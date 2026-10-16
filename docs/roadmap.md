@@ -88,9 +88,9 @@ Utilisation, margins, revenue forecast, headcount and attrition, payroll cost, c
 | Phase | Changes | Outcome |
 |---|---|---|
 | 1. PSA core | 001–009 | Replaces the delivery tool (projects, time, allocations, releases, presales basics) |
-| 2. People | 010 core HR and org, 011 leave and holidays, 012 on/offboarding + assets, 013 expenses | Replaces the HRIS for everything except pay |
+| 2. People | 010 core HR records, 011 leave and holidays, 012 on/offboarding with access and licences, 013 expenses | Replaces the HRIS for everything except pay |
 | 3. Payroll | 014 payroll engine, 015 Sri Lanka pack, 016 Australia pack, 017 GL journal integration | Replaces the payroll system |
-| 4. Talent and revenue | 018 recruitment, 019 performance/OKRs, 020 learning and skills, 021 CRM pipeline, 022 billing and AR | Replaces the ATS and the OKR tool; closes the quote-to-cash loop |
-| 5. Scale | 023 self-serve tenant signup and billing, 024 country-pack SDK, 025 Teams/Slack app, 026 compliance registers | Ready for customers outside the first market |
+| 4. Talent, operations and intelligence | 018 recruitment, 019 learning and development, 020 helpdesk, 021 Keyflow sync, 022 insights agents | Replaces the ATS and the helpdesk; adds agent intelligence |
+| 5. Revenue and scale | 023 CRM pipeline, 024 billing and AR, 025 self-serve tenant sign-up, 026 country-pack SDK, 027 Teams/Slack app, 028 compliance registers | Closes the quote-to-cash loop; ready for customers outside the first market |
 
 **Tenancy and entities must be in the 001 data model** (`tenant_id` and `legal_entity_id` on every table). Adding them later means rewriting every query and permission.
