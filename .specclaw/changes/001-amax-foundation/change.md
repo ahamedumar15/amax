@@ -25,6 +25,7 @@ Bistec Apex (`Resource_Allocation_Tool`: Angular 20 + .NET 9, ~263 REST endpoint
   - Smooth area charts, a donut chart, segmented tabs, outlined buttons, and a yellow main button.
   - Geometric sans type (Avenir Next) with tabular numerals.
   - Light and dark themes, plus a phone layout with a bottom tab bar.
+- **Every screen uses the home screen's design:** illustrated stat cards with progress bars, a chart wherever there are numbers (area lines, bars, donuts, funnels), illustrated faces for every person, coloured status labels with icons, and coloured sticker icons on stages (board lanes, proposal phases, hiring stages, pipeline stages).
 - **Agents are always violet, people are always mint.** Every chart, row, card and time entry shows who did the work: an agent acting for a person, or the person.
 - **Every screen opens with a sentence, not a widget.** "Ayesha is over-allocated in December" comes before the grid.
 - **⌘K "Ask amax"** answers questions with the same MCP tools agents use and shows which tools it called.

@@ -189,11 +189,12 @@ h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 .board{display:grid;grid-template-columns:repeat(5,minmax(220px,1fr));gap:20px;overflow-x:auto;padding:4px 4px 12px}
 .lane{background:var(--sunken);border-radius:24px;padding:16px}
 .lane-head{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 14px;font-weight:600;font-size:14px}
-.lane-head span{font-size:12px;font-weight:600;color:var(--ink-3);background:var(--card);border-radius:8px;padding:2px 8px}
+.lane-head>span:last-child{font-size:12px;font-weight:600;color:var(--ink-3);background:var(--card);border-radius:8px;padding:2px 8px}
 .tcard{background:var(--card);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(40,30,110,.05)}
 .tcard .id{font-size:12px;color:var(--ink-3);font-weight:600}
 .tcard p{margin:4px 0 12px;font-weight:600;font-size:14.5px;line-height:1.35}
 .tcard .foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-3)}
+.tcard .foot{flex-wrap:wrap;row-gap:6px}
 .tcard .foot>span:last-child{white-space:nowrap}
 .prog{height:6px;border-radius:6px;background:var(--sunken);margin:0 0 12px;overflow:hidden}
 .prog i{display:block;height:100%;border-radius:6px;background:var(--violet)}
@@ -370,6 +371,44 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 .rail::-webkit-scrollbar{display:none}
 .rail .spacer{min-height:16px}
 
+/* ---- home look on every screen ---- */
+.tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.tickets.four svg.art{width:clamp(70px,5.6vw,100px)}
+.tickets .p{z-index:1}
+.t-pink{background:linear-gradient(135deg,#FFD6DE,#F48B9B)}
+.cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.phasebar{display:flex;gap:4px;height:18px;margin:6px 0 22px}
+.phasebar i{border-radius:6px}
+.phase-legend{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.phase-legend li{display:flex;align-items:center;gap:12px;font-size:14px;padding:8px 0;border-top:1px solid var(--line)}
+.phase-legend li:first-child{border-top:0}
+.phase-legend b{margin-left:auto;font-weight:600}
+.funnel{display:grid;gap:12px}
+.funnel div{display:grid;grid-template-columns:100px 1fr 36px;align-items:center;gap:14px;font-size:14px}
+.funnel i{display:block;height:30px;border-radius:10px;min-width:12px}
+.funnel b{text-align:right}
+.stk{--c:#7B61FF;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--c);border:2px solid #fff;box-shadow:0 4px 10px -3px rgba(40,30,110,.35);transform:rotate(-6deg);flex:none;color:#fff}
+.stk svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.lane-head .lh,.stage .k{display:flex;align-items:center;gap:10px}
+.cand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.cand p{margin:0!important}
+.av.photo{background:none!important;overflow:hidden;padding:0;color:transparent}
+.av.photo svg{width:100%;height:100%;display:block}
+/* status chips carry an icon */
+.chip.pink{background:#FFE4EA;color:#C2416A}
+.chip.info{background:#DFF3FB;color:#1E7FA8}
+.chip.draft{background:var(--sunken);color:var(--ink-2)}
+.chip.good::before,.chip.warn::before,.chip.bad::before,.chip.agent::before,.chip.pink::before,.chip.info::before,.chip.draft::before{content:"";width:13px;height:13px;flex:none;background:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
+.chip.good{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.8' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.chip.warn{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M8 4.2v4.6M8 11.4v.2' stroke='%23fff' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E")}
+.chip.bad{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E")}
+.chip.agent{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0l2 6 6 2-6 2-2 6-2-6-6-2 6-2z'/%3E%3C/svg%3E")}
+.chip.pink{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1c3 2 4.5 5 4.2 9H3.8C3.5 6 5 3 8 1z'/%3E%3Cpath d='M6 11h4l-2 4z'/%3E%3C/svg%3E")}
+.chip.info{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 1h4M7 1v5L3 13a1.5 1.5 0 0 0 1.3 2h7.4A1.5 1.5 0 0 0 13 13L9 6V1' stroke='black' stroke-width='1.6' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.chip.draft{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 2l3 3-8 8H3v-3z' stroke='black' stroke-width='1.6' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.tbl td.heat{border-radius:0}
+
 /* dark-mode colour fixes */
 @media (prefers-color-scheme: dark){
 :root:not([data-theme="light"]) .chip.bad{background:#3A1F27;color:#FF9C8F}
@@ -391,6 +430,10 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 :root:not([data-theme="light"]) .btn.primary{color:#2A220A}
 :root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#2A220A}
 :root:not([data-theme="light"]) .brief{box-shadow:none}
+:root:not([data-theme="light"]) .t-pink{background:linear-gradient(135deg,#B8476A,#8A2E4E)}
+:root:not([data-theme="light"]) .chip.pink{background:#3A1F2E;color:#FF9CB6}
+:root:not([data-theme="light"]) .chip.info{background:#16303C;color:#7FD3F2}
+:root:not([data-theme="light"]) .stk{border-color:#1E1C33}
 }
 :root[data-theme="dark"] .chip.bad{background:#3A1F27;color:#FF9C8F}
 :root[data-theme="dark"] .chip.warn{background:#3A2E17;color:#F2C26B}
@@ -411,7 +454,11 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 :root[data-theme="dark"] .btn.primary{color:#2A220A}
 :root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#2A220A}
 :root[data-theme="dark"] .brief{box-shadow:none}
-@media (max-width:1180px){ .cols{grid-template-columns:minmax(0,1fr)} .profile{grid-template-columns:minmax(0,1fr)} .brief ol,.opp,.apps{grid-template-columns:minmax(0,1fr)} .sister{grid-column:auto;grid-template-columns:1fr} .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr))} }
+:root[data-theme="dark"] .t-pink{background:linear-gradient(135deg,#B8476A,#8A2E4E)}
+:root[data-theme="dark"] .chip.pink{background:#3A1F2E;color:#FF9CB6}
+:root[data-theme="dark"] .chip.info{background:#16303C;color:#7FD3F2}
+:root[data-theme="dark"] .stk{border-color:#1E1C33}
+@media (max-width:1180px){ .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))} .cols.even{grid-template-columns:minmax(0,1fr)} .cols{grid-template-columns:minmax(0,1fr)} .profile{grid-template-columns:minmax(0,1fr)} .brief ol,.opp,.apps{grid-template-columns:minmax(0,1fr)} .sister{grid-column:auto;grid-template-columns:1fr} .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:860px){
   body{padding:0}
   body::before,body::after{display:none}
@@ -428,7 +475,7 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
   .rail a .tip{display:none}
   .content{padding:20px 16px 32px}
   .top{gap:10px} .search{flex:1;height:46px} .me div,.vr,.iconbtn.hide-sm{display:none}
-  .tickets{grid-template-columns:1fr;gap:16px} .ticket{height:150px}
+  .tickets,.tickets.four{grid-template-columns:1fr;gap:16px} .ticket{height:150px}
   .card{padding:22px;border-radius:24px}
   .card.flush .card-head{padding:22px 22px 0}
   .tbl th:first-child,.tbl td:first-child{padding-left:22px}
@@ -441,6 +488,30 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <linearGradient id="gW" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E6E1FF"/></linearGradient>
+  <linearGradient id="gV" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A792FF"/><stop offset="1" stop-color="#5B44D6"/></linearGradient>
+  <linearGradient id="gM" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#1E9E6E"/></linearGradient>
+  <linearGradient id="gY" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE68A"/><stop offset="1" stop-color="#E0A928"/></linearGradient>
+  <linearGradient id="gP" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC2CC"/><stop offset="1" stop-color="#E55E78"/></linearGradient>
+ </defs>
+ <symbol id="art-people" viewBox="0 0 120 110"><ellipse cx="62" cy="99" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><circle cx="82" cy="34" r="14" fill="#F1C7A5"/><path d="M68 30c0-10 6-15 14-15s14 5 14 15c-3-5-8-7-14-7s-11 2-14 7z" fill="#3A2418"/><path d="M58 96c0-18 10-30 24-30s24 12 24 30z" fill="url(#gV)"/><circle cx="44" cy="44" r="15" fill="#C68A62"/><path d="M29 41c0-11 6-17 15-17s15 6 15 17c-3-6-9-8-15-8s-12 2-15 8z" fill="#1C1410"/><path d="M16 100c0-20 12-32 28-32s28 12 28 32z" fill="url(#gM)"/><circle cx="40" cy="45" r="1.6" fill="#1D1B2E"/><circle cx="48" cy="45" r="1.6" fill="#1D1B2E"/><path d="M40 51q4 3 8 0" stroke="#5a2e1a" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+ <symbol id="art-calendar" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><rect x="22" y="22" width="70" height="70" rx="14" fill="url(#gW)"/><path d="M22 36a14 14 0 0 1 14-14h42a14 14 0 0 1 14 14v6H22z" fill="url(#gV)"/><rect x="36" y="14" width="7" height="18" rx="3.5" fill="#1D1B2E"/><rect x="71" y="14" width="7" height="18" rx="3.5" fill="#1D1B2E"/><g fill="#C9BEFF"><rect x="33" y="52" width="10" height="9" rx="3"/><rect x="52" y="52" width="10" height="9" rx="3"/><rect x="71" y="52" width="10" height="9" rx="3"/><rect x="33" y="68" width="10" height="9" rx="3"/><rect x="71" y="68" width="10" height="9" rx="3"/></g><rect x="52" y="68" width="10" height="9" rx="3" fill="#F48B9B"/><circle cx="92" cy="86" r="14" fill="#2FCB8C"/><path d="M86 86l4 4 8-8" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="art-payslip" viewBox="0 0 120 110"><ellipse cx="62" cy="100" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><g transform="rotate(-8 60 50)"><rect x="40" y="10" width="54" height="72" rx="10" fill="url(#gW)"/><rect x="48" y="20" width="26" height="6" rx="3" fill="#7B61FF"/><path d="M48 36h38M48 46h30M48 56h38" stroke="#C9BEFF" stroke-width="4" stroke-linecap="round"/><rect x="48" y="64" width="38" height="9" rx="4.5" fill="#2FCB8C"/></g><g><ellipse cx="34" cy="90" rx="18" ry="6" fill="#E0A928"/><rect x="16" y="72" width="36" height="18" fill="#E0A928"/><ellipse cx="34" cy="72" rx="18" ry="6" fill="#FFE68A"/><path d="M16 79h36M16 85h36" stroke="#C99216" stroke-width="1.4"/></g></symbol>
+ <symbol id="art-briefcase" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><path d="M46 28a8 8 0 0 1 8-8h12a8 8 0 0 1 8 8v6h-7v-5H53v5h-7z" fill="#5B44D6"/><rect x="18" y="32" width="84" height="58" rx="14" fill="url(#gV)"/><path d="M18 52h84" stroke="#4A33C4" stroke-width="3"/><rect x="52" y="46" width="16" height="12" rx="4" fill="url(#gY)"/><circle cx="96" cy="30" r="12" fill="#F7D65A"/><path d="M96 23v14M89 30h14" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></symbol>
+ <symbol id="art-cap" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><rect x="24" y="66" width="72" height="22" rx="6" fill="url(#gM)"/><rect x="28" y="70" width="64" height="5" rx="2.5" fill="#fff" opacity=".7"/><path d="M60 14 104 34 60 54 16 34z" fill="#2B2742"/><path d="M36 43v14c0 6 11 11 24 11s24-5 24-11V43L60 54z" fill="#3B3658"/><path d="M98 37v20" stroke="#F7D65A" stroke-width="3"/><circle cx="98" cy="60" r="5" fill="#F7D65A"/></symbol>
+ <symbol id="art-key" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><path d="M60 10 94 22v26c0 22-15 36-34 44C41 84 26 70 26 48V22z" fill="url(#gV)"/><path d="M60 18 86 27v21c0 17-11 28-26 35V18z" fill="#fff" opacity=".18"/><circle cx="60" cy="44" r="9" fill="#fff"/><rect x="56.5" y="48" width="7" height="16" rx="3" fill="#fff"/><g transform="rotate(-35 92 82)"><circle cx="92" cy="82" r="10" fill="url(#gY)"/><circle cx="92" cy="82" r="4" fill="#fff"/><rect x="100" y="79" width="22" height="6" rx="3" fill="#E0A928"/></g></symbol>
+ <symbol id="art-headset" viewBox="0 0 120 110"><ellipse cx="58" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><circle cx="54" cy="56" r="32" fill="url(#gP)"/><circle cx="54" cy="56" r="17" fill="#fff"/><g fill="#fff"><path d="M48 25h12v14H48zM48 73h12v14H48zM23 50h14v12H23zM71 50h14v12H71z"/></g><path d="M84 14h24a8 8 0 0 1 8 8v12a8 8 0 0 1-8 8h-12l-8 7v-7h-4a8 8 0 0 1-8-8V22a8 8 0 0 1 8-8z" fill="url(#gV)"/><circle cx="90" cy="28" r="2.4" fill="#fff"/><circle cx="98" cy="28" r="2.4" fill="#fff"/><circle cx="106" cy="28" r="2.4" fill="#fff"/></symbol>
+ <symbol id="art-chart" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="40" ry="6" fill="#1D1B2E" opacity=".12"/><rect x="20" y="58" width="20" height="36" rx="6" fill="url(#gM)"/><rect x="48" y="40" width="20" height="54" rx="6" fill="url(#gY)"/><rect x="76" y="20" width="20" height="74" rx="6" fill="url(#gV)"/><path d="M18 46 46 26l18 10 34-24" stroke="#1D1B2E" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 10h12v12" stroke="#1D1B2E" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="art-rocket" viewBox="0 0 120 110"><ellipse cx="56" cy="100" rx="34" ry="6" fill="#1D1B2E" opacity=".12"/><g transform="rotate(35 60 52)"><path d="M60 8c14 10 20 28 18 52H42C40 36 46 18 60 8z" fill="url(#gW)"/><circle cx="60" cy="34" r="8" fill="url(#gV)"/><path d="M42 50 28 66l16 2zM78 50l14 16-16 2z" fill="#F48B9B"/><path d="M50 62h20l-4 18h-12z" fill="url(#gY)"/></g><circle cx="22" cy="24" r="4" fill="#F7D65A"/><circle cx="100" cy="18" r="3" fill="#fff"/></symbol>
+ <symbol id="art-target" viewBox="0 0 120 110"><ellipse cx="58" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><circle cx="56" cy="56" r="36" fill="url(#gP)"/><circle cx="56" cy="56" r="25" fill="#fff"/><circle cx="56" cy="56" r="15" fill="url(#gP)"/><circle cx="56" cy="56" r="6" fill="#fff"/><path d="M56 56 98 16" stroke="#1D1B2E" stroke-width="4" stroke-linecap="round"/><path d="M92 12l10-2-2 10-8 2z" fill="url(#gV)"/></symbol>
+ <symbol id="art-wallet" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><rect x="34" y="14" width="56" height="36" rx="8" fill="url(#gM)" transform="rotate(-10 62 32)"/><rect x="18" y="34" width="84" height="58" rx="14" fill="url(#gV)"/><rect x="72" y="52" width="34" height="22" rx="8" fill="#4A33C4"/><circle cx="84" cy="63" r="5" fill="#F7D65A"/></symbol>
+ <symbol id="art-clock" viewBox="0 0 120 110"><ellipse cx="66" cy="98" rx="34" ry="6" fill="#1D1B2E" opacity=".12"/><circle cx="66" cy="56" r="38" fill="#1E9E6E"/><circle cx="63" cy="52" r="36" fill="url(#gW)"/><rect x="56" y="8" width="14" height="10" rx="3" fill="#1E9E6E"/><path d="M63 30v22l14 9" stroke="#1D1B2E" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="63" cy="52" r="4" fill="#7B61FF"/></symbol>
+ <symbol id="art-plane" viewBox="0 0 120 110"><ellipse cx="62" cy="99" rx="32" ry="5" fill="#1D1B2E" opacity=".12"/><path d="M14 52 104 14 76 92 58 66z" fill="url(#gW)"/><path d="M58 66 104 14 46 60z" fill="#8E77F5"/><path d="M58 66 62 86 70 74z" fill="#5B44D6"/><path d="M14 52l32 8 58-46z" fill="#fff"/><circle cx="26" cy="86" r="5" fill="#F7D65A"/></symbol>
+ <symbol id="art-coins" viewBox="0 0 120 110"><ellipse cx="64" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><g fill="#E0A928"><ellipse cx="46" cy="88" rx="20" ry="7"/><rect x="26" y="66" width="40" height="22"/></g><ellipse cx="46" cy="66" rx="20" ry="7" fill="#FFE68A"/><path d="M26 74h40M26 81h40" stroke="#C99216" stroke-width="1.5"/><g fill="#E0A928"><ellipse cx="82" cy="92" rx="18" ry="6"/><rect x="64" y="50" width="36" height="42"/></g><ellipse cx="82" cy="50" rx="18" ry="6" fill="#FFE68A"/><path d="M64 60h36M64 70h36M64 80h36" stroke="#C99216" stroke-width="1.5"/></symbol>
+ <symbol id="art-shield" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><path d="M60 10 94 22v26c0 22-15 36-34 44C41 84 26 70 26 48V22z" fill="url(#gM)"/><path d="M45 50l10 10 20-22" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
 <div class="app">
   <nav class="rail" aria-label="Main">
     <svg class="logo" viewBox="0 0 44 44" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#53D6A1"/><stop offset="1" stop-color="#7B61FF"/></linearGradient></defs><rect width="44" height="44" rx="14" fill="url(#lg1)"/><path d="M12 31 21 13l4 8 7-6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="15" r="3" fill="#F7D65A"/></svg>
@@ -566,7 +637,7 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
       <tbody>
       <tr><td><span class="dot" style="background:var(--amber)"></span><b>Fleet Tracker</b><small>Due Nov 14</small></td><td><div class="risk"><div class="meter"><i style="width:71%;background:var(--coral)"></i></div><b>71%</b></div></td><td>Velocity down 32%, UAT rollback, 2 reviews skipped</td><td><span class="down">↑ worse</span></td><td class="num"><button class="btn sm primary">Plan recovery</button></td></tr>
       <tr><td><span class="dot" style="background:var(--violet)"></span><b>Contoso Portal</b><small>v2.5.0 due Nov 28</small></td><td><div class="risk"><div class="meter"><i style="width:34%;background:var(--amber)"></i></div><b>34%</b></div></td><td>Global search has 4 tasks left and one engineer on leave Oct 27–31</td><td class="muted">steady</td><td class="num"><button class="btn sm">Review</button></td></tr>
-      <tr><td><span class="dot" style="background:var(--pink)"></span><b>HR Insights</b><small>Retainer</small></td><td><div class="risk"><div class="meter"><i style="width:12%;background:var(--mint)"></i></div><b>12%</b></div></td><td>On time; margin 41% against a 35% target</td><td class="up">↓ better</td><td class="num"><button class="btn sm">Open</button></td></tr>
+      <tr><td><span class="dot" style="background:var(--pink)"></span><b>HR Insights</b><small>Retainer</small></td><td><div class="risk"><div class="meter"><i style="width:12%;background:var(--mint)"></i></div><b>12%</b></div></td><td>On time; margin 41% against a 35% target</td><td><span class="up">↓ better</span></td><td class="num"><button class="btn sm">Open</button></td></tr>
       </tbody></table></div>
   </div>
 
@@ -627,11 +698,22 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>Projects</h1><p class="lede">3 active projects for 3 clients. Fleet Tracker is at risk; Contoso Portal is on track for v2.5.0.</p></div>
     <div class="actions"><select class="select" aria-label="Client"><option>All clients</option><option>Contoso</option><option>Fleet Logistics</option><option>Northwind HR</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New project</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">Active projects</div><div class="big">3</div><small>1 in presales handover</small></div>
-    <div class="stat"><div class="k">Contract value</div><div class="big">$774,000</div><small>65% invoiced</small></div>
-    <div class="stat"><div class="k">Average margin</div><div class="big">37.4%</div><small>Target 35%</small></div>
-    <div class="stat"><div class="k">At risk</div><div class="big">1</div><small class="down">Fleet Tracker, 71%</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Active projects</div><div class="v">3</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><div class="p">1 more in presales handover<div class="bar"><i style="width:75%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Contract value</div><div class="v">$774,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">65% invoiced so far<div class="bar"><i style="width:65%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Average margin</div><div class="v">37.4%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">Target 35%<div class="bar dark"><i style="width:74%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">At risk</div><div class="v">1 project</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Fleet Tracker, 71% risk<div class="bar"><i style="width:71%"></i></div></div></div>
+  </div>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Tasks done per week</h2><span class="muted" style="font-size:13px">All projects</span></div>
+      <svg class="chart viz" data-kind="line" data-labels="W35,W36,W37,W38,W39,W40,W41,W42" data-series="Planned|#C3B5FF|dash|28,30,30,32,32,34,34,36;Done|#7B61FF|area|24,29,31,27,33,35,30,38" data-max="40" data-step="10" viewBox="0 0 560 210" role="img" aria-label="Tasks done per week against plan"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Done</span><span><i style="background:repeating-linear-gradient(90deg,#C3B5FF 0 5px,transparent 5px 9px)"></i>Planned</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Revenue by project</h2><button class="btn sm pillbtn">View all</button></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Contoso Portal:420:#7B61FF;Fleet Tracker:210:#F2A93B;HR Insights:144:#F48B9B" data-center="$774k" data-sub="contract value" data-legend="lgProj" viewBox="0 0 170 170" role="img" aria-label="Revenue by project"></svg><ul class="donut-legend" id="lgProj"></ul></div>
+    </div>
   </div>
   <div class="card flush">
     <div class="card-head"><h2>Portfolio</h2><div class="actions"><div class="seg" role="group" aria-label="Status"><button aria-pressed="true">Active</button><button aria-pressed="false">Closed</button></div><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button></div></div>
@@ -654,17 +736,17 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
   </div>
   <div class="tabs"><a class="btn sm" aria-current="true">Board</a><a class="btn sm" href="#001-amax-foundation-proposals">Proposals</a><a class="btn sm" href="#001-amax-foundation-releases">Releases</a><a class="btn sm">Risks and decisions</a><a class="btn sm">Team</a><a class="btn sm" href="#001-amax-foundation-financials">Contract</a></div>
   <div class="board">
-    <div class="lane"><div class="lane-head">Proposed <span>2</span></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>Proposed</span> <span>2</span></div>
       <div class="tcard"><div class="id">016</div><p>Audit trail on approvals</p><div class="foot"><span class="av sm a4">AR</span><span>est. 6 h</span></div></div>
       <div class="tcard"><div class="id">017</div><p>CSV import for clients</p><div class="foot"><span class="chip agent">Claude for Nimal</span><span>est. 4 h</span></div></div></div>
-    <div class="lane"><div class="lane-head">Planned <span>1</span></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="map" style="--c:#5CC8F0"></span>Planned</span> <span>1</span></div>
       <div class="tcard"><div class="id">013</div><p>Dark mode</p><div class="prog"><i style="width:0"></i></div><div class="foot"><span class="av sm a2">KD</span><span>0 of 3 tasks</span></div></div></div>
-    <div class="lane"><div class="lane-head">Building <span>2</span></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="code" style="--c:#7B61FF"></span>Building</span> <span>2</span></div>
       <div class="tcard"><div class="id">014</div><p>Invoice export to PDF</p><div class="prog"><i style="width:60%"></i></div><div class="foot"><span class="chip agent">Claude for Nimal</span><span>3 of 5, 7.5 h</span></div></div>
       <div class="tcard"><div class="id">011</div><p>Global search</p><div class="prog"><i style="width:20%"></i></div><div class="foot"><span class="av sm a2">KD</span><span>1 of 5, 2 h</span></div></div></div>
-    <div class="lane"><div class="lane-head">Verified <span>1</span></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="check" style="--c:#2FCB8C"></span>Verified</span> <span>1</span></div>
       <div class="tcard"><div class="id">012</div><p>SSO token refresh</p><div class="prog"><i style="width:100%;background:var(--mint)"></i></div><div class="foot"><span class="chip agent">specclaw</span><span class="chip">v2.4.0</span></div></div></div>
-    <div class="lane"><div class="lane-head">Released <span>2</span></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="rocket" style="--c:#F48B9B"></span>Released</span> <span>2</span></div>
       <div class="tcard"><div class="id">009</div><p>Reports v2</p><div class="foot"><span class="chip">v2.3.0</span><span class="chip good">In Prod</span></div></div>
       <div class="tcard"><div class="id">010</div><p>Email digest</p><div class="foot"><span class="chip">v2.4.0</span><span class="chip warn">In QA</span></div></div></div>
   </div>
@@ -674,6 +756,17 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 <section data-change="001-amax-foundation" id="001-amax-foundation-proposals" data-title="Proposals" data-icon="doc">
   <h1>Proposals</h1>
   <p class="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Proposals by phase</h2><span class="muted" style="font-size:13px">37 in flight</span></div>
+      <div class="phasebar"><i style="flex:6;background:#F7D65A"></i><i style="flex:4;background:#5CC8F0"></i><i style="flex:21;background:#7B61FF"></i><i style="flex:9;background:#2FCB8C"></i><i style="flex:5;background:#F48B9B"></i></div>
+      <ul class="phase-legend"><li><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>Proposed<b>6</b></li><li><span class="stk" data-i="map" style="--c:#5CC8F0"></span>Planned<b>4</b></li><li><span class="stk" data-i="code" style="--c:#7B61FF"></span>Building<b>21</b></li><li><span class="stk" data-i="check" style="--c:#2FCB8C"></span>Verified<b>9</b></li><li><span class="stk" data-i="rocket" style="--c:#F48B9B"></span>Released this month<b>5</b></li></ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Shipped to Prod per week</h2><span class="up">↑ 12.6%</span></div>
+      <svg class="chart viz" data-kind="bars" data-labels="W35,W36,W37,W38,W39,W40,W41,W42" data-values="2,3,1,4,3,5,4,6" data-color="#D6CCFF" data-hl="#7B61FF" data-max="8" viewBox="0 0 520 200" role="img" aria-label="Proposals shipped to Prod per week"></svg>
+    </div>
+  </div>
   <div class="card flush">
     <div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released</button></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
     <div class="scroll-x"><table class="tbl">
@@ -681,8 +774,8 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
       <tbody>
       <tr><td><b>014</b> Invoice export</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip agent">Building</span></td><td><div class="meter"><i style="width:60%;background:var(--violet)"></i></div></td><td class="num">7.5 h</td><td>v2.5.0</td><td class="muted">Not yet</td><td>Nimal Silva</td></tr>
       <tr><td><b>012</b> SSO token refresh</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip good">Verified</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">9.0 h</td><td>v2.4.0</td><td>QA</td><td>Ayesha Rahman</td></tr>
-      <tr><td><b>010</b> Email digest</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip">Released</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">14.0 h</td><td>v2.4.0</td><td>QA</td><td>Kasun Dias</td></tr>
-      <tr><td><b>009</b> Reports v2</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip">Released</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">22.5 h</td><td>v2.3.0</td><td><span class="chip good">Prod</span></td><td>Nimal Silva</td></tr>
+      <tr><td><b>010</b> Email digest</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip pink">Released</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">14.0 h</td><td>v2.4.0</td><td>QA</td><td>Kasun Dias</td></tr>
+      <tr><td><b>009</b> Reports v2</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip pink">Released</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">22.5 h</td><td>v2.3.0</td><td><span class="chip good">Prod</span></td><td>Nimal Silva</td></tr>
       <tr><td><b>015</b> Bulk upload</td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip warn">Proposed</span></td><td class="muted">–</td><td class="num">0.5 h</td><td class="muted">None</td><td class="muted">Not yet</td><td>Kasun Dias</td></tr>
       </tbody></table></div>
   </div>
@@ -720,7 +813,7 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
       <thead><tr><th>Release</th><th>Project</th><th class="num">Proposals</th><th>Dev</th><th>QA</th><th>UAT</th><th>Prod</th><th class="num">Action</th></tr></thead>
       <tbody>
       <tr><td><b>v2.5.0</b></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td class="num">3</td><td class="muted">–</td><td class="muted">–</td><td class="muted">–</td><td class="muted">–</td><td class="num muted">Building</td></tr>
-      <tr><td><b>v2.4.0</b></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td class="num">2</td><td>Oct 10</td><td><span class="chip agent">Testing</span></td><td class="muted">–</td><td class="muted">–</td><td class="num"><button class="btn sm primary">Promote to UAT</button></td></tr>
+      <tr><td><b>v2.4.0</b></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td class="num">2</td><td>Oct 10</td><td><span class="chip info">Testing</span></td><td class="muted">–</td><td class="muted">–</td><td class="num"><button class="btn sm primary">Promote to UAT</button></td></tr>
       <tr><td><b>v1.8.0</b></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td class="num">5</td><td>Oct 8</td><td>Oct 12</td><td><span class="chip bad">Rolled back</span></td><td class="muted">–</td><td class="num"><button class="btn sm">Retry UAT</button></td></tr>
       <tr><td><b>v0.9.2</b></td><td><span class="dot" style="background:var(--pink)"></span>HR Insights</td><td class="num">4</td><td>Sep 22</td><td>Sep 25</td><td>Sep 29</td><td><span class="chip good">Oct 1</span></td><td class="num muted">Live</td></tr>
       </tbody></table></div>
@@ -764,8 +857,8 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
       <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td class="num">8.0</td><td class="num">8.5</td><td class="num">7.0</td><td class="num">8.0</td><td class="num">–</td><td class="num"><b>31.5</b></td><td><span class="chip agent">71%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
       <tr><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td class="num">8.0</td><td class="num">8.0</td><td class="num">8.0</td><td class="num">7.5</td><td class="num">1.0</td><td class="num"><b>32.5</b></td><td><span class="chip agent">78%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
       <tr><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td class="num">7.5</td><td class="num">8.0</td><td class="num">–</td><td class="num">8.0</td><td class="num">–</td><td class="num"><b>23.5</b></td><td><span class="chip agent">44%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
-      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td class="num">7.0</td><td class="num">8.0</td><td class="num">8.0</td><td class="num">6.0</td><td class="num">–</td><td class="num"><b>29.0</b></td><td><span class="chip agent">66%</span></td><td><span class="chip">Draft</span></td><td class="num"><button class="btn sm">Remind</button></td></tr>
-      <tr><td><div class="who"><span class="av sm a1">LM</span>Liam Murphy</div></td><td class="num">7.6</td><td class="num">7.6</td><td class="num">7.6</td><td class="num">2.2</td><td class="num">–</td><td class="num"><b>25.0</b></td><td><span class="chip">0%</span></td><td><span class="chip">Draft</span></td><td class="num"><button class="btn sm">Remind</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td class="num">7.0</td><td class="num">8.0</td><td class="num">8.0</td><td class="num">6.0</td><td class="num">–</td><td class="num"><b>29.0</b></td><td><span class="chip agent">66%</span></td><td><span class="chip draft">Draft</span></td><td class="num"><button class="btn sm">Remind</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a1">LM</span>Liam Murphy</div></td><td class="num">7.6</td><td class="num">7.6</td><td class="num">7.6</td><td class="num">2.2</td><td class="num">–</td><td class="num"><b>25.0</b></td><td><span class="chip">0%</span></td><td><span class="chip draft">Draft</span></td><td class="num"><button class="btn sm">Remind</button></td></tr>
       </tbody></table></div>
   </div>
 </section>
@@ -774,6 +867,17 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 <section data-change="001-amax-foundation" id="001-amax-foundation-allocations" data-title="Allocations" data-icon="people">
   <h1>Allocations and forecast</h1>
   <p class="lede">Ayesha is over-allocated in December. Kasun has no work planned from January.</p>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Capacity and demand</h2><span class="muted" style="font-size:13px">People, next 6 months</span></div>
+      <svg class="chart viz" data-kind="line" data-labels="Oct,Nov,Dec,Jan,Feb,Mar" data-series="Capacity|#2FCB8C|dash|171,173,175,176,176,178;Demand|#7B61FF|area|158,162,168,149,152,163" data-max="200" data-step="50" viewBox="0 0 560 210" role="img" aria-label="Capacity against demand"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Demand</span><span><i style="background:repeating-linear-gradient(90deg,var(--mint) 0 5px,transparent 5px 9px)"></i>Capacity</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Bench by skill, January</h2><span class="muted" style="font-size:13px">27 people</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts=".NET:11:#7B61FF;React:7:#5CC8F0;QA:5:#F48B9B;Data:4:#F2A93B" data-center="27" data-sub="on bench" data-legend="lgBench" viewBox="0 0 170 170" role="img" aria-label="Bench by skill, January"></svg><ul class="donut-legend" id="lgBench"></ul></div>
+    </div>
+  </div>
   <div class="card flush">
     <div class="card-head"><h2>People by month</h2><div class="actions"><select class="select" aria-label="Team"><option>Delivery team</option></select><button class="btn primary">Copy to next month</button></div></div>
     <div class="scroll-x"><table class="tbl heat">
@@ -793,11 +897,22 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>People</h1><p class="lede">184 people in 2 entities. 3 probation reviews are due this month and 2 contracts end in November.</p></div>
     <div class="actions"><select class="select" aria-label="Entity"><option>All entities</option><option>Sri Lanka</option><option>Australia</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add person</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">Headcount<span class="up">↑ 6</span></div><div class="big">184</div><small>171 Sri Lanka, 13 Australia</small></div>
-    <div class="stat"><div class="k">Joiners and leavers, Q4</div><div class="big">9 / 3</div><small>2 joining Nov 2</small></div>
-    <div class="stat"><div class="k">On probation</div><div class="big">11</div><small>3 reviews due this month</small></div>
-    <div class="stat"><div class="k">Documents missing</div><div class="big">7</div><small>Agent sent reminders</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Headcount</div><div class="v">184</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">171 Sri Lanka, 13 Australia<div class="bar"><i style="width:93%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Joiners and leavers, Q4</div><div class="v">9 / 3</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">2 joining on Nov 2<div class="bar"><i style="width:75%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">On probation</div><div class="v">11</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 reviews due this month<div class="bar dark"><i style="width:27%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Documents missing</div><div class="v">7</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">Agent sent reminders<div class="bar"><i style="width:30%"></i></div></div></div>
+  </div>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>People by department</h2><span class="muted" style="font-size:13px">184 people</span></div>
+      <svg class="chart viz" data-kind="hbars" data-labels="Engineering,Quality,Delivery,Sales,People and Culture,Finance,IT,Leadership" data-values="112,24,14,9,8,6,6,5" data-colors="#7B61FF,#F48B9B,#2FCB8C,#F2A93B,#5CC8F0,#B9EE7A,#A792FF,#FFB86B" viewBox="0 0 520 230" role="img" aria-label="People by department"></svg>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Joiners and leavers</h2><span class="up">Net +31 this year</span></div>
+      <svg class="chart viz" data-kind="line" data-labels="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct" data-series="Leavers|#F48B9B|dash|2,1,3,1,2,1,2,1,2,1;Joiners|#2FCB8C|area|5,4,5,4,4,4,6,4,4,3" data-max="8" data-step="2" viewBox="0 0 520 210" role="img" aria-label="Joiners and leavers per month"></svg>
+      <div class="legend"><span><i style="background:var(--mint)"></i>Joiners</span><span><i style="background:repeating-linear-gradient(90deg,#F48B9B 0 5px,transparent 5px 9px)"></i>Leavers</span></div>
+    </div>
   </div>
   <div class="card flush">
     <div class="card-head"><h2>Directory</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn">Org chart</button><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
@@ -869,15 +984,25 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>Leave</h1><p class="lede">Nimal asked for Oct 27–30 off, the same week as the Fleet Tracker UAT retry. Next public holiday: Vap Full Moon Poya Day, Oct 26.</p></div>
     <div class="actions"><button class="btn">Holiday calendar</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">On leave today</div><div class="big">6</div><small>3 annual, 2 casual, 1 medical</small></div>
-    <div class="stat"><div class="k">Waiting for approval</div><div class="big">2</div><small>1 clashes with a release</small></div>
-    <div class="stat"><div class="k">Booked this month</div><div class="big">41 days</div><small>Across 19 people</small></div>
-    <div class="stat"><div class="k">Unused annual leave</div><div class="big">812 days</div><small>LKR 9.4M liability</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">On leave today</div><div class="v">6</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 annual, 2 casual, 1 medical<div class="bar"><i style="width:33%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Waiting for approval</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">1 clashes with a release<div class="bar dark"><i style="width:50%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Booked this month</div><div class="v">41 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Across 19 people<div class="bar"><i style="width:41%"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">LKR 9.4M owed<div class="bar"><i style="width:64%"></i></div></div></div>
   </div>
   <div class="card" style="margin-bottom:28px">
     <div class="card-head"><h2>Team calendar, October 2026</h2><div class="legend" style="padding:0;margin:0;gap:16px"><span><i style="width:12px;height:12px;border-radius:4px;background:#B3A1FF"></i>Annual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#7FD8F5"></i>Casual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#F48B9B"></i>Medical</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #7B61FF"></i>Pending</span><span><i style="width:12px;height:12px;border-radius:4px;background:#FFF1D6"></i>Holiday</span></div></div>
     <div class="cal" id="leaveCal"></div>
+  </div>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Leave taken by type</h2><span class="muted" style="font-size:13px">2026, in days</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Annual:412:#B3A1FF;Casual:186:#7FD8F5;Medical:97:#F48B9B;Lieu:21:#2FCB8C" data-center="716" data-sub="days taken" data-legend="lgLeave" viewBox="0 0 170 170" role="img" aria-label="Leave taken by type"></svg><ul class="donut-legend" id="lgLeave"></ul></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Leave days per month</h2><span class="muted" style="font-size:13px">Everyone</span></div>
+      <svg class="chart viz" data-kind="bars" data-labels="J,F,M,A,M,J,J,A,S,O" data-values="58,49,71,88,64,52,61,79,57,41" data-color="#D6CCFF" data-hl="#7B61FF" data-max="100" viewBox="0 0 520 200" role="img" aria-label="Leave days per month"></svg>
+    </div>
   </div>
   <div class="card flush">
     <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary">Approve all</button></div>
@@ -900,9 +1025,9 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <ol class="steps" style="padding:0"><li class="done">Draft from time and leave</li><li class="done">Agent variance check</li><li class="now">HR approval</li><li>Finance approval</li><li>Bank file and EPF/ETF</li><li>Payslips sent</li></ol>
   </div>
   <div class="tickets">
-    <div class="ticket t-violet"><div class="k">Gross pay</div><div class="v">LKR 48.62M</div><div class="p">171 people, up 1.8% on September<div class="bar"><i style="width:100%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Net to banks</div><div class="v">LKR 39.07M</div><div class="p">Bank file ready after approval<div class="bar"><i style="width:80%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Statutory</div><div class="v">LKR 12.40M</div><div class="p">EPF 20%, ETF 3%, APIT; due Nov 15<div class="bar dark"><i style="width:60%;background:#1D1B2E;opacity:.7"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Gross pay</div><div class="v">LKR 48.62M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">171 people, up 1.8% on September<div class="bar"><i style="width:100%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Net to banks</div><div class="v">LKR 39.07M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-wallet"/></svg><div class="p">Bank file ready after approval<div class="bar"><i style="width:80%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Statutory</div><div class="v">LKR 12.40M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">EPF 20%, ETF 3%, APIT; due Nov 15<div class="bar dark"><i style="width:60%;background:#1D1B2E;opacity:.7"></i></div></div></div>
   </div>
   <div class="cols">
     <div class="card flush">
@@ -916,15 +1041,14 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
         <tr><td><div class="who"><span class="av sm a1">RF</span>Rizwan Farook</div></td><td class="num">− 285,000</td><td>Final settlement paid in September, not October</td><td class="num"><button class="btn sm">Review</button></td></tr>
         </tbody></table></div>
     </div>
-    <div class="card">
-      <div class="card-head"><h2>Run totals</h2><span class="muted" style="font-size:13px">171 people, LKR</span></div>
-      <div class="payslip">
-        <div class="row"><span>Gross pay</span><span>48,620,400</span></div>
-        <div class="row"><span>EPF, employee 8%</span><span>− 3,512,300</span></div>
-        <div class="row"><span>APIT</span><span>− 6,038,100</span></div>
-        <div class="row tot"><span>Net to banks</span><span>39,070,000</span></div>
-        <div class="row" style="margin-top:14px"><span>Employer EPF 12%</span><span>5,268,450</span></div>
-        <div class="row"><span>Employer ETF 3%</span><span>1,317,110</span></div>
+    <div class="stack">
+      <div class="card">
+      <div class="card-head"><h2>Where the money goes</h2><span class="muted" style="font-size:13px">LKR, October</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Net pay:39.07:#7B61FF;APIT:6.04:#F48B9B;EPF:3.51:#5CC8F0" data-center="48.6M" data-sub="gross pay" data-legend="lgPay" viewBox="0 0 170 170" role="img" aria-label="Where the money goes"></svg><ul class="donut-legend" id="lgPay"></ul></div>
+    </div>
+      <div class="card">
+        <div class="card-head"><h2>Payroll cost</h2><span class="up" style="color:var(--ink-2)">↑ 1.8% on Sep</span></div>
+        <svg class="chart viz" data-kind="bars" data-labels="May,Jun,Jul,Aug,Sep,Oct" data-values="45.1,45.8,46.3,47.2,47.8,48.6" data-color="#D6CCFF" data-hl="#7B61FF" data-max="50" data-unit="M" viewBox="0 0 340 180" role="img" aria-label="Gross payroll per month, LKR millions"></svg>
       </div>
     </div>
   </div>
@@ -946,24 +1070,41 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>Recruitment</h1><p class="lede">4 open roles. Two were raised by the resourcing agent from January demand on Fleet Tracker phase 2.</p></div>
     <div class="actions"><select class="select" aria-label="Role"><option>All roles (4)</option><option>Senior .NET engineer (2)</option><option>AI engineer (1)</option><option>QA engineer (1)</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New role</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">Open roles</div><div class="big">4</div><small>2 raised from demand forecasts</small></div>
-    <div class="stat"><div class="k">Candidates</div><div class="big">63</div><small>41 screened by agent</small></div>
-    <div class="stat"><div class="k">Time to hire</div><div class="big">31 d</div><small class="up">↓ 9 days</small></div>
-    <div class="stat"><div class="k">Offers accepted</div><div class="big">80%</div><small>4 of 5 this quarter</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Open roles</div><div class="v">4</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">2 raised from demand forecasts<div class="bar"><i style="width:50%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Candidates</div><div class="v">63</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">41 screened by the agent<div class="bar"><i style="width:65%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Time to hire</div><div class="v">31 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">9 days faster than Q3<div class="bar dark"><i style="width:70%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Offers accepted</div><div class="v">80%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">4 of 5 this quarter<div class="bar"><i style="width:80%"></i></div></div></div>
   </div>
   <div class="board">
-    <div class="lane"><div class="lane-head">Applied <span>24</span></div>
-      <div class="tcard"><p>Dinithi Fernando</p><div class="foot"><span class="chip agent">Match 86%</span><span>LinkedIn</span></div></div>
-      <div class="tcard"><p>Arjun Mehta</p><div class="foot"><span class="chip agent">Match 72%</span><span>Careers page</span></div></div></div>
-    <div class="lane"><div class="lane-head">Screening <span>9</span></div>
-      <div class="tcard"><p>Sachini Perera</p><div class="foot"><span class="chip agent">Match 91%</span><span>Referral</span></div></div></div>
-    <div class="lane"><div class="lane-head">Interviews <span>5</span></div>
-      <div class="tcard"><p>Ravindu Jayasuriya</p><div class="prog"><i style="width:66%"></i></div><div class="foot"><span>2 of 3 rounds</span><span>Thu 10:00</span></div></div></div>
-    <div class="lane"><div class="lane-head">Offer <span>1</span></div>
-      <div class="tcard"><p>Hasini Gunawardena</p><div class="foot"><span class="chip warn">Out for signature</span><span>Sent Oct 14</span></div></div></div>
-    <div class="lane"><div class="lane-head">Hired <span>2</span></div>
-      <div class="tcard"><p>Mohamed Rifkhan</p><div class="foot"><span class="chip good">Starts Nov 2</span><span>Onboarding</span></div></div></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span>Applied</span> <span>24</span></div>
+      <div class="tcard"><div class="cand"><span class="av sm">DF</span><p>Dinithi Fernando</p></div><div class="foot"><span class="chip agent">Match 86%</span><span>LinkedIn</span></div></div>
+      <div class="tcard"><div class="cand"><span class="av sm">AM</span><p>Arjun Mehta</p></div><div class="foot"><span class="chip agent">Match 72%</span><span>Careers page</span></div></div></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="spark" style="--c:#7B61FF"></span>Screening</span> <span>9</span></div>
+      <div class="tcard"><div class="cand"><span class="av sm">SP</span><p>Sachini Perera</p></div><div class="foot"><span class="chip agent">Match 91%</span><span>Referral</span></div></div></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="chat" style="--c:#F2A93B"></span>Interviews</span> <span>5</span></div>
+      <div class="tcard"><div class="cand"><span class="av sm">RJ</span><p>Ravindu Jayasuriya</p></div><div class="prog"><i style="width:66%"></i></div><div class="foot"><span>2 of 3 rounds</span><span>Thu 10:00</span></div></div></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="mail" style="--c:#F48B9B"></span>Offer</span> <span>1</span></div>
+      <div class="tcard"><div class="cand"><span class="av sm">HG</span><p>Hasini Gunawardena</p></div><div class="foot"><span class="chip warn">Out for signature</span><span>Sent Oct 14</span></div></div></div>
+    <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="party" style="--c:#2FCB8C"></span>Hired</span> <span>2</span></div>
+      <div class="tcard"><div class="cand"><span class="av sm">MR</span><p>Mohamed Rifkhan</p></div><div class="foot"><span class="chip good">Starts Nov 2</span><span>Onboarding</span></div></div></div>
+  </div>
+
+  <div class="cols even" style="margin-top:28px">
+    <div class="card">
+      <div class="card-head"><h2>Hiring funnel</h2><span class="muted" style="font-size:13px">All roles, this quarter</span></div>
+      <div class="funnel">
+        <div><span>Applied</span><i style="width:100%;background:#C3B5FF"></i><b>63</b></div>
+        <div><span>Screened</span><i style="width:65%;background:#A792FF"></i><b>41</b></div>
+        <div><span>Interviewed</span><i style="width:30%;background:#7B61FF"></i><b>19</b></div>
+        <div><span>Offered</span><i style="width:8%;background:#F2A93B"></i><b>5</b></div>
+        <div><span>Hired</span><i style="width:6%;background:#2FCB8C"></i><b>4</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Hires per month</h2><span class="up">↓ 9 days to hire</span></div>
+      <svg class="chart viz" data-kind="bars" data-labels="May,Jun,Jul,Aug,Sep,Oct" data-values="3,5,2,4,6,4" data-color="#D6CCFF" data-hl="#7B61FF" data-max="8" viewBox="0 0 520 200" role="img" aria-label="Hires per month"></svg>
+    </div>
   </div>
 </section>
 
@@ -973,11 +1114,11 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>Learning and development</h1><p class="lede">18 programmes this year with 126 people taking part. 6 certifications expire before January.</p></div>
     <div class="actions"><button class="btn">Skills matrix</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New programme</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">Programmes created<span class="up">↑ 7</span></div><div class="big">18</div><small>11 internal, 7 external</small></div>
-    <div class="stat"><div class="k">People who took part</div><div class="big">126</div><small>68% of all people</small></div>
-    <div class="stat"><div class="k">Completion rate</div><div class="big">74%</div><small>Target 80%</small></div>
-    <div class="stat"><div class="k">Certifications</div><div class="big">41</div><small>6 expire before January</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Programmes</div><div class="v">18</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-cap"/></svg><div class="p">11 internal, 7 external<div class="bar"><i style="width:72%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">People who took part</div><div class="v">126</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">68% of everyone<div class="bar"><i style="width:68%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Completion rate</div><div class="v">74%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">Target 80%<div class="bar dark"><i style="width:74%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Certifications</div><div class="v">41</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">6 expire before January<div class="bar"><i style="width:85%"></i></div></div></div>
   </div>
   <div class="cols">
     <div class="card flush">
@@ -1009,9 +1150,19 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
   <h1>Financials</h1>
   <p class="lede">Contoso's next invoice unlocks when v2.4.0 reaches Prod. Fleet Tracker has one invoice 9 days overdue.</p>
   <div class="tickets">
-    <div class="ticket t-violet"><div class="k">Contract value</div><div class="v">$774,000</div><div class="p">3 active contracts<div class="bar"><i style="width:100%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Invoiced to date</div><div class="v">$502,980</div><div class="p">65% of contract value<div class="bar"><i style="width:65%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Overdue</div><div class="v">$18,315</div><div class="p">1 invoice, 9 days late<div class="bar dark"><i style="width:9%;background:#1D1B2E;opacity:.7"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Contract value</div><div class="v">$774,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">3 active contracts<div class="bar"><i style="width:100%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Invoiced to date</div><div class="v">$502,980</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">65% of contract value<div class="bar"><i style="width:65%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Overdue</div><div class="v">$18,315</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">1 invoice, 9 days late<div class="bar dark"><i style="width:9%;background:#1D1B2E;opacity:.7"></i></div></div></div>
+  </div>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Invoiced per month</h2><span class="muted" style="font-size:13px">USD, against target</span></div>
+      <svg class="chart viz" data-kind="bars" data-labels="May,Jun,Jul,Aug,Sep,Oct" data-values="61,74,58,82,77,64" data-color="#D6CCFF" data-hl="#7B61FF" data-max="100" data-target="80" data-unit="k" viewBox="0 0 520 200" role="img" aria-label="Invoiced per month in thousands of USD, target 80"></svg>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Receivables by age</h2><span class="muted" style="font-size:13px">$96,400 open</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Current:72:#2FCB8C;1–30 days:18:#5CC8F0;31–60 days:7:#F2A93B;Over 60:3:#F26B5B" data-center="$96.4k" data-sub="to collect" data-legend="lgAR" viewBox="0 0 170 170" role="img" aria-label="Receivables by age"></svg><ul class="donut-legend" id="lgAR"></ul></div>
+    </div>
   </div>
   <div class="card flush">
     <div class="card-head"><h2>Contracts</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Download</button></div></div>
@@ -1030,10 +1181,21 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
   <h1>Presales</h1>
   <p class="lede">$596,000 in the pipeline, $323,400 weighted by probability.</p>
   <div class="pipe">
-    <div class="stage" style="border-top-color:#C3B5FF"><div class="k">Discovery</div><div class="big">$320,000</div><div class="tcard"><p>Data platform, phase 2</p><div class="foot"><span>Fabrikam, 30%</span><span>Oct 24</span></div></div></div>
-    <div class="stage" style="border-top-color:var(--amber)"><div class="k">Proposal sent</div><div class="big">$180,000</div><div class="tcard"><p>Claims copilot</p><div class="foot"><span>Northwind, 60%</span><span>Demo Oct 21</span></div></div></div>
-    <div class="stage" style="border-top-color:var(--violet)"><div class="k">Negotiation</div><div class="big">$96,000</div><div class="tcard"><p>Support retainer</p><div class="foot"><span>Contoso, 80%</span></div><button class="btn sm primary" style="margin-top:12px">Convert to project</button></div></div>
-    <div class="stage" style="border-top-color:var(--mint)"><div class="k">Won this quarter</div><div class="big">$240,000</div><div class="tcard"><p>HR Insights</p><div class="foot"><span>Started Aug 4</span></div></div></div>
+    <div class="stage" style="border-top-color:#C3B5FF"><div class="k"><span class="stk" data-i="search" style="--c:#A792FF"></span>Discovery</div><div class="big">$320,000</div><div class="tcard"><p>Data platform, phase 2</p><div class="foot"><span>Fabrikam, 30%</span><span>Oct 24</span></div></div></div>
+    <div class="stage" style="border-top-color:var(--amber)"><div class="k"><span class="stk" data-i="plane" style="--c:#F2A93B"></span>Proposal sent</div><div class="big">$180,000</div><div class="tcard"><p>Claims copilot</p><div class="foot"><span>Northwind, 60%</span><span>Demo Oct 21</span></div></div></div>
+    <div class="stage" style="border-top-color:var(--violet)"><div class="k"><span class="stk" data-i="hand" style="--c:#7B61FF"></span>Negotiation</div><div class="big">$96,000</div><div class="tcard"><p>Support retainer</p><div class="foot"><span>Contoso, 80%</span></div><button class="btn sm primary" style="margin-top:12px">Convert to project</button></div></div>
+    <div class="stage" style="border-top-color:var(--mint)"><div class="k"><span class="stk" data-i="trophy" style="--c:#2FCB8C"></span>Won this quarter</div><div class="big">$240,000</div><div class="tcard"><p>HR Insights</p><div class="foot"><span>Started Aug 4</span></div></div></div>
+  </div>
+  <div class="cols even" style="margin-top:28px">
+    <div class="card">
+      <div class="card-head"><h2>Pipeline value</h2><span class="muted" style="font-size:13px">USD, weighted vs total</span></div>
+      <svg class="chart viz" data-kind="line" data-labels="May,Jun,Jul,Aug,Sep,Oct" data-series="Total|#C3B5FF|dash|410,455,470,520,560,596;Weighted|#7B61FF|area|190,215,236,262,301,323" data-max="700" data-step="175" viewBox="0 0 560 210" role="img" aria-label="Pipeline value per month"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Weighted</span><span><i style="background:repeating-linear-gradient(90deg,#C3B5FF 0 5px,transparent 5px 9px)"></i>Total</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Win rate by service</h2><span class="muted" style="font-size:13px">Last 12 months</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="AI and agents:46:#7B61FF;Modernisation:38:#2FCB8C;Data:31:#5CC8F0;Staffing:22:#F2A93B" data-center="38%" data-sub="overall" data-legend="lgWin" viewBox="0 0 170 170" role="img" aria-label="Win rate by service"></svg><ul class="donut-legend" id="lgWin"></ul></div>
+    </div>
   </div>
 </section>
 
@@ -1041,6 +1203,11 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 <section data-change="001-amax-foundation" id="001-amax-foundation-reports" data-title="Reports" data-icon="chart">
   <h1>Utilisation in October</h1>
   <p class="lede">Billable hours as a share of available hours. The target is 80%.</p>
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-head"><h2>Utilisation, last 12 months</h2><span class="muted" style="font-size:13px">Target 80%</span></div>
+    <svg class="chart viz" data-kind="line" data-labels="Nov,Dec,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct" data-series="Target|#F2A93B|dash|80,80,80,80,80,80,80,80,80,80,80,80;Billable|#7B61FF|area|72,68,74,77,79,81,78,83,82,80,84,81" data-max="100" data-step="25" viewBox="0 0 1000 220" role="img" aria-label="Utilisation per month against an 80% target"></svg>
+    <div class="legend"><span><i style="background:var(--violet)"></i>Billable utilisation</span><span><i style="background:repeating-linear-gradient(90deg,#F2A93B 0 5px,transparent 5px 9px)"></i>Target</span></div>
+  </div>
   <div class="card flush">
     <div class="card-head"><div class="seg" role="group" aria-label="Report"><button aria-pressed="true">Utilisation</button><button aria-pressed="false">Availability</button><button aria-pressed="false">Estimate vs actual</button></div><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div>
     <div class="scroll-x"><table class="tbl">
@@ -1059,11 +1226,11 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>Access and licences</h1><p class="lede">What everyone can sign in to, from Microsoft Entra ID, Azure DevOps, Intune and your SaaS tools. 23 seats have gone unused for 60 days.</p></div>
     <div class="actions"><button class="btn">Start access review</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add licence</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">Licence spend, monthly</div><div class="big">$14,860</div><small>12 products</small></div>
-    <div class="stat"><div class="k">Unused seats</div><div class="big">23</div><small class="down">$1,940 a month</small></div>
-    <div class="stat"><div class="k">Devices compliant</div><div class="big">96.4%</div><small>7 of 231 need updates</small></div>
-    <div class="stat"><div class="k">Leavers with access</div><div class="big">0</div><small class="up">Revoked on last day</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Licence spend, monthly</div><div class="v">$14,860</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-wallet"/></svg><div class="p">12 products<div class="bar"><i style="width:78%"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Unused seats</div><div class="v">23</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><div class="p">$1,940 a month to save<div class="bar"><i style="width:23%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Devices compliant</div><div class="v">96.4%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">7 of 231 need updates<div class="bar"><i style="width:96%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Leavers with access</div><div class="v">0</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">Revoked on the last day<div class="bar dark"><i style="width:100%;background:#1D1B2E;opacity:.75"></i></div></div></div>
   </div>
   <div class="cols">
     <div class="card flush">
@@ -1079,6 +1246,10 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
         </tbody></table></div>
     </div>
     <div class="stack">
+      <div class="card">
+      <div class="card-head"><h2>Spend by product</h2><span class="muted" style="font-size:13px">$14,860 a month</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Microsoft 365:6840:#F26B5B;Azure DevOps:2912:#5CC8F0;GitHub Copilot:2280:#7B61FF;Other:2828:#F7D65A" data-center="$14.9k" data-sub="per month" data-legend="lgSpend" viewBox="0 0 170 170" role="img" aria-label="Spend by product"></svg><ul class="donut-legend" id="lgSpend"></ul></div>
+    </div>
       <div class="card">
         <div class="card-head"><h2>Licence savings</h2><span class="chip agent">Licence agent</span></div>
         <ul class="list">
@@ -1113,11 +1284,22 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
     <div><h1>Helpdesk</h1><p class="lede">The support agent solved 41% of tickets on its own this month, mostly access requests and password resets. 2 tickets are close to breaching their SLA.</p></div>
     <div class="actions"><div class="seg" role="group" aria-label="Queue"><button aria-pressed="true">IT</button><button aria-pressed="false">HR</button><button aria-pressed="false">Facilities</button></div><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New ticket</button></div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="k">Open tickets</div><div class="big">27</div><small>9 waiting on requester</small></div>
-    <div class="stat"><div class="k">Solved by agent</div><div class="big">41%</div><small class="up">↑ 12 pts</small></div>
-    <div class="stat"><div class="k">First response</div><div class="big">7 min</div><small>Target 30 min</small></div>
-    <div class="stat"><div class="k">Satisfaction</div><div class="big">4.7</div><small>212 ratings</small></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Open tickets</div><div class="v">27</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-headset"/></svg><div class="p">9 waiting on the requester<div class="bar"><i style="width:33%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Solved by agent</div><div class="v">41%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Up 12 points on September<div class="bar"><i style="width:41%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">First response</div><div class="v">7 min</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Target 30 min<div class="bar dark"><i style="width:77%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Satisfaction</div><div class="v">4.7 / 5</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">212 ratings<div class="bar"><i style="width:94%"></i></div></div></div>
+  </div>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Tickets per week</h2><span class="muted" style="font-size:13px">Solved by the agent vs by people</span></div>
+      <svg class="chart viz" data-kind="line" data-labels="W35,W36,W37,W38,W39,W40,W41,W42" data-series="By people|#2FCB8C|dash|31,29,33,27,26,24,25,22;By agent|#7B61FF|area|9,12,11,14,16,17,15,18" data-max="40" data-step="10" viewBox="0 0 560 210" role="img" aria-label="Tickets solved per week"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Solved by agent</span><span><i style="background:repeating-linear-gradient(90deg,var(--mint) 0 5px,transparent 5px 9px)"></i>Solved by people</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Tickets by category</h2><span class="muted" style="font-size:13px">October</span></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Access:38:#7B61FF;Hardware:21:#F2A93B;Network:16:#5CC8F0;HR letters:14:#F48B9B;Other:11:#B9EE7A" data-center="163" data-sub="tickets" data-legend="lgCat" viewBox="0 0 170 170" role="img" aria-label="Tickets by category"></svg><ul class="donut-legend" id="lgCat"></ul></div>
+    </div>
   </div>
   <div class="card flush">
     <div class="card-head"><h2>Queue</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button></div></div>
@@ -1125,7 +1307,7 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
       <thead><tr><th>Ticket</th><th>Requester</th><th>Category</th><th>Priority</th><th>SLA</th><th>Handled by</th></tr></thead>
       <tbody>
       <tr><td><b>INC-20431</b> VPN drops on home Wi-Fi<small>Opened 3 h ago, via Teams</small></td><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td>Network</td><td><span class="chip bad">High</span></td><td><span class="down">45 min left</span></td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
-      <tr><td><b>INC-20429</b> Access to Fleet Tracker repo<small>Approved by manager in Teams</small></td><td><div class="who"><span class="av sm a2">TW</span>Tharushi W.</div></td><td>Access</td><td><span class="chip">Normal</span></td><td class="up">Done</td><td><span class="chip agent">Support agent</span></td></tr>
+      <tr><td><b>INC-20429</b> Access to Fleet Tracker repo<small>Approved by manager in Teams</small></td><td><div class="who"><span class="av sm a2">TW</span>Tharushi W.</div></td><td>Access</td><td><span class="chip">Normal</span></td><td><span class="chip good">Done</span></td><td><span class="chip agent">Support agent</span></td></tr>
       <tr><td><b>INC-20427</b> Laptop for new joiner, Nov 2<small>Created by onboarding checklist</small></td><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Hardware</td><td><span class="chip">Normal</span></td><td>2 d left</td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
       <tr><td><b>HR-1186</b> Salary confirmation letter for visa<small>Letter drafted, waiting for HR signature</small></td><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td>HR letters</td><td><span class="chip">Normal</span></td><td>1 d left</td><td><span class="chip agent">Support agent</span></td></tr>
       </tbody></table></div>
@@ -1351,10 +1533,81 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
   // leave calendar, October 2026
   (function(){var c=document.getElementById('leaveCal'); if(!c) return;
     var days=31, people=[['Nimal Silva',{27:'pend',28:'pend',29:'pend',30:'pend'}],['Ayesha Rahman',{16:'ca',19:'an',20:'an',21:'an'}],['Kasun Dias',{8:'me2',9:'me2'}],['Tharushi W.',{}],['Liam Murphy',{12:'an',13:'an',14:'an',15:'an'}]], hol={26:1};
-    c.style.gridTemplateColumns='130px repeat('+days+',minmax(26px,1fr))';
+    c.style.gridTemplateColumns='170px repeat('+days+',minmax(26px,1fr))';
     var h='<div></div>'; for(var d=1;d<=days;d++){h+='<div class="d hd">'+d+'</div>';}
-    people.forEach(function(p){h+='<div class="nm">'+p[0]+'</div>'; for(var d=1;d<=days;d++){var dow=new Date(2026,9,d).getDay(),cls=p[1][d]||(hol[d]?'ph':(dow===0||dow===6?'we':''));h+='<div class="d '+cls+'" title="Oct '+d+'"></div>';}});
+    people.forEach(function(p){var ini=p[0].split(' ').map(function(w){return w[0]}).join('').slice(0,2);h+='<div class="nm"><span class="av sm" style="margin-right:10px">'+ini+'</span>'+p[0]+'</div>'; for(var d=1;d<=days;d++){var dow=new Date(2026,9,d).getDay(),cls=p[1][d]||(hol[d]?'ph':(dow===0||dow===6?'we':''));h+='<div class="d '+cls+'" title="Oct '+d+'"></div>';}});
     c.innerHTML=h;})();
+
+  // ---- data-driven charts: <svg class="viz" data-kind="line|bars|hbars|donut"> ----
+  function lineEl(sv,labels,series,max,step){ if(!sv.id) sv.id='v'+Math.random().toString(36).slice(2); lineChart(sv.id,labels,series,max,step); }
+  function barsEl(sv){
+    var vb=sv.viewBox.baseVal,W=vb.width,H=vb.height,L=40,R=8,T=12,B=28;
+    var lab=sv.dataset.labels.split(','),v=sv.dataset.values.split(',').map(Number),max=+sv.dataset.max,unit=sv.dataset.unit||'';
+    var n=v.length,slot=(W-L-R)/n,bw=Math.min(36,slot*.5),Y=function(x){return T+(1-x/max)*(H-T-B)};
+    [0,.5,1].forEach(function(f){var y=Y(max*f);sv.appendChild(el('line',{x1:L,x2:W-R,y1:y,y2:y,stroke:'var(--line)'}));var t=el('text',{x:L-8,y:y+4,'text-anchor':'end','class':'ax'});t.textContent=Math.round(max*f)+unit;sv.appendChild(t);});
+    v.forEach(function(x,i){var cx=L+slot*i+slot/2,h=Y(0)-Y(x);var last=i===n-1;
+      sv.appendChild(el('rect',{x:cx-bw/2,y:Y(x),width:bw,height:h,rx:Math.min(10,bw/3),fill:last?(sv.dataset.hl||'#7B61FF'):(sv.dataset.color||'#D6CCFF')}));
+      var t=el('text',{x:cx,y:H-8,'text-anchor':'middle','class':'ax'});t.textContent=lab[i];sv.appendChild(t);
+      if(last){var tt=el('text',{x:cx,y:Y(x)-8,'text-anchor':'middle','class':'ax','font-weight':700,fill:'var(--ink)'});tt.textContent=x+unit;sv.appendChild(tt);} });
+    if(sv.dataset.target){var ty=Y(+sv.dataset.target);sv.appendChild(el('line',{x1:L,x2:W-R,y1:ty,y2:ty,stroke:'#F2A93B','stroke-width':2,'stroke-dasharray':'6 6'}));var tl=el('text',{x:W-R,y:ty-6,'text-anchor':'end','class':'ax'});tl.textContent='Target '+sv.dataset.target+unit;sv.appendChild(tl);}
+  }
+  function hbarsEl(sv){
+    var vb=sv.viewBox.baseVal,W=vb.width,H=vb.height,lab=sv.dataset.labels.split(','),v=sv.dataset.values.split(',').map(Number),cols=sv.dataset.colors.split(','),max=Math.max.apply(0,v);
+    var L=150,R=40,rh=(H-4)/v.length,bh=Math.min(18,rh*.62);
+    v.forEach(function(x,i){var y=4+rh*i+rh/2;var t=el('text',{x:0,y:y+4,'class':'ax',fill:'var(--ink-2)','font-size':13});t.textContent=lab[i];sv.appendChild(t);
+      sv.appendChild(el('rect',{x:L,y:y-bh/2,width:W-L-R,height:bh,rx:bh/2,fill:'var(--sunken)'}));
+      sv.appendChild(el('rect',{x:L,y:y-bh/2,width:Math.max(bh,(W-L-R)*x/max),height:bh,rx:bh/2,fill:cols[i%cols.length]}));
+      var n=el('text',{x:W,y:y+4,'text-anchor':'end','class':'ax','font-weight':700,fill:'var(--ink)'});n.textContent=x;sv.appendChild(n);});
+  }
+  function donutEl(sv){
+    var parts=sv.dataset.parts.split(';').map(function(p){var a=p.split(':');return [a[0],+a[1],a[2]]}),tot=parts.reduce(function(a,p){return a+p[1]},0);
+    var lgEl=document.getElementById(sv.dataset.legend),a0=-Math.PI/2,cx=85,cy=85,ro=78,ri=48;
+    parts.forEach(function(p,i){var a1=a0+p[1]/tot*Math.PI*2,g=.025,st=a0+g,en=a1-g,big=(en-st)>Math.PI?1:0,mid=(st+en)/2,off=i===0?6:0,ox=Math.cos(mid)*off,oy=Math.sin(mid)*off;
+      function P(r,a){return (cx+ox+r*Math.cos(a)).toFixed(2)+' '+(cy+oy+r*Math.sin(a)).toFixed(2)}
+      sv.appendChild(el('path',{d:'M'+P(ro,st)+' A'+ro+' '+ro+' 0 '+big+' 1 '+P(ro,en)+' L'+P(ri,en)+' A'+ri+' '+ri+' 0 '+big+' 0 '+P(ri,st)+' Z',fill:p[2]}));
+      if(lgEl){var li=document.createElement('li');if(i===0)li.className='hl';li.innerHTML='<i style="background:'+p[2]+'"></i>'+p[0]+'<b>'+Math.round(p[1]/tot*100)+'%</b>';lgEl.appendChild(li);}
+      a0=a1;});
+    var c=el('text',{x:85,y:84,'text-anchor':'middle','font-size':19,'font-weight':600,fill:'currentColor','font-family':'Avenir Next,system-ui'});c.textContent=sv.dataset.center;sv.appendChild(c);
+    var c2=el('text',{x:85,y:102,'text-anchor':'middle','font-size':11.5,fill:'#9A97AE','font-family':'Avenir Next,system-ui'});c2.textContent=sv.dataset.sub;sv.appendChild(c2);
+  }
+  [].forEach.call(document.querySelectorAll('svg.viz'),function(sv){
+    var k=sv.dataset.kind;
+    if(k==='bars') barsEl(sv); else if(k==='hbars') hbarsEl(sv); else if(k==='donut') donutEl(sv);
+    else if(k==='line'){ var ser=sv.dataset.series.split(';').map(function(x){var a=x.split('|');return {name:a[0],color:a[1],area:a[2]==='area',dashed:a[2]==='dash',data:a[3].split(',').map(Number)}});
+      lineEl(sv,sv.dataset.labels.split(','),ser,+sv.dataset.max,+sv.dataset.step); }
+  });
+
+  // ---- stickers ----
+  var STK={bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',code:'<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13 6l-2 12"/>',check:'<path d="m5 12 5 5 9-10"/>',rocket:'<path d="M12 15c-2-2-3-5-1-9 2-2 5-3 8-3 0 3-1 6-3 8-4 2-7 1-9-1"/><path d="M9 12l-4 1 2-4 3-1"/>',inbox:'<path d="M4 13h4l2 3h4l2-3h4M5 5h14l1 8v6H4v-6z"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',chat:'<path d="M5 18V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H9l-4 3z"/>',mail:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="m3 7 9 6 9-6"/>',party:'<path d="M4 20 9 7l8 8z"/><path d="M14 4v2M19 9h2M17 5l-1 1M20 13l-2-1"/>',search:'<circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/>',plane:'<path d="M3 11 21 3l-6 18-4-7z"/>',hand:'<path d="M7 11V7a2 2 0 0 1 4 0v3M11 10V5a2 2 0 0 1 4 0v5M15 10V7a2 2 0 0 1 4 0v6a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-3l-2-4a2 2 0 0 1 3-2l1 2"/>',trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M10 17h4M12 13v4M8 20h8"/>'};
+  [].forEach.call(document.querySelectorAll('.stk[data-i]'),function(e){e.innerHTML='<svg viewBox="0 0 24 24">'+(STK[e.dataset.i]||STK.spark)+'</svg>';});
+
+  // ---- illustrated people (no photos needed in the mock) ----
+  var FOLK={CP:['#F1C7A5','short','#2B1E16','#7B61FF',{glasses:1}],NS:['#C68A62','short','#1C1410','#2FCB8C',{beard:1}],AR:['#D9A37E','long','#3A2418','#F48B9B',{}],KD:['#B97A56','curly','#15100C','#5CC8F0',{}],
+    TW:['#E2B08C','bun','#2A1A12','#F2A93B',{}],LM:['#F4D2BC','short','#B5651D','#5B44D6',{}],RF:['#A86E4C','short','#0F0B08','#9A97AE',{beard:1}],SK:['#C99272','side','#1A120D','#F2A93B',{glasses:1}],
+    MR:['#B07650','short','#120D0A','#2FB5A0',{beard:1}],VC:['#E0B394','bald','#6B4A35','#5D5A73',{beard:1}],DF:['#D49A72','long','#20150F','#B9A9FF',{}],AM:['#BF845E','short','#16100B','#F26B5B',{glasses:1}],
+    SP:['#DDA985','bun','#24170F','#7FD8F5',{}],RJ:['#B57B55','side','#110C08','#7B61FF',{}],HG:['#E6B796','long','#3B2416','#2FCB8C',{}]};
+  var BGS=['#ECE8FF','#DDF7EC','#FFF1D6','#FDE7E4','#DFF3FB'];
+  function face(k){var f=FOLK[k],sk=f[0],st=f[1],hc=f[2],sh=f[3],o=f[4],bg=BGS[(k.charCodeAt(0)+k.charCodeAt(1))%BGS.length],h='';
+    h+='<rect width="40" height="40" fill="'+bg+'"/>';
+    if(st==='long') h+='<path d="M10.5 19c0-7.5 4-11.5 9.5-11.5S29.5 11.5 29.5 19v13h-19z" fill="'+hc+'"/>';
+    h+='<path d="M6 40c0-8.5 6.2-12.5 14-12.5S34 31.5 34 40z" fill="'+sh+'"/><path d="M16.5 27.5 20 31l3.5-3.5" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/>';
+    h+='<rect x="17" y="23" width="6" height="6" rx="2.5" fill="'+sk+'" style="filter:brightness(.9)"/>';
+    h+='<ellipse cx="12.6" cy="18.6" rx="1.5" ry="2" fill="'+sk+'"/><ellipse cx="27.4" cy="18.6" rx="1.5" ry="2" fill="'+sk+'"/>';
+    h+='<ellipse cx="20" cy="18" rx="7.4" ry="8.6" fill="'+sk+'"/>';
+    if(o.beard) h+='<path d="M12.8 19c.3 6 3.5 8.6 7.2 8.6s6.9-2.6 7.2-8.6c-1.4 2.6-3.8 3.6-7.2 3.6s-5.8-1-7.2-3.6z" fill="'+hc+'" opacity=".92"/>';
+    if(st==='short'||st==='long'||st==='bun') h+='<path d="M12.4 16.5C12.4 10.6 15.7 8 20 8s7.6 2.6 7.6 8.5c-1.6-3-4.2-4.4-7.6-4.4s-6 1.4-7.6 4.4z" fill="'+hc+'"/>';
+    if(st==='bun') h+='<circle cx="20" cy="7.2" r="3.6" fill="'+hc+'"/>';
+    if(st==='curly') h+='<g fill="'+hc+'"><circle cx="13.6" cy="13.6" r="3.2"/><circle cx="17" cy="10.6" r="3.4"/><circle cx="21" cy="9.8" r="3.5"/><circle cx="24.8" cy="11.4" r="3.3"/><circle cx="26.8" cy="14.6" r="3"/></g>';
+    if(st==='side') h+='<path d="M12.4 17C12 10.8 15.6 8 20.3 8c4.3 0 7.5 2.7 7.3 8.6-2.4-2.6-6.4-3.9-10.2-3.4-1.9.3-3.6 1.6-5 3.8z" fill="'+hc+'"/>';
+    h+='<circle cx="17.2" cy="18.8" r=".95" fill="#1D1B2E"/><circle cx="22.8" cy="18.8" r=".95" fill="#1D1B2E"/>';
+    h+='<path d="M17.8 22.6c1.3 1 3.1 1 4.4 0" stroke="'+(o.beard?'#F4D9C8':'#7A3E2A')+'" stroke-width="1" fill="none" stroke-linecap="round"/>';
+    h+='<ellipse cx="15.6" cy="21.2" rx="1.3" ry=".8" fill="#F48B9B" opacity=".35"/><ellipse cx="24.4" cy="21.2" rx="1.3" ry=".8" fill="#F48B9B" opacity=".35"/>';
+    if(o.glasses) h+='<g fill="none" stroke="#1D1B2E" stroke-width=".9"><circle cx="17.2" cy="18.8" r="2.4"/><circle cx="22.8" cy="18.8" r="2.4"/><path d="M19.6 18.8h.8"/></g>';
+    return '<svg viewBox="0 0 40 40" aria-hidden="true">'+h+'</svg>';}
+  [].forEach.call(document.querySelectorAll('.av'),function(a){var k=a.textContent.trim(); if(FOLK[k]){a.setAttribute('aria-label',k);a.classList.add('photo');a.innerHTML=face(k);}});
+
+  // ---- heat-shade timesheet hours ----
+  [].forEach.call(document.querySelectorAll('[id="001-amax-foundation-time"] .tbl tbody td.num'),function(td){var v=parseFloat(td.textContent); if(!isNaN(v)&&v<=10&&!td.querySelector('b')){td.classList.add('heat');td.style.background='color-mix(in srgb, var(--violet) '+Math.round(v/8.5*22)+'%, transparent)';}});
 
   // switches
   [].forEach.call(document.querySelectorAll('.switch'),function(s){s.tabIndex=0;s.addEventListener('click',function(){var on=s.classList.toggle('off');s.setAttribute('aria-checked',on?'false':'true');});});
