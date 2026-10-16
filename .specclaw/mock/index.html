@@ -455,35 +455,66 @@ dialog.small .form{padding:0}
 .found-item .src{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);font-weight:600}
 .found-item .actions{margin-top:auto}
 .found-item.gone{display:none}
-dialog.chat{width:min(520px,100vw);max-width:100vw;display:none;flex-direction:column}
-dialog.chat[open]{display:flex}
-.msgs{flex:1;overflow-y:auto;padding:4px 24px 12px;display:flex;flex-direction:column;gap:14px}
-.msg{display:flex;gap:10px;align-items:flex-end;max-width:92%}
-.msg .av{width:30px;height:30px;border-radius:10px;font-size:11px}
-.msg.mine{align-self:flex-end;flex-direction:row-reverse}
-.bubble{background:var(--sunken);border-radius:18px 18px 18px 6px;padding:11px 14px;font-size:14px;line-height:1.5}
-.msg.mine .bubble{background:var(--violet);color:#fff;border-radius:18px 18px 6px 18px}
-.bubble .got{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.sugs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.sug{border:1.5px solid var(--line-2);background:var(--card);border-radius:999px;padding:6px 12px;font:600 12.5px var(--font);color:var(--ink);cursor:pointer}
-.sug:hover{border-color:var(--violet);color:var(--violet)}
-.draft{margin:0 24px 12px;border:1.5px dashed var(--line-2);border-radius:18px;padding:12px 16px}
-.draft-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
-.dgrid{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px 12px;margin:0;font-size:13px}
-.dgrid dt{color:var(--ink-3)}.dgrid dd{margin:0;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dgrid dd.new{color:var(--violet);animation:pop .5s ease-out}
-@keyframes pop{from{background:var(--violet-soft)}to{background:transparent}}
-.composer{display:flex;gap:10px;align-items:flex-end;margin:0 24px;padding:8px;border-radius:20px;background:var(--sunken)}
-.composer textarea{flex:1;border:0;background:none;resize:none;font:500 14px/1.45 var(--font);color:var(--ink);padding:9px 4px;max-height:120px}
-.composer textarea:focus{outline:none}
-.mic{width:40px;height:40px;border-radius:14px;border:0;background:var(--card);color:var(--violet);display:grid;place-items:center;cursor:pointer;flex:none;position:relative}
-.mic svg,.send svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mic[aria-pressed="true"]{background:var(--coral);color:#fff}
-.mic[aria-pressed="true"]::after{content:"";position:absolute;inset:-5px;border-radius:18px;border:2px solid var(--coral);animation:ring 1.2s ease-out infinite}
-@keyframes ring{from{opacity:.8;transform:scale(.92)}to{opacity:0;transform:scale(1.15)}}
-.send{width:40px;height:40px;border-radius:14px}
-.chat-foot{display:flex;gap:10px;padding:14px 24px 24px}
-.chat-foot .btn{flex:1;justify-content:center;height:44px}
+
+/* ---- amax chat (global, simple) ---- */
+.chat{position:fixed;z-index:30;top:24px;right:24px;bottom:24px;width:400px;display:flex;flex-direction:column;background:var(--frame);border-radius:32px;box-shadow:0 30px 80px -24px rgba(40,30,110,.35),0 0 0 1px var(--line);transform:translateX(calc(100% + 40px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.chat.open{transform:none}
+@media (min-width:1181px){body.chat-open .app{margin-right:424px}body.chat-open .tickets,body.chat-open .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}body.chat-open .cols,body.chat-open .cols.even,body.chat-open .found,body.chat-open .opp,body.chat-open .brief ol{grid-template-columns:minmax(0,1fr)}body.chat-open .stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.c-head{display:flex;align-items:center;gap:12px;padding:20px 20px 10px}
+.c-head b{font-size:16px;display:block}.c-head small{color:var(--ink-3);font-size:12.5px}
+.c-head .iconbtn{margin-left:auto;width:38px;height:38px}
+.c-face{width:40px;height:40px;flex:none}.c-face svg,.c-talk svg,.launcher svg,.mface svg{width:100%;height:100%;display:block}
+.c-log{flex:1;overflow-y:auto;padding:12px 22px 6px;display:flex;flex-direction:column;gap:18px}
+.m{display:flex;flex-direction:column;gap:8px;max-width:88%}
+.m.me{align-self:flex-end;align-items:flex-end}
+.m .b{background:var(--card);border-radius:18px;padding:13px 16px;font-size:14px;line-height:1.55;box-shadow:0 8px 24px -12px rgba(40,30,110,.25)}
+.m .who{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.m.me .who{flex-direction:row-reverse}
+.m .who .av,.mface{width:26px;height:26px;border-radius:50%;font-size:10px}
+mark.x{background:none;color:inherit;outline:1.5px dashed #2FCB8C;outline-offset:1px;border-radius:4px;padding:0 1px}
+.m .tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.m .tools span{font:600 11.5px var(--font);color:var(--violet);background:var(--violet-soft);border-radius:7px;padding:2px 8px}
+.rec{margin-top:10px;border-top:1px dashed var(--line-2);padding-top:10px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.rec dt{color:var(--ink-3)}.rec dd{margin:0;font-weight:600}
+.m .acts{display:flex;gap:8px;margin-top:12px}
+.dots{display:flex;gap:5px;padding:4px 2px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--ink-3);animation:bob 1s infinite}.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes bob{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+.c-ctx{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px}
+.c-ctx:empty{display:none}
+.pinchip{display:inline-flex;align-items:center;gap:6px;max-width:100%;background:var(--card);border:1.5px solid var(--line-2);border-radius:10px;padding:4px 6px 4px 9px;font-size:12.5px;font-weight:600}
+.pinchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.pinchip button{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.c-input{display:flex;align-items:center;gap:6px;margin:10px 20px 0;background:var(--card);border-radius:999px;padding:5px 5px 5px 16px;box-shadow:0 0 0 1.5px var(--line-2)}
+.c-input input{flex:1;border:0;background:none;font:500 14px var(--font);color:var(--ink);height:36px;min-width:0}
+.c-input input:focus{outline:none}
+.c-input:focus-within{box-shadow:0 0 0 2px var(--violet)}
+.c-send{width:36px;height:36px;border-radius:50%;border:0;background:var(--violet);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.c-send svg,.c-round svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.c-dock{display:flex;align-items:center;justify-content:center;gap:22px;padding:16px 0 20px}
+.c-round{width:46px;height:46px;border-radius:50%;border:0;background:var(--card);color:var(--ink-2);display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 20px -10px rgba(40,30,110,.35)}
+.c-round[aria-pressed="true"]{background:var(--violet);color:#fff}
+.c-talk{width:72px;height:72px;border-radius:50%;border:0;background:var(--card);padding:10px;cursor:pointer;box-shadow:0 14px 30px -12px rgba(40,30,110,.45);position:relative;transition:transform .15s}
+.c-talk:active{transform:scale(.96)}
+.c-talk[aria-pressed="true"]::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid #2FCB8C;animation:ring 1.2s ease-out infinite}
+@keyframes ring{from{opacity:.9;transform:scale(.94)}to{opacity:0;transform:scale(1.18)}}
+.launcher{position:fixed;z-index:25;right:32px;bottom:32px;width:64px;height:64px;border-radius:50%;border:0;background:var(--card);padding:9px;cursor:pointer;box-shadow:0 16px 36px -12px rgba(40,30,110,.5);transition:transform .15s}
+.launcher:hover{transform:translateY(-2px)}
+.launcher.drop,.chat.drop{box-shadow:0 0 0 3px #2FCB8C,0 16px 36px -12px rgba(40,30,110,.5)}
+body.chat-open .launcher{display:none}
+/* pin anything */
+.pinnable{position:relative}
+.pin{position:absolute;z-index:4;top:10px;right:10px;width:30px;height:30px;border-radius:10px;border:0;background:var(--card);color:var(--violet);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px -4px rgba(40,30,110,.4);opacity:0;transform:scale(.9);transition:opacity .15s,transform .15s}
+.pin svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pinnable:hover>.pin,.pin:focus-visible{opacity:1;transform:none}
+tr.pinnable>td:last-child{position:relative;padding-right:48px}
+tr.pinnable .pin{top:50%;margin-top:-15px;right:10px}
+.pin.inline{position:static;margin:0 auto 0 8px;width:28px;height:28px}
+.pinnable:hover>.card-head>.pin{opacity:1;transform:none}
+.card-head h2{margin-right:0}
+body.picking .pinnable{cursor:copy}
+body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
+.toast{position:fixed;z-index:40;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--frame);border-radius:14px;padding:12px 18px;font-size:14px;font-weight:500;box-shadow:0 16px 40px -12px rgba(0,0,0,.4)}
+@media (max-width:860px){.chat{top:0;right:0;bottom:0;width:100vw;border-radius:0}.launcher{bottom:88px;right:16px;width:56px;height:56px}}
 
 /* dark-mode colour fixes */
 @media (prefers-color-scheme: dark){
@@ -546,11 +577,10 @@ dialog.chat[open]{display:flex}
   .rail{position:fixed;top:auto;height:auto;background:var(--card);z-index:10;left:0;right:0;bottom:0;flex-direction:row;padding:10px 12px;gap:2px;overflow-x:auto;border-right:0;border-top:1px solid var(--line)}
   .rail .logo,.rail .spacer,.rail .toggle,.rail .out,.rail hr{display:none}
   .steps li{font-size:10.5px;padding-top:38px}
-  .dgrid{grid-template-columns:auto 1fr}
   .row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
   .row.head>.actions .seg{flex:1 1 100%}
   dialog.drawer{border-radius:0}
-  .msgs,.draft{padding-left:16px;padding-right:16px}.draft{margin:0 16px 10px}.composer{margin:0 16px}.chat-foot{padding:12px 16px 16px}
+
   .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .stat{padding:16px;border-radius:22px}
   .stat .big{font-size:21px}
@@ -1265,7 +1295,7 @@ dialog.chat[open]{display:flex}
 <section data-change="001-amax-foundation" id="001-amax-foundation-presales" data-title="Presales" data-icon="target">
   <div class="row head">
     <div><h1>Presales</h1><p class="lede">$596,000 open across 3 opportunities, plus 2 more the inbox agent found in Teams and email. Northwind has its demo on Oct 21.</p></div>
-    <div class="actions"><div class="seg" role="group" aria-label="View"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div><select class="select" aria-label="Owner"><option>All owners</option><option>Liam Murphy</option><option>Chandima Perera</option></select><button class="btn ghost" data-open="oppDrawer">Use a form</button><button class="btn primary" data-fill><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>Fill with amax</button></div>
+    <div class="actions"><div class="seg" role="group" aria-label="View"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div><select class="select" aria-label="Owner"><option>All owners</option><option>Liam Murphy</option><option>Chandima Perera</option></select><button class="btn primary" data-fill><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>Fill with amax</button></div>
   </div>
   <div class="tickets four">
     <div class="ticket t-violet"><div class="k">Open pipeline</div><div class="v">$596,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">3 opportunities, 2 suggested<div class="bar"><i style="width:60%"></i></div></div></div>
@@ -1564,42 +1594,18 @@ dialog.chat[open]{display:flex}
   </div>
 </div>
 
-<dialog class="drawer chat" id="fillChat" aria-label="Fill with amax">
-  <div class="drawer-head"><div><h2>New opportunity</h2><span class="muted" style="font-size:13px">Tell amax about it. Type or tap the mic and talk.</span></div><button class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
-  <div class="msgs" id="msgs" aria-live="polite">
-    <div class="msg bot"><span class="av ai">AI</span><div class="bubble">Who's the client, what do they want, roughly how much, and who's leading it? Say it however it comes out; I'll sort the fields.</div></div>
-    <div class="msg bot"><span class="av ai">AI</span><div class="bubble">I also checked Teams and email from the last 7 days. These look like new opportunities:<div class="sugs"><button class="sug" data-say="Adatum Australia wants help with the Payday Super payroll changes, about 85,000 AUD, Liam Murphy is account manager, close in December">Adatum, Payday Super</button><button class="sug" data-say="Woodgrove Bank is asking about AI governance and ISO 42001 readiness, roughly 60,000 USD, new idea, Chandima Perera to lead">Woodgrove, AI governance</button></div></div></div>
+<aside class="chat" id="chat" aria-label="amax chat">
+  <header class="c-head"><span class="c-face"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient></defs><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#mg)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg></span><div><b>amax</b><small id="cWhere">Ask, add or drop anything here</small></div><button class="iconbtn" id="cClose" aria-label="Close chat"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <div class="c-log" id="cLog" aria-live="polite"></div>
+  <div class="c-ctx" id="cCtx"></div>
+  <form class="c-input" id="cForm"><input id="cIn" autocomplete="off" placeholder="Type, or tap amax and talk"><button class="c-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button></form>
+  <div class="c-dock">
+    <button class="c-round" id="cPick" aria-pressed="false" title="Pick something on the screen" aria-label="Pick from the screen"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/></svg></button>
+    <button class="c-talk" id="cTalk" aria-pressed="false" aria-label="Talk to amax"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient></defs><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#mg)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg></button>
+    <button class="c-round" id="cNew" title="New conversation" aria-label="New conversation"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
   </div>
-  <div class="draft" id="draft">
-    <div class="draft-head"><b>Draft</b><span class="muted" id="draftState">Nothing yet</span></div>
-    <dl class="dgrid">
-      <dt>Name</dt><dd data-f="name">–</dd><dt>Client</dt><dd data-f="client">–</dd>
-      <dt>Value</dt><dd data-f="value">–</dd><dt>Stage</dt><dd data-f="stage">New idea</dd>
-      <dt>Win chance</dt><dd data-f="win">–</dd><dt>Owner</dt><dd data-f="owner">–</dd>
-      <dt>Close</dt><dd data-f="close">–</dd>
-    </dl>
-  </div>
-  <form class="composer" id="composer">
-    <button type="button" class="mic" id="mic" aria-label="Speak" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-    <textarea id="say" rows="1" placeholder="e.g. Fabrikam wants phase 2 of the data platform, about 320k USD, Liam leads it"></textarea>
-    <button class="btn primary icon send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
-  </form>
-  <div class="chat-foot"><button class="btn primary" id="chatAdd" disabled>Add to board</button><button class="btn" type="button" id="chatForm">Check in the form</button></div>
-</dialog>
-
-<dialog class="drawer" id="oppDrawer" aria-label="New opportunity">
-  <div class="drawer-head"><div><h2>New opportunity</h2><span class="muted" style="font-size:13px">It starts on the board in the stage you pick</span></div><button class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
-  <form class="form" id="oppForm" method="dialog">
-    <label>Name<input name="oppName" required placeholder="e.g. Claims copilot"></label>
-    <label>Client<select name="client" class="select"><option>Northwind Insurance</option><option>Fabrikam</option><option>Contoso</option><option>Woodgrove Bank</option><option>+ New client</option></select></label>
-    <div class="two"><label>Value<input name="oppValue" inputmode="numeric" placeholder="120,000"></label><label>Currency<select class="select" name="cur"><option>USD</option><option>AUD</option><option>LKR</option><option>GBP</option><option>SGD</option><option>EUR</option></select></label></div>
-    <div class="two"><label>Stage<select class="select" name="stage"><option>New idea</option><option>Lead</option><option>Qualified</option><option>Proposal</option><option>Negotiation</option></select></label><label>Win chance<input name="win" inputmode="numeric" placeholder="20%"></label></div>
-    <div class="two"><label>Account manager<select class="select" name="owner"><option value="LM">Liam Murphy</option><option value="CP">Chandima Perera</option></select></label><label>Expected close<input name="close" placeholder="Dec 20"></label></div>
-    <div class="two"><label>Service<select class="select"><option>AI and agents</option><option>Modernisation</option><option>Data</option><option>Staffing</option></select></label><label>Lead source<select class="select"><option>Referral</option><option>Website</option><option>Partner</option><option>Event</option><option>Outbound</option></select></label></div>
-    <label>Scope summary<textarea rows="3" placeholder="What the client wants, in a sentence or two"></textarea></label>
-    <div class="actions" style="margin-top:6px"><button class="btn primary" type="submit" value="save">Add to board</button><button class="btn" type="button" data-close>Cancel</button></div>
-  </form>
-</dialog>
+</aside>
+<button class="launcher" id="launcher" aria-label="Open amax chat (⌘K)" title="amax (⌘K). Drop anything here"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient></defs><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#mg)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg></button>
 
 <dialog class="small" id="lostDialog" aria-label="Mark as lost">
   <div class="pal-body"><h2 style="margin-bottom:6px">Mark Claims copilot as lost?</h2><p class="muted" style="margin:0 0 16px;font-size:14px">It moves to Closed and stays in the history. Reasons feed the win-rate insights.</p>
@@ -1628,16 +1634,6 @@ dialog.chat[open]{display:flex}
   </div>
 </dialog>
 
-<dialog id="palette" aria-label="Ask amax">
-  <div class="pal-in"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Which proposals in v2.4.0 still need QA sign-off?</div>
-  <div class="pal-body">
-    <div class="toolcall"><b>list_proposals</b> release v2.4.0, Contoso Portal</div>
-    <div class="toolcall"><b>get_release</b> v2.4.0, environment QA</div>
-    <p style="margin:16px 0 8px">Both proposals in v2.4.0 are in QA and neither has sign-off yet:</p>
-    <p style="margin:0;line-height:1.8"><b>012</b> SSO token refresh, owned by Ayesha Rahman<br><b>010</b> Email digest, owned by Kasun Dias</p>
-    <div class="actions" style="margin-top:22px"><button class="btn primary">Ask both for sign-off</button><button class="btn" id="close">Close</button></div>
-  </div>
-</dialog>
 
 <script>
 (function(){
@@ -1702,10 +1698,6 @@ dialog.chat[open]{display:flex}
   });
 
   // palette
-  var pal=document.getElementById('palette');
-  document.getElementById('ask').addEventListener('click',function(){pal.showModal()});
-  document.getElementById('close').addEventListener('click',function(){pal.close()});
-  document.addEventListener('keydown',function(e){ if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); pal.open?pal.close():pal.showModal();} });
 
   // hours chart: smooth Catmull-Rom splines from data
   var NS='http://www.w3.org/2000/svg';
@@ -1868,79 +1860,142 @@ dialog.chat[open]{display:flex}
         if(v==='Won'){card.querySelector('.opp-act').remove(); card.querySelector('.opp-num span').textContent='100%'; card.querySelector('.opp-top').insertAdjacentHTML('beforeend','<span class="chip good">Won</span>'); var r=card.querySelector('.rag'); if(r) r.remove();}
         target.insertBefore(card,target.children[1]||null); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); wire(card); recount();};}
     [].forEach.call(board.querySelectorAll('.tcard'),wire);
-    board.addEventListener('cardadded',function(e){wire(e.detail);recount();});
+    window.amaxAddDeal=function(d){var lane=board.querySelector('.lane[data-stage="'+(d.stage||'New idea')+'"]')||board.querySelector('.lane');
+      var c=document.createElement('div');c.className='tcard deal';
+      c.innerHTML='<div class="opp-top"><span class="id">'+(d.client||'New client')+'</span><span class="rag g"></span></div><p>'+(d.name||'Untitled')+'</p><div class="opp-num"><b>'+(d.value||'–')+'</b><span>'+(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+(d.ownerIni||'CP')+'</span><span>'+(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
+      lane.insertBefore(c,lane.children[1]||null);var av=c.querySelector('.av');if(FOLK[d.ownerIni||'CP']){av.classList.add('photo');av.innerHTML=face(d.ownerIni||'CP');}
+      wire(c);recount();c.classList.add('flash');};
+
     var pending=null;
     board.addEventListener('click',function(e){var b=e.target.closest('[data-remove]'); if(!b) return; pending=b.closest('.tcard');
       document.getElementById('removeName').textContent=pending.querySelector('p').textContent; document.getElementById('removeDialog').showModal();});
     document.getElementById('removeYes').addEventListener('click',function(){if(pending){pending.remove();pending=null;recount();} document.getElementById('removeDialog').close();});
-    document.getElementById('oppForm').addEventListener('submit',function(e){var f=e.target,E=f.elements,name=E.oppName.value.trim(); if(!name){e.preventDefault();E.oppName.focus();return;}
-      var lane=board.querySelector('.lane[data-stage="'+E.stage.value+'"]'),win=(E.win.value||'10').replace('%',''),val=E.oppValue.value||'0';
-      var c=document.createElement('div'); c.className='tcard deal';
-      c.innerHTML='<div class="opp-top"><span class="id">'+E.client.value+'</span><span class="rag g"></span></div><p>'+name.replace(/</g,'&lt;')+'</p><div class="opp-num"><b>'+(E.cur.value==='USD'?'$':E.cur.value+' ')+val+'</b><span>'+win+'%</span></div><div class="foot"><span class="av sm">'+E.owner.value+'</span><span>'+(E.close.value?'Close '+E.close.value:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
-      lane.insertBefore(c,lane.children[1]||null); var av=c.querySelector('.av'); if(FOLK[E.owner.value]){av.classList.add('photo');av.innerHTML=face(E.owner.value);} wire(c); recount(); c.classList.add('flash'); f.reset();});
   })();
 
-  // ---- Fill with amax: chat + voice, extracts fields into a draft ----
-  (function(){var dlg=document.getElementById('fillChat'); if(!dlg) return;
-    var msgs=document.getElementById('msgs'),say=document.getElementById('say'),mic=document.getElementById('mic'),add=document.getElementById('chatAdd');
-    var D={stage:'New idea'};
-    var CLIENTS=['Northwind Insurance','Northwind','Fabrikam','Contoso','Woodgrove Bank','Woodgrove','Adatum','Tailspin','Litware','Wide World Importers'];
-    var PEOPLE={liam:['LM','Liam Murphy'],chandima:['CP','Chandima Perera'],nimal:['NS','Nimal Silva'],ayesha:['AR','Ayesha Rahman']};
-    function bubble(who,html){var m=document.createElement('div');m.className='msg '+who;m.innerHTML=(who==='bot'?'<span class="av ai">AI</span>':'<span class="av">CP</span>')+'<div class="bubble">'+html+'</div>';
-      if(who!=='bot'){var a=m.querySelector('.av');a.classList.add('photo');a.innerHTML=face('CP');}
-      msgs.appendChild(m);msgs.scrollTop=msgs.scrollHeight;}
-    function setF(k,v){D[k]=v;var dd=dlg.querySelector('[data-f="'+k+'"]');dd.textContent=v;dd.classList.remove('new');void dd.offsetWidth;dd.classList.add('new');}
-    function parse(t){var got=[],low=t.toLowerCase();
-      CLIENTS.some(function(c){if(low.indexOf(c.toLowerCase())>-1){setF('client',c==='Northwind'?'Northwind Insurance':c==='Woodgrove'?'Woodgrove Bank':c);got.push('client');return true;}});
-      if(low.indexOf('australia')>-1&&D.client==='Adatum') setF('client','Adatum, Australia');
-      var re=/(\d[\d,.]*)\s*(k\b|thousand|m\b|million)?\s*(usd|aud|lkr|gbp|sgd|eur|dollars)?(\s*%)?/ig,m;
-      while((m=re.exec(t))){if(m[4])continue;var n=parseFloat(m[1].replace(/,/g,''));if(/^k|thousand/i.test(m[2]||''))n*=1000;if(/^m|million/i.test(m[2]||''))n*=1e6;
-        if(n<1000)continue;var cur=(m[3]||'USD').toUpperCase().replace('DOLLARS','USD');setF('value',(cur==='USD'?'$':cur+' ')+n.toLocaleString('en-US'));got.push('value');break;}
-      [['negotiat','Negotiation'],['proposal','Proposal'],['qualif','Qualified'],['lead','Lead'],['new idea','New idea']].some(function(s){if(low.indexOf(s[0])>-1&&!(s[0]==='lead'&&/\blead(s|ing)? it\b|to lead/.test(low))){setF('stage',s[1]);got.push('stage');return true;}});
-      var w=t.match(/(\d{1,3})\s*%/);if(w){setF('win',w[1]+'%');got.push('win chance');}
-      Object.keys(PEOPLE).some(function(k){if(low.indexOf(k)>-1){setF('owner',PEOPLE[k][1]);D.ownerIni=PEOPLE[k][0];got.push('owner');return true;}});
-      var c=t.match(/(?:close|closing|by|in)\s+(?:in\s+)?((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:\s+\d{1,2})?|next (?:week|month|quarter))/i);if(c){setF('close',c[1].replace(/^\w/,function(x){return x.toUpperCase()}));got.push('close date');}
-      var w2=t.match(/(?:wants|needs|asking about|asked about|help with|interested in)\s+(?:help with\s+)?(?:the\s+)?([^,.]+)/i);
-      if(w2){var nm=w2[1].replace(/\s+(phase|for|about)\s*$/i,'').trim();nm=nm.replace(/^(a|an)\s+/i,'');nm=nm.charAt(0).toUpperCase()+nm.slice(1);setF('name',nm);got.push('name');}
-      return got;}
-    function respond(got){var missing=['name','client','value','owner'].filter(function(k){return !D[k]});
-      var labels={name:'what it is',client:'the client',value:'a rough value',owner:'who leads it'};
-      var h=got.length?'Got it: '+got.join(', ')+'.':'I couldn’t pick out any details there.';
-      if(missing.length) h+=' Can you tell me '+missing.map(function(k){return labels[k]}).join(' and ')+'?';
-      else {if(!D.win){setF('win',{'New idea':'10%','Lead':'20%','Qualified':'30%','Proposal':'50%','Negotiation':'70%'}[D.stage]);h+=' I set the win chance to '+D.win+' for '+D.stage+'; change it if you know better.';}
-        h+=' Ready to add to the board.';}
-      document.getElementById('draftState').textContent=missing.length?missing.length+' still missing':'Ready';
-      add.disabled=!!missing.length; bubble('bot',h);}
-    function send(text){text=(text||'').trim();if(!text)return;bubble('mine',text.replace(/</g,'&lt;'));say.value='';var got=parse(text);setTimeout(function(){respond(got)},350);}
-    document.getElementById('composer').addEventListener('submit',function(e){e.preventDefault();send(say.value);});
-    say.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(say.value);}});
-    dlg.addEventListener('click',function(e){var s=e.target.closest('.sug');if(s)send(s.dataset.say);});
-    // voice: browser speech recognition when available
+  // ---- amax chat: one assistant for the whole app ----
+  (function(){
+    var C=document.getElementById('chat'),log=document.getElementById('cLog'),ctx=document.getElementById('cCtx'),inp=document.getElementById('cIn'),talk=document.getElementById('cTalk'),launcher=document.getElementById('launcher');
+    var MAS=launcher.innerHTML, S={intent:null,D:{},pins:[]};
+    function open(){C.classList.add('open');document.body.classList.add('chat-open');var sec=document.querySelector('section.on');document.getElementById('cWhere').textContent='On '+(sec?sec.dataset.title:'amax')+'. Ask, add or drop anything here';if(!log.children.length)greet();}
+    function close(){C.classList.remove('open');document.body.classList.remove('chat-open');pick(false);}
+    function esc(t){return String(t).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+    function msg(me,html){var m=document.createElement('div');m.className='m'+(me?' me':'');
+      m.innerHTML='<div class="b">'+html+'</div><div class="who">'+(me?'<span class="av">CP</span>Chandima':'<span class="mface">'+MAS+'</span>amax')+'</div>';
+      if(me){var a=m.querySelector('.av');a.classList.add('photo');a.innerHTML=face('CP');}
+      log.appendChild(m);log.scrollTop=log.scrollHeight;return m;}
+    function typing(cb){var m=msg(false,'<div class="dots"><i></i><i></i><i></i></div>');setTimeout(function(){m.remove();cb();},550);}
+    function greet(){msg(false,'Hi Chandima. Tell me what to add or change, or ask about anything on screen. Pin cards, rows or numbers to give me context.');}
+    function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove()},2200);}
+
+    // what to ask for each kind of record
+    var INTENTS={
+      opportunity:{label:'opportunity',ask:'Tell me about the opportunity: the client, what they want, a rough value and who leads it.',need:['name','client','value','owner'],where:'Presales'},
+      leave:{label:'leave request',ask:'Who is taking leave, what type, and which dates?',need:['person','type','dates'],where:'Leave'},
+      person:{label:'person',ask:'Who is joining? Their name, role, start date and manager.',need:['person','title','dates'],where:'People'},
+      ticket:{label:'ticket',ask:'What is the problem, and who is it for?',need:['title'],where:'Helpdesk'},
+      project:{label:'project',ask:'What is the project, who is the client, and who manages it?',need:['title'],where:'Projects'},
+      proposal:{label:'proposal',ask:'What should the change do? I will draft the specclaw proposal from what you say.',need:['title'],where:'Proposals'},
+      role:{label:'open role',ask:'Which role, how many people, and by when?',need:['title'],where:'Recruitment'},
+      programme:{label:'programme',ask:'What is the programme, who is it for, and when does it run?',need:['title'],where:'Learning'},
+      licence:{label:'licence',ask:'Which product, how many seats, and the monthly cost?',need:['title'],where:'Access and licences'},
+      release:{label:'release',ask:'Which project and version, and which proposals go in it?',need:['title'],where:'Releases'},
+      time:{label:'time entry',ask:'What did you work on, for how long, and on which day?',need:['title','hours'],where:'Time'},
+      task:{label:'task',ask:'What is the task, who owns it, and when is it due?',need:['title'],where:'this page'},
+      activity:{label:'activity',ask:'What happened or is planned, with whom, and when?',need:['title'],where:'this page'},
+      risk:{label:'risk or issue',ask:'Describe the risk or issue, its impact and the owner.',need:['title'],where:'this page'},
+      job:{label:'agent job',ask:'What should the agent do, and how often?',need:['title'],where:'Insights'}};
+    var BUTTONS={'New project':'project','New proposal':'proposal','New release':'release','Add person':'person','Request leave':'leave','New role':'role','New programme':'programme','Add licence':'licence','New ticket':'ticket','Add time':'time','New job':'job','Add task':'task','Log activity':'activity','Add':'risk','Fill with amax':'opportunity','Request for Kasun':'leave'};
+    var SPARK='<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>';
+    [].forEach.call(document.querySelectorAll('.btn'),function(b){var t=b.textContent.trim(),k=BUTTONS[t];if(!k||b.closest('#chat'))return;
+      b.dataset.ask=k;b.removeAttribute('data-fill');var svg=b.querySelector('svg');if(svg)svg.outerHTML=SPARK;else b.insertAdjacentHTML('afterbegin',SPARK);b.title='Add with amax';});
+    function start(k){S.intent=k;S.D={};open();var it=INTENTS[k];msg(false,'New '+it.label+'. '+it.ask);setTimeout(function(){inp.focus()},60);}
+
+    // pull fields out of what was said, and remember which words they came from
+    var CLIENTS=['Northwind Insurance','Northwind','Fabrikam','Contoso','Woodgrove Bank','Woodgrove','Adatum','Tailspin','Litware'];
+    var PEOPLE={'liam':['LM','Liam Murphy'],'chandima':['CP','Chandima Perera'],'nimal':['NS','Nimal Silva'],'ayesha':['AR','Ayesha Rahman'],'kasun':['KD','Kasun Dias'],'tharushi':['TW','Tharushi Wijesinghe'],'sahan':['SK','Sahan Kumara'],'me':['CP','Chandima Perera']};
+    function extract(t){var D=S.D,hits=[],low=t.toLowerCase();
+      function hit(str){if(str)hits.push(str);}
+      CLIENTS.some(function(c){var i=low.indexOf(c.toLowerCase());if(i>-1){D.client=c==='Northwind'?'Northwind Insurance':c==='Woodgrove'?'Woodgrove Bank':c;hit(t.substr(i,c.length));return true;}});
+      var re=/(\d[\d,.]*)\s*(k\b|thousand|m\b|million)?\s*(usd|aud|lkr|gbp|sgd|eur|dollars)?(\s*%|\s*(?:h|hours?|days?)\b)?/ig,m;
+      while((m=re.exec(t))){var n=parseFloat(m[1].replace(/,/g,''));
+        if(m[4]&&/%/.test(m[4])){D.win=n+'%';hit(m[0].trim());continue;}
+        if(m[4]&&/h/i.test(m[4])){D.hours=n+' h';hit(m[0].trim());continue;}
+        if(/^k|thousand/i.test(m[2]||''))n*=1000;if(/^m|million/i.test(m[2]||''))n*=1e6;
+        if(n>=1000){var cur=(m[3]||'USD').toUpperCase().replace('DOLLARS','USD');D.value=(cur==='USD'?'$':cur+' ')+n.toLocaleString('en-US');hit(m[0].trim());}}
+      [['negotiat','Negotiation'],['proposal stage','Proposal'],['qualif','Qualified'],['new idea','New idea']].some(function(x){var i=low.indexOf(x[0]);if(i>-1){D.stage=x[1];hit(t.substr(i,x[0].length));return true;}});
+      Object.keys(PEOPLE).some(function(k){var r=new RegExp('\\b'+k+'\\b','i'),mm=t.match(r);if(mm){D.ownerIni=PEOPLE[k][0];D.owner=D.person=PEOPLE[k][1];hit(mm[0]);return true;}});
+      ['annual','casual','medical','lieu','sick'].some(function(x){var i=low.indexOf(x);if(i>-1){D.type=(x==='sick'?'medical':x).replace(/^\w/,function(c){return c.toUpperCase()});hit(t.substr(i,x.length));return true;}});
+      var dm=t.match(/((?:mon|tues|wednes|thurs|fri|satur|sun)day|tomorrow|today|next (?:week|month|monday|friday)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*\d{0,2}(?:\s*(?:to|-|–)\s*\d{1,2})?)/i);
+      if(dm){D.dates=D.close=dm[1];hit(dm[1]);}
+      var w=t.match(/(?:wants|needs|asking about|asked about|help with|interested in|is about|for)\s+(?:help with\s+)?(?:the\s+|a\s+|an\s+)?([^,.]{4,60})/i);
+      if(w){var nm=w[1].trim();nm=nm.charAt(0).toUpperCase()+nm.slice(1);D.name=D.title=nm;hit(w[1].trim());}
+      else if(!D.title&&S.intent&&S.intent!=='opportunity'&&S.intent!=='leave'){D.title=t.split(/[,.]/)[0].trim().slice(0,70);}
+      return hits;}
+    function highlight(t,hits){var out=esc(t);hits.sort(function(a,b){return b.length-a.length}).forEach(function(h){var e=esc(h);var i=out.indexOf(e);if(i>-1)out=out.slice(0,i)+'<mark class="x">'+e+'</mark>'+out.slice(i+e.length);});return out;}
+    var LABEL={name:'Name',title:'Title',client:'Client',value:'Value',stage:'Stage',win:'Win chance',owner:'Owner',person:'Person',type:'Type',dates:'Dates',hours:'Hours',close:'Close'};
+    function record(){var D=S.D,keys=S.intent==='opportunity'?['name','client','value','stage','win','owner','close']:S.intent==='leave'?['person','type','dates']:['title','person','dates','hours','value'];
+      if(S.intent==='opportunity'){D.stage=D.stage||'New idea';D.win=D.win||{'New idea':'10%','Lead':'20%','Qualified':'30%','Proposal':'50%','Negotiation':'70%'}[D.stage];}
+      return '<dl class="rec">'+keys.filter(function(k){return D[k]}).map(function(k){return '<dt>'+LABEL[k]+'</dt><dd>'+esc(D[k])+'</dd>'}).join('')+'</dl>';}
+    function reply(text){
+      if(S.intent){var it=INTENTS[S.intent],miss=it.need.filter(function(k){return !S.D[k]});
+        if(miss.length){var w={name:'what it is',client:'the client',value:'a rough value',owner:'who leads it',person:'who',type:'the leave type',dates:'the dates',title:'a short description',hours:'how many hours'};
+          msg(false,'Got it. Still need '+miss.map(function(k){return w[k]}).join(' and ')+'.');return;}
+        var m=msg(false,'Here is the '+it.label+'.'+record()+'<div class="acts"><button class="btn sm primary" data-commit>Add it</button><button class="btn sm" data-tweak>Change something</button></div>');return;}
+      // questions and pinned context
+      var low=text.toLowerCase();
+      if(/v2\.4|sign-?off|qa/.test(low)){msg(false,'<div class="tools"><span>list_proposals</span><span>get_release</span></div>Both proposals in v2.4.0 are in QA without sign-off: 012 SSO token refresh (Ayesha) and 010 Email digest (Kasun). Want me to ask them?');return;}
+      if(S.pins.length){msg(false,'<div class="tools"><span>get_record</span><span>list_activity</span></div>Looking at '+S.pins.map(function(p){return '<b>'+esc(p)+'</b>'}).join(', ')+'. '+(/risk|why|late|fail/.test(low)?'The main driver is the UAT rollback on Oct 14 and two skipped client reviews; velocity is down 32% over 3 sprints.':'What would you like me to do with '+(S.pins.length>1?'these':'it')+'?'));return;}
+      msg(false,'<div class="tools"><span>search</span></div>I can add records, answer questions about anything in amax, or act on what you pin. Try "request annual leave for Nimal Oct 27 to 30" or pin a project and ask why it is at risk.');}
+    function send(t){t=(t||'').trim();if(!t)return;open();var hits=S.intent?extract(t):[];msg(true,highlight(t,hits));inp.value='';typing(function(){reply(t)});}
+    document.getElementById('cForm').addEventListener('submit',function(e){e.preventDefault();send(inp.value)});
+
+    // committing a record
+    log.addEventListener('click',function(e){
+      if(e.target.closest('[data-tweak]')){msg(false,'Sure, what should change?');inp.focus();return;}
+      if(!e.target.closest('[data-commit]'))return;
+      var D=S.D,k=S.intent,it=INTENTS[k];e.target.closest('.acts').remove();
+      if(k==='opportunity'&&window.amaxAddDeal){window.amaxAddDeal(D);}
+      if(k==='leave'){var tb=document.querySelector('[id="001-amax-foundation-leave"] .card.flush tbody');if(tb){var ini=D.ownerIni||'CP';var tr=document.createElement('tr');tr.innerHTML='<td><div class="who"><span class="av sm">'+ini+'</span>'+esc(D.person)+'</div></td><td>'+esc(D.type)+'</td><td>'+esc(D.dates)+'</td><td class="num">–</td><td><span class="chip agent">Checking clashes</span></td><td class="num"><button class="btn sm primary">Approve</button></td>';tb.insertBefore(tr,tb.firstChild);var a=tr.querySelector('.av');if(FOLK[ini]){a.classList.add('photo');a.innerHTML=face(ini);}}}
+      msg(false,'Added. You will find it in '+it.where+'.');toast('Added '+it.label+(D.name||D.title?': '+(D.name||D.title):''));S.intent=null;S.D={};});
+
+    // pins: a small button on every card, row, stat and stage, plus drag and pick
+    var SEL='.card,.ticket,.tcard,.found-item,.stage,.tbl tbody tr';
+    var PINSVG='<svg viewBox="0 0 24 24"><path d="M12 17v4M8 3h8l-1 6 3 4H6l3-4z"/></svg>';
+    function labelOf(el){var h=el.querySelector('h2,.k,b,p,td');var t=(h?h.textContent:el.textContent).replace(/\s+/g,' ').trim();
+      if(el.matches('.ticket')){var v=el.querySelector('.v');t=t+': '+(v?v.textContent:'');}
+      if(el.matches('tr')){t=[].slice.call(el.cells,0,2).map(function(c){return c.textContent.replace(/\s+/g,' ').trim()}).join(', ');}
+      return t.slice(0,70);}
+    function addPin(t){if(S.pins.indexOf(t)>-1)return;S.pins.push(t);var c=document.createElement('span');c.className='pinchip';c.innerHTML='<span>'+esc(t)+'</span><button aria-label="Unpin">×</button>';
+      c.querySelector('button').onclick=function(){S.pins.splice(S.pins.indexOf(t),1);c.remove();};ctx.appendChild(c);open();}
+    [].forEach.call(document.querySelectorAll(SEL),function(el){if(el.closest('#chat')||el.closest('dialog'))return;el.classList.add('pinnable');el.draggable=true;
+      var b=document.createElement('button');b.className='pin';b.type='button';b.title='Add to chat';b.setAttribute('aria-label','Add to chat');b.innerHTML=PINSVG;
+      b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();addPin(labelOf(el));});
+      var hd=el.querySelector(':scope>.card-head>h2');if(hd){hd.insertAdjacentElement('afterend',b);b.classList.add('inline');}else (el.matches('tr')?el.cells[el.cells.length-1]:el).appendChild(b);
+      el.addEventListener('dragstart',function(e){e.dataTransfer.setData('text/plain',labelOf(el));e.dataTransfer.effectAllowed='copy';});});
+    [C,launcher].forEach(function(z){z.addEventListener('dragover',function(e){e.preventDefault();z.classList.add('drop');});
+      z.addEventListener('dragleave',function(){z.classList.remove('drop')});
+      z.addEventListener('drop',function(e){e.preventDefault();z.classList.remove('drop');var t=e.dataTransfer.getData('text/plain');if(t)addPin(t);});});
+    function pick(on){document.body.classList.toggle('picking',on);document.getElementById('cPick').setAttribute('aria-pressed',on?'true':'false');}
+    document.getElementById('cPick').onclick=function(){pick(!document.body.classList.contains('picking'));};
+    document.addEventListener('click',function(e){if(!document.body.classList.contains('picking')||e.target.closest('#chat'))return;var el=e.target.closest('.pinnable');if(el){e.preventDefault();e.stopPropagation();addPin(labelOf(el));}},true);
+
+    // voice
     var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null;
-    mic.addEventListener('click',function(){
-      if(!SR){bubble('bot','Voice needs a browser with speech recognition, such as Chrome or Edge. In the app this uses the device microphone through the same panel.');return;}
-      if(rec){rec.stop();return;}
-      rec=new SR();rec.lang='en-AU';rec.interimResults=true;rec.continuous=false;var base=say.value;
-      rec.onresult=function(ev){var t='';for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;say.value=(base?base+' ':'')+t;};
-      rec.onend=function(){mic.setAttribute('aria-pressed','false');rec=null;if(say.value.trim())send(say.value);};
-      rec.onerror=function(){mic.setAttribute('aria-pressed','false');rec=null;};
-      mic.setAttribute('aria-pressed','true');rec.start();});
-    function addCard(d){var board=document.getElementById('salesBoard'),lane=board.querySelector('.lane[data-stage="'+d.stage+'"]')||board.querySelector('.lane');
-      var c=document.createElement('div');c.className='tcard deal';
-      c.innerHTML='<div class="opp-top"><span class="id">'+d.client+'</span><span class="rag g"></span></div><p>'+d.name+'</p><div class="opp-num"><b>'+(d.value||'–')+'</b><span>'+(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+(d.ownerIni||'CP')+'</span><span>'+(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
-      lane.insertBefore(c,lane.children[1]||null);var av=c.querySelector('.av');if(FOLK[d.ownerIni||'CP']){av.classList.add('photo');av.innerHTML=face(d.ownerIni||'CP');}
-      board.dispatchEvent(new CustomEvent('cardadded',{detail:c}));c.classList.add('flash');}
-    window.amaxAddDeal=addCard;
-    add.addEventListener('click',function(){addCard(D);dlg.close();});
-    document.getElementById('chatForm').addEventListener('click',function(){var f=document.getElementById('oppForm').elements;
-      if(D.name)f.oppName.value=D.name; if(D.value)f.oppValue.value=D.value.replace(/^\D+/,''); if(D.stage)f.stage.value=D.stage; if(D.win)f.win.value=D.win; if(D.close)f.close.value=D.close; if(D.ownerIni)f.owner.value=D.ownerIni;
-      dlg.close();document.getElementById('oppDrawer').showModal();});
-    function reset(){D={stage:'New idea'};[].forEach.call(dlg.querySelectorAll('[data-f]'),function(dd){dd.textContent=dd.dataset.f==='stage'?'New idea':'–';});document.getElementById('draftState').textContent='Nothing yet';add.disabled=true;
-      [].forEach.call(msgs.querySelectorAll('.msg'),function(m,i){if(i>1)m.remove();});}
-    document.addEventListener('click',function(e){var b=e.target.closest('[data-fill]');if(b){reset();dlg.showModal();setTimeout(function(){say.focus()},50);}
-      var ch=e.target.closest('[data-chat]');if(ch){reset();dlg.showModal();send(ch.closest('.found-item').dataset.text);}
-      var ac=e.target.closest('[data-accept]');if(ac){var it=ac.closest('.found-item');reset();parse(it.dataset.text);if(!D.win)D.win={'New idea':'10%','Lead':'20%'}[D.stage]||'10%';addCard(D);it.classList.add('gone');}
-      var di=e.target.closest('[data-dismiss]');if(di){di.closest('.found-item').classList.add('gone');}});
+    talk.onclick=function(){open();if(!SR){msg(false,'Voice needs Chrome or Edge in this mock. Type instead, and I will do the same.');return;}
+      if(rec){rec.stop();return;}rec=new SR();rec.lang='en-AU';rec.interimResults=true;
+      rec.onresult=function(ev){var t='';for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;inp.value=t;};
+      rec.onend=function(){talk.setAttribute('aria-pressed','false');rec=null;if(inp.value.trim())send(inp.value);};
+      rec.onerror=function(){talk.setAttribute('aria-pressed','false');rec=null;};talk.setAttribute('aria-pressed','true');rec.start();};
+
+    document.getElementById('cNew').onclick=function(){log.innerHTML='';ctx.innerHTML='';S={intent:null,D:{},pins:[]};greet();};
+    document.getElementById('cClose').onclick=close;
+    launcher.onclick=open;
+    document.getElementById('ask').addEventListener('click',function(){open();inp.focus();});
+    document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();C.classList.contains('open')?close():(open(),inp.focus());}if(e.key==='Escape'&&document.body.classList.contains('picking'))pick(false);});
+    document.addEventListener('click',function(e){var a=e.target.closest('[data-ask]');if(a){e.preventDefault();start(a.dataset.ask);}
+      var ch=e.target.closest('[data-chat]');if(ch){S.intent='opportunity';S.D={};open();send(ch.closest('.found-item').dataset.text);}
+      var ac=e.target.closest('[data-accept]');if(ac){var itm=ac.closest('.found-item');var keep=S.intent;S.intent='opportunity';S.D={};extract(itm.dataset.text);var D=S.D;D.stage=D.stage||'New idea';D.win=D.win||'10%';if(window.amaxAddDeal)window.amaxAddDeal(D);itm.classList.add('gone');S.intent=keep;S.D={};toast('Added '+(D.name||'opportunity'));}
+      var di=e.target.closest('[data-dismiss]');if(di)di.closest('.found-item').classList.add('gone');});
   })();
 
   // switches
