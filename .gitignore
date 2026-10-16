@@ -1,0 +1,19 @@
+.DS_Store
+node_modules/
+.next/
+.env*
+*.log
+.playwright-mcp/
+.impeccable/
+.specclaw/.update-check
+.specclaw/worktrees/
+
+# specclaw: raw timing ledgers. timeline.md (the render) is committed.
+.specclaw/changes/*/timeline.jsonl
+.specclaw/changes/archive/*/timeline.jsonl
+
+# specclaw: bf-* collector handoff files. Regenerated every run.
+.specclaw/analysis/.collect/
+
+# specclaw: per-change dispatch locks. Transient, never committed.
+.specclaw/changes/**/.lock/
