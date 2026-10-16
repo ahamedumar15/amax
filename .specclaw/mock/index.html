@@ -95,7 +95,7 @@ h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 .pillbtn{border-radius:999px}
 .select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%239A97AE' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer}
 .seg{display:flex;padding:5px;border-radius:16px;background:var(--sunken);gap:4px}
-.seg button{flex:1;border:0;background:none;height:36px;border-radius:12px;font-size:13.5px;font-weight:500;color:var(--ink-2);cursor:pointer;transition:background .15s,color .15s}
+.seg button{flex:1;white-space:nowrap;padding:0 12px;border:0;background:none;height:36px;border-radius:12px;font-size:13.5px;font-weight:500;color:var(--ink-2);cursor:pointer;transition:background .15s,color .15s}
 .seg button[aria-pressed="true"]{background:var(--yellow);color:var(--yellow-ink);font-weight:600}
 .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;font-size:12.5px;font-weight:600;background:var(--sunken);color:var(--ink-2);white-space:nowrap}
 .chip.agent{background:var(--violet-soft);color:var(--violet)}
@@ -237,7 +237,9 @@ h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 .stage .tcard{background:var(--sunken);box-shadow:none}
 
 /* code */
-.code{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--sunken);border-radius:14px;padding:14px 16px;font:500 13px ui-monospace,"SF Mono",Menlo,monospace;overflow-x:auto}
+.code{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--sunken);border-radius:14px;padding:14px 16px;font:500 13px ui-monospace,"SF Mono",Menlo,monospace}
+.code span{min-width:0;overflow-wrap:anywhere}
+.code .btn{flex:none}
 
 /* palette */
 dialog{border:0;padding:0;border-radius:28px;width:min(680px,calc(100vw - 32px));background:var(--card);color:var(--ink);box-shadow:0 40px 100px -20px rgba(40,30,110,.45)}
@@ -248,13 +250,107 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
 .toolcall{display:flex;align-items:center;gap:10px;background:var(--violet-soft);border-radius:12px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--ink-2)}
 .toolcall b{color:var(--violet)}
 
-@media (max-width:1180px){ .cols{grid-template-columns:minmax(0,1fr)} }
+/* rail groups */
+.rail{gap:2px}
+.rail a{height:44px}
+.rail hr{width:32px;border:0;border-top:1.5px solid var(--line-2);margin:8px 0}
+.logo{margin-bottom:16px}
+
+/* small stats */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-bottom:28px}
+.stat{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:20px 22px;min-width:0}
+.stat .k{font-size:13px;color:var(--ink-3);display:flex;justify-content:space-between;gap:8px}
+.stat .big{font-size:26px;margin:8px 0 4px}
+.stat small{font-size:12.5px;color:var(--ink-2)}
+.icon-dot{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none}
+.icon-dot svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* tabs as links */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stack>.tabs{margin-bottom:-6px}
+.tabs a{text-decoration:none;color:inherit}
+.kv dt{white-space:nowrap}
+.tabs .btn[aria-current="true"]{background:var(--ink);border-color:var(--ink);color:var(--frame)}
+
+/* profile */
+.profile{display:grid;grid-template-columns:320px minmax(0,1fr);gap:28px;align-items:start}
+.idcard{text-align:center}
+.idcard .av{margin:0 auto 14px}
+.idcard b{font-size:19px;font-weight:600;display:block}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;font-size:14px;margin:0;text-align:left}
+.kv dt{color:var(--ink-3)} .kv dd{margin:0;font-weight:500}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line);font-size:14px}
+.list li:first-child{border-top:0;padding-top:0}
+.list li small{display:block;color:var(--ink-3);font-size:12.5px}
+.list .l{display:flex;align-items:center;gap:12px;min-width:0}
+.logo-sq{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:12px;color:#fff;flex:none}
+
+/* stepper */
+.steps{display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:4px 0 6px;counter-reset:s}
+.steps li{list-style:none;position:relative;text-align:center;font-size:12.5px;color:var(--ink-3);padding-top:42px}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;top:0;left:50%;transform:translateX(-50%);width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:var(--sunken);color:var(--ink-3);font-weight:700;font-size:13px;z-index:1}
+.steps li::after{content:"";position:absolute;top:15px;left:-50%;width:100%;height:3px;background:var(--line-2)}
+.steps li:first-child::after{display:none}
+.steps li.done{color:var(--ink-2)} .steps li.done::before{content:"✓";background:var(--mint);color:#fff} .steps li.done::after{background:var(--mint)}
+.steps li.now{color:var(--ink);font-weight:600} .steps li.now::before{background:var(--yellow);color:var(--yellow-ink)} .steps li.now::after{background:var(--mint)}
+.payslip{font-size:13.5px}
+.payslip .row{padding:8px 0;border-top:1px dashed var(--line-2)}
+.payslip .row:first-of-type{border-top:0}
+.payslip .tot{border-top:1.5px solid var(--ink);margin-top:6px;padding-top:12px;font-weight:600;font-size:15px}
+
+/* leave timeline */
+.cal{display:grid;gap:3px;font-size:11px;overflow-x:auto;padding-bottom:4px}
+.cal .nm{font-size:13px;font-weight:500;white-space:nowrap;padding-right:10px;display:flex;align-items:center}
+.cal .d{height:30px;border-radius:7px;background:var(--sunken);display:grid;place-items:center;color:var(--ink-3)}
+.cal .hd{background:none;height:20px;font-weight:600}
+.cal .we{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--line) 4px 6px)}
+.cal .ph{background:#FFF1D6;color:#9A5B00}
+.cal .an{background:#B3A1FF;color:#fff} .cal .ca{background:#7FD8F5;color:#fff} .cal .me2{background:#F48B9B;color:#fff} .cal .pend{background:transparent;box-shadow:inset 0 0 0 1.5px #7B61FF;color:var(--violet)}
+.bal{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-bottom:28px}
+.ring{--p:50;--c:var(--violet);width:76px;height:76px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--sunken) 0);display:grid;place-items:center;flex:none}
+.ring span{width:58px;height:58px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-weight:600;font-size:15px}
+
+/* insights */
+.brief{border-radius:var(--r-card);padding:30px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#53D6A1 0%,transparent 45%),linear-gradient(135deg,#8E77F5,#5B44D6);box-shadow:0 20px 50px -20px rgba(91,68,214,.6);margin-bottom:28px;position:relative;overflow:hidden}
+.brief h2{font-size:22px;margin-bottom:6px}
+.brief p.sub{margin:0 0 20px;opacity:.85;font-size:14px}
+.brief ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.brief li{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:18px;padding:18px;font-size:14px;line-height:1.45}
+.brief li b{display:block;font-size:15px;margin-bottom:6px}
+.brief li small{display:block;margin-top:10px;opacity:.8;font-size:12px}
+.brief .btn{background:#fff;border-color:#fff;color:#3D2BB0}
+.brief .btn.ghost{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);color:#fff}
+.risk{display:flex;align-items:center;gap:10px}
+.risk .meter{min-width:90px;flex:1}
+.opp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.opp .tcard{background:var(--sunken);box-shadow:none;margin:0;display:flex;flex-direction:column;gap:10px}
+.opp .tcard p{margin:0}
+.opp .tcard .foot{margin-top:auto}
+.trend{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line)}
+.trend:first-child{border-top:0;padding-top:0}
+.trend .t{flex:1;min-width:0;font-size:14px} .trend .t small{display:block;color:var(--ink-3);font-size:12.5px}
+.vs{display:grid;grid-template-columns:110px 1fr 46px;gap:12px;align-items:center;font-size:13.5px;padding:7px 0}
+.vs .meter{min-width:0}
+.switch{display:inline-block;vertical-align:middle;cursor:pointer;width:38px;height:22px;border-radius:999px;background:var(--mint);position:relative;flex:none;border:0}
+.switch::after{content:"";position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.switch.off{background:var(--line-2)} .switch.off::after{right:auto;left:3px}
+.apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:28px}
+.app-card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;gap:12px}
+.app-card .top2{display:flex;align-items:center;gap:12px}
+.app-card p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.app-card .foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;font-size:12.5px;color:var(--ink-3)}
+.sister{grid-column:span 3;background:linear-gradient(135deg,var(--card),var(--violet-soft));display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center}
+
+@media (max-width:1180px){ .cols{grid-template-columns:minmax(0,1fr)} .profile{grid-template-columns:minmax(0,1fr)} .brief ol,.opp,.apps{grid-template-columns:minmax(0,1fr)} .sister{grid-column:auto;grid-template-columns:1fr} .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:860px){
   body{padding:0}
   body::before,body::after{display:none}
   .app{grid-template-columns:minmax(0,1fr);border-radius:0;min-height:100dvh;padding-bottom:76px}
   .rail{position:fixed;z-index:10;left:0;right:0;bottom:0;flex-direction:row;padding:10px 12px;gap:2px;overflow-x:auto;border-right:0;border-top:1px solid var(--line)}
-  .rail .logo,.rail .spacer,.rail .toggle,.rail .out{display:none}
+  .rail .logo,.rail .spacer,.rail .toggle,.rail .out,.rail hr{display:none}
+  .steps li{font-size:10.5px;padding-top:38px}
+  .stats,.bal{grid-template-columns:minmax(0,1fr)}
   .rail a{flex:none;width:48px;height:44px}
   .rail a[aria-current="page"]::before{display:none}
   .rail a .tip{display:none}
@@ -332,6 +428,16 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
 
     <aside class="stack">
       <div class="card">
+        <div class="card-head"><h2>Agent insights</h2><span class="chip agent">Updated 06:00</span></div>
+        <ul class="list">
+          <li><div class="l"><span class="icon-dot" style="background:#FDE7E4;color:#C2412F"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><div>Fleet Tracker likely to miss Nov 14<small>71% confidence, 3 signals</small></div></div></li>
+          <li><div class="l"><span class="icon-dot" style="background:var(--mint-soft);color:#14845A"><svg viewBox="0 0 24 24"><path d="m4 15 5-5 4 4 7-7M14 7h6v6"/></svg></span><div>Demand for agentic modernisation up 38%<small>14 of your people already fit</small></div></div></li>
+          <li><div class="l"><span class="icon-dot" style="background:var(--violet-soft);color:var(--violet)"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M17 8v6M14 11h6"/></svg></span><div>2 senior .NET hires needed by January<small>Bench forecast, Fleet Tracker phase 2</small></div></div></li>
+        </ul>
+        <a class="btn" href="#001-amax-foundation-insights" style="width:100%;justify-content:center;margin-top:18px;text-decoration:none;color:inherit">Open insights</a>
+      </div>
+
+      <div class="card">
         <h2>Delivery performance</h2>
         <div class="seg" role="group" aria-label="Measure" style="margin-top:18px"><button aria-pressed="true">Shipped</button><button aria-pressed="false">Time</button><button aria-pressed="false">Revenue</button></div>
         <div class="person"><span class="av lg a3">NS</span><div><small>Top contributor this month</small><b>Nimal Silva</b><small>Claude for Nimal closed 14 tasks</small></div></div>
@@ -363,8 +469,88 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
   </div>
 </section>
 
+<!-- ================= Insights ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-insights" data-title="Insights" data-icon="spark">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>Insights</h1><p class="lede" style="margin:0">Agents read your projects, people, pipeline and the market every week, then tell you where you're heading and what to do next.</p></div>
+    <div class="actions"><select class="select" aria-label="Horizon"><option>Next 90 days</option><option>Next 12 months</option></select><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Board pack</button></div>
+  </div>
+
+  <div class="brief">
+    <h2>This week's briefing</h2>
+    <p class="sub">Written by the strategy agent on Mon Oct 12 from 1,284 signals. Each point links to its evidence.</p>
+    <ol>
+      <li><b>Fleet Tracker is drifting</b>Velocity is down 32% for 3 sprints, the UAT rollback reopened 2 proposals, and the client hasn't joined the last 2 reviews.<small>Suggest: a scope call this week, and add one QA engineer</small></li>
+      <li><b>You're ahead on agentic AI</b>44 people now hold AI skills (up from 12 in January). Market demand for agentic modernisation of .NET estates is up 38% this quarter.<small>Suggest: package a fixed-price offering</small></li>
+      <li><b>Bench risk in January</b>6 people roll off in January with nothing planned. 3 of them match the Northwind claims-copilot opportunity.<small>Suggest: push Northwind to signature before Dec 15</small></li>
+    </ol>
+    <div class="actions" style="margin-top:20px"><button class="btn">Discuss with amax</button><button class="btn ghost" style="color:#fff">Show evidence</button></div>
+  </div>
+
+  <div class="card flush" style="margin-bottom:28px">
+    <div class="card-head"><h2>Projects at risk</h2><div class="seg" role="group" aria-label="Risk view"><button aria-pressed="true">Delivery</button><button aria-pressed="false">Commercial</button><button aria-pressed="false">People</button></div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Project</th><th style="min-width:200px">Risk of missing the date</th><th>Why the agent thinks so</th><th>Trend</th><th class="num">Action</th></tr></thead>
+      <tbody>
+      <tr><td><span class="dot" style="background:var(--amber)"></span><b>Fleet Tracker</b><small>Due Nov 14</small></td><td><div class="risk"><div class="meter"><i style="width:71%;background:var(--coral)"></i></div><b>71%</b></div></td><td>Velocity down 32%, UAT rollback, 2 reviews skipped</td><td><span class="down">↑ worse</span></td><td class="num"><button class="btn sm primary">Plan recovery</button></td></tr>
+      <tr><td><span class="dot" style="background:var(--violet)"></span><b>Contoso Portal</b><small>v2.5.0 due Nov 28</small></td><td><div class="risk"><div class="meter"><i style="width:34%;background:var(--amber)"></i></div><b>34%</b></div></td><td>Global search has 4 tasks left and one engineer on leave Oct 27–31</td><td class="muted">steady</td><td class="num"><button class="btn sm">Review</button></td></tr>
+      <tr><td><span class="dot" style="background:var(--pink)"></span><b>HR Insights</b><small>Retainer</small></td><td><div class="risk"><div class="meter"><i style="width:12%;background:var(--mint)"></i></div><b>12%</b></div></td><td>On time; margin 41% against a 35% target</td><td class="up">↓ better</td><td class="num"><button class="btn sm">Open</button></td></tr>
+      </tbody></table></div>
+  </div>
+
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-head"><h2>Opportunities from your skills</h2><span class="muted" style="font-size:13px">Your people's skills matched with market demand</span></div>
+    <div class="opp">
+      <div class="tcard"><div class="row"><span class="chip good">Demand ↑ 38%</span><span class="muted" style="font-size:12.5px">14 people fit</span></div><p>Agentic modernisation of legacy .NET</p><small class="muted">Azure AI, .NET 9, MCP. Your delivery record: 6 projects.</small><svg class="spark" data-v="12,14,15,19,22,26,31,38" width="100%" height="36" viewBox="0 0 220 36" preserveAspectRatio="none"></svg><div class="foot"><span>Margin potential: high</span><button class="btn sm">Draft offering</button></div></div>
+      <div class="tcard"><div class="row"><span class="chip good">Demand ↑ 21%</span><span class="muted" style="font-size:12.5px">9 people fit</span></div><p>Data platforms on Microsoft Fabric</p><small class="muted">Fabric, Power BI, Synapse. Fabrikam phase 2 is in discovery.</small><svg class="spark" data-v="20,22,21,24,27,29,30,33" width="100%" height="36" viewBox="0 0 220 36" preserveAspectRatio="none"></svg><div class="foot"><span>Margin potential: medium</span><button class="btn sm">See accounts</button></div></div>
+      <div class="tcard"><div class="row"><span class="chip warn">Skills gap</span><span class="muted" style="font-size:12.5px">2 people fit</span></div><p>AI governance and ISO 42001 readiness</p><small class="muted">Regulated clients are asking. You already run ISO 27001.</small><svg class="spark" data-v="5,6,8,9,12,15,19,24" width="100%" height="36" viewBox="0 0 220 36" preserveAspectRatio="none"></svg><div class="foot"><span>Needs: 1 hire + training</span><button class="btn sm">Plan training</button></div></div>
+    </div>
+  </div>
+
+  <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+    <div class="card">
+      <div class="card-head"><h2>Talent growth</h2><span class="up">↑ 17.6% headcount this year</span></div>
+      <svg class="chart" id="talentChart" viewBox="0 0 560 220" role="img" aria-label="Headcount and AI-skilled people, January to October"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Headcount</span><span><i style="background:repeating-linear-gradient(90deg,var(--mint) 0 5px,transparent 5px 9px)"></i>People with AI skills</span></div>
+      <div class="hr"></div>
+      <div class="split" style="grid-template-columns:repeat(3,1fr)"><div><div class="k">Attrition, 12 months</div><div class="big" style="font-size:24px">8.4%</div><span class="up">↓ 2.1 pts</span></div><div><div class="k">Promoted this year</div><div class="big" style="font-size:24px">23</div><span class="muted" style="font-size:13px">13% of people</span></div><div><div class="k">Certifications</div><div class="big" style="font-size:24px">41</div><span class="muted" style="font-size:13px">6 expire soon</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Market position</h2><select class="select" aria-label="Region"><option>Australia + UK</option><option>All regions</option></select></div>
+      <div class="split" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px"><div><div class="k">Win rate</div><div class="big" style="font-size:24px">38%</div><span class="up">↑ 6 pts</span></div><div><div class="k">Share of voice</div><div class="big" style="font-size:24px">4.2%</div><span class="muted" style="font-size:13px">rank 7 of 22</span></div><div><div class="k">Review rating</div><div class="big" style="font-size:24px">4.8</div><span class="muted" style="font-size:13px">31 reviews</span></div></div>
+      <div class="k muted" style="font-size:13px;margin-bottom:6px">How buyers see you against peers, from public reviews and RFP feedback</div>
+      <div class="vs"><span>Delivery speed</span><div class="meter"><i style="width:82%;background:var(--violet)"></i></div><b>8.2</b></div>
+      <div class="vs"><span>AI capability</span><div class="meter"><i style="width:76%;background:var(--violet)"></i></div><b>7.6</b></div>
+      <div class="vs"><span>Price</span><div class="meter"><i style="width:69%;background:var(--violet)"></i></div><b>6.9</b></div>
+      <div class="vs"><span>Brand awareness</span><div class="meter"><i style="width:41%;background:var(--amber)"></i></div><b>4.1</b></div>
+    </div>
+  </div>
+
+  <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:28px">
+    <div class="card">
+      <div class="card-head"><h2>World trends to act on</h2><span class="chip agent">Market agent</span></div>
+      <div class="trend"><span class="chip good">Take on</span><div class="t">Agent platforms in the enterprise<small>CIO surveys: 64% plan agent pilots in 2027. Fits your MCP and Azure AI work.</small></div></div>
+      <div class="trend"><span class="chip good">Take on</span><div class="t">Payday Super in Australia from July 2026<small>Mid-size AU firms need payroll changes. You know the domain.</small></div></div>
+      <div class="trend"><span class="chip warn">Watch</span><div class="t">Price pressure on staff augmentation<small>Rates down 9% year on year across 3 of your markets.</small></div></div>
+      <div class="trend"><span class="chip">Skip</span><div class="t">Low-code app factories<small>Crowded, and low margin for your profile.</small></div></div>
+    </div>
+    <div class="card flush">
+      <div class="card-head"><h2>Recurring agent work</h2><button class="btn sm"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New job</button></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Job</th><th>Runs</th><th>Last result</th><th class="num">On</th></tr></thead>
+        <tbody>
+        <tr><td><b>Project risk scan</b><small>Velocity, scope, client signals</small></td><td>Daily 06:00</td><td>1 new risk</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Project risk scan"></span></td></tr>
+        <tr><td><b>Market and trends scan</b><small>News, RFPs, reviews, analysts</small></td><td>Mondays</td><td>3 trends</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Market scan"></span></td></tr>
+        <tr><td><b>Skills-to-opportunity match</b><small>Skills matrix vs pipeline</small></td><td>Weekly</td><td>2 matches</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Skills match"></span></td></tr>
+        <tr><td><b>Payroll variance check</b><small>Before each pay run</small></td><td>Monthly</td><td>4 explained</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Payroll check"></span></td></tr>
+        <tr><td><b>Unused licence sweep</b><small>Microsoft 365, Azure DevOps, SaaS seats</small></td><td>Monthly</td><td>$1,620/yr to save</td><td class="num"><span class="switch off" role="switch" aria-checked="false" aria-label="Licence sweep"></span></td></tr>
+        </tbody></table></div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= Projects ================= -->
-<section data-change="001-amax-foundation" id="001-amax-foundation-projects" data-title="Projects" data-icon="grid">
+<section data-change="001-amax-foundation" id="001-amax-foundation-projects" data-title="Projects" data-icon="grid" data-group="work">
   <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
     <div><h1>Contoso Portal</h1><p class="lede" style="margin:0">Sprint 18 runs Oct 13 to Oct 24. 9 of 16 tasks done, on track for v2.5.0.</p></div>
     <div class="actions"><select class="select" aria-label="Project"><option>Contoso Portal</option><option>Fleet Tracker</option><option>HR Insights</option></select><select class="select" aria-label="Sprint"><option>Sprint 18</option><option>Sprint 17</option></select><button class="btn primary">New proposal</button></div>
@@ -500,8 +686,190 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
   </div>
 </section>
 
+<!-- ================= People (HR records) ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-people" data-title="People" data-icon="user" data-group="people">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>People</h1><p class="lede" style="margin:0">184 people in 2 entities. 3 probation reviews are due this month and 2 contracts end in November.</p></div>
+    <div class="actions"><select class="select" aria-label="Entity"><option>All entities</option><option>Sri Lanka</option><option>Australia</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add person</button></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Headcount<span class="up">↑ 6</span></div><div class="big">184</div><small>171 Sri Lanka, 13 Australia</small></div>
+    <div class="stat"><div class="k">Joiners and leavers, Q4</div><div class="big">9 / 3</div><small>2 joining Nov 2</small></div>
+    <div class="stat"><div class="k">On probation</div><div class="big">11</div><small>3 reviews due this month</small></div>
+    <div class="stat"><div class="k">Documents missing</div><div class="big">7</div><small>Agent sent reminders</small></div>
+  </div>
+  <div class="profile">
+    <div class="card idcard">
+      <span class="av lg a2" style="width:88px;height:88px;border-radius:28px;font-size:26px">KD</span>
+      <b>Kasun Dias</b><span class="muted" style="font-size:14px">Senior software engineer</span>
+      <div style="display:flex;gap:6px;justify-content:center;margin:14px 0 20px"><span class="chip good">Active</span><span class="chip">Sri Lanka</span><span class="chip agent">On Fleet Tracker</span></div>
+      <dl class="kv"><dt>Employee no.</dt><dd>BG-0417</dd><dt>Joined</dt><dd>Mar 3, 2022</dd><dt>Manager</dt><dd>Chandima Perera</dd><dt>Department</dt><dd>Engineering</dd><dt>Work email</dt><dd>kasun.dias@example.dev</dd><dt>Location</dt><dd>Colombo, hybrid</dd></dl>
+    </div>
+    <div class="stack">
+      <div class="tabs"><a class="btn sm" aria-current="true">Overview</a><a class="btn sm">Employment</a><a class="btn sm">Pay</a><a class="btn sm">Leave</a><a class="btn sm">Documents</a><a class="btn sm" href="#001-amax-foundation-access">Access and licences</a><a class="btn sm">Performance</a></div>
+      <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+        <div class="card">
+          <h2>Employment</h2>
+          <dl class="kv" style="margin-top:18px"><dt>Contract</dt><dd>Permanent, full time</dd><dt>Grade</dt><dd>E4</dd><dt>Basic salary</dt><dd>LKR ••••••• <button class="link" style="display:inline">Show</button></dd><dt>EPF number</dt><dd>•••• 2231</dd><dt>Bank</dt><dd>Commercial Bank •••• 7740</dd><dt>Next review</dt><dd>Mar 2027</dd></dl>
+        </div>
+        <div class="card">
+          <h2>Documents</h2>
+          <ul class="list" style="margin-top:14px">
+            <li><div class="l"><span class="icon-dot" style="background:var(--violet-soft);color:var(--violet)"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg></span><div>Employment contract<small>Signed Mar 1, 2022</small></div></div><span class="chip good">Signed</span></li>
+            <li><div class="l"><span class="icon-dot" style="background:var(--violet-soft);color:var(--violet)"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg></span><div>Promotion letter, E4<small>Issued Apr 2, 2025</small></div></div><span class="chip good">Signed</span></li>
+            <li><div class="l"><span class="icon-dot" style="background:#FFF1D6;color:#9A5B00"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg></span><div>Updated NIC copy<small>Requested Oct 2</small></div></div><span class="chip warn">Missing</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card flush">
+        <div class="card-head"><h2>Team directory</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn">Org chart</button></div></div>
+        <div class="scroll-x"><table class="tbl">
+          <thead><tr><th>Person</th><th>Role</th><th>Entity</th><th>Status</th><th>Leave today</th></tr></thead>
+          <tbody>
+          <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Tech lead</td><td>Sri Lanka</td><td><span class="chip good">Active</span></td><td class="muted">–</td></tr>
+          <tr><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td>QA lead</td><td>Sri Lanka</td><td><span class="chip good">Active</span></td><td><span class="chip">Casual leave</span></td></tr>
+          <tr><td><div class="who"><span class="av sm a1">LM</span>Liam Murphy</div></td><td>Account director</td><td>Australia</td><td><span class="chip good">Active</span></td><td class="muted">–</td></tr>
+          <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td>Associate engineer</td><td>Sri Lanka</td><td><span class="chip warn">Probation ends Oct 31</span></td><td class="muted">–</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Leave ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-leave" data-title="Leave" data-icon="calendar">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>Leave</h1><p class="lede" style="margin:0">Nimal asked for Oct 27–30 off, the same week as the Fleet Tracker UAT retry. Next public holiday: Vap Full Moon Poya Day, Oct 26.</p></div>
+    <div class="actions"><button class="btn">Holiday calendar</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
+  </div>
+  <div class="bal">
+    <div class="stat row" style="justify-content:flex-start;gap:16px"><div class="ring" style="--p:57;--c:#7B61FF"><span>8</span></div><div><div class="k">Annual leave</div><b style="font-size:17px">8 of 14 days left</b><small style="display:block">Carry over up to 5</small></div></div>
+    <div class="stat row" style="justify-content:flex-start;gap:16px"><div class="ring" style="--p:71;--c:#5CC8F0"><span>5</span></div><div><div class="k">Casual leave</div><b style="font-size:17px">5 of 7 days left</b><small style="display:block">Resets Jan 1</small></div></div>
+    <div class="stat row" style="justify-content:flex-start;gap:16px"><div class="ring" style="--p:86;--c:#F48B9B"><span>6</span></div><div><div class="k">Medical leave</div><b style="font-size:17px">6 of 7 days left</b><small style="display:block">Certificate after 2 days</small></div></div>
+    <div class="stat row" style="justify-content:flex-start;gap:16px"><div class="ring" style="--p:100;--c:#2FCB8C"><span>1</span></div><div><div class="k">Lieu leave</div><b style="font-size:17px">1 day earned</b><small style="display:block">From Sep 21 release</small></div></div>
+  </div>
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-head"><h2>Team calendar, October 2026</h2><div class="legend" style="padding:0;margin:0;gap:16px"><span><i style="width:12px;height:12px;border-radius:4px;background:#B3A1FF"></i>Annual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#7FD8F5"></i>Casual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#F48B9B"></i>Medical</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #7B61FF"></i>Pending</span><span><i style="width:12px;height:12px;border-radius:4px;background:#FFF1D6"></i>Holiday</span></div></div>
+    <div class="cal" id="leaveCal"></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary">Approve all</button></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Person</th><th>Type</th><th>Dates</th><th class="num">Days</th><th>Clash check</th><th class="num">Action</th></tr></thead>
+      <tbody>
+      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Annual</td><td>Oct 27 – Oct 30</td><td class="num">4</td><td><span class="chip warn">Overlaps Fleet UAT retry</span></td><td class="num"><button class="btn sm">Decide</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td>Casual</td><td>Nov 2</td><td class="num">1</td><td><span class="chip good">No clash</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= Payroll ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-payroll" data-title="Payroll" data-icon="cash">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>October payroll</h1><p class="lede" style="margin:0">The payroll agent checked 171 payslips against September and explained every change. 4 changes need your eyes before HR approval.</p></div>
+    <div class="actions"><div class="seg" role="group" aria-label="Entity"><button aria-pressed="true">Sri Lanka</button><button aria-pressed="false">Australia</button></div></div>
+  </div>
+  <div class="card" style="margin-bottom:28px">
+    <ol class="steps" style="padding:0"><li class="done">Draft from time and leave</li><li class="done">Agent variance check</li><li class="now">HR approval</li><li>Finance approval</li><li>Bank file and EPF/ETF</li><li>Payslips sent</li></ol>
+  </div>
+  <div class="tickets">
+    <div class="ticket t-violet"><div class="k">Gross pay</div><div class="v">LKR 48.62M</div><div class="p">171 people, up 1.8% on September<div class="bar"><i style="width:100%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Net to banks</div><div class="v">LKR 39.07M</div><div class="p">Bank file ready after approval<div class="bar"><i style="width:80%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Statutory</div><div class="v">LKR 12.40M</div><div class="p">EPF 20%, ETF 3%, APIT; due Nov 15<div class="bar dark"><i style="width:60%;background:#1D1B2E;opacity:.7"></i></div></div></div>
+  </div>
+  <div class="cols">
+    <div class="card flush">
+      <div class="card-head"><h2>Changes since September</h2><span class="chip agent">Explained by the payroll agent</span></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Person</th><th class="num">Change</th><th>Explanation</th><th class="num">Check</th></tr></thead>
+        <tbody>
+        <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td class="num">+ 12,400</td><td>6 h weekend overtime for the Sep 21 release</td><td class="num"><span class="chip good">OK</span></td></tr>
+        <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td class="num">+ 18,000</td><td>Probation confirmation, effective Oct 1</td><td class="num"><span class="chip good">OK</span></td></tr>
+        <tr><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td class="num">− 9,850</td><td>1.5 days no-pay leave, no approval found</td><td class="num"><button class="btn sm">Review</button></td></tr>
+        <tr><td><div class="who"><span class="av sm a1">RF</span>Rizwan Farook</div></td><td class="num">− 285,000</td><td>Final settlement paid in September, not October</td><td class="num"><button class="btn sm">Review</button></td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="card payslip">
+      <div class="card-head" style="margin-bottom:14px"><h2>Payslip preview</h2><select class="select" aria-label="Person"><option>Kasun Dias</option><option>Nimal Silva</option></select></div>
+      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Earnings</div>
+      <div class="row"><span>Basic salary</span><span>285,000.00</span></div>
+      <div class="row"><span>Fixed allowance</span><span>40,000.00</span></div>
+      <div class="row"><span>Overtime, 4 h</span><span>8,250.00</span></div>
+      <div class="muted" style="font-size:12.5px;margin:14px 0 6px">Deductions</div>
+      <div class="row"><span>EPF, employee 8%</span><span>− 22,800.00</span></div>
+      <div class="row"><span>APIT</span><span>− 31,450.00</span></div>
+      <div class="row tot"><span>Net pay</span><span>LKR 279,000.00</span></div>
+      <div class="muted" style="font-size:12.5px;margin-top:14px">Employer also pays EPF 12% (34,200.00) and ETF 3% (8,550.00).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Recruitment ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-recruitment" data-title="Recruitment" data-icon="briefcase">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>Recruitment</h1><p class="lede" style="margin:0">4 open roles. Two were raised by the resourcing agent from January demand on Fleet Tracker phase 2.</p></div>
+    <div class="actions"><select class="select" aria-label="Role"><option>Senior .NET engineer (2)</option><option>AI engineer (1)</option><option>QA engineer (1)</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New role</button></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Open roles</div><div class="big">4</div><small>2 raised from demand forecasts</small></div>
+    <div class="stat"><div class="k">Candidates</div><div class="big">63</div><small>41 screened by agent</small></div>
+    <div class="stat"><div class="k">Time to hire</div><div class="big">31 d</div><small class="up">↓ 9 days</small></div>
+    <div class="stat"><div class="k">Offers accepted</div><div class="big">80%</div><small>4 of 5 this quarter</small></div>
+  </div>
+  <div class="board">
+    <div class="lane"><div class="lane-head">Applied <span>24</span></div>
+      <div class="tcard"><p>Dinithi Fernando</p><div class="foot"><span class="chip agent">Match 86%</span><span>LinkedIn</span></div></div>
+      <div class="tcard"><p>Arjun Mehta</p><div class="foot"><span class="chip agent">Match 72%</span><span>Careers page</span></div></div></div>
+    <div class="lane"><div class="lane-head">Screening <span>9</span></div>
+      <div class="tcard"><p>Sachini Perera</p><div class="foot"><span class="chip agent">Match 91%</span><span>Referral</span></div></div></div>
+    <div class="lane"><div class="lane-head">Interviews <span>5</span></div>
+      <div class="tcard"><p>Ravindu Jayasuriya</p><div class="prog"><i style="width:66%"></i></div><div class="foot"><span>2 of 3 rounds</span><span>Thu 10:00</span></div></div></div>
+    <div class="lane"><div class="lane-head">Offer <span>1</span></div>
+      <div class="tcard"><p>Hasini Gunawardena</p><div class="foot"><span class="chip warn">Out for signature</span><span>Sent Oct 14</span></div></div></div>
+    <div class="lane"><div class="lane-head">Hired <span>2</span></div>
+      <div class="tcard"><p>Mohamed Rifkhan</p><div class="foot"><span class="chip good">Starts Nov 2</span><span>Onboarding</span></div></div></div>
+  </div>
+</section>
+
+<!-- ================= Learning ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-learning" data-title="Learning" data-icon="book">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>Learning and development</h1><p class="lede" style="margin:0">18 programmes this year with 126 people taking part. 6 certifications expire before January.</p></div>
+    <div class="actions"><button class="btn">Skills matrix</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New programme</button></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Programmes created<span class="up">↑ 7</span></div><div class="big">18</div><small>11 internal, 7 external</small></div>
+    <div class="stat"><div class="k">People who took part</div><div class="big">126</div><small>68% of all people</small></div>
+    <div class="stat"><div class="k">Completion rate</div><div class="big">74%</div><small>Target 80%</small></div>
+    <div class="stat"><div class="k">Certifications</div><div class="big">41</div><small>6 expire before January</small></div>
+  </div>
+  <div class="cols">
+    <div class="card flush">
+      <div class="card-head"><h2>Programmes</h2><div class="seg" role="group" aria-label="Status"><button aria-pressed="true">All</button><button aria-pressed="false">Running</button><button aria-pressed="false">Done</button></div></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Programme</th><th>Type</th><th class="num">People</th><th style="min-width:160px">Completion</th><th class="num">Hours</th></tr></thead>
+        <tbody>
+        <tr><td><b>Azure AI Engineer cohort</b><small>Ends Nov 20</small></td><td><span class="chip agent">Certification</span></td><td class="num">22</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:58%;background:var(--violet)"></i></div>58%</div></td><td class="num">640</td></tr>
+        <tr><td><b>Agentic engineering with MCP</b><small>Internal, 6 sessions</small></td><td><span class="chip">Workshop</span></td><td class="num">38</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:92%;background:var(--mint)"></i></div>92%</div></td><td class="num">456</td></tr>
+        <tr><td><b>ISO 27001 awareness</b><small>Mandatory, yearly</small></td><td><span class="chip">Compliance</span></td><td class="num">184</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:81%;background:var(--mint)"></i></div>81%</div></td><td class="num">184</td></tr>
+        <tr><td><b>Leading delivery teams</b><small>New managers</small></td><td><span class="chip">Leadership</span></td><td class="num">9</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:33%;background:var(--amber)"></i></div>33%</div></td><td class="num">108</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>People taking part</h2><span class="muted" style="font-size:13px">2026</span></div>
+      <svg class="chart" id="learnChart" viewBox="0 0 340 200" role="img" aria-label="People taking part in learning each month"></svg>
+      <div class="hr"></div>
+      <h2 style="margin-bottom:12px">Expiring soon</h2>
+      <ul class="list">
+        <li><div class="l"><span class="av sm a3">NS</span><div>AZ-305 Solutions Architect<small>Nimal Silva, Dec 2</small></div></div><button class="btn sm">Remind</button></li>
+        <li><div class="l"><span class="av sm a4">AR</span><div>ISTQB Advanced<small>Ayesha Rahman, Dec 18</small></div></div><button class="btn sm">Remind</button></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <!-- ================= Financials ================= -->
-<section data-change="001-amax-foundation" id="001-amax-foundation-financials" data-title="Financials" data-icon="wallet">
+<section data-change="001-amax-foundation" id="001-amax-foundation-financials" data-title="Financials" data-icon="wallet" data-group="business">
   <h1>Financials</h1>
   <p class="lede">Contoso's next invoice unlocks when v2.4.0 reaches Prod. Fleet Tracker has one invoice 9 days overdue.</p>
   <div class="tickets">
@@ -549,10 +917,87 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
   </div>
 </section>
 
+<!-- ================= Access and licences ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-access" data-title="Access and licences" data-icon="key" data-group="ops">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>Access and licences</h1><p class="lede" style="margin:0">Everything each person can sign in to, from Microsoft Entra ID, Azure DevOps, Intune and your SaaS tools. 23 seats have gone unused for 60 days.</p></div>
+    <div class="actions"><select class="select" aria-label="Person"><option>Kasun Dias</option><option>Nimal Silva</option><option>Ayesha Rahman</option></select><button class="btn">Access review</button></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Licence spend, monthly</div><div class="big">$14,860</div><small>12 products</small></div>
+    <div class="stat"><div class="k">Unused seats</div><div class="big">23</div><small class="down">$1,940 a month</small></div>
+    <div class="stat"><div class="k">Devices compliant</div><div class="big">96.4%</div><small>7 need updates</small></div>
+    <div class="stat"><div class="k">Leavers with access</div><div class="big">0</div><small class="up">Revoked on last day</small></div>
+  </div>
+  <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+    <div class="card">
+      <div class="card-head"><h2>Kasun Dias has</h2><span class="chip good">MFA on</span></div>
+      <ul class="list">
+        <li><div class="l"><span class="logo-sq" style="background:#2F6FEB">E</span><div>Microsoft Entra ID<small>Groups: Engineering, Fleet Tracker, VPN users</small></div></div><span class="chip good">Active</span></li>
+        <li><div class="l"><span class="logo-sq" style="background:#D83B01">M</span><div>Microsoft 365 E3<small>Outlook, Teams, SharePoint, OneDrive</small></div></div><span class="muted" style="font-size:13px">$36/mo</span></li>
+        <li><div class="l"><span class="logo-sq" style="background:#0078D4">D</span><div>Azure DevOps, Basic + Test Plans<small>Projects: Fleet Tracker, Shared Libraries</small></div></div><span class="muted" style="font-size:13px">$52/mo</span></li>
+        <li><div class="l"><span class="logo-sq" style="background:#24292F">G</span><div>GitHub Copilot Business<small>Last used today</small></div></div><span class="muted" style="font-size:13px">$19/mo</span></li>
+        <li><div class="l"><span class="logo-sq" style="background:#A259FF">F</span><div>Figma, viewer<small>Last used 74 days ago</small></div></div><span class="chip warn">Unused</span></li>
+        <li><div class="l"><span class="logo-sq" style="background:#107C10">A</span><div>Azure subscription "fleet-dev"<small>Contributor role</small></div></div><span class="chip">Expires Dec 31</span></li>
+      </ul>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h2>Devices</h2>
+        <ul class="list" style="margin-top:14px">
+          <li><div class="l"><span class="icon-dot" style="background:var(--violet-soft);color:var(--violet)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg></span><div>MacBook Pro 14, BG-LT-0388<small>Intune: compliant, encrypted</small></div></div><span class="chip good">OK</span></li>
+          <li><div class="l"><span class="icon-dot" style="background:var(--violet-soft);color:var(--violet)"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span><div>iPhone 15, company portal<small>Intune: OS update pending</small></div></div><span class="chip warn">Update</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Licence savings</h2><span class="chip agent">Licence agent</span></div>
+        <ul class="list">
+          <li><div class="l"><span class="logo-sq" style="background:#A259FF">F</span><div>9 Figma seats unused for 60+ days<small>Save $1,620 a year</small></div></div><button class="btn sm primary">Remove</button></li>
+          <li><div class="l"><span class="logo-sq" style="background:#0078D4">D</span><div>6 Test Plans seats on people who never ran a test<small>Save $3,744 a year</small></div></div><button class="btn sm">Review</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Helpdesk ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-helpdesk" data-title="Helpdesk" data-icon="help">
+  <div class="row" style="align-items:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    <div><h1>Helpdesk</h1><p class="lede" style="margin:0">The support agent solved 41% of tickets on its own this month, mostly access requests and password resets. 2 tickets are close to breaching their SLA.</p></div>
+    <div class="actions"><div class="seg" role="group" aria-label="Queue"><button aria-pressed="true">IT</button><button aria-pressed="false">HR</button><button aria-pressed="false">Facilities</button></div><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New ticket</button></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Open tickets</div><div class="big">27</div><small>9 waiting on requester</small></div>
+    <div class="stat"><div class="k">Solved by agent</div><div class="big">41%</div><small class="up">↑ 12 pts</small></div>
+    <div class="stat"><div class="k">First response</div><div class="big">7 min</div><small>Target 30 min</small></div>
+    <div class="stat"><div class="k">Satisfaction</div><div class="big">4.7</div><small>212 ratings</small></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Queue</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button></div></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Ticket</th><th>Requester</th><th>Category</th><th>Priority</th><th>SLA</th><th>Handled by</th></tr></thead>
+      <tbody>
+      <tr><td><b>INC-20431</b> VPN drops on home Wi-Fi<small>Opened 3 h ago, via Teams</small></td><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td>Network</td><td><span class="chip bad">High</span></td><td><span class="down">45 min left</span></td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
+      <tr><td><b>INC-20429</b> Access to Fleet Tracker repo<small>Approved by manager in Teams</small></td><td><div class="who"><span class="av sm a2">TW</span>Tharushi W.</div></td><td>Access</td><td><span class="chip">Normal</span></td><td class="up">Done</td><td><span class="chip agent">Support agent</span></td></tr>
+      <tr><td><b>INC-20427</b> Laptop for new joiner, Nov 2<small>Created by onboarding checklist</small></td><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Hardware</td><td><span class="chip">Normal</span></td><td>2 d left</td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
+      <tr><td><b>HR-1186</b> Salary confirmation letter for visa<small>Letter drafted, waiting for HR signature</small></td><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td>HR letters</td><td><span class="chip">Normal</span></td><td>1 d left</td><td><span class="chip agent">Support agent</span></td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
 <!-- ================= Integrations ================= -->
-<section data-change="001-amax-foundation" id="001-amax-foundation-integrations" data-title="Agents and MCP" data-icon="plug">
-  <h1>Connect agents</h1>
-  <p class="lede">Add amax to Claude, specclaw or any MCP client. Each tool can do only what your role allows.</p>
+<section data-change="001-amax-foundation" id="001-amax-foundation-integrations" data-title="Integrations" data-icon="plug">
+  <h1>Integrations</h1>
+  <p class="lede">Sign-in, people and devices come from Microsoft. Code and releases come from Azure DevOps. Agents connect over MCP and can do only what your role allows.</p>
+  <div class="apps">
+    <div class="app-card sister"><span class="logo-sq" style="width:56px;height:56px;border-radius:18px;font-size:18px;background:linear-gradient(135deg,#7B61FF,#2FCB8C)">K</span><div><h2>Keyflow, sister product</h2><p style="margin-top:4px">OKRs, check-ins, feedback and recognition stay in Keyflow. amax sends people, teams and project outcomes; Keyflow sends goals, review scores and recognition back into profiles, insights and promotion data.</p></div><div style="text-align:right"><span class="chip good">Two-way sync</span><div class="muted" style="font-size:12.5px;margin-top:8px">Last sync 4 min ago</div></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#2F6FEB">E</span><h2>Microsoft Entra ID</h2></div><p>Single sign-on, user sync, and roles from groups.</p><div class="foot"><span>184 users synced</span><span class="chip good">Connected</span></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#0078D4">D</span><h2>Azure DevOps</h2></div><p>Repos, commits, pull requests, pipelines and deployments.</p><div class="foot"><span>14 projects</span><span class="chip good">Connected</span></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#00A4EF">I</span><h2>Microsoft Intune</h2></div><p>Devices, compliance and assignment to people.</p><div class="foot"><span>231 devices</span><span class="chip good">Connected</span></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#5059C9">T</span><h2>Microsoft Teams</h2></div><p>Notifications, approvals in chat, and helpdesk intake.</p><div class="foot"><span>App installed</span><span class="chip good">Connected</span></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#E42527">Z</span><h2>Zoho Sign</h2></div><p>E-signature for offers, contracts and letters.</p><div class="foot"><span>Optional</span><button class="btn sm">Connect</button></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#13B5EA">X</span><h2>Accounting</h2></div><p>Payroll journals and invoices to Xero, QuickBooks or Business Central.</p><div class="foot"><span>Not chosen yet</span><button class="btn sm">Choose</button></div></div>
+  </div>
   <div class="cols">
     <div class="card flush">
       <div class="card-head"><h2>MCP tools</h2><span class="chip agent">64 tools</span></div>
@@ -612,11 +1057,20 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
     wallet:'<path d="M4 7a2 2 0 0 1 2-2h11v4"/><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M16 13h2"/>',
     target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 12l6-6"/>',
     chart:'<path d="M4 19h16"/><path d="m5 15 4-5 4 3 6-7"/>',
-    plug:'<path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0zM12 16v5"/>'
+    plug:'<path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0zM12 16v5"/>',
+    spark:'<path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+    calendar:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 14h2M13 14h2"/>',
+    cash:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7 9.5v.01M17 14.5v.01"/>',
+    briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 12h18"/>',
+    book:'<path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h6"/>',
+    key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M16 7l3 3M14 9l2 2"/>',
+    help:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/>'
   };
   var nav=document.getElementById('nav');
   var screens=[].slice.call(document.querySelectorAll('section[data-change]'));
   screens.forEach(function(s){
+    if(s.dataset.group) nav.appendChild(document.createElement('hr'));
     var a=document.createElement('a'); a.href='#'+s.id; a.setAttribute('aria-label',s.dataset.title);
     a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[s.dataset.icon]||ICONS.home)+'</svg><span class="tip">'+s.dataset.title+'</span>';
     nav.appendChild(a);
@@ -690,6 +1144,48 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
   });
   var c=el('text',{x:85,y:82,'text-anchor':'middle','font-size':20,'font-weight':600,fill:'currentColor','font-family':'Avenir Next,system-ui'}); c.textContent='412.5 h'; d.appendChild(c);
   var c2=el('text',{x:85,y:101,'text-anchor':'middle','font-size':11.5,fill:'#9A97AE','font-family':'Avenir Next,system-ui'}); c2.textContent='this week'; d.appendChild(c2);
+
+  // generic smooth line chart
+  function curve(pts){var s='M'+pts[0][0]+' '+pts[0][1];
+    for(var i=0;i<pts.length-1;i++){var p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+      s+=' C'+(p1[0]+(p2[0]-p0[0])/6)+' '+(p1[1]+(p2[1]-p0[1])/6)+' '+(p2[0]-(p3[0]-p1[0])/6)+' '+(p2[1]-(p3[1]-p1[1])/6)+' '+p2[0]+' '+p2[1];}
+    return s;}
+  function lineChart(id,labels,series,max,step){
+    var s=document.getElementById(id); if(!s) return; var vb=s.viewBox.baseVal,W=vb.width,H=vb.height,L=40,R=10,T=10,B=30,n=labels.length;
+    var X=function(i){return L+i*(W-L-R)/(n-1)},Y=function(v){return T+(1-v/max)*(H-T-B)};
+    for(var v=0;v<=max;v+=step){s.appendChild(el('line',{x1:L,x2:W-R,y1:Y(v),y2:Y(v),stroke:'var(--line)'})); var t=el('text',{x:L-8,y:Y(v)+4,'text-anchor':'end','class':'ax'}); t.textContent=v; s.appendChild(t);}
+    labels.forEach(function(l,i){var t=el('text',{x:X(i),y:H-8,'text-anchor':'middle','class':'ax'}); t.textContent=l; s.appendChild(t);});
+    series.forEach(function(se,k){var pts=se.data.map(function(v,i){return [X(i),Y(v)]});
+      if(se.area){var gid=id+'g'+k,df=el('defs',{}); df.innerHTML='<linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+se.color+'" stop-opacity=".25"/><stop offset="1" stop-color="'+se.color+'" stop-opacity="0"/></linearGradient>'; s.appendChild(df);
+        s.appendChild(el('path',{d:curve(pts)+' L'+X(n-1)+' '+Y(0)+' L'+X(0)+' '+Y(0)+' Z',fill:'url(#'+gid+')'}));}
+      s.appendChild(el('path',{d:curve(pts),fill:'none',stroke:se.color,'stroke-width':se.dashed?2.2:3,'stroke-dasharray':se.dashed?'6 6':'none','stroke-linecap':'round'}));
+      var lp=pts[n-1]; s.appendChild(el('circle',{cx:lp[0],cy:lp[1],r:5,fill:'#fff',stroke:se.color,'stroke-width':2.5}));});
+  }
+  lineChart('talentChart',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'],
+    [{data:[148,151,153,156,158,161,165,168,170,174],color:'#7B61FF',area:true},{data:[12,14,17,19,24,28,31,35,39,44],color:'#2FCB8C',dashed:true}],200,50);
+
+  // learning bars
+  (function(){var s=document.getElementById('learnChart'); if(!s) return;
+    var v=[8,14,22,19,31,26,18,34,41,29],lab=['J','F','M','A','M','J','J','A','S','O'],W=340,H=200,L=28,B=26,T=8,max=50,bw=18,gap=(W-L-10)/v.length;
+    [0,25,50].forEach(function(t){s.appendChild(el('line',{x1:L,x2:W-10,y1:T+(1-t/max)*(H-T-B),y2:T+(1-t/max)*(H-T-B),stroke:'var(--line)'})); var tx=el('text',{x:L-6,y:T+(1-t/max)*(H-T-B)+4,'text-anchor':'end','class':'ax'}); tx.textContent=t; s.appendChild(tx);});
+    v.forEach(function(x,i){var h=x/max*(H-T-B),cx=L+gap*i+gap/2; s.appendChild(el('rect',{x:cx-bw/2,y:H-B-h,width:bw,height:h,rx:6,fill:i===8?'#7B61FF':'#D6CCFF'})); var t=el('text',{x:cx,y:H-8,'text-anchor':'middle','class':'ax'}); t.textContent=lab[i]; s.appendChild(t);});
+  })();
+
+  // sparklines
+  [].forEach.call(document.querySelectorAll('svg.spark'),function(s){var v=s.dataset.v.split(',').map(Number),mx=Math.max.apply(0,v),mn=Math.min.apply(0,v);
+    var pts=v.map(function(x,i){return [4+i*(212/(v.length-1)),32-(x-mn)/(mx-mn||1)*26]});
+    s.appendChild(el('path',{d:curve(pts),fill:'none',stroke:'#2FCB8C','stroke-width':2.5,'stroke-linecap':'round','vector-effect':'non-scaling-stroke'}));});
+
+  // leave calendar, October 2026
+  (function(){var c=document.getElementById('leaveCal'); if(!c) return;
+    var days=31, people=[['Nimal Silva',{27:'pend',28:'pend',29:'pend',30:'pend'}],['Ayesha Rahman',{16:'ca',19:'an',20:'an',21:'an'}],['Kasun Dias',{8:'me2',9:'me2'}],['Tharushi W.',{}],['Liam Murphy',{12:'an',13:'an',14:'an',15:'an'}]], hol={26:1};
+    c.style.gridTemplateColumns='130px repeat('+days+',minmax(26px,1fr))';
+    var h='<div></div>'; for(var d=1;d<=days;d++){h+='<div class="d hd">'+d+'</div>';}
+    people.forEach(function(p){h+='<div class="nm">'+p[0]+'</div>'; for(var d=1;d<=days;d++){var dow=new Date(2026,9,d).getDay(),cls=p[1][d]||(hol[d]?'ph':(dow===0||dow===6?'we':''));h+='<div class="d '+cls+'" title="Oct '+d+'"></div>';}});
+    c.innerHTML=h;})();
+
+  // switches
+  [].forEach.call(document.querySelectorAll('.switch'),function(s){s.tabIndex=0;s.addEventListener('click',function(){var on=s.classList.toggle('off');s.setAttribute('aria-checked',on?'false':'true');});});
 })();
 </script>
 </body>

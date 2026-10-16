@@ -6,18 +6,14 @@
 
 Bistec Apex (`Resource_Allocation_Tool`: Angular 20 + .NET 9, ~263 REST endpoints, ~201 MCP tools) covers projects, allocations, timesheets, finance, presales and reports, but humans drive every update by hand. amax rebuilds it from scratch as a Next.js app that agents drive: specclaw proposals, commits and releases flow in, time and progress are recorded from that work, and every capability has an MCP tool that can only do what the caller's Entra role allows. This change lays the foundation every later module builds on, and the mock draws the whole app.
 
-**In scope for the overall revamp:** projects and sprints, specclaw proposal tracking, releases and environments, time tracking, allocations and forecasts, financials, presales, utilisation and reporting, git-identity mapping, and the MCP server.
-**Out of scope (Apex features not carried over unless asked):** onboarding/offboarding, outings, email templates.
+**In scope for the overall product:** a services ERP. The full module list and phasing are in `docs/roadmap.md`. This change only builds the foundation; every other screen in the mock shows an empty state naming the change that fills it.
 
 **Planned follow-up changes (one page each, proposed later):**
-002 specclaw + git ingestion (MCP write tools: `mark_task_done`, `log_time`; commit → user mapping) ·
-003 releases and environment promotion ·
-004 time tracking and approvals ·
-005 allocations, future allocations and forecasts ·
-006 financials (contracts, invoicing, payments) ·
-007 presales ·
-008 utilisation and availability reports ·
-009 sprints and board
+- **Delivery:** 002 specclaw + git ingestion (`mark_task_done`, `log_time`, commit → person mapping) · 003 releases and environment promotion · 004 time tracking and approvals · 005 allocations and forecasts · 006 financials · 007 presales · 008 reports · 009 sprints and board
+- **People:** 010 core HR records · 011 leave and holidays · 012 onboarding/offboarding with access and licences · 013 expenses
+- **Payroll:** 014 payroll engine · 015 Sri Lanka rules (EPF, ETF, APIT) · 016 Australia rules (PAYG, super, STP) · 017 accounting journals
+- **Talent and operations:** 018 recruitment · 019 learning and development · 020 helpdesk · 021 Keyflow sister-product sync
+- **Intelligence:** 022 insights agents (project risk, skills-to-opportunity, market position, world trends, recurring agent jobs)
 
 **Ambition:** a leader-quadrant PM product. What sets amax apart is that it's agent-native: agents do the bookkeeping and people make the decisions. The UI has to make that visible at a glance, and it has to feel better crafted than Jira, Monday or Asana.
 
@@ -38,17 +34,19 @@ Bistec Apex (`Resource_Allocation_Tool`: Angular 20 + .NET 9, ~263 REST endpoint
 
 What changes on screen, and where to see it: [`001-amax-foundation`](../../mock/index.html#001-amax-foundation)
 
-Replaces the template with the whole app on fake data. Screens switch from the left rail, and ⌘K opens Ask amax:
-- **Overview:** three stat cards (hours, proposals, ready to invoice), an hours-logged chart comparing agents and people, the "Waiting on you" table, delivery performance, a "where time went" donut, release readiness, and agent activity.
-- **Projects:** a project with its sprint board, where specclaw proposals are cards grouped by phase.
-- **Proposals:** the proposal list with phase, release tag and the environments each proposal has reached.
-- **Releases:** releases × environments (Dev → QA → Prod), showing what has been promoted where.
-- **Time:** entries logged automatically from commits and MCP calls (source column), with approval status.
-- **Allocations & Forecast:** a monthly grid and future projections.
-- **Financials:** contracts, invoicing milestones and payments.
-- **Presales:** pipeline of opportunities.
-- **Reports:** utilisation and availability.
-- **Integrations:** MCP server endpoint and tool catalogue by role, and the git-identity → Entra user mapping.
+Replaces the template with the whole app on fake data. Screens switch from the left rail, which is grouped into Work, People, Business and Operations; ⌘K opens Ask amax:
+- **Overview:** three stat cards, an hours chart (agents vs people), "Waiting on you", agent insights, delivery performance, a "where time went" donut, release readiness and agent activity.
+- **Insights:** the weekly agent briefing, projects at risk with reasons, opportunities matched to the company's skills, talent growth, market position against peers, world trends to act on, and recurring agent jobs with on/off switches.
+- **Projects, Proposals, Releases, Time, Allocations:** the sprint board, the proposal list, the release map and table, the weekly time chart with entries, and the allocation grid.
+- **People:** headcount stats, an employee profile (employment, masked pay details, documents) and the team directory.
+- **Leave:** balance rings per leave type, a team calendar with holidays and pending requests, and approvals with clash checks.
+- **Payroll:** pay-run steps, gross, net and statutory totals, changes explained by the payroll agent, and a payslip preview (Sri Lanka, with an Australia switch).
+- **Recruitment:** roles raised from demand, hiring stats and a candidate pipeline with agent match scores.
+- **Learning:** programmes created, how many people took part, completion, certifications, a monthly participation chart and expiring certifications.
+- **Financials, Presales, Reports:** contracts and invoicing, the pipeline, and utilisation.
+- **Access and licences:** everything a person can use (Entra groups, Microsoft 365, Azure DevOps, GitHub, SaaS seats, Azure roles), their devices from Intune, licence spend, and agent suggestions for savings.
+- **Helpdesk:** IT, HR and facilities queues with SLA, plus tickets resolved by the support agent.
+- **Integrations:** Keyflow as a two-way-sync sister product; Entra ID, Azure DevOps, Intune, Teams, Zoho Sign and accounting connectors; the MCP tool catalogue; and commit-author mapping.
 
 ## Acceptance Criteria
 

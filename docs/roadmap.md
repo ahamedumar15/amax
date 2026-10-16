@@ -42,8 +42,8 @@ Agent angle: a payroll agent explains every change from last month ("+LKR 12,400
 
 ### 6. Talent
 - **Recruitment (ATS):** job requisitions raised from resource demand and bench forecasts, pipeline, interviews, scorecards, offers with e-signature, hire → employee record.
-- **Performance:** OKRs, check-ins, continuous feedback and recognition, review cycles, promotion readiness.
-- **Learning:** courses, certifications with expiry, skills growth linked to the skills matrix.
+- **Performance:** provided by the sister product Keyflow (see below).
+- **Learning and development:** programmes, who took part, completion, hours, certifications with expiry, and skills growth linked to the skills matrix.
 
 ### 7. Finance (services finance)
 - **Contracts:** fixed price, time and materials, retainers.
@@ -56,12 +56,31 @@ Agent angle: a payroll agent explains every change from last month ("+LKR 12,400
 Leads, accounts, opportunities, weighted pipeline, presales activities and RAID items, proposal tracking, win → project conversion, partner/referral programs.
 
 ### 9. IT and assets
-Asset and licence register, assignment linked to onboarding/offboarding, device-management sync (Intune and similar tools). A light helpdesk, or integration with Freshservice or Jira Service Management.
+Asset register and assignment linked to onboarding/offboarding, plus device-management sync (Intune and similar tools).
 
 ### 10. Governance and compliance
 Policy library with read-and-acknowledge tracking, ISMS registers (risks, incidents, assets, suppliers), and audit evidence export (ISO 27001, SOC 2).
 
-### 11. Analytics
+### 11. Access and licences
+One place per person for everything they can use: Entra groups and roles, Microsoft 365 and other SaaS seats, Azure DevOps and GitHub access, cloud roles, and Intune devices. Includes licence spend, unused-seat detection, access reviews, and revocation on the person's last day.
+
+### 12. Helpdesk
+IT, HR and facilities queues with SLAs, tickets from Teams and email, and a support agent that resolves access requests, password resets and HR letters on its own.
+
+### 13. Insights (agent intelligence)
+Recurring agent jobs that write a weekly briefing:
+- Projects at risk, with reasons and confidence.
+- Opportunities matched against the company's skills.
+- Talent growth: headcount, skills, attrition and promotions.
+- Market position: win rate, share of voice, reviews against peers.
+- World trends to take on, watch or skip.
+
+Every insight links to its evidence, and people can switch each job on or off.
+
+### Sister product: Keyflow
+OKRs, check-ins, feedback and recognition live in Keyflow, which syncs both ways with amax (people and teams out; goals, review scores and recognition in).
+
+### 14. Analytics
 Utilisation, margins, revenue forecast, headcount and attrition, payroll cost, cash flow, plus executive dashboards, scheduled reports and a BI export (Power BI, Fabric).
 
 ## Proposed phasing (specclaw changes)
