@@ -409,6 +409,41 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 .chip.draft{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 2l3 3-8 8H3v-3z' stroke='black' stroke-width='1.6' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .tbl td.heat{border-radius:0}
 
+/* presales */
+.board.sales{grid-template-columns:repeat(6,minmax(170px,1fr));gap:14px}
+.board.sales .lane{padding:14px 12px}
+.board.sales .tcard{padding:14px}
+.who{display:flex;align-items:center;gap:10px}
+.opp-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-3);font-weight:600}
+.rag{width:10px;height:10px;border-radius:50%;flex:none}.rag.g{background:var(--mint)}.rag.a{background:var(--amber)}.rag.r{background:var(--coral)}
+.deal p a{color:inherit;text-decoration:none}.deal p a:hover{color:var(--violet)}
+.opp-num{display:flex;align-items:baseline;justify-content:space-between;margin:-4px 0 12px}
+.opp-num b{font-size:17px;font-weight:600}.opp-num span{font-size:12.5px;font-weight:600;color:var(--violet);background:var(--violet-soft);border-radius:7px;padding:1px 7px}
+.opp-act{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-2)}
+.opp-act .select{flex:1;min-width:0}
+.select.sm{height:32px;font-size:12.5px;border-radius:10px;padding:0 28px 0 10px;background-position:right 8px center}
+.board.sales .lane:not(:has(.tcard))::after{content:"Nothing in this stage";display:block;text-align:center;font-size:13px;color:var(--ink-3);padding:22px 8px;border:1.5px dashed var(--line-2);border-radius:18px}
+.tcard.lost{opacity:.7}.tcard.lost p{text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.tcard.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--violet)}100%{box-shadow:0 1px 2px rgba(40,30,110,.05)}}
+.steps li small{display:block;font-weight:400;color:var(--ink-3);font-size:11.5px;margin-top:2px}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:grid;grid-template-columns:28px 1fr auto;gap:14px;align-items:start;padding:12px 0;position:relative;font-size:14px}
+.timeline li:not(:last-child)::after{content:"";position:absolute;left:13px;top:42px;bottom:-6px;width:2px;background:var(--line-2)}
+.timeline small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.timeline .dur{font-size:12.5px;font-weight:600;color:var(--ink-2);background:var(--sunken);border-radius:8px;padding:2px 8px}
+.timeline li.cur b{color:var(--violet)}
+.form{display:grid;gap:14px;padding:0 28px 28px}
+.form label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.form input,.form textarea,.form .select{width:100%;height:42px;border:1.5px solid var(--line-2);border-radius:12px;padding:0 12px;font:500 14px var(--font);background-color:var(--card);color:var(--ink)}
+.form textarea{height:auto;padding:10px 12px;resize:vertical}
+.form input:focus,.form textarea:focus{outline:2px solid var(--violet);outline-offset:1px}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+dialog.small{width:min(440px,calc(100vw - 32px))}
+dialog.small .form{padding:0}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm.ghost{color:var(--ink-3)} .btn.icon{width:32px;padding:0;justify-content:center;flex:none} .btn.sm.ghost:hover{color:var(--coral);border-color:transparent}
+
 /* dark-mode colour fixes */
 @media (prefers-color-scheme: dark){
 :root:not([data-theme="light"]) .chip.bad{background:#3A1F27;color:#FF9C8F}
@@ -458,7 +493,10 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 :root[data-theme="dark"] .chip.pink{background:#3A1F2E;color:#FF9CB6}
 :root[data-theme="dark"] .chip.info{background:#16303C;color:#7FD3F2}
 :root[data-theme="dark"] .stk{border-color:#1E1C33}
-@media (max-width:1180px){ .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))} .cols.even{grid-template-columns:minmax(0,1fr)} .cols{grid-template-columns:minmax(0,1fr)} .profile{grid-template-columns:minmax(0,1fr)} .brief ol,.opp,.apps{grid-template-columns:minmax(0,1fr)} .sister{grid-column:auto;grid-template-columns:1fr} .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1180px){ .board.sales{grid-template-columns:repeat(6,minmax(170px,1fr));gap:14px}
+.board.sales .lane{padding:14px 12px}
+.board.sales .tcard{padding:14px}
+.who{display:flex;align-items:center;gap:10px} .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))} .cols.even{grid-template-columns:minmax(0,1fr)} .cols{grid-template-columns:minmax(0,1fr)} .profile{grid-template-columns:minmax(0,1fr)} .brief ol,.opp,.apps{grid-template-columns:minmax(0,1fr)} .sister{grid-column:auto;grid-template-columns:1fr} .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:860px){
   body{padding:0}
   body::before,body::after{display:none}
@@ -1178,24 +1216,125 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 
 <!-- ================= Presales ================= -->
 <section data-change="001-amax-foundation" id="001-amax-foundation-presales" data-title="Presales" data-icon="target">
-  <h1>Presales</h1>
-  <p class="lede">$596,000 in the pipeline, $323,400 weighted by probability.</p>
-  <div class="pipe">
-    <div class="stage" style="border-top-color:#C3B5FF"><div class="k"><span class="stk" data-i="search" style="--c:#A792FF"></span>Discovery</div><div class="big">$320,000</div><div class="tcard"><p>Data platform, phase 2</p><div class="foot"><span>Fabrikam, 30%</span><span>Oct 24</span></div></div></div>
-    <div class="stage" style="border-top-color:var(--amber)"><div class="k"><span class="stk" data-i="plane" style="--c:#F2A93B"></span>Proposal sent</div><div class="big">$180,000</div><div class="tcard"><p>Claims copilot</p><div class="foot"><span>Northwind, 60%</span><span>Demo Oct 21</span></div></div></div>
-    <div class="stage" style="border-top-color:var(--violet)"><div class="k"><span class="stk" data-i="hand" style="--c:#7B61FF"></span>Negotiation</div><div class="big">$96,000</div><div class="tcard"><p>Support retainer</p><div class="foot"><span>Contoso, 80%</span></div><button class="btn sm primary" style="margin-top:12px">Convert to project</button></div></div>
-    <div class="stage" style="border-top-color:var(--mint)"><div class="k"><span class="stk" data-i="trophy" style="--c:#2FCB8C"></span>Won this quarter</div><div class="big">$240,000</div><div class="tcard"><p>HR Insights</p><div class="foot"><span>Started Aug 4</span></div></div></div>
+  <div class="row head">
+    <div><h1>Presales</h1><p class="lede">$741,000 open across 5 opportunities, $303,800 weighted by win chance. Northwind has its demo on Oct 21.</p></div>
+    <div class="actions"><div class="seg" role="group" aria-label="View"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div><select class="select" aria-label="Owner"><option>All owners</option><option>Liam Murphy</option><option>Chandima Perera</option></select><button class="btn primary" data-open="oppDrawer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New opportunity</button></div>
   </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Open pipeline</div><div class="v">$741,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">5 opportunities<div class="bar"><i style="width:74%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Weighted by win chance</div><div class="v">$303,800</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">41% of open value<div class="bar"><i style="width:41%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Win rate, 12 months</div><div class="v">38%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Up 6 points<div class="bar dark"><i style="width:38%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Days to close</div><div class="v">64 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Average for won deals<div class="bar"><i style="width:64%"></i></div></div></div>
+  </div>
+
+  <div class="board sales" id="salesBoard">
+    <div class="lane" data-stage="New idea"><div class="lane-head"><span class="lh"><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>New idea</span> <span>1</span></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Woodgrove Bank</span><span class="rag g" title="Health: green"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">AI governance readiness</a></p><div class="opp-num"><b>$60,000</b><span>10%</span></div><div class="foot"><span class="av sm">CP</span><span>Close Jan 30</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+    <div class="lane" data-stage="Lead"><div class="lane-head"><span class="lh"><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span>Lead</span> <span>1</span></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Adatum, Australia</span><span class="rag g"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Payday Super payroll changes</a></p><div class="opp-num"><b>$85,000</b><span>20%</span></div><div class="foot"><span class="av sm">LM</span><span>Close Dec 20</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+    <div class="lane" data-stage="Qualified"><div class="lane-head"><span class="lh"><span class="stk" data-i="search" style="--c:#A792FF"></span>Qualified</span> <span>1</span></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Fabrikam</span><span class="rag a" title="Health: amber"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Data platform, phase 2</a></p><div class="opp-num"><b>$320,000</b><span>30%</span></div><div class="foot"><span class="av sm">LM</span><span>Workshop Oct 24</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+    <div class="lane" data-stage="Proposal"><div class="lane-head"><span class="lh"><span class="stk" data-i="plane" style="--c:#F2A93B"></span>Proposal</span> <span>1</span></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Northwind Insurance</span><span class="rag g"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Claims copilot</a></p><div class="opp-num"><b>$180,000</b><span>60%</span></div><div class="foot"><span class="av sm">CP</span><span>Demo Oct 21</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+    <div class="lane" data-stage="Negotiation"><div class="lane-head"><span class="lh"><span class="stk" data-i="hand" style="--c:#7B61FF"></span>Negotiation</span> <span>1</span></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Contoso</span><span class="rag g"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Support retainer</a></p><div class="opp-num"><b>$96,000</b><span>80%</span></div><div class="foot"><span class="av sm">LM</span><span>Close Nov 7</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+    <div class="lane" data-stage="Closed"><div class="lane-head"><span class="lh"><span class="stk" data-i="trophy" style="--c:#2FCB8C"></span>Closed</span> <span>2</span></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Northwind HR</span><span class="chip good">Won</span></div><p>HR Insights</p><div class="opp-num"><b>$240,000</b><span>Aug 4</span></div><div class="foot"><span class="av sm">AR</span><a class="link" href="#001-amax-foundation-projects">Now a project ›</a></div></div>
+      <div class="tcard deal lost"><div class="opp-top"><span class="id">Tailspin</span><span class="chip bad">Lost</span></div><p>Mobile banking revamp</p><div class="opp-num"><b>$150,000</b><span>Sep 26</span></div><div class="foot"><span class="av sm">LM</span><span>Lost on price</span></div></div></div>
+  </div>
+
   <div class="cols even" style="margin-top:28px">
     <div class="card">
       <div class="card-head"><h2>Pipeline value</h2><span class="muted" style="font-size:13px">USD, weighted vs total</span></div>
-      <svg class="chart viz" data-kind="line" data-labels="May,Jun,Jul,Aug,Sep,Oct" data-series="Total|#C3B5FF|dash|410,455,470,520,560,596;Weighted|#7B61FF|area|190,215,236,262,301,323" data-max="700" data-step="175" viewBox="0 0 560 210" role="img" aria-label="Pipeline value per month"></svg>
+      <svg class="chart viz" data-kind="line" data-labels="May,Jun,Jul,Aug,Sep,Oct" data-series="Total|#C3B5FF|dash|410,455,470,520,612,741;Weighted|#7B61FF|area|190,215,236,262,281,304" data-max="800" data-step="200" viewBox="0 0 560 210" role="img" aria-label="Pipeline value per month"></svg>
       <div class="legend"><span><i style="background:var(--violet)"></i>Weighted</span><span><i style="background:repeating-linear-gradient(90deg,#C3B5FF 0 5px,transparent 5px 9px)"></i>Total</span></div>
     </div>
-    <div class="card">
-      <div class="card-head"><h2>Win rate by service</h2><span class="muted" style="font-size:13px">Last 12 months</span></div>
-      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="AI and agents:46:#7B61FF;Modernisation:38:#2FCB8C;Data:31:#5CC8F0;Staffing:22:#F2A93B" data-center="38%" data-sub="overall" data-legend="lgWin" viewBox="0 0 170 170" role="img" aria-label="Win rate by service"></svg><ul class="donut-legend" id="lgWin"></ul></div>
+    <div class="card flush">
+      <div class="card-head"><h2>Recent stage changes</h2><span class="chip agent">Tracked automatically</span></div>
+      <ul class="feed" style="padding:0 28px 24px">
+        <li><span class="av">LM</span><div><p><b>Liam</b> moved Contoso support retainer to <span class="chip" style="background:#ECE8FF;color:#5B44D6">Negotiation</span></p><small>Win chance 60% → 80%</small></div><time>Oct 14</time></li>
+        <li><span class="av ai">AI</span><div><p><span class="by">Claude for Chandima</span> drafted the Northwind proposal</p><small>From discovery notes and 3 past bids</small></div><time>Oct 2</time></li>
+        <li><span class="av">CP</span><div><p><b>Chandima</b> moved Northwind claims copilot to <span class="chip" style="background:#FFF1D6;color:#9A5B00">Proposal</span></p><small>Win chance 40% → 60%</small></div><time>Oct 2</time></li>
+        <li><span class="av">LM</span><div><p><b>Liam</b> marked Tailspin mobile banking <span class="chip bad">Lost</span></p><small>Reason: price. Competitor: regional consultancy</small></div><time>Sep 26</time></li>
+      </ul>
     </div>
+  </div>
+</section>
+
+<!-- ================= Opportunity detail ================= -->
+<section data-change="001-amax-foundation" id="001-amax-foundation-opportunity" data-title="Claims copilot" data-nav="no" data-parent="001-amax-foundation-presales">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-presales">Presales</a><span>/</span>Northwind Insurance<span>/</span>Claims copilot</nav>
+  <div class="row head">
+    <div><h1>Claims copilot</h1><p class="lede">PS-0142 for Northwind Insurance. In Proposal for 15 days; the demo on Oct 21 decides the next stage.</p></div>
+    <div class="actions"><button class="btn" data-open="lostDialog">Mark as lost</button><button class="btn">Edit</button><button class="btn primary">Move to Negotiation</button></div>
+  </div>
+  <div class="card" style="margin-bottom:28px">
+    <ol class="steps" style="padding:0"><li class="done">New idea<small>Aug 4</small></li><li class="done">Lead<small>Aug 7</small></li><li class="done">Qualified<small>Aug 21</small></li><li class="now">Proposal<small>since Oct 2</small></li><li>Negotiation</li><li>Won</li></ol>
+  </div>
+  <div class="tabs"><a class="btn sm" aria-current="true">Overview</a><a class="btn sm">Activities 6</a><a class="btn sm">Tasks 3</a><a class="btn sm">Risks and issues 3</a><a class="btn sm">Team 4</a><a class="btn sm">Documents 5</a></div>
+  <div class="cols">
+    <div class="stack">
+      <div class="cols even">
+        <div class="card">
+          <div class="card-head"><h2>Details</h2><span class="chip good">Health: green</span></div>
+          <dl class="kv"><dt>Client</dt><dd>Northwind Insurance, Australia</dd><dt>Account manager</dt><dd><span class="who"><span class="av sm">LM</span>Liam Murphy</span></dd><dt>Presales lead</dt><dd><span class="who"><span class="av sm">CP</span>Chandima Perera</span></dd><dt>Service</dt><dd>AI and agents</dd><dt>Cost centre</dt><dd>Northwind presales</dd><dt>Value</dt><dd>USD 180,000</dd><dt>Estimate</dt><dd>210 person-days</dd><dt>Expected close</dt><dd>Dec 15, 2026</dd><dt>Lead source</dt><dd>Referral</dd><dt>Competing with</dt><dd>2 regional consultancies</dd></dl>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Stage history</h2><span class="muted" style="font-size:13px">Every change is logged</span></div>
+          <ol class="timeline">
+            <li class="cur"><span class="stk" data-i="plane" style="--c:#F2A93B"></span><div><b>Proposal</b><small>Chandima, Oct 2. Win chance 40% → 60%</small></div><span class="dur">15 d</span></li>
+            <li><span class="stk" data-i="search" style="--c:#A792FF"></span><div><b>Qualified</b><small>Chandima, Aug 21. Discovery workshop held</small></div><span class="dur">42 d</span></li>
+            <li><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span><div><b>Lead</b><small>Liam, Aug 7. Win chance 10% → 20%</small></div><span class="dur">14 d</span></li>
+            <li><span class="stk" data-i="bulb" style="--c:#F7D65A"></span><div><b>New idea</b><small>Liam, Aug 4. Referral from HR Insights</small></div><span class="dur">3 d</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="card flush">
+        <div class="card-head"><h2>Activities</h2><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Log activity</button></div>
+        <div class="scroll-x"><table class="tbl">
+          <thead><tr><th>Activity</th><th>Type</th><th>Owner</th><th>Date</th><th style="min-width:140px">Progress</th></tr></thead>
+          <tbody>
+          <tr><td><b>Live demo with claims team</b><small>Agent prepared the demo script</small></td><td><span class="chip info">Demo</span></td><td><div class="who"><span class="av sm">CP</span>Chandima</div></td><td>Oct 21</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:70%;background:var(--violet)"></i></div>70%</div></td></tr>
+          <tr><td><b>Proposal submitted</b><small>Drafted by Claude for Chandima, reviewed by Liam</small></td><td><span class="chip agent">Proposal</span></td><td><div class="who"><span class="av sm">CP</span>Chandima</div></td><td>Oct 2</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:100%;background:var(--mint)"></i></div>Done</div></td></tr>
+          <tr><td><b>Discovery workshop</b><small>Claims intake, fraud checks, adjuster workload</small></td><td><span class="chip">Workshop</span></td><td><div class="who"><span class="av sm">NS</span>Nimal</div></td><td>Sep 12</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:100%;background:var(--mint)"></i></div>Done</div></td></tr>
+          <tr><td><b>Intro call</b></td><td><span class="chip">Call</span></td><td><div class="who"><span class="av sm">LM</span>Liam</div></td><td>Aug 7</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:100%;background:var(--mint)"></i></div>Done</div></td></tr>
+          </tbody></table></div>
+      </div>
+      <div class="cols even">
+        <div class="card">
+          <div class="card-head"><h2>Tasks</h2><button class="btn sm">Add task</button></div>
+          <ul class="list">
+            <li><div class="l"><span class="av sm">NS</span><div>Prepare the demo environment<small>Due Oct 20</small></div></div><span class="chip agent">In progress</span></li>
+            <li><div class="l"><span class="av sm">SK</span><div>Security questionnaire<small>Due Oct 25</small></div></div><span class="chip warn">On hold</span></li>
+            <li><div class="l"><span class="av sm">CP</span><div>Pricing sign-off with finance<small>Due Oct 28</small></div></div><span class="chip draft">To start</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Risks and issues</h2><button class="btn sm">Add</button></div>
+          <ul class="list">
+            <li><div class="l"><span class="chip bad">Risk</span><div>Client budget not confirmed until December<small>High impact, owner Liam</small></div></div><span class="chip warn">Open</span></li>
+            <li><div class="l"><span class="chip info">Assumption</span><div>Client provides the Azure tenant<small>Owner Nimal</small></div></div><span class="chip good">Agreed</span></li>
+            <li><div class="l"><span class="chip agent">Decision</span><div>Fixed price for phase 1<small>Decided Sep 30</small></div></div><span class="chip good">Closed</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <aside class="stack">
+      <div class="card">
+        <div class="card-head"><h2>Win chance</h2><span class="up">↑ 60%</span></div>
+        <svg class="chart viz" data-kind="line" data-labels="Aug 4,Aug 7,Aug 21,Sep 12,Oct 2,Oct 17" data-series="Win chance|#7B61FF|area|10,20,40,40,60,60" data-max="100" data-step="50" viewBox="0 0 340 180" role="img" aria-label="Win chance over time"></svg>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Next step</h2><span class="chip agent">Agent suggestion</span></div>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.55">Northwind's last two RFPs went to the vendor that showed fraud-detection numbers in the demo. Add the 14% false-positive reduction from the HR Insights pilot to the demo script.</p>
+        <button class="btn" style="width:100%;justify-content:center">Update demo script</button>
+      </div>
+      <div class="card">
+        <h2>Ready to deliver?</h2>
+        <p class="muted" style="margin:8px 0 16px;font-size:14px">When it's won, promote it to a delivery project. The client, cost centre, team and estimate carry over.</p>
+        <button class="btn primary" style="width:100%;justify-content:center" disabled title="Available once the opportunity is won">Promote to delivery</button>
+      </div>
+    </aside>
   </div>
 </section>
 
@@ -1362,6 +1501,31 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 
   </div>
 </div>
+
+<dialog class="drawer" id="oppDrawer" aria-label="New opportunity">
+  <div class="drawer-head"><div><h2>New opportunity</h2><span class="muted" style="font-size:13px">It starts on the board in the stage you pick</span></div><button class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <form class="form" id="oppForm" method="dialog">
+    <label>Name<input name="oppName" required placeholder="e.g. Claims copilot"></label>
+    <label>Client<select name="client" class="select"><option>Northwind Insurance</option><option>Fabrikam</option><option>Contoso</option><option>Woodgrove Bank</option><option>+ New client</option></select></label>
+    <div class="two"><label>Value<input name="oppValue" inputmode="numeric" placeholder="120,000"></label><label>Currency<select class="select" name="cur"><option>USD</option><option>AUD</option><option>LKR</option><option>GBP</option><option>SGD</option><option>EUR</option></select></label></div>
+    <div class="two"><label>Stage<select class="select" name="stage"><option>New idea</option><option>Lead</option><option>Qualified</option><option>Proposal</option><option>Negotiation</option></select></label><label>Win chance<input name="win" inputmode="numeric" placeholder="20%"></label></div>
+    <div class="two"><label>Account manager<select class="select" name="owner"><option value="LM">Liam Murphy</option><option value="CP">Chandima Perera</option></select></label><label>Expected close<input name="close" placeholder="Dec 20"></label></div>
+    <div class="two"><label>Service<select class="select"><option>AI and agents</option><option>Modernisation</option><option>Data</option><option>Staffing</option></select></label><label>Lead source<select class="select"><option>Referral</option><option>Website</option><option>Partner</option><option>Event</option><option>Outbound</option></select></label></div>
+    <label>Scope summary<textarea rows="3" placeholder="What the client wants, in a sentence or two"></textarea></label>
+    <div class="actions" style="margin-top:6px"><button class="btn primary" type="submit" value="save">Add to board</button><button class="btn" type="button" data-close>Cancel</button></div>
+  </form>
+</dialog>
+
+<dialog class="small" id="lostDialog" aria-label="Mark as lost">
+  <div class="pal-body"><h2 style="margin-bottom:6px">Mark Claims copilot as lost?</h2><p class="muted" style="margin:0 0 16px;font-size:14px">It moves to Closed and stays in the history. Reasons feed the win-rate insights.</p>
+  <form class="form" method="dialog"><label>Reason<select class="select"><option>Price</option><option>Lost to a competitor</option><option>No budget</option><option>Timing</option><option>Scope did not fit</option></select></label><label>Competitor<input placeholder="Optional"></label>
+  <div class="actions"><button class="btn primary" style="background:var(--coral);border-color:var(--coral);color:#fff">Mark as lost</button><button class="btn" type="button" data-close>Cancel</button></div></form></div>
+</dialog>
+
+<dialog class="small" id="removeDialog" aria-label="Remove opportunity">
+  <div class="pal-body"><h2 style="margin-bottom:6px">Remove <span id="removeName">this opportunity</span>?</h2><p class="muted" style="margin:0 0 18px;font-size:14px">Use this for duplicates or mistakes. To record a lost deal, mark it as lost instead so it counts in win rates.</p>
+  <div class="actions"><button class="btn primary" id="removeYes" style="background:var(--coral);border-color:var(--coral);color:#fff">Remove</button><button class="btn" data-close>Keep it</button></div></div>
+</dialog>
 
 <dialog class="drawer" id="payslipDrawer" aria-label="Payslip, Kasun Dias">
   <div class="drawer-head"><div><h2>Kasun Dias</h2><span class="muted" style="font-size:13px">Payslip, October 2026</span></div><button class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -1608,6 +1772,27 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 
   // ---- heat-shade timesheet hours ----
   [].forEach.call(document.querySelectorAll('[id="001-amax-foundation-time"] .tbl tbody td.num'),function(td){var v=parseFloat(td.textContent); if(!isNaN(v)&&v<=10&&!td.querySelector('b')){td.classList.add('heat');td.style.background='color-mix(in srgb, var(--violet) '+Math.round(v/8.5*22)+'%, transparent)';}});
+
+  // ---- presales board: move, add, remove ----
+  (function(){var board=document.getElementById('salesBoard'); if(!board) return;
+    var STAGES=['New idea','Lead','Qualified','Proposal','Negotiation'];
+    function recount(){[].forEach.call(board.querySelectorAll('.lane'),function(l){l.querySelector('.lane-head>span:last-child').textContent=l.querySelectorAll('.tcard').length;});}
+    function wire(card){var sel=card.querySelector('[data-move]'); if(!sel) return; var cur=card.closest('.lane').dataset.stage;
+      sel.innerHTML=STAGES.map(function(st){return '<option'+(st===cur?' selected':'')+'>'+(st===cur?st:'→ '+st)+'</option>'}).join('')+'<option>→ Won</option>';
+      sel.onchange=function(){var v=sel.value.replace(/^→ /,''); var target=board.querySelector('.lane[data-stage="'+(v==='Won'?'Closed':v)+'"]');
+        if(v==='Won'){card.querySelector('.opp-act').remove(); card.querySelector('.opp-num span').textContent='100%'; card.querySelector('.opp-top').insertAdjacentHTML('beforeend','<span class="chip good">Won</span>'); var r=card.querySelector('.rag'); if(r) r.remove();}
+        target.insertBefore(card,target.children[1]||null); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); wire(card); recount();};}
+    [].forEach.call(board.querySelectorAll('.tcard'),wire);
+    var pending=null;
+    board.addEventListener('click',function(e){var b=e.target.closest('[data-remove]'); if(!b) return; pending=b.closest('.tcard');
+      document.getElementById('removeName').textContent=pending.querySelector('p').textContent; document.getElementById('removeDialog').showModal();});
+    document.getElementById('removeYes').addEventListener('click',function(){if(pending){pending.remove();pending=null;recount();} document.getElementById('removeDialog').close();});
+    document.getElementById('oppForm').addEventListener('submit',function(e){var f=e.target,E=f.elements,name=E.oppName.value.trim(); if(!name){e.preventDefault();E.oppName.focus();return;}
+      var lane=board.querySelector('.lane[data-stage="'+E.stage.value+'"]'),win=(E.win.value||'10').replace('%',''),val=E.oppValue.value||'0';
+      var c=document.createElement('div'); c.className='tcard deal';
+      c.innerHTML='<div class="opp-top"><span class="id">'+E.client.value+'</span><span class="rag g"></span></div><p>'+name.replace(/</g,'&lt;')+'</p><div class="opp-num"><b>'+(E.cur.value==='USD'?'$':E.cur.value+' ')+val+'</b><span>'+win+'%</span></div><div class="foot"><span class="av sm">'+E.owner.value+'</span><span>'+(E.close.value?'Close '+E.close.value:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
+      lane.insertBefore(c,lane.children[1]||null); var av=c.querySelector('.av'); if(FOLK[E.owner.value]){av.classList.add('photo');av.innerHTML=face(E.owner.value);} wire(c); recount(); c.classList.add('flash'); f.reset();});
+  })();
 
   // switches
   [].forEach.call(document.querySelectorAll('.switch'),function(s){s.tabIndex=0;s.addEventListener('click',function(){var on=s.classList.toggle('off');s.setAttribute('aria-checked',on?'false':'true');});});
