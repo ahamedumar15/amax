@@ -96,8 +96,8 @@ Every number in `.specclaw/mock/index.html` must come from this sheet. Totals ar
 - **Fleet Tracker:** time and materials at $45/h, capped at $210,000, 72% invoiced ($151,200).
   - INV-0912 for $18,315 covers **September** hours. It was issued Sep 15, was due Oct 7, and is **9 days overdue**.
   - October hours to date: **$14,200**, not yet invoiced.
-- **HR Insights:** retainer of $12,000 a month, $144,000 for 12 months, started Jul 1. 4 months invoiced = **$48,000, which is 33%**.
-- **Totals:** contract value **$774,000**; invoiced **$430,200, which is 56%**; overdue **$18,315**.
+- **HR Insights:** retainer of $12,000 a month, $144,000 for 12 months, started Jul 1. Jul–Sep invoiced = **$36,000, which is 25%**; October's $12,000 is ready to invoice.
+- **Totals:** contract value **$774,000**; invoiced **$418,200, which is 54%**; overdue **$18,315**.
 - **Overview ticket "Ready to invoice": $26,200.** That is Fleet October hours $14,200 plus the HR Insights October retainer $12,000. No bar.
 - **Invoiced per month ($k):** May 61, Jun 74, Jul 58, Aug 82, Sep 77, **Oct 26 (to date, partial)**. Target 80.
 - **Projects ticket "Average margin":** revenue-weighted **36.4%** (Contoso 38.2%, Fleet 29.6%, HR 41.0%).
@@ -186,7 +186,7 @@ Every number in `.specclaw/mock/index.html` must come from this sheet. Totals ar
 
 ## Fictional data rule
 
-- No real people or companies. Clients are Microsoft sample names (Contoso, Fabrikam, Northwind, Woodgrove, Adatum, Tailspin, Litware).
+- No real people or companies. Clients are Microsoft sample names (Contoso, Fabrikam, Northwind, Woodgrove, Adatum, Tailspin, Litware, Wide World Importers for Fleet Tracker).
 - **Market claims carry a source, a confidence level and a date**, for example "From 27 RFP debriefs in amax and 31 public reviews; medium confidence; Oct 12".
 - **Region filter:** "Australia + Sri Lanka".
 - **The "14% false-positive" line becomes:** "Add the 31% faster claim triage from the Litware document-processing pilot to the demo script".
