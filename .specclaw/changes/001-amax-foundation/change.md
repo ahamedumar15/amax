@@ -34,17 +34,19 @@ Bistec Apex (`Resource_Allocation_Tool`: Angular 20 + .NET 9, ~263 REST endpoint
 
 What changes on screen, and where to see it: [`001-amax-foundation`](../../mock/index.html#001-amax-foundation)
 
-Replaces the template with the whole app on fake data. Screens switch from the left rail, which is grouped into Work, People, Business and Operations; ⌘K opens Ask amax:
+Replaces the template with the whole app on fake data. Screens switch from the left rail, which is grouped into Work, People, Business and Operations; ⌘K opens Ask amax. Every module screen is a team- or company-level list; one person or one project opens on its own detail page (with a breadcrumb back) or in a side panel:
 - **Overview:** three stat cards, an hours chart (agents vs people), "Waiting on you", agent insights, delivery performance, a "where time went" donut, release readiness and agent activity.
 - **Insights:** the weekly agent briefing, projects at risk with reasons, opportunities matched to the company's skills, talent growth, market position against peers, world trends to act on, and recurring agent jobs with on/off switches.
-- **Projects, Proposals, Releases, Time, Allocations:** the sprint board, the proposal list, the release map and table, the weekly time chart with entries, and the allocation grid.
-- **People:** headcount stats, an employee profile (employment, masked pay details, documents) and the team directory.
-- **Leave:** balance rings per leave type, a team calendar with holidays and pending requests, and approvals with clash checks.
-- **Payroll:** pay-run steps, gross, net and statutory totals, changes explained by the payroll agent, and a payslip preview (Sri Lanka, with an Australia switch).
+- **Projects:** the portfolio (health, progress, margin, next release); each project opens its own page with the sprint board.
+- **Proposals, Releases, Allocations:** the proposal list, the release map and table, and the allocation grid.
+- **Time:** team hours per day (agents vs people) and every person's timesheet for the week, with approve and remind; a switch for my own timesheet.
+- **People:** headcount stats and the directory; each person opens a profile page with employment (pay masked), documents, leave balance, and their access and licences.
+- **Leave:** team stats (on leave today, pending, booked, unused balance), a team calendar with holidays and pending requests, and approvals with clash checks.
+- **Payroll:** pay-run steps, gross, net and statutory totals, changes explained by the payroll agent, run totals, and the payslip list; one payslip opens in a side panel (Sri Lanka, with an Australia switch).
 - **Recruitment:** roles raised from demand, hiring stats and a candidate pipeline with agent match scores.
 - **Learning:** programmes created, how many people took part, completion, certifications, a monthly participation chart and expiring certifications.
 - **Financials, Presales, Reports:** contracts and invoicing, the pipeline, and utilisation.
-- **Access and licences:** everything a person can use (Entra groups, Microsoft 365, Azure DevOps, GitHub, SaaS seats, Azure roles), their devices from Intune, licence spend, and agent suggestions for savings.
+- **Access and licences:** licence inventory (seats, assigned, active, cost, unused), agent savings suggestions, the Intune device summary, and a people-and-access table (groups, licences, devices, admin roles, last review, leavers, contractors).
 - **Helpdesk:** IT, HR and facilities queues with SLA, plus tickets resolved by the support agent.
 - **Integrations:** Keyflow as a two-way-sync sister product; Entra ID, Azure DevOps, Intune, Teams, Zoho Sign and accounting connectors; the MCP tool catalogue; and commit-author mapping.
 
