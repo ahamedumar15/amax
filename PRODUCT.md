@@ -12,6 +12,8 @@ Next.js (App Router, TypeScript). Chosen by the user at specclaw init (preset `n
 
 ## Users
 
+- **HR and payroll teams:** employee records, leave, pay runs and statutory filings.
+- **Employees:** self-service for leave, payslips, letters and expenses.
 - **PMs and delivery leads:** check what agents did, approve proposals and timesheets, unblock releases, and rebalance allocations.
 - **Leadership:** portfolio health, utilisation, revenue and forecasts.
 - **Finance:** contracts, invoicing milestones and payments.
@@ -21,7 +23,7 @@ Most activity happens through agents over MCP. People open the UI to see, decide
 
 ## Product Purpose
 
-amax is a project-delivery platform for software services companies. It combines resource allocation, time tracking, financials, presales, utilisation and forecasting (the scope of Bistec Apex, which it replaces) with lightweight sprint tracking, specclaw proposal tracking, and releases promoted across environments. Success means the bookkeeping is done by agents: commits close tasks and log time, deployments move releases. People spend their time on decisions.
+amax is an ERP for software and professional-services companies, covering delivery, people, payroll and money. It combines resource allocation, time tracking, financials, presales, utilisation and forecasting (the scope of Bistec Apex, which it replaces) with lightweight sprint tracking, specclaw proposal tracking, and releases promoted across environments. Success means the bookkeeping is done by agents: commits close tasks and log time, deployments move releases. People spend their time on decisions.
 
 ## Positioning
 
@@ -36,8 +38,14 @@ amax is agent-native project management. Every capability is an MCP tool with ro
 
 ## Capabilities and Constraints
 
-- In scope: projects and sprints, proposals, releases and environments, time and approvals, allocations and future allocations, forecasts, contracts/invoicing/payments, presales pipeline, utilisation/availability/effort-variance reports, git-identity mapping, and an MCP server covering every endpoint.
-- Out of scope unless asked: onboarding/offboarding, outings, email templates (all from Apex).
+- In scope (ERP for services firms, phased in `docs/roadmap.md`):
+  - **Delivery (PSA):** projects and sprints, proposals, releases and environments, time and approvals, allocations and future allocations, forecasts.
+  - **People:** HRM (core HR, org, onboarding/offboarding), leave and attendance, payroll with country packs (Sri Lanka and Australia first), recruitment, performance/OKRs, learning.
+  - **Finance and sales:** contracts, billing and receivables, expenses, procurement, CRM and presales.
+  - **Operations:** IT assets, compliance registers, analytics.
+  - **Platform:** git-identity mapping and an MCP server covering every endpoint.
+- Out of scope unless asked: staff outings, a native general ledger (integrate Xero, QuickBooks or Business Central instead).
+- Multi-tenant and multi-entity from the first data model.
 - The UI must expose every capability and rich visualisations even though agents are the primary channel.
 - Roles (initial): Admin, PM, Finance, Sales, Engineer.
 
