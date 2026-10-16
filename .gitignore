@@ -23,3 +23,6 @@ node_modules/
 /public/mock/
 next-env.d.ts
 *.tsbuildinfo
+
+# internal, never published
+/docs/private/
