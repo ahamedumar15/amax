@@ -363,7 +363,7 @@ a.btn{text-decoration:none;color:inherit}
 .ringrow{display:flex;align-items:center;gap:16px;padding:10px 0;font-size:14px;font-weight:500}
 .ringrow small{display:block;color:var(--ink-3);font-weight:400;font-size:12.5px}
 .ringrow .ring{width:60px;height:60px}.ringrow .ring span{width:46px;height:46px;font-size:14px}
-dialog.drawer{margin:0 0 0 auto;height:100dvh;max-height:100dvh;width:min(460px,100vw);border-radius:28px 0 0 28px}
+dialog.drawer{max-width:100vw;margin:0 0 0 auto;height:100dvh;max-height:100dvh;width:min(460px,100vw);border-radius:28px 0 0 28px}
 dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:26px 28px 20px}
 .app{overflow:clip;background:linear-gradient(90deg,var(--card) 0 95px,var(--line) 95px 96px,var(--frame) 96px)}
@@ -444,6 +444,47 @@ dialog.small .form{padding:0}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.sm.ghost{color:var(--ink-3)} .btn.icon{width:32px;padding:0;justify-content:center;flex:none} .btn.sm.ghost:hover{color:var(--coral);border-color:transparent}
 
+/* fill with amax (chat) + agent-found items */
+.btn svg path{vector-effect:non-scaling-stroke}
+[data-fill] svg{fill:currentColor;stroke:none}
+.found{background:linear-gradient(135deg,var(--violet-soft),var(--card));border-radius:var(--r-card);padding:20px 22px;margin-bottom:24px;display:grid;grid-template-columns:minmax(220px,.9fr) 1fr 1fr;gap:18px;align-items:stretch}
+.found-head{display:flex;gap:14px;align-items:flex-start}
+.found-head b{display:block;font-size:15px;margin-bottom:4px}.found-head small{color:var(--ink-2);font-size:12.5px;line-height:1.45}
+.found-item{background:var(--card);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 2px rgba(40,30,110,.05)}
+.found-item p{margin:0;font-size:13.5px;line-height:1.45}
+.found-item .src{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);font-weight:600}
+.found-item .actions{margin-top:auto}
+.found-item.gone{display:none}
+dialog.chat{width:min(520px,100vw);max-width:100vw;display:none;flex-direction:column}
+dialog.chat[open]{display:flex}
+.msgs{flex:1;overflow-y:auto;padding:4px 24px 12px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:10px;align-items:flex-end;max-width:92%}
+.msg .av{width:30px;height:30px;border-radius:10px;font-size:11px}
+.msg.mine{align-self:flex-end;flex-direction:row-reverse}
+.bubble{background:var(--sunken);border-radius:18px 18px 18px 6px;padding:11px 14px;font-size:14px;line-height:1.5}
+.msg.mine .bubble{background:var(--violet);color:#fff;border-radius:18px 18px 6px 18px}
+.bubble .got{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sugs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.sug{border:1.5px solid var(--line-2);background:var(--card);border-radius:999px;padding:6px 12px;font:600 12.5px var(--font);color:var(--ink);cursor:pointer}
+.sug:hover{border-color:var(--violet);color:var(--violet)}
+.draft{margin:0 24px 12px;border:1.5px dashed var(--line-2);border-radius:18px;padding:12px 16px}
+.draft-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.dgrid{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px 12px;margin:0;font-size:13px}
+.dgrid dt{color:var(--ink-3)}.dgrid dd{margin:0;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dgrid dd.new{color:var(--violet);animation:pop .5s ease-out}
+@keyframes pop{from{background:var(--violet-soft)}to{background:transparent}}
+.composer{display:flex;gap:10px;align-items:flex-end;margin:0 24px;padding:8px;border-radius:20px;background:var(--sunken)}
+.composer textarea{flex:1;border:0;background:none;resize:none;font:500 14px/1.45 var(--font);color:var(--ink);padding:9px 4px;max-height:120px}
+.composer textarea:focus{outline:none}
+.mic{width:40px;height:40px;border-radius:14px;border:0;background:var(--card);color:var(--violet);display:grid;place-items:center;cursor:pointer;flex:none;position:relative}
+.mic svg,.send svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mic[aria-pressed="true"]{background:var(--coral);color:#fff}
+.mic[aria-pressed="true"]::after{content:"";position:absolute;inset:-5px;border-radius:18px;border:2px solid var(--coral);animation:ring 1.2s ease-out infinite}
+@keyframes ring{from{opacity:.8;transform:scale(.92)}to{opacity:0;transform:scale(1.15)}}
+.send{width:40px;height:40px;border-radius:14px}
+.chat-foot{display:flex;gap:10px;padding:14px 24px 24px}
+.chat-foot .btn{flex:1;justify-content:center;height:44px}
+
 /* dark-mode colour fixes */
 @media (prefers-color-scheme: dark){
 :root:not([data-theme="light"]) .chip.bad{background:#3A1F27;color:#FF9C8F}
@@ -493,7 +534,7 @@ dialog.small .form{padding:0}
 :root[data-theme="dark"] .chip.pink{background:#3A1F2E;color:#FF9CB6}
 :root[data-theme="dark"] .chip.info{background:#16303C;color:#7FD3F2}
 :root[data-theme="dark"] .stk{border-color:#1E1C33}
-@media (max-width:1180px){ .board.sales{grid-template-columns:repeat(6,minmax(170px,1fr));gap:14px}
+@media (max-width:1180px){ .found{grid-template-columns:1fr} .board.sales{grid-template-columns:repeat(6,minmax(170px,1fr));gap:14px}
 .board.sales .lane{padding:14px 12px}
 .board.sales .tcard{padding:14px}
 .who{display:flex;align-items:center;gap:10px} .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))} .cols.even{grid-template-columns:minmax(0,1fr)} .cols{grid-template-columns:minmax(0,1fr)} .profile{grid-template-columns:minmax(0,1fr)} .brief ol,.opp,.apps{grid-template-columns:minmax(0,1fr)} .sister{grid-column:auto;grid-template-columns:1fr} .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -505,6 +546,11 @@ dialog.small .form{padding:0}
   .rail{position:fixed;top:auto;height:auto;background:var(--card);z-index:10;left:0;right:0;bottom:0;flex-direction:row;padding:10px 12px;gap:2px;overflow-x:auto;border-right:0;border-top:1px solid var(--line)}
   .rail .logo,.rail .spacer,.rail .toggle,.rail .out,.rail hr{display:none}
   .steps li{font-size:10.5px;padding-top:38px}
+  .dgrid{grid-template-columns:auto 1fr}
+  .row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
+  .row.head>.actions .seg{flex:1 1 100%}
+  dialog.drawer{border-radius:0}
+  .msgs,.draft{padding-left:16px;padding-right:16px}.draft{margin:0 16px 10px}.composer{margin:0 16px}.chat-foot{padding:12px 16px 16px}
   .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .stat{padding:16px;border-radius:22px}
   .stat .big{font-size:21px}
@@ -724,6 +770,7 @@ dialog.small .form{padding:0}
         <tr><td><b>Market and trends scan</b><small>News, RFPs, reviews, analysts</small></td><td>Mondays</td><td>3 trends</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Market scan"></span></td></tr>
         <tr><td><b>Skills-to-opportunity match</b><small>Skills matrix vs pipeline</small></td><td>Weekly</td><td>2 matches</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Skills match"></span></td></tr>
         <tr><td><b>Payroll variance check</b><small>Before each pay run</small></td><td>Monthly</td><td>4 explained</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Payroll check"></span></td></tr>
+        <tr><td><b>Teams and email scan</b><small>Sales channels and account mailboxes</small></td><td>Hourly</td><td>2 new opportunities</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Teams and email scan"></span></td></tr>
         <tr><td><b>Unused licence sweep</b><small>Microsoft 365, Azure DevOps, SaaS seats</small></td><td>Monthly</td><td>$1,620/yr to save</td><td class="num"><span class="switch off" role="switch" aria-checked="false" aria-label="Licence sweep"></span></td></tr>
         </tbody></table></div>
     </div>
@@ -1217,21 +1264,35 @@ dialog.small .form{padding:0}
 <!-- ================= Presales ================= -->
 <section data-change="001-amax-foundation" id="001-amax-foundation-presales" data-title="Presales" data-icon="target">
   <div class="row head">
-    <div><h1>Presales</h1><p class="lede">$741,000 open across 5 opportunities, $303,800 weighted by win chance. Northwind has its demo on Oct 21.</p></div>
-    <div class="actions"><div class="seg" role="group" aria-label="View"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div><select class="select" aria-label="Owner"><option>All owners</option><option>Liam Murphy</option><option>Chandima Perera</option></select><button class="btn primary" data-open="oppDrawer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New opportunity</button></div>
+    <div><h1>Presales</h1><p class="lede">$596,000 open across 3 opportunities, plus 2 more the inbox agent found in Teams and email. Northwind has its demo on Oct 21.</p></div>
+    <div class="actions"><div class="seg" role="group" aria-label="View"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div><select class="select" aria-label="Owner"><option>All owners</option><option>Liam Murphy</option><option>Chandima Perera</option></select><button class="btn ghost" data-open="oppDrawer">Use a form</button><button class="btn primary" data-fill><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>Fill with amax</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Open pipeline</div><div class="v">$741,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">5 opportunities<div class="bar"><i style="width:74%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Weighted by win chance</div><div class="v">$303,800</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">41% of open value<div class="bar"><i style="width:41%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Open pipeline</div><div class="v">$596,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">3 opportunities, 2 suggested<div class="bar"><i style="width:60%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Weighted by win chance</div><div class="v">$280,800</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">47% of open value<div class="bar"><i style="width:47%"></i></div></div></div>
     <div class="ticket t-yellow"><div class="k">Win rate, 12 months</div><div class="v">38%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Up 6 points<div class="bar dark"><i style="width:38%;background:#1D1B2E;opacity:.75"></i></div></div></div>
     <div class="ticket t-pink"><div class="k">Days to close</div><div class="v">64 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Average for won deals<div class="bar"><i style="width:64%"></i></div></div></div>
   </div>
 
+  <div class="found" id="foundStrip">
+    <div class="found-head"><span class="stk" data-i="spark" style="--c:#7B61FF"></span><div><b>Found by agents in Teams and email</b><small>The inbox agent reads the sales channels and account managers' mail every hour. Nothing is added until someone accepts it.</small></div></div>
+    <div class="found-item" data-text="Adatum Australia wants help with the Payday Super payroll changes, about 85,000 AUD, Liam Murphy is account manager, close in December">
+      <span class="src"><span class="logo-sq" style="background:#0078D4;width:28px;height:28px;font-size:11px">O</span>Email to Liam, Oct 15</span>
+      <p><b>Adatum, Australia</b> asked for a quote on Payday Super payroll changes. About AUD 85,000.</p>
+      <div class="actions"><button class="btn sm primary" data-accept>Add</button><button class="btn sm" data-chat>Open in chat</button><button class="btn sm ghost" data-dismiss>Dismiss</button></div>
+    </div>
+    <div class="found-item" data-text="Woodgrove Bank is asking about AI governance and ISO 42001 readiness, roughly 60,000 USD, new idea, Chandima Perera to lead">
+      <span class="src"><span class="logo-sq" style="background:#5059C9;width:28px;height:28px;font-size:11px">T</span>Teams, #sales-anz, Oct 16</span>
+      <p><b>Woodgrove Bank</b> raised AI governance and ISO 42001 readiness on a call. Roughly $60,000.</p>
+      <div class="actions"><button class="btn sm primary" data-accept>Add</button><button class="btn sm" data-chat>Open in chat</button><button class="btn sm ghost" data-dismiss>Dismiss</button></div>
+    </div>
+  </div>
+
   <div class="board sales" id="salesBoard">
-    <div class="lane" data-stage="New idea"><div class="lane-head"><span class="lh"><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>New idea</span> <span>1</span></div>
-      <div class="tcard deal"><div class="opp-top"><span class="id">Woodgrove Bank</span><span class="rag g" title="Health: green"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">AI governance readiness</a></p><div class="opp-num"><b>$60,000</b><span>10%</span></div><div class="foot"><span class="av sm">CP</span><span>Close Jan 30</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
-    <div class="lane" data-stage="Lead"><div class="lane-head"><span class="lh"><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span>Lead</span> <span>1</span></div>
-      <div class="tcard deal"><div class="opp-top"><span class="id">Adatum, Australia</span><span class="rag g"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Payday Super payroll changes</a></p><div class="opp-num"><b>$85,000</b><span>20%</span></div><div class="foot"><span class="av sm">LM</span><span>Close Dec 20</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+    <div class="lane" data-stage="New idea"><div class="lane-head"><span class="lh"><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>New idea</span> <span>0</span></div>
+      </div>
+    <div class="lane" data-stage="Lead"><div class="lane-head"><span class="lh"><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span>Lead</span> <span>0</span></div>
+      </div>
     <div class="lane" data-stage="Qualified"><div class="lane-head"><span class="lh"><span class="stk" data-i="search" style="--c:#A792FF"></span>Qualified</span> <span>1</span></div>
       <div class="tcard deal"><div class="opp-top"><span class="id">Fabrikam</span><span class="rag a" title="Health: amber"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Data platform, phase 2</a></p><div class="opp-num"><b>$320,000</b><span>30%</span></div><div class="foot"><span class="av sm">LM</span><span>Workshop Oct 24</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
     <div class="lane" data-stage="Proposal"><div class="lane-head"><span class="lh"><span class="stk" data-i="plane" style="--c:#F2A93B"></span>Proposal</span> <span>1</span></div>
@@ -1462,6 +1523,7 @@ dialog.small .form{padding:0}
     <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#2F6FEB">E</span><h2>Microsoft Entra ID</h2></div><p>Single sign-on, user sync, and roles from groups.</p><div class="foot"><span>184 users synced</span><span class="chip good">Connected</span></div></div>
     <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#0078D4">D</span><h2>Azure DevOps</h2></div><p>Repos, commits, pull requests, pipelines and deployments.</p><div class="foot"><span>14 projects</span><span class="chip good">Connected</span></div></div>
     <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#00A4EF">I</span><h2>Microsoft Intune</h2></div><p>Devices, compliance and assignment to people.</p><div class="foot"><span>231 devices</span><span class="chip good">Connected</span></div></div>
+    <div class="app-card"><div class="top2"><span class="logo-sq" style="background:linear-gradient(135deg,#7B61FF,#0078D4)">✦</span><h2>Inbox agent</h2></div><p>Reads the Teams channels and mailboxes you allow, and suggests opportunities, activities, leave and tickets. Nothing is saved until a person accepts it.</p><div class="foot"><span>4 channels, 6 mailboxes</span><span class="chip good">Running</span></div></div>
     <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#5059C9">T</span><h2>Microsoft Teams</h2></div><p>Notifications, approvals in chat, and helpdesk intake.</p><div class="foot"><span>App installed</span><span class="chip good">Connected</span></div></div>
     <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#E42527">Z</span><h2>Zoho Sign</h2></div><p>E-signature for offers, contracts and letters.</p><div class="foot"><span>Optional</span><button class="btn sm">Connect</button></div></div>
     <div class="app-card"><div class="top2"><span class="logo-sq" style="background:#13B5EA">X</span><h2>Accounting</h2></div><p>Payroll journals and invoices to Xero, QuickBooks or Business Central.</p><div class="foot"><span>Not chosen yet</span><button class="btn sm">Choose</button></div></div>
@@ -1501,6 +1563,29 @@ dialog.small .form{padding:0}
 
   </div>
 </div>
+
+<dialog class="drawer chat" id="fillChat" aria-label="Fill with amax">
+  <div class="drawer-head"><div><h2>New opportunity</h2><span class="muted" style="font-size:13px">Tell amax about it. Type or tap the mic and talk.</span></div><button class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="msgs" id="msgs" aria-live="polite">
+    <div class="msg bot"><span class="av ai">AI</span><div class="bubble">Who's the client, what do they want, roughly how much, and who's leading it? Say it however it comes out; I'll sort the fields.</div></div>
+    <div class="msg bot"><span class="av ai">AI</span><div class="bubble">I also checked Teams and email from the last 7 days. These look like new opportunities:<div class="sugs"><button class="sug" data-say="Adatum Australia wants help with the Payday Super payroll changes, about 85,000 AUD, Liam Murphy is account manager, close in December">Adatum, Payday Super</button><button class="sug" data-say="Woodgrove Bank is asking about AI governance and ISO 42001 readiness, roughly 60,000 USD, new idea, Chandima Perera to lead">Woodgrove, AI governance</button></div></div></div>
+  </div>
+  <div class="draft" id="draft">
+    <div class="draft-head"><b>Draft</b><span class="muted" id="draftState">Nothing yet</span></div>
+    <dl class="dgrid">
+      <dt>Name</dt><dd data-f="name">–</dd><dt>Client</dt><dd data-f="client">–</dd>
+      <dt>Value</dt><dd data-f="value">–</dd><dt>Stage</dt><dd data-f="stage">New idea</dd>
+      <dt>Win chance</dt><dd data-f="win">–</dd><dt>Owner</dt><dd data-f="owner">–</dd>
+      <dt>Close</dt><dd data-f="close">–</dd>
+    </dl>
+  </div>
+  <form class="composer" id="composer">
+    <button type="button" class="mic" id="mic" aria-label="Speak" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    <textarea id="say" rows="1" placeholder="e.g. Fabrikam wants phase 2 of the data platform, about 320k USD, Liam leads it"></textarea>
+    <button class="btn primary icon send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
+  </form>
+  <div class="chat-foot"><button class="btn primary" id="chatAdd" disabled>Add to board</button><button class="btn" type="button" id="chatForm">Check in the form</button></div>
+</dialog>
 
 <dialog class="drawer" id="oppDrawer" aria-label="New opportunity">
   <div class="drawer-head"><div><h2>New opportunity</h2><span class="muted" style="font-size:13px">It starts on the board in the stage you pick</span></div><button class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -1783,6 +1868,7 @@ dialog.small .form{padding:0}
         if(v==='Won'){card.querySelector('.opp-act').remove(); card.querySelector('.opp-num span').textContent='100%'; card.querySelector('.opp-top').insertAdjacentHTML('beforeend','<span class="chip good">Won</span>'); var r=card.querySelector('.rag'); if(r) r.remove();}
         target.insertBefore(card,target.children[1]||null); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); wire(card); recount();};}
     [].forEach.call(board.querySelectorAll('.tcard'),wire);
+    board.addEventListener('cardadded',function(e){wire(e.detail);recount();});
     var pending=null;
     board.addEventListener('click',function(e){var b=e.target.closest('[data-remove]'); if(!b) return; pending=b.closest('.tcard');
       document.getElementById('removeName').textContent=pending.querySelector('p').textContent; document.getElementById('removeDialog').showModal();});
@@ -1792,6 +1878,69 @@ dialog.small .form{padding:0}
       var c=document.createElement('div'); c.className='tcard deal';
       c.innerHTML='<div class="opp-top"><span class="id">'+E.client.value+'</span><span class="rag g"></span></div><p>'+name.replace(/</g,'&lt;')+'</p><div class="opp-num"><b>'+(E.cur.value==='USD'?'$':E.cur.value+' ')+val+'</b><span>'+win+'%</span></div><div class="foot"><span class="av sm">'+E.owner.value+'</span><span>'+(E.close.value?'Close '+E.close.value:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
       lane.insertBefore(c,lane.children[1]||null); var av=c.querySelector('.av'); if(FOLK[E.owner.value]){av.classList.add('photo');av.innerHTML=face(E.owner.value);} wire(c); recount(); c.classList.add('flash'); f.reset();});
+  })();
+
+  // ---- Fill with amax: chat + voice, extracts fields into a draft ----
+  (function(){var dlg=document.getElementById('fillChat'); if(!dlg) return;
+    var msgs=document.getElementById('msgs'),say=document.getElementById('say'),mic=document.getElementById('mic'),add=document.getElementById('chatAdd');
+    var D={stage:'New idea'};
+    var CLIENTS=['Northwind Insurance','Northwind','Fabrikam','Contoso','Woodgrove Bank','Woodgrove','Adatum','Tailspin','Litware','Wide World Importers'];
+    var PEOPLE={liam:['LM','Liam Murphy'],chandima:['CP','Chandima Perera'],nimal:['NS','Nimal Silva'],ayesha:['AR','Ayesha Rahman']};
+    function bubble(who,html){var m=document.createElement('div');m.className='msg '+who;m.innerHTML=(who==='bot'?'<span class="av ai">AI</span>':'<span class="av">CP</span>')+'<div class="bubble">'+html+'</div>';
+      if(who!=='bot'){var a=m.querySelector('.av');a.classList.add('photo');a.innerHTML=face('CP');}
+      msgs.appendChild(m);msgs.scrollTop=msgs.scrollHeight;}
+    function setF(k,v){D[k]=v;var dd=dlg.querySelector('[data-f="'+k+'"]');dd.textContent=v;dd.classList.remove('new');void dd.offsetWidth;dd.classList.add('new');}
+    function parse(t){var got=[],low=t.toLowerCase();
+      CLIENTS.some(function(c){if(low.indexOf(c.toLowerCase())>-1){setF('client',c==='Northwind'?'Northwind Insurance':c==='Woodgrove'?'Woodgrove Bank':c);got.push('client');return true;}});
+      if(low.indexOf('australia')>-1&&D.client==='Adatum') setF('client','Adatum, Australia');
+      var re=/(\d[\d,.]*)\s*(k\b|thousand|m\b|million)?\s*(usd|aud|lkr|gbp|sgd|eur|dollars)?(\s*%)?/ig,m;
+      while((m=re.exec(t))){if(m[4])continue;var n=parseFloat(m[1].replace(/,/g,''));if(/^k|thousand/i.test(m[2]||''))n*=1000;if(/^m|million/i.test(m[2]||''))n*=1e6;
+        if(n<1000)continue;var cur=(m[3]||'USD').toUpperCase().replace('DOLLARS','USD');setF('value',(cur==='USD'?'$':cur+' ')+n.toLocaleString('en-US'));got.push('value');break;}
+      [['negotiat','Negotiation'],['proposal','Proposal'],['qualif','Qualified'],['lead','Lead'],['new idea','New idea']].some(function(s){if(low.indexOf(s[0])>-1&&!(s[0]==='lead'&&/\blead(s|ing)? it\b|to lead/.test(low))){setF('stage',s[1]);got.push('stage');return true;}});
+      var w=t.match(/(\d{1,3})\s*%/);if(w){setF('win',w[1]+'%');got.push('win chance');}
+      Object.keys(PEOPLE).some(function(k){if(low.indexOf(k)>-1){setF('owner',PEOPLE[k][1]);D.ownerIni=PEOPLE[k][0];got.push('owner');return true;}});
+      var c=t.match(/(?:close|closing|by|in)\s+(?:in\s+)?((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:\s+\d{1,2})?|next (?:week|month|quarter))/i);if(c){setF('close',c[1].replace(/^\w/,function(x){return x.toUpperCase()}));got.push('close date');}
+      var w2=t.match(/(?:wants|needs|asking about|asked about|help with|interested in)\s+(?:help with\s+)?(?:the\s+)?([^,.]+)/i);
+      if(w2){var nm=w2[1].replace(/\s+(phase|for|about)\s*$/i,'').trim();nm=nm.replace(/^(a|an)\s+/i,'');nm=nm.charAt(0).toUpperCase()+nm.slice(1);setF('name',nm);got.push('name');}
+      return got;}
+    function respond(got){var missing=['name','client','value','owner'].filter(function(k){return !D[k]});
+      var labels={name:'what it is',client:'the client',value:'a rough value',owner:'who leads it'};
+      var h=got.length?'Got it: '+got.join(', ')+'.':'I couldn’t pick out any details there.';
+      if(missing.length) h+=' Can you tell me '+missing.map(function(k){return labels[k]}).join(' and ')+'?';
+      else {if(!D.win){setF('win',{'New idea':'10%','Lead':'20%','Qualified':'30%','Proposal':'50%','Negotiation':'70%'}[D.stage]);h+=' I set the win chance to '+D.win+' for '+D.stage+'; change it if you know better.';}
+        h+=' Ready to add to the board.';}
+      document.getElementById('draftState').textContent=missing.length?missing.length+' still missing':'Ready';
+      add.disabled=!!missing.length; bubble('bot',h);}
+    function send(text){text=(text||'').trim();if(!text)return;bubble('mine',text.replace(/</g,'&lt;'));say.value='';var got=parse(text);setTimeout(function(){respond(got)},350);}
+    document.getElementById('composer').addEventListener('submit',function(e){e.preventDefault();send(say.value);});
+    say.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(say.value);}});
+    dlg.addEventListener('click',function(e){var s=e.target.closest('.sug');if(s)send(s.dataset.say);});
+    // voice: browser speech recognition when available
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null;
+    mic.addEventListener('click',function(){
+      if(!SR){bubble('bot','Voice needs a browser with speech recognition, such as Chrome or Edge. In the app this uses the device microphone through the same panel.');return;}
+      if(rec){rec.stop();return;}
+      rec=new SR();rec.lang='en-AU';rec.interimResults=true;rec.continuous=false;var base=say.value;
+      rec.onresult=function(ev){var t='';for(var i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;say.value=(base?base+' ':'')+t;};
+      rec.onend=function(){mic.setAttribute('aria-pressed','false');rec=null;if(say.value.trim())send(say.value);};
+      rec.onerror=function(){mic.setAttribute('aria-pressed','false');rec=null;};
+      mic.setAttribute('aria-pressed','true');rec.start();});
+    function addCard(d){var board=document.getElementById('salesBoard'),lane=board.querySelector('.lane[data-stage="'+d.stage+'"]')||board.querySelector('.lane');
+      var c=document.createElement('div');c.className='tcard deal';
+      c.innerHTML='<div class="opp-top"><span class="id">'+d.client+'</span><span class="rag g"></span></div><p>'+d.name+'</p><div class="opp-num"><b>'+(d.value||'–')+'</b><span>'+(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+(d.ownerIni||'CP')+'</span><span>'+(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
+      lane.insertBefore(c,lane.children[1]||null);var av=c.querySelector('.av');if(FOLK[d.ownerIni||'CP']){av.classList.add('photo');av.innerHTML=face(d.ownerIni||'CP');}
+      board.dispatchEvent(new CustomEvent('cardadded',{detail:c}));c.classList.add('flash');}
+    window.amaxAddDeal=addCard;
+    add.addEventListener('click',function(){addCard(D);dlg.close();});
+    document.getElementById('chatForm').addEventListener('click',function(){var f=document.getElementById('oppForm').elements;
+      if(D.name)f.oppName.value=D.name; if(D.value)f.oppValue.value=D.value.replace(/^\D+/,''); if(D.stage)f.stage.value=D.stage; if(D.win)f.win.value=D.win; if(D.close)f.close.value=D.close; if(D.ownerIni)f.owner.value=D.ownerIni;
+      dlg.close();document.getElementById('oppDrawer').showModal();});
+    function reset(){D={stage:'New idea'};[].forEach.call(dlg.querySelectorAll('[data-f]'),function(dd){dd.textContent=dd.dataset.f==='stage'?'New idea':'–';});document.getElementById('draftState').textContent='Nothing yet';add.disabled=true;
+      [].forEach.call(msgs.querySelectorAll('.msg'),function(m,i){if(i>1)m.remove();});}
+    document.addEventListener('click',function(e){var b=e.target.closest('[data-fill]');if(b){reset();dlg.showModal();setTimeout(function(){say.focus()},50);}
+      var ch=e.target.closest('[data-chat]');if(ch){reset();dlg.showModal();send(ch.closest('.found-item').dataset.text);}
+      var ac=e.target.closest('[data-accept]');if(ac){var it=ac.closest('.found-item');reset();parse(it.dataset.text);if(!D.win)D.win={'New idea':'10%','Lead':'20%'}[D.stage]||'10%';addCard(D);it.classList.add('gone');}
+      var di=e.target.closest('[data-dismiss]');if(di){di.closest('.found-item').classList.add('gone');}});
   })();
 
   // switches

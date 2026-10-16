@@ -14,6 +14,8 @@ The category it competes in is **PSA + HCM + services finance**, against Kantata
 | Approval/workflow engine | Leave, timesheets, expenses, offers, pay runs and releases all use one engine |
 | Audit log on every write, with the acting agent and the person it acts for | Needed for ISO 27001, SOC 2 and payroll audits |
 | MCP server covering every endpoint, plus webhooks and a REST API | Core to the product's positioning |
+| "Fill with amax": chat and voice capture for every create flow, producing a reviewable draft | Records come from conversation, not forms |
+| Inbox agent: background ingestion from Teams and Outlook (scoped channels and mailboxes, admin consent), suggestions a person accepts | Data arrives without anyone typing it |
 | Country packs | Holidays, leave rules, tax, statutory funds and filing formats, plugged in per country |
 | Notifications: email, Teams, Slack; Teams/Slack app; mobile web | People act where they already are |
 | Documents and e-signature (provider integration) | Contracts, offers, letters, policies |
