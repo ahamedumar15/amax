@@ -9,24 +9,24 @@
 <style>
 :root{
   --bg:#EEEDF8; --frame:#FBFBFE; --card:#FFFFFF; --sunken:#F4F3FB;
-  --ink:#1D1B2E; --ink-2:#5D5A73; --ink-3:#9A97AE; --line:#ECEAF4; --line-2:#DEDBEC;
+  --ink:#1D1B2E; --ink-2:#5D5A73; --ink-3:#6A6681; --line:#ECEAF4; --line-2:#DEDBEC;
   --violet:#7B61FF; --violet-soft:#ECE8FF; --mint:#2FCB8C; --mint-soft:#DDF7EC;
   --yellow:#F7D65A; --yellow-ink:#3B3110; --pink:#F48B9B; --coral:#F26B5B; --sky:#5CC8F0; --amber:#F2A93B;
-  --agent:var(--violet); --person:var(--mint);
+  --agent:var(--violet); --person:var(--mint); --bar-dim:#D6CCFF; --danger:#C2412F; --sw-on:#138A5C;
   --r-frame:36px; --r-card:28px; --r-inner:16px; --r-ctl:12px;
   --shadow:0 1px 2px rgba(40,30,110,.04), 0 12px 32px -12px rgba(60,40,160,.14);
   --font:"Avenir Next","Poppins","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0F0E1A; --frame:#161527; --card:#1E1C33; --sunken:#24223D;
-  --ink:#F1F0FA; --ink-2:#B6B3CC; --ink-3:#7E7A98; --line:#2B2945; --line-2:#3A3757;
-  --violet:#9C88FF; --violet-soft:#2C2650; --mint:#4CD9A0; --mint-soft:#183A2E; --yellow:#F2D366;
+  --ink:#F1F0FA; --ink-2:#B6B3CC; --ink-3:#8E8AA8; --line:#2B2945; --line-2:#3A3757;
+  --violet:#9C88FF; --violet-soft:#2C2650; --mint:#4CD9A0; --mint-soft:#183A2E; --yellow:#F2D366; --bar-dim:#3A3466; --sw-on:#2E9E74;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.6);
 }}
 :root[data-theme="dark"]{
   --bg:#0F0E1A; --frame:#161527; --card:#1E1C33; --sunken:#24223D;
-  --ink:#F1F0FA; --ink-2:#B6B3CC; --ink-3:#7E7A98; --line:#2B2945; --line-2:#3A3757;
-  --violet:#9C88FF; --violet-soft:#2C2650; --mint:#4CD9A0; --mint-soft:#183A2E; --yellow:#F2D366;
+  --ink:#F1F0FA; --ink-2:#B6B3CC; --ink-3:#8E8AA8; --line:#2B2945; --line-2:#3A3757;
+  --violet:#9C88FF; --violet-soft:#2C2650; --mint:#4CD9A0; --mint-soft:#183A2E; --yellow:#F2D366; --bar-dim:#3A3466; --sw-on:#2E9E74;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
@@ -37,7 +37,11 @@ body::before{width:420px;height:420px;left:-140px;top:-160px;background:#C9BDFF}
 body::after{width:360px;height:360px;right:-120px;bottom:-140px;background:#BFEBDD}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--violet);outline-offset:2px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sr{position:absolute!important;width:1px!important;height:1px!important;margin:-1px;padding:0!important;border:0!important;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:16px;top:-60px;z-index:60;background:var(--ink);color:var(--frame);padding:10px 16px;border-radius:12px;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+main:focus{outline:none}
+section h1:focus{outline:none}
 
 /* frame + rail */
 .app{display:grid;grid-template-columns:96px 1fr;min-height:calc(100dvh - 48px);background:var(--frame);border-radius:var(--r-frame);box-shadow:0 30px 80px -30px rgba(60,40,160,.25);overflow:hidden;max-width:1560px;margin:0 auto}
@@ -77,7 +81,7 @@ h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.02em;margin:
 h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 
 .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
-.stack{display:grid;gap:28px;min-width:0}
+.stack{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;min-width:0}
 .card{background:var(--card);border-radius:var(--r-card);box-shadow:var(--shadow);padding:28px;min-width:0}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}
 .card.flush{padding:0}
@@ -93,18 +97,20 @@ h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 .btn.ghost{border-color:transparent;color:var(--ink-2)}
 .btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:10px}
 .pillbtn{border-radius:999px}
-.select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%239A97AE' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer}
-.seg{display:flex;padding:5px;border-radius:16px;background:var(--sunken);gap:4px}
+.select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236A6681' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer}
+.seg{display:flex;padding:5px;border-radius:16px;background:var(--sunken);gap:4px;max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
 .seg button{flex:1;white-space:nowrap;padding:0 12px;border:0;background:none;height:36px;border-radius:12px;font-size:13.5px;font-weight:500;color:var(--ink-2);cursor:pointer;transition:background .15s,color .15s}
-.seg button[aria-pressed="true"]{background:var(--yellow);color:var(--yellow-ink);font-weight:600}
+.seg button[aria-pressed="true"],.tabs [aria-pressed="true"],.tabs [aria-current="true"]{background:var(--card);color:var(--violet);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
 .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;font-size:12.5px;font-weight:600;background:var(--sunken);color:var(--ink-2);white-space:nowrap}
-.chip.agent{background:var(--violet-soft);color:var(--violet)}
-.chip.person{background:var(--mint-soft);color:#14845A}
-.chip.bad{background:#FDE7E4;color:#C2412F}
-.chip.warn{background:#FFF1D6;color:#9A5B00}
-.chip.good{background:var(--mint-soft);color:#14845A}
-.up{display:inline-flex;align-items:center;gap:4px;color:#14A06A;font-weight:600;font-size:13px}
-.down{color:var(--coral);font-weight:600;font-size:13px}
+.chip.agent{background:var(--violet-soft);color:#5B44D6}
+.chip.person{background:var(--mint-soft);color:#0F6E4A}
+.chip.bad{background:#FDE7E4;color:#A8321F}
+.chip.warn{background:#FFF1D6;color:#8A5200}
+.chip.good{background:var(--mint-soft);color:#0F6E4A}
+.up{display:inline-flex;align-items:center;gap:4px;color:#0F7A50;font-weight:600;font-size:13px}
+.down{color:var(--danger);font-weight:600;font-size:13px}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
 .muted{color:var(--ink-3)}
 
 /* avatars */
@@ -122,12 +128,12 @@ h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 .t-mint{background:linear-gradient(135deg,#A6F0CF,#53D6A1)}
 .t-violet{background:linear-gradient(135deg,#D9CFFF,#A792FF)}
 .t-yellow{background:linear-gradient(135deg,#FBEA9C,#F5CF4E)}
-.ticket .k{font-size:14px;font-weight:500;opacity:.8}
+.ticket .k{font-size:14px;font-weight:600}
 .ticket .v{position:relative;z-index:1;font-size:clamp(24px,2.1vw,32px);font-weight:600;letter-spacing:-.02em;line-height:1.2;margin-top:6px}
 .ticket .p{position:absolute;left:24px;bottom:22px;right:24px;font-size:12.5px;font-weight:600}
-.ticket .bar{height:7px;border-radius:7px;background:rgba(255,255,255,.55);margin-top:8px;overflow:hidden}
-.ticket .bar i{display:block;height:100%;border-radius:7px;background:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
-.ticket .bar.dark{background:rgba(29,27,46,.18)}
+.ticket .bar{position:relative;height:7px;border-radius:7px;background:rgba(29,27,46,.16);margin-top:8px}
+.ticket .bar i{display:block;height:100%;border-radius:7px;background:rgba(29,27,46,.72)}
+.ticket .bar b{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#1D1B2E}
 .ticket svg.art{position:absolute;right:12px;top:10px;width:clamp(76px,6.4vw,118px);height:auto;opacity:.95}
 
 /* chart */
@@ -141,9 +147,12 @@ h2{font-size:17px;font-weight:600;letter-spacing:-.005em;margin:0}
 /* tables */
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th{text-align:left;font-weight:600;font-size:13.5px;color:var(--ink);padding:0 16px 14px;border-bottom:1.5px solid var(--line-2);white-space:nowrap}
-.tbl td{padding:16px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+.tbl td{padding:16px 14px;border-bottom:1px solid var(--line);white-space:normal;vertical-align:middle}
+.tbl td.num,.tbl td.h{white-space:nowrap}
+.tbl td.num small{white-space:normal;min-width:9ch}
+.tbl th{padding-left:14px;padding-right:14px}
 .tbl tr:last-child td{border-bottom:0}
-.tbl td:first-child{white-space:normal;min-width:200px}
+.tbl td:first-child{white-space:normal;min-width:180px}
 .tbl th:first-child,.tbl td:first-child{padding-left:28px}
 .tbl th:last-child,.tbl td:last-child{padding-right:28px}
 .tbl tbody tr{transition:background .15s}
@@ -268,11 +277,15 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
 .icon-dot svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 /* tabs as links */
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.tabs{display:flex;gap:4px;padding:5px;border-radius:16px;background:var(--sunken);margin-bottom:22px;width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .btn{border:0;background:none;color:var(--ink-2);font-weight:500;height:34px;flex:none}
+.tabs .btn:hover{color:var(--ink)}
+.tabs .btn[aria-pressed="true"],.tabs .btn[aria-current="true"]{background:var(--card);color:var(--violet);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
 .stack>.tabs{margin-bottom:-6px}
 .tabs a{text-decoration:none;color:inherit}
 .kv dt{white-space:nowrap}
-.tabs .btn[aria-current="true"]{background:var(--ink);border-color:var(--ink);color:var(--frame)}
+
 
 /* profile */
 .profile{display:grid;grid-template-columns:320px minmax(0,1fr);gap:28px;align-items:start}
@@ -334,9 +347,9 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
 .trend .t{flex:1;min-width:0;font-size:14px} .trend .t small{display:block;color:var(--ink-3);font-size:12.5px}
 .vs{display:grid;grid-template-columns:110px 1fr 46px;gap:12px;align-items:center;font-size:13.5px;padding:7px 0}
 .vs .meter{min-width:0}
-.switch{display:inline-block;vertical-align:middle;cursor:pointer;width:38px;height:22px;border-radius:999px;background:var(--mint);position:relative;flex:none;border:0}
-.switch::after{content:"";position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
-.switch.off{background:var(--line-2)} .switch.off::after{right:auto;left:3px}
+.switch{display:inline-block;vertical-align:middle;cursor:pointer;width:46px;height:26px;padding:0;border-radius:999px;background:var(--sw-on);position:relative;flex:none;border:0}
+.switch::after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch[aria-checked="false"]{background:var(--ink-3)} .switch[aria-checked="false"]::after{right:auto;left:3px}
 .apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:28px}
 .app-card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;gap:12px}
 .app-card .top2{display:flex;align-items:center;gap:12px}
@@ -359,7 +372,7 @@ dialog::backdrop{background:rgba(29,27,46,.35);backdrop-filter:blur(4px)}
 a.btn{text-decoration:none;color:inherit}
 .row.line{font-size:14px;padding:11px 0;border-top:1px solid var(--line)}
 .row.line:first-of-type{border-top:0}
-.warn-t{color:#9A5B00}
+.warn-t{color:#8A5200}
 .ringrow{display:flex;align-items:center;gap:16px;padding:10px 0;font-size:14px;font-weight:500}
 .ringrow small{display:block;color:var(--ink-3);font-weight:400;font-size:12.5px}
 .ringrow .ring{width:60px;height:60px}.ringrow .ring span{width:46px;height:46px;font-size:14px}
@@ -370,6 +383,45 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 .rail{position:sticky;top:0;align-self:start;height:calc(100dvh - 48px);overflow-y:auto;scrollbar-width:none;background:none;border-right:0}
 .rail::-webkit-scrollbar{display:none}
 .rail .spacer{min-height:16px}
+/* rail: icons collapsed, expands as an overlay on hover or keyboard focus (no reflow) */
+.rail{width:96px;z-index:20;align-items:stretch;transition:width .18s ease,box-shadow .18s ease}
+.rail:hover,.rail:focus-within{width:252px;background:var(--card);box-shadow:16px 0 40px -24px rgba(40,30,110,.45);border-radius:0 var(--r-frame) var(--r-frame) 0}
+.rail .logo{margin:0 0 16px 26px;flex:none}
+.rail a{width:auto;margin:0 20px;height:44px;display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:0 17px;white-space:nowrap;overflow:hidden;text-decoration:none;font-size:14px;font-weight:600;flex:none}
+.rail a svg{flex:none}
+.rail a[aria-current="page"]::before{left:-20px}
+.rail .lbl{opacity:0;transition:opacity .12s}
+.rail:hover .lbl,.rail:focus-within .lbl{opacity:1}
+.rail .grp{position:relative;flex:none;height:22px;margin:10px 20px 2px}
+.rail .grp::before{content:"";position:absolute;left:12px;top:10px;width:32px;border-top:1.5px solid var(--line-2);transition:opacity .12s}
+.rail .grp span{display:block;padding-left:17px;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);line-height:22px;opacity:0;transition:opacity .12s}
+.rail:hover .grp span,.rail:focus-within .grp span{opacity:1}
+.rail:hover .grp::before,.rail:focus-within .grp::before{opacity:0}
+.more-btn{display:none}
+dialog.sheet{margin:auto auto 0;width:100vw;max-width:100vw;max-height:82dvh;border-radius:28px 28px 0 0;padding:0 0 calc(12px + env(safe-area-inset-bottom))}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 8px}
+.sheet-list{list-style:none;margin:0;padding:0 12px 8px}
+.sheet-list .sh{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:14px 12px 4px}
+.sheet-list a{display:flex;align-items:center;gap:14px;padding:12px;border-radius:14px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+.sheet-list a[aria-current="page"]{background:var(--violet-soft);color:var(--violet)}
+.sheet-list svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* empty states */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:36px 24px 40px}
+.empty .ico{width:52px;height:52px;border-radius:18px;background:var(--violet-soft);color:var(--violet);display:grid;place-items:center;margin-bottom:10px}
+.empty .ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.empty b{font-size:15.5px;font-weight:600}
+.empty p{margin:0;color:var(--ink-2);font-size:13.5px;max-width:44ch}
+.empty .btn{margin-top:14px}
+/* row selection */
+.tbl .sel{width:52px;min-width:0!important;padding-right:0}
+.tbl .sel input,.selall{width:18px;height:18px;accent-color:var(--violet);cursor:pointer;margin:0;vertical-align:middle}
+.spark-cap{display:block;font-size:11.5px;color:var(--ink-3);margin-top:-6px}
+.legend{flex-wrap:wrap;row-gap:6px}
+.opp-act{flex-wrap:wrap}
+.opp-act .select.sm{flex:1 1 100%}
+.opp-act [data-go]{flex:1}
+.idcard h1{font-size:19px;font-weight:600;letter-spacing:0;margin:0}
+.lane-head:focus{outline:2px solid var(--violet);outline-offset:2px;border-radius:10px}
 
 /* ---- home look on every screen ---- */
 .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -396,8 +448,8 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 .av.photo{background:none!important;overflow:hidden;padding:0;color:transparent}
 .av.photo svg{width:100%;height:100%;display:block}
 /* status chips carry an icon */
-.chip.pink{background:#FFE4EA;color:#C2416A}
-.chip.info{background:#DFF3FB;color:#1E7FA8}
+.chip.pink{background:#FFE4EA;color:#A3345A}
+.chip.info{background:#DFF3FB;color:#17648A}
 .chip.draft{background:var(--sunken);color:var(--ink-2)}
 .chip.good::before,.chip.warn::before,.chip.bad::before,.chip.agent::before,.chip.pink::before,.chip.info::before,.chip.draft::before{content:"";width:13px;height:13px;flex:none;background:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
 .chip.good{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.8' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
@@ -442,7 +494,7 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 dialog.small{width:min(440px,calc(100vw - 32px))}
 dialog.small .form{padding:0}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn.sm.ghost{color:var(--ink-3)} .btn.icon{width:32px;padding:0;justify-content:center;flex:none} .btn.sm.ghost:hover{color:var(--coral);border-color:transparent}
+.btn.sm.ghost{color:var(--ink-2)} .btn.sm.ghost:hover{border-color:var(--line-2);color:var(--ink)} .btn.icon{width:32px;padding:0;justify-content:center;flex:none} .btn.icon.ghost{color:var(--ink-3)} .btn.icon.ghost:hover{color:var(--danger);border-color:transparent}
 
 /* fill with amax (chat) + agent-found items */
 .btn svg path{vector-effect:non-scaling-stroke}
@@ -471,7 +523,12 @@ dialog.small .form{padding:0}
 .m .who{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
 .m.me .who{flex-direction:row-reverse}
 .m .who .av,.mface{width:26px;height:26px;border-radius:50%;font-size:10px}
-mark.x{background:none;color:inherit;outline:1.5px dashed #2FCB8C;outline-offset:1px;border-radius:4px;padding:0 1px}
+mark.x{background:none;color:inherit;outline:2px dashed var(--f,#6A6681);outline-offset:1px;border-radius:4px;padding:0 1px}
+.f-client{--f:#7B61FF}.f-value{--f:#1E9E6E}.f-dates{--f:#D98A1C}.f-person{--f:#E0607A}.f-stage{--f:#2A9FD0}.f-name{--f:#6A6681}
+.rec dt{display:flex;align-items:center;gap:7px}
+.fd{width:9px;height:9px;border-radius:50%;background:var(--f,#6A6681);flex:none}
+.m.grouped>.who{display:none}
+.c-log .m.grouped{margin-bottom:-10px}
 .m .tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .m .tools span{font:600 11.5px var(--font);color:var(--violet);background:var(--violet-soft);border-radius:7px;padding:2px 8px}
 .rec{margin-top:10px;border-top:1px dashed var(--line-2);padding-top:10px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
@@ -497,24 +554,28 @@ mark.x{background:none;color:inherit;outline:1.5px dashed #2FCB8C;outline-offset
 .c-talk:active{transform:scale(.96)}
 .c-talk[aria-pressed="true"]::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid #2FCB8C;animation:ring 1.2s ease-out infinite}
 @keyframes ring{from{opacity:.9;transform:scale(.94)}to{opacity:0;transform:scale(1.18)}}
-.launcher{position:fixed;z-index:25;right:32px;bottom:32px;width:64px;height:64px;border-radius:50%;border:0;background:var(--card);padding:9px;cursor:pointer;box-shadow:0 16px 36px -12px rgba(40,30,110,.5);transition:transform .15s}
-.launcher:hover{transform:translateY(-2px)}
-.launcher.drop,.chat.drop{box-shadow:0 0 0 3px #2FCB8C,0 16px 36px -12px rgba(40,30,110,.5)}
-body.chat-open .launcher{display:none}
+.launcher{flex:none;display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 20px 0 6px;border-radius:999px;border:0;background:var(--card);box-shadow:var(--shadow);font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:box-shadow .15s,transform .1s}
+.launcher .lface{width:42px;height:42px;flex:none;display:block}
+.launcher .lface svg{width:100%;height:100%;display:block}
+.launcher:hover{box-shadow:0 0 0 1.5px var(--line-2),var(--shadow)}
+.launcher:active{transform:scale(.98)}
+.launcher[aria-expanded="true"]{box-shadow:0 0 0 2px var(--violet),var(--shadow)}
+.launcher.drop,.chat.drop{box-shadow:0 0 0 3px var(--sw-on),0 16px 36px -12px rgba(40,30,110,.5)}
 /* pin anything */
 .pinnable{position:relative}
 .pin{position:absolute;z-index:4;top:10px;right:10px;width:30px;height:30px;border-radius:10px;border:0;background:var(--card);color:var(--violet);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px -4px rgba(40,30,110,.4);opacity:0;transform:scale(.9);transition:opacity .15s,transform .15s}
 .pin svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.pinnable:hover>.pin,.pin:focus-visible{opacity:1;transform:none}
+.pinnable:hover>.pin,.pin:focus-visible,.pinnable:focus-within>.pin,.pinnable:focus-within>.card-head>.pin,tr.pinnable:hover .pin,tr.pinnable:focus-within .pin{opacity:1;transform:none}
+@media (hover:none){.pin{opacity:1;transform:none}}
 tr.pinnable>td:last-child{position:relative;padding-right:48px}
 tr.pinnable .pin{top:50%;margin-top:-15px;right:10px}
 .pin.inline{position:static;margin:0 auto 0 8px;width:28px;height:28px}
 .pinnable:hover>.card-head>.pin{opacity:1;transform:none}
 .card-head h2{margin-right:0}
 body.picking .pinnable{cursor:copy}
-body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
+body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px}
 .toast{position:fixed;z-index:40;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--frame);border-radius:14px;padding:12px 18px;font-size:14px;font-weight:500;box-shadow:0 16px 40px -12px rgba(0,0,0,.4)}
-@media (max-width:860px){.chat{top:0;right:0;bottom:0;width:100vw;border-radius:0}.launcher{bottom:88px;right:16px;width:56px;height:56px}}
+@media (max-width:860px){.chat{top:0;right:0;bottom:0;width:100vw;border-radius:0}.launcher{height:46px;padding:0 4px}.launcher .lface{width:38px;height:38px}.launcher .ltxt{display:none}}
 
 /* dark-mode colour fixes */
 @media (prefers-color-scheme: dark){
@@ -528,16 +589,20 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
 :root:not([data-theme="light"]) .czero{background:repeating-linear-gradient(135deg,#2E2614 0 6px,#3A2E17 6px 8px);color:#F2C26B}
 :root:not([data-theme="light"]) .cal .ph{background:#3A2E17}
 :root:not([data-theme="light"]) .warn-t{color:#F2C26B}
-:root:not([data-theme="light"]) .t-mint{background:linear-gradient(135deg,#2E8F6B,#1C6B4F)}
-:root:not([data-theme="light"]) .t-violet{background:linear-gradient(135deg,#6E57E8,#4A36B8)}
-:root:not([data-theme="light"]) .t-yellow{background:linear-gradient(135deg,#B08A22,#7E6216)}
+:root:not([data-theme="light"]) .t-mint{background:linear-gradient(135deg,#1F6E52,#14513C)}
+:root:not([data-theme="light"]) .t-violet{background:linear-gradient(135deg,#5A45C9,#3B2B99)}
+:root:not([data-theme="light"]) .t-yellow{background:linear-gradient(135deg,#8A6A12,#5E480C)}
 :root:not([data-theme="light"]) .ticket{color:#fff}
-:root:not([data-theme="light"]) .ticket .bar,:root:not([data-theme="light"]) .ticket .bar.dark{background:rgba(255,255,255,.22)}
-:root:not([data-theme="light"]) .ticket .bar i,:root:not([data-theme="light"]) .ticket .bar.dark i{background:#fff!important;opacity:.9!important}
+:root:not([data-theme="light"]) .ticket .bar{background:rgba(255,255,255,.24)}
+:root:not([data-theme="light"]) .ticket .bar i{background:#fff}
+:root:not([data-theme="light"]) .ticket .bar b{background:#fff}
+:root:not([data-theme="light"]) .chip.agent{color:#B9A9FF}
+:root:not([data-theme="light"]) .up{color:#5FE0A6}
+:root:not([data-theme="light"]) .down{color:#FF9C8F}
 :root:not([data-theme="light"]) .btn.primary{color:#2A220A}
-:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#2A220A}
+
 :root:not([data-theme="light"]) .brief{box-shadow:none}
-:root:not([data-theme="light"]) .t-pink{background:linear-gradient(135deg,#B8476A,#8A2E4E)}
+:root:not([data-theme="light"]) .t-pink{background:linear-gradient(135deg,#9A3858,#6E2440)}
 :root:not([data-theme="light"]) .chip.pink{background:#3A1F2E;color:#FF9CB6}
 :root:not([data-theme="light"]) .chip.info{background:#16303C;color:#7FD3F2}
 :root:not([data-theme="light"]) .stk{border-color:#1E1C33}
@@ -552,16 +617,20 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
 :root[data-theme="dark"] .czero{background:repeating-linear-gradient(135deg,#2E2614 0 6px,#3A2E17 6px 8px);color:#F2C26B}
 :root[data-theme="dark"] .cal .ph{background:#3A2E17}
 :root[data-theme="dark"] .warn-t{color:#F2C26B}
-:root[data-theme="dark"] .t-mint{background:linear-gradient(135deg,#2E8F6B,#1C6B4F)}
-:root[data-theme="dark"] .t-violet{background:linear-gradient(135deg,#6E57E8,#4A36B8)}
-:root[data-theme="dark"] .t-yellow{background:linear-gradient(135deg,#B08A22,#7E6216)}
+:root[data-theme="dark"] .t-mint{background:linear-gradient(135deg,#1F6E52,#14513C)}
+:root[data-theme="dark"] .t-violet{background:linear-gradient(135deg,#5A45C9,#3B2B99)}
+:root[data-theme="dark"] .t-yellow{background:linear-gradient(135deg,#8A6A12,#5E480C)}
 :root[data-theme="dark"] .ticket{color:#fff}
-:root[data-theme="dark"] .ticket .bar,:root[data-theme="dark"] .ticket .bar.dark{background:rgba(255,255,255,.22)}
-:root[data-theme="dark"] .ticket .bar i,:root[data-theme="dark"] .ticket .bar.dark i{background:#fff!important;opacity:.9!important}
+:root[data-theme="dark"] .ticket .bar{background:rgba(255,255,255,.24)}
+:root[data-theme="dark"] .ticket .bar i{background:#fff}
+:root[data-theme="dark"] .ticket .bar b{background:#fff}
+:root[data-theme="dark"] .chip.agent{color:#B9A9FF}
+:root[data-theme="dark"] .up{color:#5FE0A6}
+:root[data-theme="dark"] .down{color:#FF9C8F}
 :root[data-theme="dark"] .btn.primary{color:#2A220A}
-:root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#2A220A}
+
 :root[data-theme="dark"] .brief{box-shadow:none}
-:root[data-theme="dark"] .t-pink{background:linear-gradient(135deg,#B8476A,#8A2E4E)}
+:root[data-theme="dark"] .t-pink{background:linear-gradient(135deg,#9A3858,#6E2440)}
 :root[data-theme="dark"] .chip.pink{background:#3A1F2E;color:#FF9CB6}
 :root[data-theme="dark"] .chip.info{background:#16303C;color:#7FD3F2}
 :root[data-theme="dark"] .stk{border-color:#1E1C33}
@@ -574,8 +643,8 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   body::before,body::after{display:none}
   .app{grid-template-columns:minmax(0,1fr);border-radius:0;min-height:100dvh;padding-bottom:76px}
   .app{background:var(--frame)}
-  .rail{position:fixed;top:auto;height:auto;background:var(--card);z-index:10;left:0;right:0;bottom:0;flex-direction:row;padding:10px 12px;gap:2px;overflow-x:auto;border-right:0;border-top:1px solid var(--line)}
-  .rail .logo,.rail .spacer,.rail .toggle,.rail .out,.rail hr{display:none}
+  .rail,.rail:hover,.rail:focus-within{position:fixed;top:auto;height:auto;width:auto;background:var(--card);z-index:10;left:0;right:0;bottom:0;flex-direction:row;align-items:stretch;padding:6px 8px calc(6px + env(safe-area-inset-bottom));gap:2px;overflow:visible;border-right:0;border-top:1px solid var(--line);box-shadow:none;border-radius:0}
+  .rail .logo,.rail .spacer,.rail .toggle,.rail .out,.rail .grp{display:none}
   .steps li{font-size:10.5px;padding-top:38px}
   .row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
   .row.head>.actions .seg{flex:1 1 100%}
@@ -584,12 +653,15 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   .stats,.bal{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .stat{padding:16px;border-radius:22px}
   .stat .big{font-size:21px}
-  .rail a{flex:none;width:48px;height:44px}
+  .rail a,.more-btn{flex:1 1 0;min-width:0;margin:0;width:auto;height:58px;flex-direction:column;justify-content:center;gap:3px;padding:0 2px;font-size:11.5px;font-weight:600;border-radius:14px}
+  .rail a:not(.pri){display:none}
+  .rail .lbl{opacity:1;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .more-btn{display:flex;align-items:center;border:0;background:none;color:var(--ink-2);cursor:pointer}
+  .more-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
   .rail a[aria-current="page"]::before{display:none}
-  .rail a .tip{display:none}
   .content{padding:20px 16px 32px}
   .top{gap:10px} .search{flex:1;height:46px} .me div,.vr,.iconbtn.hide-sm{display:none}
-  .tickets,.tickets.four{grid-template-columns:1fr;gap:16px} .ticket{height:150px}
+  .tickets,.tickets.four{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px} .ticket{height:150px}
   .card{padding:22px;border-radius:24px}
   .card.flush .card-head{padding:22px 22px 0}
   .tbl th:first-child,.tbl td:first-child{padding-left:22px}
@@ -598,7 +670,36 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   .donut-wrap{grid-template-columns:140px 1fr}
   h1{font-size:25px}
 }
-@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{transition:none!important} }
+@media (max-width:600px){
+  .tickets,.tickets.four{gap:12px}
+  .ticket{height:132px;padding:16px 14px;border-radius:22px}
+  .ticket .k{font-size:12.5px;line-height:1.3;max-width:62%}
+  .ticket .v,.tickets.four .v{font-size:20px;margin-top:4px}
+  .ticket svg.art,.tickets.four svg.art{width:58px;right:6px;top:8px}
+  .ticket .p{left:14px;right:14px;bottom:14px;font-size:11.5px;line-height:1.3}
+  .card.flush .scroll-x{overflow-x:visible}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl thead{display:none}
+  .tbl tbody tr{padding:14px 22px;border-bottom:1px solid var(--line);position:relative}
+  .tbl tbody tr:last-child{border-bottom:0}
+  .tbl td,.tbl td:first-child,.tbl td:last-child{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0;border:0;white-space:normal;min-width:0;text-align:right}
+  .tbl td:first-child{justify-content:flex-start;text-align:left;padding-bottom:8px;font-size:15px;padding-right:36px}
+  .tbl td::before{content:attr(data-label);flex:none;color:var(--ink-3);font-size:12.5px;font-weight:600;text-align:left}
+  .tbl td:first-child::before,.tbl td[data-label=""]::before{display:none}
+  .tbl td:first-child>*{min-width:0}
+  .tbl td.sel,.tbl td.sel:first-child{position:absolute;left:22px;top:19px;width:auto;padding:0}
+  .tbl td.sel + td{justify-content:flex-start;text-align:left;padding:0 36px 8px 32px;font-size:15px}
+  .tbl td.sel + td::before{display:none}
+  tr.pinnable>td:last-child{padding-right:0}
+  tr.pinnable .pin{top:12px;right:12px;margin-top:0}
+  .tbl .meter{min-width:90px}
+  .tbl td .row{gap:10px}
+  .tbl.heat td.h{padding:5px 0;text-align:right}
+  .tbl tr.total td{background:none}
+  .tbl tr.total{background:var(--sunken)}
+  .tbl td .chip{white-space:normal;height:auto;min-height:26px;padding:3px 10px;text-align:left}
+}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *,*::before,*::after{animation:none!important;transition:none!important} }
 
 /* ---- fixtures, governance and roles pass ---- */
 [hidden]{display:none!important}
@@ -631,6 +732,8 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
 </style>
 </head>
 <body>
+<a class="skip" href="#main" id="skipLink">Skip to content</a>
+<div class="sr" id="live" role="status" aria-live="polite" aria-atomic="true"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
  <defs>
   <linearGradient id="gW" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E6E1FF"/></linearGradient>
@@ -638,7 +741,10 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <linearGradient id="gM" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#1E9E6E"/></linearGradient>
   <linearGradient id="gY" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE68A"/><stop offset="1" stop-color="#E0A928"/></linearGradient>
   <linearGradient id="gP" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC2CC"/><stop offset="1" stop-color="#E55E78"/></linearGradient>
+  <linearGradient id="gMascot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient>
  </defs>
+ <symbol id="mascot" viewBox="0 0 64 64"><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#gMascot)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></symbol>
+
  <symbol id="art-people" viewBox="0 0 120 110"><ellipse cx="62" cy="99" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><circle cx="82" cy="34" r="14" fill="#F1C7A5"/><path d="M68 30c0-10 6-15 14-15s14 5 14 15c-3-5-8-7-14-7s-11 2-14 7z" fill="#3A2418"/><path d="M58 96c0-18 10-30 24-30s24 12 24 30z" fill="url(#gV)"/><circle cx="44" cy="44" r="15" fill="#C68A62"/><path d="M29 41c0-11 6-17 15-17s15 6 15 17c-3-6-9-8-15-8s-12 2-15 8z" fill="#1C1410"/><path d="M16 100c0-20 12-32 28-32s28 12 28 32z" fill="url(#gM)"/><circle cx="40" cy="45" r="1.6" fill="#1D1B2E"/><circle cx="48" cy="45" r="1.6" fill="#1D1B2E"/><path d="M40 51q4 3 8 0" stroke="#5a2e1a" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
  <symbol id="art-calendar" viewBox="0 0 120 110"><ellipse cx="60" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><rect x="22" y="22" width="70" height="70" rx="14" fill="url(#gW)"/><path d="M22 36a14 14 0 0 1 14-14h42a14 14 0 0 1 14 14v6H22z" fill="url(#gV)"/><rect x="36" y="14" width="7" height="18" rx="3.5" fill="#1D1B2E"/><rect x="71" y="14" width="7" height="18" rx="3.5" fill="#1D1B2E"/><g fill="#C9BEFF"><rect x="33" y="52" width="10" height="9" rx="3"/><rect x="52" y="52" width="10" height="9" rx="3"/><rect x="71" y="52" width="10" height="9" rx="3"/><rect x="33" y="68" width="10" height="9" rx="3"/><rect x="71" y="68" width="10" height="9" rx="3"/></g><rect x="52" y="68" width="10" height="9" rx="3" fill="#F48B9B"/><circle cx="92" cy="86" r="14" fill="#2FCB8C"/><path d="M86 86l4 4 8-8" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
  <symbol id="art-payslip" viewBox="0 0 120 110"><ellipse cx="62" cy="100" rx="38" ry="6" fill="#1D1B2E" opacity=".12"/><g transform="rotate(-8 60 50)"><rect x="40" y="10" width="54" height="72" rx="10" fill="url(#gW)"/><rect x="48" y="20" width="26" height="6" rx="3" fill="#7B61FF"/><path d="M48 36h38M48 46h30M48 56h38" stroke="#C9BEFF" stroke-width="4" stroke-linecap="round"/><rect x="48" y="64" width="38" height="9" rx="4.5" fill="#2FCB8C"/></g><g><ellipse cx="34" cy="90" rx="18" ry="6" fill="#E0A928"/><rect x="16" y="72" width="36" height="18" fill="#E0A928"/><ellipse cx="34" cy="72" rx="18" ry="6" fill="#FFE68A"/><path d="M16 79h36M16 85h36" stroke="#C99216" stroke-width="1.4"/></g></symbol>
@@ -659,12 +765,14 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <nav class="rail" aria-label="Main">
     <svg class="logo" viewBox="0 0 44 44" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#53D6A1"/><stop offset="1" stop-color="#7B61FF"/></linearGradient></defs><rect width="44" height="44" rx="14" fill="url(#lg1)"/><path d="M12 31 21 13l4 8 7-6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="15" r="3" fill="#F7D65A"/></svg>
     <div id="nav" style="display:contents"></div>
+    <button class="more-btn" id="navMore" type="button" aria-haspopup="dialog" aria-controls="navSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span class="lbl">More</span></button>
     <div class="spacer"></div>
   </nav>
 
   <div class="content">
     <div class="top">
-      <button class="search" id="ask" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Ask amax or search<kbd>⌘K</kbd></button>
+      <button class="search" id="ask" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search projects, people, anything<kbd>⌘K</kbd></button>
+      <button class="launcher" id="launcher" type="button" aria-expanded="false" aria-controls="chat" aria-label="Ask amax" title="Ask amax (⌘K). Drop anything here to add it to the chat"><span class="lface"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#mascot"/></svg></span><span class="ltxt">Ask amax</span></button>
       <div class="icons">
         <button class="iconbtn hide-sm" aria-label="Agent sessions, 3 running"><svg viewBox="0 0 24 24"><path d="M5 18V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H9l-4 3z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg><i></i></button>
         <button class="iconbtn" aria-label="Notifications, 6 waiting"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i></i></button>
@@ -696,7 +804,8 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
         </div>
       </div>
     </div>
-    <div class="viewbanner" id="viewBanner" role="status" hidden></div>
+    <main id="main" tabindex="-1">
+    <div class="viewbanner" id="viewBanner" hidden></div>
 
 <!-- ================= Overview ================= -->
 <section data-change="001-amax-foundation" id="001-amax-foundation" data-roles="all" data-title="Overview" data-icon="home">
@@ -705,13 +814,13 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="cols">
     <div class="stack">
       <div class="tickets" style="margin-bottom:0">
-        <div class="ticket t-mint"><div class="k">Hours this week</div><div class="v">141.5</div>
+        <div class="ticket t-violet"><div class="k">Hours this week</div><div class="v">141.5</div>
           <svg class="art" viewBox="0 0 120 110" aria-hidden="true"><defs><radialGradient id="ck" cx=".35" cy=".3"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#CFF5E4"/></radialGradient></defs><ellipse cx="66" cy="98" rx="34" ry="6" fill="#1D1B2E" opacity=".12"/><circle cx="66" cy="56" r="38" fill="#1E9E6E"/><circle cx="63" cy="52" r="36" fill="url(#ck)"/><rect x="56" y="8" width="14" height="10" rx="3" fill="#1E9E6E"/><path d="M63 30v22l14 9" stroke="#1D1B2E" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="63" cy="52" r="4" fill="#7B61FF"/><path d="M22 34l10 6M18 52h11M22 70l10-5" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/></svg>
-          <div class="p">64% logged by agents<div class="bar dark"><i style="width:64%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+          <div class="p">64% of 141.5 h logged by agents<div class="bar" aria-hidden="true"><i style="width:64%"></i></div></div></div>
         <div class="ticket t-violet"><div class="k">Proposals in flight</div><div class="v">37</div>
           <svg class="art" viewBox="0 0 120 110" aria-hidden="true"><defs><linearGradient id="pl" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#D9CFFF"/></linearGradient></defs><ellipse cx="62" cy="99" rx="32" ry="5" fill="#1D1B2E" opacity=".12"/><path d="M14 52 104 14 76 92 58 66z" fill="url(#pl)"/><path d="M58 66 104 14 46 60z" fill="#8E77F5"/><path d="M58 66 62 86 70 74z" fill="#5B44D6"/><path d="M14 52l32 8 58-46z" fill="#fff"/><circle cx="26" cy="86" r="5" fill="#F7D65A"/><circle cx="100" cy="64" r="3.5" fill="#fff"/></svg>
-          <div class="p">18 building, 9 verified<div class="bar"><i style="width:49%"></i></div></div></div>
-        <div class="ticket t-yellow"><div class="k">Ready to invoice</div><div class="v">$26,200</div>
+          <div class="p">18 building, 9 verified</div></div>
+        <div class="ticket t-mint"><div class="k">Ready to invoice</div><div class="v">$26,200</div>
           <svg class="art" viewBox="0 0 120 110" aria-hidden="true"><ellipse cx="64" cy="100" rx="36" ry="6" fill="#1D1B2E" opacity=".12"/><g fill="#E0A928"><ellipse cx="46" cy="88" rx="20" ry="7"/><rect x="26" y="66" width="40" height="22"/></g><g fill="#FFE68A"><ellipse cx="46" cy="66" rx="20" ry="7"/></g><path d="M26 74h40M26 81h40" stroke="#C99216" stroke-width="1.5"/><rect x="62" y="22" width="44" height="58" rx="10" fill="#7B61FF" transform="rotate(12 84 51)"/><rect x="66" y="30" width="36" height="8" rx="4" fill="#fff" opacity=".85" transform="rotate(12 84 51)"/><path d="M70 50h26M68 60h20" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7" transform="rotate(12 84 51)"/><circle cx="96" cy="88" r="12" fill="#2FCB8C"/><path d="M91 88l4 4 7-8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <div class="p">Fleet Oct hours $14,200 + HR Insights Oct retainer $12,000</div></div>
       </div>
@@ -723,15 +832,23 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
       </div>
 
       <div class="card flush">
-        <div class="card-head"><h2>Waiting on you</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>Approve selected</button></div></div>
-        <div class="scroll-x"><table class="tbl">
-          <thead><tr><th>Decision</th><th>Project</th><th>Raised by</th><th>Waiting</th><th class="num">Action</th></tr></thead>
+        <div class="card-head"><h2>Waiting on you</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn primary" id="approveSel" type="button" disabled><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>Approve selected</button></div></div>
+        <div class="scroll-x"><table class="tbl" id="waitTbl">
+          <thead><tr><th class="sel"><input type="checkbox" class="selall" id="selAll" aria-label="Select all decisions"></th><th>Decision</th><th>Project</th><th>Raised by</th><th>Waiting</th><th class="num">Action</th></tr></thead>
           <tbody>
-          <tr><td><b>v1.8.0 failed in UAT</b><small>Smoke test "upload over 20 MB" failed, run 1190</small></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip">Pipeline</span></td><td>2 d</td><td class="num"><button class="btn sm primary">Retry UAT</button></td></tr>
-          <tr><td><b>Approve proposal FLT-015 Bulk upload</b><small>5 acceptance criteria, estimated 11 h</small></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip agent">Claude for Kasun</span></td><td>3 h</td><td class="num"><button class="btn sm">Review</button></td></tr>
-          <tr><td><b>Week 42 timesheets</b><small>3 of 5 people submitted, 87.5 h. Team 141.5 h, 64% from agents</small></td><td class="muted">3 projects</td><td><span class="chip agent">Claude, 38 commits</span></td><td>5 h</td><td class="num"><button class="btn sm">Review</button></td></tr>
-          <tr><td><b>Link commit author ci-bot@builds.local</b><small>6 commits have no owner</small></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip">Git sync</span></td><td>1 d</td><td class="num"><button class="btn sm">Link</button></td></tr>
+          <tr><td class="sel"><input type="checkbox" aria-label="Select: v1.8.0 failed in UAT"></td><td><b>v1.8.0 failed in UAT</b><small>Smoke test "upload over 20 MB" failed, run 1190</small></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip">Pipeline</span></td><td>2 d</td><td class="num"><button class="btn sm primary">Retry UAT</button></td></tr>
+          <tr><td class="sel"><input type="checkbox" aria-label="Select: Approve proposal FLT-015 Bulk upload"></td><td><b>Approve proposal FLT-015 Bulk upload</b><small>5 acceptance criteria, estimated 11 h</small></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip agent">Claude for Kasun</span></td><td>3 h</td><td class="num"><button class="btn sm">Review</button></td></tr>
+          <tr><td class="sel"><input type="checkbox" aria-label="Select: Week 42 timesheets"></td><td><b>Week 42 timesheets</b><small>3 of 5 people submitted, 87.5 h. Team 141.5 h, 64% from agents</small></td><td class="muted">3 projects</td><td><span class="chip agent">Claude, 38 commits</span></td><td>5 h</td><td class="num"><button class="btn sm">Review</button></td></tr>
+          <tr><td class="sel"><input type="checkbox" aria-label="Select: Link commit author ci-bot@builds.local"></td><td><b>Link commit author ci-bot@builds.local</b><small>6 commits have no owner</small></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip">Git sync</span></td><td>1 d</td><td class="num"><button class="btn sm">Link</button></td></tr>
           </tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Agent activity</h2><span class="chip agent">3 running</span></div>
+        <ul class="feed">
+          <li><span class="av ai">AI</span><div><p><span class="by">Claude for Nimal</span> finished task 3 of CON-014 Invoice export</p><small>1.5 h logged from commit a91f3c2</small></div><time>4 min</time></li>
+          <li><span class="av a4">AR</span><div><p><b>Ayesha</b> promoted Contoso v2.4.0 to QA</p><small>Confirmed by pipeline run 1182</small></div><time>Thu</time></li>
+          <li><span class="av ai">AI</span><div><p><span class="by">specclaw</span> verified CON-012 SSO token refresh</p><small>4 of 4 criteria pass, tagged v2.4.0</small></div><time>Tue</time></li>
+        </ul>
       </div>
     </div>
 
@@ -766,14 +883,6 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-head"><h2>Agent activity</h2><span class="chip agent">3 running</span></div>
-        <ul class="feed">
-          <li><span class="av ai">AI</span><div><p><span class="by">Claude for Nimal</span> finished task 3 of CON-014 Invoice export</p><small>1.5 h logged from commit a91f3c2</small></div><time>4 min</time></li>
-          <li><span class="av a4">AR</span><div><p><b>Ayesha</b> promoted Contoso v2.4.0 to QA</p><small>Confirmed by pipeline run 1182</small></div><time>Thu</time></li>
-          <li><span class="av ai">AI</span><div><p><span class="by">specclaw</span> verified CON-012 SSO token refresh</p><small>4 of 4 criteria pass, tagged v2.4.0</small></div><time>Tue</time></li>
-        </ul>
-      </div>
     </aside>
   </div>
 </section>
@@ -816,7 +925,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     </div>
   </div>
 
-  <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+  <div class="cols even">
     <div class="card">
       <div class="card-head"><h2>Talent growth</h2><span class="up">↑ 17.9% headcount this year (156 → 184)</span></div>
       <svg class="chart" id="talentChart" viewBox="0 0 560 220" role="img" aria-label="Headcount and AI-skilled people, January to October"></svg>
@@ -836,7 +945,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     </div>
   </div>
 
-  <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:28px">
+  <div class="cols even" style="margin-top:28px">
     <div class="card">
       <div class="card-head"><h2>World trends to act on</h2><span class="chip agent">Market agent</span></div>
       <div class="trend"><span class="chip good">Take on</span><div class="t">Agent platforms in the enterprise<small>Agent pilots came up in 18 of 40 client conversations this quarter. Fits your MCP and Azure AI work.</small><small class="src">From 40 client conversations logged in amax; medium confidence; Oct 12</small></div></div>
@@ -849,12 +958,12 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
       <div class="scroll-x"><table class="tbl">
         <thead><tr><th>Job</th><th>Runs</th><th>Last result</th><th class="num">On</th></tr></thead>
         <tbody>
-        <tr><td><b>Project risk scan</b><small>Velocity, scope, client signals</small></td><td>Daily 06:00</td><td>1 new risk</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Project risk scan"></span></td></tr>
-        <tr><td><b>Market and trends scan</b><small>News, RFPs, reviews, analysts</small></td><td>Mondays</td><td>3 trends</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Market scan"></span></td></tr>
-        <tr><td><b>Skills-to-opportunity match</b><small>Skills matrix vs pipeline</small></td><td>Weekly</td><td>2 matches</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Skills match"></span></td></tr>
-        <tr><td><b>Payroll variance check</b><small>Before each pay run</small></td><td>Monthly</td><td>3 explained, 1 to check</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Payroll check"></span></td></tr>
-        <tr><td><b>Teams and email scan</b><small>Sales channels and account mailboxes</small></td><td>Hourly</td><td>2 new opportunities</td><td class="num"><span class="switch" role="switch" aria-checked="true" aria-label="Teams and email scan"></span></td></tr>
-        <tr><td><b>Unused licence sweep</b><small>Microsoft 365, Azure DevOps, SaaS seats</small></td><td>Monthly</td><td>$7,488 a year to save</td><td class="num"><span class="switch off" role="switch" aria-checked="false" aria-label="Licence sweep"></span></td></tr>
+        <tr><td><b>Project risk scan</b><small>Velocity, scope, client signals</small></td><td>Daily 06:00</td><td>1 new risk</td><td class="num"><button type="button" class="switch" role="switch" aria-checked="true" aria-label="Project risk scan"></button></td></tr>
+        <tr><td><b>Market and trends scan</b><small>News, RFPs, reviews, analysts</small></td><td>Mondays</td><td>3 trends</td><td class="num"><button type="button" class="switch" role="switch" aria-checked="true" aria-label="Market scan"></button></td></tr>
+        <tr><td><b>Skills-to-opportunity match</b><small>Skills matrix vs pipeline</small></td><td>Weekly</td><td>2 matches</td><td class="num"><button type="button" class="switch" role="switch" aria-checked="true" aria-label="Skills match"></button></td></tr>
+        <tr><td><b>Payroll variance check</b><small>Before each pay run</small></td><td>Monthly</td><td>3 explained, 1 to check</td><td class="num"><button type="button" class="switch" role="switch" aria-checked="true" aria-label="Payroll check"></button></td></tr>
+        <tr><td><b>Teams and email scan</b><small>Sales channels and account mailboxes</small></td><td>Hourly</td><td>2 new opportunities</td><td class="num"><button type="button" class="switch" role="switch" aria-checked="true" aria-label="Teams and email scan"></button></td></tr>
+        <tr><td><b>Unused licence sweep</b><small>Microsoft 365, Azure DevOps, SaaS seats</small></td><td>Monthly</td><td>$7,488 a year to save</td><td class="num"><button type="button" class="switch" role="switch" aria-checked="false" aria-label="Licence sweep"></button></td></tr>
         </tbody></table></div>
     </div>
   </div>
@@ -867,10 +976,10 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><select class="select" aria-label="Client"><option>All clients</option><option>Contoso</option><option>Wide World Importers</option><option>Northwind HR</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New project</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Active projects</div><div class="v">3</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><div class="p">1 more in presales handover<div class="bar"><i style="width:75%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Contract value</div><div class="v">$774,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">56% invoiced so far<div class="bar"><i style="width:56%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Average margin</div><div class="v">36.4%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">Revenue-weighted. Target 35%<div class="bar dark"><i style="width:74%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">At risk</div><div class="v">1 project</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Fleet Tracker, 71% risk<div class="bar"><i style="width:71%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Active projects</div><div class="v">3</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><div class="p">1 more in presales handover</div></div>
+    <div class="ticket t-violet"><div class="k">Contract value</div><div class="v">$774,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">54% of $774k invoiced<div class="bar" aria-hidden="true"><i style="width:54%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Average margin</div><div class="v">36.4%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">Revenue-weighted, above the 35% target</div></div>
+    <div class="ticket t-pink"><div class="k">At risk</div><div class="v">1 project</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Fleet Tracker, 71% risk</div></div>
   </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
@@ -886,7 +995,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="card flush">
     <div class="card-head"><h2>Portfolio</h2><div class="actions"><div class="seg" role="group" aria-label="Status"><button aria-pressed="true">Active</button><button aria-pressed="false">Closed</button></div><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button></div></div>
     <div class="scroll-x"><table class="tbl">
-      <thead><tr><th>Project</th><th>Manager</th><th>Sprint</th><th style="min-width:170px">Progress</th><th>Health</th><th class="num">Margin</th><th>Next release</th><th class="num"></th></tr></thead>
+      <thead><tr><th>Project</th><th>Manager</th><th>Sprint</th><th style="min-width:170px">Progress</th><th>Health</th><th class="num">Margin</th><th>Next release</th><th class="num"><span class="sr">Actions</span></th></tr></thead>
       <tbody>
       <tr><td><a class="rowlink" href="#001-amax-foundation-project"><span class="dot" style="background:var(--violet)"></span><b>Contoso Portal</b></a><small>Contoso, fixed price</small></td><td><div class="who"><span class="av sm a1">MF</span>Maya F.</div></td><td>Sprint 18</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:56%;background:var(--violet)"></i></div>9 of 16</div></td><td><span class="chip good">On track</span></td><td class="num">38.2%</td><td>v2.5.0, Nov 28</td><td class="num"><a class="btn sm" href="#001-amax-foundation-project">Open board</a></td></tr>
       <tr><td><a class="rowlink" href="#001-amax-foundation-project"><span class="dot" style="background:var(--amber)"></span><b>Fleet Tracker</b></a><small>Wide World Importers, time and materials</small></td><td><div class="who"><span class="av sm a3">NS</span>Nimal S.</div></td><td>Sprint 11</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:31%;background:var(--amber)"></i></div>5 of 16</div></td><td><span class="chip bad">At risk</span></td><td class="num">29.6%</td><td>v1.8.0, retry UAT</td><td class="num"><a class="btn sm" href="#001-amax-foundation-project">Open board</a></td></tr>
@@ -902,7 +1011,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div><h1>Contoso Portal</h1><p class="lede">Sprint 18 runs Mon Oct 12 to Fri Oct 23. 9 of 16 tasks done, on track for v2.5.0. Released means it reached Prod.</p></div>
     <div class="actions"><select class="select" aria-label="Sprint"><option>Sprint 18</option><option>Sprint 17</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New proposal</button></div>
   </div>
-  <div class="tabs"><a class="btn sm" aria-current="true">Board</a><a class="btn sm" href="#001-amax-foundation-proposals">Proposals</a><a class="btn sm" href="#001-amax-foundation-releases">Releases</a><a class="btn sm">Risks and decisions</a><a class="btn sm">Team</a><a class="btn sm" href="#001-amax-foundation-financials">Contract</a></div>
+  <div class="tabs" role="group" aria-label="Sections"><button type="button" class="btn sm" aria-pressed="true">Board</button><a class="btn sm" href="#001-amax-foundation-proposals">Proposals</a><a class="btn sm" href="#001-amax-foundation-releases">Releases</a><button type="button" class="btn sm" aria-pressed="false">Risks and decisions</button><button type="button" class="btn sm" aria-pressed="false">Team</button><a class="btn sm" href="#001-amax-foundation-financials">Contract</a></div>
   <div class="board">
     <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>Proposed</span> <span>2</span></div>
       <div class="tcard"><div class="id">CON-016</div><p>Audit trail on approvals</p><div class="foot"><span class="av sm a4">AR</span><span>est. 6 h</span></div></div>
@@ -1020,11 +1129,11 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="card flush" style="margin-top:28px">
     <div class="card-head"><h2>Timesheets</h2><div class="actions"><button class="btn">Remind 2 people</button><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
     <div class="scroll-x"><table class="tbl">
-      <thead><tr><th>Person</th><th class="num">Mon</th><th class="num">Tue</th><th class="num">Wed</th><th class="num">Thu</th><th class="num">Fri</th><th class="num">Total</th><th>From agents</th><th>Status</th><th class="num"></th></tr></thead>
+      <thead><tr><th>Person</th><th class="num">Mon</th><th class="num">Tue</th><th class="num">Wed</th><th class="num">Thu</th><th class="num">Fri</th><th class="num">Total</th><th>From agents</th><th>Status</th><th class="num"><span class="sr">Actions</span></th></tr></thead>
       <tbody>
-      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td class="num">8.0</td><td class="num">8.5</td><td class="num">7.0</td><td class="num">8.0</td><td class="num">–</td><td class="num"><b>31.5</b></td><td><span class="chip agent">71%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
-      <tr><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td class="num">8.0</td><td class="num">8.0</td><td class="num">8.0</td><td class="num">7.5</td><td class="num">1.0</td><td class="num"><b>32.5</b></td><td><span class="chip agent">78%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
-      <tr><td><div class="who"><span class="av sm a4">AR</span><div>Ayesha Rahman<small>Casual leave Fri</small></div></div></td><td class="num">7.5</td><td class="num">8.0</td><td class="num">–</td><td class="num">8.0</td><td class="num">–</td><td class="num"><b>23.5</b></td><td><span class="chip agent">44%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td class="num">8.0</td><td class="num">8.5</td><td class="num">7.0</td><td class="num">8.0</td><td class="num">–</td><td class="num"><b>31.5</b></td><td><span class="chip agent">71%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm ghost">Approve</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td class="num">8.0</td><td class="num">8.0</td><td class="num">8.0</td><td class="num">7.5</td><td class="num">1.0</td><td class="num"><b>32.5</b></td><td><span class="chip agent">78%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm ghost">Approve</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a4">AR</span><div>Ayesha Rahman<small>Casual leave Fri</small></div></div></td><td class="num">7.5</td><td class="num">8.0</td><td class="num">–</td><td class="num">8.0</td><td class="num">–</td><td class="num"><b>23.5</b></td><td><span class="chip agent">44%</span></td><td><span class="chip good">Submitted</span></td><td class="num"><button class="btn sm ghost">Approve</button></td></tr>
       <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td class="num">7.0</td><td class="num">8.0</td><td class="num">8.0</td><td class="num">6.0</td><td class="num">–</td><td class="num"><b>29.0</b></td><td><span class="chip agent">66%</span></td><td><span class="chip draft">Draft</span></td><td class="num"><button class="btn sm">Remind</button></td></tr>
       <tr><td><div class="who"><span class="av sm a1">DW</span><div>Dinesh Wickrama<small>Joined Oct 5</small></div></div></td><td class="num">7.6</td><td class="num">7.6</td><td class="num">7.6</td><td class="num">2.2</td><td class="num">–</td><td class="num"><b>25.0</b></td><td><span class="chip agent">52%</span></td><td><span class="chip draft">Draft</span></td><td class="num"><button class="btn sm">Remind</button></td></tr>
       </tbody></table></div>
@@ -1071,21 +1180,20 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><select class="select" aria-label="Entity"><option>All entities</option><option>Sri Lanka</option><option>Australia</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add person</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Headcount</div><div class="v">184</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">171 Sri Lanka, 13 Australia<div class="bar"><i style="width:93%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Joiners and leavers, Q4</div><div class="v">3 / 0</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">3 joined, 0 left. 2 more join Nov 2<div class="bar"><i style="width:75%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">On probation</div><div class="v">11</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 reviews due this month<div class="bar dark"><i style="width:27%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Documents missing</div><div class="v">7</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">Agent sent reminders<div class="bar"><i style="width:30%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Headcount</div><div class="v">184</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">171 Sri Lanka, 13 Australia</div></div>
+    <div class="ticket t-mint"><div class="k">Joiners and leavers, Q4</div><div class="v">3 / 0</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">3 joined, 0 left. 2 more join Nov 2</div></div>
+    <div class="ticket t-yellow"><div class="k">On probation</div><div class="v">11</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 reviews due this month</div></div>
+    <div class="ticket t-yellow"><div class="k">Documents missing</div><div class="v">7</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">Agent sent reminders</div></div>
   </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
       <div class="card-head"><h2>People by department</h2><span class="muted" style="font-size:13px">184 people</span></div>
-      <svg class="chart viz" data-kind="hbars" data-labels="Engineering,Quality,Delivery,Sales,People and Culture,Finance,IT,Leadership" data-values="112,24,14,9,8,6,6,5" data-colors="#7B61FF,#F48B9B,#2FCB8C,#F2A93B,#5CC8F0,#B9EE7A,#A792FF,#FFB86B" viewBox="0 0 520 230" role="img" aria-label="People by department"></svg>
+      <svg class="chart viz" data-kind="hbars" data-labels="Engineering,Quality,Delivery,Sales,People and Culture,Finance,IT,Leadership" data-values="112,24,14,9,8,6,6,5" data-colors="#7B61FF" viewBox="0 0 520 230" role="img" aria-label="People by department"></svg>
     </div>
     <div class="card">
       <div class="card-head"><h2>Joiners and leavers</h2><span class="up">42 joined, 14 left: net +28 this year</span></div>
-      <svg class="chart viz" data-kind="line" data-labels="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct" data-series="Leavers|#F48B9B|dash|2,1,3,1,2,1,2,1,1,0;Joiners|#2FCB8C|area|5,4,5,4,4,4,6,4,3,3"
- data-max="8" data-step="2" viewBox="0 0 520 210" role="img" aria-label="Joiners and leavers per month"></svg>
-      <div class="legend"><span><i style="background:var(--mint)"></i>Joiners</span><span><i style="background:repeating-linear-gradient(90deg,#F48B9B 0 5px,transparent 5px 9px)"></i>Leavers</span></div>
+      <svg class="chart viz" data-kind="gbars" data-labels="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct" data-series="Joiners|#2FCB8C|5,4,5,4,4,4,6,4,3,3;Leavers|#F48B9B|2,1,3,1,2,1,2,1,1,0" data-max="8" data-step="2" viewBox="0 0 520 210" role="img" aria-label="Joiners and leavers per month"></svg>
+      <div class="legend"><span><i style="width:12px;height:12px;border-radius:4px;background:#2FCB8C"></i>Joiners</span><span><i style="width:12px;height:12px;border-radius:4px;background:#F48B9B"></i>Leavers</span></div>
     </div>
   </div>
   <div class="card flush">
@@ -1110,13 +1218,13 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="profile">
     <div class="card idcard">
       <span class="av lg a2" style="width:88px;height:88px;border-radius:28px;font-size:26px">KD</span>
-      <b>Kasun Dias</b><span class="muted" style="font-size:14px">Senior software engineer</span>
+      <h1>Kasun Dias</h1><span class="muted" style="font-size:14px">Senior software engineer</span>
       <div style="display:flex;gap:6px;justify-content:center;margin:14px 0 20px"><span class="chip good">Active</span><span class="chip">Sri Lanka</span><span class="chip agent">On Fleet Tracker</span></div>
       <dl class="kv"><dt>Employee no.</dt><dd>LL-0417</dd><dt>Joined</dt><dd>Mar 3, 2022</dd><dt>Manager</dt><dd>Maya Fernando</dd><dt>Department</dt><dd>Engineering</dd><dt>Work email</dt><dd>kasun.dias@example.dev</dd><dt>Location</dt><dd>Colombo, hybrid</dd></dl>
     </div>
     <div class="stack">
-      <div class="tabs"><a class="btn sm" aria-current="true">Overview</a><a class="btn sm">Employment</a><a class="btn sm">Pay</a><a class="btn sm">Leave</a><a class="btn sm">Documents</a><a class="btn sm">Access</a><a class="btn sm">Performance</a></div>
-      <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+      <div class="tabs" role="group" aria-label="Sections"><button type="button" class="btn sm" aria-pressed="true">Overview</button><button type="button" class="btn sm" aria-pressed="false">Employment</button><button type="button" class="btn sm" aria-pressed="false">Pay</button><button type="button" class="btn sm" aria-pressed="false">Leave</button><button type="button" class="btn sm" aria-pressed="false">Documents</button><button type="button" class="btn sm" aria-pressed="false">Access</button><button type="button" class="btn sm" aria-pressed="false">Performance</button></div>
+      <div class="cols even">
         <div class="card">
           <h2>Employment</h2>
           <dl class="kv" style="margin-top:18px"><dt>Contract</dt><dd>Permanent, full time</dd><dt>Grade</dt><dd>E4</dd><dt>Basic salary</dt><dd><span class="pay reveal">LKR 285,000</span> <button class="link" style="display:inline" id="salShow" type="button">Show</button></dd><dt>EPF number</dt><dd>•••• 2231</dd><dt>Bank</dt><dd>Commercial Bank •••• 7740</dd><dt>Next review</dt><dd>Mar 2027</dd></dl>
@@ -1130,7 +1238,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
           </ul>
         </div>
       </div>
-      <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+      <div class="cols even">
         <div class="card">
           <div class="card-head"><h2>Leave balance</h2><button class="btn sm">Request for Kasun</button></div>
           <div class="ringrow"><div class="ring" style="--p:57;--c:#7B61FF"><span>8</span></div><div>Annual<small>8 of 14 days left</small></div></div>
@@ -1160,10 +1268,10 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><button class="btn">Holiday calendar</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">On leave today</div><div class="v">6</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 annual, 2 casual, 1 medical<div class="bar"><i style="width:33%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Waiting for approval</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">1 clashes with a release<div class="bar dark"><i style="width:50%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Booked this month</div><div class="v">41 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Across 19 people<div class="bar"><i style="width:41%"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">LKR 9.4M liability, Sri Lankan entity only<div class="bar"><i style="width:64%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">On leave today</div><div class="v">6</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 annual, 2 casual, 1 medical</div></div>
+    <div class="ticket t-yellow"><div class="k">Waiting for approval</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">1 clashes with a release</div></div>
+    <div class="ticket t-violet"><div class="k">Booked this month</div><div class="v">41 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Across 19 people</div></div>
+    <div class="ticket t-yellow"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">LKR 9.4M liability, Sri Lankan entity only</div></div>
   </div>
   <div class="card" style="margin-bottom:28px">
     <div class="card-head"><h2>Team calendar, October 2026</h2><div class="legend" style="padding:0;margin:0;gap:16px"><span><i style="width:12px;height:12px;border-radius:4px;background:#B3A1FF"></i>Annual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#7FD8F5"></i>Casual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#F48B9B"></i>Medical</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #7B61FF"></i>Pending</span><span><i style="width:12px;height:12px;border-radius:4px;background:#FFF1D6"></i>Holiday</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 2px var(--ink)"></i>Today, Oct 16</span></div></div>
@@ -1180,7 +1288,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary">Approve all</button></div>
+    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary" id="leaveApproveAll" type="button">Approve all</button></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Person</th><th>Type</th><th>Dates</th><th class="num">Days</th><th>Clash check</th><th class="num">Action</th></tr></thead>
       <tbody>
@@ -1202,8 +1310,8 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <ol class="steps" style="padding:0"><li class="done">Draft from time and leave</li><li class="done">Agent variance check</li><li class="now">HR approval</li><li>Finance approval</li><li>Bank file and EPF/ETF</li><li>Payslips sent</li></ol>
   </div>
   <div class="tickets">
-    <div class="ticket t-violet"><div class="k">Gross pay</div><div class="v pay">LKR 48.62M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">171 people, up 1.8% on September<div class="bar"><i style="width:100%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Net to banks</div><div class="v pay">LKR 39.07M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-wallet"/></svg><div class="p">Gross − EPF 8% 3.60M − APIT 5.95M<div class="bar"><i style="width:80%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Gross pay</div><div class="v pay">LKR 48.62M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">171 people, up 1.8% on September</div></div>
+    <div class="ticket t-violet"><div class="k">Net to banks</div><div class="v pay">LKR 39.07M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-wallet"/></svg><div class="p">Gross − EPF 8% 3.60M − APIT 5.95M</div></div>
     <div class="ticket t-yellow"><div class="k">Statutory</div><div class="v pay">LKR 16.30M</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">EPF 9.00M + ETF 1.35M + APIT 5.95M. APIT due Nov 15; EPF and ETF by Nov 30</div></div>
   </div>
   <div class="stack">
@@ -1234,7 +1342,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="card flush" style="margin-top:28px">
     <div class="card-head"><h2>Payslips</h2><div class="actions"><span class="muted" id="runHint" style="font-size:13px;align-self:center">Resolve the 2 open changes to approve the run</span><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn primary" id="approveRun" disabled aria-describedby="runHint">Approve run</button></div></div>
     <div class="scroll-x"><table class="tbl">
-      <thead><tr><th>Person</th><th>Department</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net</th><th>Check</th><th class="num"></th></tr></thead>
+      <thead><tr><th>Person</th><th>Department</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net</th><th>Check</th><th class="num"><span class="sr">Actions</span></th></tr></thead>
       <tbody>
       <tr><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td>Engineering</td><td class="num pay">333,250</td><td class="num pay">53,475</td><td class="num"><b class="pay">279,775</b></td><td><span class="chip agent">Overtime</span></td><td class="num"><button class="btn sm" data-open="payslipDrawer">View payslip</button></td></tr>
       <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Engineering</td><td class="num pay">512,400</td><td class="num pay">98,120</td><td class="num"><b class="pay">414,280</b></td><td><span class="chip agent">Overtime</span></td><td class="num"><button class="btn sm" data-open="payslipDrawer">View payslip</button></td></tr>
@@ -1249,7 +1357,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   </div>
   <div class="tickets">
     <div class="ticket t-violet"><div class="k">Gross pay, this fortnight</div><div class="v pay">AUD 118,400</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-payslip"/></svg><div class="p">13 people, Lumen Labs Pty Ltd</div></div>
-    <div class="ticket t-mint"><div class="k">PAYG withheld</div><div class="v pay">AUD 31,900</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">Net to banks <span class="pay">AUD 86,500</span></div></div>
+    <div class="ticket t-violet"><div class="k">PAYG withheld</div><div class="v pay">AUD 31,900</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">Net to banks <span class="pay">AUD 86,500</span></div></div>
     <div class="ticket t-yellow"><div class="k">Super, 12%</div><div class="v pay">AUD 14,208</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">Paid with this run under Payday Super; due within 7 days</div></div>
   </div>
   <div class="cols even">
@@ -1277,10 +1385,10 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><select class="select" aria-label="Role"><option>All roles (4)</option><option>Senior .NET engineer (2)</option><option>AI engineer (1)</option><option>QA engineer (1)</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New role</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Open roles</div><div class="v">4</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">2 raised from demand forecasts<div class="bar"><i style="width:50%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Candidates</div><div class="v">63</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">41 screened by the agent<div class="bar"><i style="width:65%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Time to hire</div><div class="v">31 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">9 days faster than Q3<div class="bar dark"><i style="width:70%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Offers accepted</div><div class="v">80%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">4 of 5 this quarter<div class="bar"><i style="width:80%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Open roles</div><div class="v">4</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">2 raised from demand forecasts</div></div>
+    <div class="ticket t-violet"><div class="k">Candidates</div><div class="v">63</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">41 screened by the agent</div></div>
+    <div class="ticket t-mint"><div class="k">Time to hire</div><div class="v">31 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">9 days faster than Q3</div></div>
+    <div class="ticket t-mint"><div class="k">Offers accepted</div><div class="v">80%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">4 of 5 offers accepted this quarter<div class="bar" aria-hidden="true"><i style="width:80%"></i></div></div></div>
   </div>
   <div class="board">
     <div class="lane"><div class="lane-head"><span class="lh"><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span>Applied</span> <span>22</span></div>
@@ -1325,10 +1433,10 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><button class="btn">Skills matrix</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New programme</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Programmes</div><div class="v">18</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-cap"/></svg><div class="p">11 internal, 7 external<div class="bar"><i style="width:72%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">People in optional programmes</div><div class="v">126</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">68% of everyone<div class="bar"><i style="width:68%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Completion rate</div><div class="v">74%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">Target 80%<div class="bar dark"><i style="width:74%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Certifications</div><div class="v">41</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">6 expire before January<div class="bar"><i style="width:85%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Programmes</div><div class="v">18</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-cap"/></svg><div class="p">11 internal, 7 external</div></div>
+    <div class="ticket t-violet"><div class="k">People in optional programmes</div><div class="v">126</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">68% of 184 people<div class="bar" aria-hidden="true"><i style="width:68%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Completion rate</div><div class="v">74%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">74%, against an 80% target<div class="bar" aria-hidden="true"><i style="width:74%"></i><b style="left:80%"></b></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Certifications</div><div class="v">41</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">6 expire before January</div></div>
   </div>
   <div class="cols">
     <div class="card flush">
@@ -1360,9 +1468,9 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <h1>Financials</h1>
   <p class="lede">Contoso's next invoice unlocks when v2.4.0 reaches Prod. Fleet Tracker has one invoice 9 days overdue.</p>
   <div class="tickets">
-    <div class="ticket t-violet"><div class="k">Contract value</div><div class="v">$774,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">3 active contracts<div class="bar"><i style="width:100%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Invoiced to date</div><div class="v">$418,200</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">54% of contract value<div class="bar"><i style="width:54%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Overdue</div><div class="v">$18,315</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">INV-0912, September hours, due Oct 7</div></div>
+    <div class="ticket t-violet"><div class="k">Contract value</div><div class="v">$774,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">3 active contracts</div></div>
+    <div class="ticket t-violet"><div class="k">Invoiced to date</div><div class="v">$418,200</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">54% of $774k contract value<div class="bar" aria-hidden="true"><i style="width:54%"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Overdue</div><div class="v">$18,315</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">INV-0912, September hours, due Oct 7</div></div>
   </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
@@ -1393,10 +1501,10 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><div class="seg" role="group" aria-label="View"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div><select class="select" aria-label="Owner"><option>All owners</option><option>Liam Murphy</option><option>Maya Fernando</option></select><button class="btn primary" data-fill><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>Fill with amax</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Open pipeline</div><div class="v">$596,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">3 opportunities, 2 suggested<div class="bar"><i style="width:60%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Weighted by win chance</div><div class="v">$280,800</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">47% of open value<div class="bar"><i style="width:47%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Win rate, 12 months</div><div class="v">38%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Up 6 points<div class="bar dark"><i style="width:38%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Days to close</div><div class="v">64 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Average for won deals<div class="bar"><i style="width:64%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Open pipeline</div><div class="v">$596,000</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">3 opportunities, 2 suggested</div></div>
+    <div class="ticket t-violet"><div class="k">Weighted by win chance</div><div class="v">$280,800</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">47% of $596k open value<div class="bar" aria-hidden="true"><i style="width:47%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Win rate, 12 months</div><div class="v">38%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">Up 6 points</div></div>
+    <div class="ticket t-violet"><div class="k">Days to close</div><div class="v">64 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Average for won deals</div></div>
   </div>
 
   <div class="found" id="foundStrip">
@@ -1419,11 +1527,11 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="lane" data-stage="Lead"><div class="lane-head"><span class="lh"><span class="stk" data-i="inbox" style="--c:#5CC8F0"></span>Lead</span> <span>0</span></div>
       </div>
     <div class="lane" data-stage="Qualified"><div class="lane-head"><span class="lh"><span class="stk" data-i="search" style="--c:#A792FF"></span>Qualified</span> <span>1</span></div>
-      <div class="tcard deal"><div class="opp-top"><span class="id">Fabrikam</span><span class="rag a" title="Health: amber"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Data platform, phase 2</a></p><div class="opp-num"><b>$320,000</b><span>30%</span></div><div class="foot"><span class="av sm">LM</span><span>Workshop Oct 24</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Fabrikam</span><span class="rag a" title="Health: amber"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Data platform, phase 2</a></p><div class="opp-num"><b>$320,000</b><span>30%</span></div><div class="foot"><span class="av sm">LM</span><span>Workshop Oct 24</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm" type="button" data-go disabled>Move</button><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
     <div class="lane" data-stage="Proposal"><div class="lane-head"><span class="lh"><span class="stk" data-i="plane" style="--c:#F2A93B"></span>Proposal</span> <span>1</span></div>
-      <div class="tcard deal"><div class="opp-top"><span class="id">Northwind Insurance</span><span class="rag a" title="Health: amber, high-impact risk open"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Claims copilot</a></p><div class="opp-num"><b>$180,000</b><span>60%</span></div><div class="foot"><span class="av sm">MF</span><span>Demo Oct 21</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Northwind Insurance</span><span class="rag a" title="Health: amber, high-impact risk open"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Claims copilot</a></p><div class="opp-num"><b>$180,000</b><span>60%</span></div><div class="foot"><span class="av sm">MF</span><span>Demo Oct 21</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm" type="button" data-go disabled>Move</button><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
     <div class="lane" data-stage="Negotiation"><div class="lane-head"><span class="lh"><span class="stk" data-i="hand" style="--c:#7B61FF"></span>Negotiation</span> <span>1</span></div>
-      <div class="tcard deal"><div class="opp-top"><span class="id">Contoso</span><span class="rag g"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Support retainer</a></p><div class="opp-num"><b>$96,000</b><span>80%</span></div><div class="foot"><span class="av sm">LM</span><span>Close Nov 7</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
+      <div class="tcard deal"><div class="opp-top"><span class="id">Contoso</span><span class="rag g"></span></div><p><a class="rowlink" href="#001-amax-foundation-opportunity">Support retainer</a></p><div class="opp-num"><b>$96,000</b><span>80%</span></div><div class="foot"><span class="av sm">LM</span><span>Close Nov 7</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm" type="button" data-go disabled>Move</button><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div></div></div>
     <div class="lane" data-stage="Closed"><div class="lane-head"><span class="lh"><span class="stk" data-i="trophy" style="--c:#2FCB8C"></span>Closed</span> <span>2</span></div>
       <div class="tcard deal"><div class="opp-top"><span class="id">Northwind HR</span><span class="chip good">Won</span></div><p>HR Insights retainer</p><div class="opp-num"><b>$144,000</b><span>Won Jun 2</span></div><div class="foot"><span class="av sm">AR</span><a class="link" href="#001-amax-foundation-projects">Now a project ›</a></div></div>
       <div class="tcard deal lost"><div class="opp-top"><span class="id">Tailspin</span><span class="chip bad">Lost</span></div><p>Mobile banking revamp</p><div class="opp-num"><b>$150,000</b><span>Sep 26</span></div><div class="foot"><span class="av sm">LM</span><span>Lost on price</span></div></div></div>
@@ -1457,7 +1565,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="card" style="margin-bottom:28px">
     <ol class="steps" style="padding:0"><li class="done">New idea<small>Aug 4</small></li><li class="done">Lead<small>Aug 7</small></li><li class="done">Qualified<small>Aug 21</small></li><li class="now">Proposal<small>since Oct 2</small></li><li>Negotiation</li><li>Won</li></ol>
   </div>
-  <div class="tabs"><a class="btn sm" aria-current="true">Overview</a><a class="btn sm">Activities 6</a><a class="btn sm">Tasks 3</a><a class="btn sm">Risks and issues 3</a><a class="btn sm">Team 4</a><a class="btn sm">Documents 5</a></div>
+  <div class="tabs" role="group" aria-label="Sections"><button type="button" class="btn sm" aria-pressed="true">Overview</button><button type="button" class="btn sm" aria-pressed="false">Activities 6</button><button type="button" class="btn sm" aria-pressed="false">Tasks 3</button><button type="button" class="btn sm" aria-pressed="false">Risks and issues 3</button><button type="button" class="btn sm" aria-pressed="false">Team 4</button><button type="button" class="btn sm" aria-pressed="false">Documents 5</button></div>
   <div class="cols">
     <div class="stack">
       <div class="cols even">
@@ -1557,23 +1665,23 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     <div class="actions"><button class="btn">Start access review</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add licence</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Licence spend, monthly</div><div class="v">$14,860</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-wallet"/></svg><div class="p">12 products<div class="bar"><i style="width:78%"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Unused seats</div><div class="v">23</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><div class="p">$624 a month to save<div class="bar"><i style="width:23%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Devices compliant</div><div class="v">96.4%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">7 of 231 need updates<div class="bar"><i style="width:96%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">Leavers with access</div><div class="v">0</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">Revoked on the last day<div class="bar dark"><i style="width:100%;background:#1D1B2E;opacity:.75"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Licence spend, monthly</div><div class="v">$14,860</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-wallet"/></svg><div class="p">12 products</div></div>
+    <div class="ticket t-yellow"><div class="k">Unused seats</div><div class="v">23</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><div class="p">$624 a month to save</div></div>
+    <div class="ticket t-mint"><div class="k">Devices compliant</div><div class="v">96.4%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">96.4% of 231 devices; 7 need updates<div class="bar" aria-hidden="true"><i style="width:96%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Leavers with access</div><div class="v">0</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">Revoked on the last day</div></div>
   </div>
   <div class="cols">
     <div class="card flush">
       <div class="card-head"><h2>Licences</h2><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div>
       <div class="scroll-x"><table class="tbl">
-        <thead><tr><th>Product</th><th class="num">Seats</th><th style="min-width:120px">Assigned</th><th class="num">Active 30 d</th><th class="num">Monthly</th><th>Unused seats</th><th class="num">Unused cost</th></tr></thead>
+        <thead><tr><th>Product</th><th class="num">Seats</th><th>Assigned</th><th class="num">Active 30 d</th><th class="num">Monthly</th><th>Unused seats</th><th class="num">Unused cost</th></tr></thead>
         <tbody>
         <tr><td><div class="who"><span class="logo-sq" style="background:#D83B01">M</span>Microsoft 365 E3</div></td><td class="num">190</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:97%;background:var(--violet)"></i></div>184</div></td><td class="num">181</td><td class="num">$6,840</td><td><span class="chip">3</span></td><td class="num">$108</td></tr>
         <tr><td><div class="who"><span class="logo-sq" style="background:#0078D4">D</span>Azure DevOps, Basic + Test Plans</div></td><td class="num">60</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:93%;background:var(--violet)"></i></div>56</div></td><td class="num">50</td><td class="num">$2,912</td><td><span class="chip warn">6</span></td><td class="num">$276<small>Test Plans add-on only</small></td></tr>
         <tr><td><div class="who"><span class="logo-sq" style="background:#24292F">G</span>GitHub Copilot Business</div></td><td class="num">120</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:93%;background:var(--violet)"></i></div>112</div></td><td class="num">108</td><td class="num">$2,280</td><td><span class="chip">4</span></td><td class="num">$76</td></tr>
         <tr><td><div class="who"><span class="logo-sq" style="background:#A259FF">F</span>Figma Professional</div></td><td class="num">40</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:95%;background:var(--violet)"></i></div>38</div></td><td class="num">29</td><td class="num">$600</td><td><span class="chip warn">9</span></td><td class="num">$135</td></tr>
         <tr><td><div class="who"><span class="logo-sq" style="background:#111">J</span>JetBrains All Products</div></td><td class="num">30</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:90%;background:var(--violet)"></i></div>27</div></td><td class="num">25</td><td class="num">$870</td><td><span class="chip">1</span></td><td class="num">$29</td></tr>
-        <tr class="total"><td>Unused, all products</td><td></td><td></td><td></td><td></td><td><span class="chip">23</span></td><td class="num">$624 a month</td></tr>
+        <tr class="total"><td>Unused, all products</td><td></td><td></td><td></td><td></td><td><span class="chip">23</span></td><td class="num">$624<small>a month</small></td></tr>
         </tbody></table></div>
     </div>
     <div class="stack">
@@ -1599,7 +1707,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   <div class="card flush" style="margin-top:28px">
     <div class="card-head"><h2>People and access</h2><div class="actions"><select class="select" aria-label="Show"><option>Everyone</option><option>Admins only</option><option>Leavers</option><option>Contractors</option></select></div></div>
     <div class="scroll-x"><table class="tbl">
-      <thead><tr><th>Person</th><th class="num">Entra groups</th><th class="num">Licences</th><th class="num">Devices</th><th>Admin roles</th><th>Last review</th><th class="num"></th></tr></thead>
+      <thead><tr><th>Person</th><th class="num">Entra groups</th><th class="num">Licences</th><th class="num">Devices</th><th>Admin roles</th><th>Last review</th><th class="num"><span class="sr">Actions</span></th></tr></thead>
       <tbody>
       <tr><td><a class="rowlink who" href="#001-amax-foundation-person"><span class="av sm a2">KD</span>Kasun Dias</a></td><td class="num">3</td><td class="num">4</td><td class="num">1</td><td class="muted">None</td><td>Jul 2026</td><td class="num"><a class="btn sm" href="#001-amax-foundation-person">Open</a></td></tr>
       <tr><td><a class="rowlink who" href="#001-amax-foundation-person"><span class="av sm a1">SK</span>Sahan Kumara</a></td><td class="num">7</td><td class="num">6</td><td class="num">2</td><td><span class="chip warn">Global admin</span></td><td>Jul 2026</td><td class="num"><button class="btn sm">Review</button></td></tr>
@@ -1613,13 +1721,13 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
 <section data-change="001-amax-foundation" id="001-amax-foundation-helpdesk" data-roles="all" data-title="Helpdesk" data-icon="help">
   <div class="row head">
     <div><h1>Helpdesk</h1><p class="lede">The support agent solved 41% of tickets on its own this month, mostly access requests and password resets. 2 tickets are close to breaching their SLA.</p></div>
-    <div class="actions"><div class="seg" role="group" aria-label="Queue"><button aria-pressed="true">IT</button><button aria-pressed="false">HR</button><button aria-pressed="false">Facilities</button></div><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New ticket</button></div>
+    <div class="actions"><div class="seg" role="group" aria-label="Queue" id="queueSeg"><button aria-pressed="true" data-q="it">IT</button><button aria-pressed="false" data-q="hr">HR</button><button aria-pressed="false" data-q="fac">Facilities</button></div><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New ticket</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Open tickets</div><div class="v">27</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-headset"/></svg><div class="p">9 waiting on the requester<div class="bar"><i style="width:33%"></i></div></div></div>
-    <div class="ticket t-mint"><div class="k">Solved by agent</div><div class="v">41%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Up 12 points on September<div class="bar"><i style="width:41%"></i></div></div></div>
-    <div class="ticket t-yellow"><div class="k">First response</div><div class="v">7 min</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Target 30 min<div class="bar dark"><i style="width:77%;background:#1D1B2E;opacity:.75"></i></div></div></div>
-    <div class="ticket t-pink"><div class="k">Satisfaction</div><div class="v">4.7 / 5</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">212 ratings<div class="bar"><i style="width:94%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Open tickets</div><div class="v">27</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-headset"/></svg><div class="p">9 waiting on the requester</div></div>
+    <div class="ticket t-mint"><div class="k">Solved by agent</div><div class="v">41%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Up 12 points on September</div></div>
+    <div class="ticket t-mint"><div class="k">First response</div><div class="v">7 min</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Target 30 min</div></div>
+    <div class="ticket t-mint"><div class="k">Satisfaction</div><div class="v">4.7 / 5</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">212 ratings</div></div>
   </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
@@ -1633,15 +1741,15 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><h2>Queue</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button></div></div>
+    <div class="card-head"><h2 id="queueTitle">IT queue</h2><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button></div></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Ticket</th><th>Requester</th><th>Category</th><th>Priority</th><th>SLA</th><th>Handled by</th></tr></thead>
       <tbody>
-      <tr><td><b>INC-20431</b> VPN drops on home Wi-Fi<small>Opened 3 h ago, via Teams</small></td><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td>Network</td><td><span class="chip bad">High</span></td><td><span class="down">45 min left</span></td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
-      <tr><td><b>INC-20429</b> Access to Fleet Tracker repo<small>Granted by support agent after Nimal (repo owner) approved in Teams</small></td>
+      <tr data-q="it"><td><b>INC-20431</b> VPN drops on home Wi-Fi<small>Opened 3 h ago, via Teams</small></td><td><div class="who"><span class="av sm a4">AR</span>Ayesha Rahman</div></td><td>Network</td><td><span class="chip bad">High</span></td><td><span class="down">45 min left</span></td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
+      <tr data-q="it"><td><b>INC-20429</b> Access to Fleet Tracker repo<small>Granted by support agent after Nimal (repo owner) approved in Teams</small></td>
 <td><div class="who"><span class="av sm a2">TW</span>Tharushi W.</div></td><td>Access</td><td><span class="chip">Normal</span></td><td><span class="chip good">Done</span></td><td><span class="chip agent">Support agent</span></td></tr>
-      <tr><td><b>INC-20427</b> Laptop for new joiner, Nov 2<small>Created by onboarding checklist</small></td><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Hardware</td><td><span class="chip">Normal</span></td><td>2 d left</td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
-      <tr><td><b>HR-1186</b> Salary confirmation letter for visa<small>Letter drafted, waiting for HR signature</small></td><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td>HR letters</td><td><span class="chip">Normal</span></td><td>1 d left</td><td><span class="chip agent">Support agent</span></td></tr>
+      <tr data-q="it"><td><b>INC-20427</b> Laptop for new joiner, Nov 2<small>Created by onboarding checklist</small></td><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Hardware</td><td><span class="chip">Normal</span></td><td>2 d left</td><td><div class="who"><span class="av sm a1">SK</span>Sahan K.</div></td></tr>
+      <tr data-q="hr"><td><b>HR-1186</b> Salary confirmation letter for visa<small>Letter drafted, waiting for HR signature</small></td><td><div class="who"><span class="av sm a2">KD</span>Kasun Dias</div></td><td>HR letters</td><td><span class="chip">Normal</span></td><td>1 d left</td><td><span class="chip agent">Support agent</span></td></tr>
       </tbody></table></div>
   </div>
 </section>
@@ -1692,32 +1800,36 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     </div>
   </div>
 </section>
-
+    </main>
   </div>
 </div>
 
-<aside class="chat" id="chat" aria-label="amax chat">
-  <header class="c-head"><span class="c-face"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient></defs><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#mg)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg></span><div><b>amax</b><small id="cWhere">Ask, add or drop anything here</small></div><button class="iconbtn" id="cClose" aria-label="Close chat"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
-  <div class="c-log" id="cLog" aria-live="polite"></div>
+<aside class="chat" id="chat" aria-label="amax chat" inert>
+  <header class="c-head"><span class="c-face"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#mascot"/></svg></span><div><b>amax</b><small id="cWhere">Ask, add or drop anything here</small></div><button class="iconbtn" id="cClose" aria-label="Close chat"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <div class="c-log" id="cLog" role="log" aria-live="polite" aria-label="Conversation"></div>
   <div class="c-ctx" id="cCtx"></div>
-  <form class="c-input" id="cForm"><input id="cIn" autocomplete="off" placeholder="Type, or tap amax and talk"><button class="c-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button></form>
+  <form class="c-input" id="cForm"><input id="cIn" autocomplete="off" aria-label="Message amax" placeholder="Type, or tap amax and talk"><button class="c-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button></form>
   <div class="c-dock">
     <button class="c-round" id="cPick" aria-pressed="false" title="Pick something on the screen" aria-label="Pick from the screen"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/></svg></button>
-    <button class="c-talk" id="cTalk" aria-pressed="false" aria-label="Talk to amax"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient></defs><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#mg)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg></button>
+    <button class="c-talk" id="cTalk" aria-pressed="false" aria-label="Talk to amax"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#mascot"/></svg></button>
     <button class="c-round" id="cNew" title="New conversation" aria-label="New conversation"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
   </div>
 </aside>
-<button class="launcher" id="launcher" aria-label="Open amax chat (⌘K)" title="amax (⌘K). Drop anything here"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7BE3B4"/><stop offset="1" stop-color="#2FB5A0"/></linearGradient></defs><rect x="29" y="4" width="6" height="9" rx="3" fill="#2FB5A0"/><circle cx="32" cy="5" r="4" fill="#7B61FF"/><rect x="6" y="12" width="52" height="44" rx="22" fill="url(#mg)"/><rect x="13" y="22" width="38" height="22" rx="11" fill="#1D1B2E" opacity=".9"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#7BE3B4"/><ellipse cx="40" cy="33" rx="4" ry="5" fill="#7BE3B4"/><path d="M27 50q5 3 10 0" stroke="#1D1B2E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg></button>
+
+<dialog class="sheet" id="navSheet" aria-labelledby="sheetTitle">
+  <div class="sheet-head"><h2 id="sheetTitle">All screens</h2><button class="iconbtn" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <nav aria-label="All screens"><ul class="sheet-list" id="sheetList"></ul></nav>
+</dialog>
 
 <dialog class="small" id="lostDialog" aria-label="Mark as lost">
   <div class="pal-body"><h2 style="margin-bottom:6px">Mark Claims copilot as lost?</h2><p class="muted" style="margin:0 0 16px;font-size:14px">It moves to Closed and stays in the history. Reasons feed the win-rate insights.</p>
   <form class="form" method="dialog"><label>Reason<select class="select"><option>Price</option><option>Lost to a competitor</option><option>No budget</option><option>Timing</option><option>Scope did not fit</option></select></label><label>Competitor<input placeholder="Optional"></label>
-  <div class="actions"><button class="btn primary" style="background:var(--coral);border-color:var(--coral);color:#fff">Mark as lost</button><button class="btn" type="button" data-close>Cancel</button></div></form></div>
+  <div class="actions"><button class="btn danger">Mark as lost</button><button class="btn" type="button" data-close>Cancel</button></div></form></div>
 </dialog>
 
 <dialog class="small" id="removeDialog" aria-label="Remove opportunity">
   <div class="pal-body"><h2 style="margin-bottom:6px">Remove <span id="removeName">this opportunity</span>?</h2><p class="muted" style="margin:0 0 18px;font-size:14px">Use this for duplicates or mistakes. To record a lost deal, mark it as lost instead so it counts in win rates.</p>
-  <div class="actions"><button class="btn primary" id="removeYes" style="background:var(--coral);border-color:var(--coral);color:#fff">Remove</button><button class="btn" data-close>Keep it</button></div></div>
+  <div class="actions"><button class="btn danger" id="removeYes" type="button">Remove</button><button class="btn" data-close>Keep it</button></div></div>
 </dialog>
 
 <dialog class="small" id="licenceDialog" aria-labelledby="licTitle">
@@ -1773,13 +1885,20 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   };
   var nav=document.getElementById('nav');
   var screens=[].slice.call(document.querySelectorAll('section[data-change]'));
+  var GROUPS={work:'Work',people:'People',business:'Business',ops:'Operations'};
+  var PRIMARY=['001-amax-foundation','001-amax-foundation-insights','001-amax-foundation-projects','001-amax-foundation-people'];
   screens.forEach(function(s){
     if(s.dataset.nav==='no') return;
-    if(s.dataset.group) nav.appendChild(document.createElement('hr'));
-    var a=document.createElement('a'); a.href='#'+s.id; a.setAttribute('aria-label',s.dataset.title);
-    a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[s.dataset.icon]||ICONS.home)+'</svg><span class="tip">'+s.dataset.title+'</span>';
+    if(s.dataset.group){var g=document.createElement('div');g.className='grp';g.innerHTML='<span>'+GROUPS[s.dataset.group]+'</span>';nav.appendChild(g);}
+    var a=document.createElement('a'); a.href='#'+s.id; if(PRIMARY.indexOf(s.id)>-1) a.className='pri';
+    a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[s.dataset.icon]||ICONS.home)+'</svg><span class="lbl">'+s.dataset.title+'</span>';
     nav.appendChild(a);
   });
+  // one polite live region for toasts, moves and screen changes
+  var live=document.getElementById('live');
+  function announce(t){live.textContent='';setTimeout(function(){live.textContent=t;},60);}
+  window.amaxAnnounce=announce;
+  var firstShow=true;
   function show(){
     var id=decodeURIComponent(location.hash.slice(1));
     var t=screens.filter(function(s){return s.id===id})[0]||screens[0];
@@ -1788,9 +1907,22 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     var navId=t.dataset.parent||t.id;
     [].forEach.call(nav.querySelectorAll('a'),function(a){ if(a.getAttribute('href')==='#'+navId) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
     document.title=t.dataset.title+' · amax mock';
-    var cur=nav.querySelector('[aria-current="page"]'); if(cur&&matchMedia('(max-width:860px)').matches) cur.scrollIntoView({inline:'center',block:'nearest'});
-    window.scrollTo(0,0); setTimeout(function(){window.scrollTo(0,0)},120);
+    window.scrollTo({top:0,left:0,behavior:'instant'});
+    if(!firstShow){var h=t.querySelector('h1')||t; h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); announce(t.dataset.title+' screen');}
+    firstShow=false;
   }
+  // skip link: focus the screen heading without touching the hash route
+  // the browser jumps to the #section anchor on first load; undo that once
+  window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,0)},0)});
+  document.getElementById('skipLink').addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('section.on'),h=(t&&t.querySelector('h1'))||document.getElementById('main');h.setAttribute('tabindex','-1');h.focus();});
+  // phone: "More" opens a sheet with every screen this role can see
+  (function(){var more=document.getElementById('navMore'),sheet=document.getElementById('navSheet'),list=document.getElementById('sheetList');
+    more.addEventListener('click',function(){var h='',kids=nav.children;
+      for(var i=0;i<kids.length;i++){var k=kids[i];if(k.hidden)continue;
+        if(k.classList.contains('grp'))h+='<li class="sh" aria-hidden="true">'+k.textContent+'</li>';
+        else h+='<li><a href="'+k.getAttribute('href')+'"'+(k.getAttribute('aria-current')?' aria-current="page"':'')+'>'+k.querySelector('svg').outerHTML+'<span>'+k.textContent+'</span></a></li>';}
+      list.innerHTML=h;sheet.showModal();});
+    list.addEventListener('click',function(e){if(e.target.closest('a'))sheet.close();});})();
   // drawers
   document.addEventListener('click',function(e){
     var o=e.target.closest('[data-open]'); if(o){document.getElementById(o.dataset.open).showModal();}
@@ -1798,7 +1930,6 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   });
   if('scrollRestoration' in history) history.scrollRestoration='manual';
   window.addEventListener('hashchange',show); window.amaxShow=show; show();
-  window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,0)},30)});
 
   // segmented controls
   [].forEach.call(document.querySelectorAll('.seg'),function(g){
@@ -1809,7 +1940,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   // theme: set from the profile menu (see "roles and profile menu" below)
 
   // toast, optionally with an Undo action
-  function toast(t,undo){var d=document.createElement('div');d.className='toast';d.setAttribute('role','status');var sp=document.createElement('span');sp.textContent=t;d.appendChild(sp);
+  function toast(t,undo){announce(t+(undo?'. Undo is available for a few seconds.':''));var d=document.createElement('div');d.className='toast';var sp=document.createElement('span');sp.textContent=t;d.appendChild(sp);
     if(undo){var b=document.createElement('button');b.type='button';b.textContent='Undo';b.onclick=function(){undo();d.remove();};d.appendChild(b);}
     [].forEach.call(document.querySelectorAll('.toast'),function(x){x.remove()});document.body.appendChild(d);setTimeout(function(){d.remove()},undo?7000:2600);return d;}
   window.amaxToast=toast;
@@ -1839,7 +1970,12 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
   svg.appendChild(el('path',{d:spline(agents),fill:'none',stroke:'#7B61FF','stroke-width':3.2,'stroke-linecap':'round'}));
   var lx=x(11),ly=y(agents[11]);
   svg.appendChild(el('circle',{cx:lx,cy:ly,r:6,fill:'#fff',stroke:'#7B61FF','stroke-width':3}));
-  var tag=el('g',{}); tag.innerHTML='<rect x="'+(lx-150)+'" y="'+(ly-44)+'" width="138" height="30" rx="10" fill="#5B44D6"/><text x="'+(lx-81)+'" y="'+(ly-24)+'" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="600" font-family="Avenir Next,system-ui">90 h by agents so far</text>'; svg.appendChild(tag);
+  var tag=el('g',{}); tag.innerHTML='<path d="M'+lx+' '+(ly-9)+'V'+(ly-42)+'" stroke="#5B44D6" stroke-width="1.5" stroke-dasharray="2 3"/><rect x="'+(lx-150)+'" y="'+(ly-74)+'" width="138" height="30" rx="10" fill="#5B44D6"/><text x="'+(lx-81)+'" y="'+(ly-54)+'" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="600" font-family="Avenir Next,system-ui">90 h by agents so far</text>'; svg.appendChild(tag);
+  // every chart gets its values as a visually hidden table next to it
+  function srTable(sv,caption,head,rows){var t=document.createElement('table');t.className='sr';
+    t.innerHTML='<caption>'+caption+'</caption><thead><tr>'+head.map(function(h){return '<th scope="col">'+h+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return i?'<td>'+c+'</td>':'<th scope="row">'+c+'</th>'}).join('')+'</tr>'}).join('')+'</tbody>';
+    sv.setAttribute('aria-describedby',(sv.id||(sv.id='v'+Math.random().toString(36).slice(2)))+'-data');t.id=sv.id+'-data';sv.parentNode.insertBefore(t,sv.nextSibling);}
+  srTable(svg,svg.getAttribute('aria-label'),['Week','Agents (h)','People (h)'],agents.map(function(v,i){return ['W'+(31+i),v,people[i]]}));
 
   // donut
   var parts=[['Building',41,'#7B61FF'],['Reviews',18,'#5CC8F0'],['Meetings',23,'#F48B9B'],['Support',18,'#B9EE7A']];
@@ -1855,7 +1991,8 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     a0=a1;
   });
   var c=el('text',{x:85,y:82,'text-anchor':'middle','font-size':20,'font-weight':600,fill:'currentColor','font-family':'Avenir Next,system-ui'}); c.textContent='141.5 h'; d.appendChild(c);
-  var c2=el('text',{x:85,y:101,'text-anchor':'middle','font-size':11.5,fill:'#9A97AE','font-family':'Avenir Next,system-ui'}); c2.textContent='this week'; d.appendChild(c2);
+  var c2=el('text',{x:85,y:101,'text-anchor':'middle','font-size':11.5,fill:'var(--ink-3)','font-family':'Avenir Next,system-ui'}); c2.textContent='this week'; d.appendChild(c2);
+  srTable(d,d.getAttribute('aria-label'),['Activity','Share'],parts.map(function(p){return [p[0],p[1]+'%']}));
 
   // generic smooth line chart
   function curve(pts){var s='M'+pts[0][0]+' '+pts[0][1];
@@ -1873,21 +2010,25 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
         s.appendChild(el('path',{d:curve(pts)+' L'+X(n-1)+' '+Y(min)+' L'+X(0)+' '+Y(min)+' Z',fill:'url(#'+gid+')'}));}
       s.appendChild(el('path',{d:curve(pts),fill:'none',stroke:se.color,'stroke-width':se.dashed?2.2:3,'stroke-dasharray':se.dashed?'6 6':'none','stroke-linecap':'round'}));
       var lp=pts[n-1]; s.appendChild(el('circle',{cx:lp[0],cy:lp[1],r:5,fill:'#fff',stroke:se.color,'stroke-width':2.5}));});
+    srTable(s,s.getAttribute('aria-label')||'',[''].concat(series.map(function(se){return se.name||''})),labels.map(function(l,i){return [l].concat(series.map(function(se){return pre+se.data[i]+unit}))}));
   }
   lineChart('talentChart',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'],
-    [{data:[159,162,164,167,169,172,176,179,181,184],color:'#7B61FF',area:true},{data:[12,14,17,19,24,28,31,35,39,44],color:'#2FCB8C',dashed:true}],200,50);
+    [{name:'Headcount',data:[159,162,164,167,169,172,176,179,181,184],color:'#7B61FF',area:true},{name:'People with AI skills',data:[12,14,17,19,24,28,31,35,39,44],color:'#2FCB8C',dashed:true}],200,50);
 
   // learning bars
   (function(){var s=document.getElementById('learnChart'); if(!s) return;
     var v=[8,14,22,19,31,26,18,34,41,29],lab=['J','F','M','A','M','J','J','A','S','O'],W=340,H=200,L=28,B=26,T=8,max=50,bw=18,gap=(W-L-10)/v.length;
     [0,25,50].forEach(function(t){s.appendChild(el('line',{x1:L,x2:W-10,y1:T+(1-t/max)*(H-T-B),y2:T+(1-t/max)*(H-T-B),stroke:'var(--line)'})); var tx=el('text',{x:L-6,y:T+(1-t/max)*(H-T-B)+4,'text-anchor':'end','class':'ax'}); tx.textContent=t; s.appendChild(tx);});
-    v.forEach(function(x,i){var h=x/max*(H-T-B),cx=L+gap*i+gap/2; s.appendChild(el('rect',{x:cx-bw/2,y:H-B-h,width:bw,height:h,rx:6,fill:i===8?'#7B61FF':'#D6CCFF'})); var t=el('text',{x:cx,y:H-8,'text-anchor':'middle','class':'ax'}); t.textContent=lab[i]; s.appendChild(t);});
+    v.forEach(function(x,i){var h=x/max*(H-T-B),cx=L+gap*i+gap/2; s.appendChild(el('rect',{x:cx-bw/2,y:H-B-h,width:bw,height:h,rx:6,fill:i===8?'#7B61FF':'var(--bar-dim)'})); var t=el('text',{x:cx,y:H-8,'text-anchor':'middle','class':'ax'}); t.textContent=lab[i]; s.appendChild(t);});
+    srTable(s,s.getAttribute('aria-label'),['Month','People'],v.map(function(x,i){return [['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][i],x]}));
   })();
 
   // sparklines
   [].forEach.call(document.querySelectorAll('svg.spark'),function(s){var v=s.dataset.v.split(',').map(Number),mx=Math.max.apply(0,v),mn=Math.min.apply(0,v);
     var pts=v.map(function(x,i){return [4+i*(212/(v.length-1)),32-(x-mn)/(mx-mn||1)*26]});
-    s.appendChild(el('path',{d:curve(pts),fill:'none',stroke:'#2FCB8C','stroke-width':2.5,'stroke-linecap':'round','vector-effect':'non-scaling-stroke'}));});
+    s.appendChild(el('path',{d:curve(pts),fill:'none',stroke:'#2FCB8C','stroke-width':2.5,'stroke-linecap':'round','vector-effect':'non-scaling-stroke'}));
+    s.setAttribute('role','img');s.setAttribute('aria-label','Demand over the last 8 quarters: '+v.join(', '));
+    var cap=document.createElement('small');cap.className='spark-cap';cap.setAttribute('aria-hidden','true');cap.textContent='Demand, last 8 quarters';s.parentNode.insertBefore(cap,s.nextSibling);});
 
   // leave calendar, October 2026
   (function(){var c=document.getElementById('leaveCal'); if(!c) return;
@@ -1907,19 +2048,31 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     var partial=sv.dataset.partial==='last',hl=sv.dataset.hl||'#7B61FF';
     if(partial){if(!sv.id) sv.id='v'+Math.random().toString(36).slice(2);var pid=sv.id+'-hatch',df=el('defs',{});df.innerHTML='<pattern id="'+pid+'" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="'+hl+'" fill-opacity=".14"/><line x1="0" y1="0" x2="0" y2="7" stroke="'+hl+'" stroke-width="3" stroke-opacity=".55"/></pattern>';sv.appendChild(df);}
     v.forEach(function(x,i){var cx=L+slot*i+slot/2,h=Y(0)-Y(x);var last=i===n-1,part=last&&partial;
-      sv.appendChild(el('rect',part?{x:cx-bw/2+.75,y:Y(x)+.75,width:bw-1.5,height:Math.max(0,h-1.5),rx:Math.min(10,bw/3),fill:'url(#'+pid+')',stroke:hl,'stroke-width':1.5,'stroke-dasharray':'4 3'}:{x:cx-bw/2,y:Y(x),width:bw,height:h,rx:Math.min(10,bw/3),fill:last?hl:(sv.dataset.color||'#D6CCFF')}));
+      sv.appendChild(el('rect',part?{x:cx-bw/2+.75,y:Y(x)+.75,width:bw-1.5,height:Math.max(0,h-1.5),rx:Math.min(10,bw/3),fill:'url(#'+pid+')',stroke:hl,'stroke-width':1.5,'stroke-dasharray':'4 3'}:{x:cx-bw/2,y:Y(x),width:bw,height:h,rx:Math.min(10,bw/3),fill:last?hl:'var(--bar-dim)'}));
       var t=el('text',{x:cx,y:H-8,'text-anchor':'middle','class':'ax'});t.textContent=lab[i];sv.appendChild(t);
       if(last){var tt=el('text',{x:cx,y:Y(x)-(part?20:8),'text-anchor':'middle','class':'ax','font-weight':700,fill:'var(--ink)'});tt.textContent=x+unit;sv.appendChild(tt);
         if(part){var td=el('text',{x:cx,y:Y(x)-7,'text-anchor':'middle','class':'ax bar-partial-lbl'});td.textContent='to date';sv.appendChild(td);}} });
     if(sv.dataset.target){var ty=Y(+sv.dataset.target);sv.appendChild(el('line',{x1:L,x2:W-R,y1:ty,y2:ty,stroke:'#F2A93B','stroke-width':2,'stroke-dasharray':'6 6'}));var tl=el('text',{x:W-R,y:ty-6,'text-anchor':'end','class':'ax'});tl.textContent='Target '+sv.dataset.target+unit;sv.appendChild(tl);}
+    srTable(sv,sv.getAttribute('aria-label'),['Period','Value'],v.map(function(x,i){return [lab[i],x+unit+(i===n-1&&partial?' (to date)':'')]}));
+  }
+  // grouped bars for counts (e.g. joiners and leavers)
+  function gbarsEl(sv){
+    var vb=sv.viewBox.baseVal,W=vb.width,H=vb.height,L=36,R=8,T=12,B=28,lab=sv.dataset.labels.split(','),max=+sv.dataset.max,step=+sv.dataset.step||max/2;
+    var ser=sv.dataset.series.split(';').map(function(x){var a=x.split('|');return {name:a[0],color:a[1],data:a[2].split(',').map(Number)}});
+    var n=lab.length,slot=(W-L-R)/n,bw=Math.min(14,slot*.3),Y=function(x){return T+(1-x/max)*(H-T-B)};
+    for(var g=0;g<=max+1e-9;g+=step){var y=Y(g);sv.appendChild(el('line',{x1:L,x2:W-R,y1:y,y2:y,stroke:'var(--line)'}));var t=el('text',{x:L-8,y:y+4,'text-anchor':'end','class':'ax'});t.textContent=g;sv.appendChild(t);}
+    lab.forEach(function(l,i){var cx=L+slot*i+slot/2,x0=cx-(ser.length*bw+(ser.length-1)*3)/2;
+      ser.forEach(function(se,k){var v=se.data[i],h=Y(0)-Y(v);if(v>0)sv.appendChild(el('rect',{x:x0+k*(bw+3),y:Y(v),width:bw,height:h,rx:Math.min(4,bw/3),fill:se.color}));});
+      var t=el('text',{x:cx,y:H-8,'text-anchor':'middle','class':'ax'});t.textContent=l;sv.appendChild(t);});
+    srTable(sv,sv.getAttribute('aria-label'),['Month'].concat(ser.map(function(s){return s.name})),lab.map(function(l,i){return [l].concat(ser.map(function(s){return s.data[i]}))}));
   }
   function hbarsEl(sv){
     var vb=sv.viewBox.baseVal,W=vb.width,H=vb.height,lab=sv.dataset.labels.split(','),v=sv.dataset.values.split(',').map(Number),cols=sv.dataset.colors.split(','),max=Math.max.apply(0,v);
     var L=150,R=40,rh=(H-4)/v.length,bh=Math.min(18,rh*.62);
-    v.forEach(function(x,i){var y=4+rh*i+rh/2;var t=el('text',{x:0,y:y+4,'class':'ax',fill:'var(--ink-2)','font-size':13});t.textContent=lab[i];sv.appendChild(t);
-      sv.appendChild(el('rect',{x:L,y:y-bh/2,width:W-L-R,height:bh,rx:bh/2,fill:'var(--sunken)'}));
-      sv.appendChild(el('rect',{x:L,y:y-bh/2,width:Math.max(bh,(W-L-R)*x/max),height:bh,rx:bh/2,fill:cols[i%cols.length]}));
+    v.forEach(function(x,i){var y=4+rh*i+rh/2;var t=el('text',{x:0,y:y+4,'font-size':13,'font-family':'var(--font)',fill:'var(--ink)'});t.textContent=lab[i];sv.appendChild(t);
+      sv.appendChild(el('rect',{x:L,y:y-bh/2,width:Math.max(2,(W-L-R)*x/max),height:bh,rx:Math.min(5,bh/3),fill:cols[0]}));
       var n=el('text',{x:W,y:y+4,'text-anchor':'end','class':'ax','font-weight':700,fill:'var(--ink)'});n.textContent=x;sv.appendChild(n);});
+    srTable(sv,sv.getAttribute('aria-label'),['Group','Count'],v.map(function(x,i){return [lab[i],x]}));
   }
   function donutEl(sv){
     var parts=sv.dataset.parts.split(';').map(function(p){var a=p.split(':');return [a[0],+a[1],a[2]]}),tot=parts.reduce(function(a,p){return a+p[1]},0);
@@ -1930,11 +2083,12 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
       if(lgEl){var li=document.createElement('li');if(i===0)li.className='hl';li.innerHTML='<i style="background:'+p[2]+'"></i>'+p[0]+'<b>'+Math.round(p[1]/tot*100)+'%</b>';lgEl.appendChild(li);}
       a0=a1;});
     var c=el('text',{x:85,y:84,'text-anchor':'middle','font-size':19,'font-weight':600,fill:'currentColor','font-family':'Avenir Next,system-ui'});c.textContent=sv.dataset.center;if(sv.dataset.pay)c.setAttribute('class','pay');sv.appendChild(c);
-    var c2=el('text',{x:85,y:102,'text-anchor':'middle','font-size':11.5,fill:'#9A97AE','font-family':'Avenir Next,system-ui'});c2.textContent=sv.dataset.sub;sv.appendChild(c2);
+    var c2=el('text',{x:85,y:102,'text-anchor':'middle','font-size':11.5,fill:'var(--ink-3)','font-family':'Avenir Next,system-ui'});c2.textContent=sv.dataset.sub;sv.appendChild(c2);
+    srTable(sv,sv.getAttribute('aria-label')+', total '+sv.dataset.center+' '+sv.dataset.sub,['Part','Value','Share'],parts.map(function(p){return [p[0],p[1],Math.round(p[1]/tot*100)+'%']}));
   }
   [].forEach.call(document.querySelectorAll('svg.viz'),function(sv){
     var k=sv.dataset.kind;
-    if(k==='bars') barsEl(sv); else if(k==='hbars') hbarsEl(sv); else if(k==='donut') donutEl(sv);
+    if(k==='bars') barsEl(sv); else if(k==='gbars') gbarsEl(sv); else if(k==='hbars') hbarsEl(sv); else if(k==='donut') donutEl(sv);
     else if(k==='line'){ var ser=sv.dataset.series.split(';').map(function(x){var a=x.split('|');return {name:a[0],color:a[1],area:a[2]==='area',dashed:a[2]==='dash',data:a[3].split(',').map(Number)}});
       lineEl(sv,sv.dataset.labels.split(','),ser,+sv.dataset.max,+sv.dataset.step,+(sv.dataset.min||0),sv.dataset.prefix||'',sv.dataset.unit||''); }
   });
@@ -1968,22 +2122,26 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     return '<svg viewBox="0 0 40 40" aria-hidden="true">'+h+'</svg>';}
   [].forEach.call(document.querySelectorAll('.av'),function(a){var k=a.textContent.trim(); if(FOLK[k]){a.setAttribute('aria-label',k);a.classList.add('photo');a.innerHTML=face(k);}});
 
-  // ---- heat-shade timesheet hours ----
-  [].forEach.call(document.querySelectorAll('[id="001-amax-foundation-time"] .tbl tbody td.num'),function(td){var v=parseFloat(td.textContent); if(!isNaN(v)&&v<=10&&!td.querySelector('b')){td.classList.add('heat');td.style.background='color-mix(in srgb, var(--violet) '+Math.round(v/8.5*22)+'%, transparent)';}});
 
   // ---- presales board: move, add, remove ----
   (function(){var board=document.getElementById('salesBoard'); if(!board) return;
     var STAGES=['New idea','Lead','Qualified','Proposal','Negotiation'];
     function recount(){[].forEach.call(board.querySelectorAll('.lane'),function(l){l.querySelector('.lane-head>span:last-child').textContent=l.querySelectorAll('.tcard').length;});}
-    function wire(card){var sel=card.querySelector('[data-move]'); if(!sel) return; var cur=card.closest('.lane').dataset.stage;
-      sel.innerHTML=STAGES.map(function(st){return '<option'+(st===cur?' selected':'')+'>'+(st===cur?st:'→ '+st)+'</option>'}).join('')+'<option>→ Won</option>';
-      sel.onchange=function(){var v=sel.value.replace(/^→ /,''); var target=board.querySelector('.lane[data-stage="'+(v==='Won'?'Closed':v)+'"]');
+    function nameOf(card){return card.querySelector('.id').textContent+', '+card.querySelector('p').textContent;}
+    // choosing a stage does nothing until "Move" is pressed, so arrow keys in the select are safe
+    function wire(card){var sel=card.querySelector('[data-move]'); if(!sel) return; var go=card.querySelector('[data-go]'),cur=card.closest('.lane').dataset.stage;
+      sel.innerHTML=STAGES.map(function(st){return '<option value="'+st+'"'+(st===cur?' selected':'')+'>'+(st===cur?st+' (now)':'→ '+st)+'</option>'}).join('')+'<option value="Won">→ Won</option>';
+      go.disabled=true; go.setAttribute('aria-label','Move '+card.querySelector('p').textContent);
+      sel.onchange=function(){go.disabled=sel.value===cur;};
+      go.onclick=function(){var v=sel.value; if(v===cur) return; var target=board.querySelector('.lane[data-stage="'+(v==='Won'?'Closed':v)+'"]');
         if(v==='Won'){card.querySelector('.opp-act').remove(); card.querySelector('.opp-num span').textContent='100%'; card.querySelector('.opp-top').insertAdjacentHTML('beforeend','<span class="chip good">Won</span>'); var r=card.querySelector('.rag'); if(r) r.remove();}
-        target.insertBefore(card,target.children[1]||null); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); wire(card); recount();};}
+        target.insertBefore(card,target.children[1]||null); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); wire(card); recount();
+        var f=card.querySelector('[data-move]')||card.querySelector('a,button'); if(!f){card.tabIndex=-1;f=card;} f.focus();
+        window.amaxAnnounce&&window.amaxAnnounce('Moved '+nameOf(card)+' to '+v);};}
     [].forEach.call(board.querySelectorAll('.tcard'),wire);
     window.amaxAddDeal=function(d){var lane=board.querySelector('.lane[data-stage="'+(d.stage||'New idea')+'"]')||board.querySelector('.lane');
       var c=document.createElement('div');c.className='tcard deal';
-      c.innerHTML='<div class="opp-top"><span class="id">'+(d.client||'New client')+'</span><span class="rag g"></span></div><p>'+(d.name||'Untitled')+'</p><div class="opp-num"><b>'+(d.value||'–')+'</b><span>'+(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+(d.ownerIni||'MF')+'</span><span>'+(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
+      c.innerHTML='<div class="opp-top"><span class="id">'+(d.client||'New client')+'</span><span class="rag g"></span></div><p>'+(d.name||'Untitled')+'</p><div class="opp-num"><b>'+(d.value||'–')+'</b><span>'+(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+(d.ownerIni||'MF')+'</span><span>'+(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm" type="button" data-go disabled>Move</button><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
       lane.insertBefore(c,lane.children[1]||null);var av=c.querySelector('.av');if(FOLK[d.ownerIni||'MF']){av.classList.add('photo');av.innerHTML=face(d.ownerIni||'MF');}
       wire(c);recount();c.classList.add('flash');
       c.amaxUndo=function(){c.remove();recount();};return c;};
@@ -1991,21 +2149,36 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     var pending=null;
     board.addEventListener('click',function(e){var b=e.target.closest('[data-remove]'); if(!b) return; pending=b.closest('.tcard');
       document.getElementById('removeName').textContent=pending.querySelector('p').textContent; document.getElementById('removeDialog').showModal();});
-    document.getElementById('removeYes').addEventListener('click',function(){if(pending){pending.remove();pending=null;recount();} document.getElementById('removeDialog').close();});
+    var refocus=null;
+    document.getElementById('removeYes').addEventListener('click',function(){if(pending){var lane=pending.closest('.lane'),cards=[].slice.call(lane.querySelectorAll('.tcard')),i=cards.indexOf(pending),nm=nameOf(pending);
+        var next=cards[i+1]||cards[i-1]||null; pending.remove();pending=null;recount();
+        refocus=next?(next.querySelector('[data-move]')||next.querySelector('a,button')):lane.querySelector('.lane-head');
+        if(refocus===lane.querySelector('.lane-head'))refocus.tabIndex=-1;
+        window.amaxAnnounce&&window.amaxAnnounce('Removed '+nm);}
+      document.getElementById('removeDialog').close();});
+    document.getElementById('removeDialog').addEventListener('close',function(){if(refocus){var f=refocus;refocus=null;setTimeout(function(){f.focus();},0);}});
   })();
 
   // ---- amax chat: one assistant for the whole app ----
   (function(){
     var C=document.getElementById('chat'),log=document.getElementById('cLog'),ctx=document.getElementById('cCtx'),inp=document.getElementById('cIn'),talk=document.getElementById('cTalk'),launcher=document.getElementById('launcher');
-    var MAS=launcher.innerHTML, S={intent:null,D:{},pins:[]};
-    function open(){C.classList.add('open');document.body.classList.add('chat-open');var sec=document.querySelector('section.on');document.getElementById('cWhere').textContent='On '+(sec?sec.dataset.title:'amax')+'. Ask, add or drop anything here';if(!log.children.length)greet();}
-    function close(){C.classList.remove('open');document.body.classList.remove('chat-open');pick(false);}
+    var MAS='<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#mascot"/></svg>', S={intent:null,D:{},pins:[]}, opener=null;
+    function isOpen(){return C.classList.contains('open');}
+    // closed chat is inert (not tabbable, not read); opening moves focus to the input and remembers who opened it
+    function open(){var was=isOpen();C.inert=false;C.classList.add('open');document.body.classList.add('chat-open');launcher.setAttribute('aria-expanded','true');
+      var sec=document.querySelector('section.on');document.getElementById('cWhere').textContent='On '+(sec?sec.dataset.title:'amax')+'. Ask, add or drop anything here';if(!log.children.length)greet();
+      if(!was){var a=document.activeElement;opener=(a&&a!==document.body&&!C.contains(a))?a:launcher;setTimeout(function(){inp.focus();},30);}}
+    function close(){if(!isOpen())return;pick(false);C.classList.remove('open');document.body.classList.remove('chat-open');launcher.setAttribute('aria-expanded','false');C.inert=true;
+      var o=opener;opener=null;if(!o||!document.contains(o)||!o.offsetParent)o=launcher;o.focus();}
     function esc(t){return String(t).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
-    function msg(me,html){var m=document.createElement('div');m.className='m'+(me?' me':'');
+    // consecutive messages from one author form a group; only the last shows the name and face
+    function msg(me,html,isTyping){var m=document.createElement('div');m.className='m'+(me?' me':'')+(isTyping?' typing':'');
       m.innerHTML='<div class="b">'+html+'</div><div class="who">'+(me?'<span class="av">MF</span>Maya':'<span class="mface">'+MAS+'</span>amax')+'</div>';
       if(me){var a=m.querySelector('.av');a.classList.add('photo');a.innerHTML=face('MF');}
+      if(isTyping)m.setAttribute('aria-hidden','true');
+      else{var last=log.lastElementChild;if(last&&!last.classList.contains('typing')&&last.classList.contains('me')===!!me)last.classList.add('grouped');}
       log.appendChild(m);log.scrollTop=log.scrollHeight;return m;}
-    function typing(cb){var m=msg(false,'<div class="dots"><i></i><i></i><i></i></div>');setTimeout(function(){m.remove();cb();},550);}
+    function typing(cb){var m=msg(false,'<div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>',true);setTimeout(function(){m.remove();cb();},550);}
     function greet(){msg(false,'Hi Maya. Tell me what to add or change, or ask about anything on screen. Pin cards, rows or numbers to give me context.');}
     // toast(): shared helper defined at the top, supports Undo
 
@@ -2035,30 +2208,31 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     // pull fields out of what was said, and remember which words they came from
     var CLIENTS=['Northwind Insurance','Northwind','Fabrikam','Contoso','Woodgrove Bank','Woodgrove','Adatum','Tailspin','Litware'];
     var PEOPLE={'liam':['LM','Liam Murphy'],'maya':['MF','Maya Fernando'],'nimal':['NS','Nimal Silva'],'ayesha':['AR','Ayesha Rahman'],'kasun':['KD','Kasun Dias'],'tharushi':['TW','Tharushi Wijesinghe'],'dinesh':['DW','Dinesh Wickrama'],'sahan':['SK','Sahan Kumara'],'me':['MF','Maya Fernando']};
-    function extract(t){var D=S.D,hits=[],low=t.toLowerCase();
-      function hit(str){if(str)hits.push(str);}
-      CLIENTS.some(function(c){var i=low.indexOf(c.toLowerCase());if(i>-1){D.client=c==='Northwind'?'Northwind Insurance':c==='Woodgrove'?'Woodgrove Bank':c;hit(t.substr(i,c.length));return true;}});
+    function extract(t){var D=S.D,hits=[],low=t.toLowerCase(),F='name';
+      function hit(str){if(str)hits.push({t:str,f:F});}
+      F='client';CLIENTS.some(function(c){var i=low.indexOf(c.toLowerCase());if(i>-1){D.client=c==='Northwind'?'Northwind Insurance':c==='Woodgrove'?'Woodgrove Bank':c;hit(t.substr(i,c.length));return true;}});F='value';
       var re=/(\d[\d,.]*)\s*(k\b|thousand|m\b|million)?\s*(usd|aud|lkr|gbp|sgd|eur|dollars)?(\s*%|\s*(?:h|hours?|days?)\b)?/ig,m;
       while((m=re.exec(t))){var n=parseFloat(m[1].replace(/,/g,''));
-        if(m[4]&&/%/.test(m[4])){D.win=n+'%';hit(m[0].trim());continue;}
+        if(m[4]&&/%/.test(m[4])){F='stage';D.win=n+'%';hit(m[0].trim());F='value';continue;}
         if(m[4]&&/h/i.test(m[4])){D.hours=n+' h';hit(m[0].trim());continue;}
         if(/^k|thousand/i.test(m[2]||''))n*=1000;if(/^m|million/i.test(m[2]||''))n*=1e6;
         if(n>=1000){var cur=(m[3]||'USD').toUpperCase().replace('DOLLARS','USD');var FX={AUD:.66,GBP:1.27,EUR:1.08,SGD:.74,LKR:.0033};
           D.value=(cur==='USD'?'$':cur+' ')+n.toLocaleString('en-US')+(FX[cur]?' (≈ $'+(Math.round(n*FX[cur]/1000)*1000).toLocaleString('en-US')+')':'');hit(m[0].trim());}}
-      [['negotiat','Negotiation'],['proposal stage','Proposal'],['qualif','Qualified'],['new idea','New idea']].some(function(x){var i=low.indexOf(x[0]);if(i>-1){D.stage=x[1];hit(t.substr(i,x[0].length));return true;}});
-      Object.keys(PEOPLE).some(function(k){var r=new RegExp('\\b'+k+'\\b','i'),mm=t.match(r);if(mm){D.ownerIni=PEOPLE[k][0];D.owner=D.person=PEOPLE[k][1];hit(mm[0]);return true;}});
-      ['annual','casual','medical','lieu','sick'].some(function(x){var i=low.indexOf(x);if(i>-1){D.type=(x==='sick'?'medical':x).replace(/^\w/,function(c){return c.toUpperCase()});hit(t.substr(i,x.length));return true;}});
+      F='stage';[['negotiat','Negotiation'],['proposal stage','Proposal'],['qualif','Qualified'],['new idea','New idea']].some(function(x){var i=low.indexOf(x[0]);if(i>-1){D.stage=x[1];hit(t.substr(i,x[0].length));return true;}});
+      F='person';Object.keys(PEOPLE).some(function(k){var r=new RegExp('\\b'+k+'\\b','i'),mm=t.match(r);if(mm){D.ownerIni=PEOPLE[k][0];D.owner=D.person=PEOPLE[k][1];hit(mm[0]);return true;}});
+      F='stage';['annual','casual','medical','lieu','sick'].some(function(x){var i=low.indexOf(x);if(i>-1){D.type=(x==='sick'?'medical':x).replace(/^\w/,function(c){return c.toUpperCase()});hit(t.substr(i,x.length));return true;}});
       var dm=t.match(/((?:mon|tues|wednes|thurs|fri|satur|sun)day|tomorrow|today|next (?:week|month|monday|friday)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*\d{0,2}(?:\s*(?:to|-|–)\s*\d{1,2})?)/i);
-      if(dm){D.dates=D.close=dm[1];hit(dm[1]);}
+      F='dates';if(dm){D.dates=D.close=dm[1];hit(dm[1]);}F='name';
       var w=t.match(/(?:wants|needs|asking about|asked about|help with|interested in|is about|for)\s+(?:help with\s+)?(?:the\s+|a\s+|an\s+)?([^,.]{4,60})/i);
       if(w){var nm=w[1].trim();nm=nm.charAt(0).toUpperCase()+nm.slice(1);D.name=D.title=nm;hit(w[1].trim());}
       else if(!D.title&&S.intent&&S.intent!=='opportunity'&&S.intent!=='leave'){D.title=t.split(/[,.]/)[0].trim().slice(0,70);}
       return hits;}
-    function highlight(t,hits){var out=esc(t);hits.sort(function(a,b){return b.length-a.length}).forEach(function(h){var e=esc(h);var i=out.indexOf(e);if(i>-1)out=out.slice(0,i)+'<mark class="x">'+e+'</mark>'+out.slice(i+e.length);});return out;}
+    var FLD={name:'f-name',title:'f-name',client:'f-client',value:'f-value',hours:'f-value',stage:'f-stage',win:'f-stage',type:'f-stage',owner:'f-person',person:'f-person',dates:'f-dates',close:'f-dates'};
+    function highlight(t,hits){var out=esc(t);hits.sort(function(a,b){return b.t.length-a.t.length}).forEach(function(h){var e=esc(h.t);var i=out.indexOf(e);if(i>-1)out=out.slice(0,i)+'<mark class="x f-'+h.f+'">'+e+'</mark>'+out.slice(i+e.length);});return out;}
     var LABEL={name:'Name',title:'Title',client:'Client',value:'Value',stage:'Stage',win:'Win chance',owner:'Owner',person:'Person',type:'Type',dates:'Dates',hours:'Hours',close:'Close'};
     function record(){var D=S.D,keys=S.intent==='opportunity'?['name','client','value','stage','win','owner','close']:S.intent==='leave'?['person','type','dates']:['title','person','dates','hours','value'];
       if(S.intent==='opportunity'){D.stage=D.stage||'New idea';D.win=D.win||{'New idea':'10%','Lead':'20%','Qualified':'30%','Proposal':'50%','Negotiation':'70%'}[D.stage];}
-      return '<dl class="rec">'+keys.filter(function(k){return D[k]}).map(function(k){return '<dt>'+LABEL[k]+'</dt><dd>'+esc(D[k])+'</dd>'}).join('')+'</dl>';}
+      return '<dl class="rec">'+keys.filter(function(k){return D[k]}).map(function(k){return '<dt class="'+FLD[k]+'"><i class="fd" aria-hidden="true"></i>'+LABEL[k]+'</dt><dd>'+esc(D[k])+'</dd>'}).join('')+'</dl>';}
     function reply(text){
       if(S.intent){var it=INTENTS[S.intent],miss=it.need.filter(function(k){return !S.D[k]});
         if(miss.length){var w={name:'what it is',client:'the client',value:'a rough value',owner:'who leads it',person:'who',type:'the leave type',dates:'the dates',title:'a short description',hours:'how many hours'};
@@ -2085,23 +2259,25 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     // pins: a small button on every card, row, stat and stage, plus drag and pick
     var SEL='.card,.ticket,.tcard,.found-item,.stage,.tbl tbody tr';
     var PINSVG='<svg viewBox="0 0 24 24"><path d="M12 17v4M8 3h8l-1 6 3 4H6l3-4z"/></svg>';
-    function labelOf(el){var h=el.querySelector('h2,.k,b,p,td');var t=(h?h.textContent:el.textContent).replace(/\s+/g,' ').trim();
+    function txt(n){var c=n.cloneNode(true);[].forEach.call(c.querySelectorAll('.logo-sq,.av,.pin,.sr,input'),function(x){x.remove()});return c.textContent.replace(/\s+/g,' ').trim();}
+    function labelOf(el){var h=el.querySelector('h2,.k,b,p,td');var t=txt(h||el);
       if(el.matches('.ticket')){var v=el.querySelector('.v');t=t+': '+(v?v.textContent:'');}
-      if(el.matches('tr')){t=[].slice.call(el.cells,0,2).map(function(c){return c.textContent.replace(/\s+/g,' ').trim()}).join(', ');}
+      if(el.matches('tr')){t=[].slice.call(el.cells).map(txt).filter(Boolean).slice(0,2).join(', ');}
       return t.slice(0,70);}
     function addPin(t){if(S.pins.indexOf(t)>-1)return;S.pins.push(t);var c=document.createElement('span');c.className='pinchip';c.innerHTML='<span>'+esc(t)+'</span><button aria-label="Unpin">×</button>';
       c.querySelector('button').onclick=function(){S.pins.splice(S.pins.indexOf(t),1);c.remove();};ctx.appendChild(c);open();}
     [].forEach.call(document.querySelectorAll(SEL),function(el){if(el.closest('#chat')||el.closest('dialog'))return;el.classList.add('pinnable');el.draggable=true;
-      var b=document.createElement('button');b.className='pin';b.type='button';b.title='Add to chat';b.setAttribute('aria-label','Add to chat');b.innerHTML=PINSVG;
+      var b=document.createElement('button');b.className='pin';b.type='button';b.title='Add to chat';b.setAttribute('aria-label','Add '+labelOf(el)+' to chat');b.innerHTML=PINSVG;
       b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();addPin(labelOf(el));});
       var hd=el.querySelector(':scope>.card-head>h2');if(hd){hd.insertAdjacentElement('afterend',b);b.classList.add('inline');}else (el.matches('tr')?el.cells[el.cells.length-1]:el).appendChild(b);
-      el.addEventListener('dragstart',function(e){e.dataTransfer.setData('text/plain',labelOf(el));e.dataTransfer.effectAllowed='copy';});});
+      el.addEventListener('dragstart',function(e){e.stopPropagation();e.dataTransfer.setData('text/plain',labelOf(el));e.dataTransfer.effectAllowed='copy';});});
     [C,launcher].forEach(function(z){z.addEventListener('dragover',function(e){e.preventDefault();z.classList.add('drop');});
       z.addEventListener('dragleave',function(){z.classList.remove('drop')});
       z.addEventListener('drop',function(e){e.preventDefault();z.classList.remove('drop');var t=e.dataTransfer.getData('text/plain');if(t)addPin(t);});});
-    function pick(on){document.body.classList.toggle('picking',on);document.getElementById('cPick').setAttribute('aria-pressed',on?'true':'false');}
+    function pick(on){var was=document.body.classList.contains('picking');document.body.classList.toggle('picking',on);document.getElementById('cPick').setAttribute('aria-pressed',on?'true':'false');
+      if(was!==on)announce(on?'Pick mode on. Click anything on the screen to add it to the chat. Press Escape to stop.':'Pick mode off');}
     document.getElementById('cPick').onclick=function(){pick(!document.body.classList.contains('picking'));};
-    document.addEventListener('click',function(e){if(!document.body.classList.contains('picking')||e.target.closest('#chat'))return;var el=e.target.closest('.pinnable');if(el){e.preventDefault();e.stopPropagation();addPin(labelOf(el));}},true);
+    document.addEventListener('click',function(e){if(!document.body.classList.contains('picking')||e.detail===0||e.target.closest('#chat'))return;var el=e.target.closest('.pinnable');if(el){e.preventDefault();e.stopPropagation();addPin(labelOf(el));}},true);
 
     // voice
     var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null;
@@ -2112,10 +2288,14 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
       rec.onerror=function(){talk.setAttribute('aria-pressed','false');rec=null;};talk.setAttribute('aria-pressed','true');rec.start();};
 
     document.getElementById('cNew').onclick=function(){log.innerHTML='';ctx.innerHTML='';S={intent:null,D:{},pins:[]};greet();};
+    window.addEventListener('hashchange',function(){if(isOpen()){var sec=document.querySelector('section.on');document.getElementById('cWhere').textContent='On '+(sec?sec.dataset.title:'amax')+'. Ask, add or drop anything here';}});
     document.getElementById('cClose').onclick=close;
-    launcher.onclick=open;
-    document.getElementById('ask').addEventListener('click',function(){open();inp.focus();});
-    document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();C.classList.contains('open')?close():(open(),inp.focus());}if(e.key==='Escape'&&document.body.classList.contains('picking'))pick(false);});
+    launcher.onclick=function(){isOpen()?close():open();};
+    document.getElementById('ask').addEventListener('click',function(){open();});
+    document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();isOpen()?close():open();return;}
+      if(e.key!=='Escape'||e.defaultPrevented||document.querySelector('dialog[open]'))return;
+      if(document.body.classList.contains('picking')){e.preventDefault();pick(false);return;}
+      if(isOpen()&&!e.target.closest('select,input:not(#cIn),textarea')){e.preventDefault();close();}});
     document.addEventListener('click',function(e){var a=e.target.closest('[data-ask]');if(a){e.preventDefault();start(a.dataset.ask);}
       var ch=e.target.closest('[data-chat]');if(ch){S.intent='opportunity';S.D={};open();send(ch.closest('.found-item').dataset.text);}
       var ac=e.target.closest('[data-accept]');if(ac){var itm=ac.closest('.found-item');var keep=S.intent;S.intent='opportunity';S.D={};extract(itm.dataset.text);var D=S.D;D.stage=D.stage||'New idea';D.win=D.win||'10%';var card=window.amaxAddDeal?window.amaxAddDeal(D):null;itm.classList.add('gone');S.intent=keep;S.D={};toast('Added '+(D.name||'opportunity')+', source: inbox agent',function(){if(card&&card.amaxUndo)card.amaxUndo();itm.classList.remove('gone');});}
@@ -2203,7 +2383,7 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     function setView(v){document.body.dataset.view=v;chip.textContent=NAMES[v];
       [].forEach.call(menu.querySelectorAll('[data-view]'),function(b){b.setAttribute('aria-checked',b.dataset.view===v?'true':'false')});
       [].forEach.call(document.querySelectorAll('#nav a'),function(a){a.hidden=!canSee(document.getElementById(a.getAttribute('href').slice(1)),v);});
-      [].forEach.call(document.querySelectorAll('#nav hr'),function(hr){var n=hr.nextElementSibling,any=false;while(n&&n.tagName!=='HR'){if(n.tagName==='A'&&!n.hidden)any=true;n=n.nextElementSibling;}hr.hidden=!any;});
+      [].forEach.call(document.querySelectorAll('#nav .grp'),function(hr){var n=hr.nextElementSibling,any=false;while(n&&!n.classList.contains('grp')){if(n.tagName==='A'&&!n.hidden)any=true;n=n.nextElementSibling;}hr.hidden=!any;});
       banner.hidden=v==='admin';
       banner.textContent=v==='payroll'?'Viewing as Payroll: screens outside payroll are hidden.':'Viewing as '+NAMES[v]+': pay, payroll and admin screens are hidden.';
       mask();
@@ -2222,9 +2402,53 @@ body.picking .pinnable:hover{outline:2px dashed #2FCB8C;outline-offset:2px}
     setView('admin');
   })();
 
-  // switches
+  // switches: real buttons, so Space and Enter work natively
+  [].forEach.call(document.querySelectorAll('.switch'),function(s){s.addEventListener('click',function(){var on=s.getAttribute('aria-checked')!=='true';s.setAttribute('aria-checked',on?'true':'false');announce(s.getAttribute('aria-label')+(on?' on':' off'));});});
 
-  [].forEach.call(document.querySelectorAll('.switch'),function(s){s.tabIndex=0;s.addEventListener('click',function(){var on=s.classList.toggle('off');s.setAttribute('aria-checked',on?'false':'true');});});
+  // section tabs that are not links yet
+  document.addEventListener('click',function(e){var b=e.target.closest('.tabs button'); if(!b||b.getAttribute('aria-pressed')==='true') return; toast(b.textContent.trim()+' is not in this mock yet');});
+
+  // reusable empty state
+  var EMPTYICO={done:'<path d="m5 12 5 5 9-10"/>',inbox:'<path d="M4 13h4l2 3h4l2-3h4M5 5h14l1 8v6H4v-6z"/>'};
+  function emptyState(o){var d=document.createElement('div');d.className='empty';d.setAttribute('role','status');
+    d.innerHTML='<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">'+(EMPTYICO[o.icon]||EMPTYICO.inbox)+'</svg></span><b>'+o.title+'</b><p>'+o.hint+'</p>';
+    if(o.action){var b=document.createElement('button');b.type='button';b.className='btn sm';b.textContent=o.action;if(o.onAction)b.onclick=o.onAction;d.appendChild(b);}return d;}
+  window.amaxEmpty=emptyState;
+
+  // tables: captions from the card heading, labelled headers, and per-cell labels for the phone layout
+  [].forEach.call(document.querySelectorAll('table.tbl'),function(t){
+    if(!t.caption){var card=t.closest('.card'),h=card&&card.querySelector('.card-head h2'),sg=card&&card.querySelector('.card-head .seg'),sec=t.closest('section');
+      var c=t.createCaption();c.className='sr';c.textContent=h?h.textContent.trim():(sg?sg.getAttribute('aria-label')+' table':'')||(sec?sec.dataset.title:'Table');}
+    [].forEach.call(t.querySelectorAll('thead th'),function(th){if(!th.textContent.trim()&&!th.querySelector('input'))th.innerHTML='<span class="sr">Actions</span>';});
+    var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.querySelector('input')?'':th.textContent.trim()});
+    [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.cells,function(td,i){td.setAttribute('data-label',heads[i]==='Actions'||heads[i]==='Action'?'':(heads[i]||''));});});
+  });
+
+  // overview: select decisions, then approve them together
+  (function(){var t=document.getElementById('waitTbl'); if(!t) return; var all=document.getElementById('selAll'),btn=document.getElementById('approveSel');
+    function boxes(){return [].slice.call(t.querySelectorAll('tbody .sel input'));}
+    function sync(){var b=boxes(),n=b.filter(function(x){return x.checked}).length;btn.disabled=!n;btn.lastChild.textContent=n?'Approve '+n+' selected':'Approve selected';
+      all.checked=n>0&&n===b.length;all.indeterminate=n>0&&n<b.length;all.disabled=!b.length;}
+    t.addEventListener('change',function(e){if(e.target===all)boxes().forEach(function(x){x.checked=all.checked});sync();});
+    btn.addEventListener('click',function(){var rows=boxes().filter(function(x){return x.checked}).map(function(x){return x.closest('tr')});
+      var keep=rows.map(function(r){return [r,r.nextSibling]});rows.forEach(function(r){r.remove()});sync();
+      var empty=null;if(!boxes().length){empty=emptyState({icon:'done',title:'Nothing is waiting on you',hint:'New decisions from agents and pipelines will appear here.'});t.closest('.scroll-x').hidden=true;t.closest('.card').appendChild(empty);}
+      toast('Approved '+rows.length+' decision'+(rows.length>1?'s':''),function(){if(empty){empty.remove();t.closest('.scroll-x').hidden=false;}keep.forEach(function(k){var tb=t.tBodies[0];tb.insertBefore(k[0],k[1]&&k[1].parentNode===tb?k[1]:null);k[0].querySelector('.sel input').checked=false;});sync();});});
+    sync();})();
+
+  // leave: approving everything leaves an empty state, with undo
+  (function(){var b=document.getElementById('leaveApproveAll'); if(!b) return; var card=b.closest('.card'),wrap=card.querySelector('.scroll-x'),tb=wrap.querySelector('tbody'),empty=null;
+    b.addEventListener('click',function(){var rows=[].slice.call(tb.rows); if(!rows.length) return; var n=rows.length; rows.forEach(function(r){r.remove()});
+      wrap.hidden=true;b.disabled=true;empty=emptyState({icon:'done',title:'No requests waiting for you',hint:'You approved '+n+' request'+(n>1?'s':'')+'. New ones from your team will show up here.',action:'Open team calendar',onAction:function(){document.getElementById('leaveCal').scrollIntoView({block:'center'});}});card.appendChild(empty);
+      toast('Approved '+n+' leave request'+(n>1?'s':''),function(){rows.forEach(function(r){tb.appendChild(r)});wrap.hidden=false;b.disabled=false;if(empty)empty.remove();});});})();
+
+  // helpdesk: queues filter the table; an empty queue says so
+  (function(){var seg=document.getElementById('queueSeg'); if(!seg) return; var title=document.getElementById('queueTitle'),card=title.closest('.card'),wrap=card.querySelector('.scroll-x'),empty=null;
+    var NAMES={it:'IT',hr:'HR',fac:'Facilities'};
+    function apply(q){var any=false;[].forEach.call(wrap.querySelectorAll('tbody tr'),function(r){var on=r.dataset.q===q;r.hidden=!on;if(on)any=true;});
+      title.textContent=NAMES[q]+' queue';wrap.hidden=!any;if(empty){empty.remove();empty=null;}
+      if(!any){empty=emptyState({icon:'done',title:'No open '+NAMES[q]+' tickets',hint:'Requests raised in Teams or by email land here. The support agent picks up access and password requests first.',action:'New ticket',onAction:function(){var nb=document.querySelector('[id="001-amax-foundation-helpdesk"] [data-ask]');if(nb)nb.click();}});card.appendChild(empty);}}
+    seg.addEventListener('click',function(e){var b=e.target.closest('[data-q]');if(b)apply(b.dataset.q);});apply('it');})();
 })();
 </script>
 </body>

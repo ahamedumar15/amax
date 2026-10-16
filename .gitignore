@@ -17,3 +17,9 @@ node_modules/
 
 # specclaw: per-change dispatch locks. Transient, never committed.
 .specclaw/changes/**/.lock/
+
+# next
+/out/
+/public/mock/
+next-env.d.ts
+*.tsbuildinfo

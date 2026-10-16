@@ -1,0 +1,29 @@
+:root {
+  --bg: #eeedf8; --card: #fff; --ink: #1d1b2e; --ink-2: #5d5a73; --line: #deDbec;
+  --violet: #7b61ff; --violet-soft: #ece8ff; --yellow: #f7d65a; --yellow-ink: #3b3110;
+  --font: "Avenir Next", "Poppins", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f0e1a; --card: #1e1c33; --ink: #f1f0fa; --ink-2: #b6b3cc; --line: #3a3757; --violet: #9c88ff; --violet-soft: #2c2650; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+.page { max-width: 1240px; margin: 0 auto; padding: 56px 24px 40px; }
+.hero { max-width: 760px; }
+.mark { display: inline-block; margin: 0 0 18px; font-weight: 700; font-size: 20px; letter-spacing: -0.02em; padding: 6px 14px; border-radius: 12px; background: linear-gradient(135deg, #53d6a1, #7b61ff); color: #fff; }
+h1 { font-size: clamp(30px, 4.4vw, 48px); line-height: 1.08; letter-spacing: -0.03em; font-weight: 650; margin: 0 0 16px; text-wrap: balance; }
+.lede { color: var(--ink-2); font-size: 17px; margin: 0 0 26px; max-width: 64ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.btn { display: inline-flex; align-items: center; height: 46px; padding: 0 18px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card); font-weight: 600; font-size: 15px; text-decoration: none; transition: transform .1s, border-color .15s; }
+.btn:hover { border-color: var(--violet); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--yellow); border-color: var(--yellow); color: var(--yellow-ink); }
+.btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.chips li { font-size: 13px; font-weight: 600; color: var(--violet); background: var(--violet-soft); border-radius: 9px; padding: 3px 10px; }
+.preview { margin-top: 44px; border-radius: 32px; overflow: hidden; background: var(--card); box-shadow: 0 30px 80px -30px rgba(60, 40, 160, .35); }
+.preview iframe { display: block; width: 100%; height: min(78vh, 860px); border: 0; }
+footer { margin-top: 28px; color: var(--ink-2); font-size: 13.5px; }
+@media (max-width: 700px) { .page { padding: 36px 16px 32px; } .preview { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
