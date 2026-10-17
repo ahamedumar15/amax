@@ -35,7 +35,10 @@ async function ensureEnvironments(tx: Tx, tenantId: string, projectId: string) {
 async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, keys: string[]) {
   const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${releaseId} and released and voided_at is null`);
   for (const key of keys) {
-    const [p] = await tx.execute(sql`select id, phase, release_id from delivery.proposal where key = ${key} and project_id = ${projectId}`);
+    // Row lock: a Prod deployment of the proposal's current release updates this row too, so the two
+    // serialise and the phase read here is the committed one (round 18: moving a proposal out of a
+    // release while that release goes live).
+    const [p] = await tx.execute(sql`select id, phase, release_id from delivery.proposal where key = ${key} and project_id = ${projectId} for update`);
     if (!p) throw new Error(`no proposal ${key} in this project`);
     if (p.phase === "released" && p.release_id !== releaseId) throw new Error(`${key} already shipped in another release`);
     if (Number(live) > 0 && p.release_id !== releaseId) throw new Error(`this release is already live in Prod; put ${key} in a new release`);

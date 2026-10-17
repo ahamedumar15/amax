@@ -264,14 +264,18 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     expect(rows).toEqual([{ key: a.key, phase: "released", assigned: true }, { key: b.key, phase: "proposed", assigned: false }]);
   });
 
-  it("assignProposals is private to services.ts with exactly two call sites, both raced below (rounds 16 and 17)", async () => {
+  it("assignProposals is private to services.ts with exactly two call sites, both raced below (rounds 16 to 18)", async () => {
     const { readdirSync, statSync } = await import("node:fs");
     const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? (f === "tests" || f === "node_modules" ? [] : files(p)) : /\.tsx?$/.test(f) ? [p] : []; });
-    const sources = files(join(__dirname, ".."));
-    const calls = sources.flatMap((f) => [...readFileSync(f, "utf8").matchAll(/(?<!function )\bassignProposals\(tx\b/g)].map(() => f.replace(/.*modules\/delivery\//, "")));
-    // Not exported, so nothing outside services.ts can call it; a new call site needs its own race test.
-    expect(readFileSync(join(__dirname, "../server/services.ts"), "utf8")).not.toMatch(/export (async )?function assignProposals/);
-    expect(calls).toEqual(["server/services.ts", "server/services.ts"]);
+    const mentions = files(join(__dirname, "..")).flatMap((f) => {
+      const src = readFileSync(f, "utf8");
+      return [...src.matchAll(/\bassignProposals\b/g)].map((m) => ({ file: f.replace(/.*modules\/delivery\//, ""), line: src.slice(src.lastIndexOf("\n", m.index) + 1, src.indexOf("\n", m.index)) }));
+    });
+    // Every mention other than the declaration is a call; none is an export in any form.
+    expect(mentions.filter((m) => /\bexport\b/.test(m.line))).toEqual([]);
+    expect(mentions.map((m) => [m.file, /async function assignProposals\(/.test(m.line) ? "declaration" : "call"])).toEqual([
+      ["server/services.ts", "declaration"], ["server/services.ts", "call"], ["server/services.ts", "call"],
+    ]);
   });
 
   // Holds the first service that locks a release inside its transaction, right after the lock, until
@@ -366,6 +370,38 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     await expect(first).resolves.toBeTruthy();
     await expect(second).rejects.toThrow(/CRB already has a release v1/);
     expect(await t.owner`select 1 from delivery.release r join delivery.project pr on pr.id = r.project_id where pr.key = 'CRB'`).toHaveLength(1);
+  });
+
+  it.each([
+    ["moving it to a new release holds its row; v1's Prod deployment waits, then leaves it unreleased under v2", "move-first"],
+    ["v1's Prod deployment holds its row; moving it to a new release waits, then is refused", "deploy-first"],
+  ])("cross-release race, %s (round 18)", async (_n, order) => {
+    const { createProposal } = await import("../server/services");
+    const key = order === "move-first" ? "XRA" : "XRB";
+    await createProject(ctx(), { key, name: key, client: "x", billing: "internal" });
+    const p = await createProposal(ctx(), { projectKey: key, title: "p" });
+    await createRelease(ctx(), { projectKey: key, version: "v1", proposalKeys: [p.key] });
+    const move = () => createRelease(ctx(), { projectKey: key, version: "v2", proposalKeys: [p.key] });
+    const deploy = () => recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Prod" });
+    const h = holdAfterReleaseLock(order === "move-first" ? /from delivery\.proposal where key = .* for update/s : /update delivery\.proposal set phase = 'released'/);
+    let first: Promise<unknown> = Promise.resolve(), second: Promise<unknown> = Promise.resolve();
+    let secondDone = false;
+    try {
+      first = order === "move-first" ? move() : deploy();
+      await h.inside;
+      second = (order === "move-first" ? deploy() : move()).finally(() => { secondDone = true; });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(secondDone).toBe(false); // waiting on the proposal's row
+    } finally {
+      h.release();
+      await Promise.allSettled([first, second]);
+    }
+    await expect(first).resolves.toBeTruthy();
+    if (order === "move-first") await expect(second).resolves.toMatchObject({ released: true });
+    else await expect(second).rejects.toThrow(/already shipped in another release/);
+    const [row] = await t.owner`select p.phase, r.version from delivery.proposal p join delivery.release r on r.id = p.release_id where p.id = ${p.id}`;
+    // Never released under v2: either unreleased in v2, or released in v1.
+    expect(row).toEqual(order === "move-first" ? { phase: "proposed", version: "v2" } : { phase: "released", version: "v1" });
   });
 
   const MERGE = [
