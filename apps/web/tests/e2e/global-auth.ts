@@ -11,9 +11,12 @@ import { configureRuntime } from "@amax/core/server";
 import { authenticateToken, createPrincipal, installAuthorizer, principalContext, setGrants, viewerForUser } from "@amax/auth";
 import { withTenant } from "@amax/db";
 import { sql } from "drizzle-orm";
+import { seedSecrets } from "./secrets-seed";
 
 // Fresh amax_e2e database: migrate, then seed Lumen Labs and its demo users as the app role.
-export const E2E_DB = "amax_e2e";
+// E2E_DB lets parallel worktrees each use their own database.
+export const E2E_DB = process.env.E2E_DB ?? "amax_e2e";
+if (!/^[a-z_][a-z0-9_]*$/.test(E2E_DB)) throw new Error(`E2E_DB must be a plain database name, got "${E2E_DB}"`);
 
 export default async function setupE2eDatabase() {
   const admin = process.env.DATABASE_MIGRATE_URL;
@@ -42,6 +45,8 @@ export default async function setupE2eDatabase() {
   await syncSpecclaw(db, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(join(import.meta.dirname, "../../../..")), sha: "e2e" });
   // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
   await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
+  // 031: Lumen Labs' connector credentials (test values) under a throwaway local key.
+  if (process.env.AMAX_KMS_KEY_FILE) await seedSecrets(db, lumen.tenant.id, process.env.AMAX_KMS_KEY_FILE);
   await client.end();
 }
 
