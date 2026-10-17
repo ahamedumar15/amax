@@ -41,3 +41,5 @@ Presales board with Move, the opportunity page (stage history, win chance, activ
   Depends: T5
 
 ## Verify
+
+Quality: 71 → 71 duplicated lines (repo-wide; presales accounts for 23: its `ctxFor` and MCP `tool()` helper mirror delivery's, which only a platform change could share, and two 6-line service headers). No refactor kept.
