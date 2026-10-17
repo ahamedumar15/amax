@@ -1,6 +1,6 @@
-# Status: 033-ai-gateway-and-residency
+# Status: 005-amax-chat
 
-**Change:** 033-ai-gateway-and-residency
+**Change:** 005-amax-chat
 **Started:** -
 **Last Updated:** 2026-10-17
 
@@ -15,7 +15,7 @@
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
 | PR | - | - |
-| Archived | - | - |
+| Archived | ✅ Done |  |
 
 ## Issues
 
