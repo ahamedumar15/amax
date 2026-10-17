@@ -134,3 +134,47 @@ export const recordDeployment = defineService({
     return { result: { id: d.id as string, released }, resourceId: d.id as string, after: input, events };
   },
 });
+
+// 039 self-sync (and later 008 ingestion): upsert one proposal from an external source. Called only
+// when something changed, so an unchanged re-sync writes and audits nothing.
+export const syncProposal = defineService({
+  name: "delivery.proposal.sync",
+  action: "delivery:proposal:sync",
+  resource: "delivery.proposal",
+  input: z.object({
+    projectKey: z.string(),
+    project: z.object({ name: z.string(), client: z.string() }),
+    key: z.string(),
+    title: z.string(),
+    phase: z.enum(PHASES),
+    tasksDone: z.number().int().nonnegative(),
+    tasksTotal: z.number().int().nonnegative(),
+    source: z.string(),
+    sourceRef: z.string(),
+    releasedAt: z.string().nullable(),
+    meta: z.record(z.string(), z.unknown()),
+  }),
+  async run(tx, input, ctx) {
+    let [project] = await tx.execute(sql`select * from delivery.project where key = ${input.projectKey}`);
+    if (!project) {
+      [project] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, color, sprint)
+        values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
+    }
+    const [before] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
+    const meta = JSON.stringify(input.meta);
+    const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)
+      values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
+              ${input.releasedAt}, ${meta}::jsonb, now())
+      on conflict (tenant_id, key) do update set title = excluded.title, phase = excluded.phase, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
+        source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
+      returning *`);
+    const events: Emitted[] = before && before.phase !== input.phase ? [phaseEvent(before, input.phase, ctx)] : [];
+    return {
+      result: { key: input.key, created: !before, phaseChanged: events.length > 0 },
+      resourceId: row.id as string,
+      before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title } : null,
+      after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha },
+      events,
+    };
+  },
+});

@@ -85,6 +85,9 @@ importers:
       '@types/pngjs':
         specifier: '6'
         version: 6.0.5
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(postgres@3.4.9)
       pixelmatch:
         specifier: 8.0.0
         version: 8.0.0
@@ -119,6 +122,9 @@ importers:
       react:
         specifier: 19.2.0
         version: 19.2.0
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
 
   modules/hello: {}
 

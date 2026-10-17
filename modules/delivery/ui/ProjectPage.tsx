@@ -8,6 +8,19 @@ import { initials, needViewer, PHASE_UI, SignInFirst, Stk, Tabs } from "./parts"
 const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released to Prod" };
 const MOVABLE = PHASES.filter((p) => p !== "released");
 
+// Facts the specclaw sync adds (039): lane, queue status, claim, PR.
+function SpecFacts({ p }: { p: ProposalRow }) {
+  const m = p.meta as { lane?: string; status?: string; waiting?: string[]; claim?: string | null; pr?: string | null; withdrawn?: boolean };
+  const status = m.withdrawn ? "withdrawn" : m.status === "blocked" ? `blocked on ${m.waiting?.join(", ")}` : m.status === "claimed" ? `claimed by ${m.claim}` : m.status === "ready" ? "ready" : null;
+  return (
+    <div className="foot" style={{ marginTop: 8 }}>
+      {m.lane && <span className="chip">{m.lane}</span>}
+      {status && status !== "done" && <span className={`chip ${m.status === "ready" ? "good" : m.status === "claimed" ? "agent" : "warn"}`}>{status}</span>}
+      {m.pr && <a href={m.pr} rel="noreferrer">PR {m.pr.split("/").at(-1)}</a>}
+    </div>
+  );
+}
+
 function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
@@ -26,7 +39,8 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
           {p.phase === "released" && <span className="chip good">In Prod</span>}
         </span>
       </div>
-      {canMove && p.phase !== "released" && (
+      {p.source === "specclaw" && <SpecFacts p={p} />}
+      {canMove && p.phase !== "released" && p.source !== "specclaw" && (
         <form action={moveAction}>
           <input type="hidden" name="key" value={p.key} />
           <label className="sr" htmlFor={`mv-${p.key}`}>Move {p.key} to</label>
