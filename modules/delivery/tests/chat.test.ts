@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
@@ -9,7 +11,7 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { createRegistry } from "@amax/mcp";
-import { cancelAction, chatTurn, confirmAction, NotPendingError, type Intent } from "@amax/chat";
+import { CARD_DAYS, cancelAction, chatTurn, confirmAction, NotPendingError, type Intent } from "@amax/chat";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { chatIntents } from "../chat";
@@ -280,18 +282,69 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       expect(await rows("Refused")).toEqual([]);
     });
 
-    it("a card expires before its record can be pruned, and notes keep only the record key (review round 9)", async () => {
-      const { CARD_DAYS } = await import("@amax/chat");
-      const a = await card("test_write", "Expires");
-      const old = new Date(Date.now() - (CARD_DAYS + 1) * 86_400_000).toISOString();
-      await withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending = (select jsonb_agg(p || jsonb_build_object('createdAt', ${old}::text)) from jsonb_array_elements(pending) p) where id = ${a.convo}`));
+    const setCreatedAt = (convo: string, value: string | null) => withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending =
+      (select jsonb_agg(case when ${value}::text is null then p - 'createdAt' else p || jsonb_build_object('createdAt', ${value}::text) end) from jsonb_array_elements(pending) p) where id = ${convo}`));
+    const old = () => new Date(Date.now() - (CARD_DAYS + 1) * 86_400_000).toISOString();
+
+    it.each([
+      ["past its days", () => old()],
+      ["without createdAt (fail closed)", () => null],
+      ["with an unreadable createdAt (fail closed)", () => "not a date"],
+    ])("a card %s is expired: confirm writes nothing and says to check the record (review rounds 9 and 10)", async (_n, value) => {
+      const title = `Expired ${Math.random()}`;
+      const a = await card("test_write", title);
+      await setCreatedAt(a.convo, value());
       await expect(confirmAction(app, reg, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "expired" });
-      expect(await rows("Expires")).toEqual([]);
+      expect(await rows(title)).toEqual([]);
+      const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages->-1 as last from chat.conversation where id = ${a.convo}`));
+      expect(JSON.stringify(c.last)).toContain("check the record");
+    });
+
+    it.each([["confirm"], ["cancel"]])("committed, settle lost, key pruned by the real job, then %s: no second write, never 'nothing happened' (round 10)", async (how) => {
+      const { withIdempotency, pruneKeysJob, KEY_DAYS } = await import("@amax/core/server");
+      const title = `Pruned ${how}`;
+      const a = await card("test_write", title);
+      // The write commits under the card's key but the card is never settled.
+      const [pending] = await withTenant(app, T, (tx) => tx.execute(sql`select pending->0->'input' as input from chat.conversation where id = ${a.convo}`));
+      await withIdempotency(`chat:${a.id}`, () => reg.call(maya, "test_write", pending.input, { source: "chat" }));
+      expect(await rows(title)).toHaveLength(1);
+      // Both age past their days; the job prunes the record.
+      await setCreatedAt(a.convo, new Date(Date.now() - (KEY_DAYS + 2) * 86_400_000).toISOString());
+      await t.owner`update core.idempotency set created_at = now() - make_interval(days => ${KEY_DAYS + 1}) where key = ${`chat:${a.id}`}`;
+      await withTenant(app, T, (tx) => pruneKeysJob.run({ tx, tenantId: T } as never));
+      const act = how === "confirm" ? confirmAction(app, reg, maya, a.convo, a.id) : cancelAction(app, maya, a.convo, a.id);
+      await expect(act).rejects.toMatchObject({ decision: "expired" });
+      expect(await rows(title)).toHaveLength(1);
+    });
+
+    it("a cancel on an expired card whose write is recorded says it was done", async () => {
+      const { withIdempotency } = await import("@amax/core/server");
+      const a = await card("test_write", "Expired but done");
+      const [pending] = await withTenant(app, T, (tx) => tx.execute(sql`select pending->0->'input' as input from chat.conversation where id = ${a.convo}`));
+      await withIdempotency(`chat:${a.id}`, () => reg.call(maya, "test_write", pending.input, { source: "chat" }));
+      await setCreatedAt(a.convo, old());
+      await expect(cancelAction(app, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "confirmed" });
+    });
+
+    it("notes keep only the record key (review round 9)", async () => {
       const b = await card("test_write", "Note shape");
       const r = await confirmAction(app, reg, maya, b.convo, b.id);
       const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages->-1 as last from chat.conversation where id = ${b.convo}`));
       expect(JSON.stringify(c.last)).toContain(`Record: ${(r.result as { key: string }).key}.`);
       expect(JSON.stringify(c.last)).not.toContain("Result:");
+    });
+
+    it("migration 0015 backfills card dates and cuts old notes to the confirmation (round 10)", async () => {
+      const [u] = await t.owner`select id from auth.user where email = 'maya@lumenlabs.test'`;
+      const [conv] = await t.owner`insert into chat.conversation (tenant_id, user_id, created_at, pending, messages) values (${T}, ${u.id}, now() - interval '3 days',
+        ${t.owner.json([{ id: "legacy", tool: "test_write", title: "Legacy", input: {}, fields: [] }])},
+        ${t.owner.json([{ role: "user", content: [{ type: "text", text: '(I confirmed "Old". Result: {"gross":"285000"})' }] }, { role: "user", content: [{ type: "text", text: "hello" }] }])}) returning id`;
+      const sqlText = readFileSync(join(__dirname, "../../../packages/db/migrations/0015_chat_cards_backfill.sql"), "utf8");
+      for (const stmt of sqlText.split(/;\s*\n/).map((x) => x.replace(/^\s*--.*$/gm, "").trim()).filter((x) => x.startsWith("update"))) await t.owner.unsafe(stmt);
+      const [after] = await t.owner`select pending, messages, created_at from chat.conversation where id = ${conv.id}`;
+      expect(Date.parse(after.pending[0].createdAt)).toBe(new Date(after.created_at).getTime());
+      expect(after.messages[0].content[0].text).toBe('(I confirmed "Old".)');
+      expect(after.messages[1].content[0].text).toBe("hello");
     });
 
     it("the stored record is a replay record only, and old records are pruned", async () => {

@@ -9,7 +9,7 @@ import type { Viewer } from "@amax/auth";
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type Pin = { label: string; tool: string; args: Record<string, unknown> };
 /** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt?: string };
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string };
 export type Highlight = { text: string; field: string; index: number };
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
 
@@ -152,8 +152,18 @@ const UNKNOWN = "I can't tell whether this was done. Check the record before try
 // A card can be confirmed for CARD_DAYS. Its idempotency record lives KEY_DAYS from the attempt, so
 // while a card can still be confirmed, the record of any earlier attempt still exists: a pruned
 // record can never be mistaken for "never written" (review round 9).
+// Fail closed: a card without a readable createdAt counts as expired (migration 0015 backfilled the
+// cards stored before it). Once expired, a missing record can mean "never confirmed" or "confirmed,
+// record pruned", so an expired card never claims nothing happened (review rounds 9 and 10).
 export const CARD_DAYS = KEY_DAYS - 1;
-const expired = (a: PendingAction, now = Date.now()) => Boolean(a.createdAt) && now - Date.parse(a.createdAt!) > CARD_DAYS * 86_400_000;
+export const isExpired = (a: PendingAction, now = Date.now()) => {
+  const at = Date.parse(a.createdAt ?? "");
+  return Number.isNaN(at) || now - at > CARD_DAYS * 86_400_000;
+};
+const expire = async (db: Db, viewer: Viewer, conversationId: string, action: PendingAction) => {
+  await settleNow(db, viewer, conversationId, action, "expired", `(The request "${action.title}" expired. If it was confirmed earlier, check the record before asking again.)`);
+  return new NotPendingError("expired");
+};
 
 // What the conversation records about a write: the record's key, never the result itself, which
 // may hold classified fields and is read back by the model (review round 9).
@@ -178,10 +188,7 @@ export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, 
   const known = await lookupKey(db, viewer.tenantId, key);
   if (known && "cancelled" in known) throw await cancelled();
   if (known) return done(known.done);
-  if (expired(action)) {
-    await settleNow(db, viewer, conversationId, action, "expired", `(The request "${action.title}" expired before it was confirmed.)`);
-    throw new NotPendingError("expired");
-  }
+  if (isExpired(action)) throw await expire(db, viewer, conversationId, action);
   // 2. Run the tool; it must make exactly one service write.
   const run = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
   if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
@@ -211,6 +218,16 @@ export async function cancelAction(db: Db, viewer: Viewer, conversationId: strin
     throw e;
   });
   if (!action) return;
+  // The same expiry rule as confirm: past it, the key may have been pruned, so claiming it as
+  // cancelled could hide a write that happened (review round 10).
+  if (isExpired(action)) {
+    const known = await lookupKey(db, viewer.tenantId, keyOf(actionId));
+    if (known && "done" in known) {
+      await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, known.done));
+      throw new NotPendingError("confirmed");
+    }
+    throw await expire(db, viewer, conversationId, action);
+  }
   const prior = await withTenant(db, viewer.tenantId, async (tx) => {
     const prior = await claimKey(tx, viewer.tenantId, keyOf(actionId), { cancelled: true });
     if (!prior || "cancelled" in prior) await settle(tx, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
