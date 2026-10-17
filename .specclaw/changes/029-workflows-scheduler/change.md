@@ -23,3 +23,27 @@ What changes on screen, and where to see it: [`026-insights`](../../mock/index.h
 4. **AC-4** Steps that call LLMs or external APIs have timeouts, retry policies and an idempotency key. A run that waits for a person has no execution time limit (it can wait days), and it costs nothing while waiting.
 5. **AC-5** Every run records its inputs, steps, tool calls, outputs, cost and the person it acts for, masked by sensitivity class and kept according to 032. Admins can pause, resume, cancel or retry a run, and each of those actions is audited.
 6. **AC-6** Cron schedules support time zones per legal entity (Asia/Colombo, Australia/Sydney) and can be switched on and off on Insights. A disabled schedule creates no runs.
+
+## Tasks
+
+Assumptions (stated per Rule 1):
+- Insights (026) isn't built yet, so the scheduler view and the admin Runs list ship as an Admin screen at `/settings/workflows` (Settings, like AI and data), built from components 026 can embed as its "Recurring agent work" card.
+- Both engines share one replay interpreter: a workflow body re-runs from the top, and completed steps, fired timers and received events come back from history instead of running again. Postgres keeps that history in `workflows.*`; Temporal keeps it in workflow state and runs each step as an activity (so module code never enters Temporal's sandbox).
+- `waitForEvent` matches by event name plus a JSON subset of the payload (`payload @> match`), so a match survives restarts; workflows list the outbox events they wait for (`waitsFor`) and those are bridged from `core.event`.
+- Per-entity schedules take the time zone from the legal entity's country (LK → Asia/Colombo, AU → Australia/Sydney, else UTC).
+- The Temporal suite runs when `AMAX_TEMPORAL_TESTS=1` (local dev server via `@temporalio/testing`) or `TEMPORAL_ADDRESS` is set.
+
+- [ ] `T1` — Scheduler and Runs screen: `/settings/workflows` (Admin) with the schedules table (job, schedule + time zone, last and next run, last result, on/off switch) and the Runs list (status, workflow, acts for, steps with waits and retries, cost; masked fields; pause/resume/cancel/retry), matching the mock's "Recurring agent work" card; Settings nav link (AC-5, AC-6)
+  Files: apps/web/app/(app)/settings/workflows/{page,actions}.tsx, apps/web/app/(app)/settings/settings.css, apps/web/components/shell/Shell.tsx
+  Depends: T3, T4
+- [ ] `T2` — `@amax/workflows` API and replay core: `defineWorkflow`, `step` (retry policy, timeout, idempotency key, tool-call and cost recording), `sleep`, `waitForEvent`, `cron`, durations; manifest `workflows` and `schedules` fields (additive, opaque in core); registry from manifests; unit tests (AC-1, AC-4)
+  Files: packages/workflows/{package.json,tsconfig.json,README.md}, packages/workflows/src/{index,types,define,replay,registry,duration}.ts, packages/core/src/module.ts, tsconfig.base.json, vitest.config.ts, packages/workflows/tests/replay.test.ts
+- [ ] `T3` — Postgres engine: `workflows` schema (run, step, signal, schedule; RLS; claim functions as amax_claimer), leased claims with a fencing token, step checkpoints, timers, waits with buffered signals, retries with backoff, per-entity time-zone cron schedules (disabled = no runs), admin pause/resume/cancel/retry and schedule toggle with audit, masked run views, retention entry and prune job, outbox bridge; driven by `/api/jobs/tick` (AC-2, AC-4, AC-5, AC-6)
+  Files: packages/db/migrations/0016_workflows.sql, packages/workflows/src/pg/{engine,schedules,admin}.ts, packages/workflows/src/retention.ts, apps/web/lib/{server,tick}.ts, apps/web/app/api/jobs/tick/route.ts
+  Depends: T2
+- [ ] `T4` — Temporal adapter: generic interpreter workflow, plan/runStep/record activities, client engine (start, signal, pause/resume/cancel/retry), `startTemporalWorker`, config `AMAX_WORKFLOWS_ENGINE=postgres|temporal`, Helm values for the worker and the Temporal chart/Cloud (AC-3)
+  Files: packages/workflows/src/temporal/{workflow,activities,engine,worker}.ts, packages/workflows/src/config.ts, deploy/helm/amax/{values.yaml,templates/worker.yaml}
+  Depends: T3
+- [ ] `T5` — Shared engine suite run on both engines (resume, retries, sleep, waitForEvent, admin actions, no step re-run), a kill test that SIGKILLs a worker process mid-run, schedule and time-zone tests, RLS check, tick route; CI runs the Temporal suite (AC-2, AC-3, AC-5, AC-6)
+  Files: packages/workflows/tests/{conformance,kill,schedules,admin}.test.ts, packages/workflows/tests/fixtures/*, .github/workflows/ci.yml
+  Depends: T3, T4
