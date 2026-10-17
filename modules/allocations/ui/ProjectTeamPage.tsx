@@ -44,7 +44,6 @@ function TeamTable({ team }: { team: ProjectTeam }) {
   );
 }
 
-/** The project page's Team section (051), mounted at /delivery/p/:key/team. */
 export async function ProjectTeamPage({ viewer: raw, params }: ScreenProps) {
   const viewer = raw as Viewer | null;
   if (!viewer) return <><h1>Team</h1><Card><EmptyState icon="people" title="Sign in to see the team" hint="Allocations come from the database once you're signed in." /></Card></>;

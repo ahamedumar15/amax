@@ -7,10 +7,8 @@ import { windowMonths } from "./months";
 import { readAlloc } from "./read";
 
 export type TeamMember = { personId: string; employeeNo: string; name: string; role: string; percents: (number | null)[] };
-/** `hidden`: people allocated to the project whom the viewer's hr access doesn't reach; they're left out and counted. */
 export type ProjectTeam = { project: ProjectRef; months: string[]; people: TeamMember[]; hidden: number };
 
-/** Who is allocated to a project this month and the next two (051), read as the viewer. */
 export async function teamIn(tx: Tx, v: Viewer, projectKey: string, today: Date): Promise<ProjectTeam | null> {
   const project = await getProjectRef(tx, projectKey);
   if (!project) return null;

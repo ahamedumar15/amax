@@ -6,7 +6,6 @@ import { ProposalsTable } from "./ProposalsPage";
 import { ReleasesCards } from "./ReleasesPage";
 import { needViewer } from "./parts";
 
-/** A project's Proposals section (051): the global proposals table, scoped to the project in the query. */
 export function ProjectProposals(props: ScreenProps) {
   const viewer = needViewer(props.viewer);
   const phase = (PHASES as readonly string[]).includes(props.params.phase ?? "") ? (props.params.phase as Phase) : undefined;
@@ -18,7 +17,6 @@ export function ProjectProposals(props: ScreenProps) {
   );
 }
 
-/** A project's Releases section (051): the global release map and table, scoped to the project in the query. */
 export function ProjectReleases(props: ScreenProps) {
   const viewer = needViewer(props.viewer);
   return (

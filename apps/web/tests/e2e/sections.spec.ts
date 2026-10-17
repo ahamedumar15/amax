@@ -1,7 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-// 051: the project page's section tabs are links, each to a section inside the project.
 const SECTIONS: [tab: string, path: string, heading: string][] = [
   ["Proposals", "/delivery/p/CON/proposals", "Proposals"],
   ["Releases", "/delivery/p/CON/releases", "Release map"],

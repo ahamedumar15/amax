@@ -5,7 +5,6 @@ import type { Viewer } from "@amax/auth";
 import { teamFor } from "../server/team";
 import { allocationsDatabase, TODAY } from "./setup";
 
-// 051: the project page's Team section, read through listAllocations as the viewer.
 describe.skipIf(!hasDb)("project team (Postgres)", () => {
   let db: Awaited<ReturnType<typeof allocationsDatabase>>;
   let auOnly: Viewer;

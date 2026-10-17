@@ -6,7 +6,6 @@ import { getProject } from "../server/queries";
 import { AskButton } from "./AskButton";
 import { needViewer, SignInFirst } from "./parts";
 
-/** The section tabs (051): links, the current one marked aria-current="page". */
 export function ProjectTabs({ projectKey, current }: { projectKey: string; current: ProjectSection }) {
   return (
     <nav className="tabs" aria-label="Sections">
@@ -17,7 +16,6 @@ export function ProjectTabs({ projectKey, current }: { projectKey: string; curre
   );
 }
 
-/** A section screen: the project's crumb, name and tabs, then the section. */
 export async function ProjectSectionPage({ viewer: raw, params, section, title, children }: ScreenProps & { section: ProjectSection; title: string; children: (p: { id: string; key: string; name: string }) => ReactNode }) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Project</h1><SignInFirst /></>;

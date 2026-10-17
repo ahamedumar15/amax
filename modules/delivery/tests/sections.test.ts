@@ -12,7 +12,6 @@ import { PROJECT_SECTIONS } from "../contracts";
 import { listProposals, listReleases } from "../server/queries";
 import { ProjectTabs } from "../ui/ProjectSections";
 
-// 051: the project page's section tabs and its scoped lists.
 describe("project section tabs", () => {
   it("AC4 every tab is a link to its own section, none is aria-disabled, and only the current one is marked", async () => {
     const { renderToStaticMarkup } = await import("react-dom/server");
