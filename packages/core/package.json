@@ -4,10 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./registry": "./src/registry.ts",
     "./*": "./src/*"
   },
   "scripts": {
     "lint": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests"
   }
 }

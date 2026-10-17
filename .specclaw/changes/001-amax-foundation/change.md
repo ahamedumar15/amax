@@ -46,10 +46,10 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 - [x] `T2` — `@amax/ui`: design tokens (light/dark, AA contrast) and the shell components: rail, top bar, card, ticket stat card, table (stacked under 600 px), chip, segmented control, empty state, toast and live region (AC-4)
   Files: packages/ui/src/tokens.css, packages/ui/src/components/*.tsx, packages/ui/src/index.ts, packages/ui/tests/contrast.test.ts
   Depends: T1
-- [ ] `T3` — `apps/web` shell matching the mock: expanding labelled rail with groups, top bar (search, Ask amax placeholder, profile menu with theme), phone tab bar with More, skip link, `main`, heading focus and announcement on navigation, reduced motion (AC-5)
+- [x] `T3` — `apps/web` shell matching the mock: expanding labelled rail with groups, top bar (search, Ask amax placeholder, profile menu with theme), phone tab bar with More, skip link, `main`, heading focus and announcement on navigation, reduced motion (AC-5)
   Files: apps/web/app/layout.tsx, apps/web/app/(app)/layout.tsx, apps/web/app/(app)/page.tsx, apps/web/components/shell/*.tsx, apps/web/next.config.ts
   Depends: T2
-- [ ] `T4` — Module manifest type and build-time discovery: scan `modules/*/module.ts`, generate the git-ignored registry, mount through `app/(app)/[module]/[[...path]]`, nav from manifests; sample `modules/hello` (AC-2)
+- [x] `T4` — Module manifest type and build-time discovery: scan `modules/*/module.ts`, generate the git-ignored registry, mount through `app/(app)/[module]/[[...path]]`, nav from manifests; sample `modules/hello` (AC-2)
   Files: packages/core/src/module.ts, apps/web/scripts/gen-registry.mjs, apps/web/app/(app)/[module]/[[...path]]/page.tsx, modules/hello/**, apps/web/tests/registry.test.ts
   Depends: T3
 - [ ] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
