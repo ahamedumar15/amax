@@ -27,7 +27,7 @@ test("047 AC1 the Settings hub lists every admin screen with a live status; the 
   expect((await cards.allTextContents()).sort()).toEqual(["AI and data", "AI usage", "API and webhooks", "Audit and trace", "Backups and export", "Connections and keys", "Data retention", "Integrations", "Scheduler"]);
   await expect(cards.first()).toHaveText("Connections and keys");
   await expect(page.locator(".app-card", { hasText: "Connections and keys" }).locator(".chip")).toHaveText("1 expiring");
-  await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon", "Coming soon"]);
+  await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon"]);
   await expect(page.getByRole("link", { name: "Audit and trace" })).toHaveAttribute("href", "/settings/audit");
   await expect(page.getByRole("link", { name: "AI usage" })).toHaveAttribute("href", "/settings/ai/usage");
   await expect(page.locator(".lede")).toContainText("2 things need you: the Azure DevOps credential expires in 12 days; 1 privacy request needs a second approver");
