@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { setTenant } from "@amax/db";
 import { hasDb } from "@amax/db/testdb";
 import { engineConfig } from "../src/config";
 import { count, flags } from "./fixtures/workflows";
@@ -48,6 +49,22 @@ describe.each(engines)("AC-3 the same suite on the %s engine", (_name, make, ena
     await h.engine.signal(TENANT, "test.go", { id: `e-${h.name}`, n: 1 }, { id: `evt-${h.name}` });
     await h.engine.signal(TENANT, "test.go", { id: `e-${h.name}`, n: 2 }, { id: `evt-${h.name}` });
     expect((await settle(h, id, ["completed"])).output).toEqual({ id: `e-${h.name}`, n: 1 });
+  }, 60_000);
+
+  it.skipIf(!enabled)("AC-3 a run started in a transaction that rolls back never runs; one that commits gets events sent before it launched", async () => {
+    await expect(h.db.transaction(async (tx) => {
+      await setTenant(tx, TENANT);
+      await h.engine.start(TENANT, "test.early", { id: `rb-${h.name}` }, { startedBy: "test", tx });
+      throw new Error("caller rolled back");
+    })).rejects.toThrow(/rolled back/);
+    const id = await h.db.transaction(async (tx) => {
+      await setTenant(tx, TENANT);
+      return h.engine.start(TENANT, "test.early", { id: `tx-${h.name}` }, { startedBy: "test", tx });
+    });
+    await h.engine.signal(TENANT, "test.go", { id: `tx-${h.name}`, n: 7 });
+    expect((await settle(h, id, ["completed"])).output).toEqual({ id: `tx-${h.name}`, n: 7 });
+    expect(count(`prep:rb-${h.name}`)).toBe(0);
+    expect((await h.t.owner`select count(*)::int as n from workflows.run where input->>'id' = ${`rb-${h.name}`}`)[0].n).toBe(0);
   }, 60_000);
 
   it.skipIf(!enabled)("AC-5 pauses, resumes and cancels runs; starting twice with a key returns the first run", async () => {

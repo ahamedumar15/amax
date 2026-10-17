@@ -6,9 +6,10 @@ import { errorText } from "./errors";
 import type { WorkflowRegistry } from "./registry";
 import type { Json } from "./types";
 
-/** Default zone per legal-entity country (AC-6); a workflows.entity_zone row overrides it. An
- * entity with neither has no zone, and its per-entity schedules don't fire until one is set. */
-export const ENTITY_ZONES: Record<string, string> = { LK: "Asia/Colombo", AU: "Australia/Sydney" };
+/** Default zone for single-zone countries only; a workflows.entity_zone row sets any other entity's
+ * (Australia/Sydney, Australia/Perth, …). An entity with neither has no zone, and its per-entity
+ * schedules don't fire until one is set (AC-6, fail closed). */
+export const ENTITY_ZONES: Record<string, string> = { LK: "Asia/Colombo" };
 
 type Start = (tenantId: string, workflow: string, input: Json, options: StartOptions) => Promise<string>;
 
@@ -29,8 +30,8 @@ export async function fireSchedules(db: Db, registry: WorkflowRegistry, start: S
   for (const row of due) {
     const def = registry.schedules.get(row.name as string)!;
     const tenantId = row.tenant_id as string;
-    const next = nextFire(def.cron, row.timezone as string).toISOString();
     try {
+      const next = nextFire(def.cron, row.timezone as string).toISOString();
       await withTenant(db, tenantId, async (tx) => {
         if (!row.next_run_at) return void (await tx.execute(sql`update workflows.schedule set next_run_at = ${next}, locked_until = null where id = ${row.id}`));
         const slot = new Date(row.next_run_at as string).toISOString();
@@ -40,7 +41,9 @@ export async function fireSchedules(db: Db, registry: WorkflowRegistry, start: S
       });
     } catch (e) {
       o.log?.(`workflows: schedule ${def.name} failed to start: ${errorText(e)}`);
-      await withTenant(db, tenantId, (tx) => tx.execute(sql`update workflows.schedule set last_error = ${errorText(e)}, next_run_at = ${next}, locked_until = null where id = ${row.id}`));
+      const next = (() => { try { return nextFire(def.cron, row.timezone as string).toISOString(); } catch { return null; } })();
+      await withTenant(db, tenantId, (tx) => tx.execute(sql`update workflows.schedule set last_error = ${errorText(e)}, next_run_at = coalesce(${next}::timestamptz, next_run_at),
+        locked_until = ${next ? null : sql`now() + interval '1 hour'`} where id = ${row.id}`));
     }
   }
   return fired;

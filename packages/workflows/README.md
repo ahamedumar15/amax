@@ -22,10 +22,13 @@ export const riskScan = defineWorkflow({
 export const daily = cron({ name: "delivery.risk-scan", title: "Project risk scan", workflow: "delivery.risk-scan", cron: "0 6 * * *", timezone: "entity" });
 ```
 
+`timezone: "entity"` runs one schedule per legal entity in that entity's zone: Sri Lanka defaults to Asia/Colombo; any other entity (Australia/Sydney, Australia/Perth, …) needs a `workflows.entity_zone` row, and until it has one its schedule is shown as not scheduled and never fires. The run gets the entity as `ctx.legalEntityId`.
+
 Register both in the module manifest (`workflows: [riskScan]`, `schedules: [daily]`). Modules never import an engine.
 
 Rules:
 - **Steps are idempotent.** Both engines can deliver a step more than once (a worker can die mid-step). Pass `idempotencyKey` to external APIs.
+- **Bump `version` when you rename, reorder or insert steps.** A run started on another version is refused on resume instead of replaying the wrong history.
 - **The body is deterministic.** It re-runs from the top on every resume; only `step` results, timers and events are remembered. Do I/O only inside steps. Names are unique per run.
 - Defaults per step: 60 s timeout, 5 attempts, 10 s initial backoff doubling to 1 h. `NonRetryableError` fails a step at once; the body sees `StepFailedError` and may catch it.
 - `waitForEvent` matches by event name plus a JSON subset of the payload. It has no time limit unless `timeout` is set, and a waiting run costs nothing. Events listed in `waitsFor` are forwarded from the `core.event` outbox; `signal()` delivers directly.

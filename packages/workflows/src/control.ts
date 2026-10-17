@@ -6,11 +6,12 @@ import type { RunStatus } from "./types";
 
 const ACTIVE: RunStatus[] = ["running", "sleeping", "waiting"];
 const FROM: Record<RunAction, RunStatus[]> = { pause: ACTIVE, resume: ["paused"], cancel: [...ACTIVE, "paused"], retry: ["failed"] };
+const pending = (action: RunAction) => sql`engine_action = case when engine = 'temporal' then ${action} end`;
 const SET: Record<RunAction, ReturnType<typeof sql>> = {
-  pause: sql`status = 'paused'`,
-  resume: sql`status = 'running', wake_at = now()`,
-  cancel: sql`status = 'cancelled', finished_at = now(), wake_at = null`,
-  retry: sql`status = 'running', error = null, finished_at = null, wake_at = now(), launched_at = null`,
+  pause: sql`status = 'paused', ${pending("pause")}`,
+  resume: sql`status = 'running', wake_at = now(), ${pending("resume")}`,
+  cancel: sql`status = 'cancelled', finished_at = now(), wake_at = null, ${pending("cancel")}`,
+  retry: sql`status = 'running', error = null, finished_at = null, wake_at = now(), launched_at = null, engine_action = null`,
 };
 const AFTER: Record<RunAction, RunStatus> = { pause: "paused", resume: "running", cancel: "cancelled", retry: "running" };
 const PAST: Record<RunAction, string> = { pause: "paused", resume: "resumed", cancel: "cancelled", retry: "retried" };
@@ -19,7 +20,8 @@ const PAST: Record<RunAction, string> = { pause: "paused", resume: "resumed", ca
 export const WORKFLOWS_ADMIN = "workflows:admin";
 
 export type ControlledRun = { id: string; tenantId: string; engine: "postgres" | "temporal"; status: RunStatus; workflow: string };
-/** Engine work that must follow a committed control (Temporal signals, cancel, relaunch). */
+/** Engine work that follows a committed control (Temporal signals, cancel, relaunch). The control
+ * leaves it recorded as pending (engine_action / launched_at), so a failed hook is retried by the tick. */
 export type ControlHook = (run: ControlledRun, action: RunAction) => Promise<void>;
 
 // Each action is a service: authorised, written, audited and announced (workflows.run.paused, …)

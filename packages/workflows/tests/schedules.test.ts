@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { sql } from "drizzle-orm";
 import type { Db } from "@amax/db";
 import { hasDb } from "@amax/db/testdb";
 import { cron } from "../src";
@@ -21,6 +22,7 @@ describe.skipIf(!hasDb)("AC-6 cron schedules per legal entity", () => {
     t = await database();
     await t.owner`insert into core.legal_entity (id, tenant_id, name, country, base_currency) values
       (${LK}, ${TENANT}, 'Lumen Labs Lanka', 'LK', 'LKR'), (${AU}, ${TENANT}, 'Lumen Labs Australia', 'AU', 'AUD'), (${NZ}, ${TENANT}, 'Lumen Labs NZ', 'NZ', 'NZD')`;
+    await t.owner`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${AU}, ${TENANT}, 'Australia/Sydney')`;
     db = t.app();
     useRuntime(db);
     engine = createPostgresEngine({ db, registry });
@@ -49,6 +51,14 @@ describe.skipIf(!hasDb)("AC-6 cron schedules per legal entity", () => {
     expect(after.find((r) => r.entity === "Lumen Labs Lanka")).toMatchObject({ enabled: true, lastStatus: "completed", lastSummary: "counted" });
     expect(after.find((r) => r.entity === "Lumen Labs Australia")).toMatchObject({ enabled: false, lastRunAt: null });
 
+    const other = "00000000-0000-4000-8000-0000000003ff";
+    await t.owner`insert into core.tenant (id, name) values (${other}, 'Other')`;
+    for (const [tenant, entity, zone, error] of [[TENANT, NZ, "Mars/Olympus", /unknown time zone/], [other, NZ, "Pacific/Auckland", /not in this tenant/], [TENANT, NZ, "auckland", /unknown time zone/]] as const) {
+      await expect(db.transaction(async (tx) => {
+        await tx.execute(sql`select set_config('app.tenant_id', ${tenant}, true)`);
+        await tx.execute(sql`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${entity}, ${tenant}, ${zone})`);
+      })).rejects.toMatchObject({ cause: { message: expect.stringMatching(error) } });
+    }
     await t.owner`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${NZ}, ${TENANT}, 'Pacific/Auckland')`;
     await engine.tick();
     expect((await listSchedules(db, registry, TENANT)).find((r) => r.entity === "Lumen Labs NZ")!.timezone).toBe("Pacific/Auckland");

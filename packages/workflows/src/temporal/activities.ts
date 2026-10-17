@@ -6,7 +6,9 @@ import { writeStep, nextSeqOf } from "../pg/store";
 import { advance, type Advance, type History } from "../replay";
 import type { Json } from "../types";
 
-export type RunArgs = { runId: string; tenantId: string; workflow: string; version: number; input: Json; actsFor: string | null; legalEntityId: string | null; history?: History };
+export type EventMessage = { event: string; payload: Json; id?: string };
+/** `signals`: events that arrived before the execution started, delivered first. */
+export type RunArgs = { runId: string; tenantId: string; workflow: string; version: number; input: Json; actsFor: string | null; legalEntityId: string | null; history?: History; signals?: EventMessage[] };
 export type StepMark = { name: string; kind: "sleep" | "wait"; status: "sleeping" | "waiting" | "done"; fireInMs?: number | null; waitEvent?: string; waitMatch?: Json; result?: Json };
 export type Mark = { status: "running" | "sleeping" | "waiting" | "completed" | "failed"; output?: Json; error?: string; step?: StepMark };
 

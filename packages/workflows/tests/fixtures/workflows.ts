@@ -78,4 +78,17 @@ export const counter = defineWorkflow({
   },
 });
 
-export const testWorkflows = [pipeline, approval, killable, early, counter];
+export const slow = defineWorkflow({
+  name: "test.slow",
+  async run(ctx, input: { ms: number }) {
+    await step("slow", async ({ signal }) => {
+      bump(`slow:${ctx.runId}`);
+      signal.addEventListener("abort", () => bump(`aborted:${ctx.runId}`));
+      await new Promise((r) => setTimeout(r, input.ms));
+    }, { timeout: "30s" });
+    await step("after", async () => void bump(`after:${ctx.runId}`));
+    return "ok";
+  },
+});
+
+export const testWorkflows = [pipeline, approval, killable, early, counter, slow];

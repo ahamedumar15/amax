@@ -2,9 +2,8 @@ import { ApplicationFailure, condition, defineSignal, proxyActivities, setHandle
 import type { Command, History } from "../replay";
 import type { Json } from "../types";
 import { contains } from "../match";
-import type { Activities, RunArgs } from "./activities";
+import type { Activities, EventMessage, RunArgs } from "./activities";
 
-export type EventMessage = { event: string; payload: Json; id?: string };
 export const eventSignal = defineSignal<[EventMessage]>("amax.event");
 export const pauseSignal = defineSignal<[boolean]>("amax.pause");
 
@@ -23,11 +22,13 @@ export async function amaxRun(args: RunArgs): Promise<Json> {
   const inbox: EventMessage[] = [];
   const seen = new Set<string>();
   let paused = false;
-  setHandler(eventSignal, (s) => {
+  const receive = (s: EventMessage) => {
     if (s.id && seen.has(s.id)) return;
     if (s.id) seen.add(s.id);
     inbox.push(s);
-  });
+  };
+  for (const s of args.signals ?? []) receive(s);
+  setHandler(eventSignal, receive);
   setHandler(pauseSignal, (p) => void (paused = p));
   for (;;) {
     await condition(() => !paused);

@@ -20,7 +20,8 @@ export type SignalOptions = {
   /** The event's id (e.g. the outbox event id): delivering the same id twice is a no-op. */
   id?: string;
 };
-export type WorkflowTickResult = { runs: number; runsFailed: number; schedulesFired: number };
+/** `schedulesError` is set when the scheduler pass itself failed (nothing was synced or fired). */
+export type WorkflowTickResult = { runs: number; runsFailed: number; schedulesFired: number; schedulesError?: string };
 
 /** What modules and the app talk to. Modules never import an engine; they get this from the host. */
 export type WorkflowEngine = {

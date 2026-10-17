@@ -10,15 +10,16 @@ const SIGNAL: RetentionEntry = { table: "workflows.signal", fields: ["payload"],
  * after two idle years. */
 export const workflowsRetention: RetentionEntry[] = [RUN, STEP, SIGNAL];
 
-const due = (e: RetentionEntry, column: string, period: string) => sql`${sql.raw(column)} < now() - ${period}::interval`;
+// Past an entry's period from its own start column, or (for start.idle) since the row last changed.
+const expired = (e: RetentionEntry) => sql`${sql.identifier(e.start.at[0])} < now() - ${e.period}::interval`;
+const idle = (e: RetentionEntry) => (e.start.idle ? sql`updated_at < now() - ${e.start.idle}::interval` : sql`false`);
+const prune = (e: RetentionEntry) => sql`delete from ${sql.identifier(e.table.split(".")[0])}.${sql.identifier(e.table.split(".")[1])} where ${expired(e)} or ${idle(e)}`;
 
 /** Applies the entries above daily until 032's enforcer takes them over (deleting a run deletes its steps). */
 export const pruneRunsJob: JobDef = {
   name: "workflows.prune",
   cron: "17 3 * * *",
   async run({ tx }) {
-    await tx.execute(sql`delete from workflows.run where ${due(RUN, "finished_at", RUN.period)} or ${due(RUN, "updated_at", RUN.start.idle!)}`);
-    await tx.execute(sql`delete from workflows.step where ${due(STEP, "run_finished_at", STEP.period)}`);
-    await tx.execute(sql`delete from workflows.signal where ${due(SIGNAL, "created_at", SIGNAL.period)}`);
+    for (const e of workflowsRetention) await tx.execute(prune(e));
   },
 };

@@ -22,6 +22,9 @@ create table workflows.run (
   -- Temporal only: when the execution was started. Null runs are launched by the tick, so a run
   -- started inside a caller's transaction is launched only after that transaction commits.
   launched_at timestamptz,
+  -- Temporal only: a pause, resume or cancel committed here but not yet confirmed by Temporal; the
+  -- tick retries it until it is.
+  engine_action text check (engine_action in ('pause', 'resume', 'cancel')),
   -- When a worker should next look at the run. Null while it waits for an event with no timeout,
   -- so a waiting run costs nothing: no worker claims it until a signal sets this.
   wake_at timestamptz,
@@ -111,6 +114,21 @@ create table workflows.entity_zone (
   timezone text not null
 );
 
+-- The zone must be a real one, and the entity must belong to the row's tenant: the lookup runs as
+-- the app role under RLS, so another tenant's entity is simply not found.
+create function workflows.check_entity_zone() returns trigger language plpgsql as $$
+begin
+  if not exists (select 1 from pg_timezone_names where name = new.timezone) then
+    raise exception 'unknown time zone "%"', new.timezone;
+  end if;
+  if not exists (select 1 from core.legal_entity e where e.id = new.legal_entity_id and e.tenant_id = new.tenant_id) then
+    raise exception 'legal entity % is not in this tenant', new.legal_entity_id;
+  end if;
+  return new;
+end $$;
+create trigger entity_zone_check before insert or update on workflows.entity_zone
+  for each row execute function workflows.check_entity_zone();
+
 select core.enable_tenant_rls('workflows.run');
 select core.enable_tenant_rls('workflows.entity_zone');
 select core.enable_tenant_rls('workflows.signal');
@@ -158,7 +176,8 @@ language sql security definer set search_path = workflows, pg_temp as $$
       from d cross join core.tenant t where d.timezone <> 'entity'
     union all
     select e.tenant_id, d.name, d.workflow, d.cron, coalesce(z.timezone, zones ->> e.country::text), e.id, d.enabled
-      from d join core.legal_entity e on d.timezone = 'entity' left join workflows.entity_zone z on z.legal_entity_id = e.id
+      from d join core.legal_entity e on d.timezone = 'entity'
+      left join workflows.entity_zone z on z.legal_entity_id = e.id and z.tenant_id = e.tenant_id
   ), ins as (
     insert into workflows.schedule (tenant_id, name, workflow, cron, timezone, legal_entity_id, enabled)
     select tenant_id, name, workflow, cron, tz, entity, enabled from target
@@ -186,14 +205,16 @@ language sql security definer set search_path = workflows, pg_temp as $$
   returning s.*;
 $$;
 
--- Temporal runs not yet started on Temporal (see run.launched_at).
-create function workflows.claim_launches(lease_seconds int, max_rows int) returns table (id uuid, tenant_id uuid, lease uuid)
+-- Temporal runs with engine work outstanding: not yet started on Temporal (launched_at), or a
+-- committed pause, resume or cancel Temporal hasn't confirmed (engine_action).
+create function workflows.claim_temporal(lease_seconds int, max_rows int) returns table (id uuid, tenant_id uuid, lease uuid)
 language sql security definer set search_path = workflows, pg_temp as $$
   update workflows.run r
      set locked_until = now() + make_interval(secs => lease_seconds), lease = gen_random_uuid()
    where r.id in (
      select x.id from workflows.run x
-      where x.engine = 'temporal' and x.launched_at is null and x.status = 'running'
+      where x.engine = 'temporal'
+        and ((x.launched_at is null and x.status = 'running') or x.engine_action is not null)
         and (x.locked_until is null or x.locked_until < now())
       order by x.created_at
       for update skip locked
@@ -202,8 +223,8 @@ language sql security definer set search_path = workflows, pg_temp as $$
 $$;
 
 alter function workflows.claim_runs(int, int) owner to amax_claimer;
-alter function workflows.claim_launches(int, int) owner to amax_claimer;
+alter function workflows.claim_temporal(int, int) owner to amax_claimer;
 alter function workflows.ensure_schedules(jsonb, jsonb) owner to amax_claimer;
 alter function workflows.claim_schedules(int, int, jsonb) owner to amax_claimer;
-revoke all on function workflows.claim_runs(int, int), workflows.claim_launches(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) from public;
-grant execute on function workflows.claim_runs(int, int), workflows.claim_launches(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) to amax_app;
+revoke all on function workflows.claim_runs(int, int), workflows.claim_temporal(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) from public;
+grant execute on function workflows.claim_runs(int, int), workflows.claim_temporal(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) to amax_app;

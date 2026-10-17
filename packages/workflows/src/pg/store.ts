@@ -73,9 +73,15 @@ export async function startAttempt(tx: Tx, run: ClaimedRun, name: string, seq: n
 
 // Keeps the lease alive while a step runs; aborts the step once another worker holds the run.
 export function heartbeat(db: Db, run: ClaimedRun, leaseSeconds: number, stop: AbortController) {
+  let lastRenewed = Date.now();
   const beat = async () => {
-    const alive = await withTenant(db, run.tenantId, (tx) => fenced(tx, run, sql`locked_until = now() + make_interval(secs => ${leaseSeconds})`)).catch(() => true);
-    if (!alive) stop.abort("lease lost to another worker");
+    try {
+      const alive = await withTenant(db, run.tenantId, (tx) => fenced(tx, run, sql`locked_until = now() + make_interval(secs => ${leaseSeconds})`));
+      if (!alive) return stop.abort("lease lost to another worker");
+      lastRenewed = Date.now();
+    } catch {
+      if (Date.now() - lastRenewed > (leaseSeconds * 1000 * 2) / 3) stop.abort("couldn't renew the lease");
+    }
   };
   const timer = setInterval(() => void beat(), Math.max(1000, (leaseSeconds * 1000) / 3));
   return () => clearInterval(timer);

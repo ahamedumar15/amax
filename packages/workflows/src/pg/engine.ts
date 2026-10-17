@@ -29,14 +29,14 @@ export function validInput(registry: WorkflowRegistry, workflow: string, input: 
 
 export const inTx = <T>(db: Db, tenantId: string, tx: Tx | undefined, fn: (tx: Tx) => Promise<T>) => (tx ? fn(tx) : withTenant(db, tenantId, fn));
 
-// Schedules first, but a failure there never stops due runs from being driven.
-export async function scheduleTick(db: Db, registry: WorkflowRegistry, start: WorkflowEngine["start"], log?: (msg: string) => void) {
+// Schedules first, but a failure there never stops due runs from being driven; it is reported.
+export async function scheduleTick(db: Db, registry: WorkflowRegistry, start: WorkflowEngine["start"], log?: (msg: string) => void): Promise<{ schedulesFired: number; schedulesError?: string }> {
   try {
     await syncSchedules(db, registry);
-    return await fireSchedules(db, registry, start, { leaseSeconds: 60, batch: 20, log });
+    return { schedulesFired: await fireSchedules(db, registry, start, { leaseSeconds: 60, batch: 20, log }) };
   } catch (e) {
     log?.(`workflows: schedules failed: ${errorText(e)}`);
-    return 0;
+    return { schedulesFired: 0, schedulesError: errorText(e) };
   }
 }
 
@@ -52,9 +52,9 @@ export function createPostgresEngine(o: PostgresEngineOptions): WorkflowEngine {
     signal: (tenantId, event, payload, so = {}) => inTx(db, tenantId, so.tx, (t) => signalTx(t, tenantId, event, payload, so.id)),
     async tick(): Promise<WorkflowTickResult> {
       const deadline = Date.now() + (o.budgetMs ?? 20_000);
-      const schedulesFired = await scheduleTick(db, registry, engine.start, o.log);
+      const schedules = await scheduleTick(db, registry, engine.start, o.log);
       const claimed = await db.execute(sql`select * from workflows.claim_runs(${leaseSeconds}, ${o.batch ?? 20})`);
-      const result = { runs: 0, runsFailed: 0, schedulesFired };
+      const result: WorkflowTickResult = { runs: 0, runsFailed: 0, ...schedules };
       for (const c of claimed) {
         const run = { id: c.id as string, tenantId: c.tenant_id as string, lease: c.lease as string };
         try {
