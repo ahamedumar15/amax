@@ -76,7 +76,7 @@ describe.skipIf(!hasDb)("allocations data scope (Postgres)", () => {
   ])("Copy to next month is refused without a viewer unless core issued the context: $who", async ({ ctx, copies }) => {
     // Fixtures plan December, and some of it isn't in January yet, so there is something to copy.
     const run = copyMonth(await ctx(), { from: "2026-12" });
-    if (copies) await expect(run).resolves.toMatchObject({ skipped: 0 });
+    if (copies) await expect(run).resolves.toMatchObject({ forbidden: 0 });
     else await expect(run).rejects.toThrow(/forbidden/);
   });
 

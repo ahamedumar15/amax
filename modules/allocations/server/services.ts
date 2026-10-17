@@ -68,13 +68,18 @@ export const copyMonth = defineService({
     if (!viewerOf(ctx) && !isSystemContext(ctx)) throw new ScopeError("allocations:copy");
     const to = nextMonth(input.from);
     const members = (await teamMembers(tx, input.team)).map((m) => m.personId);
-    const rows = await tx.execute(sql`select * from allocations.allocation a where month = ${input.from}::date and person_id::text in (${sql.join([...members, "none"].map((i) => sql`${i}`), sql`, `)})
-      and not exists (select 1 from allocations.allocation b where b.person_id = a.person_id and b.month = ${to}::date and coalesce(b.project_id::text, 'work:' || b.work) = coalesce(a.project_id::text, 'work:' || a.work))`);
+    const all = await tx.execute(sql`select a.*, exists (select 1 from allocations.allocation b where b.person_id = a.person_id and b.month = ${to}::date
+        and coalesce(b.project_id::text, 'work:' || b.work) = coalesce(a.project_id::text, 'work:' || a.work)) as planned
+      from allocations.allocation a where month = ${input.from}::date and person_id::text in (${sql.join([...members, "none"].map((i) => sql`${i}`), sql`, `)})`);
+    // Two different reasons a row isn't copied, counted apart: already planned next month (skipped), or
+    // on a project the caller may not allocate (forbidden).
+    const rows = all.filter((r) => !r.planned);
     const allowed = rows.filter((r) => mayAllocate(ctx, (r.project_id as string | null) ?? null));
+    const skipped = all.length - rows.length, forbidden = rows.length - allowed.length;
     for (const r of allowed) {
       await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, work, month, percent, updated_by) values (${ctx.tenantId}, ${r.person_id}, ${r.project_id}, ${r.work}, ${to}, ${r.percent}, ${by(ctx)})`);
     }
     const payload: MonthCopied = { team: input.team, from: input.from, to, rows: allowed.length, by: by(ctx) };
-    return { result: { from: input.from, to, copied: allowed.length, skipped: rows.length - allowed.length }, resourceId: null, after: { ...payload, skipped: rows.length - allowed.length }, events: [{ name: EVENTS.monthCopied, payload }] };
+    return { result: { from: input.from, to, copied: allowed.length, skipped, forbidden }, resourceId: null, after: { ...payload, skipped, forbidden }, events: [{ name: EVENTS.monthCopied, payload }] };
   },
 });

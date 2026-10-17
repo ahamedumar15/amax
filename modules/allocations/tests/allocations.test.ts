@@ -45,12 +45,14 @@ describe.skipIf(!hasDb)("allocations against Postgres", () => {
     await expect(allocate(pm, { person: "Kasun Dias", projectKey: "CON", month: "2027-01", through: "2027-02", percent: 40 })).resolves.toMatchObject({ months: ["2027-01-01", "2027-02-01"] });
     await expect(allocate(pm, { person: "LL-0417", projectKey: "FLT", month: "2027-01", percent: 40 })).rejects.toThrow(/data scope/);
     const copied = await copyMonth(pm, { from: "2027-02" });
-    expect(copied).toMatchObject({ to: "2027-03-01", copied: 3, skipped: 2 });
+    expect(copied).toMatchObject({ to: "2027-03-01", copied: 3, skipped: 141, forbidden: 2 });
     const audit = await db.tx((tx) => tx.execute(sql`select action, after from core.audit_event where action like 'allocations.%' order by seq`));
     expect(audit.map((a) => a.action)).toEqual(["allocations.allocation.set", "allocations.month.copy"]);
     const events = await db.tx((tx) => tx.execute(sql`select name from core.event where name like 'allocations.%' order by created_at, id`));
     expect(events.map((e) => e.name)).toEqual(["allocations.allocation.set", "allocations.month.copied"]);
     const intent = (manifest.chatIntents as { id: string; tool: string }[]).find((i) => i.id === "allocations.allocate")!;
     expect(manifest.mcpTools!.map((t) => t.name)).toContain(intent.tool);
+    // A second copy finds those rows already planned: skipped, not forbidden.
+    expect(await copyMonth(pm, { from: "2027-02" })).toMatchObject({ copied: 0, skipped: 141 + 3, forbidden: 2 });
   });
 });
