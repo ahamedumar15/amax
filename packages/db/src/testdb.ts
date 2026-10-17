@@ -1,6 +1,11 @@
 import { randomBytes } from "node:crypto";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { createDb } from "./client";
+import { migrate, migrationScopes } from "./migrate";
+
+export const repoRoot = join(fileURLToPath(import.meta.url), "../../../..");
 
 // Real Postgres for tests. DB tests skip without DATABASE_MIGRATE_URL, except in CI where that's an error.
 export const adminUrl = process.env.DATABASE_MIGRATE_URL;
@@ -37,4 +42,11 @@ export async function freshDatabase() {
       await admin.end();
     },
   };
+}
+
+// A throwaway database with core and every installed module migrated.
+export async function migratedDatabase() {
+  const t = await freshDatabase();
+  await migrate(t.owner, migrationScopes(repoRoot));
+  return t;
 }

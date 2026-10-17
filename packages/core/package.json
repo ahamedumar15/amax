@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./registry": "./src/registry.ts",
-    "./*": "./src/*"
+    "./*": "./src/*",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",

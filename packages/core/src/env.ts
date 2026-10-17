@@ -11,6 +11,8 @@ const schema = z.object({
   // Both optional so the app still boots and serves /healthz before a database is configured.
   DATABASE_URL: postgresUrl.optional(),
   DATABASE_MIGRATE_URL: postgresUrl.optional(),
+  // Keys the HMAC that replaces classified values in the audit. Moves to 031 secrets later.
+  AUDIT_HASH_KEY: z.string().min(32, "at least 32 characters").optional(),
 });
 
 export type Env = z.infer<typeof schema>;
