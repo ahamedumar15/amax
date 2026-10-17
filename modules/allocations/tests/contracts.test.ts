@@ -15,7 +15,7 @@ describe("AC-4 contract shape", () => {
 
 describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
   let db: Awaited<ReturnType<typeof allocationsDatabase>>;
-  beforeAll(async () => { db = await allocationsDatabase(); });
+  beforeAll(async () => { db = await allocationsDatabase(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("listAllocations and personMonthTotals: Ayesha is at 120% in December", async () => {

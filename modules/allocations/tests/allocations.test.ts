@@ -13,7 +13,7 @@ import { allocationsDatabase, TODAY } from "./setup";
 
 describe.skipIf(!hasDb)("allocations against Postgres", () => {
   let db: Awaited<ReturnType<typeof allocationsDatabase>>;
-  beforeAll(async () => { db = await allocationsDatabase(); });
+  beforeAll(async () => { db = await allocationsDatabase(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("AC-1 tenant-isolated schema; per-person totals with over 100% flagged (Ayesha, December)", async () => {
