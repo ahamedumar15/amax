@@ -44,6 +44,6 @@ Assumptions (stated per Rule 1):
 - [x] `T4` — Temporal adapter: generic interpreter workflow, plan/runStep/record activities, client engine (start, signal, pause/resume/cancel/retry), `startTemporalWorker`, config `AMAX_WORKFLOWS_ENGINE=postgres|temporal`, Helm values for the worker and the Temporal chart/Cloud (AC-3)
   Files: packages/workflows/src/temporal/{workflow,activities,engine,worker}.ts, packages/workflows/src/config.ts, deploy/helm/amax/{values.yaml,templates/worker.yaml}
   Depends: T3
-- [ ] `T5` — Shared engine suite run on both engines (resume, retries, sleep, waitForEvent, admin actions, no step re-run), a kill test that SIGKILLs a worker process mid-run, schedule and time-zone tests, RLS check, tick route; CI runs the Temporal suite (AC-2, AC-3, AC-5, AC-6)
+- [x] `T5` — Shared engine suite run on both engines (resume, retries, sleep, waitForEvent, admin actions, no step re-run), a kill test that SIGKILLs a worker process mid-run, schedule and time-zone tests, RLS check, tick route; CI runs the Temporal suite (AC-2, AC-3, AC-5, AC-6)
   Files: packages/workflows/tests/{conformance,kill,schedules,admin}.test.ts, packages/workflows/tests/fixtures/*, .github/workflows/ci.yml
   Depends: T3, T4

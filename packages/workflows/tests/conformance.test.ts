@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
+import { engineConfig } from "../src/config";
 import { count, flags } from "./fixtures/workflows";
 import { admin, pause, pgHarness, settle, TENANT, type Harness } from "./harness";
 import { temporalEnabled, temporalHarness } from "./temporal-harness";
@@ -57,4 +58,13 @@ describe.each(engines)("AC-3 the same suite on the %s engine", (_name, make, ena
     await h.engine.control(admin, other, "cancel");
     expect((await settle(h, other, ["cancelled"])).finishedAt).not.toBeNull();
   }, 60_000);
+});
+
+describe("AC-3 engine per deployment", () => {
+  it("defaults to Postgres and needs an address for Temporal; an API key means Temporal Cloud over TLS", () => {
+    expect(engineConfig({}).engine).toBe("postgres");
+    expect(() => engineConfig({ AMAX_WORKFLOWS_ENGINE: "temporal" })).toThrow(/TEMPORAL_ADDRESS/);
+    expect(() => engineConfig({ AMAX_WORKFLOWS_ENGINE: "inngest" })).toThrow(/postgres or temporal/);
+    expect(engineConfig({ AMAX_WORKFLOWS_ENGINE: "temporal", TEMPORAL_ADDRESS: "lumen.a1b2.tmprl.cloud:7233", TEMPORAL_API_KEY: "k" }).temporal).toMatchObject({ tls: true, namespace: "default", taskQueue: "amax-workflows" });
+  });
 });
