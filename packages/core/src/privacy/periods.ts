@@ -31,12 +31,13 @@ export function statutoryFor(rule: Pick<Rule, "class">, country: string | null) 
   return { period: top.period, reason: top.reason };
 }
 
-export function effective(p: Periods, rule: Rule, entityId: string | null): Effective {
+export function effective(p: Periods, rule: Pick<Rule, "id" | "class" | "period" | "minimum">, entityId: string | null): Effective {
   const own = p.overrides.find((o) => o.rule === rule.id && o.entityId === entityId) ?? p.overrides.find((o) => o.rule === rule.id && o.entityId === null);
   const country = p.entities.find((e) => e.id === entityId)?.country ?? null;
   const statutory = statutoryFor(rule, country);
   const base = own?.period ?? rule.period;
-  return { period: statutory ? longest([base, statutory.period]) : base, statutory, override: !!own };
+  const floors = [base, ...(statutory ? [statutory.period] : []), ...(rule.minimum ? [rule.minimum] : [])];
+  return { period: longest(floors), statutory, override: !!own };
 }
 
 export function widest(p: Periods, rule: Rule) {

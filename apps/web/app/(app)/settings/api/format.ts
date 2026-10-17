@@ -50,7 +50,7 @@ export function lede(rows: CredentialView[], s: ApiStats, now: Date) {
   const bad = total ? ` ${total} unsigned webhook call${total === 1 ? " was" : "s were"} rejected this week${from}.` : "";
   // No secret set up is a setup problem, not an attacker (review 058 B3).
   const unset = s.inbound.filter((i) => i.unconfigured > 0).map((i) => PROVIDER_NAMES[i.provider]);
-  const setup = unset.length ? ` Calls from ${unset.join(" and ")} couldn't be verified because no webhook secret is set up; add it in Secrets.` : "";
+  const setup = unset.length ? ` Calls from ${unset.join(" and ")} couldn't be verified because no webhook secret is set up; add it in Connections and keys.` : "";
   const off = s.webhooks.find((w) => w.status === "off");
   const soon = live(rows).filter((r) => expiringSoon(r, now)).sort((a, b) => a.expiresAt.localeCompare(b.expiresAt))[0];
   const attention = off ? ` The ${off.name} webhook was switched off after failing; ask amax to resume it once it's fixed.`

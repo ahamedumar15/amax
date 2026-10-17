@@ -1,8 +1,8 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
-import { managedProjectIds } from "./contracts";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -61,6 +61,14 @@ export default defineModule({
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
   jobs: [],
-  events: { emits: ["delivery.release.deployed", "delivery.proposal.phase_changed", "delivery.proposal.rekeyed"] },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: {
+    emits: Object.values(EVENTS),
+    payloads: {
+      [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
+      [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain" }),
+      [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
+    },
+  },
   fixtures: [deliveryFixtures],
 });

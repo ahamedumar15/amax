@@ -37,7 +37,6 @@ describe("058 one limiter per process, whichever bundle imports it", () => {
     expect(proxy).not.toBe(app);
     const limited: string[] = [];
     app.configureRateLimits({ page: { user: 2, token: 2 }, call: { user: 2, token: 2 }, sink: (l) => void limited.push(l.channel), now: () => 1_900_000_000_000 });
-    proxy.ensureRateLimits({ page: { user: 500 }, call: { user: 500 } });
     const take = () => proxy.takeRate({ tenantId: T, userId: `u-${channel}`, channel }).ok;
     expect([take(), take(), take()]).toEqual([true, true, false]);
     expect(limited).toEqual([channel]);

@@ -29,11 +29,12 @@ export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocal
 export const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 
 export function requestNote(r: RequestView, openedBy: string) {
-  if (r.status === "completed") return r.kind === "access" ? `Package ready: ${plural(r.summary.total, "record")}` : `Erased ${r.completedAt?.slice(0, 10) ?? ""}; ${plural(r.summary.kept, "record")} kept by law or design`;
+  const review = r.summary.review ? `; ${plural(r.summary.review, "record")} recorded by name only, to check by hand` : "";
+  if (r.status === "completed") return r.kind === "access" ? `Package ready: ${plural(r.summary.total - r.summary.review, "record")}${review}` : `Erased ${r.completedAt?.slice(0, 10) ?? ""}; ${plural(r.summary.kept, "record")} kept by law or design${review}`;
   const kept = r.inventory.find((i) => i.kept && i.rule);
   const keptText = kept ? `${kept.label} kept by law; ` : "";
   const action = r.kind === "erasure" ? "to erase" : "in the package";
-  return `Opened by ${openedBy}. ${keptText}${plural(r.summary.toErase, kept ? "other record" : "record")} ${action}`;
+  return `Opened by ${openedBy}. ${keptText}${plural(r.summary.toErase, kept ? "other record" : "record")} ${action}${review}`;
 }
 
 export const requestTitle = (r: RequestView) => `${r.kind === "erasure" ? "Erasure" : "Access"}, ${r.subjectLabel}`;

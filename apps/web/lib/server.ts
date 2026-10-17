@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
-import { auditExportJob, configureRateLimits, declaredFieldClasses, configureRuntime, limitsFromEnv, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
-import { apiPlatform } from "@amax/api/module";
+import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { apiPlatform, webhookEvents } from "@amax/api/module";
 import { rateLimitRecorder } from "@amax/api/limits";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
@@ -19,6 +19,7 @@ import { platformWorkflows } from "./platform-workflows";
 import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
 import { privacySources } from "./privacy-sources";
+import { wireRateLimits } from "./rate-wiring";
 
 // One database client per server process; null until DATABASE_URL is configured.
 const cache = globalThis as unknown as { amaxDb?: Db | null };
@@ -42,7 +43,7 @@ export function getDb(): Db | null {
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     // 035 AC-5: limited requests are counted for the API and webhooks screen.
-    configureRateLimits({ ...limitsFromEnv(loadEnv()), sink: rateLimitRecorder().sink });
+    wireRateLimits(loadEnv(), rateLimitRecorder().sink);
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
@@ -59,7 +60,7 @@ export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 const auth = { id: "auth", events: { handles: authEventHandlers } };
 
 // 035: outgoing webhooks for every event an installed module emits, delivered as 029 workflows.
-const api = () => apiPlatform(installed.flatMap((m) => m.events?.emits ?? []), workflowEngine, declaredFieldClasses(installed));
+const api = () => apiPlatform(webhookEvents(installed), workflowEngine);
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
 export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), ...installed]));

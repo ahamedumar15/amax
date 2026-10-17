@@ -3,7 +3,7 @@ import type { McpToolDef } from "@amax/core";
 import type { ServiceContext, Source } from "@amax/core/server";
 import { contextForViewer, type Viewer } from "@amax/auth";
 import type { Db } from "@amax/db";
-import type { Registry } from "@amax/mcp";
+import { ToolError, type Registry } from "@amax/mcp";
 import type { WorkflowEngine, WorkflowRegistry } from "@amax/workflows/server";
 
 /** What the admin tools need from the running app; tests pass their own. */
@@ -20,3 +20,8 @@ export const read = (permission: string) => ({ scope: "read" as const, readOnly:
 export const write = (permission: string) => ({ scope: "write" as const, permission });
 
 export const notFound = (what: string) => Object.assign(new Error(`${what} not found`), { retryable: false, code: "not_found" });
+
+/** Writes that only a person on chat's confirm card may make: never over MCP or the REST API (035, 058). */
+export function chatOnly(source: string, why: string) {
+  if (source !== "chat") throw new ToolError(why, "invalid_input");
+}

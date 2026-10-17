@@ -4,8 +4,8 @@ import { authorize, ForbiddenError, type ServiceContext } from "../authorize";
 import { getRuntime } from "../service";
 import { APPEND_ONLY, PRIVACY_READ, privacyRules, TENANT_DEFAULTS, type Rule } from "./catalog";
 import { held as heldNow } from "./holds";
-import { summarise } from "./inventory";
-import { paused } from "./match";
+import { countArms, summarise } from "./inventory";
+import { paused, searchable } from "./match";
 import { effective, loadPeriods, type Effective, type Entity } from "./periods";
 import { previewPurge } from "./purge";
 import { toRequest, type RequestRow } from "./requests";
@@ -52,13 +52,23 @@ export async function names(tx: Tx, actors: string[]) {
   return Object.fromEntries(rows.map((r) => [`user:${r.id}`, r.name as string]));
 }
 
+// Every rule requests search, tried with a match nothing has: whatever fails would block a request.
+async function requestBlockers(tx: Tx): Promise<string[]> {
+  const none = { ids: ["amax:no-such-subject"], names: ["amax:no-such-subject"] };
+  const out: string[] = [];
+  for (const rule of privacyRules().filter((r) => searchable(r) && r.module !== "privacy")) if ((await countArms(tx, rule, none)) instanceof Error) out.push(rule.id);
+  return out;
+}
+
 export async function privacyOverview(ctx: ServiceContext, opts: { entityId?: string | null } = {}) {
   return readPrivacy(ctx, async (tx) => {
     const [rules, preview, requests, holds, purged] = [await listRules(tx, opts.entityId), await previewPurge(tx), await listRequests(tx), await listHolds(tx), await purgedSince(tx)];
     const due = { delete: 0, anonymise: 0 };
     for (const c of preview.counts) due[c.action] += c.n;
-    // A rule whose preview failed is unknown, never 0 (review 058 B3): the screen says so.
-    const unchecked = preview.failed.map((id) => rules.rules.find((r) => r.id === id)?.label ?? id);
+    // A rule whose preview failed is unknown, never 0 (review 058 B3), and so is one whose subject
+    // columns can't be read: requests refuse to open on it, so the screen must say so too.
+    const blocked = await requestBlockers(tx);
+    const unchecked = [...new Set([...preview.failed, ...blocked])].map((id) => rules.rules.find((r) => r.id === id)?.label ?? id);
     const who = await names(tx, [...requests.flatMap((r) => [r.openedBy, r.approvedBy ?? ""]), ...holds.map((h) => h.placedBy)]);
     return { ...rules, due, dueByRule: preview.counts.filter((c) => c.n > 0), unchecked, requests, holds, purged, names: who };
   });

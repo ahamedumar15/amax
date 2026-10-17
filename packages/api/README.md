@@ -16,18 +16,19 @@ Public API, signed webhooks and rate limits (035). Owned by the platform team.
   Azure DevOps service hooks (Basic auth password plus `createdDate`), Microsoft Graph
   (`clientState`) and amax-signed calls against the tenant's 031 secrets (`github-webhook`,
   `azure-devops-webhook`, `msgraph-webhook`, `amax-webhook`; every valid version, so rotation has
-  grace). Signed timestamps must be within 5 minutes; GitHub sends none. Dedupe is on a hash of the
+  grace). Signed timestamps must be within `REPLAY_WINDOW_MS` (5 minutes); GitHub sends none. Dedupe is on a hash of the
   signed body, not the unsigned delivery-id header, so a replay with a fresh id is still a duplicate.
   Every rejection is recorded in `api.inbound`; a provider with no secret set up is recorded as
   `not_configured`, a setup problem, not a rejection.
 - **Outgoing webhooks**: `subscribe_webhook` and friends (Admin, chat-confirmed). Each event an
   installed module emits fans out to a `api.webhook-deliver` workflow (029): payload fields of a
-  002 class the modules declare (retention entries, tools' `sensitive`) are masked in any spelling,
-  with name patterns as a safety net. Receivers must be public: the URL is checked when subscribed
+  each module declares every field of each event it emits (`declarePayload`); a plain field is sent,
+  a classified one is masked with its class, and an undeclared one is masked (fail closed), with name
+  patterns as a net inside plain fields. Receivers must be public: the URL is checked when subscribed
   and the resolved address again at delivery, where the connection is pinned to it (no private,
   loopback, link-local, CGNAT or mapped addresses, no redirects). the body is signed `X-Amax-Signature: t=<unix>,v1=<hex HMAC-SHA256 of
-  "t.body">` with the tenant's `amax-webhook` secret, retried 5 times with backoff, and the webhook
-  is switched off after 5 deliveries in a row fail.
+  "t.body">` with the tenant's `amax-webhook` secret, retried `RETRY.maxAttempts` times with backoff, and the webhook
+  is switched off after `MAX_FAILURES` deliveries in a row fail.
 - **Rate limits** live in `@amax/core/rate-limit` (fixed one-minute windows per token, user and tenant, counted per server process
   and shared by the proxy's and the app's bundles;
   a shared store can plug in later). The registry calls it once per tool call; MCP and REST answer 429 with `Retry-After`;

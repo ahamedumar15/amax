@@ -4,9 +4,11 @@ import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { setGrants } from "@amax/auth";
 import { chatTurn, confirmAction } from "@amax/chat";
-import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
+import { previewPurge, privacyGrants, setPrivacySources } from "@amax/core/privacy";
+import { withTenant } from "@amax/db";
 import { PLATFORM_PRIVACY_SOURCES, privacySources } from "../../lib/privacy-sources";
-import { apiPlatform } from "@amax/api/module";
+import { apiPlatform, webhookEvents } from "@amax/api/module";
+import { installed } from "../../lib/registry";
 import { adminDb, T } from "./fixture";
 
 const PRIVACY_WRITES = ["open_privacy_request", "complete_privacy_request", "place_legal_hold", "release_legal_hold", "set_retention_period"];
@@ -72,3 +74,29 @@ describe("058 every platform retention rule is a privacy source", () => {
     expect((apiPlatform([], async () => { throw new Error("unused"); }) as { jobs?: unknown[] }).jobs ?? []).toEqual([]);
   });
 });
+
+// Review 058: every event an installed module emits declares its payload, so outgoing webhooks know
+// what may leave amax; anything undeclared is masked.
+describe("058 every emitted event declares its payload", () => {
+  it.each(installed.flatMap((m) => (m.events?.emits ?? []).map((e) => [m.id, e] as const)))("%s emits %s with a declaration", (_, event) => {
+    expect(webhookEvents(installed).find((e) => e.name === event)?.fields).toBeTruthy();
+  });
+});
+
+// Review 058 (rounds 1 and 2): chat is kept 90 days after its last message, not 90 idle days plus 90.
+describe.skipIf(!hasDb)("058 chat conversations are due 90 days after the last message (Postgres)", () => {
+  let db: Awaited<ReturnType<typeof adminDb>>;
+  beforeAll(async () => {
+    db = await adminDb();
+    setPrivacySources(PLATFORM_PRIVACY_SOURCES);
+  });
+  afterAll(() => db?.t.drop());
+
+  it.each([[89, 0], [91, 1], [179, 1]])("a conversation last updated %i days ago: %i due", async (days, due) => {
+    await db.t.owner`delete from chat.conversation`;
+    await db.t.owner`insert into chat.conversation (tenant_id, user_id, updated_at) select ${T}, id, now() - make_interval(days => ${days}) from auth.user where email = 'maya@lumenlabs.test'`;
+    const out = await withTenant(db.app, T, (tx) => previewPurge(tx));
+    expect(out.counts.find((c) => c.rule === "chat.conversation.messages")?.n).toBe(due);
+  }, 60_000);
+});
+

@@ -21,7 +21,8 @@ async function erase(tx: Tx, req: RequestRow, who: Match, items: Item[], approve
   const names = new Set(held.names.map(lower));
   if (who.ids.some((id) => held.ids.includes(id)) || who.names.some((n) => names.has(lower(n)))) throw new PrivacyError("this person is under a legal hold; release the hold before erasing");
   let n = 0;
-  for (const rule of privacyRules().filter((r) => items.some((i) => i.rule === r.id && !i.kept))) n += await applyRule(tx, rule, about(rule, who));
+  // Only rows found by id; rows found by name are left for a person to review (NAME_REVIEW).
+  for (const rule of privacyRules().filter((r) => items.some((i) => i.rule === r.id && !i.kept && !i.review))) n += await applyRule(tx, rule, about(rule, who));
   // erase_request erases the audit and trace chains for the stored ids, so store every id the
   // inventory used, including ones resolved since the request was opened (review 058 B1).
   await tx.execute(sql`update privacy.request set status = 'approved', approved_by = ${approver}, subjects = ${textArray(who.ids)} where id = ${req.id}`);

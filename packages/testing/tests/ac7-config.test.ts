@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -52,4 +52,20 @@ describe("AC7 configuration and ownership", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  // Review 058 round 2: the check runs when started through a path with a space or a symlink; it must
+  // never exit 0 without checking.
+  it.each([["a space", "with space"], ["a symlink", "link"], ["both", "a link with space"]])("runs the check through %s", (_, name) => {
+    const dir = mkdtempSync(join(tmpdir(), "amax-cli-"));
+    try {
+      const at = join(dir, name);
+      symlinkSync(repo, at);
+      const r = spawnSync("node", [join(at, "scripts/check-module-standard.mjs"), "--root", join(__dirname, "../standard/missing")], { encoding: "utf8" });
+      expect(r.status).toBe(2);
+      expect(r.stderr).toMatch(/missing README\.md/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
+

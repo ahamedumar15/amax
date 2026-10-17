@@ -1,6 +1,6 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
-import { EVENTS } from "./contracts";
+import { EVENTS, type OpportunityPromoted, type OpportunityStageChanged } from "./contracts";
 import { presalesFixtures } from "./fixtures";
 import { jobs } from "./jobs";
 import { mcpTools, search } from "./mcp";
@@ -39,6 +39,10 @@ export default defineModule({
   ],
   chatIntents,
   jobs,
-  events: { emits: Object.values(EVENTS) },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: { emits: Object.values(EVENTS), payloads: {
+    [EVENTS.stageChanged]: declarePayload<OpportunityStageChanged>({ opportunityId: "plain", number: "plain", from: "plain", to: "plain", fromChance: "plain", toChance: "plain", by: "plain", reason: "plain" }),
+    [EVENTS.promoted]: declarePayload<OpportunityPromoted>({ opportunityId: "plain", number: "plain", projectId: "plain", projectKey: "plain", by: "plain", client: "plain", costCentre: "plain", estimateDays: "plain", ownerName: "plain", leadName: "plain", valueUsd: "plain" }),
+  } },
   fixtures: [presalesFixtures],
 });

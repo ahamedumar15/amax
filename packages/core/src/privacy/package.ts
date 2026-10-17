@@ -7,7 +7,8 @@ import { about, tableOf, type Match } from "./match";
 export async function buildPackage(tx: Tx, label: string, who: Match, items: Item[]) {
   const ids = who.ids;
   const sections = [];
-  for (const item of items.filter((i) => i.rule)) {
+  // Rows found by name only may be a namesake's, so they stay out of the package (review 058).
+  for (const item of items.filter((i) => i.rule && !i.review && !i.unchecked)) {
     const rule = privacyRules().find((r) => r.id === item.rule)!;
     const cols = [...new Set([...rule.fields, ...rule.start.at])].map((c) => sql.identifier(c));
     const rows = await tx.execute(sql`select ${sql.join(cols, sql`, `)} from ${tableOf(rule)} where ${about(rule, who)} limit 5000`);

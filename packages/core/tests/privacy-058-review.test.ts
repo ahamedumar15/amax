@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { appendAudit, contextFor, type ServiceContext } from "../src/server";
-import { completePrivacyRequest, inventoryFor, openPrivacyRequest, placeLegalHold, privacyOverview, purgeDue, releaseLegalHold, type PrivacySource } from "../src/privacy";
+import { completePrivacyRequest, effective, inventoryFor, loadPeriods, openPrivacyRequest, placeLegalHold, privacyOverview, purgeDue, releaseLegalHold, setRetentionPeriod, type PrivacySource } from "../src/privacy";
 import { as, privacyDb, T, USERS, useTestSources } from "./privacy-fixture";
 
 type Entry = NonNullable<PrivacySource["retention"]>[number];
@@ -22,18 +22,19 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
   afterAll(() => db?.t.drop());
 
   // B3: a rule that can't be counted is "could not check", and the request refuses to open.
-  // `purge`: whether tonight's purge (which doesn't use the subject columns) also fails on it.
   it.each<[string, Entry, boolean]>([
-    ["a subject column that doesn't exist", { table: "pt.person", label: "Broken subject (fictional)", subject: ["no_such_column"], fields: ["name"], class: "personal", period: "P1Y", start: { at: ["left_on"] }, action: "anonymise" }, false],
+    ["a subject column that doesn't exist", { table: "pt.person", label: "Broken subject (fictional)", subject: ["no_such_column"], fields: ["left_on"], class: "personal", period: "P1Y", start: { at: ["left_on"] }, action: "anonymise" }, false],
     ["a table that doesn't exist", { table: "pt.gone", label: "Missing table (fictional)", subject: ["id"], fields: ["body"], class: "personal", period: "P1Y", start: { at: ["created_at"] }, action: "delete" }, true],
-    ["a name column that doesn't exist", { table: "pt.note", label: "Broken name (fictional)", subjectName: ["no_such_name"], fields: ["body"], class: "personal", period: "P1Y", start: { at: ["created_at"] }, action: "delete" }, false],
+    ["a name column that doesn't exist", { table: "pt.note", label: "Broken name (fictional)", subjectName: ["no_such_name"], fields: ["created_at"], class: "personal", period: "P1Y", start: { at: ["created_at"] }, action: "delete" }, false],
   ])("refuses to open a request when a rule has %s, and says which", async (_, broken, purge) => {
     await withExtra(broken);
     const inv = await db.tx((tx) => inventoryFor(tx, "Rowan Test"));
     expect(inv.items.find((i) => i.label === broken.label)).toMatchObject({ unchecked: expect.stringMatching(/^could not check/) });
     await expect(openPrivacyRequest(hana(), { kind: "erasure", person: "Rowan Test" })).rejects.toThrow(`could not check ${broken.label}`);
-    // B3: the screen shows a rule its preview couldn't count as unknown, never as 0.
-    if (purge) expect((await privacyOverview(hana())).unchecked).toContain(broken.label);
+    // B3: the screen shows the rule as unknown too, whether or not tonight's purge (which reads no
+    // subject column) fails on it (review round 2).
+    void purge;
+    expect((await privacyOverview(hana())).unchecked).toContain(broken.label);
     expect((await db.t.owner`select count(*)::int as n from privacy.request`)[0].n).toBe(0);
   }, 60_000);
 
@@ -46,17 +47,30 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
     await db.t.owner`update privacy.request set status = 'cancelled' where id = ${opened.id}`;
   }, 60_000);
 
-  // B1: rows that record the person only by name are found, erased and held by that name.
-  it.each([["exact", "Rowan Test"], ["other case", "ROWAN TEST"], ["padded", "  rowan test "]])("erasure reaches a name-only row spelled %s", async (_, spelled) => {
+  // B1 (round 2): a name doesn't identify a person. Rows found only by name are listed for review and
+  // never erased or exported automatically, in any spelling, so a namesake's rows are never touched.
+  it.each([["exact", "Rowan Test"], ["other case", "ROWAN TEST"], ["padded", "  rowan test "]])("a name-only row spelled %s is listed for review, not erased", async (_, spelled) => {
     await withExtra(TASK);
     await db.t.owner`delete from pt.task`;
     await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, ${spelled}), (${T}, 'Ivy Test')`;
     await db.t.owner`delete from privacy.request`;
     await db.t.owner`update pt.person set name = 'Rowan Test' where user_id = ${USERS.rowan}`;
     const opened = await openPrivacyRequest(hana(), { kind: "erasure", person: "rowan@example.test" });
-    expect(opened.inventory.find((i) => i.label === TASK.label)).toMatchObject({ n: 1 });
+    expect(opened.inventory.find((i) => i.label === `${TASK.label}, by name`)).toMatchObject({ n: 1, review: expect.stringMatching(/^needs review/) });
+    expect(opened.review).toBe(1);
     await completePrivacyRequest(sam(), { id: opened.id });
-    expect((await db.t.owner`select owner_name from pt.task order by owner_name nulls first`).map((r) => r.owner_name)).toEqual([null, "Ivy Test"]);
+    expect((await db.t.owner`select owner_name from pt.task order by owner_name`).map((r) => r.owner_name)).toEqual(["Ivy Test", spelled].sort());
+  }, 60_000);
+
+  it("an access package leaves out rows found only by name", async () => {
+    await withExtra(TASK);
+    await db.t.owner`delete from pt.task`;
+    await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, 'Ivy Test')`;
+    await db.t.owner`update privacy.request set status = 'cancelled' where status = 'open'`;
+    const opened = await openPrivacyRequest(sam(), { kind: "access", person: "ivy@example.test" });
+    await completePrivacyRequest(hana(), { id: opened.id });
+    const [pkg] = await db.t.owner`select package from privacy.request where id = ${opened.id}`;
+    expect(pkg.package.sections.map((x: { table: string }) => x.table)).not.toContain("pt.task");
   }, 60_000);
 
   it("a person hold keeps their name-only rows out of the purge", async () => {
@@ -86,4 +100,24 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
     expect((await db.t.owner`select name from pt.person where id = ${later.id}`)[0].name).toBe("Anonymised");
     expect((await db.t.owner`select count(*)::int as n from core.audit_event where chain_v = 2 and resource_id = ${later.id}`)[0].n).toBe(0);
   }, 60_000);
+
+  // Review 058 round 2: a rule kept for security has a floor no tenant period goes below.
+  const FLOORED: Entry = { table: "pt.note", label: "Signed call log (fictional)", fields: ["created_at"], class: "personal", period: "P90D", minimum: "P90D", start: { at: ["created_at"] }, action: "delete" };
+  it.each([["P1D", false], ["P30D", false], ["P12W", false], ["P90D", true], ["P1Y", true]] as const)("setting %s on a P90D floor: allowed %s", async (period, ok) => {
+    await withExtra(FLOORED);
+    const set = setRetentionPeriod(hana(), { rule: FLOORED.label!, period });
+    if (ok) await expect(set).resolves.toMatchObject({ period });
+    else await expect(set).rejects.toThrow(/can't be kept for less than P90D/);
+  }, 60_000);
+
+  it("a period stored below the floor still runs at the floor", async () => {
+    await withExtra(FLOORED);
+    await db.t.owner`delete from privacy.retention_period`;
+    await db.t.owner`insert into privacy.retention_period (tenant_id, rule, period, set_by) values (${T}, 'pt.note.created_at', 'P1D', 'user:test')`;
+    const p = await db.tx((tx) => loadPeriods(tx));
+    const rule = { id: "pt.note.created_at", class: "personal" as const, period: "P90D" as const, minimum: "P90D" as const };
+    expect(effective(p, rule, null).period).toBe("P90D");
+    await db.t.owner`delete from privacy.retention_period`;
+  }, 60_000);
 });
+

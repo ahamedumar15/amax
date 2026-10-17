@@ -16,14 +16,14 @@ export class RateLimitedError extends Error {
   }
 }
 
-type State = { limits: { page: Limits; call: Limits }; window: number; counts: Map<string, number>; sink: (l: Limited) => void; now: () => number; configured: boolean };
+type State = { limits: { page: Limits; call: Limits }; window: number; counts: Map<string, number>; sink: (l: Limited) => void; now: () => number };
 
-// One limiter per process (review 058 B6). Next compiles the proxy and the app as separate bundles,
-// each with its own copy of this module; keeping the state on globalThis makes them share the limits
-// the app configures, the counts and the sink that records 429s, instead of the proxy using defaults.
+// One limiter per process. Next compiles the proxy and the app as separate bundles, each with its own
+// copy of this module; where they share a process (k3s, standalone) the state on globalThis is one.
+// Where the host runs the proxy apart (Vercel, Cloudflare), the proxy wires its own (review 058).
 const KEY = Symbol.for("amax.rate-limit");
 const shared = globalThis as unknown as { [KEY]?: State };
-const state: State = (shared[KEY] ??= { limits: { page: PAGES, call: CALLS }, window: -1, counts: new Map(), sink: () => {}, now: Date.now, configured: false });
+const state: State = (shared[KEY] ??= { limits: { page: PAGES, call: CALLS }, window: -1, counts: new Map(), sink: () => {}, now: Date.now });
 
 type Options = { page?: Partial<Limits>; call?: Partial<Limits>; sink?: (l: Limited) => void; now?: () => number };
 
@@ -33,15 +33,6 @@ export function configureRateLimits(opts: Options) {
   if (opts.now) state.now = opts.now;
   state.counts.clear();
   state.window = -1;
-  state.configured = true;
-}
-
-/** For an entry point that may run before the app wires the limiter (the proxy): configures the
- * limits from the environment unless the app already has, and never resets counts or the sink. */
-export function ensureRateLimits(opts: Pick<Options, "page" | "call">) {
-  if (state.configured) return;
-  state.limits = { page: { ...PAGES, ...opts.page }, call: { ...CALLS, ...opts.call } };
-  state.configured = true;
 }
 
 /** The limits in force, for screens that show them. */

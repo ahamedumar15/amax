@@ -1,28 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { declaredFieldClasses } from "@amax/core/server";
-import { maskPayload } from "../src";
+import { maskEvent, webhookEvents } from "../src";
 
-// Review 058 B4: outgoing payloads are masked by the classes the modules declare (retention entries,
-// tools' classified results), in any spelling of the field, not by a second list of name guesses.
-const declared = declaredFieldClasses([
-  { retention: [
-    { table: "x.employment", fields: ["epf_number", "base_salary"], class: "pay", period: "P7Y", start: { at: ["ends_on"] }, action: "anonymise" },
-    { table: "x.employment", fields: ["bank_account"], class: "bank", period: "P7Y", start: { at: ["ends_on"] }, action: "anonymise" },
-    { table: "x.person", fields: ["name"], class: "personal", period: "P7Y", start: { at: ["left_on"] }, action: "anonymise" },
-  ] },
-  { mcpTools: [{ name: "get_x", description: "", input: undefined as never, permission: "", scope: "read", run: async () => null, sensitive: { probationOutcome: "performance" } }] },
-]);
+// Review 058 (rounds 1 and 2): outgoing payloads are masked by what the emitting module declared for
+// that event, and fail closed: a field it didn't declare never leaves amax in the clear.
+const fields = { personId: "plain", epfNumber: "pay", bankAccount: "bank", detail: "plain" } as const;
 
-describe("058 outgoing webhook masking follows the declared classes", () => {
+describe("058 outgoing webhook masking follows the event's declaration and fails closed", () => {
   it.each([
-    ["epf_number", "pay"], ["epfNumber", "pay"], ["EPF-Number", "pay"], ["base_salary", "pay"], ["baseSalary", "pay"],
-    ["bank_account", "bank"], ["bankAccount", "bank"], ["probation_outcome", "performance"], ["probationOutcome", "performance"],
-  ])("masks %s as %s", (field, cls) => {
-    expect(maskPayload({ person: { [field]: "value", name: "Test Person" } }, declared)).toEqual({ person: { [field]: { masked: true, class: cls }, name: "Test Person" } });
+    ["a plain field is sent", { personId: "p-1" }, { personId: "p-1" }],
+    ["a classified field is masked with its class", { epfNumber: "EPF-123" }, { epfNumber: { masked: true, class: "pay" } }],
+    ["another class", { bankAccount: "000-111" }, { bankAccount: { masked: true, class: "bank" } }],
+    ["an undeclared field is masked", { epf_number: "EPF-123" }, { epf_number: { masked: true, class: "undeclared" } }],
+    ["an undeclared harmless-looking field is masked too", { amount: 10 }, { amount: { masked: true, class: "undeclared" } }],
+    ["a pay field nested in a plain one is caught by the net", { detail: { salary: 1, note: "x" } }, { detail: { salary: { masked: true, class: "pay" }, note: "x" } }],
+  ])("%s", (_, payload, want) => expect(maskEvent(payload, fields)).toEqual(want));
+
+  it("an event with no declaration sends nothing in the clear", () => {
+    expect(maskEvent({ personId: "p-1", name: "Test Person" }, undefined)).toEqual({ personId: { masked: true, class: "undeclared" }, name: { masked: true, class: "undeclared" } });
   });
 
-  it("leaves unclassified fields and the personal class (not a 002 class) as they are", () => {
-    expect(declared).not.toHaveProperty("name");
-    expect(maskPayload({ name: "Test Person", leftOn: "2026-10-01" }, declared)).toEqual({ name: "Test Person", leftOn: "2026-10-01" });
+  it("each module's declaration applies only to its own events", () => {
+    const events = webhookEvents([
+      { events: { emits: ["a.thing.done"], payloads: { "a.thing.done": { amount: "plain" } } } },
+      { events: { emits: ["b.pay.run"], payloads: { "b.pay.run": { amount: "pay" } } } },
+    ]);
+    const a = events.find((e) => e.name === "a.thing.done")!;
+    const b = events.find((e) => e.name === "b.pay.run")!;
+    expect([maskEvent({ amount: 5 }, a.fields), maskEvent({ amount: 5 }, b.fields)]).toEqual([{ amount: 5 }, { amount: { masked: true, class: "pay" } }]);
   });
 });

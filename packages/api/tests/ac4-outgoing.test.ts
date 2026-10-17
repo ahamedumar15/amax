@@ -12,7 +12,7 @@ const EVENT = "hr.person.updated";
 describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
   let db: Awaited<ReturnType<typeof apiDb>>;
   let engine: WorkflowEngine;
-  const platform = apiPlatform([EVENT], async () => engine);
+  const platform = apiPlatform([{ name: EVENT, fields: { name: "plain", salary: "pay" } }], async () => engine);
   const sent: { url: string; headers: Headers; body: string }[] = [];
 
   const emit = (payload: Record<string, unknown>) =>
@@ -56,7 +56,7 @@ describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
     expect(good).toHaveLength(1);
     expect(verifyWebhook({ provider: "amax", headers: good[0].headers, body: good[0].body, secrets: [SECRET] }).ok).toBe(true);
     expect(verifyWebhook({ provider: "amax", headers: good[0].headers, body: good[0].body, secrets: ["wrong"] }).ok).toBe(false);
-    expect(JSON.parse(good[0].body).data).toEqual({ name: "Test Person", salary: { masked: true, class: "pay" }, bankAccount: { masked: true, class: "bank" } });
+    expect(JSON.parse(good[0].body).data).toEqual({ name: "Test Person", salary: { masked: true, class: "pay" }, bankAccount: { masked: true, class: "undeclared" } });
     expect(sent.filter((s) => s.url.endsWith("/broken"))).toHaveLength(RETRY.maxAttempts);
 
     for (let i = 1; i < MAX_FAILURES; i++) await emit({ name: `Person ${i}` });

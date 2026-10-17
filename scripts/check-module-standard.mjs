@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 const at = args.indexOf("--root");
@@ -102,9 +103,17 @@ function unretained(name) {
   ];
 }
 
-if (import.meta.url !== `file://${process.argv[1]}`) {
-  // Imported for its parsers (tests); only the CLI checks the tree.
-} else main();
+// Run as the CLI unless imported for the parsers. Compare real paths, not URL text: a checkout path with
+// a space or a symlink must never make the check exit 0 without checking (review 058 round 2).
+const real = (p) => {
+  try {
+    return realpathSync(p);
+  } catch {
+    return resolve(p);
+  }
+};
+const isCli = !!process.argv[1] && real(fileURLToPath(import.meta.url)) === real(process.argv[1]);
+if (isCli) main();
 
 function main() {
 const names = existsSync(modulesDir) ? readdirSync(modulesDir).filter((d) => statSync(join(modulesDir, d)).isDirectory()) : [];

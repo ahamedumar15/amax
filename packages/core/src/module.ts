@@ -95,9 +95,18 @@ export type RetentionEntry = {
   /** Free-text columns holding the person's name where no id column names them (an owner_name on a
    * sales task). Requests and holds match them case-insensitively against the person's name. */
   subjectName?: string[];
+  /** The shortest period a tenant may set, for rows kept for security rather than for a person (the
+   * inbound webhook dedupe that stops replays). Tenant periods never go below it (review 058). */
+  minimum?: `P${string}`;
   /** The row's legal entity column, so each entity's statutory minimum applies to its own rows. */
   entity?: string;
 };
+
+/** Every field of an event payload with its 002 class, or "plain" for a field safe to send outside. */
+export type PayloadFields = Record<string, Sensitivity | "plain">;
+
+/** Declares a payload type's fields; the compiler requires every field of `T`, so a new one can't go out undeclared. */
+export const declarePayload = <T>(fields: Record<keyof T & string, Sensitivity | "plain">): PayloadFields => fields;
 
 /** A country pack's statutory minimum (032 AC-2): no tenant may keep this class for less. */
 export type StatutoryMinimum = { country: string; class: Sensitivity | "personal"; period: `P${string}`; reason: string };
@@ -144,7 +153,9 @@ export type ModuleManifest = {
   workflows?: readonly unknown[];
   /** Cron schedules (029): cron() results from @amax/workflows, opaque to core. */
   schedules?: readonly unknown[];
-  events?: { emits?: string[]; handles?: EventHandlerDef[] };
+  /** `payloads`: each emitted event's fields with their 002 class or "plain" (declarePayload). Outgoing
+   * webhooks send a declared plain field, mask a classified one and mask any field not declared (035, review 058). */
+  events?: { emits?: string[]; handles?: EventHandlerDef[]; payloads?: Record<string, PayloadFields> };
   fixtures?: FixtureSeed[];
 };
 

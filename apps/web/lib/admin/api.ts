@@ -2,9 +2,8 @@ import { z } from "zod";
 import { createCredential, MAX_CREDENTIAL_DAYS, revokeCredential, rotateCredential, SCOPE } from "@amax/auth/credentials";
 import { listCredentialViews } from "@amax/auth/credentials-read";
 import { apiStats, listWebhooks, PROVIDERS, resumeWebhook, subscribeWebhook, unsubscribeWebhook } from "@amax/api";
-import { ToolError } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
-import { ctxFor, notFound, read, tool, write, type AdminDeps } from "./tool";
+import { chatOnly, ctxFor, notFound, read, tool, write, type AdminDeps } from "./tool";
 
 const CRED_READ = "api:credential:read";
 const CRED_MANAGE = "api:credential:manage";
@@ -12,9 +11,7 @@ const HOOK_READ = "api:webhook:read";
 const HOOK_MANAGE = "api:webhook:manage";
 const id = z.object({ id: z.uuid() });
 
-function chatOnly(source: string) {
-  if (source !== "chat") throw new ToolError("a new API key is shown once, on amax chat's confirm card; create or rotate credentials there", "invalid_input");
-}
+const KEY_ONCE = "a new API key is shown once, on amax chat's confirm card; create or rotate credentials there";
 
 export const apiTools = (d: AdminDeps) => {
   const creds = (v: Viewer) => listCredentialViews(d.db(), v.tenantId);
@@ -30,9 +27,9 @@ export const apiTools = (d: AdminDeps) => {
         actsFor: z.array(z.email()).default([]).describe("Emails of the people it may act for; empty for no one"),
         days: z.number().int().min(1).max(MAX_CREDENTIAL_DAYS).describe(`Days until it expires, at most ${MAX_CREDENTIAL_DAYS}`),
       }),
-      run: async (v, a, s) => (chatOnly(s), createCredential(ctxFor(v, s), { ...a, ownerUserId: v.userId })) }),
+      run: async (v, a, s) => (chatOnly(s, KEY_ONCE), createCredential(ctxFor(v, s), { ...a, ownerUserId: v.userId })) }),
     tool({ ...write(CRED_MANAGE), name: "rotate_api_credential", description: "Rotate a service credential's API key. The new key is shown once, on the confirm card; the old one stops working at once.", input: id,
-      run: async (v, a, s) => (chatOnly(s), rotateCredential(ctxFor(v, s), a)) }),
+      run: async (v, a, s) => (chatOnly(s, KEY_ONCE), rotateCredential(ctxFor(v, s), a)) }),
     tool({ ...write(CRED_MANAGE), name: "revoke_api_credential", description: "Revoke a service credential now; its key and access tokens stop working.", destructive: true,
       input: z.object({ id: z.uuid(), reason: z.enum(["replaced", "compromised", "unused"]) }), run: (v, a, s) => revokeCredential(ctxFor(v, s), a) }),
     tool({ ...read(HOOK_READ), name: "get_api_overview", description: "This week's API picture: outgoing webhooks and deliveries, incoming webhooks verified and rejected per provider, and requests rate-limited.", input: z.object({ provider: z.enum(PROVIDERS).optional(), channel: z.enum(["page", "rest", "mcp", "chat"]).optional() }),
