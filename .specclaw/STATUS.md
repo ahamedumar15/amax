@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 12:15 UTC
+**Last Updated:** 2026-10-17 12:42 UTC
 
 ## Active Changes
 
@@ -9,10 +9,13 @@
 - 🔍 **004-mcp-gateway** — verify done | 3/3 tasks (100%) | 0 failed | PR #23 closed
 - 🔍 **005-amax-chat** — verify done | 3/3 tasks (100%) | 0 failed | PR #22 closed
 - 🔍 **007-delivery-projects** — verify done | 4/4 tasks (100%) | 0 failed | PR #17 closed
+- 🔀 **009-time-and-approvals** — PR #28 open
+- 🔀 **010-allocations-forecast** — PR #29 open
+- 🔀 **011-hr-core** — PR #27 open
 - 🔍 **033-ai-gateway-and-residency** — verify done | 3/3 tasks (100%) | 0 failed
 - 🔍 **039-specclaw-self-sync** — verify done | 3/3 tasks (100%) | 0 failed | PR #18 closed
 - ✅ **040-dependency-updates** — 2/2 tasks (100%) | 0 failed
-- 📝 **041-delivery-mock-parity** — tasks done | 0/6 tasks (0%) | 0 failed
+- 🔍 **041-delivery-mock-parity** — verify done | 6/6 tasks (100%) | 0 failed
 - 🔍 **042-release-management** — verify done | 3/3 tasks (100%) | 0 failed | PR #24 closed
 
 ## Pending Proposals
@@ -20,9 +23,6 @@
 
 - 📋 **006-agent-governance** — proposal ready, awaiting planning
 - 📋 **008-delivery-ingestion** — proposal ready, awaiting planning
-- 📋 **009-time-and-approvals** — proposal ready, awaiting planning
-- 📋 **010-allocations-forecast** — proposal ready, awaiting planning
-- 📋 **011-hr-core** — proposal ready, awaiting planning
 - 📋 **012-leave** — proposal ready, awaiting planning
 - 📋 **013-onboarding-offboarding** — proposal ready, awaiting planning
 - 📋 **014-payroll-engine** — proposal ready, awaiting planning
@@ -61,6 +61,6 @@
 
 ## Stats
 
-- **Total changes:** 11
-- **Active:** 8
+- **Total changes:** 14
+- **Active:** 11
 - **Completed:** 3
