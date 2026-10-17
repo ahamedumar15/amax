@@ -1,9 +1,0 @@
-{
-  "change": "004-mcp-gateway",
-  "phase": "verify",
-  "branch": "",
-  "phases": {
-    "build": {"status":"done","at":"2026-10-17T08:04:06Z"},
-    "verify": {"status":"done","at":"2026-10-17T08:04:06Z"}
-  }
-}
