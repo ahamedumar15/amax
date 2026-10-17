@@ -1,5 +1,5 @@
 import type { ScreenProps } from "@amax/core";
-import { Ticket } from "@amax/ui";
+import { IntentButton, PinButton, Ticket } from "@amax/ui";
 import { listProjects } from "../server/queries";
 import { COLOR, initials, needViewer, shortName, SignInFirst, Tabs, usd } from "./parts";
 
@@ -22,6 +22,7 @@ export async function ProjectsPage({ viewer: raw }: ScreenProps) {
           <h1>Projects</h1>
           <p className="lede">{projects.length} active projects for {clients} clients.{atRisk.length ? ` ${atRisk.map((p) => p.name).join(", ")} ${atRisk.length > 1 ? "are" : "is"} at risk.` : ""}</p>
         </div>
+        <div className="actions"><IntentButton intent="delivery.new-project" label="New project" /></div>
       </div>
       <Tabs current="board" />
       <div className="tickets four" style={{ marginTop: 24 }}>
@@ -41,7 +42,7 @@ export async function ProjectsPage({ viewer: raw }: ScreenProps) {
                 const pct = p.sprintTotal ? Math.round((p.sprintDone / p.sprintTotal) * 100) : 0;
                 const [tone, label] = HEALTH[p.health];
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.id} className="pinnable">
                     <td data-label="Project"><a className="rowlink" href={`/delivery/p/${p.key}`}><span className="dot" style={{ background: COLOR[p.color] }} /><b>{p.name}</b></a><small>{p.client}, {BILLING[p.billing]}</small></td>
                     <td data-label="Manager"><div className="who"><span className="av sm a1">{initials(p.managerName)}</span>{shortName(p.managerName)}</div></td>
                     <td data-label="Sprint">{p.sprint ?? "–"}</td>
@@ -49,7 +50,7 @@ export async function ProjectsPage({ viewer: raw }: ScreenProps) {
                     <td data-label="Health"><span className={`chip ${tone}`}>{label}</span></td>
                     <td data-label="Margin" className="num">{p.marginPct === null ? "–" : `${p.marginPct.toFixed(1)}%`}</td>
                     <td data-label="Next release">{p.nextRelease ?? "–"}</td>
-                    <td data-label="" className="num"><a className="btn sm" href={`/delivery/p/${p.key}`}>Open board</a></td>
+                    <td data-label="" className="num"><a className="btn sm" href={`/delivery/p/${p.key}`}>Open board</a><PinButton pin={{ label: p.name, tool: "get_project", args: { key: p.key } }} /></td>
                   </tr>
                 );
               })}

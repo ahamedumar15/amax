@@ -16,3 +16,4 @@ export { Ticket, type TicketTone } from "./components/Ticket";
 export { Toast } from "./components/Toast";
 export { TopBar } from "./components/TopBar";
 export { Masked } from "./components/Masked";
+export { IntentButton, openChat, PinButton, type PinRef } from "./components/PinButton";

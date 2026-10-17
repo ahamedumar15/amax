@@ -1,4 +1,5 @@
 import type { ScreenProps } from "@amax/core";
+import { PinButton } from "@amax/ui";
 import { PHASES, type Phase } from "../contracts";
 import { listProposals, phaseCounts } from "../server/queries";
 import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk, Tabs } from "./parts";
@@ -44,7 +45,7 @@ export async function ProposalsPage({ viewer: raw, params }: ScreenProps) {
               {rows.map((p) => {
                 const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.id} className="pinnable">
                     <td data-label="Proposal"><b>{p.key}</b> {p.title}</td>
                     <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} />{p.projectName}</td>
                     <td data-label="Phase"><PhaseChip phase={p.phase} /></td>
@@ -52,7 +53,7 @@ export async function ProposalsPage({ viewer: raw, params }: ScreenProps) {
                     <td data-label="Time" className="num">{p.hours.toFixed(1)} h</td>
                     <td data-label="Release">{p.release ?? <span className="muted">None</span>}</td>
                     <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
-                    <td data-label="Owner">{p.ownerName ?? "–"}</td>
+                    <td data-label="Owner">{p.ownerName ?? "–"}<PinButton pin={{ label: `${p.key} ${p.title}`, tool: "get_project", args: { key: p.projectKey } }} /></td>
                   </tr>
                 );
               })}

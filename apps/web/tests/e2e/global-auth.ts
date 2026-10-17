@@ -40,6 +40,8 @@ export default async function setupE2eDatabase() {
   if (id?.kind !== "principal") throw new Error("no principal");
   const ctx = await principalContext(db, id.principal, "delivery:proposal:sync");
   await syncSpecclaw(db, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(join(import.meta.dirname, "../../../..")), sha: "e2e" });
+  // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
+  await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
   await client.end();
 }
 

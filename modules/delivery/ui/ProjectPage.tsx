@@ -1,5 +1,6 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
+import { IntentButton, PinButton } from "@amax/ui";
 import { moveAction } from "../actions";
 import { PHASES, type Phase } from "../contracts";
 import { getProject, type ProposalRow } from "../server/queries";
@@ -25,7 +26,8 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
   return (
-    <div className="tcard">
+    <div className="tcard pinnable">
+      <PinButton pin={{ label: `${p.key} ${p.title}`, tool: "list_proposals", args: { projectKey: p.projectKey } }} />
       <div className="id">{p.key}</div>
       <p>{p.title}</p>
       {p.phase !== "proposed" && p.phase !== "released" && <div className="prog"><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
@@ -73,6 +75,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           <h1>{project.name}</h1>
           <p className="lede">{project.sprint ? `${project.sprint}. ${done} of ${total} tasks done. ` : ""}Released means it reached Prod.</p>
         </div>
+        <div className="actions"><IntentButton intent="delivery.new-proposal" label="New proposal" /></div>
       </div>
       <Tabs current="board" projectKey={project.key} />
       <div className="board" style={{ marginTop: 24 }}>

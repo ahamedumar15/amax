@@ -8,7 +8,11 @@ const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "
 
 export default defineConfig({
   testDir: "tests/e2e",
-  testMatch: /(auth|delivery|ai)\.spec\.ts/,
+  // Chat writes proposals, so it runs after the specs that count fixture rows.
+  projects: [
+    { name: "screens", testMatch: /(auth|delivery|ai)\.spec\.ts/ },
+    { name: "chat", testMatch: /chat\.spec\.ts/, dependencies: ["screens"] },
+  ],
   workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",
@@ -24,6 +28,7 @@ export default defineConfig({
       AMAX_AUTH_DEMO: "1",
       AMAX_AUTH_DEMO_TENANT: lumen.tenant.id,
       AMAX_AUTH_PASSWORD_TENANT: lumen.tenant.id,
+      AMAX_AI_PROVIDER: "scripted",
       NODE_ENV: "test",
       DATABASE_MIGRATE_URL: admin.toString(),
     },
