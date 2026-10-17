@@ -44,3 +44,5 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
   Depends: T1, T2, T3, T4, T5
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan aborts: `jq: Argument list too long` on this repo)
