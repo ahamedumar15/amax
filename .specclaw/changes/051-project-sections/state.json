@@ -1,8 +1,9 @@
 {
   "change": "051-project-sections",
-  "phase": "proposal",
+  "phase": "tasks",
   "branch": "",
   "phases": {
-    "proposal": {"status":"approved","at":"2026-10-17T18:11:56Z"}
+    "proposal": {"status":"approved","at":"2026-10-17T18:11:56Z"},
+    "tasks": {"status":"done","at":"2026-10-17T18:15:23Z"}
   }
 }
