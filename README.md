@@ -8,6 +8,7 @@ An agent-native ERP for software and professional-services companies, covering d
 
 | Path | What it is |
 |---|---|
+| `AGENTS.md` | Agent guide: key files, specclaw workflow, core rules (chat-first, pins) |
 | `PRODUCT.md` | Product brief: users, purpose, positioning, principles |
 | `docs/roadmap.md` | Modules and phasing, from PSA to services ERP |
 | `.specclaw/changes/001-amax-foundation/` | The first specclaw change: scope, 17 acceptance criteria, and `fixtures.md` (the single source of demo data) |
