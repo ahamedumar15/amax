@@ -25,7 +25,7 @@ None. This changes a contract only and nothing on screen. Presales' Promote butt
 - [x] `T2` — Publish createProject, createProjectInTx and PROJECT_CREATE_PERMISSION on the contract (AC-1, AC-3, AC-4)
   Files: modules/delivery/contracts.ts, modules/delivery/server/project-create.ts, modules/delivery/README.md
   Depends: T1
-- [ ] `T3` — Contract tests: shape, idempotency key, permission, validation, sourceRef replay and race, in-transaction rollback and tenant guard (AC-1–AC-4)
+- [x] `T3` — Contract tests: shape, idempotency key, permission, validation, sourceRef replay and race, in-transaction rollback and tenant guard (AC-1–AC-4)
   Files: modules/delivery/tests/create-project-contract.test.ts
   Depends: T2
 
