@@ -45,7 +45,8 @@ export const PRICES: Record<string, [number, number]> = {
   "claude-sonnet-5-5": [2, 10],
   "claude-opus-5-5": [4, 20],
 };
-export const costOf = (model: string, u: Usage) => {
-  const [i, o] = PRICES[model] ?? [0, 0];
-  return (u.inputTokens * i + u.outputTokens * o) / 1_000_000;
+/** USD, or null when the model has no known price (shown as "unknown", never as $0). */
+export const costOf = (model: string, u: Usage): number | null => {
+  const price = PRICES[model] ?? PRICES[model.replace(/-\d{8}$/, "")];
+  return price ? (u.inputTokens * price[0] + u.outputTokens * price[1]) / 1_000_000 : null;
 };

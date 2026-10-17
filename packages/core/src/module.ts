@@ -50,6 +50,8 @@ export type McpToolDef = {
   scope: "read" | "write" | "sensitive";
   readOnly?: boolean;
   destructive?: boolean;
+  /** Classified fields in the result (002 classes), so the AI gateway can redact them per tenant policy. */
+  sensitive?: Partial<Record<string, "pay" | "health" | "bank" | "performance" | "candidate">>;
   run: (viewer: never, input: never, source: "mcp" | "chat") => Promise<unknown>;
 };
 

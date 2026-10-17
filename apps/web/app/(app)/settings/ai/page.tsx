@@ -46,7 +46,7 @@ export default async function AiSettingsPage() {
       {blocked && <div className="viewbanner" role="alert">AI features are off: {blocked}.</div>}
       <div className="tickets four">
         <Ticket tone="info" label="Data region" value={p.dataRegion ?? "Not set"} note={blocked ? "Resolve the warning above" : "Database, files and AI in region"} />
-        <Ticket tone="good" label="Calls this month" value={s.calls.toLocaleString("en-US")} note={`$${s.costUsd.toFixed(2)} in model cost`} />
+        <Ticket tone="good" label="Calls this month" value={s.calls.toLocaleString("en-US")} note={`$${s.costUsd.toFixed(2)} in model cost${s.unpriced ? `, plus ${s.unpriced} call${s.unpriced === 1 ? "" : "s"} at unknown cost` : ""}`} />
         <Ticket tone="good" label="Fields redacted" value={redacted.toLocaleString("en-US")} note={Object.entries(s.redactions).map(([k, n]) => `${k[0].toUpperCase()}${k.slice(1)} ${n}`).join(", ") || "None yet"} />
         <Ticket tone="attention" label="Injection attempts flagged" value={String(s.injections)} note="Quoted as data, never followed" />
       </div>

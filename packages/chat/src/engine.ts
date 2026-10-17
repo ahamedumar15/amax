@@ -57,6 +57,7 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     name: t.name,
     description: t.description,
     input: t.input,
+    sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
       const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input) };
@@ -71,7 +72,8 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     const tool = registry.toolsFor(viewer, ["read"]).find((t) => t.name === pin.tool);
     if (!tool) continue;
     const record = await registry.call(viewer, pin.tool, pin.args, { scopes: ["read"], source: "chat" }).catch((e: Error) => ({ error: e.message }));
-    data.push({ label: pin.label, text: JSON.stringify(record) });
+    // A record, not text, so the gateway redacts its classified fields like any other record.
+    data.push({ label: pin.label, record, sensitive: tool.sensitive });
   }
 
   const intentNote = opts.intent

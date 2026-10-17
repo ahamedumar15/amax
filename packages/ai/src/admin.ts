@@ -3,17 +3,17 @@ import { withTenant, type Db } from "@amax/db";
 import { appendAudit } from "@amax/core/server";
 import { loadPolicy, normalizeRegion, type AiPolicy } from "./policy";
 
-export type AiStats = { calls: number; costUsd: number; redactions: Record<string, number>; injections: number; failures: number };
+export type AiStats = { calls: number; costUsd: number; unpriced: number; redactions: Record<string, number>; injections: number; failures: number };
 
 // Figures for the AI and data screen: this calendar month (UTC).
 export async function aiStats(db: Db, tenantId: string, now = new Date()): Promise<AiStats & { policy: AiPolicy }> {
   const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   return withTenant(db, tenantId, async (tx) => {
-    const [s] = await tx.execute(sql`select count(*)::int as calls, coalesce(sum(cost_usd), 0)::float as cost, count(*) filter (where injection_suspected)::int as injections,
+    const [s] = await tx.execute(sql`select count(*)::int as calls, coalesce(sum(cost_usd), 0)::float as cost, count(*) filter (where cost_usd is null)::int as unpriced, count(*) filter (where injection_suspected)::int as injections,
       count(*) filter (where not ok)::int as failures from ai.call where at >= ${month}`);
     const red = await tx.execute(sql`select key, sum(value::int)::int as n from ai.call, jsonb_each_text(redactions) where at >= ${month} group by key`);
     return {
-      calls: Number(s.calls), costUsd: Number(s.cost), injections: Number(s.injections), failures: Number(s.failures),
+      calls: Number(s.calls), costUsd: Number(s.cost), unpriced: Number(s.unpriced), injections: Number(s.injections), failures: Number(s.failures),
       redactions: Object.fromEntries(red.map((r) => [r.key as string, Number(r.n)])), policy: await loadPolicy(tx),
     };
   });
