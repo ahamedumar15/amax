@@ -96,11 +96,13 @@ describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
     });
   });
 
-  it.each(["service", "agent", "user"] as const)("a %s context without a viewer can't read people", async (kind) => {
+  it.each(["service", "agent", "user", "system"] as const)("a %s context without a viewer can't read people, unless core issued it", async (kind) => {
     const ctx = { tenantId: T, actor: { id: `${kind}:x`, kind }, source: "api" } as ServiceContext;
     await db.tx(async (tx) => {
       await expect(listPeople(tx, ctx)).rejects.toThrow(/forbidden/);
       await expect(getPerson(tx, ctx, "LL-0417")).rejects.toThrow(/forbidden/);
+      // A copy of an issued context is a plain object again.
+      await expect(getEmployment(tx, (await getPerson(tx, sys(), "LL-0417"))!.id, { ...sys() })).rejects.toThrow(/forbidden/);
     });
   });
 });
