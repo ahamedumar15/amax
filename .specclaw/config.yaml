@@ -95,7 +95,7 @@ build:
   # NOTE: the VERIFICATION FOOTER is not configurable and is always enforced. A
   # task whose report cannot show what it ran, and that the run exited 0, does
   # not become `complete`. That is not a feature with a trade-off.
-  task_review: off                 # off | spec | full
+  task_review: spec                # off | spec | full
 
   # Memory-aware parallelism (opt-in). Lowers effective build concurrency
   # when free RAM is tight; absent → parallel_tasks used unchanged.
@@ -182,8 +182,8 @@ prototype:
 # Workflow enforcement
 workflow:
   strict: true                     # Enforce phase prerequisites
-  code_review: false               # Spawn code-reviewer agent during verify
-  code_review_block: false         # Block PR if review requests changes
+  code_review: true                # Spawn code-reviewer agent during verify
+  code_review_block: true          # Block PR if review requests changes
   
   # Staged-files audit — does the branch carry exactly what this change should?
   # PRs shipped the wrong file set in BOTH directions, silently: planning
@@ -474,3 +474,16 @@ jira:
   email: ""         # Atlassian account email
   project_key: ""   # Project key shown in issue IDs, e.g. PROJ
   issue_type: "Story"  # Default issue type: Story | Task | Bug | Epic
+
+# specclaw-review (local review loop), turned on 2026-10-17 by the product owner.
+# Opus rounds: this repo's governance (module standard, architecture, CLAUDE.md) decides severity.
+review:
+  models: { round: opus, final: opus }
+  passes: [review, design]
+  tools: "Read,Grep,Glob"
+  max_turns: 12
+  max_diff_lines: 8000
+  governance:
+    - "CLAUDE.md"
+    - "docs/module-standard.md"
+    - "docs/architecture.md"
