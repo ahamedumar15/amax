@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
-import { appendAudit } from "@amax/core/server";
+import { z } from "zod";
+import { defineService } from "@amax/core/server";
 import { canEver, ROLES, type Role, type Viewer } from "@amax/auth";
 import type { Registry } from "./registry";
 
@@ -23,12 +24,23 @@ export async function connectedClients(db: Db, tenantId: string) {
   })));
 }
 
-// Revokes one person's grant to one client (a row on the Integrations screen), audited as the Admin.
-export async function revokeClient(db: Db, admin: { tenantId: string; userId: string }, clientId: string, userId: string) {
-  await withTenant(db, admin.tenantId, async (tx) => {
+// Revokes one person's grant to one client (a row on the Integrations screen): Admin only, audited
+// with who did it and announced as auth.oauth.client_revoked (047 AC-3).
+export const revokeMcpClient = defineService({
+  name: "auth.oauth.client_revoked",
+  action: "mcp:client:revoke",
+  resource: "auth.api_token",
+  input: z.object({ clientId: z.string().min(1), userId: z.string().min(1) }).strict(),
+  async run(tx, { clientId, userId }) {
     const rows = await tx.execute(sql`update auth.api_token set revoked_at = now()
-      where client_id = ${clientId} and user_id = ${userId} and revoked_at is null returning id`);
-    await appendAudit(tx, { tenantId: admin.tenantId, actor: { id: `user:${admin.userId}`, kind: "user" }, source: "ui" },
-      { action: "auth.oauth.client_revoked", resource: "auth.api_token", resourceId: clientId, after: { clientId, userId, tokens: rows.length } });
-  });
+      where client_id = ${clientId} and user_id = ${userId} and kind = 'mcp' and revoked_at is null returning id`);
+    if (!rows.length) throw Object.assign(new Error(`no active grant for client ${clientId} and that person`), { retryable: false });
+    const after = { clientId, userId, tokens: rows.length };
+    return { result: after, resourceId: clientId, after, events: [{ name: "auth.oauth.client_revoked", payload: after }] };
+  },
+});
+
+/** One connected client grant, for the get_mcp_client read tool and pins. */
+export async function getMcpClient(db: Db, tenantId: string, clientId: string, userId: string) {
+  return (await connectedClients(db, tenantId)).find((c) => c.clientId === clientId && c.userId === userId) ?? null;
 }

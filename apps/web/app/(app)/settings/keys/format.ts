@@ -13,6 +13,8 @@ export function shortDate(d: Date, now: Date, withYear = d.getUTCFullYear() !== 
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC", ...(withYear ? { year: "numeric" } : {}) });
 }
 
+export const lastRotated = (r: CredentialRow, now: Date) => (!r.lastRotatedAt ? "Never" : sameDay(r.lastRotatedAt, now) ? "Rotated today" : shortDate(r.lastRotatedAt, now));
+
 export function lastUsed(r: CredentialRow, now: Date) {
   if (r.status === "revoked" && r.revokedAt) return `${shortDate(r.revokedAt, now)}, ${r.revokeReason ?? "revoked"}`;
   if (!r.lastUsedAt) return "Never";

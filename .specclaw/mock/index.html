@@ -2151,6 +2151,37 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   </div>
 </section>
 
+<!-- ================= 047 Admin end to end ================= -->
+<section data-change="047-admin-end-to-end" id="047-admin-end-to-end" data-roles="admin" data-title="Connections and keys (chat-first)" data-nav="no" data-parent="038-settings" data-icon="key">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Connections and keys</nav>
+  <div class="row head">
+    <div><h1>Connections and keys</h1><p class="lede">One thing needs you: the Azure DevOps token expires in 12 days. Changes happen in chat. Pin anything, then ask.</p></div>
+    <div class="actions"><button class="btn primary">✦ Ask amax to add a credential</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-yellow"><div class="k">Expiring in 30 days <span class="chip">📌</span></div><div class="v">1</div><div class="p">Azure DevOps (Lumen Labs)</div></div>
+    <div class="ticket t-mint"><div class="k">Active <span class="chip">📌</span></div><div class="v">6</div><div class="p">Encrypted with your key</div></div>
+    <div class="ticket t-mint"><div class="k">Rotated in 90 days <span class="chip">📌</span></div><div class="v">4</div><div class="p">2 still on first version</div></div>
+    <div class="ticket t-violet"><div class="k">Schedules paused <span class="chip">📌</span></div><div class="v">0</div><div class="p">All 9 on time</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Credentials</h2></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Credential</th><th>Status</th><th>Expires</th><th class="num"><span class="sr">Ask</span></th></tr></thead>
+      <tbody>
+      <tr><td><b>Azure DevOps PAT</b><small>Delivery ingestion</small></td><td><span class="chip warn">Expiring</span></td><td>Oct 29</td><td class="num"><button class="btn sm">📌</button> <button class="btn sm">✦ Ask to rotate</button></td></tr>
+      <tr><td><b>Microsoft Graph</b><small>Inbox, Teams</small></td><td><span class="chip good">Active</span></td><td>Mar 2027</td><td class="num"><button class="btn sm">📌</button> <button class="btn sm">✦ Ask amax</button></td></tr>
+      </tbody></table></div>
+  </div>
+  <div class="card" style="margin-top:28px;max-width:520px">
+    <div class="card-head"><h2>Chat confirm card</h2><span class="chip agent">Pending</span></div>
+    <p><b>Rotate Azure DevOps PAT</b>, keep expiry Oct 29 2027.</p>
+    <label>New value <input type="password" value="••••••••••••" aria-label="New secret value"></label>
+    <p class="muted" style="font-size:13px">Typed here only. It goes straight to the vault, never to the AI or the chat history.</p>
+    <div class="actions"><button class="btn primary">Confirm</button> <button class="btn">Cancel</button></div>
+  </div>
+</section>
+
     </main>
   </div>
 </div>

@@ -81,7 +81,7 @@ test("refresh rotates, revoke ends access", async ({ page, baseURL }) => {
   expect(after.status).toBe(401);
 });
 
-test("AC4 Integrations lists tools by module with who can use them, and connected clients can be revoked", async ({ page, baseURL }) => {
+test("AC4 Integrations lists tools by module with who can use them, and connected clients can be revoked through chat", async ({ page, baseURL }) => {
   await connectClient(page, baseURL!, "read");
   await page.goto("/settings/integrations");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Integrations");
@@ -92,6 +92,12 @@ test("AC4 Integrations lists tools by module with who can use them, and connecte
   const rows = page.locator("tr", { hasText: "e2e client" });
   const before = await rows.count();
   expect(before).toBeGreaterThan(0);
-  await rows.first().getByRole("button", { name: "Revoke" }).click();
+  // 047: revoking is chat-first: the Ask chip pins the grant, chat confirms revoke_mcp_client.
+  await rows.first().getByRole("button", { name: /^Ask to revoke e2e client for / }).click();
+  await page.getByRole("button", { name: "Send" }).click();
+  const card = page.getByRole("group", { name: /^Confirm:/ });
+  await card.getByRole("button", { name: "Add it" }).click();
+  await expect(card).toContainText("Done");
+  await page.reload();
   await expect(rows).toHaveCount(before - 1);
 });
