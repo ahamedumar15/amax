@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { aiUsage, monthOf, USAGE_SOURCES, type UsageSource } from "@amax/ai/usage";
-import { compact, costLabel, plural } from "@amax/ai/usage-format";
+import { aiUsage, monthOf, USAGE_SOURCES, type AiUsage, type UsageSource } from "@amax/ai/usage";
+import { compact, costLabel, plural, usd } from "@amax/ai/usage-format";
 import { rolesOf } from "@amax/auth";
 import { PinButton, Ticket, type TicketTone } from "@amax/ui";
 import { getDb } from "../../../../../lib/server";
@@ -21,6 +21,12 @@ const daysOf = (m: string, now: Date) => {
   return Array.from({ length: last }, (_, i) => `${m}-${String(i + 1).padStart(2, "0")}`);
 };
 
+const bySource = (u: AiUsage) => {
+  const used = (Object.keys(USAGE_SOURCES) as UsageSource[]).filter((s) => u.bySource[s].costUsd !== null || u.bySource[s].unknownCostCalls);
+  const text = used.map((s) => `${s} ${costLabel(u.bySource[s]).toLowerCase()}`).join(", ");
+  return text ? `${text[0].toUpperCase()}${text.slice(1)}` : "No calls yet";
+};
+
 export default async function AiUsagePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const viewer = await getViewer();
   if (!viewer || !rolesOf(viewer).includes("Admin")) notFound();
@@ -31,10 +37,10 @@ export default async function AiUsagePage({ searchParams }: { searchParams: Prom
   const source = sp.source && sp.source in USAGE_SOURCES ? (sp.source as UsageSource) : undefined;
   const u = await aiUsage(getDb()!, { tenantId: viewer.tenantId, userId: viewer.userId, roles: rolesOf(viewer) }, { scope: "tenant", month, source });
   const t = u.totals;
-  const top = u.byPerson.find((p) => p.name);
+  const top = u.byPerson.find((p) => p.name && p.costUsd !== null);
   const args = { scope: "tenant", month, ...(source ? { source } : {}) };
   const tickets: { tone: TicketTone; label: string; value: string; note: string }[] = [
-    { tone: "good", label: "Cost", value: costLabel(t), note: (Object.keys(USAGE_SOURCES) as UsageSource[]).map((s) => `${s[0].toUpperCase()}${s.slice(1)} ${costLabel(u.bySource[s])}`).join(", ") },
+    { tone: "good", label: "Cost", value: costLabel(t), note: bySource(u) },
     { tone: "good", label: "Calls", value: t.calls.toLocaleString("en-US"), note: plural(t.people, "person", "people") },
     { tone: "info", label: "Tokens", value: compact(t.inputTokens + t.outputTokens), note: `${compact(t.inputTokens)} in, ${compact(t.outputTokens)} out` },
     { tone: "attention", label: "Unknown cost", value: plural(t.unknownCostCalls, "call"), note: "Model without a price" },
@@ -46,9 +52,9 @@ export default async function AiUsagePage({ searchParams }: { searchParams: Prom
         <div>
           <h1>AI usage</h1>
           <p className="lede">
-            {monthName(month)}{month === months[0] ? " so far" : ""}: {costLabel(t)} across {plural(t.people, "person", "people")}.
-            {top ? ` ${top.name}'s AI use cost the most this month.` : " No AI calls yet."}
-            {t.unknownCostCalls ? ` ${plural(t.unknownCostCalls, "call")} used a model without a known price, so the total is a lower bound.` : ""}
+            {monthName(month)}{month === months[0] ? " so far" : ""}: {plural(t.calls, "call")} across {plural(t.people, "person", "people")}, {t.costUsd === null ? (t.calls ? "at unknown cost" : "costing nothing") : `costing ${usd(t.costUsd)}`}.
+            {top ? ` ${top.name}'s AI use cost the most.` : ""}
+            {t.unknownCostCalls ? ` ${plural(t.unknownCostCalls, "call")} used a model without a known price, so ${t.costUsd === null ? "the cost is unknown" : "the total is a lower bound"}.` : ""}
           </p>
         </div>
         <UsageFilters month={month} source={source ?? ""} months={months.map((m) => ({ value: m, label: monthName(m) }))} />
