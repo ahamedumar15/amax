@@ -8,3 +8,4 @@ export { gate, isPublicPath } from "./gate";
 export { hashPassword, MIN_PASSWORD, signInPassword, upsertPasswordUser, verifyPassword } from "./password";
 export { authenticateToken, createApiToken, createPrincipal, principalContext, type Identity, type Principal } from "./principals";
 export { revokeUser } from "./revoke";
+export { principalAllowsTool } from "./principals";

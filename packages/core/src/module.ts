@@ -64,7 +64,7 @@ export type McpToolDef = {
    * part of `input`, so the model can neither see nor fill it; `run` gets it as `secret`.
    */
   secretInput?: { label: string };
-  run: (viewer: never, input: never, source: "mcp" | "chat", secret?: string) => Promise<unknown>;
+  run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
 };
 
 /**
