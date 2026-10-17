@@ -22,7 +22,7 @@ Allocations: capacity vs demand, January bench, per-person monthly grid with tot
 
 ## Tasks
 
-- [ ] `T1` — Publish `contracts.ts` (allocation types, `listAllocations`, `personMonthTotals`, event names and payloads) with contract tests (AC-4)
+- [x] `T1` — Publish `contracts.ts` (allocation types, `listAllocations`, `personMonthTotals`, event names and payloads) with contract tests (AC-4)
   Files: modules/allocations/contracts.ts, modules/allocations/package.json, modules/allocations/tsconfig.json, modules/allocations/tests/contracts.test.ts
 - [ ] `T2` — Allocations screen: capacity vs demand chart, January bench by skill donut, per-person monthly grid with totals and over-100% flagged, Copy to next month (AC-1, AC-2, AC-3)
   Files: modules/allocations/ui/AllocationsPage.tsx, modules/allocations/ui/Grid.tsx, modules/allocations/ui/charts.tsx, modules/allocations/ui/CopyMonth.tsx, modules/allocations/ui/parts.tsx, modules/allocations/ui/allocations.css, modules/allocations/css.d.ts
