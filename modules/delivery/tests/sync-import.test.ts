@@ -142,12 +142,13 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     ["made before the first sync", { synced: false, phase: "proposed", source: null }, "rekeyed"],
     ["released by hand: shipped history keeps its key", { synced: false, phase: "released", source: null }, "skipped"],
     ["from another source", { synced: false, phase: "planned", source: "jira" }, "skipped"],
-  ])("a proposal on a spec key, %s (review rounds 5 and 6)", async (_n, c, expected) => {
+    ["round-4 numbering (1001) meeting spec change 1001", { synced: true, phase: "planned", source: null, on: "1001" }, "rekeyed"],
+  ])("a proposal on a spec key, %s (review rounds 5 to 7)", async (_n, c: { synced: boolean; phase: string; source: string | null; on?: string }, expected) => {
     const P = `K${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
     await t.owner`insert into delivery.project (tenant_id, key, name, client, billing, color) values (${T}, ${P}, 'p', 'x', 'internal', 'mint')`;
     if (c.synced) await syncSpecclaw(app, ctx, { projectKey: P, projectName: "p", client: "x", records: readSpecclaw(fakeRepo({ "001-a": {} })), sha: "1" });
     const [{ id }] = await t.owner`insert into delivery.proposal (tenant_id, project_id, key, title, phase, source)
-      select ${T}, id, ${`${P}-002`}, 'Made by hand', ${c.phase}, ${c.source} from delivery.project where key = ${P} returning id`;
+      select ${T}, id, ${`${P}-${c.on ?? "002"}`}, 'Made by hand', ${c.phase}, ${c.source} from delivery.project where key = ${P} returning id`;
     const repo = fakeRepo({ "001-a": {}, "002-b": {}, "1001-big": {} });
     const r = await syncSpecclaw(app, ctx, { projectKey: P, projectName: "p", client: "x", records: readSpecclaw(repo), sha: "2" });
     const [hand] = await t.owner`select key from delivery.proposal where id = ${id}`;
@@ -156,10 +157,11 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
       expect(hand.key).toBe(`${P}-H001`);
       expect(spec).toEqual([`${P}-001`, `${P}-002`, `${P}-1001`]);
       expect(r.skipped).toEqual([]);
+      const from = `${P}-${c.on ?? "002"}`;
       const [audit] = await t.owner`select before, after from core.audit_event where action = 'delivery.proposal.rekey' and resource_id = ${id}`;
-      expect(audit).toMatchObject({ before: { key: `${P}-002` }, after: { key: `${P}-H001` } });
+      expect(audit).toMatchObject({ before: { key: from }, after: { key: `${P}-H001` } });
       const [ev] = await t.owner`select payload from core.event where name = 'delivery.proposal.rekeyed' and payload->>'proposalId' = ${id}`;
-      expect(ev.payload).toMatchObject({ from: `${P}-002`, to: `${P}-H001` });
+      expect(ev.payload).toMatchObject({ from, to: `${P}-H001` });
     } else {
       expect(hand.key).toBe(`${P}-002`);
       expect(spec).toEqual([`${P}-001`, `${P}-1001`]);

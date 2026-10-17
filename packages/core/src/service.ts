@@ -3,6 +3,7 @@ import type { z } from "zod";
 import { setTenant, type Db, type Tx } from "@amax/db";
 import { appendAudit, redact, type Sensitivity } from "./audit";
 import { authorize, ForbiddenError, type ServiceContext } from "./authorize";
+import { CancelledByKeyError, claimKey, settleKey, takeIdempotencyKey } from "./idempotency";
 
 export type Emitted = { name: string; payload: object };
 
@@ -40,22 +41,30 @@ export function getRuntime(): Runtime {
 }
 
 export class ValidationError extends Error {
+  readonly retryable = false;
   constructor(public issues: z.core.$ZodIssue[]) {
     super(`invalid input: ${issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`);
     this.name = "ValidationError";
   }
 }
 
-// authorize → validate → write in a transaction → audit → emit. The write, its audit row and its
-// outbox events commit together or not at all.
+// authorize → validate → write in a transaction → audit → emit. The write, its audit row, its
+// outbox events and (under an idempotency key) its recorded result commit together or not at all.
 export function defineService<I, R>(spec: ServiceSpec<I, R>) {
   const call = async (ctx: ServiceContext, raw: unknown): Promise<R> => {
     const { db, auditKey } = getRuntime();
     if (!(await authorize(ctx, spec.action, spec.resource, raw, { scoped: spec.scoped }))) throw new ForbiddenError(spec.action, spec.resource);
     const parsed = spec.input.safeParse(raw);
     if (!parsed.success) throw new ValidationError(parsed.error.issues);
+    const key = takeIdempotencyKey();
     return db.transaction(async (tx) => {
       await setTenant(tx, ctx.tenantId);
+      // Under an idempotency key, an earlier attempt's result is returned instead of writing again.
+      if (key) {
+        const prior = await claimKey(tx, ctx.tenantId, key, null);
+        if (prior && "cancelled" in prior) throw new CancelledByKeyError(key);
+        if (prior) return prior.result as R;
+      }
       const out = await spec.run(tx, parsed.data, ctx);
       const sensitive = spec.sensitive ?? {};
       await appendAudit(tx, ctx, {
@@ -68,6 +77,7 @@ export function defineService<I, R>(spec: ServiceSpec<I, R>) {
       for (const e of out.events ?? []) {
         await tx.execute(sql`insert into core.event (tenant_id, name, payload) values (${ctx.tenantId}, ${e.name}, ${JSON.stringify(e.payload)}::jsonb)`);
       }
+      if (key) await settleKey(tx, ctx.tenantId, key, { result: out.result ?? null });
       return out.result;
     });
   };

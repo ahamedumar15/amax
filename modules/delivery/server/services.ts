@@ -181,6 +181,7 @@ export const recordDeployment = defineService({
 // when something changed, so an unchanged re-sync writes and audits nothing.
 /** The key is held by a proposal the sync may not move; the spec change is reported, not synced. */
 export class KeyTakenError extends Error {
+  readonly retryable = false;
   constructor(key: string, why: string) {
     super(`${key} belongs to another proposal and can't be moved: ${why}`);
     this.name = "KeyTakenError";

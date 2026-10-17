@@ -113,7 +113,7 @@ export function readSpecclaw(root: string | Source, overlays: (string | Source)[
   for (const archived of [true, false]) for (const d of folders(main.dir, archived)) take(parse(main.dir, d, archived, main.ref));
   for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(numberOf(d)) || archived) take(parse(o.dir, d, archived, o.ref));
   const done = new Set([...byNumber.values()].filter((r) => r.phase === "released").map((r) => r.number));
-  return [...byNumber.values()].sort((a, b) => a.number.localeCompare(b.number)).map((r) => {
+  return [...byNumber.values()].sort((a, b) => Number(a.number) - Number(b.number)).map((r) => {
     const waiting = r.hard.filter((h) => !done.has(h));
     const isDone = done.has(r.number);
     const status = isDone ? "done" : r.claim ? "claimed" : !r.approved ? "not approved" : waiting.length ? "blocked" : "ready";

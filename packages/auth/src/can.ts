@@ -58,6 +58,7 @@ export function canEver(v: Viewer, action: string): boolean {
 }
 
 export class ScopeError extends Error {
+  readonly retryable = false;
   constructor(action: string) {
     super(`forbidden: ${action} is outside your data scope`);
     this.name = "ScopeError";

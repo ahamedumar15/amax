@@ -1,14 +1,13 @@
-import { ActionFailedError, BusyError, NotPendingError } from "@amax/chat";
+import { ActionFailedError, NotPendingError } from "@amax/chat";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "working" | "error"; note: string };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string };
 
 /**
- * What a failed confirm or cancel means for the card (review rounds 3 to 6). "cancelled" only when it
+ * What a failed confirm or cancel means for the card (review rounds 3 to 7). "cancelled" only when it
  * really was cancelled; anything unknown is an error, never a silent close.
  */
 export function outcomeOf(e: unknown): CardOutcome {
-  if (e instanceof BusyError) return { state: "working", note: "This is being done right now." };
   if (e instanceof ActionFailedError) {
     return e.retry ? { state: "open", note: `That didn't work: ${e.message}. Try again or cancel.` } : { state: "error", note: `This couldn't be done: ${e.message}. Nothing was changed.` };
   }

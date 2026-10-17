@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Review round 1: the OAuth issuer and MCP audience must not come from request headers.
-describe("baseUrl", () => {
+// The first import of lib/server loads the whole app graph; under a parallel turbo run that can pass 5s.
+describe("baseUrl", { timeout: 30_000 }, () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
   const load = async () => (await import("../lib/server")).baseUrl;
   const req = (headers: Record<string, string>) => new Request("http://x/", { headers });

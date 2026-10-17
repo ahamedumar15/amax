@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ActionFailedError, BusyError, NotPendingError } from "@amax/chat";
+import { ActionFailedError, NotPendingError } from "@amax/chat";
 import { outcomeOf } from "../lib/chat-outcome";
 
-// Review round 6: the mapping from a server result to the card's state, every case.
+// Review rounds 6 and 7: the mapping from a server result to the card's state, every case.
 describe("chat card outcomes", () => {
   it.each([
-    ["busy", new BusyError(), "working"],
     ["a failed write that can be retried", new ActionFailedError("db down", true), "open"],
     ["a failed write that can't", new ActionFailedError("forbidden", false), "error"],
     ["already confirmed", new NotPendingError("confirmed"), "done"],

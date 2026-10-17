@@ -29,3 +29,16 @@ describe("AC-1 specclaw parser", () => {
     }
   });
 });
+
+describe("change numbers past 999 (review rounds 6 and 7)", () => {
+  it("are read in full and sorted as numbers", async () => {
+    const { mkdirSync, mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const root = mkdtempSync(join(tmpdir(), "amax-num-"));
+    for (const dir of ["1001-big", "999-last", "042-mid"]) {
+      mkdirSync(join(root, ".specclaw/changes", dir), { recursive: true });
+      writeFileSync(join(root, ".specclaw/changes", dir, "change.md"), `# ${dir}\n\n**Change:** ${dir}\n\n\n`);
+    }
+    expect(readSpecclaw(root).map((r) => r.number)).toEqual(["042", "999", "1001"]);
+  });
+});

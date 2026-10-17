@@ -8,6 +8,7 @@ export const ALL_SCOPES: Scope[] = ["read", "write", "sensitive"];
 export type RegisteredTool = McpToolDef & { module: string };
 
 export class ToolError extends Error {
+  readonly retryable = false;
   constructor(message: string, public code: "not_found" | "forbidden" | "invalid_input") {
     super(message);
     this.name = "ToolError";

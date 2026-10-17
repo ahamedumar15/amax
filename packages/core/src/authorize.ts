@@ -25,6 +25,7 @@ export const setAuthorizer = (fn: Authorizer) => {
 export const authorize: Authorizer = (...args) => authorizer(...args);
 
 export class ForbiddenError extends Error {
+  readonly retryable = false;
   constructor(action: string, resource: string) {
     super(`forbidden: ${action} on ${resource}`);
     this.name = "ForbiddenError";
