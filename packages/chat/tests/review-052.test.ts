@@ -1,10 +1,13 @@
-import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
-import { chatTurn, confirmAction, getConversation, listConversations, openCards, type PendingAction } from "../src";
+import type { McpToolDef } from "@amax/core";
+import { claimKey, withIdempotency } from "@amax/core/server";
+import { createRegistry } from "@amax/mcp";
+import { cancelAction, chatPlatform, chatTurn, confirmAction, getConversation, listConversations, openCards, type PendingAction } from "../src";
 import { chatWorld, registry, scripted, T } from "./world";
 
 const card = (id: string, createdAt: string, extra: Partial<PendingAction> = {}): PendingAction =>
@@ -23,43 +26,67 @@ describe("052 history restores only undecided cards", () => {
   });
 });
 
+// A write tool whose value is typed on the card, so needs_secret has a real proposal too.
+const vault = { id: "vault", mcpTools: [{ name: "set_code", description: "Set the door code.", input: z.object({}).strict(), scope: "write", permission: "", secretInput: { label: "Code" },
+  run: async () => ({ ok: true }) } as unknown as McpToolDef] };
+const withVault = createRegistry([chatPlatform, vault]);
+
 describe.skipIf(!hasDb)("052 chat history and confirm trace (Postgres)", () => {
   let world: Awaited<ReturnType<typeof chatWorld>>;
   let app: Db, maya: Viewer;
-  let convo: string;
-  const setCards = (pending: PendingAction[], decided: Record<string, string> = {}) =>
-    withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending)}::jsonb, decided = ${JSON.stringify(decided)}::jsonb where id = ${convo}`));
-  const decidedSteps = (traceId: string) =>
-    withTenant(app, T, (tx) => tx.execute(sql`select kind, detail ->> 'outcome' as outcome from core.trace_event where trace_id = ${traceId}::uuid order by seq`));
+  const rows = (q: ReturnType<typeof sql>) => withTenant(app, T, (tx) => tx.execute(q));
+  const note = async (text: string) => {
+    scripted(app, [() => ({ text: "Noted." })]);
+    return (await chatTurn(app, registry, maya, { text })).conversationId;
+  };
+  // A real proposal: the model calls the write tool, chat turns it into a pending card.
+  const propose = async (tool: string, input: Record<string, unknown>, reg = registry) => {
+    scripted(app, [() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: tool, input }] }), () => ({ text: "Confirm?" })]);
+    const turn = await chatTurn(app, reg, maya, { text: `please ${tool}` });
+    return { conversationId: turn.conversationId, card: turn.pending[0] };
+  };
+  const decided = async (traceId: string) =>
+    (await rows(sql`select detail ->> 'outcome' as outcome from core.trace_event where trace_id = ${traceId}::uuid and kind = 'decided' order by seq`)).map((r) => r.outcome);
 
   beforeAll(async () => {
     world = await chatWorld();
     app = world.app;
     maya = await world.as("maya");
-    scripted(app, [() => ({ text: "Noted." })]);
-    convo = (await chatTurn(app, registry, maya, { text: "Keep a note for later" })).conversationId;
   });
   afterAll(() => world?.t.drop());
 
-  it("getConversation and listConversations skip decided cards; only undecided expired ones count", async () => {
-    await setCards([card("x1", OLD), card("x2", OLD), card("x3", NOW())], { x1: "confirmed" });
-    expect((await getConversation(app, maya, convo))!.pending.map((p) => [p.id, p.expired])).toEqual([["x2", true], ["x3", false]]);
-    expect((await listConversations(app, maya)).find((c) => c.id === convo)!.expiredCount).toBe(1);
+  it("after a real confirm and a real cancel, History restores neither card; an undecided expired one still counts", async () => {
+    const yes = await propose("archive_conversation", { id: await note("one to archive") });
+    const no = await propose("archive_conversation", { id: await note("one to keep") });
+    const stale = await propose("archive_conversation", { id: await note("an old one") });
+    await confirmAction(app, registry, maya, yes.conversationId, yes.card.id);
+    await cancelAction(app, maya, no.conversationId, no.card.id);
+    // Only the card's age is planted: nothing else can make a card old.
+    await rows(sql`update chat.conversation set pending = jsonb_set(pending, '{0,createdAt}', '"2026-01-01T00:00:00Z"') where id = ${stale.conversationId}`);
+    for (const c of [yes, no]) {
+      expect((await getConversation(app, maya, c.conversationId))!.pending, c.card.id).toEqual([]);
+      expect((await listConversations(app, maya)).find((x) => x.id === c.conversationId)!.expiredCount).toBe(0);
+    }
+    expect((await getConversation(app, maya, stale.conversationId))!.pending.map((p) => [p.id, p.expired])).toEqual([[stale.card.id, true]]);
+    expect((await listConversations(app, maya)).find((x) => x.id === stale.conversationId)!.expiredCount).toBe(1);
   });
 
   it.each([
-    { name: "a card that needs a secret", extra: { secret: { label: "Value" } }, at: NOW, rejects: /type the value first/, steps: [["decided", "needs_secret"]] },
-    { name: "an expired card", extra: {}, at: () => OLD, rejects: /expired/, steps: [["decided", "expired"]] },
-    { name: "a card that runs", extra: {}, at: NOW, rejects: null, steps: [["decided", "run"], ["tool_call", "ok"]] },
-  ])("confirming $name records the decided step with what came of it", async ({ extra, at, rejects, steps }) => {
-    const traceId = randomUUID();
-    scripted(app, [() => ({ text: "Noted." })]);
-    const target = (await chatTurn(app, registry, maya, { text: "a chat to archive" })).conversationId;
-    const id = randomUUID();
-    await setCards([card(id, at(), { ...extra, input: { id: target }, traceId })]);
-    const run = confirmAction(app, registry, maya, convo, id);
+    { name: "a card that runs", setup: null, reg: "chat", rejects: null, outcome: "run" },
+    { name: "a card that needs a typed value", setup: null, reg: "vault", rejects: /type the code first/, outcome: "needs_secret" },
+    { name: "an expired card", setup: "expire", reg: "chat", rejects: /expired/, outcome: "expired" },
+    { name: "a card whose write already ran (reply lost)", setup: "ran", reg: "chat", rejects: null, outcome: "already_done" },
+    { name: "a card already cancelled (reply lost)", setup: "cancelled", reg: "chat", rejects: /cancelled/, outcome: "already_cancelled" },
+  ] as const)("confirming $name records the decided step with what came of it", async ({ setup, reg, rejects, outcome }) => {
+    const r = reg === "vault" ? withVault : registry;
+    const { conversationId, card } = reg === "vault" ? await propose("set_code", {}, r) : await propose("archive_conversation", { id: await note("target") });
+    const key = `chat:${card.id}`;
+    if (setup === "expire") await rows(sql`update chat.conversation set pending = jsonb_set(pending, '{0,createdAt}', '"2026-01-01T00:00:00Z"') where id = ${conversationId}`);
+    if (setup === "ran") await withIdempotency(key, () => r.call(maya, card.tool, card.input, { source: "chat" }));
+    if (setup === "cancelled") await withTenant(app, T, (tx) => claimKey(tx, T, key, { cancelled: true }));
+    const run = confirmAction(app, r, maya, conversationId, card.id);
     if (rejects) await expect(run).rejects.toThrow(rejects);
     else await run;
-    expect((await decidedSteps(traceId)).map((s) => [s.kind, s.outcome])).toEqual(steps);
+    expect(await decided(card.traceId!)).toEqual([outcome]);
   });
 });

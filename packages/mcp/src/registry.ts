@@ -63,7 +63,7 @@ export function createRegistry(modules: Registrable[]) {
       // 050: inside a trace (chat turn, confirm, MCP call) every tool call is a step, refusals included.
       const step = (outcome: string) => traceStep({ kind: "tool_call", tool: name, args: args ?? {}, detail: { scope: tool.scope, outcome } });
       if (!allowed(viewer, tool, opts.scopes ?? ALL_SCOPES)) {
-        await step("denied");
+        await step("denied").catch((x) => logError(`mcp.trace ${name}`, x));
         throw new ToolError(`forbidden: ${name}`, "forbidden");
       }
       const parsed = tool.input.safeParse(args ?? {});
@@ -72,7 +72,8 @@ export function createRegistry(modules: Registrable[]) {
       try {
         result = await tool.run(viewer as never, parsed.data as never, opts.source, tool.secretInput ? opts.secret : undefined);
       } catch (e) {
-        await step(e instanceof ForbiddenError || e instanceof ScopeError ? "denied" : "error");
+        // The caller is told the tool's own error, never the trace store's (052 review).
+        await step(e instanceof ForbiddenError || e instanceof ScopeError ? "denied" : "error").catch((x) => logError(`mcp.trace ${name}`, x));
         throw e;
       }
       // Outside the try: the tool has run (a write may have committed), so a failure to record the

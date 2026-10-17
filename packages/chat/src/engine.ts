@@ -230,7 +230,11 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
   };
   // 1. An earlier attempt's outcome comes first (its reply may have been lost).
   const known = await lookupKey(db, viewer.tenantId, key);
-  const decide = (outcome: ConfirmOutcome) => decidedStep(action, "confirmed", outcome);
+  // Only the `run` step is fail-closed: it is written before the write, so a write never runs
+  // untraced. The others report an outcome that is already settled; a trace-store failure there must
+  // not hide it from the person asking, so they are best-effort and logged (052 review round 2).
+  const decide = (outcome: ConfirmOutcome) =>
+    outcome === "run" ? decidedStep(action, "confirmed", outcome) : decidedStep(action, "confirmed", outcome).catch((e) => void logError(`chat.trace ${action.tool}`, e));
   if (known && "cancelled" in known) {
     await decide("already_cancelled");
     throw await cancelled();

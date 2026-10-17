@@ -50,7 +50,12 @@ export async function exportAuditDay(tx: Tx, tenantId: string, day: Date, storag
     await storage.put(key, body, { contentType: "application/x-ndjson", retainUntil });
     out.push({ key, rows: rows.length, chainOk: chain?.ok ?? true });
   }
-  await appendAudit(tx, contextFor.job(tenantId, "core.audit.export"), {
+  // A re-run that found every object already written records nothing new if the day's export row
+  // is there (one row per exported day); otherwise this is the run that completes it (052 review).
+  const [done] = out.every((o) => o.existing)
+    ? await tx.execute(sql`select 1 from core.audit_event where tenant_id = ${tenantId} and action = 'core.audit.export' and resource_id = ${isoDay(from)} limit 1`)
+    : [];
+  if (!done) await appendAudit(tx, contextFor.job(tenantId, "core.audit.export"), {
     action: "core.audit.export", resource: "core.audit_export", resourceId: isoDay(from),
     after: { day: isoDay(from), retainUntil: retainUntil.toISOString(), objects: out },
   });

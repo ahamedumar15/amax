@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
@@ -48,6 +49,9 @@ describe.skipIf(!hasDb)("AC-7 daily export to write-once storage", () => {
     const again = await withTenant(app, U, (tx) => exportAuditDay(tx, U, new Date(), storage, 30));
     expect(again.objects.every((o) => o.existing)).toBe(true);
     expect(first.objects.map((o) => storage.objects.get(o.key)!.body)).toEqual(bodies);
+    // One export row per day, however often the job re-runs it.
+    await withTenant(app, U, (tx) => exportAuditDay(tx, U, new Date(), storage, 30));
+    expect(await withTenant(app, U, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'core.audit.export'`))).toEqual([{ n: 1 }]);
     await expect(storage.put(first.key, "tampered")).rejects.toBeInstanceOf(ObjectLockedError);
   });
 });

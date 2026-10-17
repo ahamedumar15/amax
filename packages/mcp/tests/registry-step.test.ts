@@ -4,7 +4,8 @@ import type { McpToolDef } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 
 // 052 review: recording the tool_call step must never change what the caller is told. A write that
-// ran is reported as done even when the step can't be written, and a failure is recorded once.
+// ran is reported as done even when the step can't be written, a refusal or failure is reported as
+// itself (never as the trace store's error), and each outcome is recorded once.
 const steps: string[] = [];
 let stepFails = false;
 vi.mock("@amax/core/server", async (orig) => ({
@@ -28,11 +29,14 @@ describe("registry.call trace step (052)", () => {
     { name: "ok, step write fails", run: async () => ({ key: "TH-2" }), fails: true, expect: { resolves: { key: "TH-2" } }, steps: ["ok"] },
     { name: "tool throws", run: async () => { throw new Error("boom"); }, fails: false, expect: { rejects: "boom" }, steps: ["error"] },
     { name: "tool refuses", run: async () => { throw new ForbiddenError("x", "y"); }, fails: false, expect: { rejects: "forbidden" }, steps: ["denied"] },
+    { name: "tool throws, step write fails", run: async () => { throw new Error("boom"); }, fails: true, expect: { rejects: "boom" }, steps: ["error"] },
+    { name: "tool refuses, step write fails", run: async () => { throw new ForbiddenError("x", "y"); }, fails: true, expect: { rejects: "forbidden: x on y" }, steps: ["denied"] },
+    { name: "scope refused, step write fails", run: async () => ({ key: "never" }), fails: true, scopes: ["read" as const], expect: { rejects: "forbidden: add_thing" }, steps: ["denied"] },
   ])("$name", async (c) => {
     steps.length = 0;
     stepFails = c.fails;
     runner.fn = c.run;
-    const call = registry.call(viewer, "add_thing", {}, { source: "chat" });
+    const call = registry.call(viewer, "add_thing", {}, { source: "chat", ...("scopes" in c ? { scopes: c.scopes } : {}) });
     if ("resolves" in c.expect) await expect(call).resolves.toEqual(c.expect.resolves);
     else await expect(call).rejects.toThrow(c.expect.rejects);
     expect(steps).toEqual(c.steps);

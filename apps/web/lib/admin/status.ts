@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { withTenant } from "@amax/db";
 import { aiConfigured, blockedReason, REGIONS } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
-import { auditStatus, type AuditStatus } from "@amax/core/server";
+import { auditStatus, logError, type AuditStatus } from "@amax/core/server";
 import { CONNECTORS, EXPIRY_WINDOW_DAYS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
 import { listRuns, listSchedules } from "@amax/workflows/server";
@@ -58,11 +58,22 @@ async function integrations(d: AdminDeps, v: Viewer): Promise<Area> {
   return { id: "integrations", title: "Integrations", href: "/settings/integrations", blurb: "Every amax capability as an MCP tool, and the clients people have connected.", stat: `${d.tools().all.length} tools`, chip: { tone: "good", text: plural(clients.length, "client") } };
 }
 
-/** The Audit card: a chain that no longer verifies comes first on the hub (052 review). */
-export function auditArea(today: number, s: Pick<AuditStatus, "audit" | "trace">): Area {
+/** A chain check older than this reads as not verified (the cached walk is refreshed hourly). */
+export const VERIFY_STALE_MS = 2 * 3_600_000;
+
+/**
+ * The Audit card: anything short of "both chains verified, recently" comes first on the hub. A check
+ * that failed to run, or is stale, never reads as clear (052 review rounds 1 and 2).
+ */
+export function auditArea(today: number, s: Pick<AuditStatus, "audit" | "trace" | "verifiedAt"> | null, now = Date.now()): Area {
   const base = { id: "audit", title: "Audit and trace", href: "/settings/audit", blurb: "Who did what, and which agent acted for them, in a tamper-evident log.", stat: "Read-only" };
+  if (!s) return { ...base, chip: { tone: "bad", text: "Not verified" }, attention: "the audit and trace chains couldn't be verified" };
   const broken = [s.audit.ok ? null : "audit", s.trace.ok ? null : "trace"].filter((c): c is string => !!c);
   if (broken.length) return { ...base, chip: { tone: "bad", text: "Chain broken" }, attention: `the ${broken.join(" and ")} chain${broken.length > 1 ? "s" : ""} no longer verif${broken.length > 1 ? "y" : "ies"}` };
+  const at = Date.parse(s.verifiedAt ?? "");
+  if (Number.isNaN(at) || now - at > VERIFY_STALE_MS) {
+    return { ...base, chip: { tone: "warn", text: "Not verified" }, attention: Number.isNaN(at) ? "the audit and trace chains haven't been verified" : `the audit and trace chains haven't been verified since ${new Date(at).toISOString().slice(0, 16).replace("T", " ")} UTC` };
+  }
   return { ...base, chip: { tone: "info", text: `${today} today` } };
 }
 
@@ -71,6 +82,9 @@ async function audit(d: AdminDeps, v: Viewer): Promise<Area> {
   const [today, status] = await withTenant(d.db(), v.tenantId, async (tx) => {
     const [r] = await tx.execute(sql`select count(*)::int as n from core.audit_event where occurred_at >= date_trunc('day', now())`);
     return [Number(r?.n ?? 0), await auditStatus(tx, v.tenantId)] as const;
+  }).catch((e) => {
+    logError("settings.audit-status", e);
+    return [0, null] as const;
   });
   return auditArea(today, status);
 }

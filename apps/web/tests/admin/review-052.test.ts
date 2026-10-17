@@ -3,7 +3,7 @@ import { hasDb } from "@amax/db/testdb";
 import { policyPatch } from "@amax/ai/admin";
 import { keptExpiry } from "../../lib/admin/secrets";
 import { auditArea } from "../../lib/admin/status";
-import { adminDb, AU } from "./fixture";
+import { adminDb, AU, T } from "./fixture";
 
 // 052 module-end review of settings/admin: one table per class of finding.
 
@@ -37,8 +37,13 @@ describe("052 the hub's Audit card leads with a broken chain", () => {
     { audit: bad, trace: ok, tone: "bad", attention: "the audit chain no longer verifies" },
     { audit: ok, trace: bad, tone: "bad", attention: "the trace chain no longer verifies" },
     { audit: bad, trace: bad, tone: "bad", attention: "the audit and trace chains no longer verify" },
-  ])("audit $audit.ok, trace $trace.ok", ({ audit, trace, tone, attention }) => {
-    const a = auditArea(4, { audit, trace });
+    { audit: ok, trace: ok, at: "2026-10-17T08:00:00Z", tone: "warn", attention: "the audit and trace chains haven't been verified since 2026-10-17 08:00 UTC" },
+    { audit: ok, trace: ok, at: "", tone: "warn", attention: "the audit and trace chains haven't been verified" },
+    { status: null, tone: "bad", attention: "the audit and trace chains couldn't be verified" },
+  ])("audit $audit.ok, trace $trace.ok, verified $at", (c) => {
+    const now = Date.parse("2026-10-17T12:00:00Z");
+    const a = auditArea(4, "status" in c ? null : { audit: c.audit, trace: c.trace, verifiedAt: c.at ?? new Date(now - 60_000).toISOString() }, now);
+    const { tone, attention } = c;
     expect(a.chip.tone).toBe(tone);
     expect(a.attention).toBe(attention);
   });
@@ -80,7 +85,7 @@ describe.skipIf(!hasDb)("052 admin tools (Postgres)", () => {
       expect(tools.length, module).toBeGreaterThan(0);
       expect(new Set(tools.map((t) => t.module))).toEqual(new Set([module]));
     }
-    expect(await db.registry.call(maya, "list_mcp_tools", { module: "nothing-here" }, { source: "mcp" })).toEqual([]);
+    await expect(db.registry.call(maya, "list_mcp_tools", { module: "nothing-here" }, { source: "mcp" })).rejects.toThrow(/module nothing-here not found/);
   });
 
   it("the Events card's pin and the Failed runs pin are accepted by their read tools", async () => {
@@ -88,7 +93,23 @@ describe.skipIf(!hasDb)("052 admin tools (Postgres)", () => {
     for (const args of [{ limit: 100 }, { query: "maya", chain: "audit", sinceDays: 7, limit: 100 }, { chain: "trace", limit: 100 }]) {
       await expect(db.registry.call(maya, "search_audit", args, { source: "mcp" })).resolves.toBeInstanceOf(Array);
     }
-    const failed = (await db.registry.call(maya, "list_workflow_runs", { status: "failed" }, { source: "mcp" })) as { status: string }[];
-    expect(failed.every((r) => r.status === "failed")).toBe(true);
+  });
+
+  it("each Scheduler ticket pin returns exactly the runs its ticket counts", async () => {
+    const maya = await db.as("maya");
+    const ids: Record<string, string> = {};
+    for (const status of ["failed", "completed", "running", "waiting", "paused"]) {
+      ids[status] = await db.engine.start(T, "core.audit-check", null, { startedBy: "test" });
+      await db.t.owner`update workflows.run set status = ${status} where id = ${ids[status]}`;
+    }
+    const pinned = async (status?: unknown) => ((await db.registry.call(maya, "list_workflow_runs", status === undefined ? {} : { status }, { source: "mcp" })) as { id: string; status: string }[]).filter((r) => Object.values(ids).includes(r.id)).map((r) => r.status).sort();
+    const cases: [unknown, string[]][] = [
+      ["failed", ["failed"]],
+      [["running", "sleeping", "waiting"], ["running", "waiting"]],
+      [undefined, ["completed", "failed", "paused", "running", "waiting"]],
+      [["completed", "paused"], ["completed", "paused"]],
+    ];
+    for (const [status, want] of cases) expect(await pinned(status), JSON.stringify(status)).toEqual(want);
+    await expect(db.registry.call(maya, "list_workflow_runs", { status: [] }, { source: "mcp" })).rejects.toMatchObject({ code: "invalid_input" });
   });
 });
