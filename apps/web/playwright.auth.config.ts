@@ -24,7 +24,7 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",
-  use: { baseURL: `http://localhost:${port}`, colorScheme: "light", reducedMotion: "reduce", browserName: "chromium", trace: process.env.CI ? "retain-on-failure" : "off" },
+  use: { baseURL: `http://localhost:${port}`, colorScheme: "light", reducedMotion: "reduce", browserName: "chromium", trace: process.env.E2E_TRACE ? "retain-on-failure" : "off" },
   webServer: {
     command: `pnpm exec tsx tests/e2e/global-auth.ts && pnpm start --port ${port}`,
     url: `http://localhost:${port}/healthz`,
