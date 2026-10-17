@@ -19,7 +19,7 @@ The lane split keeps the machines in different folders, so merges stay trivial.
 
 | Machine | Lanes | Changes | Starts |
 |---|---|---|---|
-| mac | Platform, Delivery, Finance, Intelligence | 001–010, 017–019, 025–027, 029–035, 038 | now (001 is approved) |
+| mac | Platform, Delivery, Finance, Intelligence | 001–010, 017–019, 025–027, 029–035, 038, 039 | now (001 is approved) |
 | vps | People, Payroll, IT, Talent, Sales, Integrations | 011–016, 020–024, 028, 036, 037 | once 002 and 003 are archived (011 HR core is its first) |
 
 When one machine runs out of ready work in its lanes, run `next` with no `--lanes` and it will take anything ready.
