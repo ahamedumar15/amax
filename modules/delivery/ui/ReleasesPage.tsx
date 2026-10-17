@@ -1,4 +1,4 @@
-import { can } from "@amax/auth";
+import { can, type Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
 import { promoteAction } from "../actions";
@@ -171,20 +171,33 @@ export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenPro
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Releases</h1><SignInFirst /></>;
   const [releases, now] = await Promise.all([listReleases(viewer), today(viewer)]);
-  // 042: projects have their own environments; columns are the union in stage order.
-  const envs = stageColumns(releases);
   return (
     <>
       <h1>Releases</h1>
       <p className="lede">A release moves when a pipeline reports a deployment, when an agent records one, or when you promote it here.</p>
+      <ReleasesCards viewer={viewer} releases={releases} now={now} root="/delivery/releases" map={searchParams.map} />
+    </>
+  );
+}
+
+/**
+ * The release map and table (051): the global list and a project's Releases section share them.
+ * `root` is the list's path, `map` the Active/All choice; `projectKey` scopes the pins.
+ */
+export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: { viewer: Viewer; releases: ReleaseRow[]; now: Date; root: string; map?: string; projectKey?: string }) {
+  // 042: projects have their own environments; columns are the union in stage order.
+  const envs = stageColumns(releases);
+  const pinArgs = projectKey ? { projectKey } : {};
+  return (
+    <>
       <div className="card map scroll-x pinnable" style={{ marginBottom: 28 }}>
-        <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: {} }} />
-          <nav className="seg" aria-label="Range"><a href="/delivery/releases" aria-current={searchParams.map !== "all" ? "true" : undefined}>Active</a><a href="/delivery/releases?map=all" aria-current={searchParams.map === "all" ? "true" : undefined}>All</a></nav>
+        <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: pinArgs }} />
+          <nav className="seg" aria-label="Range"><a href={root} aria-current={map !== "all" ? "true" : undefined}>Active</a><a href={`${root}?map=all`} aria-current={map === "all" ? "true" : undefined}>All</a></nav>
         </div>
-        <ReleaseMap releases={searchParams.map === "all" ? releases : onActiveMap(releases, now)} columns={envs} />
+        <ReleaseMap releases={map === "all" ? releases : onActiveMap(releases, now)} columns={envs} />
       </div>
       <div className="card flush pinnable">
-        <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: {} }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
+        <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: pinArgs }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
         <div className="scroll-x">
           <table className="tbl">
             <caption className="sr">All releases</caption>

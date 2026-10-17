@@ -8,6 +8,8 @@ import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
 import { ReleasesPage } from "./ui/ReleasesPage";
 import { ReleasePage } from "./ui/ReleasePage";
+import { ProjectProposals, ProjectReleases } from "./ui/ProjectLists";
+import { ContractSection, RisksSection, TeamSection } from "./ui/ProjectSections";
 
 const READ = ["delivery:read"];
 
@@ -31,6 +33,13 @@ export default defineModule({
   routes: [
     { path: "", title: "Projects", component: ProjectsPage },
     { path: "p/:key", title: "Project", component: ProjectPage },
+    { path: "p/:key/proposals", title: "Proposals", component: ProjectProposals },
+    { path: "p/:key/proposals/:phase", title: "Proposals", component: ProjectProposals },
+    { path: "p/:key/releases", title: "Releases", component: ProjectReleases },
+    { path: "p/:key/risks", title: "Risks and decisions", component: RisksSection },
+    // Allocations mounts the real Team section over this one (051); this shows when it's switched off.
+    { path: "p/:key/team", title: "Team", component: TeamSection },
+    { path: "p/:key/contract", title: "Contract", component: ContractSection },
     { path: "proposals", title: "Proposals", component: ProposalsPage },
     { path: "proposals/:phase", title: "Proposals", component: ProposalsPage },
     { path: "releases", title: "Releases", component: ReleasesPage },

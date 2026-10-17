@@ -7,7 +7,13 @@ import type { Sensitivity } from "./audit";
 /** What a screen receives: route params (":key" segments), query params (optional, 041) and the signed-in viewer (null in the guest preview). */
 export type ScreenProps = { params: Record<string, string>; searchParams?: Record<string, string>; viewer: unknown };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ModuleRoute = { path: string; title: string; component: ComponentType<ScreenProps> | ComponentType<any> };
+/**
+ * `mount` (051) serves the route under another module's URL space, e.g. allocations' Team section at
+ * /delivery/p/:key/team. That module's ":read" still gates the URL, a mounted route wins over the
+ * owner's route with the same path (the owner's is the fallback when the contributor is switched
+ * off), and the contributor gets no import edge to the owner.
+ */
+export type ModuleRoute = { path: string; title: string; mount?: string; component: ComponentType<ScreenProps> | ComponentType<any> };
 
 export type JobContext = { tx: Tx; tenantId: string; payload: Record<string, unknown>; jobId: string };
 export type JobDef = {
@@ -122,7 +128,7 @@ export type ModuleManifest = {
 
 export function defineModule(manifest: ModuleManifest): ModuleManifest {
   if (!/^[a-z][a-z0-9-]*$/.test(manifest.id)) throw new Error(`module id "${manifest.id}" must be kebab-case`);
-  if (!manifest.routes.some((r) => r.path === "")) throw new Error(`module "${manifest.id}" needs a root route ("")`);
+  if (!manifest.routes.some((r) => r.path === "" && !r.mount)) throw new Error(`module "${manifest.id}" needs a root route ("")`);
   for (const r of manifest.retention ?? []) {
     if (!r.start.at.length && !r.start.idle) throw new Error(`module "${manifest.id}": retention for ${r.table} never starts`);
   }
