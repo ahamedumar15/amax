@@ -58,9 +58,11 @@ test("031 AC4 values are write-only: add, rotate and revoke never show them", as
   await page.getByLabel("New value").fill(second);
   await page.getByLabel("Keep the old value working for").selectOption("0");
   await page.getByRole("button", { name: "Rotate", exact: true }).click();
+  await expect(page).toHaveURL(/saved=1/);
   await expect(row).toContainText("Active");
-  expect(await axe(page)).toEqual([]);
   await page.getByRole("button", { name: "Rotate GitHub" }).click();
+  await expect(page.getByRole("button", { name: "Revoke now" })).toBeVisible();
+  expect(await axe(page)).toEqual([]);
   await page.getByRole("button", { name: "Revoke now" }).click();
   await expect(row).toContainText("Revoked");
   const html = await page.content();
