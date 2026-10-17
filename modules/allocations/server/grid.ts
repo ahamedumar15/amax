@@ -22,7 +22,7 @@ async function peopleIn(tx: Tx, v: Viewer, months: string[], everyone: boolean) 
 
 export async function gridIn(tx: Tx, v: Viewer, months: string[], today: Date, everyone = false): Promise<Grid> {
   const { scope, ids, rows } = await peopleIn(tx, v, months, everyone);
-  const [people, periods, projects] = await Promise.all([listPeople(tx, { ids }), listEmploymentPeriods(tx, ids), listProjectRefs(tx)]);
+  const [people, periods, projects] = await Promise.all([listPeople(tx, v, { ids }), listEmploymentPeriods(tx, v, ids), listProjectRefs(tx)]);
   return {
     scope, months: months.map((month) => ({ month, forecast: isForecast(month, today) })),
     people: people.map((p): GridPerson => {

@@ -19,10 +19,10 @@ const mayAllocate = (ctx: ServiceContext, projectId: string | null) => {
   return !v || can(v, "allocations:allocate", projectId ? { projectId } : {});
 };
 
-async function personOf(tx: Tx, who: string) {
-  const exact = await getPerson(tx, who);
+async function personOf(tx: Tx, ctx: ServiceContext, who: string) {
+  const exact = await getPerson(tx, ctx, who);
   if (exact) return exact;
-  const named = (await listPeople(tx, { status: ["active", "joining"] })).filter((p) => p.name.toLowerCase() === who.trim().toLowerCase());
+  const named = (await listPeople(tx, ctx, { status: ["active", "joining"] })).filter((p) => p.name.toLowerCase() === who.trim().toLowerCase());
   if (named.length !== 1) throw new Error(named.length ? `${who} matches more than one person; use the employee number` : `no person ${who}`);
   return named[0];
 }
@@ -35,7 +35,7 @@ export const allocate = defineService({
   input: z.object({ person: z.string().min(2), projectKey: z.string().optional(), work: z.string().min(2).optional(), month, through: month.optional(), percent: z.number().int().min(0).max(200) })
     .refine((i) => Boolean(i.projectKey) !== Boolean(i.work), "name a project key or other work, not both"),
   async run(tx, input, ctx) {
-    const person = await personOf(tx, input.person);
+    const person = await personOf(tx, ctx, input.person);
     const project = input.projectKey ? await getProjectRef(tx, input.projectKey) : null;
     if (input.projectKey && !project) throw new Error(`no project ${input.projectKey}`);
     if (!mayAllocate(ctx, project?.id ?? null)) throw new ScopeError("allocations:allocate");

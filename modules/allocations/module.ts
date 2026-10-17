@@ -29,7 +29,7 @@ export default defineModule({
   mcpTools,
   // Allocations hold no personal fields of their own: people are hr.person ids, names stay in hr.
   retention: [],
-  viewerScopes: async (tx, user) => ({ assignedProjects: await assignedProjectIds(tx, user.userId) }),
+  viewerScopes: async (tx, user) => ({ assignedProjects: await assignedProjectIds(tx, user) }),
   chatIntents,
   jobs: [],
   events: { emits: Object.values(EVENTS) },

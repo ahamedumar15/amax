@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { FixtureSeed } from "@amax/core";
+import { contextFor } from "@amax/core/server";
 import type { Tx } from "@amax/db";
 import { listProjectRefs } from "@amax/delivery/contracts";
 import { listEmploymentPeriods, listPeople, type PersonRef } from "@amax/hr/contracts";
@@ -7,8 +8,8 @@ import { fteIn } from "../server/months";
 import { DELIVERY_MEMBERS, DEMAND, ENGINEERING_SKILLS, JANUARY, JANUARY_BENCH_SKILLS, MONTHS, NAMED, NAMED_SKILL, spread, TEAM, UNSTAFFED, WORK } from "./plan";
 
 /** The delivery team: Engineering and Quality, plus seven delivery staff without a sign-in. */
-async function members(tx: Tx) {
-  const people = await listPeople(tx, { status: ["active", "joining"] });
+async function members(tx: Tx, tenantId: string) {
+  const people = await listPeople(tx, contextFor.job(tenantId, "allocations.fixtures"), { status: ["active", "joining"] });
   const delivery = people.filter((p) => p.department === "Delivery" && !p.userId).sort((a, b) => a.employeeNo.localeCompare(b.employeeNo)).slice(0, DELIVERY_MEMBERS);
   const team = [...people.filter((p) => p.department === "Engineering" || p.department === "Quality"), ...delivery];
   let e = 0;
@@ -24,7 +25,7 @@ const put = (tx: Tx, tenantId: string, personId: string, projectId: string | nul
 export const allocationsFixtures: FixtureSeed = async ({ tx, tenantId }) => {
   const [{ n }] = await tx.execute(sql`select count(*)::int as n from allocations.allocation`);
   if (Number(n) > 0) return;
-  const team = await members(tx);
+  const team = await members(tx, tenantId);
   for (const m of team) await tx.execute(sql`insert into allocations.member (tenant_id, person_id, team, skill) values (${tenantId}, ${m.person.id}, ${TEAM}, ${m.skill}) on conflict do nothing`);
   const projects = await listProjectRefs(tx);
   const named = new Set(NAMED.map(([no]) => no));
@@ -34,7 +35,7 @@ export const allocationsFixtures: FixtureSeed = async ({ tx, tenantId }) => {
   }
   for (const [month, label, fte] of UNSTAFFED) await tx.execute(sql`insert into allocations.forecast (tenant_id, team, month, label, demand_fte) values (${tenantId}, ${TEAM}, ${month}, ${label}, ${fte}) on conflict do nothing`);
   const generic = team.filter((m) => !named.has(m.person.employeeNo));
-  const periods = await listEmploymentPeriods(tx, generic.map((m) => m.person.id));
+  const periods = await listEmploymentPeriods(tx, contextFor.job(tenantId, "allocations.fixtures"), generic.map((m) => m.person.id));
   const fte = (id: string, month: string) => fteIn(periods.filter((p) => p.personId === id), month);
   const skills = [...JANUARY_BENCH_SKILLS];
   const bench = new Set(generic.filter((m) => fte(m.person.id, MONTHS[JANUARY]) === 1 && fte(m.person.id, MONTHS[0]) === 1 && skills.includes(m.skill) && skills.splice(skills.indexOf(m.skill), 1)).map((m) => m.person.id));

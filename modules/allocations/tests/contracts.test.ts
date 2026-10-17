@@ -3,7 +3,8 @@ import { hasDb } from "@amax/db/testdb";
 import { getPerson } from "@amax/hr/contracts";
 import manifest from "../module";
 import { EVENTS, listAllocations, monthOf, personMonthTotals } from "../contracts";
-import { allocationsDatabase } from "./setup";
+import { contextFor } from "@amax/core/server";
+import { allocationsDatabase, T } from "./setup";
 
 describe("AC-4 contract shape", () => {
   it("names the events the manifest emits and normalises months", () => {
@@ -20,7 +21,7 @@ describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
 
   it("listAllocations and personMonthTotals: Ayesha is at 120% in December", async () => {
     await db.tx(async (tx) => {
-      const ayesha = (await getPerson(tx, "LL-0291"))!;
+      const ayesha = (await getPerson(tx, contextFor.job(T, "allocations.test"), "LL-0291"))!;
       const rows = await listAllocations(tx, { from: "2026-12-01", to: "2026-12-31", personIds: [ayesha.id] });
       expect(rows.map((r) => r.percent).sort()).toEqual([50, 70]);
       expect(await personMonthTotals(tx, { from: "2026-10-01", to: "2027-02-01", personIds: [ayesha.id] })).toEqual(
