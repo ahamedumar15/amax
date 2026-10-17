@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { ScopeError } from "@amax/auth";
-import { defineService } from "@amax/core/server";
+import { defineService, isSystemContext } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contracts";
 import { changePersonRun, changeInput } from "./change";
 import { date, inScope, personByNo, today } from "./records";
@@ -95,7 +95,7 @@ export const applyStatusDates = defineService({
   resource: "hr.person",
   input: z.object({ on: date }),
   async run(tx, { on }, ctx) {
-    if (ctx.actor.kind !== "system") throw new ScopeError("hr:person:update");
+    if (!isSystemContext(ctx)) throw new ScopeError("hr:person:update");
     const left = await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where status <> 'left' and left_on <= ${on}::date returning employee_no`);
     const started = await tx.execute(sql`update hr.person set status = 'active', updated_at = now()
       where status = 'joining' and joined_on <= ${on}::date returning employee_no`);

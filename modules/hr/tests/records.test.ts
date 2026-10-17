@@ -110,6 +110,7 @@ describe.skipIf(!hasDb)("hr records (Postgres)", () => {
     expect([await status(joiner.employeeNo), await status(leaver.employeeNo)]).toEqual(["active", "left"]);
     expect(await applyStatusDates(job, { on: "2027-01-10" })).toMatchObject({ started: [], left: [] });
     await expect(applyStatusDates(hr, { on: "2027-01-10" })).rejects.toThrow(/forbidden/);
+    await expect(applyStatusDates({ ...job }, { on: "2027-01-10" })).rejects.toThrow(/forbidden/);
   });
 
   it.each([
@@ -147,10 +148,12 @@ describe.skipIf(!hasDb)("hr records (Postgres)", () => {
     { kind: "service", viewer: false, ok: false },
     { kind: "agent", viewer: false, ok: false },
     { kind: "user", viewer: false, ok: false },
-    { kind: "system", viewer: false, ok: true },
+    { kind: "system", viewer: false, ok: false },
+    { kind: "issued", viewer: false, ok: true },
     { kind: "user", viewer: true, ok: true },
   ] as const)("HR writes fail closed without a viewer: $kind (viewer: $viewer)", ({ kind, viewer, ok }) => {
-    const ctx = { tenantId: db.maya.tenantId, actor: { id: `${kind}:x`, kind }, source: "api", viewer: viewer ? db.mayaAs("HR") : undefined } as ServiceContext;
+    // "system" is a hand-built literal claiming to be system code; "issued" is one core made with contextFor.job.
+    const ctx = kind === "issued" ? sys() : ({ tenantId: db.maya.tenantId, actor: { id: `${kind}:x`, kind }, source: "api", viewer: viewer ? db.mayaAs("HR") : undefined } as ServiceContext);
     const lk = "11111111-1111-4111-8111-1111111111a1";
     if (ok) expect(() => inScope(ctx, "hr:person:update", lk)).not.toThrow();
     else expect(() => inScope(ctx, "hr:person:update", lk)).toThrow(/forbidden/);

@@ -1,23 +1,23 @@
 // The only import surface for other modules (docs/module-standard.md). Reads run in the caller's
 // tenant transaction and take a Reader: a viewer sees only the legal entities their hr:read reaches,
-// with pay and bank masked per 002; trusted system code (a ServiceContext whose actor core made with
-// contextFor.job) sees everything, and its pay reads are audited. Every read takes an as-of date
+// with pay and bank masked per 002; trusted system code (a ServiceContext core issued with
+// contextFor.job, checked by isSystemContext, not by its fields) sees everything, and its pay reads are audited. Every read takes an as-of date
 // (default today) so one screen or job reads one day.
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { can, mask, ScopeError, type Masked, type Viewer } from "@amax/auth";
-import { appendAudit, type ServiceContext } from "@amax/core/server";
+import { appendAudit, isSystemContext, type ServiceContext } from "@amax/core/server";
 import { employmentAt, inForceOrder, today } from "./server/inforce";
 
 /** Who reads: a signed-in viewer, or a ServiceContext (a system job, or a call acting for a viewer). */
 export type Reader = Viewer | ServiceContext;
 type Resolved = { kind: "viewer"; viewer: Viewer } | { kind: "system"; ctx: ServiceContext };
 
-/** @internal A ServiceContext reads as its viewer; without one only a system actor may read. Fails closed. */
+/** @internal A ServiceContext reads as its viewer; without one only a context core issued with contextFor.job may read. Fails closed. */
 export function readerOf(r: Reader): Resolved {
   if (!("actor" in r)) return { kind: "viewer", viewer: r };
   if (r.viewer) return { kind: "viewer", viewer: r.viewer as Viewer };
-  if (r.actor.kind === "system") return { kind: "system", ctx: r };
+  if (isSystemContext(r)) return { kind: "system", ctx: r };
   throw new ScopeError("hr:read");
 }
 
