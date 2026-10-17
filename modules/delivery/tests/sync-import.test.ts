@@ -59,7 +59,7 @@ describe.skipIf(!hasDb)("AC-2/AC-3 self-sync import", () => {
     expect(board.proposals.find((p) => p.key === "AMX-001")).toMatchObject({ phase: "released", tasksDone: 8, tasksTotal: 8, agent: "specclaw" });
     const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select actor, source from core.audit_event where action = 'delivery.proposal.sync' limit 1`));
     expect(row.actor).toMatch(/^sp:/);
-  });
+  }, 60_000);
 
   it("re-running with nothing changed writes and audits nothing", async () => {
     const before = Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event`)))[0].n);

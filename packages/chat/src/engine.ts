@@ -35,9 +35,11 @@ async function load(db: Db, viewer: Viewer, id?: string) {
 
 // Append-only: a turn runs for seconds, and a confirm or cancel may claim a card or add a note
 // meanwhile. Rewriting the lists from the turn's stale copy would undo that (review round 2).
-const append = (db: Db, viewer: Viewer, id: string, add: { messages: Message[]; pending: PendingAction[] }) =>
+export const titleFrom = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 80);
+const append = (db: Db, viewer: Viewer, id: string, add: { messages: Message[]; pending: PendingAction[]; title: string; pins: Pin[] }) =>
   withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set messages = messages || ${JSON.stringify(add.messages)}::jsonb,
-    pending = pending || ${JSON.stringify(add.pending)}::jsonb, updated_at = now() where id = ${id} and user_id = ${viewer.userId}`));
+    pending = pending || ${JSON.stringify(add.pending)}::jsonb, title = coalesce(title, ${add.title}), pins = ${JSON.stringify(add.pins)}::jsonb,
+    updated_at = now() where id = ${id} and user_id = ${viewer.userId}`));
 
 // Each extracted value that appears in the user's words gets its field's colour (AC-3).
 export function highlightsFor(text: string, pending: PendingAction[]): Highlight[] {
@@ -107,7 +109,7 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     tools,
     data,
   });
-  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending });
+  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending, title: titleFrom(opts.text), pins: opts.pins ?? [] });
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
