@@ -4,6 +4,7 @@ import { IntentButton, PinButton } from "@amax/ui";
 import { moveAction } from "../actions";
 import { PHASES, type Phase } from "../contracts";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
+import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
 import { initials, needViewer, PHASE_UI, SignInFirst, Stk } from "./parts";
 
@@ -43,7 +44,7 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
       {p.phase !== "proposed" && p.phase !== "released" && <div className="prog"><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
       <div className="foot">
         {p.phase === "released" ? <span className="chip">{p.release ?? "Released"}</span>
-          : p.agent ? <span className="chip agent">{p.agent}</span> : <span className="av sm a2" title={p.ownerName ?? undefined}>{initials(p.ownerName)}</span>}
+          : p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={p.ownerName} />}
         <span>
           {p.phase === "proposed" && (p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`)}
           {(p.phase === "planned" || p.phase === "building") && `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}`}
@@ -99,9 +100,9 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
         <button type="button" className="btn sm" aria-pressed="true">Board</button>
         <a className="btn sm" href={`/delivery/proposals?project=${project.key}`}>Proposals</a>
         <a className="btn sm" href="/delivery/releases">Releases</a>
-        <button type="button" className="btn sm" aria-pressed="false" disabled title="Arrives with RAID logs">Risks and decisions</button>
-        <button type="button" className="btn sm" aria-pressed="false" disabled title="Arrives with allocations (010)">Team</button>
-        <button type="button" className="btn sm" aria-pressed="false" disabled title="Arrives with finance (017)">Contract</button>
+        <button type="button" className="btn sm" aria-pressed="false" aria-disabled="true" title="Arrives with RAID logs">Risks and decisions</button>
+        <button type="button" className="btn sm" aria-pressed="false" aria-disabled="true" title="Arrives with allocations (010)">Team</button>
+        <button type="button" className="btn sm" aria-pressed="false" aria-disabled="true" title="Arrives with finance (017)">Contract</button>
       </div>
       <div className="board">
         {PHASES.map((phase) => {

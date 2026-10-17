@@ -1,5 +1,6 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
+import { IntentButton, PinButton } from "@amax/ui";
 import { promoteAction } from "../actions";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
 import { day, needViewer, SignInFirst } from "./parts";
@@ -69,7 +70,8 @@ export function mapPill(r: ReleaseRow) {
   return { kind: "in" as const, text: `In ${last.environment} since ${day(last.at)}` };
 }
 
-const PILL = { back: { fill: "#FDE7E4", ink: "#C2412F" }, live: { fill: "#E3F8EF", ink: "#14845A" }, testing: { fill: "#ECE8FF", ink: "#5B44D6" }, in: { fill: "#ECE8FF", ink: "#5B44D6" } };
+// Fills, inks and widths as drawn in the mock.
+const PILL = { back: { fill: "#FDE7E4", ink: "#C2412F", w: 128 }, live: { fill: "#E3F8EF", ink: "#14845A", w: 118 }, testing: { fill: "#ECE8FF", ink: "#5B44D6", w: 132 }, in: { fill: "#ECE8FF", ink: "#5B44D6", w: 150 } };
 
 // The mock's release map: one line per active release, stations per environment, and a status pill.
 function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: string[] }) {
@@ -87,14 +89,14 @@ function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: st
         const lastI = m.lineTo!;
         const pill = mapPill(r)!;
         const live = pill.kind === "live";
-        const w = Math.round(pill.text.length * 7 + 24);
-        const px = live ? x(lastI) - w - 26 : x(lastI) + 26;
+        const w = PILL[pill.kind].w;
+        const px = live ? x(lastI) - 144 : x(lastI) + 26;
         const py = live ? y - 30 : y - 14;
         return (
           <g key={r.id}>
             <text className="lbl" x={0} y={y + 5}>{r.projectName}</text>
             <text className="cap" x={0} y={y + 24}>{r.version}, {r.proposals} proposals{m.agrees ? "" : ", own stage order"}</text>
-            <path className="line" pathLength={1} d={`M240 ${y}H${x(lastI) - (m.back ? 12 : 0)}`} stroke={c} />
+            <path className={row % 3 ? `line l${(row % 3) + 1}` : "line"} pathLength={1} d={`M240 ${y}H${x(lastI) - (m.back ? 12 : 0)}`} stroke={c} />
             {m.aheadTo !== null && lastI < m.aheadTo && <path className="ahead" d={`M${x(lastI) + (m.back ? 12 : 0)} ${y}H${x(m.aheadTo)}`} stroke={c} />}
             {m.stations.map((s) => (
               <g key={s.environment}>
@@ -114,7 +116,7 @@ function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: st
   );
 }
 
-export async function ReleasesPage({ viewer: raw, searchParams }: ScreenProps) {
+export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Releases</h1><SignInFirst /></>;
   const releases = await listReleases(viewer);
@@ -124,14 +126,14 @@ export async function ReleasesPage({ viewer: raw, searchParams }: ScreenProps) {
     <>
       <h1>Releases</h1>
       <p className="lede">A release moves when a pipeline reports a deployment, when an agent records one, or when you promote it here.</p>
-      <div className="card map scroll-x" style={{ marginBottom: 28 }}>
-        <div className="card-head"><h2>Release map</h2>
+      <div className="card map scroll-x pinnable" style={{ marginBottom: 28 }}>
+        <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: {} }} />
           <nav className="seg" aria-label="Range"><a href="/delivery/releases" aria-current={searchParams.map !== "all" ? "true" : undefined}>Active</a><a href="/delivery/releases?map=all" aria-current={searchParams.map === "all" ? "true" : undefined}>All</a></nav>
         </div>
         <ReleaseMap releases={searchParams.map === "all" ? releases : releases.filter((r) => !r.stages.some((s) => s.isProd && s.status === "deployed" && s.at && today().getTime() - Date.parse(s.at) > 45 * 86_400_000))} columns={envs} />
       </div>
-      <div className="card flush">
-        <div className="card-head"><h2>All releases</h2></div>
+      <div className="card flush pinnable">
+        <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: {} }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
         <div className="scroll-x">
           <table className="tbl">
             <caption className="sr">All releases</caption>
@@ -142,13 +144,13 @@ export async function ReleasesPage({ viewer: raw, searchParams }: ScreenProps) {
                 // Per project: a PM elsewhere, Finance or Leadership see the stage, not a button.
                 const allowed = can(viewer, "delivery:deployment:record", { projectId: r.projectId });
                 return (
-                  <tr key={r.id}>
+                  <tr key={r.id} className="pinnable">
                     <td data-label="Release"><a className="rowlink" href={`/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`}><b>{r.version}</b></a></td>
                     <td data-label="Project"><span className="dot" style={{ background: `var(--${r.projectColor})` }} />{r.projectName}</td>
                     <td data-label="Proposals" className="num">{r.proposals}</td>
                     {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
                     <td data-label="" className="num">
-                      {!step ? <span className="muted">Live</span> : !step.environment ? <span className="muted">{step.label}</span> : !allowed ? <span className="muted">{r.stages.some((s) => s.status) ? step.label.replace(/^(Promote|Deploy|Retry|Finish) /, "Next: ") : "Building"}</span> : (
+                      {!step ? <span className="muted">Live</span> : !r.stages.some((s) => s.status) ? <span className="muted">Building</span> : !step.environment ? <span className="muted">{step.label}</span> : !allowed ? <span className="muted">{step.label.replace(/^(Promote|Deploy|Retry|Finish) /, "Next: ")}</span> : (
                         <form action={promoteAction}>
                           <input type="hidden" name="projectKey" value={r.projectKey} />
                           <input type="hidden" name="version" value={r.version} />
@@ -156,6 +158,7 @@ export async function ReleasesPage({ viewer: raw, searchParams }: ScreenProps) {
                           <button className={`btn sm${step.primary ? " primary" : ""}`} type="submit">{step.label}</button>
                         </form>
                       )}
+                      <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
                     </td>
                   </tr>
                 );

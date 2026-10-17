@@ -96,11 +96,11 @@ export const weeklyThroughput = (v: Viewer, now = today()) =>
     return { labels: weeks.map((w) => w.label), planned: weeks.map((w) => Number(at(w.monday)?.planned ?? 0)), done: weeks.map((w) => Number(at(w.monday)?.done ?? 0)) };
   });
 
-/** Proposals that reached Prod per ISO week (from released_at). */
+/** Proposals shipped to Prod per ISO week, from the weekly roll-up (fixtures.md's W35 to W42). */
 export const shippedPerWeek = (v: Viewer, now = today()) =>
   read(v, async (tx) => {
     const weeks = lastWeeks(now);
-    const rows = await tx.execute(sql`select date_trunc('week', released_at)::date::text as week, count(*)::int as n from delivery.proposal where released_at >= ${weeks[0].monday} group by 1`);
+    const rows = await tx.execute(sql`select week::text as week, sum(shipped)::int as n from delivery.weekly_stat where week >= ${weeks[0].monday} group by week`);
     return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
   });
 

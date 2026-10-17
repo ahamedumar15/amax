@@ -60,7 +60,7 @@ const userId = async (tx: Tx, key: string) =>
   ((await tx.execute(sql`select id from auth.user where email = ${`${key}@lumenlabs.test`}`))[0]?.id as string | undefined) ?? null;
 
 // Tasks done per week, W35-W42 2026 (Mondays), all projects: the mock's chart.
-const WEEKLY = { planned: [28, 30, 30, 32, 32, 34, 34, 36], done: [24, 29, 31, 27, 33, 35, 30, 38] };
+const WEEKLY = { planned: [28, 30, 30, 32, 32, 34, 34, 36], done: [24, 29, 31, 27, 33, 35, 30, 38], shipped: [2, 3, 1, 4, 3, 5, 4, 6] };
 
 export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) => {
   const ids: Record<string, string> = {};
@@ -104,6 +104,6 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
   }
   for (let i = 0; i < 8; i++) {
     const week = new Date(Date.UTC(2026, 7, 24 + i * 7)).toISOString().slice(0, 10);
-    await tx.execute(sql`insert into delivery.weekly_stat (tenant_id, project_id, week, planned, done) values (${tenantId}, null, ${week}, ${WEEKLY.planned[i]}, ${WEEKLY.done[i]}) on conflict do nothing`);
+    await tx.execute(sql`insert into delivery.weekly_stat (tenant_id, project_id, week, planned, done, shipped) values (${tenantId}, null, ${week}, ${WEEKLY.planned[i]}, ${WEEKLY.done[i]}, ${WEEKLY.shipped[i]}) on conflict do nothing`);
   }
 };

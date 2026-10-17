@@ -3,7 +3,9 @@ import { IntentButton, PinButton, Ticket } from "@amax/ui";
 import { listProjects, weeklyThroughput } from "../server/queries";
 import { ART_SPRITE } from "./art";
 import { Donut, LineChart } from "./charts";
+import { Avatar } from "./Avatar";
 import { ClientFilter } from "./ClientFilter";
+import { FilterMenu } from "./FilterMenu";
 import { COLOR, initials, needViewer, shortName, SignInFirst, usd } from "./parts";
 
 const HEALTH: Record<string, [string, string]> = { "on-track": ["good", "On track"], "at-risk": ["bad", "At risk"], "off-track": ["bad", "Off track"] };
@@ -14,7 +16,7 @@ const art = (name: string) => <svg className="art" viewBox="0 0 120 110" aria-hi
 const k = (n: number) => `$${Math.round(n / 1000)}k`;
 const version = (next: string | null) => next?.match(/v\d+(\.\d+)+/)?.[0];
 
-export async function ProjectsPage({ viewer: raw, searchParams }: ScreenProps) {
+export async function ProjectsPage({ viewer: raw, searchParams = {} }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Projects</h1><SignInFirst /></>;
   const status = searchParams.status === "closed" ? "closed" : "active";
@@ -45,25 +47,26 @@ export async function ProjectsPage({ viewer: raw, searchParams }: ScreenProps) {
         <Ticket tone="problem" label="At risk" value={`${atRisk.length} project${atRisk.length === 1 ? "" : "s"}`} note={atRisk.map((p) => `${p.name}${p.riskPct ? `, ${p.riskPct}% risk` : ""}`).join("; ") || "None"} art={art("target")} />
       </div>
       <div className="cols even" style={{ marginBottom: 28 }}>
-        <div className="card">
-          <div className="card-head"><h2>Tasks done per week</h2><span className="muted" style={{ fontSize: 13 }}>All projects</span></div>
+        <div className="card pinnable">
+          <div className="card-head"><h2>Tasks done per week</h2><PinButton inline pin={{ label: "Tasks done per week", tool: "list_projects", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>All projects</span></div>
           <LineChart id="tasksWeek" label="Tasks done per week against plan" labels={weekly.labels} max={40} step={10}
             series={[{ name: "Planned", color: "#C3B5FF", data: weekly.planned, dashed: true }, { name: "Done", color: "#7B61FF", data: weekly.done, area: true }]} />
           <div className="legend"><span><i style={{ background: "var(--violet)" }} />Done</span><span><i style={{ background: "repeating-linear-gradient(90deg,#C3B5FF 0 5px,transparent 5px 9px)" }} />Planned</span></div>
         </div>
-        <div className="card">
-          <div className="card-head"><h2>Revenue by project</h2><a className="btn sm pillbtn" href="/delivery">View all</a></div>
+        <div className="card pinnable">
+          <div className="card-head"><h2>Revenue by project</h2><PinButton inline pin={{ label: "Revenue by project", tool: "list_projects", args: {} }} /><a className="btn sm pillbtn" href="/delivery">View all</a></div>
           <Donut label="Revenue by project" center={k(value)} sub="contract value" parts={projects.filter((p) => p.contractValue).map((p) => ({ name: p.name, value: p.contractValue!, color: HEX[p.color] ?? "#7B61FF" }))} />
         </div>
       </div>
-      <div className="card flush">
+      <div className="card flush pinnable">
         <div className="card-head">
-          <h2>Portfolio</h2>
+          <h2>Portfolio</h2><PinButton inline pin={{ label: "Portfolio", tool: "list_projects", args: {} }} />
           <div className="actions">
             <nav className="seg" aria-label="Status">
               <a href="/delivery" aria-current={status === "active" ? "true" : undefined}>Active</a>
               <a href="/delivery?status=closed" aria-current={status === "closed" ? "true" : undefined}>Closed</a>
             </nav>
+            <FilterMenu label="Filter by client" options={["", ...clients].map((c) => ({ text: c || "All clients", current: (searchParams.client ?? "") === c, href: `/delivery?${new URLSearchParams({ ...(status === "closed" ? { status } : {}), ...(c ? { client: c } : {}) })}` }))} />
           </div>
         </div>
         <div className="scroll-x">
@@ -77,7 +80,7 @@ export async function ProjectsPage({ viewer: raw, searchParams }: ScreenProps) {
                 return (
                   <tr key={p.id} className="pinnable">
                     <td data-label="Project"><a className="rowlink" href={`/delivery/p/${p.key}`}><span className="dot" style={{ background: COLOR[p.color] }} /><b>{p.name}</b></a><small>{p.client}, {BILLING[p.billing]}</small></td>
-                    <td data-label="Manager"><div className="who"><span className={`av sm ${AVATAR[i % AVATAR.length]}`}>{initials(p.managerName)}</span>{shortName(p.managerName)}</div></td>
+                    <td data-label="Manager"><div className="who"><Avatar initials={initials(p.managerName)} name={p.managerName} tone={AVATAR[i % AVATAR.length]} />{shortName(p.managerName)}</div></td>
                     <td data-label="Sprint">{p.sprint ?? "–"}</td>
                     <td data-label="Progress"><div className="row"><div className="meter" style={{ flex: 1 }}><i style={{ width: `${done}%`, background: done > 75 ? "var(--mint)" : COLOR[p.color] }} /></div>{p.sprintDone} of {p.sprintTotal}</div></td>
                     <td data-label="Health"><span className={`chip ${tone}`}>{label}</span></td>
