@@ -12,7 +12,7 @@ import { hrDatabase, TODAY } from "./setup";
 
 describe.skipIf(!hasDb)("hr against Postgres", () => {
   let db: Awaited<ReturnType<typeof hrDatabase>>;
-  beforeAll(async () => { db = await hrDatabase(); });
+  beforeAll(async () => { db = await hrDatabase(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("AC-1 the hr schema is tenant-isolated and every retention entry names real columns", async () => {
