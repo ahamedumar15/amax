@@ -22,4 +22,32 @@ No new screens. The amax project appears on the 007 screens: [`001-amax-foundati
 
 ## Tasks
 
+Assumptions (Rule 1):
+- Phase mapping: not approved → proposed; approved → planned; claimed or tasks started → building; verify done or PR raised → verified; archived → released (archived means merged to `main`, which the hosted environment deploys).
+- Work in progress lives on `specclaw/<change>` branches, so the sync reads `main` plus each change's own branch and keeps the furthest state; `main` alone would jump from planned to released.
+- The importer authenticates with a 002 service-principal token scoped to `delivery:proposal:sync` (minted by `admin principal-add`); its writes go through a `defineService` so they are audited as the principal.
+- The GitHub Actions job runs only when the `AMAX_SYNC_DATABASE_URL` and `AMAX_SYNC_TOKEN` secrets exist; the self-hosted environment syncs from the server every few minutes instead (amax-deploy), because its database isn't reachable from GitHub.
+
+- [x] `T1` — Parser: read change folders (main + branch overlays) into records (key, title, lane, phase, approved, claim, deps, tasks, ACs, PR, timestamps); ready/blocked identical to `scripts/queue/state.mjs` (tested against it on this repo) (AC-1)
+  Kind: impl
+  Files: modules/delivery/sync/specclaw.ts, modules/delivery/tests/sync-parse.test.ts
+- [x] `T2` — Importer: `syncProposal` service + `syncSpecclaw()` (creates the project, upserts changed proposals only, marks vanished ones withdrawn, emits `phase_changed`), CLI `pnpm --filter @amax/delivery sync:specclaw`, `admin principal-add`; idempotency and audit tests (AC-2, AC-3, AC-4)
+  Kind: impl
+  Files: modules/delivery/sync/{import.ts,bin.ts}, modules/delivery/server/services.ts, packages/auth/bin/admin.ts, modules/delivery/tests/sync-import.test.ts
+  Depends: T1
+- [x] `T3` — Board shows the sync's extra facts (lane, ready/blocked, claim, PR link) on AMX cards; workflow `.github/workflows/specclaw-sync.yml`; e2e that the AMX board matches `queue.mjs status` (AC-4, AC-5)
+  Kind: impl
+  Files: modules/delivery/ui/ProjectPage.tsx, .github/workflows/specclaw-sync.yml, apps/web/tests/e2e/delivery.spec.ts
+  Depends: T2
+
 ## Verify
+
+**Verdict:** PASS
+- AC-1: pass — `modules/delivery/tests/sync-parse.test.ts`: reads all change folders (archived and active) into records with title, lane, module, phase, approval, claim, hard/optional deps, task done/total, AC count, PR and verdict; ready/blocked/claimed equals `scripts/queue/state.mjs` for every change in this repo.
+- AC-2: pass — `sync-import.test.ts`: upserts through `syncProposal` (a `defineService`) as a 002 service principal scoped to `delivery:proposal:sync`; a re-run with nothing changed writes and audits nothing; a vanished folder is marked withdrawn, not deleted; nothing is written to the repo.
+- AC-3: pass — a phase change (branch overlay moves TST-002 planned → building) emits `delivery.proposal.phase_changed`; audit rows carry the principal and the commit sha.
+- AC-4: pass — `pnpm --filter @amax/delivery sync:specclaw --repo … [--overlay …]` with `DATABASE_URL`, `AMAX_SYNC_TOKEN`, `AUDIT_HASH_KEY`; `.github/workflows/specclaw-sync.yml` runs on pushes to `main` touching `.specclaw/**` only when its secrets exist, with `continue-on-error`. The self-hosted environment syncs from the server instead (amax-deploy `sync`), since its database isn't reachable from GitHub.
+- AC-5: pass — e2e: after a sync of this repo, the AMX board's lane counts equal the parser's phases and cards show lane and ready/blocked/claimed badges; axe clean.
+- AC-6: pass — lives in `modules/delivery/sync/`; when 008 ships its `sync_proposal` tool supersedes this (008 AC-7).
+
+Commands: `pnpm test`, `pnpm lint`, `pnpm build`, `e2e`, `e2e:auth` (12 flows), graph and module-standard checks.

@@ -18,5 +18,5 @@ export default async function ModulePage({ params }: Params) {
   const viewer = await getViewer();
   if (viewer && !can(viewer, `${module}:read`)) notFound();
   const Screen = found.route.component;
-  return <Screen />;
+  return <Screen params={found.params} viewer={viewer} />;
 }

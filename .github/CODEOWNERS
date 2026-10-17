@@ -6,6 +6,7 @@
 /.claude/ @chan4lk
 
 /modules/hello/ @chan4lk
+/modules/delivery/ @chan4lk
 # /modules/hr/ @org/people-team
 # /modules/leave/ @org/people-team
 # /modules/payroll/ @org/payroll-team

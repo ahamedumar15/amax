@@ -51,6 +51,12 @@ export function can(v: Viewer, action: string, resource: ResourceAttrs = {}): bo
   });
 }
 
+// "Could this viewer ever do this?" — a qualified grant (@managed, @assigned, @own) counts, because
+// the record isn't known yet. Services check this up front and call assertCan() with the record.
+export function canEver(v: Viewer, action: string): boolean {
+  return v.assignments.some((a) => a.role === "Admin" || (grants.get(a.role) ?? []).some((g) => matches(g, action)));
+}
+
 export class ScopeError extends Error {
   constructor(action: string) {
     super(`forbidden: ${action} is outside your data scope`);
@@ -72,6 +78,6 @@ export function installAuthorizer() {
     // principalContext() has already checked scopes, expiry and acts-for (and audited refusals).
     if (ctx.actor.kind === "service") return Boolean((ctx as { principal?: unknown }).principal);
     const v = viewerOf(ctx);
-    return !!v && can(v, action);
+    return !!v && canEver(v, action);
   });
 }

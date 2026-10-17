@@ -1,0 +1,38 @@
+name: specclaw sync
+
+# 039: after changes to .specclaw on main, import amax's own specs into an amax deployment's AMX
+# project. Runs only when the target's secrets are configured; a failed sync never blocks a merge.
+on:
+  push:
+    branches: [main]
+    paths: [".specclaw/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      DATABASE_URL: ${{ secrets.AMAX_SYNC_DATABASE_URL }}
+      AMAX_SYNC_TOKEN: ${{ secrets.AMAX_SYNC_TOKEN }}
+      AUDIT_HASH_KEY: ${{ secrets.AMAX_SYNC_AUDIT_HASH_KEY }}
+    steps:
+      - name: Skip when no target is configured
+        id: gate
+        run: echo "run=${{ env.DATABASE_URL != '' && env.AMAX_SYNC_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with: { fetch-depth: 0 }
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.run == 'true'
+      - name: Import specs (main + specclaw/* branches)
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          overlays=()
+          for b in $(git branch -r --format='%(refname:short)' | grep '^origin/specclaw/'); do
+            d=$(mktemp -d); git archive "$b" .specclaw | tar -x -C "$d"; overlays+=(--overlay "$d")
+          done
+          pnpm --filter @amax/delivery sync:specclaw --repo "$GITHUB_WORKSPACE" "${overlays[@]}" --sha "${GITHUB_SHA::8}"

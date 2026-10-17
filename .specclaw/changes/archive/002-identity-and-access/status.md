@@ -1,6 +1,6 @@
-# Status: 003-data-core
+# Status: 002-identity-and-access
 
-**Change:** 003-data-core
+**Change:** 002-identity-and-access
 **Started:** -
 **Last Updated:** 2026-10-17
 
@@ -15,7 +15,7 @@
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
 | PR | ✅ Raised |  |
-| Archived | - | - |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
