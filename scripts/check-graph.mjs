@@ -2,7 +2,7 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { findCycles, proposalGraph } from "./graph/cycles.mjs";
-import { checkFile } from "./graph/rules.mjs";
+import { checkFile, checkTraceOrFail } from "./graph/rules.mjs";
 import { dirs, ownerOf, walk } from "./graph/scan.mjs";
 
 const args = process.argv.slice(2);
@@ -20,9 +20,13 @@ const ctx = {
 const one = val("--file");
 if (one) {
   const f = resolve(one);
-  if (ownerOf(root, f) && /\.(m?[jt]sx?)$/.test(f) && existsSync(f)) checkFile(ctx, f);
+  if (/\.(m?[jt]sx?)$/.test(f) && existsSync(f)) {
+    if (ownerOf(root, f)) checkFile(ctx, f);
+    checkTraceOrFail(ctx, f);
+  }
 } else {
   for (const kind of ["modules", "packages"]) for (const d of dirs(join(root, kind))) for (const f of walk(join(root, kind, d))) checkFile(ctx, f);
+  for (const kind of ["modules", "packages", "apps"]) for (const f of walk(join(root, kind))) checkTraceOrFail(ctx, f);
   for (const c of findCycles(edges)) ctx.problems.push(`R5 cycle: ${c.join(" → ")}`);
   for (const c of findCycles(proposalGraph(root))) ctx.problems.push(`R6 proposal cycle: ${c.join(" → ")}`);
 }

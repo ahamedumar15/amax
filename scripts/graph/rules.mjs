@@ -30,6 +30,15 @@ function checkModuleImport(ctx, owner, file, name, sub) {
 // R7 (033): every LLM call goes through @amax/ai; nothing else imports a model provider SDK.
 const PROVIDER_SDK = /^(@anthropic-ai\/|openai$|openai\/|@google\/genai|@google\/generative-ai|@mistralai\/|cohere-ai|@aws-sdk\/client-bedrock)/;
 
+// R8 (053): traceStepOrFail is the one fail-closed trace step, for confirm's run step only. Any other
+// use would let a trace-store failure change an outcome again; core defines and re-exports it.
+const TRACE_OR_FAIL_ALLOWED = ["packages/core/src/trace.ts", "packages/core/src/server.ts", "packages/chat/src/engine.ts"];
+export function checkTraceOrFail(ctx, file) {
+  const rel = relative(ctx.root, file).split("\\").join("/");
+  if (TRACE_OR_FAIL_ALLOWED.includes(rel) || rel.startsWith("packages/testing/boundaries/")) return;
+  if (/\btraceStepOrFail\b/.test(readFileSync(file, "utf8"))) ctx.problems.push(`R8 ${rel}: uses traceStepOrFail; only packages/chat/src/engine.ts may (confirm's run step). Use the best-effort traceStep`);
+}
+
 export function checkFile(ctx, file) {
   const owner = ownerOf(ctx.root, file);
   if (!owner) return;

@@ -1,10 +1,10 @@
-import { CONNECTORS, EXPIRY_WINDOW_DAYS, type CredentialRow } from "@amax/core/secrets";
+import { CONNECTORS, type CredentialRow } from "@amax/core/secrets";
+import { daysUntil, expiringSoon, pastExpiry } from "../../../../lib/admin/credentials";
 
-const DAY = 86_400_000;
+export { daysUntil, expiringSoon, pastExpiry };
 const WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 
 export const countWord = (n: number) => WORDS[n] ?? String(n);
-export const daysUntil = (d: Date, now: Date) => Math.ceil((d.getTime() - now.getTime()) / DAY);
 export const possessive = (name: string) => (name.endsWith("s") ? `${name}'` : `${name}'s`);
 
 const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
@@ -24,11 +24,9 @@ export function lastUsed(r: CredentialRow, now: Date) {
   return r.lastUsedPurpose ? `${when}, ${r.lastUsedPurpose}` : when;
 }
 
-export const expiringSoon = (r: CredentialRow, now: Date) => r.status === "active" && !!r.expiresAt && daysUntil(r.expiresAt, now) <= EXPIRY_WINDOW_DAYS;
-
 export function statusChip(r: CredentialRow, now: Date): { tone: string; text: string } {
   if (r.status === "revoked") return { tone: "draft", text: "Revoked" };
-  if (r.status === "expired") return { tone: "bad", text: "Expired" };
+  if (pastExpiry(r, now)) return { tone: "bad", text: "Expired" };
   if (expiringSoon(r, now)) return { tone: "warn", text: `Expires in ${daysUntil(r.expiresAt!, now)} day${daysUntil(r.expiresAt!, now) === 1 ? "" : "s"}` };
   return { tone: "good", text: "Active" };
 }
@@ -37,7 +35,7 @@ export function lede(tenantName: string, rows: CredentialRow[], now: Date) {
   const head = rows.length
     ? `${countWord(rows.length)} connector credential${rows.length === 1 ? "" : "s"}, all encrypted with ${possessive(tenantName)} own key.`
     : `No connector credentials yet. Values you add are encrypted with ${possessive(tenantName)} own key and never shown again.`;
-  const expired = rows.find((r) => r.status === "expired");
+  const expired = rows.find((r) => pastExpiry(r, now));
   if (expired) return `${head} The ${CONNECTORS[expired.connector].name} ${CONNECTORS[expired.connector].noun} has expired; rotate it now.`;
   const soon = rows.filter((r) => expiringSoon(r, now)).sort((a, b) => a.expiresAt!.getTime() - b.expiresAt!.getTime())[0];
   if (!soon) return head;

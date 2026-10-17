@@ -1,6 +1,6 @@
-# Status: 052-settings-review
+# Status: 053-trace-and-settings-hardening
 
-**Change:** 052-settings-review
+**Change:** 053-trace-and-settings-hardening
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -11,9 +11,10 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
+| Tasks | ✅ Done |  |
 | Build | - | - |
-| Verify | - | - |
+| Verify | ✅ Done |  |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/46 |
 
 ## Task Progress
 
