@@ -50,7 +50,7 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
   if (!change) return null;
   const head = change.split("\n")[3] ?? "";
   const [hardPart, optPart = ""] = head.split("**Integrates with");
-  const ids = (s: string) => (s.match(/\[(\d{3})\]/g) ?? []).map((x) => x.slice(1, 4));
+  const ids = (s: string) => (s.match(/\[(\d{3,})\]/g) ?? []).map((x) => x.slice(1, -1));
   const status = read(join(base, "status.md"));
   const parsedState = json(join(base, "state.json"));
   const state = parsedState.ok ? parsedState.value : {};
@@ -63,7 +63,7 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
   const phase: Phase = archived ? "released" : verified ? "verified" : claim || tasksDone > 0 || phases.build ? "building" : approved ? "planned" : "proposed";
   const stamps = Object.values(phases).map((p) => p.at).filter(Boolean).sort();
   return {
-    number: dir.slice(0, 3),
+    number: numberOf(dir),
     dir,
     title: (change.match(/^# (.+)$/m)?.[1] ?? dir).trim(),
     lane: (head.match(/\*\*Lane:\*\* ([^·]+)/) ?? [])[1]?.trim() ?? "",
@@ -85,9 +85,12 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
   };
 }
 
+// "042-release-management" is change 042; numbers past 999 keep all their digits (review round 6).
+const numberOf = (dir: string) => dir.match(/^(\d{3,})-/)![1];
+
 const folders = (root: string, archived: boolean) => {
   const p = join(root, ".specclaw/changes", archived ? "archive" : "");
-  return existsSync(p) ? readdirSync(p).filter((d) => /^\d{3}-/.test(d)) : [];
+  return existsSync(p) ? readdirSync(p).filter((d) => /^\d{3,}-/.test(d)) : [];
 };
 
 /**
@@ -108,7 +111,7 @@ export function readSpecclaw(root: string | Source, overlays: (string | Source)[
     if (!cur || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
   };
   for (const archived of [true, false]) for (const d of folders(main.dir, archived)) take(parse(main.dir, d, archived, main.ref));
-  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(d.slice(0, 3)) || archived) take(parse(o.dir, d, archived, o.ref));
+  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(numberOf(d)) || archived) take(parse(o.dir, d, archived, o.ref));
   const done = new Set([...byNumber.values()].filter((r) => r.phase === "released").map((r) => r.number));
   return [...byNumber.values()].sort((a, b) => a.number.localeCompare(b.number)).map((r) => {
     const waiting = r.hard.filter((h) => !done.has(h));

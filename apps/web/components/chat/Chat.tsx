@@ -127,10 +127,15 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
     setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working", note: undefined } : x)));
     const apply = (o: CardOutcome) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, ...o } : x)));
     try {
-      // The server says what the card is now: done, cancelled, back open after a failed write, or an error.
-      const o = ok ? await confirmChat(convo.current, action.id) : await cancelChat(convo.current, action.id);
-      apply(o);
-      announce(o.note);
+      // The server says what the card is now. "working": another click's decision is running, so ask
+      // again shortly until it settles into done, cancelled, open or an error (review round 6).
+      for (let attempt = 0; ; attempt++) {
+        const o = ok ? await confirmChat(convo.current, action.id) : await cancelChat(convo.current, action.id);
+        if (o.state === "working" && attempt >= 20) { apply({ state: "open", note: "This is taking a while. Try again in a moment." }); return; }
+        apply(o);
+        if (o.state !== "working") { announce(o.note); return; }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
     } catch {
       // The request itself failed (network, server): bring the buttons back so the user can retry.
       apply({ state: "open", note: "That didn't go through. Try again." });

@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
-import { defineService, type Emitted, type ServiceContext } from "@amax/core/server";
-import { EVENTS, PHASES, type Phase, type ProposalPhaseChanged, type ReleaseDeployed } from "../contracts";
+import { appendAudit, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
+import { EVENTS, PHASES, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -179,6 +179,14 @@ export const recordDeployment = defineService({
 
 // 039 self-sync (and later 008 ingestion): upsert one proposal from an external source. Called only
 // when something changed, so an unchanged re-sync writes and audits nothing.
+/** The key is held by a proposal the sync may not move; the spec change is reported, not synced. */
+export class KeyTakenError extends Error {
+  constructor(key: string, why: string) {
+    super(`${key} belongs to another proposal and can't be moved: ${why}`);
+    this.name = "KeyTakenError";
+  }
+}
+
 export const syncProposal = defineService({
   name: "delivery.proposal.sync",
   action: "delivery:proposal:sync",
@@ -206,13 +214,19 @@ export const syncProposal = defineService({
     // The project row lock serialises this with createProposal's key computation (review round 2).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
-    // A proposal made by hand before the project was first synced can sit on a spec change's key.
-    // It moves to the hand-made series (audited below as `rekeyed`) so the spec change still syncs;
-    // releases and history follow it by id (review round 5).
+    // A proposal made by hand (no source) before the project was synced can sit on a spec change's
+    // key. While it's unreleased it moves to the hand-made series, as its own audited write with its
+    // own event, so the spec change can sync; releases and history follow it by id. A released one
+    // keeps its key (shipped history isn't renamed), and so does one from another source: the spec
+    // change is then refused and reported (review rounds 5 and 6).
     let rekeyed: { from: string; to: string } | null = null;
+    const events: Emitted[] = [];
     if (found && found.source !== input.source) {
+      if (found.source !== null || found.phase === "released") throw new KeyTakenError(input.key, found.source === null ? "it was released by hand" : `it comes from ${found.source}`);
       const to = await nextHandKey(tx, project.id as string, project.key as string, true);
       await tx.execute(sql`update delivery.proposal set key = ${to}, updated_at = now() where id = ${found.id}`);
+      await appendAudit(tx, ctx, { action: "delivery.proposal.rekey", resource: "delivery.proposal", resourceId: found.id as string, before: { key: input.key }, after: { key: to, reason: `spec change ${input.key} owns the key` } });
+      events.push({ name: EVENTS.proposalRekeyed, payload: { proposalId: found.id as string, projectId: project.id as string, from: input.key, to } satisfies ProposalRekeyed });
       rekeyed = { from: input.key, to };
     }
     const before = rekeyed ? undefined : found;
@@ -225,9 +239,9 @@ export const syncProposal = defineService({
         where delivery.proposal.source = excluded.source
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
-    const events: Emitted[] = before && before.phase !== input.phase ? [phaseEvent(before, input.phase, ctx)] : [];
+    if (before && before.phase !== input.phase) events.push(phaseEvent(before, input.phase, ctx));
     return {
-      result: { key: input.key, created: !before, phaseChanged: events.length > 0 },
+      result: { key: input.key, created: !before, phaseChanged: events.some((e) => e.name === EVENTS.proposalPhaseChanged) },
       resourceId: row.id as string,
       before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title } : null,
       after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },

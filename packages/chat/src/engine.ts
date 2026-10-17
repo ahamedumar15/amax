@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { withTenant, type Db } from "@amax/db";
+import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, type DataItem, type Message, type Tool } from "@amax/ai";
 import type { Registry, RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
@@ -92,72 +92,92 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
-/** What happened to a card: "confirming" while its write runs, then "confirmed"; or "cancelled". */
-export type Decision = "confirming" | "confirmed" | "cancelled";
-
-// Takes the action out of the pending list under a row lock, so two confirms of the same card can't
-// both run it (review round 1, B7), and records the decision (review round 4). Throws
-// NotPendingError, carrying the earlier decision if there was one, when it was already taken.
-async function claim(db: Db, viewer: Viewer, conversationId: string, actionId: string, decision: Decision) {
-  return withTenant(db, viewer.tenantId, async (tx) => {
-    const [row] = await tx.execute(sql`select pending, decided from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
-    if (!row) throw new Error("conversation not found");
-    const pending = row.pending as PendingAction[];
-    const action = pending.find((p) => p.id === actionId);
-    if (!action) throw new NotPendingError(((row.decided as Record<string, Decision>)[actionId]) ?? null);
-    await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== actionId))}::jsonb,
-      decided = decided || ${JSON.stringify({ [actionId]: decision })}::jsonb, updated_at = now() where id = ${conversationId}`);
-    return action;
-  });
-}
-
-async function note(db: Db, viewer: Viewer, conversationId: string, text: string) {
-  await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation
-    set messages = messages || ${JSON.stringify([{ role: "user", content: [{ type: "text", text }] }])}::jsonb, updated_at = now()
-    where id = ${conversationId} and user_id = ${viewer.userId}`));
-}
+/** What happened to a card: confirmed (the write ran), cancelled, or failed for good. */
+export type Decision = "confirmed" | "cancelled" | "failed";
 
 /**
- * The card isn't pending: `decision` says whether it was confirmed or cancelled earlier (perhaps by a
- * request whose reply was lost), or is null when this conversation never had that action.
+ * The card isn't pending: `decision` says what happened to it earlier (perhaps by a request whose
+ * reply was lost), or is null when this conversation never had that action.
  */
 export class NotPendingError extends Error {
   constructor(public decision: Decision | null) {
-    super(decision === "confirming" ? "that action is being done right now" : decision ? `that action was already ${decision}` : "that action isn't in this conversation");
+    super(decision ? `that action was already ${decision}` : "that action isn't in this conversation");
     this.name = "NotPendingError";
   }
 }
 
-/** The write failed and the card is back, so the user can retry or cancel. */
+/** The write failed. `retry`: nothing changed and the card is still there; otherwise it's closed as failed. */
 export class ActionFailedError extends Error {
-  constructor(public cause: unknown) {
-    super(cause instanceof Error ? cause.message : String(cause));
+  constructor(message: string, public retry: boolean) {
+    super(message);
     this.name = "ActionFailedError";
   }
 }
 
-/** "Add it": claim the pending write, then run it as the user, source chat (AC-3). */
-export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
-  // "confirming" until the write is done, so a second click meanwhile isn't told it's done (review round 5).
-  const action = await claim(db, viewer, conversationId, actionId, "confirming");
-  let result: unknown;
-  try {
-    result = await registry.call(viewer, action.tool, action.input, { source: "chat" });
-  } catch (e) {
-    await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([action])}::jsonb,
-      decided = decided - ${actionId}::text where id = ${conversationId}`));
-    throw new ActionFailedError(e);
+// Failures a retry can't fix: refused, out of scope, bad input, no such record (review round 6).
+const PERMANENT = new Set(["ForbiddenError", "ScopeError", "ZodError", "ValidationError", "KeyTakenError"]);
+const permanent = (e: unknown) =>
+  e instanceof Error && (PERMANENT.has(e.name) || ["forbidden", "invalid_input", "not_found"].includes(String((e as { code?: unknown }).code)));
+
+type Locked = { tx: Tx; action: PendingAction; pending: PendingAction[] };
+
+/** Another decision on this conversation is running right now; ask again shortly. Nothing is stored. */
+export class BusyError extends Error {
+  constructor() {
+    super("another decision in this conversation is running");
+    this.name = "BusyError";
   }
-  await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set decided = decided || ${JSON.stringify({ [actionId]: "confirmed" })}::jsonb where id = ${conversationId}`));
-  await note(db, viewer, conversationId, `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
-  return { action, result };
 }
 
-/** "Cancel": nothing is written. Cancelling twice is fine; cancelling a confirmed or unknown card throws NotPendingError. */
+const lockNotAvailable = (e: unknown): boolean =>
+  typeof e === "object" && e !== null && ((e as { code?: unknown }).code === "55P03" || lockNotAvailable((e as { cause?: unknown }).cause));
+
+// Runs `fn` with the conversation row locked and the action still pending. The lock is held for the
+// whole decision, so nothing is ever half-decided: no in-between state to get stuck in, and if the
+// process dies the transaction rolls back and the card is simply still pending. A second click
+// meanwhile doesn't wait (that would hold a pooled connection); it gets BusyError at once (review
+// rounds 1, 5 and 6).
+async function decide<T>(db: Db, viewer: Viewer, conversationId: string, actionId: string, fn: (l: Locked) => Promise<T>) {
+  return withTenant(db, viewer.tenantId, async (tx) => {
+    const [row] = await tx.execute(sql`select pending, decided from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update nowait`)
+      .catch((e: unknown) => { throw lockNotAvailable(e) ? new BusyError() : e; });
+    if (!row) throw new Error("conversation not found");
+    const pending = row.pending as PendingAction[];
+    const action = pending.find((p) => p.id === actionId);
+    if (!action) throw new NotPendingError((row.decided as Record<string, Decision>)[actionId] ?? null);
+    return fn({ tx, action, pending });
+  });
+}
+
+async function close({ tx, action, pending }: Locked, conversationId: string, decision: Decision, text: string) {
+  await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== action.id))}::jsonb,
+    decided = decided || ${JSON.stringify({ [action.id]: decision })}::jsonb,
+    messages = messages || ${JSON.stringify([{ role: "user", content: [{ type: "text", text }] }])}::jsonb, updated_at = now() where id = ${conversationId}`);
+}
+
+/** "Add it": run the pending write as the user, source chat (AC-3), and record it in the same transaction. */
+export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
+  const out = await decide(db, viewer, conversationId, actionId, async (l) => {
+    let result: unknown;
+    try {
+      result = await registry.call(viewer, l.action.tool, l.action.input, { source: "chat" });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (!permanent(e)) return { failed: new ActionFailedError(message, true) }; // nothing recorded: still pending
+      await close(l, conversationId, "failed", `(I tried "${l.action.title}" but it couldn't be done: ${message})`);
+      return { failed: new ActionFailedError(message, false) };
+    }
+    await close(l, conversationId, "confirmed", `(I confirmed "${l.action.title}". Result: ${JSON.stringify(result)})`);
+    return { action: l.action, result };
+  });
+  if ("failed" in out) throw out.failed;
+  return out;
+}
+
+/** "Cancel": nothing is written. Cancelling twice is fine; cancelling a decided or unknown card throws NotPendingError. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
-  const action = await claim(db, viewer, conversationId, actionId, "cancelled").catch((e) => {
-    if (e instanceof NotPendingError && e.decision === "cancelled") return null;
+  await decide(db, viewer, conversationId, actionId, (l) => close(l, conversationId, "cancelled", `(I cancelled "${l.action.title}".)`)).catch((e) => {
+    if (e instanceof NotPendingError && e.decision === "cancelled") return;
     throw e;
   });
-  if (action) await note(db, viewer, conversationId, `(I cancelled "${action.title}".)`);
 }

@@ -13,7 +13,10 @@ export type ReleaseDeployed = { releaseId: string; projectId: string; version: s
 /** Emitted on every phase change, from a board move, a sync or a Prod deployment. */
 export type ProposalPhaseChanged = { proposalId: string; key: string; projectId: string; from: Phase; to: Phase; by: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed" } as const;
+/** A proposal made by hand moved to the hand-made series because a spec change owns its old key. */
+export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
+
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed" } as const;
 
 const toRef = (r: Record<string, unknown>): ProjectRef => ({
   id: r.id as string, key: r.key as string, name: r.name as string, client: r.client as string,

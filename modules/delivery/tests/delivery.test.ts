@@ -21,7 +21,7 @@ const T = lumen.tenant.id;
 describe("AC-5 contract shape", () => {
   it("exports phases and event names", () => {
     expect(PHASES).toEqual(["proposed", "planned", "building", "verified", "released"]);
-    expect(EVENTS).toEqual({ releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed" });
+    expect(EVENTS).toEqual({ releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed" });
     expect(manifest.events?.emits).toEqual(Object.values(EVENTS));
   });
   it("AC-4 declares the five MCP tools and three chat intents", () => {
@@ -78,7 +78,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     expect((await t.owner`select closed_at from delivery.project where key = 'OLDC'`)[0].closed_at).not.toBeNull();
     // Already closed before the migration (closed_at null): its backfill statement fills it.
     await t.owner`update delivery.project set closed_at = null where key = 'OLDC'`;
-    const migration = readFileSync(join(__dirname, "../db/migrations/0006_project_closed_at.sql"), "utf8");
+    const migration = readFileSync(join(__dirname, "../db/migrations/0007_project_closed_at_insert.sql"), "utf8");
     await t.owner.unsafe(migration.match(/^update delivery\.project set closed_at.*$/m)![0]);
     expect((await t.owner`select closed_at from delivery.project where key = 'OLDC'`)[0].closed_at).not.toBeNull();
   });

@@ -49,6 +49,6 @@ export default defineModule({
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
   jobs: [],
-  events: { emits: ["delivery.release.deployed", "delivery.proposal.phase_changed"] },
+  events: { emits: ["delivery.release.deployed", "delivery.proposal.phase_changed", "delivery.proposal.rekeyed"] },
   fixtures: [deliveryFixtures],
 });

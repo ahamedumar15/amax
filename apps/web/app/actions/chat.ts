@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
-import { ActionFailedError, cancelAction, chatTurn, confirmAction, NotPendingError, type ChatTurn, type Pin } from "@amax/chat";
+import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true } & ChatTurn) | { ok: false; error: string };
@@ -25,20 +26,7 @@ export async function sendChat(input: { conversationId?: string; text: string; p
   }
 }
 
-/** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "working" | "error"; note: string };
-
-// What an earlier decision means for the card now (a retry after a lost reply, review rounds 3 to 5).
-// An action this conversation never had, or any other failure, is an error, never "cancelled".
-function outcomeOf(e: unknown): CardOutcome {
-  if (e instanceof ActionFailedError) return { state: "open", note: `That didn't work: ${e.message}. Try again or cancel.` };
-  if (e instanceof NotPendingError) {
-    if (e.decision === "confirmed") return { state: "done", note: "This was already done." };
-    if (e.decision === "confirming") return { state: "working", note: "This is being done right now." };
-    if (e.decision === "cancelled") return { state: "cancelled", note: "This was already cancelled. Nothing was changed." };
-  }
-  return { state: "error", note: e instanceof Error ? e.message : String(e) };
-}
+export type { CardOutcome };
 
 export async function confirmChat(conversationId: string, actionId: string): Promise<CardOutcome> {
   try {
