@@ -2,6 +2,7 @@ import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, registryFrom, storageFromEnv } from "@amax/core/server";
 import { installAuthorizer, setGrants } from "@amax/auth";
+import { authEventHandlers } from "@amax/auth/events";
 import { installed } from "./registry";
 
 // One database client per server process; null until DATABASE_URL is configured.
@@ -31,4 +32,5 @@ const core = { id: "core", jobs: [auditExportJob(() => storageFromEnv(), loadEnv
 // Sign-in is enforced once a database is configured; before that the app is a guest preview.
 export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 
-export const jobRegistry = () => registryFrom([core, ...installed]);
+const auth = { id: "auth", events: { handles: authEventHandlers } };
+export const jobRegistry = () => registryFrom([core, auth, ...installed]);

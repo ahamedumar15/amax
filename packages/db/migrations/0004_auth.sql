@@ -15,9 +15,17 @@ create table auth.identity_provider (
   client_id text not null,
   -- Where the client secret lives (env:NAME today, a 031 secret reference later). Never the secret.
   client_secret_ref text not null,
-  scim_token_hash text unique,
   created_at timestamptz not null default now(),
   unique (issuer, directory_id)
+);
+
+-- SCIM bearer tokens (hash only), one or more per tenant, independent of the sign-in method.
+create table auth.scim_token (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references core.tenant(id),
+  token_hash text not null unique,
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz
 );
 
 create table auth.role_mapping (
@@ -103,6 +111,7 @@ create table auth.service_principal (
 );
 
 select core.enable_tenant_rls('auth.identity_provider');
+select core.enable_tenant_rls('auth.scim_token');
 select core.enable_tenant_rls('auth.role_mapping');
 select core.enable_tenant_rls('auth.user');
 select core.enable_tenant_rls('auth.role_assignment');
@@ -118,10 +127,11 @@ do $$ begin
 end $$;
 grant amax_lookup to current_user;
 grant usage on schema auth, core to amax_lookup;
-grant select on auth.identity_provider, auth.api_token, auth.service_principal, core.tenant to amax_lookup;
+grant select on auth.identity_provider, auth.api_token, auth.service_principal, auth.scim_token, core.tenant to amax_lookup;
 create policy lookup_read on auth.identity_provider for select to amax_lookup using (true);
 create policy lookup_read on auth.api_token for select to amax_lookup using (true);
 create policy lookup_read on auth.service_principal for select to amax_lookup using (true);
+create policy lookup_read on auth.scim_token for select to amax_lookup using (true);
 create policy lookup_read on core.tenant for select to amax_lookup using (true);
 
 -- Sign-in: which tenant owns this directory? Resolved from the token's issuer and tenant claim only.
@@ -147,7 +157,7 @@ $$;
 
 create function auth.lookup_scim(p_hash text) returns uuid
 language sql stable security definer set search_path = auth, pg_temp as $$
-  select tenant_id from auth.identity_provider where scim_token_hash = p_hash
+  select tenant_id from auth.scim_token where token_hash = p_hash and revoked_at is null
 $$;
 
 alter function auth.resolve_tenant(text, text) owner to amax_lookup;

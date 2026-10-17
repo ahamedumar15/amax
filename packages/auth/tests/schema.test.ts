@@ -34,7 +34,7 @@ describe.skipIf(!hasDb)("AC-6 auth schema", () => {
   it("every auth table is tenant-isolated", async () => {
     expect(await tablesMissingRls(t.owner)).toEqual([]);
     const [{ n }] = await t.owner`select count(*)::int as n from pg_tables where schemaname = 'auth'`;
-    expect(n).toBe(8);
+    expect(n).toBe(9);
   });
 
   it("seeds once: tenant, provider and group mappings", async () => {

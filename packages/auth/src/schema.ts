@@ -13,8 +13,15 @@ export const identityProvider = auth.table("identity_provider", {
   directoryId: text("directory_id").notNull(),
   clientId: text("client_id").notNull(),
   clientSecretRef: text("client_secret_ref").notNull(),
-  scimTokenHash: text("scim_token_hash"),
   createdAt: at("created_at").notNull().defaultNow(),
+});
+
+export const scimToken = auth.table("scim_token", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantId(),
+  tokenHash: text("token_hash").notNull(),
+  createdAt: at("created_at").notNull().defaultNow(),
+  revokedAt: at("revoked_at"),
 });
 
 export const roleMapping = auth.table("role_mapping", {
