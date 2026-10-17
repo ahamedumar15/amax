@@ -3,6 +3,7 @@ import { createDb, migrate, migrationScopes } from "@amax/db";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import { installedModules } from "../installed";
+import { SHIFT_SQL, shiftDays } from "./shift";
 
 export const E2E_DB = "amax_e2e_020";
 const root = join(import.meta.dirname, "../../../..");
@@ -20,3 +21,6 @@ await owner.end();
 const { db, client } = createDb(ownerUrl, { max: 1, connection: { options: "-c role=amax_app" } as never });
 await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }, ...(await installedModules())], lumen);
 await client.end();
+const shifted = createDb(ownerUrl, { max: 1 }).client;
+if (shiftDays() > 0) await shifted.unsafe(SHIFT_SQL(shiftDays()));
+await shifted.end();

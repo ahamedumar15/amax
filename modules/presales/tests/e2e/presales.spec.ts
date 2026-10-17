@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { capture, diffRatio } from "./diff";
+import { shown } from "./shift";
 
 const mock = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
 
@@ -20,14 +21,14 @@ test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 
 
 test("AC1 AC3 the board shows the fixtures pipeline and its chart matches the mock within 2%", async ({ page, context }) => {
   await signIn(page, "liam@lumenlabs.test", "/presales");
-  await expect(page.locator(".lede")).toHaveText("$596,000 open across 3 opportunities, plus 2 more the inbox agent found in Teams and email. Northwind has its demo on Oct 21.");
+  await expect(page.locator(".lede")).toHaveText(`$596,000 open across 3 opportunities, plus 2 more the inbox agent found in Teams and email. Northwind has its demo on ${shown("2026-10-21")}.`);
   const tickets = page.locator(".ticket .v");
   await expect(tickets).toHaveText(["$596,000", "$280,800", "38%", "64 days"]);
   await expect(page.locator(".ticket .p").nth(1)).toContainText("47% of $596k open value");
   await expect(page.locator(".ticket .p").nth(2)).toHaveText("Up 6 points");
   for (const [name, n] of [[/^New idea, /, 0], [/^Lead, /, 0], [/^Qualified, /, 1], [/^Proposal, /, 1], [/^Negotiation, /, 1], [/^Closed, /, 2]] as const) await expect(lane(page, name).locator(".tcard")).toHaveCount(n);
-  await expect(lane(page, /^Proposal/).locator(".tcard")).toHaveText(/Claims copilot.*\$180,000.*60%.*Demo Oct 21/);
-  await expect(lane(page, /^Closed/)).toContainText("Won Jun 2");
+  await expect(lane(page, /^Proposal/).locator(".tcard")).toHaveText(new RegExp(`Claims copilot.*\\$180,000.*60%.*Demo ${shown("2026-10-21")}`));
+  await expect(lane(page, /^Closed/)).toContainText(`Won ${shown("2026-06-02")}`);
   await expect(lane(page, /^Closed/)).toContainText("Lost on price");
   await expect(page.locator(".found-item")).toHaveCount(2);
   await expect(page.locator(".found-item").first()).toContainText("About AUD 85,000 (≈ $56,000).");
@@ -70,12 +71,11 @@ test("AC3 an agent's find is added only when accepted, keeping its currency; Fil
 test("AC2 the opportunity page logs every stage, calculates health, and Lost needs a reason", async ({ page, context }) => {
   await signIn(page, "maya@lumenlabs.test", "/presales/o/PS-0142");
   await expect(page.locator("h1")).toHaveText("Claims copilot");
-  await expect(page.locator(".lede")).toContainText("PS-0142 for Northwind Insurance. In Proposal for");
-  await expect(page.locator(".lede")).toContainText("the demo on Oct 21 decides the next stage.");
+  await expect(page.locator(".lede")).toHaveText(`PS-0142 for Northwind Insurance. In Proposal for 14 days; the demo on ${shown("2026-10-21")} decides the next stage.`);
   await expect(page.locator("#details .chip").first()).toHaveText("Health: amber");
   await expect(page.locator(".timeline li")).toHaveCount(5);
-  await expect(page.locator(".timeline li").nth(1)).toContainText("Qualified, win chance updatedMaya, Sep 12. Discovery workshop held. Win chance 30% → 40%");
-  await expect(page.locator(".steps li.now")).toContainText("Proposalsince Oct 2");
+  await expect(page.locator(".timeline li").nth(1)).toContainText(`Qualified, win chance updatedMaya, ${shown("2026-09-12")}. Discovery workshop held. Win chance 30% → 40%`);
+  await expect(page.locator(".steps li.now")).toContainText(`Proposalsince ${shown("2026-10-02")}`);
   await expect(page.getByRole("button", { name: "Promote to delivery" })).toBeDisabled();
   expect(await axe(page)).toEqual([]);
 

@@ -4,7 +4,7 @@ import { Ticket } from "@amax/ui";
 import { OPEN_STAGES, type Stage } from "../contracts";
 import { openSuggestions } from "../server/detail";
 import { listOpportunities, recentChanges, type OpportunityRow } from "../server/queries";
-import { pipelineStats } from "../server/stats";
+import { pipelineStats, winRateNote } from "../server/stats";
 import { DealCard } from "./DealCard";
 import { FillButton } from "./FillButton";
 import { FoundStrip } from "./FoundStrip";
@@ -33,7 +33,6 @@ export async function BoardPage({ viewer: raw }: ScreenProps) {
   const closed = rows.filter((o) => (o.stage === "won" || o.stage === "lost") && Date.parse(o.closedAt!) >= Date.now() - SIX_MONTHS);
   const total = Number(stats.totals.open.amount), weighted = Number(stats.totals.weighted.amount);
   const share = total ? Math.round((weighted / total) * 100) : 0;
-  const change = stats.winRate !== null && stats.winRateBefore !== null ? stats.winRate - stats.winRateBefore : null;
   const canMove = can(viewer, "presales:opportunity:edit"), canRemove = can(viewer, "presales:opportunity:remove"), canCreate = can(viewer, "presales:opportunity:create");
   const owners = [...new Set(rows.map((o) => o.ownerName).filter((n): n is string => Boolean(n)))].sort();
   const lane = (key: string, label: string, icon: string, color: string, cards: OpportunityRow[]) => (
@@ -51,7 +50,7 @@ export async function BoardPage({ viewer: raw }: ScreenProps) {
       <div className="tickets four">
         <Ticket tone="info" label="Open pipeline" value={usd(total)} note={`${open.length} opportunities${found.length ? `, ${found.length} suggested` : ""}`} />
         <Ticket tone="info" label="Weighted by win chance" value={usd(weighted)} progress={{ percent: share, label: `${share}% of $${Math.round(total / 1000)}k open value` }} />
-        <Ticket tone="good" label="Win rate, 12 months" value={stats.winRate === null ? "–" : `${stats.winRate}%`} note={change === null ? "No deals closed the year before" : change === 0 ? "Same as the year before" : `${change > 0 ? "Up" : "Down"} ${Math.abs(change)} point${Math.abs(change) === 1 ? "" : "s"}`} />
+        <Ticket tone="good" label="Win rate, 12 months" value={stats.winRate === null ? "–" : `${stats.winRate}%`} note={winRateNote(stats.winRate, stats.winRateBefore)} />
         <Ticket tone="info" label="Days to close" value={stats.daysToClose === null ? "–" : `${stats.daysToClose} days`} note="Average for won deals" />
       </div>
       <FoundStrip items={found} canAccept={canCreate} />

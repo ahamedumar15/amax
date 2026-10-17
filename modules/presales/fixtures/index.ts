@@ -45,7 +45,7 @@ export const presalesFixtures: FixtureSeed = async ({ tx, tenantId }) => {
   for (const [currency, rate] of RATES) await tx.execute(sql`insert into presales.fx_rate (tenant_id, currency, usd_rate, as_of) values (${tenantId}, ${currency}, ${rate}, '2026-10-01') on conflict do nothing`);
   for (const o of [...HISTORY, ...RECENT, ...OPEN]) await seedOpportunity(tx, tenantId, o);
   for (const [month, total, weighted] of SNAPSHOTS) {
-    await tx.execute(sql`insert into presales.pipeline_snapshot (tenant_id, month, total_usd, weighted_usd) values (${tenantId}, ${month}, ${total}, ${weighted}) on conflict do nothing`);
+    await tx.execute(sql`insert into presales.pipeline_snapshot (tenant_id, month, total_usd, weighted_usd, taken_at) values (${tenantId}, ${month}, ${total}, ${weighted}, (${month}::date + interval '1 month')) on conflict do nothing`);
   }
   const seeded = await tx.execute(sql`select count(*)::int as n from presales.suggestion`);
   if (Number(seeded[0].n) > 0) return;

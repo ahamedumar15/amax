@@ -25,7 +25,7 @@ export function FoundStrip({ items, canAccept }: { items: SuggestionRow[]; canAc
               <form action={suggestionAction} className="actions">
                 <input type="hidden" name="id" value={s.id} />
                 <button className="btn sm primary" name="op" value="accept" aria-label={`Add ${s.client}`}>Add</button>
-                <FillButton label="Open in chat" className="btn sm" spark={false} prompt={`${s.client}: ${s.summary}`} />
+                <FillButton label="Open in chat" className="btn sm" spark={false} prompt="Opportunity from the inbox agent" />
                 <button className="btn sm ghost" name="op" value="dismiss" aria-label={`Dismiss ${s.client}`}>Dismiss</button>
               </form>
             )}

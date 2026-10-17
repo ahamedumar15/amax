@@ -17,6 +17,13 @@ export async function lockOpportunity(tx: Tx, number: string) {
   return o;
 }
 
+/** As lockOpportunity, for writes that only make sense while the deal is still in play. */
+export async function lockOpenOpportunity(tx: Tx, number: string) {
+  const o = await lockOpportunity(tx, number);
+  if (o.stage === "won" || o.stage === "lost") throw new Error(`${number} is ${o.stage}; its records are closed`);
+  return o;
+}
+
 /** Converts to USD at the tenant's rate, keeping the original amount and currency alongside. */
 export async function toUsd(tx: Tx, amount: number, currency: string) {
   if (currency === "USD") return { rate: "1", usd: amount.toFixed(4) };
