@@ -1,0 +1,24 @@
+# IT: access, licences and devices
+
+**Change:** 021-it-access-licences · **Created:** 2026-10-17
+**Lane:** IT · **Module:** `modules/it-access` · **Depends on:** [011](../011-hr-core/change.md), [006](../006-agent-governance/change.md)
+
+## Problem
+
+One view of what each person can use: Entra groups, Microsoft 365 and SaaS seats, Azure DevOps and GitHub, cloud roles and Intune devices, plus licence spend.
+
+## Mock Delta
+
+What changes on screen, and where to see it: [`001-amax-foundation-access`](../../mock/index.html#001-amax-foundation-access)
+
+Access and licences: inventory, spend, savings (Review → Approve removal), devices, people and access.
+
+## Acceptance Criteria
+
+1. **AC-1** Read-only sync from Microsoft Graph (Entra, licences, Intune), Azure DevOps and GitHub. Connector credentials are per tenant.
+2. **AC-2** Licence and access changes (grant, revoke, remove seat) are agent suggestions approved by IT, with undo, through 006.
+3. **AC-3** Reacts to `hr.person.left` by proposing revocation on the last day.
+
+## Tasks
+
+## Verify

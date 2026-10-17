@@ -85,14 +85,115 @@ OKRs, check-ins, feedback and recognition live in Keyflow, which syncs both ways
 ### 14. Analytics
 Utilisation, margins, revenue forecast, headcount and attrition, payroll cost, cash flow, plus executive dashboards, scheduled reports and a BI export (Power BI, Fabric).
 
-## Proposed phasing (specclaw changes)
+## Build order: dependency waves
 
-| Phase | Changes | Outcome |
+Proposals in the same wave have no dependency on each other, so separate teams or agent runs (each in its own git worktree) can build them at the same time. A proposal can start as soon as everything it depends on is merged; waves are just the earliest possible slot.
+
+| Wave | Proposals (lane) |
+|---|---|
+| 0 | 001 amax-foundation (Platform) |
+| 1 | 002 identity-and-access (Platform), 003 data-core (Platform) |
+| 2 | 004 mcp-gateway (Platform), 006 agent-governance (Platform), 007 delivery-projects (Delivery), 011 hr-core (People) |
+| 3 | 005 amax-chat (Platform), 008 delivery-ingestion (Delivery), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 013 onboarding-offboarding (People), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 020 presales (Sales), 021 it-access-licences (IT), 022 helpdesk (IT), 023 recruitment (Talent), 024 learning (Talent), 028 keyflow-sync (Integrations) |
+| 4 | 014 payroll-engine (Payroll), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
+| 5 | 015 payroll-sri-lanka (Payroll), 016 payroll-australia (Payroll), 019 accounting-journals (Finance) |
+
+```mermaid
+graph LR
+  P001["001 amax-foundation"]
+  P002["002 identity-and-access"]
+  P003["003 data-core"]
+  P004["004 mcp-gateway"]
+  P005["005 amax-chat"]
+  P006["006 agent-governance"]
+  P007["007 delivery-projects"]
+  P008["008 delivery-ingestion"]
+  P009["009 time-and-approvals"]
+  P010["010 allocations-forecast"]
+  P011["011 hr-core"]
+  P012["012 leave"]
+  P013["013 onboarding-offboarding"]
+  P014["014 payroll-engine"]
+  P015["015 payroll-sri-lanka"]
+  P016["016 payroll-australia"]
+  P017["017 finance-contracts-billing"]
+  P018["018 expenses"]
+  P019["019 accounting-journals"]
+  P020["020 presales"]
+  P021["021 it-access-licences"]
+  P022["022 helpdesk"]
+  P023["023 recruitment"]
+  P024["024 learning"]
+  P025["025 inbox-agent"]
+  P026["026 insights"]
+  P027["027 reports"]
+  P028["028 keyflow-sync"]
+  P001 --> P002
+  P001 --> P003
+  P002 --> P004
+  P003 --> P004
+  P002 --> P005
+  P003 --> P005
+  P004 --> P005
+  P002 --> P006
+  P003 --> P006
+  P002 --> P007
+  P003 --> P007
+  P007 --> P008
+  P006 --> P008
+  P007 --> P009
+  P002 --> P009
+  P007 --> P010
+  P011 --> P010
+  P002 --> P011
+  P003 --> P011
+  P011 --> P012
+  P011 --> P013
+  P011 --> P014
+  P012 --> P014
+  P006 --> P014
+  P014 --> P015
+  P014 --> P016
+  P007 --> P017
+  P003 --> P017
+  P011 --> P018
+  P003 --> P018
+  P014 --> P019
+  P017 --> P019
+  P007 --> P020
+  P003 --> P020
+  P011 --> P021
+  P006 --> P021
+  P002 --> P022
+  P003 --> P022
+  P006 --> P022
+  P011 --> P023
+  P011 --> P024
+  P006 --> P025
+  P005 --> P025
+  P006 --> P026
+  P007 --> P026
+  P009 --> P026
+  P011 --> P026
+  P020 --> P026
+  P009 --> P027
+  P010 --> P027
+  P011 --> P028
+```
+
+## Lanes and owners
+
+Each lane can be given to one team; the platform team owns waves 0–2 and reviews module contracts.
+
+| Lane | Proposals | Module folders (CODEOWNERS) |
 |---|---|---|
-| 1. PSA core | 001–009 | Replaces the delivery tool (projects, time, allocations, releases, presales basics) |
-| 2. People | 010 core HR records, 011 leave and holidays, 012 on/offboarding with access and licences, 013 expenses | Replaces the HRIS for everything except pay |
-| 3. Payroll | 014 payroll engine, 015 Sri Lanka pack, 016 Australia pack, 017 GL journal integration | Replaces the payroll system |
-| 4. Talent, operations and intelligence | 018 recruitment, 019 learning and development, 020 helpdesk, 021 Keyflow sync, 022 insights agents | Replaces the ATS and the helpdesk; adds agent intelligence |
-| 5. Revenue and scale | 023 CRM pipeline, 024 billing and AR, 025 self-serve tenant sign-up, 026 country-pack SDK, 027 Teams/Slack app, 028 compliance registers | Closes the quote-to-cash loop; ready for customers outside the first market |
-
-**Tenancy and entities must be in the 001 data model** (`tenant_id` and `legal_entity_id` on every table). Adding them later means rewriting every query and permission.
+| Platform | 001, 002, 003, 004, 005, 006 | `apps/web`, `packages/agents`, `packages/auth`, `packages/chat`, `packages/core`, `packages/mcp` |
+| Delivery | 007, 008, 009, 010, 027 | `modules/allocations`, `modules/delivery`, `modules/reports`, `modules/time` |
+| People | 011, 012, 013 | `modules/hr`, `modules/leave`, `modules/onboarding` |
+| Payroll | 014, 015, 016 | `modules/payroll-au`, `modules/payroll-lk`, `modules/payroll` |
+| Finance | 017, 018, 019 | `modules/accounting`, `modules/expenses`, `modules/finance` |
+| Sales | 020 | `modules/presales` |
+| IT | 021, 022 | `modules/helpdesk`, `modules/it-access` |
+| Talent | 023, 024 | `modules/learning`, `modules/recruitment` |
+| Intelligence | 025, 026 | `modules/inbox-agent`, `modules/insights` |
+| Integrations | 028 | `modules/keyflow` |

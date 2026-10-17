@@ -8,7 +8,9 @@ web
 
 ## Stack
 
-Next.js (App Router, TypeScript). Chosen by the user at specclaw init (preset `nextjs`). Database proposed as Postgres + Prisma, not yet confirmed (the predecessor used SQL Server).
+Next.js 16 (App Router, TypeScript, standalone output) in a pnpm and Turborepo monorepo. Each business area is a module package that a separate team can own. Postgres through Drizzle, Auth.js with OIDC (Entra ID first), S3-compatible files, jobs and events kept in Postgres.
+
+Must deploy unchanged to Vercel, Cloudflare (OpenNext) or k3s (Docker image and Helm chart); no host-specific APIs in module code. See `docs/architecture.md`.
 
 ## Users
 
