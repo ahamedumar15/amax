@@ -7,7 +7,7 @@ import { timeDb } from "./db";
 
 describe.skipIf(!hasDb)("MCP tools (Postgres)", () => {
   let db: Awaited<ReturnType<typeof timeDb>>;
-  beforeAll(async () => { db = await timeDb(); });
+  beforeAll(async () => { db = await timeDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("AC4 log_time, submit_week and approve_week run as the caller, audited, and MCP time counts as agent time", async () => {

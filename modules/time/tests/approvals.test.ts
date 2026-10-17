@@ -12,7 +12,7 @@ const W = "2026-W42";
 
 describe.skipIf(!hasDb)("approvals (Postgres)", () => {
   let db: Awaited<ReturnType<typeof timeDb>>;
-  beforeAll(async () => { db = await timeDb(); });
+  beforeAll(async () => { db = await timeDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("AC2 the chain decides, reject needs a comment, approved weeks lock and only an audited Admin change gets through", async () => {

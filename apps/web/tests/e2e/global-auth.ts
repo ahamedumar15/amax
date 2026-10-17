@@ -1,10 +1,10 @@
 import { join } from "node:path";
 import postgres from "postgres";
 import { createDb, migrate, migrationScopes } from "@amax/db";
-import { loadFixtures, lumen } from "@amax/testing";
-import { authFixtures } from "@amax/auth/fixtures";
+import { lumen } from "@amax/testing";
 import { upsertPasswordUser } from "@amax/auth/password";
-import { deliveryFixtures, pinToday } from "../../../../modules/delivery/fixtures/index";
+import { seedInstalledModules } from "../../scripts/seed-demo";
+import { pinToday } from "../../../../modules/delivery/fixtures/index";
 import { readSpecclaw } from "../../../../modules/delivery/sync/specclaw";
 import { syncSpecclaw } from "../../../../modules/delivery/sync/import";
 import { configureRuntime } from "@amax/core/server";
@@ -12,7 +12,7 @@ import { authenticateToken, createPrincipal, installAuthorizer, principalContext
 import { withTenant } from "@amax/db";
 import { sql } from "drizzle-orm";
 
-// Fresh amax_e2e database: migrate, then seed Lumen Labs and its demo users as the app role.
+// Fresh amax_e2e database: migrate, then seed Lumen Labs, its demo users and every installed module's fixtures as the app role.
 // E2E_DB lets parallel worktrees each use their own database.
 export const E2E_DB = process.env.E2E_DB ?? "amax_e2e";
 if (!/^[a-z_][a-z0-9_]*$/.test(E2E_DB)) throw new Error(`E2E_DB must be a plain database name, got "${E2E_DB}"`);
@@ -29,7 +29,8 @@ export default async function setupE2eDatabase() {
   await migrate(owner, migrationScopes(join(import.meta.dirname, "../../../..")));
   await owner.end();
   const { db, client } = createDb(ownerUrl, { max: 1, connection: { options: "-c role=amax_app" } as never });
-  await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }, { id: "delivery", dependsOn: ["auth"], fixtures: [deliveryFixtures] }], lumen);
+  // Every installed module's fixtures (the same seed as `pnpm --filter @amax/web seed:demo`).
+  await seedInstalledModules(db);
   await upsertPasswordUser(db, lumen.tenant.id, { email: "ops@lumenlabs.test", name: "Ops Admin", roles: ["Admin"], password: "e2e-ops-password" });
   // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
   await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
