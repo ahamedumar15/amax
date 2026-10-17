@@ -1,0 +1,18 @@
+{
+  "name": "@amax/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "node scripts/gen-registry.mjs",
+    "dev": "node scripts/gen-registry.mjs && next dev",
+    "build": "node scripts/gen-registry.mjs && next build",
+    "start": "next start",
+    "lint": "node scripts/gen-registry.mjs && tsc --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}

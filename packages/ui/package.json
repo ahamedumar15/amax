@@ -2,7 +2,16 @@
   "name": "@amax/ui",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./styles.css": "./src/styles/index.css", "./*": "./src/*" },
-  "scripts": { "lint": "tsc --noEmit", "test": "vitest run" },
-  "peerDependencies": { "react": "^19.2.0" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles/index.css",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
 }
