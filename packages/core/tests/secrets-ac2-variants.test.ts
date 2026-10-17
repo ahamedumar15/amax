@@ -1,7 +1,7 @@
 import { inspect } from "node:util";
 import { describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { putSecret, SecretLeakError, useSecret, type Secret } from "../src/secrets";
+import { putSecret, SecretLeakError, SecretResultError, useSecret, type Secret } from "../src/secrets";
 import { admin, job, secretsDb } from "./secrets-fixture";
 
 const VALUE = `test-q"uo\\te+/= ${"x".repeat(12)}`;
@@ -37,6 +37,9 @@ const VARIANTS: [string, (s: Secret) => unknown][] = [
   ["percent-encoded base64", () => `grant=client&auth=${encodeURIComponent(Buffer.from(`id:${VALUE}`).toString("base64"))}`],
   ["a Proxy", () => new Proxy({}, { ownKeys: () => ["a"], getOwnPropertyDescriptor: () => ({ value: "x", enumerable: true, configurable: true }), get: () => VALUE })],
   ["base64 behind a parameter name", () => `client_assertion=${Buffer.from(`id:${VALUE}`).toString("base64")}&x=1`],
+  ["quoted char codes", () => [...b].map(String)],
+  ["index/byte pairs", () => [...b].map((x, i) => [i, x])],
+  ["codes inside a string", () => [...b].join(" ")],
   ["a misaligned base64 run", () => `/v1/${Buffer.from(`id:${VALUE}`).toString("base64")}`.replace("/v1/", "/v1/a")],
 ];
 
@@ -46,7 +49,7 @@ describe.skipIf(!hasDb)("031 AC-2 every encoding of a value stays inside useSecr
   it.each(VARIANTS)("AC2 %s: never reaches the caller, and is scrubbed from errors", async (_name, leak) => {
     await putSecret(admin, { connector: "xero", value: VALUE, expiresAt: null });
     const out = await useSecret(job, { connector: "xero", purpose: "variant" }, async (s) => leak(s)).catch((e: unknown) => e);
-    if (!(out instanceof SecretLeakError)) {
+    if (!(out instanceof SecretLeakError || out instanceof SecretResultError)) {
       const text = `${JSON.stringify(out)} ${inspect(out, { depth: 20, showHidden: true, getters: true })}`;
       for (const form of [VALUE, b.toString("base64"), b.toString("base64url"), b.toString("hex"), encodeURIComponent(VALUE)]) expect(text).not.toContain(form);
       expect(JSON.stringify(out)?.match(/\d+/g) ?? []).not.toEqual(expect.arrayContaining([...b].map(String)));

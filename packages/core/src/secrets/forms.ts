@@ -24,15 +24,24 @@ const decodings = (encoded: string, run = unpercent(encoded)) =>
 
 const replaceForms = (text: string, forms: string[]) => forms.reduce((t, f) => t.split(f).join(HIDDEN), text);
 
-function numbersHold(text: string, values: string[]) {
-  const codes = (text.match(/(?<=[:[,]\s*)\d+(?=\s*[,\]}])/g) ?? []).map(Number);
+function codesHold(codes: number[], values: string[]) {
   if (codes.length < 4) return false;
   const bytes = Buffer.from(codes.map((n) => n & 0xff));
   const decoded = [bytes.toString("utf8"), bytes.toString("utf16le"), bytes.subarray(1).toString("utf16le"), String.fromCharCode(...codes.map((n) => n & 0xffff))];
   return values.some((v) => decoded.some((d) => d.includes(v)));
 }
 
+function numbersHold(text: string, values: string[]) {
+  const all = (text.match(/\d+/g) ?? []).map(Number);
+  return [all, all.filter((_n, i) => i % 2 === 0), all.filter((_n, i) => i % 2 === 1)].some((codes) => codesHold(codes, values));
+}
+
 export const reveals = (text: string, values: string[]) => hide(text, values) !== text || numbersHold(text, values);
+
+export function redact(text: string, values: string[]) {
+  const hidden = hide(text, values);
+  return numbersHold(hidden, values) ? HIDDEN : hidden;
+}
 
 export function hide(text: string, values: string[]): string {
   const forms = values.flatMap(formsOf).sort((a, b) => b.length - a.length);
