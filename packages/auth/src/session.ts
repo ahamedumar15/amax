@@ -81,25 +81,31 @@ export async function openSession(tx: Tx, tenantId: string, userId: string, role
 // was deactivated: callers sign the browser out.
 export async function loadViewer(db: Db, tenantId: string, sessionId: string): Promise<Viewer | null> {
   return withTenant(db, tenantId, async (tx) => {
-    const [row] = await tx.execute(sql`select s.user_id, s.view_as_role, u.name, u.email from auth.session s join auth.user u on u.id = s.user_id
+    const [row] = await tx.execute(sql`select s.user_id, s.view_as_role from auth.session s join auth.user u on u.id = s.user_id
       where s.id = ${sessionId} and s.revoked_at is null and s.expires_at > now() and u.status = 'active'`);
     if (!row) return null;
-    const assignments = (await tx.execute(sql`select role, legal_entity_ids, departments from auth.role_assignment where user_id = ${row.user_id}`))
-      .map((a) => ({ role: a.role as Role, legalEntityIds: (a.legal_entity_ids as string[] | null) ?? null, departments: (a.departments as string[] | null) ?? null }) satisfies Assignment);
-    const base: Viewer = {
-      tenantId,
-      userId: row.user_id as string,
-      name: row.name as string,
-      email: row.email as string,
-      assignments,
-      actualRoles: [...new Set(assignments.map((a) => a.role))],
-      sessionId,
-      managedProjects: [],
-      assignedProjects: [],
-      reports: [],
-    };
-    return applyViewAs(base, (row.view_as_role as Role | null) ?? undefined);
+    const v = await viewerForUser(tx, tenantId, row.user_id as string);
+    return v && applyViewAs({ ...v, sessionId }, (row.view_as_role as Role | null) ?? undefined);
   });
+}
+
+// An active user's roles and scopes, for a session or a personal API/MCP token.
+export async function viewerForUser(tx: Tx, tenantId: string, userId: string): Promise<Viewer | null> {
+  const [u] = await tx.execute(sql`select name, email from auth.user where id = ${userId} and status = 'active'`);
+  if (!u) return null;
+  const assignments = (await tx.execute(sql`select role, legal_entity_ids, departments from auth.role_assignment where user_id = ${userId}`))
+    .map((a) => ({ role: a.role as Role, legalEntityIds: (a.legal_entity_ids as string[] | null) ?? null, departments: (a.departments as string[] | null) ?? null }) satisfies Assignment);
+  return {
+    tenantId,
+    userId,
+    name: u.name as string,
+    email: u.email as string,
+    assignments,
+    actualRoles: [...new Set(assignments.map((a) => a.role))],
+    managedProjects: [],
+    assignedProjects: [],
+    reports: [],
+  };
 }
 
 // View as: Admins only. Stored on the session, so every request (and the audit) knows the real user.

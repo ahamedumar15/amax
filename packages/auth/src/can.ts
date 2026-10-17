@@ -69,6 +69,8 @@ export const viewerOf = (ctx: ServiceContext) => ctx.viewer as Viewer | undefine
 export function installAuthorizer() {
   setAuthorizer((ctx, action) => {
     if (ctx.actor.kind === "system") return true;
+    // principalContext() has already checked scopes, expiry and acts-for (and audited refusals).
+    if (ctx.actor.kind === "service") return Boolean((ctx as { principal?: unknown }).principal);
     const v = viewerOf(ctx);
     return !!v && can(v, action);
   });
