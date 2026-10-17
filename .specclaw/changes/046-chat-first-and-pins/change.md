@@ -37,7 +37,7 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
   Files: apps/web/components/chat/Chat.tsx
 - [x] `T5` — Pin coverage in time, allocations, HR and delivery cards and rows (AC-5)
   Files: modules/time/ui/*.tsx, modules/allocations/ui/*.tsx, modules/hr/ui/*.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/EnvironmentsCard.tsx
-- [ ] `T6` — Follow-up backlog of inline forms left in other modules (AC-6)
+- [x] `T6` — Follow-up backlog of inline forms left in other modules (AC-6)
   Files: BACKLOG.md
 - [ ] `T7` — E2E: presales chat-first spec (pin → ask to add a task → confirm), pin coverage spec; scripted model learns "add task" (AC-1, AC-4, AC-5, AC-7)
   Files: modules/presales/tests/e2e/presales.spec.ts, packages/ai/src/scripted.ts, apps/web/tests/e2e/pins.spec.ts
