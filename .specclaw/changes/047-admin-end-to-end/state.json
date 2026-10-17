@@ -1,0 +1,11 @@
+{
+  "change": "047-admin-end-to-end",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-17T16:01:45Z"},
+    "tasks": {"status":"done","at":"2026-10-17T16:11:05Z"},
+    "verify": {"status":"done","at":"2026-10-17T16:35:18Z"},
+    "pr": {"status":"raised","at":"2026-10-17T16:36:14Z","url":"https://github.com/chan4lk/amax/pull/40"}
+  }
+}

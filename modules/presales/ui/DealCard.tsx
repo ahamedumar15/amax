@@ -1,6 +1,7 @@
+import { PinButton } from "@amax/ui";
 import type { OpportunityRow } from "../server/queries";
-import { MoveControls } from "./MoveControls";
-import { day, initials, money, usd } from "./parts";
+import { AskButton } from "./AskButton";
+import { day, initials, money, oppPin, usd } from "./parts";
 
 const KIND: Record<string, string> = { call: "Call", meeting: "Meeting", workshop: "Workshop", demo: "Demo", proposal: "Proposal", email: "Email" };
 const HEALTH: Record<string, string> = { green: "Health: green", amber: "Health: amber", red: "Health: red" };
@@ -17,7 +18,8 @@ export function DealCard({ o, canMove, canRemove }: { o: OpportunityRow; canMove
   const closed = o.stage === "won" || o.stage === "lost";
   const name = `${o.client}, ${o.title}`;
   return (
-    <div className={`tcard deal${o.stage === "lost" ? " lost" : ""}`} data-owner={o.ownerName ?? ""}>
+    <div className={`tcard deal pinnable${o.stage === "lost" ? " lost" : ""}`} data-owner={o.ownerName ?? ""}>
+      <PinButton pin={oppPin(o)} />
       <div className="opp-top">
         <span className="id">{o.client}</span>
         {o.stage === "won" ? <span className="chip good">Won</span> : o.stage === "lost" ? <span className="chip bad">Lost</span>
@@ -29,7 +31,12 @@ export function DealCard({ o, canMove, canRemove }: { o: OpportunityRow; canMove
         <span>{o.stage === "won" ? `Won ${day(o.closedAt)}` : o.stage === "lost" ? day(o.closedAt) : `${o.winChance}%`}</span>
       </div>
       <div className="foot"><span className="av sm a2" title={o.ownerName ?? undefined}>{initials(o.ownerName)}</span><Foot o={o} /></div>
-      {!closed && canMove && <MoveControls number={o.number} name={name} stage={o.stage} canRemove={canRemove} />}
+      {!closed && canMove && (
+        <div className="opp-act">
+          <AskButton label="Move" name={`Ask amax to move ${name}`} prompt={`Move ${o.number} to `} pin={oppPin(o)} />
+          {canRemove && <AskButton className="btn sm ghost" label="Remove" name={`Ask amax to remove ${name}`} prompt={`Remove ${o.number}, it was a duplicate or a mistake`} pin={oppPin(o)} />}
+        </div>
+      )}
     </div>
   );
 }

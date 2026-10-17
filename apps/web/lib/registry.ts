@@ -14,6 +14,8 @@ export const navItems: NavItem[] = [
     { href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary },
     ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group })),
   ]),
+  // 047: the Settings hub; "settings:read" is Admin's alone, so visibleNav shows it only to Admins.
+  { href: "/settings", label: "Settings", icon: "gear", group: "Operations" },
 ];
 
 // Routes match segment by segment; ":name" segments become params.

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Viewer } from "@amax/auth";
-import { Card, EmptyState } from "@amax/ui";
+import { Card, EmptyState, type PinRef } from "@amax/ui";
 import type { Stage } from "../contracts";
 import "./presales.css";
 
@@ -49,3 +49,6 @@ export const needViewer = (viewer: unknown) => (viewer as Viewer | null) ?? null
 export const SignInFirst = () => (
   <Card><EmptyState icon="target" title="Sign in to see presales" hint="Opportunities, activities and the pipeline come from the database once you're signed in." /></Card>
 );
+
+export const oppPin = (o: { number: string; title: string }): PinRef => ({ label: `${o.number} ${o.title}`, tool: "get_opportunity", args: { number: o.number } });
+export const itemPin = (number: string, label: string, id: string): PinRef => ({ label: `${number} ${label}`, tool: "get_opportunity_item", args: { number, id } });

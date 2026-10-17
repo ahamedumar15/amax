@@ -6,6 +6,7 @@ import type { Conversation, ConversationSummary, Highlight, PendingAction } from
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
+import { SecretConfirm } from "./SecretConfirm";
 
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
@@ -79,6 +80,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
       if (d.pin) { setPins((p) => (p.some((x) => x.label === d.pin!.label) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
+      else if (d.prompt) { setText(d.prompt); requestAnimationFrame(() => input.current?.focus()); }
     };
     window.addEventListener("amax:chat", onEvent);
     return () => window.removeEventListener("amax:chat", onEvent);
@@ -216,11 +218,16 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
               <dl className="rec">{Object.entries(e.action.input).map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt className={fieldClass(e.action.fields, k)}><span className="fd" />{k}</dt><dd>{String(v)}</dd></div>)}</dl>
               {e.state === "open" ? (<>
                 {e.note && <p className="err">{e.note}</p>}
-                <div className="acts">
+                {e.action.secret && convo.current ? (
+                  <SecretConfirm conversationId={convo.current} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
+                    onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} />
+                ) : (
+                  <div className="acts">
                   <button className="btn sm primary" type="button" onClick={() => decide(e.action, true)}>Add it</button>
                   <button className="btn sm" type="button" onClick={() => { setText("Change "); input.current?.focus(); }}>Change something</button>
                   <button className="btn sm" type="button" onClick={() => decide(e.action, false)}>Cancel</button>
-                </div>
+                  </div>
+                )}
               </>) : e.state === "expired" ? (
                 <p className="muted" style={{ marginTop: 10 }}><span className="chip">Expired</span> Ask again to make a fresh request.</p>
               ) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
