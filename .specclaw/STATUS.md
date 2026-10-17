@@ -1,11 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:24 UTC
+**Last Updated:** 2026-10-17 19:28 UTC
 
 ## Active Changes
 
 
+- 🔀 **053-trace-and-settings-hardening** — pr raised | 6/6 tasks (100%) | 0 failed | PR #46 open
 - ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged
 
 ## Pending Proposals
@@ -70,6 +71,6 @@
 
 ## Stats
 
-- **Total changes:** 26
-- **Active:** 1
+- **Total changes:** 27
+- **Active:** 2
 - **Completed:** 25

@@ -10,7 +10,7 @@ import type { WorkflowEngine, WorkflowRegistry } from "@amax/workflows/server";
 export type AdminDeps = { db: () => Db; workflows: () => WorkflowRegistry; engine: () => Promise<WorkflowEngine>; tools: () => Registry };
 
 type Src = "mcp" | "chat";
-export const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run"> & { input: I; run: (v: Viewer, input: z.infer<I>, source: Src, secret?: string) => Promise<unknown> }) => t as unknown as McpToolDef;
+export const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run" | "propose"> & { input: I; run: (v: Viewer, input: z.infer<I>, source: Src, secret?: string) => Promise<unknown>; propose?: (v: Viewer, input: z.infer<I>) => Promise<void> }) => t as unknown as McpToolDef;
 
 // The tool acts for the signed-in person; the audit records the person and the channel (chat or MCP).
 export const ctxFor = (viewer: Viewer, source: Source): ServiceContext => ({
