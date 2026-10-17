@@ -41,3 +41,5 @@ Team time: hours per day, the timesheets table, Approve/Remind, and the My times
   Depends: T5
 
 ## Verify
+
+Quality: 58 → 58 duplicated lines (repo-wide). The 17 lines in `modules/time` that repeat delivery (`server/context.ts` ctxFor and the typed MCP `tool()` helper) can only be shared from a platform package, which is a separate platform-lane change; not refactored here.
