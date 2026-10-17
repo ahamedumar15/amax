@@ -26,4 +26,21 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
 
 ## Tasks
 
+- [ ] `T1` — Opportunity page chat-first: hint line, "Ask amax" chips with the opportunity pinned, tasks/risks as pinned table rows, pins on every card and stage step (AC-1, AC-2, AC-4)
+  Files: modules/presales/ui/OpportunityPage.tsx, modules/presales/ui/AskButton.tsx, modules/presales/ui/TasksRisks.tsx, modules/presales/ui/ActivitiesCard.tsx, modules/presales/ui/DetailsCard.tsx, modules/presales/ui/HistoryCard.tsx, modules/presales/ui/StageSteps.tsx, modules/presales/ui/PromoteCard.tsx, modules/presales/ui/LostDialog.tsx, modules/presales/ui/presales.css
+- [ ] `T2` — Board chat-first: deal tiles, suggestion strip, pipeline rows, stat cards, chart and feed get pins; move/remove/accept/dismiss become Ask chips (AC-1, AC-2, AC-4)
+  Files: modules/presales/ui/BoardPage.tsx, modules/presales/ui/DealCard.tsx, modules/presales/ui/MoveControls.tsx, modules/presales/ui/FoundStrip.tsx, modules/presales/ui/PipelineList.tsx, modules/presales/ui/StageFeed.tsx
+  Depends: T1
+- [ ] `T3` — MCP write tools close_opportunity_risk, remove_opportunity, resolve_suggestion; drop the presales form actions; unit tests incl. no-form/no-direct-write guard (AC-1, AC-3)
+  Files: modules/presales/mcp.ts, modules/presales/actions.ts, modules/presales/tests/chat-first.test.ts
+- [ ] `T4` — Chat pre-fills the prompt when opened with a pin and no intent (AC-2)
+  Files: apps/web/components/chat/Chat.tsx
+- [ ] `T5` — Pin coverage in time, allocations, HR and delivery cards and rows (AC-5)
+  Files: modules/time/ui/*.tsx, modules/allocations/ui/*.tsx, modules/hr/ui/*.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/EnvironmentsCard.tsx
+- [ ] `T6` — Follow-up backlog of inline forms left in other modules (AC-6)
+  Files: BACKLOG.md
+- [ ] `T7` — E2E: presales chat-first spec (pin → ask to add a task → confirm), pin coverage spec; scripted model learns "add task" (AC-1, AC-4, AC-5, AC-7)
+  Files: modules/presales/tests/e2e/presales.spec.ts, packages/ai/src/scripted.ts, apps/web/tests/e2e/pins.spec.ts
+  Depends: T1, T2, T3, T4, T5
+
 ## Verify
