@@ -2,7 +2,8 @@ import { PinButton } from "@amax/ui";
 import type { EnvironmentRow } from "../server/queries";
 import { AskButton } from "./AskButton";
 
-const envPin = (projectKey: string, name: string) => ({ label: `${projectKey} ${name}`, tool: "get_environment", args: { projectKey, name } });
+// Keyed on the id, so a rename can't strand the pin (057).
+const envPin = (projectKey: string, e: EnvironmentRow) => ({ label: `${projectKey} ${e.name}`, tool: "get_environment", args: { environmentId: e.id } });
 
 function RowAsks({ projectKey, e, pin }: { projectKey: string; e: EnvironmentRow; pin: { label: string; tool: string; args: Record<string, unknown> } }) {
   const of = `the ${e.name} environment of ${projectKey}`;
@@ -34,7 +35,7 @@ export function EnvironmentsCard({ projectKey, envs, canEdit }: { projectKey: st
               <td data-label="Name"><b>{e.name}</b></td>
               <td data-label="Prod">{e.isProd ? <span className="chip good">Prod</span> : <span className="muted">–</span>}</td>
               <td data-label="Deployments" className="num">{e.deployments}</td>
-              <td className="num" style={{ whiteSpace: "nowrap" }}>{canEdit && <RowAsks projectKey={projectKey} e={e} pin={envPin(projectKey, e.name)} />}<PinButton pin={envPin(projectKey, e.name)} /></td>
+              <td className="num" style={{ whiteSpace: "nowrap" }}>{canEdit && <RowAsks projectKey={projectKey} e={e} pin={envPin(projectKey, e)} />}<PinButton pin={envPin(projectKey, e)} /></td>
             </tr>
           ))}
         </tbody>
