@@ -11,6 +11,11 @@
     "graph": "node scripts/check-graph.mjs --graph"
   },
   "devDependencies": {
+    "@types/node": "22",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
     "turbo": "2.11.9",
     "typescript": "^5.7.0",
     "vitest": "5.0.5"

@@ -43,7 +43,7 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 
 - [x] `T1` — Monorepo scaffold: pnpm workspaces + Turborepo, shared tsconfig, empty `packages/*` and `modules/`; move the GitHub Pages mock site to `apps/mock` and keep its deploy working (AC-1)
   Files: package.json, pnpm-workspace.yaml, turbo.json, tsconfig.base.json, apps/mock/**, packages/{core,db,auth,ui,mcp,chat,agents,testing}/package.json, .github/workflows/pages.yml, .gitignore
-- [ ] `T2` — `@amax/ui`: design tokens (light/dark, AA contrast) and the shell components: rail, top bar, card, ticket stat card, table (stacked under 600 px), chip, segmented control, empty state, toast and live region (AC-4)
+- [x] `T2` — `@amax/ui`: design tokens (light/dark, AA contrast) and the shell components: rail, top bar, card, ticket stat card, table (stacked under 600 px), chip, segmented control, empty state, toast and live region (AC-4)
   Files: packages/ui/src/tokens.css, packages/ui/src/components/*.tsx, packages/ui/src/index.ts, packages/ui/tests/contrast.test.ts
   Depends: T1
 - [ ] `T3` — `apps/web` shell matching the mock: expanding labelled rail with groups, top bar (search, Ask amax placeholder, profile menu with theme), phone tab bar with More, skip link, `main`, heading focus and announcement on navigation, reduced motion (AC-5)
