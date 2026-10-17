@@ -49,4 +49,26 @@ What changes on screen, and where to see it: [`047-admin-end-to-end`](../../mock
 
 ## Verify
 
-Quality: not_run (specclaw-quality-scan aborts: `jq: Argument list too long` on this repo)
+**Verdict:** PASS
+- AC-1: pass — `/settings` hub (`app/(app)/settings/page.tsx`, `lib/admin/status.ts`): Connections and keys, Integrations, AI and data, AI usage (048 link), Scheduler, Audit and trace (050 link) with live chips, plus Data retention, Backups and export, API and webhooks as "Coming soon"; ordered by what needs attention. Nav "Settings" entry (Admin only via `settings:read`) and profile-menu link. e2e `admin.spec.ts` "047 AC1" incl. axe.
+- AC-2: pass — no `<form>`, server action or service import on the hub and four screens (`tests/admin/no-forms.test.ts`; e2e asserts `main form, main dialog` = 0 on all five). The eight write tools exist (`lib/admin/*`), are Admin only and run only after confirm (`tests/admin/tools.test.ts` "AC2": refused for an Engineer over MCP, not offered to their chat, nothing written before confirmAction).
+- AC-3: pass — every tool writes through `defineService()`: new `setAiPolicy`, `revokeMcpClient`, `setEntityZone`; secrets and workflows already did (029's control.ts finding was fixed before this change). "AC3" test: audit rows `secrets.credential.put/revoke`, `auth.oauth.client_revoked`, `ai.policy.update`, `workflows.run.pause`, `workflows.schedule.toggle`, `workflows.entity_zone.set`, all `user:<maya> chat`, each with its outbox event.
+- AC-4: pass — `SecretConfirm.tsx` (uncontrolled password input, cleared on submit) posts to `confirmSecretChat(conversationId, actionId, FormData)`; tools declare `secretInput`, so the value is never tool input. `tests/admin/secret.test.ts`: value absent from every table (chat.conversation, ai.call, core.audit_event, core.idempotency, ...), from every provider call (incl. a follow-up turn) and from console output; the MCP path refuses a value as input; a model-invented `value` field is dropped. e2e: value absent from page HTML after confirm and after reload.
+- AC-5: pass — every ticket, card and row on the five screens has a `PinButton` (e2e `unpinned()` empty on all five). Read tools: `get_secret_meta`, `get_mcp_client`, `get_ai_policy`, `get_workflow_run`, `get_schedule`, plus `list_secrets`, `list_mcp_clients`, `get_mcp_tool`, `list_schedules`, `list_workflow_runs`, `settings_overview`.
+- AC-6: pass — Scheduler GET no longer calls `syncSchedules()` (static test; the e2e seed syncs once, the tick does it in production); "set the entity's time zone" now carries an Ask chip for `set_entity_zone` (unit test sets AU's zone and its per-entity schedule takes it); non-Admin e2e asserts HTTP 404 + not-found page on all five screens (029/031/033 specs too) and that chat refuses the admin writes. No page server actions are left to refuse; chat's confirm path refuses via the registry (unit test).
+- AC-7: pass — e2e "pin a credential, ask to rotate, confirm with the masked field" shows "Rotated today" and keeps "Expires in 12 days"; "pin a schedule, ask to pause it, confirm" shows "Paused". Typecheck, unit tests, lint and the full e2e suites are green.
+
+Commands (exit codes; DB tests with `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`):
+- `pnpm lint` → 0 (tsc in every package + graph check ok)
+- `pnpm test` → 0 (16/16 turbo tasks; web 36 tests incl. 6 new)
+- `pnpm --filter @amax/web build` → 0
+- `apps/web: playwright test --config playwright.auth.config.ts` (E2E_DB=amax_e2e_047) → 0 (38 passed)
+- `apps/web: playwright test` → 0 (1 passed)
+- `modules/presales e2e` (scripted.ts shared with 046) → 0 (6 passed)
+- `specclaw-preset-check .` → 1: repo-wide (672), as recorded for 041/045/046. In this change's files only the comment rule (the repo's own style) and `tests/e2e/admin.spec.ts` at 105 lines.
+- `specclaw-quality-scan . --gate` → not run: aborts with `jq: Argument list too long` on this repo.
+
+Screenshots: `shots/app.png` (Keys) vs `shots/mock.png` (mock 047); `shots/confirm.png` (masked field on the confirm card); `shots/hub.png` vs `shots/mock-hub.png` (mock 038-settings); `shots/scheduler.png`.
+Differences from the mock: Keys keeps 031's four tickets and full table; the header chip reads "Ask amax to add a credential" as in 047. The 031 visual-diff test now skips the header region.
+
+Review: specclaw-review loop skipped (operator's review cadence: one review at module end, not per change).
