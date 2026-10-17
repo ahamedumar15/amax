@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
-import { canEver, rolesOf, type Viewer } from "@amax/auth";
+import { ForbiddenError } from "@amax/core/server";
+import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
 
 export type Scope = McpToolDef["scope"];
 export const ALL_SCOPES: Scope[] = ["read", "write", "sensitive"];
@@ -27,15 +28,13 @@ function builtins(modules: Registrable[]): RegisteredTool[] {
       permission: "", scope: "read", readOnly: true,
       run: async (viewer: Viewer, input: { query: string; limit?: number }) => {
         // A module the viewer may not read contributes nothing; any other failure is reported, not
-        // dressed up as "no matches" (review round 1).
+        // dressed up as "no matches" (review round 1). One shape every time (review round 2).
         const notSearched: string[] = [];
-        const results = await Promise.all(modules.filter((m) => m.search).map((m) => m.search!(viewer as never, input.query).catch((e: Error) => {
-          if (e?.name === "ForbiddenError" || e?.name === "ScopeError") return [] as SearchHit[];
-          notSearched.push(m.id);
+        const results = await Promise.all(modules.filter((m) => m.search).map((m) => m.search!(viewer as never, input.query).catch((e: unknown) => {
+          if (!(e instanceof ForbiddenError || e instanceof ScopeError)) notSearched.push(m.id);
           return [] as SearchHit[];
         })));
-        const hits = results.flat().slice(0, input.limit ?? 20);
-        return notSearched.length ? { hits, notSearched, note: `Couldn't search ${notSearched.join(", ")} just now; results may be incomplete.` } : hits;
+        return { hits: results.flat().slice(0, input.limit ?? 20), notSearched };
       },
     } as unknown as RegisteredTool,
   ];

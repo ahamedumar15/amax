@@ -101,9 +101,38 @@ export const listReleases = (v: Viewer) =>
     }));
   });
 
-/** Columns for every release view: the union of the projects' environment names, in stage order. */
-export const stageColumns = (releases: ReleaseRow[]) =>
-  [...new Map(releases.flatMap((r) => r.stages).sort((a, b) => a.position - b.position).map((s) => [s.environment, s.environment])).keys()];
+/**
+ * Columns for every release view: the union of the projects' environment names, in an order that
+ * agrees with every project's own stage order (a topological merge; ties by position, then name).
+ * Only when projects contradict each other (A before B in one, B before A in another) does the
+ * rest fall back to position order (review round 2).
+ */
+export function stageColumns(releases: ReleaseRow[]): string[] {
+  const after = new Map<string, Set<string>>();
+  const minPos = new Map<string, number>();
+  const seen = new Set<string>();
+  for (const r of releases) {
+    const own = [...r.stages].sort((a, b) => a.position - b.position);
+    own.forEach((s, i) => {
+      minPos.set(s.environment, Math.min(minPos.get(s.environment) ?? Infinity, s.position));
+      if (!after.has(s.environment)) after.set(s.environment, new Set());
+      if (i > 0 && !seen.has(`${own[i - 1].environment}>${s.environment}`)) { seen.add(`${own[i - 1].environment}>${s.environment}`); after.get(own[i - 1].environment)!.add(s.environment); }
+    });
+  }
+  const incoming = new Map([...after.keys()].map((e) => [e, 0]));
+  for (const next of after.values()) for (const e of next) incoming.set(e, incoming.get(e)! + 1);
+  const byPos = (a: string, b: string) => minPos.get(a)! - minPos.get(b)! || a.localeCompare(b);
+  const out: string[] = [];
+  const left = new Set(after.keys());
+  while (left.size) {
+    const ready = [...left].filter((e) => incoming.get(e) === 0).sort(byPos);
+    const e = ready[0] ?? [...left].sort(byPos)[0];
+    left.delete(e);
+    out.push(e);
+    for (const n of after.get(e)!) incoming.set(n, incoming.get(n)! - 1);
+  }
+  return out;
+}
 
 export type EnvironmentRow = { name: string; position: number; isProd: boolean; deployments: number };
 

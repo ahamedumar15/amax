@@ -151,7 +151,10 @@ export async function converse(caller: AiCaller, opts: { instructions: string; m
           if (looksLikeInjection(result)) p.injection = true;
           return { type: "tool_result" as const, toolUseId: call.id, content: quoteData(`result of ${call.name}`, result) };
         } catch (e) {
-          return { type: "tool_result" as const, toolUseId: call.id, content: e instanceof Error ? e.message : String(e), isError: true };
+          // Errors can echo record values or attacker text: quoted and checked like results (review round 2).
+          const message = (e instanceof Error ? e.message : String(e)).slice(0, 500);
+          if (looksLikeInjection(message)) p.injection = true;
+          return { type: "tool_result" as const, toolUseId: call.id, content: quoteData(`error from ${call.name}`, message), isError: true };
         }
       }));
       messages.push({ role: "user", content: results });

@@ -109,10 +109,13 @@ export async function validateAuthorize(db: Db, base: string, p: URLSearchParams
 /** After the signed-in user approves the consent screen. */
 export async function issueCode(db: Db, viewer: Viewer, req: AuthorizeRequest) {
   const code = randomBytes(32).toString("base64url");
-  await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`insert into auth.oauth_code (code_hash, tenant_id, user_id, client_id, redirect_uri, scopes, resource, code_challenge, expires_at)
-    values (${tokenHash(code)}, ${viewer.tenantId}, ${viewer.userId}, ${req.clientId}, ${req.redirectUri}, ${textArray(req.scopes)}, ${req.resource}, ${req.codeChallenge},
-            now() + make_interval(secs => ${CODE_SECONDS}))`));
-  await withTenant(db, viewer.tenantId, (tx) => auditOAuth(tx, viewer.tenantId, `user:${viewer.userId}`, "auth.oauth.consent", { clientId: req.clientId, scopes: req.scopes }));
+  // Code and consent audit commit together, as mint does (review round 2).
+  await withTenant(db, viewer.tenantId, async (tx) => {
+    await tx.execute(sql`insert into auth.oauth_code (code_hash, tenant_id, user_id, client_id, redirect_uri, scopes, resource, code_challenge, expires_at)
+      values (${tokenHash(code)}, ${viewer.tenantId}, ${viewer.userId}, ${req.clientId}, ${req.redirectUri}, ${textArray(req.scopes)}, ${req.resource}, ${req.codeChallenge},
+              now() + make_interval(secs => ${CODE_SECONDS}))`);
+    await auditOAuth(tx, viewer.tenantId, `user:${viewer.userId}`, "auth.oauth.consent", { clientId: req.clientId, scopes: req.scopes });
+  });
   const u = new URL(req.redirectUri);
   u.searchParams.set("code", code);
   if (req.state) u.searchParams.set("state", req.state);

@@ -24,7 +24,7 @@ function cell(s: ReleaseRow["stages"][number]) {
 }
 
 // Laid out by environment name over the same columns as the table, so projects with different or
-// reordered environments are drawn against their own stages (review round 1).
+// reordered environments are drawn against their own stages (review rounds 1 and 2).
 function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: string[] }) {
   const active = releases.filter((r) => r.stages.some((s) => s.status));
   const envs = columns.map((environment) => ({ environment }));
@@ -37,9 +37,12 @@ function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: st
       {active.map((r, row) => {
         const y = 86 + row * 70;
         const c = HEX[r.projectColor] ?? "#7B61FF";
-        const reached = r.stages.filter((s) => s.status);
-        const lastI = columns.indexOf(reached.at(-1)!.environment);
-        const lastCol = columns.indexOf(r.stages.at(-1)!.environment);
+        // Stages in the project's own order; columns agree with it (stageColumns), so the furthest
+        // reached stage is also the right-most reached column.
+        const own = [...r.stages].sort((a, b) => a.position - b.position);
+        const reached = own.filter((s) => s.status);
+        const lastI = Math.max(...reached.map((s) => columns.indexOf(s.environment)));
+        const lastCol = Math.max(...own.map((s) => columns.indexOf(s.environment)));
         const back = reached.at(-1)?.status === "rolled-back";
         return (
           <g key={r.id}>

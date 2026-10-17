@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { z } from "zod";
 import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
+import type { Sensitivity } from "./audit";
 
 /** What a screen receives: route params (":key" segments) and the signed-in viewer (null in the guest preview). */
 export type ScreenProps = { params: Record<string, string>; viewer: unknown };
@@ -51,8 +52,22 @@ export type McpToolDef = {
   readOnly?: boolean;
   destructive?: boolean;
   /** Classified fields in the result (002 classes), so the AI gateway can redact them per tenant policy. */
-  sensitive?: Partial<Record<string, "pay" | "health" | "bank" | "performance" | "candidate">>;
+  sensitive?: Partial<Record<string, Sensitivity>>;
   run: (viewer: never, input: never, source: "mcp" | "chat") => Promise<unknown>;
+};
+
+/**
+ * One retention rule (032 AC-1): the data class (002 classes, or "personal" for identifying data
+ * such as names), the period as an ISO 8601 duration ("P7Y"), the event that starts the clock, and
+ * what happens when it runs out.
+ */
+export type RetentionEntry = {
+  table: string;
+  fields: string[];
+  class: Sensitivity | "personal";
+  period: `P${string}`;
+  start: string;
+  action: "delete" | "anonymise";
 };
 
 /** A search hit for the built-in `search` tool and the chat. */
@@ -81,11 +96,8 @@ export type ModuleManifest = {
    * the projects a user manages, so "@managed" grants work for real users, not just in tests.
    */
   viewerScopes?: (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
-  /**
-   * Retention entries for tables holding personal data (module standard, enforced by 032): which
-   * fields name a person and how long they are kept.
-   */
-  retention?: { table: string; fields: string[]; keep: string }[];
+  /** Retention for tables holding personal data, in the 032 AC-1 shape so it can be enforced. */
+  retention?: RetentionEntry[];
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];

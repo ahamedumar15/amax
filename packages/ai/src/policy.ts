@@ -36,14 +36,20 @@ export async function loadPolicy(tx: Tx): Promise<AiPolicy> {
 export const REGIONS = { AU: "Australia", LK: "Sri Lanka", US: "United States", EU: "European Union", UK: "United Kingdom", SG: "Singapore", IN: "India", CA: "Canada" } as const;
 export type RegionCode = keyof typeof REGIONS;
 
-export function normalizeRegion(input: string | null | undefined): RegionCode | null {
+/** A region code for a code or name, null when empty, undefined when not recognised. */
+export function parseRegion(input: string | null | undefined): RegionCode | null | undefined {
   const v = (input ?? "").trim();
   if (!v) return null;
   const code = v.toUpperCase();
   if (code in REGIONS) return code as RegionCode;
-  const byName = (Object.entries(REGIONS) as [RegionCode, string][]).find(([, name]) => name.toLowerCase() === v.toLowerCase());
-  if (byName) return byName[0];
-  throw new Error(`unknown region "${v}"; use one of ${Object.keys(REGIONS).join(", ")}`);
+  return (Object.entries(REGIONS) as [RegionCode, string][]).find(([, name]) => name.toLowerCase() === v.toLowerCase())?.[0];
+}
+
+/** For input from the screen: an unrecognised region is refused. */
+export function normalizeRegion(input: string | null | undefined): RegionCode | null {
+  const r = parseRegion(input);
+  if (r === undefined) throw new Error(`unknown region "${(input ?? "").trim()}"; use one of ${Object.keys(REGIONS).join(", ")}`);
+  return r;
 }
 
 /**
@@ -54,11 +60,16 @@ export function blockedReason(p: AiPolicy): string | null {
   if (!p.enabled) return "AI is switched off for this organisation";
   if (p.zdrRequired && !p.zdrConfirmed) return "zero data retention is required but an Admin hasn't confirmed it with the provider";
   if (p.dataRegion) {
-    const data = normalizeRegion(p.dataRegion);
+    // Stored values may predate the closed list: one that isn't recognised blocks, it never throws,
+    // so the Admin can still open the screen and fix it (review round 2).
+    const data = parseRegion(p.dataRegion);
+    if (!data) return `the data region "${p.dataRegion}" isn't recognised; choose one from the list`;
     const entries = Object.entries(p.regions) as [string, string | null][];
     const unknown = entries.filter(([, r]) => !r).map(([k]) => k);
     if (unknown.length) return `the data region is ${data}, but where ${unknown.join(", ")} ${unknown.length > 1 ? "run isn't" : "runs isn't"} set`;
-    const outside = entries.filter(([, r]) => normalizeRegion(r) !== data).map(([k]) => k);
+    const unrecognised = entries.filter(([, r]) => parseRegion(r) === undefined).map(([k, r]) => `${k} ("${r}")`);
+    if (unrecognised.length) return `the region for ${unrecognised.join(", ")} isn't recognised; choose one from the list`;
+    const outside = entries.filter(([, r]) => parseRegion(r) !== data).map(([k]) => k);
     if (outside.length) return `${outside.join(", ")} ${outside.length > 1 ? "are" : "is"} outside the data region (${data})`;
   }
   return null;

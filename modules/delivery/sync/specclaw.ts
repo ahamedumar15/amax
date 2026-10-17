@@ -101,8 +101,11 @@ export function readSpecclaw(root: string | Source, overlays: (string | Source)[
   const take = (r: Raw | null) => {
     if (!r) return;
     const cur = byNumber.get(r.number);
-    if (r.unreadable && cur && !cur.unreadable) return;
-    if (!cur || (cur.unreadable && !r.unreadable) || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
+    // An unreadable copy anywhere (main or an overlay) can't be ranked, so the record is skipped and
+    // reported rather than silently kept at another copy's phase (review round 2).
+    if (r.unreadable && cur) { byNumber.set(r.number, { ...cur, unreadable: true, source: r.source }); return; }
+    if (cur?.unreadable) return;
+    if (!cur || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
   };
   for (const archived of [true, false]) for (const d of folders(main.dir, archived)) take(parse(main.dir, d, archived, main.ref));
   for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(d.slice(0, 3)) || archived) take(parse(o.dir, d, archived, o.ref));

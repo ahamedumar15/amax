@@ -16,9 +16,11 @@ const desired = (projectKey: string, r: SpecRecord, sha: string) => ({
   meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source },
 });
 
-// The meta fields that matter for "changed?" (the commit sha alone doesn't count as a change).
+// The meta fields that matter for "changed?". The commit sha alone doesn't count as a change, neither
+// as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2).
+const refOf = (s: unknown) => (typeof s === "string" ? s.replace(/@[0-9a-f]{7,40}$/i, "") : s);
 const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, { ...d.meta, sha: null }]);
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
 
 /**
  * One-way import of a repo's specclaw changes into a delivery project. Writes go through

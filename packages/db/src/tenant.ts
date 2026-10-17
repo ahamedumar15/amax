@@ -16,5 +16,5 @@ export function withTenant<T>(db: Db, tenantId: string, fn: (tx: Tx) => Promise<
 // Arrays go to Postgres as one bound JSON parameter, never as a hand-built array literal, so no
 // value can change the array's shape (review round 1).
 // The trailing cast makes it an array expression, so it also works inside any(...).
-export const textArray = (xs: string[]) => sql`(select coalesce(array_agg(x), '{}') from jsonb_array_elements_text(${JSON.stringify(xs)}::jsonb) x)::text[]`;
-export const uuidArray = (xs: string[]) => sql`(select coalesce(array_agg(x::uuid), '{}') from jsonb_array_elements_text(${JSON.stringify(xs)}::jsonb) x)::uuid[]`;
+export const textArray = (xs: string[]) => sql`(select coalesce(array_agg(x order by n), '{}') from jsonb_array_elements_text(${JSON.stringify(xs)}::jsonb) with ordinality as e(x, n))::text[]`;
+export const uuidArray = (xs: string[]) => sql`(select coalesce(array_agg(x::uuid order by n), '{}') from jsonb_array_elements_text(${JSON.stringify(xs)}::jsonb) with ordinality as e(x, n))::uuid[]`;

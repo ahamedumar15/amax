@@ -11,7 +11,6 @@ describe("baseUrl", () => {
     expect((await load())(req({ host: "evil.example", "x-forwarded-host": "evil.example", "x-forwarded-proto": "https" }))).toBe("https://amax.example");
   });
   it.each([["evil.example"], ["amax.example.evil.com"], ["localhost.evil.com"]])("refuses a non-loopback host %s without AMAX_BASE_URL", async (host) => {
-    expect(() => {}).not.toThrow();
     await expect((async () => (await load())(req({ host })))()).rejects.toThrow(/AMAX_BASE_URL/);
   });
   it("accepts loopback in development", async () => {

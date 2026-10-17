@@ -133,3 +133,15 @@ describe.skipIf(!hasDb)("voiding only un-releases through the record that releas
     await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-999"] })).rejects.toThrow(/no proposal HRI-999/);
   });
 });
+
+describe("release columns agree with every project's stage order (review round 2)", async () => {
+  const { stageColumns } = await import("../server/queries");
+  const rel = (...envs: string[]) => ({ stages: envs.map((environment, i) => ({ environment, position: i + 1, isProd: false, status: null, at: null, note: null, run: null })) }) as never;
+  it.each([
+    ["same order", [rel("Dev", "QA", "Prod"), rel("Dev", "QA", "Prod")], ["Dev", "QA", "Prod"]],
+    ["QA at 2 in one project, 3 in another", [rel("Dev", "QA", "Prod"), rel("Dev", "UAT", "QA", "Prod")], ["Dev", "UAT", "QA", "Prod"]],
+    ["the longer project listed first", [rel("Dev", "UAT", "QA", "Prod"), rel("QA", "Prod")], ["Dev", "UAT", "QA", "Prod"]],
+    ["disjoint stages", [rel("Dev", "Prod"), rel("Staging")], ["Dev", "Staging", "Prod"]],
+    ["projects contradict each other: still every name once", [rel("A", "B"), rel("B", "A")], ["A", "B"]],
+  ])("%s", (_n, releases, expected) => expect(stageColumns(releases as never)).toEqual(expected));
+});

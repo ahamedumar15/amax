@@ -62,10 +62,10 @@ describe.skipIf(!hasDb)("AC-2/AC-3 self-sync import", () => {
   });
 
   it("re-running with nothing changed writes and audits nothing", async () => {
-    const before = await audits();
+    const before = Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n);
     const r = await syncSpecclaw(app, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(repoRoot), sha: "def456" });
     expect(r).toMatchObject({ created: 0, updated: 0, withdrawn: 0 });
-    expect(await audits()).toBe(before);
+    expect(Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n)).toBe(before);
   });
 
   it("a branch overlay moves a change forward and emits phase_changed; a vanished folder is withdrawn", async () => {
@@ -130,6 +130,26 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     const r = await syncSpecclaw(app, ctx, { projectKey: "CJ", projectName: "cj", client: "x", records, sha: "abc12345" });
     expect(r.created).toBe(0);
     expect(r.skipped[0]).toMatch(/state.json unreadable at main@abc12345/);
+  });
+
+  it("a corrupt state.json on an overlay branch is reported too, not hidden behind main's phase (review round 2)", async () => {
+    const main = fakeRepo({ "001-a": { status: "✅ Approved" } });
+    const branch = fakeRepo({ "001-a": { status: "✅ Approved" } });
+    writeFileSync(join(branch, ".specclaw/changes/001-a/state.json"), "{ not json");
+    const records = readSpecclaw({ dir: main, ref: "main@aaaaaaaa" }, [{ dir: branch, ref: "specclaw/001-a@bbbbbbbb" }]);
+    expect(records[0]).toMatchObject({ unreadable: true, source: "specclaw/001-a@bbbbbbbb" });
+    const r = await syncSpecclaw(app, ctx, { projectKey: "CO", projectName: "co", client: "x", records, sha: "aaaaaaaa" });
+    expect(r.skipped[0]).toMatch(/state.json unreadable at specclaw\/001-a@bbbbbbbb/);
+  });
+
+  it("a re-sync at a new commit with no spec change writes nothing (review round 2)", async () => {
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
+    const first = await syncSpecclaw(app, ctx, { projectKey: "NC", projectName: "nc", client: "x", records: readSpecclaw({ dir: repo, ref: "main@1111111a" }), sha: "1111111a" });
+    expect(first.created).toBe(2);
+    const before = Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n);
+    const again = await syncSpecclaw(app, ctx, { projectKey: "NC", projectName: "nc", client: "x", records: readSpecclaw({ dir: repo, ref: "main@2222222b" }), sha: "2222222b" });
+    expect(again).toMatchObject({ created: 0, updated: 0, unchanged: 2 });
+    expect(Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n)).toBe(before);
   });
 
   it("each record carries the branch and commit it was read from; withdrawn ones leave lists and counts", async () => {

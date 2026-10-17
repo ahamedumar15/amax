@@ -126,10 +126,16 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
     // One decision per card: the buttons go away while the request is in flight.
     setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working" } : x)));
     const update = (state: "done" | "cancelled", note: string) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state, note } : x)));
-    if (!ok) { await cancelChat(convo.current, action.id); update("cancelled", "Cancelled. Nothing was changed."); return; }
-    const r = await confirmChat(convo.current, action.id);
-    update(r.ok ? "done" : "cancelled", r.ok ? r.summary : r.error);
-    announce(r.ok ? r.summary : r.error);
+    try {
+      if (!ok) { await cancelChat(convo.current, action.id); update("cancelled", "Cancelled. Nothing was changed."); return; }
+      const r = await confirmChat(convo.current, action.id);
+      update(r.ok ? "done" : "cancelled", r.ok ? r.summary : r.error);
+      announce(r.ok ? r.summary : r.error);
+    } catch {
+      // The request itself failed (network, server): bring the buttons back so the user can retry.
+      setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "open", note: "That didn't go through. Try again." } : x)));
+      announce("That didn't go through. Try again.");
+    }
   }
 
   function talk() {
@@ -165,13 +171,14 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
             <div key={i} className="m"><div className="b" role="group" aria-label={`Confirm: ${e.action.title}`}>
               <p><b>{e.action.title}</b></p>
               <dl className="rec">{Object.entries(e.action.input).map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt className={fieldClass(e.action.fields, k)}><span className="fd" />{k}</dt><dd>{String(v)}</dd></div>)}</dl>
-              {e.state === "open" ? (
+              {e.state === "open" ? (<>
+                {e.note && <p className="err">{e.note}</p>}
                 <div className="acts">
                   <button className="btn sm primary" type="button" onClick={() => decide(e.action, true)}>Add it</button>
                   <button className="btn sm" type="button" onClick={() => { setText("Change "); input.current?.focus(); }}>Change something</button>
                   <button className="btn sm" type="button" onClick={() => decide(e.action, false)}>Cancel</button>
                 </div>
-              ) : <p className="muted" style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
+              </>) : <p className="muted" style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
             </div></div>
           );
         })}

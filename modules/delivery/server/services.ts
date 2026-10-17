@@ -192,6 +192,8 @@ export const syncProposal = defineService({
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
+    // Same project row lock as createProposal: keys share one namespace (review round 2).
+    await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [before] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
     const meta = JSON.stringify(input.meta);
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)

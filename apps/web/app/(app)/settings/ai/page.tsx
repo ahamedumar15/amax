@@ -83,7 +83,7 @@ export default async function AiSettingsPage() {
             <div className="card-head"><h2>Subprocessors</h2><span className="muted" style={{ fontSize: 13 }}>Shared with Compliance</span></div>
             <div className="row line"><span>Anthropic</span><b>AI{p.regions.ai ? `, ${p.regions.ai}` : ""}</b></div>
             <div className="row line"><span>Database host</span><b>Postgres{p.regions.database ? `, ${p.regions.database}` : ""}</b></div>
-            {voiceAllowed(p).ok && <div className="row line"><span>Browser speech service</span><b>Voice audio (Google, for Chrome)</b></div>}
+            {voiceAllowed(p).ok && <div className="row line"><span>Browser speech service</span><b>Voice audio, to the user's browser vendor (Google for Chrome, Microsoft for Edge, Apple for Safari)</b></div>}
           </div>
         </div>
       </div>
@@ -96,10 +96,10 @@ export default async function AiSettingsPage() {
           ))}
           <label><input type="checkbox" name="enabled" defaultChecked={p.enabled} /> AI features on</label>
           <label><input type="checkbox" name="zdrConfirmed" defaultChecked={p.zdrConfirmed} /> Zero data retention confirmed with the provider</label>
-          <label><input type="checkbox" name="voiceEnabled" defaultChecked={p.voiceEnabled} /> Voice input (audio goes to the browser's speech service, e.g. Google for Chrome; not available with a data region)</label>
+          <label><input type="checkbox" name="voiceEnabled" defaultChecked={p.voiceEnabled} /> Voice input (audio goes to the browser vendor's speech service: Google, Microsoft or Apple; not available with a data region)</label>
           <label>AI provider region <input className="select" name="providerRegion" defaultValue={p.providerRegion ?? ""} placeholder="e.g. ap-southeast-2" /></label>
           {([["dataRegion", "Data region", p.dataRegion], ["aiRegion", "AI runs in", p.regions.ai], ["dbRegion", "Database in", p.regions.database], ["storageRegion", "Files in", p.regions.storage]] as const).map(([name, label, value]) => (
-            <label key={name}>{label} <select className="select" name={name} defaultValue={value ?? ""}><option value="">Not set</option>{Object.entries(REGIONS).map(([code, n]) => <option key={code} value={code}>{n}</option>)}</select></label>
+            <label key={name}>{label} <select className="select" name={name} defaultValue={value ?? ""}><option value="">Not set</option>{value && !(value in REGIONS) && <option value={value}>{value} (not recognised)</option>}{Object.entries(REGIONS).map(([code, n]) => <option key={code} value={code}>{n}</option>)}</select></label>
           ))}
         </fieldset>
         <button className="btn primary" type="submit" style={{ marginTop: 14 }}>Save policy</button>

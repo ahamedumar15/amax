@@ -130,6 +130,25 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
     expect(rows).toHaveLength(1);
   });
 
+  it("a confirm during a running turn stays confirmed: the turn doesn't bring the card back (review round 2)", async () => {
+    configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c", name: "create_proposal", input: { projectKey: "CON", title: "Mid-turn" } }] }), () => ({ text: "ok" })]), db: app, model: "claude-haiku-5-5" });
+    const first = await chatTurn(app, registry, maya, { text: "add Mid-turn to CON" });
+    // The second turn's model call waits until the card has been confirmed.
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const inner = fakeProvider(() => ({ text: "anything else?" }));
+    configureAi({ provider: { name: "gated", call: async (req) => { await gate; return inner.call(req); } }, db: app, model: "claude-haiku-5-5" });
+    const second = chatTurn(app, registry, maya, { text: "thanks", conversationId: first.conversationId });
+    await confirmAction(app, registry, maya, first.conversationId, first.pending[0].id);
+    release();
+    await second;
+    await expect(confirmAction(app, registry, maya, first.conversationId, first.pending[0].id)).rejects.toThrow(/no longer pending/);
+    const rows = await withTenant(app, T, (tx) => tx.execute(sql`select key from delivery.proposal where title = 'Mid-turn'`));
+    expect(rows).toHaveLength(1);
+    const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages from chat.conversation where id = ${first.conversationId}`));
+    expect(JSON.stringify(c.messages)).toContain('I confirmed \\"');
+  });
+
   it("concurrent creates in one project get distinct keys", async () => {
     const { createProposal } = await import("../server/services");
     const { ctxFor } = await import("../server/context");
