@@ -124,6 +124,11 @@ export async function getEmployment(tx: Tx, personId: string, reader: Reader, on
   return mask(who.viewer, full, EMPLOYMENT_SENSITIVE, subjectOf(r)) as Employment;
 }
 
+/** The hr.person ids a signed-in person is known by, for access and erasure requests (032). */
+export async function personIdsForUser(tx: Tx, userId: string): Promise<string[]> {
+  return (await tx.execute(sql`select id::text as id from hr.person where user_id = ${userId}`)).map((r) => r.id as string);
+}
+
 /** Auth users who report to this user (feeds the viewer's `reports` scope for manager-visible fields). */
 export async function reportUserIds(tx: Tx, userId: string, on = today()): Promise<string[]> {
   return (await tx.execute(sql`select p.user_id from hr.person p ${employmentAt(on)} where mgr.user_id = ${userId} and p.user_id is not null and p.status <> 'left'`)).map((r) => r.user_id as string);

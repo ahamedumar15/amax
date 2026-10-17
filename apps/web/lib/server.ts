@@ -5,6 +5,7 @@ import { auditExportJob, configureRateLimits, configureRuntime, limitsFromEnv, p
 import { apiPlatform } from "@amax/api/module";
 import { rateLimitRecorder } from "@amax/api/limits";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
+import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
 import { configureAi } from "@amax/ai";
 import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
@@ -13,7 +14,7 @@ import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/aut
 import { createRegistry } from "@amax/mcp";
 import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
-import { engineFromEnv, pruneRunsJob, signalHandlers, workflowRegistry, workflowsRetention, type WorkflowEngine } from "@amax/workflows/server";
+import { engineFromEnv, signalHandlers, workflowRegistry, workflowsRetention, type WorkflowEngine } from "@amax/workflows/server";
 import { platformWorkflows } from "./platform-workflows";
 import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
@@ -35,7 +36,8 @@ export function getDb(): Db | null {
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
-    setGrants([...installed, chatPlatform]);
+    setGrants([...installed, chatPlatform, privacyGrants]);
+    setPrivacySources([...installed, chatPlatform, { id: "workflows", retention: workflowsRetention }]);
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     // 035 AC-5: limited requests are counted for the API and webhooks screen.
@@ -69,7 +71,8 @@ export function workflowEngine(): Promise<WorkflowEngine> {
     throw e;
   }));
 }
-const workflowsJobs = () => ({ id: "workflows", jobs: [pruneRunsJob], retention: workflowsRetention, events: { handles: signalHandlers(workflowsRegistry(), workflowEngine) } });
+// 032: the daily privacy purge (a platform workflow) applies workflowsRetention with legal holds.
+const workflowsJobs = () => ({ id: "workflows", events: { handles: signalHandlers(workflowsRegistry(), workflowEngine) } });
 
 export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), api(), ...installed]);
 

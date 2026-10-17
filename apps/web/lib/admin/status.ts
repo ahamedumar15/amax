@@ -8,6 +8,7 @@ import { auditStatus, logError, type AuditStatus } from "@amax/core/server";
 import { CONNECTORS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
 import { LATEST_RUNS, listRuns, listSchedules } from "@amax/workflows/server";
+import { listRequests, privacyRules, readPrivacy } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
 import { daysUntil, expiringSoon, pastExpiry } from "./credentials";
 import { ctxFor, type AdminDeps } from "./tool";
@@ -94,14 +95,21 @@ async function audit(d: AdminDeps, v: Viewer): Promise<Area> {
   return auditArea(today, status);
 }
 
+// 032: an open privacy request waits for a second Admin or HR person, so it comes first on the hub.
+async function retention(v: Viewer): Promise<Area> {
+  const base = { id: "retention", title: "Data retention", href: "/settings/retention", blurb: "How long each kind of data is kept, legal holds, and access and erasure requests.", stat: plural(privacyRules().length, "rule") };
+  const waiting = (await readPrivacy(ctxFor(v, "ui"), listRequests)).filter((r) => r.status === "open").length;
+  if (waiting) return { ...base, chip: { tone: "warn", text: `${waiting} waiting` }, attention: `${plural(waiting, "privacy request")} need${waiting === 1 ? "s" : ""} a second approver` };
+  return { ...base, chip: { tone: "good", text: "No open requests" } };
+}
+
 const SOON: Area[] = [
-  { id: "retention", title: "Data retention", href: null, blurb: "How long each kind of data is kept, legal holds, and access and erasure requests.", stat: "032", chip: { tone: "info", text: "Coming soon" } },
   { id: "backups", title: "Backups and export", href: null, blurb: "Point-in-time recovery, weekly restore drills, and exporting all your data.", stat: "034", chip: { tone: "info", text: "Coming soon" } },
   { id: "api", title: "API and webhooks", href: "/settings/api", blurb: "Service credentials for CI and tools, signed webhooks, and rate limits.", stat: "REST, MCP and webhooks", chip: { tone: "info", text: "Keys shown once" } },
 ];
 
 /** The Settings hub, attention first: each admin screen with a live status (047 AC-1). */
 export async function settingsStatus(d: AdminDeps, v: Viewer): Promise<Area[]> {
-  const [k, i, a, s, t] = await Promise.all([keys(v), integrations(d, v), ai(d, v), scheduler(d, v), audit(d, v)]);
-  return [k, i, ...a, s, t, ...SOON];
+  const [k, i, a, s, t, r] = await Promise.all([keys(v), integrations(d, v), ai(d, v), scheduler(d, v), audit(d, v), retention(v)]);
+  return [k, i, ...a, s, t, r, ...SOON];
 }

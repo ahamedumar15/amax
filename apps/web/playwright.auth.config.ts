@@ -18,6 +18,8 @@ export default defineConfig({
     { name: "screens", testMatch: /(auth|delivery|sections|ai|mcp|pins|secrets|workflows)\.spec\.ts/, dependencies: ["amx"] },
     { name: "writes", testMatch: /(chat|chat-first|releases|admin|ai-usage|api)\.spec\.ts/, dependencies: ["screens"] },
     { name: "audit", testMatch: /audit\.spec\.ts/, dependencies: ["writes"] },
+    // 032: the privacy spec erases the demo erasure request's person, so it runs last.
+    { name: "privacy", testMatch: /retention(-visual)?\.spec\.ts/, dependencies: ["audit"] },
   ],
   workers: 1,
   forbidOnly: !!process.env.CI,

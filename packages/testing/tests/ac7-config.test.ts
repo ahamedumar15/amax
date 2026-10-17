@@ -15,4 +15,10 @@ describe("AC7 configuration and ownership", () => {
     expect(broken.status).toBe(2);
     expect(broken.stderr).toMatch(/missing README\.md[\s\S]*no CODEOWNERS line/);
   });
+
+  it("032 AC-1 a module whose personal-data table has no retention entry fails the standard; pseudonymous ids alone don't count", () => {
+    const r = standard(join(__dirname, "../standard/no-retention"));
+    expect(r.status).toBe(2);
+    expect(r.stderr.trim().split("\n").filter((l) => l.includes("retention"))).toEqual(["  - modules/people: personal-data table people.visit has no retention entry (032)"]);
+  });
 });

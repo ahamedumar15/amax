@@ -49,8 +49,10 @@ export const chatTools: McpToolDef[] = [
     run: (v, a, s = "mcp") => archiveConversation(ctxFor(v, s), a) }),
 ];
 
-export const chatPlatform: Pick<ModuleManifest, "id" | "mcpTools" | "grants"> = {
+export const chatPlatform: Pick<ModuleManifest, "id" | "mcpTools" | "grants" | "retention"> = {
   id: "chat",
   mcpTools: chatTools,
   grants: Object.fromEntries(ROLES.map((r) => [r, [`${ARCHIVE}@own`]])),
+  // 032 AC-2: chat is kept 90 days after its last message, then deleted.
+  retention: [{ table: "chat.conversation", label: "amax chat conversations", subject: ["user_id"], fields: ["messages", "pending", "title", "pins"], class: "personal", period: "P90D", start: { at: [], idle: "P90D" }, action: "delete" }],
 };
