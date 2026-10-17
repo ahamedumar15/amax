@@ -7,7 +7,6 @@ export async function signIn(page: Page, email: string, to: string) {
   await expect(page).toHaveURL((u) => u.pathname === to);
 }
 
-/** Click an Ask amax chip, check the pin and the filled-in prompt, finish (or replace) the prompt, send, confirm, and wait for Done. */
 export async function askAndConfirm(page: Page, chip: Locator, want: { pin: string; prompt: string; type?: string; replace?: string }) {
   await chip.click();
   await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText(want.pin);

@@ -47,3 +47,5 @@ What changes on screen, and where to see it: [`054-chat-first-everywhere`](../..
   Depends: T7
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan fails: jq "Argument list too long", a known tool issue).
