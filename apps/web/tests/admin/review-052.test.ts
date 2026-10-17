@@ -102,14 +102,23 @@ describe.skipIf(!hasDb)("052 admin tools (Postgres)", () => {
       ids[status] = await db.engine.start(T, "core.audit-check", null, { startedBy: "test" });
       await db.t.owner`update workflows.run set status = ${status} where id = ${ids[status]}`;
     }
-    const pinned = async (status?: unknown) => ((await db.registry.call(maya, "list_workflow_runs", status === undefined ? {} : { status }, { source: "mcp" })) as { id: string; status: string }[]).filter((r) => Object.values(ids).includes(r.id)).map((r) => r.status).sort();
-    const cases: [unknown, string[]][] = [
-      ["failed", ["failed"]],
-      [["running", "sleeping", "waiting"], ["running", "waiting"]],
-      [undefined, ["completed", "failed", "paused", "running", "waiting"]],
-      [["completed", "paused"], ["completed", "paused"]],
+    const list = async (args: Record<string, unknown>) => (await db.registry.call(maya, "list_workflow_runs", args, { source: "mcp" })) as { id: string; status: string }[];
+    const pinned = async (args: Record<string, unknown>) => (await list(args)).filter((r) => Object.values(ids).includes(r.id)).map((r) => r.status).sort();
+    const cases: [Record<string, unknown>, string[]][] = [
+      [{ status: "failed", withinLatest: true }, ["failed"]],
+      [{ status: ["running", "sleeping", "waiting"], withinLatest: true }, ["running", "waiting"]],
+      [{}, ["completed", "failed", "paused", "running", "waiting"]],
+      [{ status: ["completed", "paused"] }, ["completed", "paused"]],
+      [{ status: "failed" }, ["failed"]],
     ];
-    for (const [status, want] of cases) expect(await pinned(status), JSON.stringify(status)).toEqual(want);
-    await expect(db.registry.call(maya, "list_workflow_runs", { status: [] }, { source: "mcp" })).rejects.toMatchObject({ code: "invalid_input" });
+    for (const [args, want] of cases) expect(await pinned(args), JSON.stringify(args)).toEqual(want);
+    await expect(list({ status: [] })).rejects.toMatchObject({ code: "invalid_input" });
+    // Once 50 newer runs push the failed one out of the window, only the ticket's view drops it:
+    // a plain status filter still finds it (round 3).
+    for (let i = 0; i < 50; i++) await db.engine.start(T, "core.audit-check", null, { startedBy: "test" });
+    await db.t.owner`update workflows.run set status = 'completed' where id <> all(${Object.values(ids)}::uuid[])`;
+    await db.t.owner`update workflows.run set created_at = now() - interval '1 day' where id = ${ids.failed}`;
+    expect((await list({ status: "failed" })).map((r) => r.id)).toContain(ids.failed);
+    expect((await list({ status: "failed", withinLatest: true })).map((r) => r.id)).not.toContain(ids.failed);
   });
 });

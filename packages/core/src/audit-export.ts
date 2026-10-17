@@ -33,6 +33,8 @@ export async function exportAuditDay(tx: Tx, tenantId: string, day: Date, storag
   const from = new Date(`${isoDay(day)}T00:00:00Z`);
   const to = new Date(from.getTime() + DAY);
   const retainUntil = new Date(to.getTime() + retentionDays * DAY);
+  // One export of a (tenant, day) at a time, so overlapping runs can't both record it (052 review).
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`core.audit.export:${tenantId}:${isoDay(from)}`}))`);
   const out: { key: string; rows: number; chainOk: boolean; existing?: true }[] = [];
   for (const part of PARTS) {
     const key = `${part.prefix}/${tenantId}/${isoDay(from).replaceAll("-", "/")}.ndjson`;

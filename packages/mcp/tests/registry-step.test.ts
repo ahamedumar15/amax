@@ -31,12 +31,14 @@ describe("registry.call trace step (052)", () => {
     { name: "tool refuses", run: async () => { throw new ForbiddenError("x", "y"); }, fails: false, expect: { rejects: "forbidden" }, steps: ["denied"] },
     { name: "tool throws, step write fails", run: async () => { throw new Error("boom"); }, fails: true, expect: { rejects: "boom" }, steps: ["error"] },
     { name: "tool refuses, step write fails", run: async () => { throw new ForbiddenError("x", "y"); }, fails: true, expect: { rejects: "forbidden: x on y" }, steps: ["denied"] },
+    { name: "invalid input, step write fails", run: async () => ({ key: "never" }), fails: true, args: "not an object", expect: { rejects: "invalid input for add_thing" }, steps: ["invalid_input"] },
+    { name: "invalid input, step written", run: async () => ({ key: "never" }), fails: false, args: 42, expect: { rejects: "invalid input for add_thing" }, steps: ["invalid_input"] },
     { name: "scope refused, step write fails", run: async () => ({ key: "never" }), fails: true, scopes: ["read" as const], expect: { rejects: "forbidden: add_thing" }, steps: ["denied"] },
   ])("$name", async (c) => {
     steps.length = 0;
     stepFails = c.fails;
     runner.fn = c.run;
-    const call = registry.call(viewer, "add_thing", {}, { source: "chat", ...("scopes" in c ? { scopes: c.scopes } : {}) });
+    const call = registry.call(viewer, "add_thing", "args" in c ? c.args : {}, { source: "chat", ...("scopes" in c ? { scopes: c.scopes } : {}) });
     if ("resolves" in c.expect) await expect(call).resolves.toEqual(c.expect.resolves);
     else await expect(call).rejects.toThrow(c.expect.rejects);
     expect(steps).toEqual(c.steps);
