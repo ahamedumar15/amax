@@ -65,14 +65,18 @@ describe("the Active map", () => {
   const live = (version: string, at: string, projectId = "p1") => rel({ version, projectId }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, "deployed", at));
   const moving = (version: string, at: string, projectId = "p1") => rel({ version, projectId }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, null));
   const failed = (version: string, at: string) => rel({ version }, st("Dev", 1, false, "rolled-back", at), st("Prod", 2, true, null));
+  const prodBack = (version: string, at: string) => rel({ version }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, "rolled-back", at));
   const fresh = (version: string) => rel({ version }, st("Dev", 1, false, null), st("Prod", 2, true, null));
   // Rows arrive newest-written first; nothing here may depend on that or on deployment timing races.
   it.each([
     ["a recent live release, nothing in flight", [live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
     ["a live release more than 45 days old", [live("v1", "2026-08-20T09:00:00Z")], []],
     ["a release in flight replaces the live one", [moving("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
-    ["in flight, deployed to Dev before the live one reached Prod (overlap)", [moving("v2", "2026-09-20T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
-    ["a newer release that only failed is still in flight", [failed("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
+    ["overlap: deployed to Dev before the live one reached Prod and not moved since", [moving("v2", "2026-09-20T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["a newer release that failed after the live Prod still needs a retry", [failed("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
+    ["an abandoned Dev-only release older than the live one", [live("v2", "2026-10-01T09:00:00Z"), moving("v1.5", "2026-06-01T09:00:00Z")], ["v2"]],
+    ["an older release whose Prod rolled back, next to a newer live one", [live("v2", "2026-10-01T09:00:00Z"), prodBack("v1.9", "2026-09-10T09:00:00Z")], ["v2"]],
+    ["a stale release in flight (no deployment for 45 days), nothing live", [moving("v1", "2026-07-01T09:00:00Z")], []],
     ["two live releases: only the latest Prod, whatever the row order", [live("v0.9", "2026-09-01T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
     ["a newer release not deployed anywhere changes nothing", [fresh("v2"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
     ["projects are independent", [moving("v9", "2026-10-05T09:00:00Z", "p2"), live("v1", "2026-10-01T09:00:00Z")], ["v9", "v1"]],

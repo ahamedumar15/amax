@@ -62,18 +62,23 @@ export function actionFor(r: ReleaseRow, allowed: boolean): Action {
 }
 
 /**
- * The map's Active range, per project: its releases in flight (reached a stage, not Live), or, when
- * nothing is in flight, its current Live release (the latest Prod deployment) if that was within 45
- * days. No timestamp races between overlapping releases decide it (review round 3 redesign).
+ * The map's Active range, per project. Its current Live release is the one with the latest Prod
+ * deployment. A release is in flight when it isn't Live and its latest deployment is after that
+ * Prod deployment and within 45 days: an abandoned or rolled-back release older than the current
+ * Live one, or stale, is history (review rounds 3 and 4). The map shows the releases in flight, or,
+ * when there are none, the current Live release if its Prod deployment is within 45 days.
  */
 export function onActiveMap(releases: ReleaseRow[], now: Date): ReleaseRow[] {
+  const recent = (at: number) => now.getTime() - at <= 45 * 86_400_000;
+  const latestAt = (r: ReleaseRow) => Math.max(...r.stages.map((s) => (s.status && s.at ? Date.parse(s.at) : -Infinity)));
   const show = new Set<ReleaseRow>();
   for (const projectId of new Set(releases.map((r) => r.projectId))) {
     const own = releases.map((r) => ({ r, s: standing(r) })).filter((x) => x.r.projectId === projectId && x.s.last);
-    const moving = own.filter((x) => !x.s.live);
-    if (moving.length) { moving.forEach((x) => show.add(x.r)); continue; }
     const current = own.filter((x) => x.s.live?.at).sort((a, b) => Date.parse(b.s.live!.at!) - Date.parse(a.s.live!.at!))[0];
-    if (current && now.getTime() - Date.parse(current.s.live!.at!) <= 45 * 86_400_000) show.add(current.r);
+    const liveAt = current ? Date.parse(current.s.live!.at!) : -Infinity;
+    const moving = own.filter((x) => !x.s.live && latestAt(x.r) > liveAt && recent(latestAt(x.r)));
+    if (moving.length) moving.forEach((x) => show.add(x.r));
+    else if (current && recent(liveAt)) show.add(current.r);
   }
   return releases.filter((r) => show.has(r));
 }
