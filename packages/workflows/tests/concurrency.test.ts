@@ -52,9 +52,10 @@ describe.skipIf(!hasDb)("AC-2 concurrent workers", () => {
     expect((await settle(h, id, ["completed"], 20_000)).steps.map((s) => [s.name, s.attempts])).toEqual([["slow", 2], ["after", 1]]);
   }, 60_000);
 
-  it.each([[-1, 0], [50, 1]])("a tick past its %sms budget releases runs instead of driving them (%s steps done)", async (budgetMs, stepsDone) => {
+  // The budget is wall-clock: it must cover claiming the first run on a slow CI runner, and the step must outlast it.
+  it.each([[-1, 0], [1000, 1]])("a tick past its %sms budget releases runs instead of driving them (%s steps done)", async (budgetMs, stepsDone) => {
     const late = createPostgresEngine({ db: h.t.app(), registry, budgetMs });
-    const ids = await Promise.all([1, 2].map(() => late.start(TENANT, "test.slow", { ms: 100 }, { startedBy: "test" })));
+    const ids = await Promise.all([1, 2].map(() => late.start(TENANT, "test.slow", { ms: 1500 }, { startedBy: "test" })));
     await late.tick();
     const rows = await h.t.owner`select r.id, r.status, r.lease, (select count(*)::int from workflows.step s where s.run_id = r.id and s.status = 'done') as done
       from workflows.run r where r.id in ${h.t.owner(ids)} order by r.id`;
