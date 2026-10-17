@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
@@ -214,7 +216,46 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     expect(after.find((d) => d.id === history[1].id)!.voidedAt).not.toBeNull();
     expect(after.find((d) => d.id === history[0].id)!.voidedAt).toBeNull();
     await createRelease(ctx(), { projectKey: "VID", version: "v2", proposalKeys: [] });
-    await expect(voidDeployment(ctx(), { projectKey: "VID", version: "v2", environment: "Dev", deploymentId: history[0].id, reason: "wrong release" })).rejects.toThrow(/isn't a live record of v2/);
+    await expect(voidDeployment(ctx(), { projectKey: "VID", version: "v2", environment: "Dev", deploymentId: history[0].id, reason: "wrong release" })).rejects.toThrow(/isn't a live Dev record of v2/);
+    // The id and the environment must agree: a destructive call never voids a record elsewhere (round 13).
+    await expect(voidDeployment(ctx(), { projectKey: "VID", version: "v1", environment: "Prod", deploymentId: history[0].id, reason: "mismatch" })).rejects.toThrow(/isn't a live Prod record of v1/);
+    expect((await getRelease(sahan, "VID", "v1"))!.history.find((d) => d.id === history[0].id)!.voidedAt).toBeNull();
+  });
+
+  it("rename collisions are refused clearly; remove reports the stored name (round 13)", async () => {
+    await createProject(ctx(), { key: "REN", name: "Ren", client: "x", billing: "internal" });
+    await expect(upsertEnvironment(ctx(), { projectKey: "REN", name: "QA", rename: "dev" })).rejects.toThrow(/already has an environment called Dev/);
+    await upsertEnvironment(ctx(), { projectKey: "REN", name: "QA", rename: "qa" });
+    expect(await removeEnvironment(ctx(), { projectKey: "REN", name: "QA" })).toEqual({ removed: "qa" });
+  });
+
+  it("a Prod deployment and a change to the release's proposals don't interleave: the release row is locked (round 13)", async () => {
+    await createProject(ctx(), { key: "LCK", name: "Lock", client: "x", billing: "internal" });
+    await createRelease(ctx(), { projectKey: "LCK", version: "v1", proposalKeys: [] });
+    let done = false;
+    await t.owner.begin(async (tx) => {
+      // A key-share lock is what a foreign-key insert takes; it blocks only an explicit row lock,
+      // so this pins releaseOf's "for update", not just the deployment's foreign key.
+      await tx`select 1 from delivery.release r where r.version = 'v1' and r.project_id = (select id from delivery.project where key = 'LCK') for key share`;
+      const deploy = recordDeployment(ctx(), { projectKey: "LCK", version: "v1", environment: "Prod" }).then(() => { done = true; });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(done).toBe(false);
+      void deploy;
+    });
+    await expect.poll(() => done, { timeout: 5000 }).toBe(true);
+  });
+
+  it("migration 0008 merges names that differ only by case before indexing them (round 13)", async () => {
+    await t.owner`drop index delivery.environment_name_ci`;
+    const [p] = await t.owner`select id from delivery.project where key = 'VID'`;
+    const [dup] = await t.owner`insert into delivery.environment (tenant_id, project_id, name, position) values (${T}, ${p.id}, 'DEV', 9) returning id`;
+    const [rel] = await t.owner`select id from delivery.release where project_id = ${p.id} and version = 'v1'`;
+    const [dep] = await t.owner`insert into delivery.deployment (tenant_id, release_id, environment_id, status, recorded_by) values (${T}, ${rel.id}, ${dup.id}, 'deployed', 'test') returning id`;
+    await t.owner.unsafe(readFileSync(join(__dirname, "../db/migrations/0008_environment_name_ci.sql"), "utf8"));
+    expect((await t.owner`select name from delivery.environment where project_id = ${p.id} and lower(name) = 'dev'`).map((e) => e.name)).toEqual(["Dev"]);
+    const [moved] = await t.owner`select e.name from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.id = ${dep.id}`;
+    expect(moved.name).toBe("Dev");
+    expect(await t.owner`select 1 from pg_indexes where indexname = 'environment_name_ci'`).toHaveLength(1);
   });
 
   it("a release already live in Prod takes no new proposals; keeping its own is fine", async () => {
@@ -241,5 +282,6 @@ describe("nextStep: only a deployed Prod is Live (final review)", async () => {
     ["a rollback", rel(st("Dev", 1, false, "deployed"), st("QA", 2, false, "rolled-back")), "Retry QA"],
     ["nothing yet", rel(st("Dev", 1, false, null)), "Deploy to Dev"],
     ["Prod deployed", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, "deployed")), null],
+    ["a stage after Prod reached, Prod not yet (round 13)", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, null), st("Demo", 3, false, "deployed")), "Deploy to Prod"],
   ])("%s", (_n, r, label) => expect(nextStep(r)?.label ?? null).toBe(label));
 });

@@ -21,6 +21,9 @@ export function nextStep(r: ReleaseRow): { label: string; environment: string | 
   if (last?.status === "testing" && last.isProd) return { label: `Finish ${last.environment}`, environment: last.environment, primary: true };
   const next = own[lastI + 1];
   if (next) return { label: `${last ? "Promote" : "Deploy"} to ${next.environment}`, environment: next.environment, primary: true };
+  // Nothing after the last reached stage (it may sit after Prod): Prod is still the way to Live.
+  const prod = own.find((s) => s.isProd);
+  if (prod) return { label: `Deploy to ${prod.environment}`, environment: prod.environment, primary: true };
   return { label: "No Prod stage", environment: null, primary: false };
 }
 
