@@ -1,8 +1,9 @@
 {
   "change": "011-hr-core",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-17T12:15:22Z"}
+    "tasks": {"status":"done","at":"2026-10-17T12:15:22Z"},
+    "verify": {"status":"done","at":"2026-10-17T12:30:56Z"}
   }
 }

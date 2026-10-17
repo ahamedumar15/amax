@@ -31,28 +31,44 @@ const LEAVERS = [2, 1, 3, 1, 2, 1, 2, 1, 0, 0];
 const joinDates = JOINERS.flatMap((n, m) => Array.from({ length: n }, (_, i) => `2026-${pad(m + 1)}-${m === 3 && i < 2 ? 20 + 7 * i : pad(1 + ((i * 7) % 27))}`));
 const onProbation = (joined: string) => joined >= "2026-08-15" || joined === "2026-04-20" || joined === "2026-04-27";
 
+const MISSING_DOC: Record<string, number[]> = { Engineering: [0, 5, 10], Quality: [0], Sales: [2], Delivery: [1] };
+const CONTRACT_ENDS: Record<string, [number, string]> = { Finance: [1, "2026-11-30"], Sales: [6, "2026-11-15"] };
+const FULL_TIME_FROM = ["2026-12-01", "2027-02-01", "2027-03-01"];
+
+const joinedOn = (department: string, i: number, n: number) =>
+  department === "Engineering" && i < joinDates.length ? joinDates[i] : `${2015 + (n % 11)}-${pad((n % 12) + 1)}-${pad(1 + (n % 27))}`;
+const managerOf = (department: string, i: number) => (i > 0 ? `lead:${department}` : department === "Leadership" ? undefined : "lead:Leadership");
+const fteSteps = (department: string, i: number, joined: string) =>
+  department === "Engineering" && i >= 60 && i < 66 ? [{ from: joined, fte: 0.5 }, { from: FULL_TIME_FROM[Math.floor((i - 60) / 2)], fte: 1 }] : undefined;
+
+function activeFiller(department: string, i: number, n: number, auName?: string, auNo?: string): Filler {
+  const joined = joinedOn(department, i, n);
+  const ends = CONTRACT_ENDS[department];
+  return {
+    key: `f${n}`, no: auNo ?? `LL-${1001 + n}`, name: auName ?? lkName(n), title: TITLES[department][i % TITLES[department].length],
+    entity: auName ? "au" : "lk", department, status: "active", joined, manager: managerOf(department, i),
+    probationEnds: department === "Engineering" && onProbation(joined) ? plusMonths(joined, 6) : undefined,
+    fteSteps: fteSteps(department, i, joined), contractEnds: ends && ends[0] === i ? ends[1] : undefined,
+    missingDoc: (MISSING_DOC[department] ?? []).includes(i), healthDoc: department === "Quality" && i === 3,
+  };
+}
+
+const leaver = (n: number, m: number, i: number): Filler => ({
+  key: `f${n}`, no: `LL-${1001 + n}`, name: lkName(n), title: "Software engineer", entity: "lk", department: i % 2 ? "Quality" : "Engineering",
+  status: "left", joined: `${2018 + (n % 6)}-03-01`, left: `2026-${pad(m + 1)}-${pad(10 + i * 5)}`,
+});
+
 export function fillers(): Filler[] {
   const out: Filler[] = [];
-  let n = 0, au = 0;
+  let au = 0;
   for (const [department, count, inAu] of DEPARTMENT_FILLERS) {
     for (let i = 0; i < count; i++) {
-      const entity = i < inAu ? "au" : "lk";
-      const joined = department === "Engineering" && i < joinDates.length ? joinDates[i] : `${2015 + (n % 11)}-${pad((n % 12) + 1)}-${pad(1 + (n % 27))}`;
-      const key = `f${n}`;
-      out.push({
-        key, no: entity === "au" ? `AU-${String(20 + au).padStart(4, "0")}` : `LL-${1001 + n}`, name: entity === "au" ? AU[au++] : lkName(n),
-        title: TITLES[department][i % TITLES[department].length], entity, department, status: "active", joined,
-        manager: i === 0 ? (department === "Leadership" ? undefined : "lead:Leadership") : `lead:${department}`,
-        probationEnds: department === "Engineering" && onProbation(joined) ? plusMonths(joined, 6) : undefined,
-        fteSteps: department === "Engineering" && i >= 60 && i < 66 ? [{ from: joined, fte: 0.5 }, { from: ["2026-12-01", "2027-02-01", "2027-03-01"][Math.floor((i - 60) / 2)], fte: 1 }] : undefined,
-        contractEnds: (department === "Finance" && i === 1) ? "2026-11-30" : (department === "Sales" && i === 6) ? "2026-11-15" : undefined,
-        missingDoc: (department === "Engineering" && [0, 5, 10].includes(i)) || (department === "Quality" && i === 0) || (department === "Sales" && i === 2) || (department === "Delivery" && i === 1),
-        healthDoc: department === "Quality" && i === 3,
-      });
-      n++;
+      const inAustralia = i < inAu;
+      out.push(activeFiller(department, i, out.length, inAustralia ? AU[au] : undefined, inAustralia ? `AU-${String(20 + au++).padStart(4, "0")}` : undefined));
     }
   }
-  LEAVERS.forEach((count, m) => { for (let i = 0; i < count; i++, n++) out.push({ key: `f${n}`, no: `LL-${1001 + n}`, name: lkName(n), title: "Software engineer", entity: "lk", department: i % 2 ? "Quality" : "Engineering", status: "left", joined: `${2018 + (n % 6)}-03-01`, left: `2026-${pad(m + 1)}-${pad(10 + i * 5)}` }); });
+  LEAVERS.forEach((count, m) => { for (let i = 0; i < count; i++) out.push(leaver(out.length, m, i)); });
+  const n = out.length;
   out.push({ key: `f${n}`, no: `LL-${1001 + n}`, name: lkName(n), title: "Sales executive", entity: "lk", department: "Sales", status: "joining", joined: "2026-11-02", manager: "lead:Sales" });
   return out;
 }

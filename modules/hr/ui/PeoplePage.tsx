@@ -24,7 +24,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
   const q = `Q${Math.floor(today.getUTCMonth() / 3) + 1}`;
   return (
     <>
-      <div className="row head">
+      <div className="row head hr">
         <div>
           <h1>People</h1>
           <p className="lede">{plural(s.headcount, "person", "people")} in {plural(inEntities.length, "entity", "entities")}. {plural(s.probation.dueThisMonth, "probation review")} {s.probation.dueThisMonth === 1 ? "is" : "are"} due this month and {plural(s.contractsEndingNextMonth, "contract")} end{s.contractsEndingNextMonth === 1 ? "s" : ""} in {nextMonthName(today)}.</p>

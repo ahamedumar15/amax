@@ -3,6 +3,10 @@
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
 .row.head .lede{margin:0}
+.row.head>.actions{flex-shrink:0}
+.row.head.hr>div:first-child{flex:1 1 420px;min-width:0}
+.row.head.hr>.actions{width:auto;flex-shrink:0}
+@media (max-width:900px){.row.head.hr>.actions{width:100%}}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}
 .select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236A6681' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink)}
