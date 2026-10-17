@@ -38,7 +38,7 @@ What changes on screen, and where to see it: [`051-project-sections`](../../mock
   Depends: T1
 - [x] `T3` — Route mounts: a module may contribute a route under another module's URL space, and a contribution wins over the owner's fallback. Needed because delivery can't import allocations (allocations depends on delivery; R5 forbids the cycle) (AC-3)
   Files: packages/core/src/module.ts, apps/web/lib/registry.ts, apps/web/tests/routes.test.ts
-- [ ] `T4` — Team section, owned by allocations and mounted at `/delivery/p/:key/team`: this month and the next two from `listAllocations({ projectIds })` with the viewer as reader, names and roles from hr, a pin per row; delivery keeps a fallback empty state for when allocations is off (AC-3)
+- [x] `T4` — Team section, owned by allocations and mounted at `/delivery/p/:key/team`: this month and the next two from `listAllocations({ projectIds })` with the viewer as reader, names and roles from hr, a pin per row; delivery keeps a fallback empty state for when allocations is off (AC-3)
   Files: modules/allocations/ui/ProjectTeamPage.tsx, modules/allocations/server/team.ts, modules/allocations/module.ts, modules/allocations/mcp.ts, modules/allocations/tests/team.test.ts
   Depends: T1, T3
 - [ ] `T5` — Tests: unit guard (no `aria-disabled` in the tabs, every tab a link), project scoping of proposals and releases, signed-in e2e that clicks every tab, and the 041 visual baseline updated for the tab change only (AC-1, AC-2, AC-4, AC-5)

@@ -5,6 +5,7 @@ import { allocationsFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { assignedProjectIds } from "./server/scopes";
 import { AllocationsEveryonePage, AllocationsPage } from "./ui/AllocationsPage";
+import { ProjectTeamPage } from "./ui/ProjectTeamPage";
 
 const READ = ["allocations:read"];
 
@@ -25,6 +26,8 @@ export default defineModule({
   routes: [
     { path: "", title: "Allocations", component: AllocationsPage },
     { path: "everyone", title: "Allocations", component: AllocationsEveryonePage },
+    // The project page's Team section (051): served at /delivery/p/:key/team, gated by delivery:read here and allocations:read in the screen.
+    { path: "p/:key/team", title: "Team", mount: "delivery", component: ProjectTeamPage },
   ],
   mcpTools,
   // Allocations hold no personal fields of their own: people are hr.person ids, names stay in hr.
