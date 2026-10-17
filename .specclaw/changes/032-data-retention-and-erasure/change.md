@@ -52,7 +52,7 @@ Commands:
 - `DATABASE_MIGRATE_URL=… npx turbo run test --concurrency=1 --continue` → exit 0 (all 15 packages). A parallel `pnpm test` hit "too many clients" on the shared Postgres; serial is clean.
 - `pnpm lint` → exit 0; `node scripts/check-module-standard.mjs` → ok; `npm run check:graph` → ok
 - `pnpm build` → exit 0
-- `E2E_DB=amax_e2e_032 E2E_AUTH_PORT=3532 npx playwright test --config playwright.auth.config.ts` → 51 passed. `audit.spec.ts` AC-5 needed its alert locator narrowed to `.viewbanner` (Next's route announcer is also `role=alert`; pre-existing flake).
+- `E2E_DB=amax_e2e_032 E2E_AUTH_PORT=3532 npx playwright test --config playwright.auth.config.ts` → 53 passed after merging origin/main (053, 054, 056). The 050 AC-5 alert-locator flake was also fixed on main by 056; main's version kept.
 - `E2E_PORT=3533 npx playwright test` → 1 passed
 - `specclaw-preset-check .` → exit 1 on pre-existing repo-wide violations (717); none in this change's new files.
 - `specclaw-quality-scan .` → not run (jq "Argument list too long", known tool issue). Quality: not_run.
