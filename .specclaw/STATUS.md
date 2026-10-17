@@ -1,30 +1,20 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 13:28 UTC
+**Last Updated:** 2026-10-17 11:44 UTC
 
 ## Active Changes
 
-
-- 🔍 **004-mcp-gateway** — verify done | 3/3 tasks (100%) | 0 failed | PR #23 closed
-- 🔍 **005-amax-chat** — verify done | 3/3 tasks (100%) | 0 failed | PR #22 closed
-- 🔍 **007-delivery-projects** — verify done | 4/4 tasks (100%) | 0 failed | PR #17 closed
-- 🔀 **009-time-and-approvals** — PR #28 open
-- 🔀 **010-allocations-forecast** — PR #29 open
-- 🔀 **011-hr-core** — PR #27 open
-- 🔍 **029-workflows-scheduler** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔀 **031-secrets-and-keys** — PR #31 open
-- 🔍 **033-ai-gateway-and-residency** — verify done | 3/3 tasks (100%) | 0 failed
-- 🔍 **039-specclaw-self-sync** — verify done | 3/3 tasks (100%) | 0 failed | PR #18 closed
-- ✅ **040-dependency-updates** — 2/2 tasks (100%) | 0 failed
-- 🔀 **041-delivery-mock-parity** — PR #30 open
-- 🔍 **042-release-management** — verify done | 3/3 tasks (100%) | 0 failed | PR #24 closed
+_No active changes._
 
 ## Pending Proposals
 
 
 - 📋 **006-agent-governance** — proposal ready, awaiting planning
 - 📋 **008-delivery-ingestion** — proposal ready, awaiting planning
+- 📋 **009-time-and-approvals** — proposal ready, awaiting planning
+- 📋 **010-allocations-forecast** — proposal ready, awaiting planning
+- 📋 **011-hr-core** — proposal ready, awaiting planning
 - 📋 **012-leave** — proposal ready, awaiting planning
 - 📋 **013-onboarding-offboarding** — proposal ready, awaiting planning
 - 📋 **014-payroll-engine** — proposal ready, awaiting planning
@@ -42,13 +32,16 @@
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **027-reports** — proposal ready, awaiting planning
 - 📋 **028-keyflow-sync** — proposal ready, awaiting planning
+- 📋 **029-workflows-scheduler** — proposal ready, awaiting planning
 - 📋 **030-notifications** — proposal ready, awaiting planning
+- 📋 **031-secrets-and-keys** — proposal ready, awaiting planning
 - 📋 **032-data-retention-and-erasure** — proposal ready, awaiting planning
 - 📋 **034-backup-restore-and-export** — proposal ready, awaiting planning
 - 📋 **035-api-webhooks-and-rate-limits** — proposal ready, awaiting planning
 - 📋 **036-compliance-registers** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
 - 📋 **038-navigation-scale** — proposal ready, awaiting planning
+- 📋 **041-delivery-mock-parity** — proposal ready, awaiting planning
 - 📋 **043-chat-write-tool-contract** — proposal ready, awaiting planning
 - 📋 **044-release-and-region-hardening** — proposal ready, awaiting planning
 
@@ -58,9 +51,16 @@
 - ✅ **001-amax-foundation**
 - ✅ **002-identity-and-access**
 - ✅ **003-data-core**
+- ✅ **004-mcp-gateway**
+- ✅ **005-amax-chat**
+- ✅ **007-delivery-projects**
+- ✅ **033-ai-gateway-and-residency**
+- ✅ **039-specclaw-self-sync**
+- ✅ **040-dependency-updates**
+- ✅ **042-release-management**
 
 ## Stats
 
-- **Total changes:** 16
-- **Active:** 13
-- **Completed:** 3
+- **Total changes:** 10
+- **Active:** 0
+- **Completed:** 10

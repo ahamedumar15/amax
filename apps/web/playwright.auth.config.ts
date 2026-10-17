@@ -2,9 +2,9 @@ import { defineConfig } from "@playwright/test";
 import { lumen } from "@amax/testing";
 
 // Signed-in e2e: a real Postgres (DATABASE_MIGRATE_URL) and the fixtures-only demo provider.
-const port = Number(process.env.E2E_PORT ?? 3501);
+const port = Number(process.env.E2E_AUTH_PORT ?? 3501); // parallel worktrees set their own
 const admin = new URL(process.env.DATABASE_MIGRATE_URL ?? "postgres://amax:amax@127.0.0.1:5440/amax");
-const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "amax_app", pathname: "/amax_e2e" }).toString();
+const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "amax_app", pathname: `/${process.env.E2E_DB ?? "amax_e2e"}` }).toString();
 
 export default defineConfig({
   testDir: "tests/e2e",
