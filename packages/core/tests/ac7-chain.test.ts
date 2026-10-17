@@ -20,7 +20,7 @@ describe.skipIf(!hasDb)("AC-7 append-only, hash-chained audit", () => {
     configureRuntime({ db: app, auditKey: "k".repeat(32) });
     for (const tenant of [T, U]) {
       for (let i = 0; i < 5; i++) {
-        await withTenant(app, tenant, (tx) => appendAudit(tx, contextFor.ui(tenant, { id: "user:maya" }), { action: "x.update", resource: "x", resourceId: String(i), after: { n: i, nested: { b: 1, a: [1, 2] } } }));
+        await withTenant(app, tenant, (tx) => appendAudit(tx, contextFor.ui(tenant, { id: "user:maya" }), { action: "x.update", resource: "x", resourceId: String(i), after: { n: i, nested: { b: 1, a: [1, 2] }, dropped: undefined, at: new Date(0) } }));
       }
     }
   });

@@ -25,7 +25,7 @@ export async function appendTrace(tx: Tx, trace: Trace, step: TraceStep) {
   const row: Row = {
     tenant_id: trace.tenantId, seq: last ? Number(last.seq) + 1 : 1, occurred_at: new Date().toISOString(), trace_id: trace.traceId, kind: step.kind, source: trace.source,
     actor: trace.actor, actor_key: keyed(trace.actor), on_behalf_of: trace.onBehalfOf ?? null, on_behalf_of_key: keyed(trace.onBehalfOf ?? null),
-    tool: step.tool ?? null, record_id: step.recordId ?? null, record_key: keyed(step.recordId ?? null), args_key: keyed(step.args ?? null), detail: step.detail ?? {},
+    tool: step.tool ?? null, record_id: step.recordId ?? null, record_key: keyed(step.recordId ?? null), args_key: keyed(step.args ?? null), detail: JSON.parse(JSON.stringify(step.detail ?? {})),
   };
   const prevHash = (last?.hash as string | undefined) ?? GENESIS;
   const hash = sha256(prevHash, body(row));

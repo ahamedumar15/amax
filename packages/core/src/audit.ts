@@ -43,6 +43,9 @@ export const chainHash = (prevHash: string, body: AuditBody) => sha256(prevHash,
 type Entry = { action: string; resource: string; resourceId?: string | null; before?: unknown; after?: unknown };
 type Row = Record<string, unknown>;
 
+// Hash exactly what jsonb will hold: undefined keys dropped, dates as strings.
+const asStored = (v: unknown) => (v === undefined || v === null ? null : JSON.parse(JSON.stringify(v)));
+
 // Chain v2 (050): identifying values enter the hash only as keyed hashes, so erasure (032) can null
 // the raw value and the chain still verifies; the trace id is in the hash too.
 const v2Body = (r: Row) => ({
@@ -72,7 +75,7 @@ export async function appendAudit(tx: Tx, ctx: ServiceContext, entry: Entry) {
   const row: Row = {
     tenant_id: ctx.tenantId, seq: last ? Number(last.seq) + 1 : 1, occurred_at: new Date().toISOString(),
     trace_id: trace?.tenantId === ctx.tenantId ? trace.traceId : null, actor: ctx.actor.id, on_behalf_of: ctx.onBehalfOf ?? null,
-    source: ctx.source, action: entry.action, resource: entry.resource, resource_id: entry.resourceId ?? null, before: entry.before ?? null, after: entry.after ?? null,
+    source: ctx.source, action: entry.action, resource: entry.resource, resource_id: entry.resourceId ?? null, before: asStored(entry.before), after: asStored(entry.after),
   };
   Object.assign(row, { actor_key: keyed(row.actor), on_behalf_of_key: keyed(row.on_behalf_of), resource_id_key: keyed(row.resource_id), before_key: keyed(row.before), after_key: keyed(row.after) });
   const prevHash = (last?.hash as string | undefined) ?? GENESIS;
