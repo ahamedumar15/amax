@@ -45,4 +45,12 @@ What changes on screen, and where to see it: [`051-project-sections`](../../mock
   Files: modules/delivery/tests/sections.test.ts, apps/web/tests/e2e/sections.spec.ts, apps/web/playwright.auth.config.ts, apps/web/playwright.config.ts
   Depends: T2, T4
 
+## Build notes
+
+- **Team is mounted from allocations (T3, T4).** Delivery can't import `@amax/allocations/contracts`: allocations already depends on delivery, so the import would be a module cycle (R5) and break migration order. Instead `ModuleRoute.mount` lets allocations serve `/delivery/p/:key/team`; delivery's own `p/:key/team` route is the fallback when allocations is switched off. The data still comes through `listAllocations({ projectIds })` with the viewer as reader. This touches `packages/core` and `apps/web/lib/registry.ts` (platform) beyond the delivery lane.
+- New read tool `get_project_team` backs the Team pins; `list_releases` takes an optional `projectKey`.
+- The preset's 80-line and no-comment rules weren't applied to existing files (`ReleasesPage.tsx`, `ProposalsPage.tsx`), which already exceed them; new files stay short.
+
 ## Verify
+
+Quality: not_run (`specclaw-quality-scan` fails with jq "Argument list too long", a known tool issue)
