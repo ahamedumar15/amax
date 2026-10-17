@@ -25,20 +25,20 @@ What changes on screen, and where to see it: none. Fixes only; screens stay as i
 
 ## Tasks
 
-- [ ] `T1` — Keys screen: expired rows ask for a new expiry, tickets pin filtered `list_secrets` (AC-5, AC-6)
+- [x] `T1` — Keys screen: expired rows ask for a new expiry, tickets pin filtered `list_secrets` (AC-5, AC-6)
   Files: apps/web/app/(app)/settings/keys/KeyTable.tsx, apps/web/app/(app)/settings/keys/KeyTickets.tsx, apps/web/app/(app)/settings/keys/format.ts, apps/web/lib/admin/credentials.ts
-- [ ] `T2` — `list_secrets` filter and `rotate_secret` checks `keptExpiry` when chat proposes the card, through a new optional `propose` hook on `McpToolDef` (AC-5, AC-6)
+- [x] `T2` — `list_secrets` filter and `rotate_secret` checks `keptExpiry` when chat proposes the card, through a new optional `propose` hook on `McpToolDef` (AC-5, AC-6)
   Files: apps/web/lib/admin/secrets.ts, packages/core/src/module.ts, packages/chat/src/engine.ts
   Depends: T1
-- [ ] `T3` — Settings hub uses the shared `expiringSoon` and builds its AI card from `aiUsageTotals` and `costLabel`; `set_entity_zone` refuses an ambiguous entity name (AC-7, AC-8)
+- [x] `T3` — Settings hub uses the shared `expiringSoon` and builds its AI card from `aiUsageTotals` and `costLabel`; `set_entity_zone` refuses an ambiguous entity name (AC-7, AC-8)
   Files: apps/web/lib/admin/status.ts, apps/web/lib/admin/workflows.ts
   Depends: T1
-- [ ] `T4` — Split `traceStep` (best-effort, logged, returns whether it was written) from `traceStepOrFail`; remove the per-call-site `.catch` wrappers; job_run goes best-effort; `runTurn` writes the pending step before the card (AC-1, AC-3)
+- [x] `T4` — Split `traceStep` (best-effort, logged, returns whether it was written) from `traceStepOrFail`; remove the per-call-site `.catch` wrappers; job_run goes best-effort; `runTurn` writes the pending step before the card (AC-1, AC-3)
   Files: packages/core/src/trace.ts, packages/core/src/server.ts, packages/core/src/jobs.ts, packages/mcp/src/registry.ts, packages/chat/src/engine.ts
-- [ ] `T5` — Graph check R8: only `packages/chat/src/engine.ts` may use `traceStepOrFail` (AC-2)
+- [x] `T5` — Graph check R8: only `packages/chat/src/engine.ts` may use `traceStepOrFail` (AC-2)
   Files: scripts/graph/rules.mjs, scripts/check-graph.mjs, packages/testing/boundaries/r8-trace-or-fail/, packages/testing/tests/ac3-boundaries.test.ts
   Depends: T4
-- [ ] `T6` — Tests: one table test over every trace call site against a failing trace store, plus a failing-first test per settings fix; typecheck, unit, lint, both e2e suites (AC-4, AC-9)
+- [x] `T6` — Tests: one table test over every trace call site against a failing trace store, plus a failing-first test per settings fix; typecheck, unit, lint, both e2e suites (AC-4, AC-9)
   Files: packages/chat/tests/trace-store-down.test.ts, packages/chat/tests/decided-trace-fail.test.ts, packages/mcp/tests/registry-step.test.ts, apps/web/tests/admin/hardening-053.test.ts
   Depends: T2, T3, T4, T5
 
