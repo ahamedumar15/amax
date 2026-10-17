@@ -15,7 +15,7 @@
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
 | PR | - | - |
-| Archived | - | - |
+| Archived | ✅ Done |  |
 
 ## Issues
 
