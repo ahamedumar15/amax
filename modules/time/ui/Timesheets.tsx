@@ -2,8 +2,11 @@ import type { TeamRow } from "../server/team";
 import { approveAction, remindAction } from "../actions";
 import { avatar, DAY_NAMES, hrs, initials, STATUS } from "./parts";
 
+// Quote every text cell, double embedded quotes, and defuse leading formula characters (CSV injection).
+export const csvCell = (v: string) => `"${(/^[=+\-@\t\r]/.test(v) ? `'${v}` : v).replace(/"/g, '""')}"`;
+
 const csv = (rows: TeamRow[]) => encodeURIComponent([["Person", ...DAY_NAMES, "Total", "From agents", "Status"].join(","),
-  ...rows.map((r) => [`"${r.personName}"`, ...r.days.map((d) => d.toFixed(1)), r.total.toFixed(1), r.agentHours.toFixed(1), r.status].join(","))].join("\n"));
+  ...rows.map((r) => [csvCell(r.personName), ...r.days.map((d) => d.toFixed(1)), r.total.toFixed(1), r.agentHours.toFixed(1), r.status].join(","))].join("\n"));
 
 function Action({ row }: { row: TeamRow }) {
   if (row.status === "approved") return <span className="muted">Locked</span>;

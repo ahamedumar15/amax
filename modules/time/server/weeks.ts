@@ -16,6 +16,9 @@ export function weekOrNow(key: string | undefined): IsoWeek {
   return w;
 }
 
+/** An optional week from a URL or tool input: absent means "latest", malformed or non-existent is an error, never another week. */
+export const wantedWeek = (key: string | undefined): IsoWeek | undefined => (key === undefined || key === "" ? undefined : weekOrNow(key));
+
 export async function ensureWeek(tx: Tx, tenantId: string, user: { id: string; name: string }, w: IsoWeek): Promise<WeekRow> {
   await tx.execute(sql`insert into time.week (tenant_id, user_id, person_name, iso_year, iso_week, starts_on)
     values (${tenantId}, ${user.id}, ${user.name}, ${w.year}, ${w.week}, ${weekStart(w).toISOString().slice(0, 10)}) on conflict do nothing`);
@@ -31,10 +34,14 @@ export async function findWeek(tx: Tx, ref: WeekRef): Promise<WeekRow> {
   }
   if (!ref.person) throw new Error("say whose timesheet: a weekId, or a person and week");
   const w = weekOrNow(ref.week);
-  const [row] = await tx.execute(sql`select w.* from time.week w join auth.user u on u.id = w.user_id
-    where (lower(u.email) = lower(${ref.person}) or lower(w.person_name) = lower(${ref.person})) and w.iso_year = ${w.year} and w.iso_week = ${w.week} for update of w`);
-  if (!row) throw new Error(`no timesheet for ${ref.person} in ${weekKey(w)}`);
-  return row as WeekRow;
+  const rows = await tx.execute(sql`select w.*, u.email from time.week w join auth.user u on u.id = w.user_id
+    where (lower(u.email) = lower(${ref.person}) or lower(w.person_name) = lower(${ref.person})) and w.iso_year = ${w.year} and w.iso_week = ${w.week} order by u.email for update of w`);
+  if (rows.length === 0) throw new Error(`no timesheet for ${ref.person} in ${weekKey(w)}`);
+  // An email is unique; a name may not be. Never act on whichever namesake sorts first.
+  const exact = rows.filter((r) => String(r.email).toLowerCase() === ref.person!.toLowerCase());
+  if (exact.length === 1) return exact[0] as WeekRow;
+  if (rows.length > 1) throw new Error(`more than one ${ref.person} has a timesheet in ${weekKey(w)}; use their email (${rows.map((r) => r.email).join(", ")})`);
+  return rows[0] as WeekRow;
 }
 
 export const weekProjectIds = async (tx: Tx, weekId: string) =>

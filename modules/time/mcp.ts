@@ -8,22 +8,21 @@ import { myWeek } from "./server/my";
 import { reopenWeek } from "./server/reopen";
 import { submitWeek } from "./server/submit";
 import { teamWeek } from "./server/team";
-import { parseWeekKey } from "./week";
+import { wantedWeek } from "./server/weeks";
 
 type Src = "mcp" | "chat";
 const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run"> & { input: I; run: (v: Viewer, input: z.infer<I>, source: Src) => Promise<unknown> }) => t as unknown as McpToolDef;
 const read = { scope: "read" as const, readOnly: true, permission: "time:read" };
 const week = z.string().regex(/^\d{4}-W\d{2}$/).optional().describe("ISO week such as 2026-W42; the latest week if left out");
 const ref = z.object({ weekId: z.string().uuid().optional(), person: z.string().optional().describe("Name or email"), week });
-const wk = (key?: string) => parseWeekKey(key) ?? undefined;
 
 export const mcpTools: McpToolDef[] = [
   tool({ ...read, name: "get_team_week", description: "Team timesheets for a week: hours per day, share logged by agents, status, and who you can approve.", input: z.object({ week }),
-    run: (v, a) => teamWeek(v, wk(a.week)) }),
+    run: (v, a) => teamWeek(v, wantedWeek(a.week)) }),
   tool({ ...read, name: "get_my_week", description: "Your own timesheet for a week, by project and day, with its status.", input: z.object({ week }),
-    run: (v, a) => myWeek(v, wk(a.week)) }),
-  tool({ name: "log_time", description: "Log hours against a project for a day (today if no day). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",
-    input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().optional().describe("YYYY-MM-DD"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional() }),
+    run: (v, a) => myWeek(v, wantedWeek(a.week)) }),
+  tool({ name: "log_time", description: "Log hours against a project for a weekday (Monday to Friday, YYYY-MM-DD in the person's own calendar). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",
+    input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional() }),
     run: (v, a, s = "mcp") => logTime(ctxFor(v, s), { ...a, source: s === "mcp" ? "agent" : "person" }) }),
   tool({ name: "submit_week", description: "Submit your timesheet for a week for approval.", scope: "write", permission: "time:submit", input: z.object({ week }),
     run: (v, a, s = "mcp") => submitWeek(ctxFor(v, s), a) }),

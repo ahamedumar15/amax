@@ -1,5 +1,8 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
+import { can, type Viewer } from "@amax/auth";
+import { ForbiddenError } from "@amax/core/server";
+import { seesWeek } from "./server/chain";
 import type { IsoWeek } from "./week";
 
 export { isoWeekOf, parseWeekKey, shiftWeek, weekKey, weekStart, workDays, type IsoWeek } from "./week";
@@ -29,20 +32,43 @@ export type ProjectHours = { projectId: string; hours: number; agentHours: numbe
 
 const n = (v: unknown) => Number(v ?? 0);
 
-export async function weekTotals(tx: Tx, w: IsoWeek): Promise<PersonWeek[]> {
+// Contract reads apply the caller's data scope (docs/architecture.md): a person sees their own
+// time, plus the weeks they could see on Team time (time:team, their reports, projects they approve).
+const visible = (v: Viewer, ownerId: string, projectIds: string[]) => ownerId === v.userId || seesWeek(v, ownerId, projectIds);
+const mustRead = (v: Viewer) => {
+  if (!can(v, "time:read")) throw new ForbiddenError("time:read", "time");
+};
+
+/** Per-person totals for an ISO week, limited to the weeks the viewer may see. */
+export async function weekTotals(tx: Tx, viewer: Viewer, w: IsoWeek): Promise<PersonWeek[]> {
+  mustRead(viewer);
   const rows = await tx.execute(sql`select w.id, w.user_id, w.person_name, w.status, coalesce(sum(e.hours), 0) as hours,
-      coalesce(sum(e.hours) filter (where e.source = 'agent'), 0) as agent, coalesce(sum(e.hours) filter (where e.billable), 0) as billable
+      coalesce(sum(e.hours) filter (where e.source = 'agent'), 0) as agent, coalesce(sum(e.hours) filter (where e.billable), 0) as billable,
+      coalesce(array_agg(distinct e.project_id) filter (where e.project_id is not null), '{}') as projects
     from time.week w left join time.entry e on e.week_id = w.id
     where w.iso_year = ${w.year} and w.iso_week = ${w.week} group by w.id order by w.person_name`);
-  return rows.map((r) => ({ weekId: r.id as string, userId: r.user_id as string, personName: r.person_name as string, status: r.status as WeekStatus,
-    hours: n(r.hours), agentHours: n(r.agent), billableHours: n(r.billable) }));
+  return rows.filter((r) => visible(viewer, r.user_id as string, (r.projects as string[]) ?? []))
+    .map((r) => ({ weekId: r.id as string, userId: r.user_id as string, personName: r.person_name as string, status: r.status as WeekStatus,
+      hours: n(r.hours), agentHours: n(r.agent), billableHours: n(r.billable) }));
 }
 
-export async function projectHours(tx: Tx, range: { from: string; to: string; approvedOnly?: boolean }): Promise<ProjectHours[]> {
+/** Hours per project in a date range, counting only entries the viewer may see. Aggregates only: no per-person rows. */
+export async function projectHours(tx: Tx, viewer: Viewer, range: { from: string; to: string; approvedOnly?: boolean }): Promise<ProjectHours[]> {
+  mustRead(viewer);
   const approved = range.approvedOnly ? sql`and w.status = 'approved'` : sql``;
-  const rows = await tx.execute(sql`select e.project_id, sum(e.hours) as hours, coalesce(sum(e.hours) filter (where e.source = 'agent'), 0) as agent,
+  const rows = await tx.execute(sql`select e.user_id, e.project_id, sum(e.hours) as hours, coalesce(sum(e.hours) filter (where e.source = 'agent'), 0) as agent,
       coalesce(sum(e.hours) filter (where e.billable), 0) as billable
     from time.entry e join time.week w on w.id = e.week_id
-    where e.day between ${range.from} and ${range.to} ${approved} group by e.project_id order by sum(e.hours) desc`);
-  return rows.map((r) => ({ projectId: r.project_id as string, hours: n(r.hours), agentHours: n(r.agent), billableHours: n(r.billable) }));
+    where e.day between ${range.from} and ${range.to} ${approved} group by e.user_id, e.project_id`);
+  const by = new Map<string, ProjectHours>();
+  for (const r of rows) {
+    const projectId = r.project_id as string;
+    if (!visible(viewer, r.user_id as string, [projectId])) continue;
+    const p = by.get(projectId) ?? { projectId, hours: 0, agentHours: 0, billableHours: 0 };
+    p.hours += n(r.hours); p.agentHours += n(r.agent); p.billableHours += n(r.billable);
+    by.set(projectId, p);
+  }
+  const tidy = (x: number) => Math.round(x * 100) / 100;
+  return [...by.values()].map((p) => ({ ...p, hours: tidy(p.hours), agentHours: tidy(p.agentHours), billableHours: tidy(p.billableHours) }))
+    .sort((a, b) => b.hours - a.hours);
 }

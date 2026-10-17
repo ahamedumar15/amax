@@ -2,15 +2,22 @@ import type { ScreenProps } from "@amax/core";
 import { Card, EmptyState } from "@amax/ui";
 import { teamWeek } from "../server/team";
 import { parseWeekKey } from "../week";
+import { notFound } from "next/navigation";
 import { Head, SignInFirst, viewerOrNull, weekHref, weekSpan } from "./parts";
 import { ThisWeek } from "./ThisWeek";
 import { Timesheets } from "./Timesheets";
 import { WeekChart } from "./WeekChart";
 
+// A malformed or non-existent week in the URL is a 404, never a quiet fallback to another week.
+const weekParam = (key: string | undefined) => {
+  if (!key) return undefined;
+  return parseWeekKey(key) ?? notFound();
+};
+
 export async function TeamPage({ viewer: raw, params }: ScreenProps) {
   const viewer = viewerOrNull(raw);
   if (!viewer) return <div className="time"><h1>Team time</h1><SignInFirst /></div>;
-  const t = await teamWeek(viewer, parseWeekKey(params.week) ?? undefined);
+  const t = await teamWeek(viewer, weekParam(params.week));
   const total = t.rows.reduce((n, r) => n + r.total, 0);
   const agent = t.rows.reduce((n, r) => n + r.agentHours, 0);
   const sent = t.rows.filter((r) => r.status === "submitted" || r.status === "approved");

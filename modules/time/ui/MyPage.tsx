@@ -3,12 +3,19 @@ import { IntentButton } from "@amax/ui";
 import { logAction, submitAction } from "../actions";
 import { myWeek } from "../server/my";
 import { parseWeekKey } from "../week";
+import { notFound } from "next/navigation";
 import { DAY_NAMES, Head, hrs, SignInFirst, STATUS, viewerOrNull, weekSpan } from "./parts";
+
+// A malformed or non-existent week in the URL is a 404, never a quiet fallback to another week.
+const weekParam = (key: string | undefined) => {
+  if (!key) return undefined;
+  return parseWeekKey(key) ?? notFound();
+};
 
 export async function MyPage({ viewer: raw, params }: ScreenProps) {
   const viewer = viewerOrNull(raw);
   if (!viewer) return <div className="time"><h1>My timesheet</h1><SignInFirst /></div>;
-  const m = await myWeek(viewer, parseWeekKey(params.week) ?? undefined);
+  const m = await myWeek(viewer, weekParam(params.week));
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const lede = `${weekSpan(m.week, m.days)}. ${m.total.toFixed(1)} h logged${m.total ? `, ${Math.round((m.agentHours / m.total) * 100)}% by agents` : ""}.${m.status === "approved" ? " Approved and locked." : ""}`;

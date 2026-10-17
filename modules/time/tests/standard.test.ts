@@ -25,12 +25,13 @@ describe.skipIf(!hasDb)("contracts and optional hr (Postgres)", () => {
   afterAll(() => db?.t.drop());
 
   it("AC5 contract reads return the fixture week, and without hr the project chain still routes approvals", async () => {
-    const totals = await withTenant(db.app, T, (tx) => weekTotals(tx, W));
+    const admin = await db.as("maya");
+    const totals = await withTenant(db.app, T, (tx) => weekTotals(tx, admin, W));
     expect(totals.map((p) => [p.personName, p.hours, p.status])).toContainEqual(["Kasun Dias", 32.5, "submitted"]);
     expect(totals.reduce((n, p) => n + p.agentHours, 0)).toBeCloseTo(90.2, 5);
-    const byProject = await withTenant(db.app, T, (tx) => projectHours(tx, { from: "2026-10-12", to: "2026-10-16" }));
+    const byProject = await withTenant(db.app, T, (tx) => projectHours(tx, admin, { from: "2026-10-12", to: "2026-10-16" }));
     expect(byProject.map((p) => p.hours)).toEqual([68, 51.5, 22]);
-    expect(await withTenant(db.app, T, (tx) => projectHours(tx, { from: "2026-10-12", to: "2026-10-16", approvedOnly: true }))).toEqual([]);
+    expect(await withTenant(db.app, T, (tx) => projectHours(tx, admin, { from: "2026-10-12", to: "2026-10-16", approvedOnly: true }))).toEqual([]);
     const ayesha = await db.as("ayesha");
     expect(ayesha.reports).toEqual([]);
     expect((await teamWeek(ayesha, W)).rows.map((r) => r.personName)).toEqual(["Dinesh Wickrama"]);
