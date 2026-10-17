@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Tx } from "@amax/db";
+import { withTenant, type Db, type Tx } from "@amax/db";
 import { GENESIS, keyed, sha256, walkChain, type ChainResult } from "./chain-key";
+import { logError } from "./log";
 import { getRuntime } from "./service";
 import { currentTrace, type Trace } from "./trace-context";
 
@@ -35,11 +36,35 @@ export async function appendTrace(tx: Tx, trace: Trace, step: TraceStep) {
   return { seq: row.seq as number, hash };
 }
 
-/** Records a step of the current trace in its own short transaction; outside a trace it does nothing. */
-export async function traceStep(step: TraceStep) {
+/**
+ * Records a step in its own short transaction, best-effort (053): a trace-store failure is logged and
+ * never thrown, so it can't change the outcome a person or the model is told. Resolves false only when
+ * the step couldn't be written; a caller whose next action depends on the step checks that.
+ */
+export async function traceStepIn(db: Db, trace: Trace, step: TraceStep): Promise<boolean> {
+  try {
+    await withTenant(db, trace.tenantId, (tx) => appendTrace(tx, trace, step));
+    return true;
+  } catch (e) {
+    logError(`trace.${step.kind}${step.tool ? ` ${step.tool}` : ""}`, e);
+    return false;
+  }
+}
+
+/** A step of the current trace, best-effort (see traceStepIn); outside a trace it does nothing. */
+export async function traceStep(step: TraceStep): Promise<boolean> {
   const trace = currentTrace();
-  if (!trace) return;
-  await withTenant(getRuntime().db, trace.tenantId, (tx) => appendTrace(tx, trace, step));
+  return trace ? traceStepIn(getRuntime().db, trace, step) : true;
+}
+
+/**
+ * The one fail-closed step: it throws when the step can't be written. Only for a step that must exist
+ * before a write runs (confirm's `run` step in packages/chat/src/engine.ts); the graph check (R8)
+ * refuses any other importer.
+ */
+export async function traceStepOrFail(step: TraceStep): Promise<void> {
+  const trace = currentTrace();
+  if (trace) await withTenant(getRuntime().db, trace.tenantId, (tx) => appendTrace(tx, trace, step));
 }
 
 export async function verifyTraceChain(tx: Tx, tenantId: string, key?: string): Promise<ChainResult> {

@@ -12,7 +12,7 @@ vi.mock("@amax/core/server", async (orig) => ({
   ...(await orig<typeof import("@amax/core/server")>()),
   traceStep: vi.fn(async (s: { detail: { outcome: string } }) => {
     steps.push(s.detail.outcome);
-    if (stepFails) throw new Error("trace store down");
+    return !stepFails;
   }),
 }));
 
