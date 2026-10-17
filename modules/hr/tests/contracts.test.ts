@@ -81,6 +81,21 @@ describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
     });
   });
 
+  it.each([
+    { who: "HR for Engineering only", departments: ["Engineering"], kasun: true, active: 112 + 1 },
+    { who: "HR for Finance only", departments: ["Finance"], kasun: false, active: 6 + 1 },
+  ])("department-scoped readers see only their departments: $who", async ({ departments, kasun, active }) => {
+    await db.tx(async (tx) => {
+      const v: Viewer = { ...db.maya, viewAs: undefined, assignments: [{ role: "HR", legalEntityIds: null, departments }] };
+      expect(await listPeople(tx, v, { status: ["active"] })).toHaveLength(active);
+      const id = (await getPerson(tx, sys(), "LL-0417"))!.id;
+      expect(Boolean(await getEmployment(tx, id, v))).toBe(kasun);
+      // A ServiceContext acting for that viewer reads as the viewer.
+      const ctx = { tenantId: T, actor: { id: "user:x", kind: "user" }, source: "mcp", viewer: v } as ServiceContext;
+      expect(Boolean(await getPerson(tx, ctx, "LL-0417"))).toBe(kasun);
+    });
+  });
+
   it.each(["service", "agent", "user"] as const)("a %s context without a viewer can't read people", async (kind) => {
     const ctx = { tenantId: T, actor: { id: `${kind}:x`, kind }, source: "api" } as ServiceContext;
     await db.tx(async (tx) => {

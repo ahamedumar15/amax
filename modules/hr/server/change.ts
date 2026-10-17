@@ -19,8 +19,8 @@ const JOB_FIELDS = { department: "department", grade: "grade", contract: "contra
 
 /**
  * A job change starts a new employment period on `effectiveOn`; the period before it ends the day before.
- * Periods that already start later carry the change too where they still hold the old value, or it
- * would be undone when they start; a value a later period plans itself (an FTE step, a raise) stays.
+ * Periods that already start later carry the change too until one plans its own value, or it would be
+ * undone when they start.
  */
 async function newPeriod(tx: Tx, personId: string, on: string, set: Record<string, unknown>) {
   const [cur] = await tx.execute(sql`select *, starts_on::text as starts from hr.employment where person_id = ${personId} and starts_on <= ${on}::date order by starts_on desc limit 1 for update`);
@@ -35,11 +35,16 @@ async function newPeriod(tx: Tx, personId: string, on: string, set: Record<strin
     await tx.execute(sql`update hr.employment set department = ${next.department}, grade = ${next.grade}, manager_person_id = ${next.manager_person_id}, contract = ${next.contract},
       fte = ${next.fte}, next_review = ${next.next_review}, base_salary = ${next.base_salary}, updated_at = now() where id = ${cur.id}`);
   }
-  // Only where the later period still holds the old value: a column the later period plans itself
-  // (an FTE step, a raise) keeps its plan.
+  // A later period inherits the change only while it still holds what the period before it held: the
+  // first period that sets its own value (an FTE step, a raise, an acting grade) and everything after
+  // it keep their plan, even a later step back to the old value.
+  const later = await tx.execute(sql`select * from hr.employment where person_id = ${personId} and starts_on > ${on}::date order by starts_on for update`);
+  const same = (a: unknown, b: unknown) => (a ?? null) === (b ?? null) || (a != null && b != null && String(a) === String(b));
   for (const [col, v] of Object.entries(set)) {
-    await tx.execute(sql`update hr.employment set ${sql.identifier(col)} = ${v}, updated_at = now()
-      where person_id = ${personId} and starts_on > ${on}::date and ${sql.identifier(col)} is not distinct from ${cur[col]}`);
+    for (const l of later) {
+      if (!same(l[col], cur[col])) break;
+      await tx.execute(sql`update hr.employment set ${sql.identifier(col)} = ${v}, updated_at = now() where id = ${l.id}`);
+    }
   }
 }
 

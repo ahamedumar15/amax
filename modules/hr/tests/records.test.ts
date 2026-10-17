@@ -53,6 +53,19 @@ describe.skipIf(!hasDb)("hr records (Postgres)", () => {
     expect(col === "grade" ? grades.map((g) => g.grade) : ps.map((p) => p[col])).toEqual(want);
   });
 
+  it.each([
+    { name: "FTE down then back up", col: "fte", start: {}, steps: [{ fte: 0.5 }, { fte: 1 }], change: { fte: 0.8 }, want: ["0.8", "0.5", "1"] },
+    { name: "acting grade that reverts", col: "grade", start: { grade: "E2" }, steps: [{ grade: "E3" }, { grade: "E2" }], change: { grade: "E4" }, want: ["E4", "E3", "E2"] },
+    { name: "two steps that inherit", col: "department", start: {}, steps: [{ fte: 0.5 }, { fte: 0.8 }], change: { department: "IT" }, want: ["IT", "IT", "IT"] },
+  ])("a later step back to the old value is a plan, not an inherited value: $name", async ({ name, col, start, steps, change, want }) => {
+    const { employeeNo } = await hire(`Revert ${name}`, "2026-01-05", start);
+    for (const [i, step] of steps.entries()) await changePerson(hr, { employeeNo, effectiveOn: ["2027-02-01", "2027-04-01"][i], ...step });
+    await changePerson(hr, { employeeNo, effectiveOn: "2026-11-01", ...change });
+    const rows = await db.tx((tx) => tx.execute(sql`select ${sql.identifier(col)}::text as v from hr.employment e join hr.person p on p.id = e.person_id
+      where p.employee_no = ${employeeNo} and e.starts_on >= '2026-11-01' order by e.starts_on`));
+    expect(rows.map((r) => (col === "fte" ? String(Number(r.v)) : r.v))).toEqual(want);
+  });
+
   it("a salary change ahead of a planned raise keeps the raise", async () => {
     const { employeeNo } = await hire("Plan Raise", "2026-01-05", { baseSalary: "100000" });
     await changePerson(hr, { employeeNo, effectiveOn: "2027-02-01", baseSalary: "130000" });
@@ -69,6 +82,7 @@ describe.skipIf(!hasDb)("hr records (Postgres)", () => {
     const before = a.before as { removedPeriods: Record<string, unknown>[] };
     expect(before.removedPeriods).toEqual([expect.objectContaining({ startsOn: "2027-02-01", fte: 0.5, department: "Engineering", hadPay: true })]);
     expect(JSON.stringify(before)).not.toContain("120000");
+    expect((a.before as { endedPeriods: Record<string, unknown>[] }).endedPeriods).toEqual([expect.objectContaining({ startsOn: "2026-01-05", endsOnBefore: "2027-01-31" })]);
   });
 
   it.each([

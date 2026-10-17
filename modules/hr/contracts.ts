@@ -21,9 +21,14 @@ export function readerOf(r: Reader): Resolved {
   throw new ScopeError("hr:read");
 }
 
-/** System code sees everyone; a viewer sees the entities their hr:read reaches, and always themself. */
+/** System code sees everyone; a viewer sees the entities and departments their hr:read reaches, and always themself. */
 const sees = (r: Resolved, row: Record<string, unknown>) =>
-  r.kind === "system" || (!!row.user_id && row.user_id === r.viewer.userId) || can(r.viewer, "hr:read", { legalEntityId: row.legal_entity_id as string });
+  r.kind === "system" || (!!row.user_id && row.user_id === r.viewer.userId) || can(r.viewer, "hr:read", subjectOf(row));
+
+/** The scope attributes of a person or employment row: every dimension an assignment can narrow by. */
+const subjectOf = (row: Record<string, unknown>) => ({
+  ownerUserId: (row.user_id as string | null) ?? null, legalEntityId: row.legal_entity_id as string, department: (row.department as string | null) ?? null,
+});
 
 export const PERSON_STATUSES = ["joining", "active", "left"] as const;
 export type PersonStatus = (typeof PERSON_STATUSES)[number];
@@ -121,7 +126,7 @@ export async function getEmployment(tx: Tx, personId: string, reader: Reader, on
     await appendAudit(tx, who.ctx, { action: "hr.employment.read", resource: "hr.employment", resourceId: full.id, before: null, after: { personId, on, fields: Object.keys(EMPLOYMENT_SENSITIVE) } });
     return full;
   }
-  return mask(who.viewer, full, EMPLOYMENT_SENSITIVE, { ownerUserId: (r.user_id as string | null) ?? null, legalEntityId: full.legalEntityId }) as Employment;
+  return mask(who.viewer, full, EMPLOYMENT_SENSITIVE, subjectOf(r)) as Employment;
 }
 
 /** Auth users who report to this user (feeds the viewer's `reports` scope for manager-visible fields). */

@@ -75,11 +75,13 @@ export const recordLeaver = defineService({
     // Periods that would only start after the last day never happen (a future FTE step, or the whole
     // employment of someone who leaves before their start date); the one in force ends that day.
     const removed = await tx.execute(sql`delete from hr.employment where person_id = ${p.id} and starts_on > ${input.leftOn}::date
-      returning starts_on::text as "startsOn", ends_on::text as "endsOn", department, grade, manager_person_id as "managerPersonId", contract, fte::float as fte,
-        next_review::text as "nextReview", (base_salary is not null) as "hadPay"`);
-    await tx.execute(sql`update hr.employment set ends_on = ${input.leftOn}, updated_at = now() where person_id = ${p.id} and (ends_on is null or ends_on > ${input.leftOn}::date)`);
+      returning id, starts_on::text as "startsOn", ends_on::text as "endsOn", department, grade, manager_person_id as "managerPersonId", contract, fte::float as fte,
+        next_review::text as "nextReview", currency, (base_salary is not null) as "hadPay"`);
+    const ended = await tx.execute(sql`update hr.employment e set ends_on = ${input.leftOn}, updated_at = now() from hr.employment old
+      where old.id = e.id and e.person_id = ${p.id} and (e.ends_on is null or e.ends_on > ${input.leftOn}::date)
+      returning e.id, e.starts_on::text as "startsOn", old.ends_on::text as "endsOnBefore"`);
     const payload: PersonLeft = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, leftOn: input.leftOn };
-    return { result: { employeeNo: input.employeeNo, status, leftOn: input.leftOn }, resourceId: p.id as string, before: { status: p.status, removedPeriods: removed.map((r) => ({ ...r })) }, after: { status, ...input }, events: [{ name: EVENTS.personLeft, payload }] };
+    return { result: { employeeNo: input.employeeNo, status, leftOn: input.leftOn }, resourceId: p.id as string, before: { status: p.status, leftOn: p.left_on ?? null, removedPeriods: removed.map((r) => ({ ...r })), endedPeriods: ended.map((r) => ({ ...r })) }, after: { status, ...input }, events: [{ name: EVENTS.personLeft, payload }] };
   },
 });
 
