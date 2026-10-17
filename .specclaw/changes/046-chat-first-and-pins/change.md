@@ -31,7 +31,7 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
 - [x] `T2` — Board chat-first: deal tiles, suggestion strip, pipeline rows, stat cards, chart and feed get pins; move/remove/accept/dismiss become Ask chips (AC-1, AC-2, AC-4)
   Files: modules/presales/ui/BoardPage.tsx, modules/presales/ui/DealCard.tsx, modules/presales/ui/MoveControls.tsx, modules/presales/ui/FoundStrip.tsx, modules/presales/ui/PipelineList.tsx, modules/presales/ui/StageFeed.tsx
   Depends: T1
-- [ ] `T3` — MCP write tools close_opportunity_risk, remove_opportunity, resolve_suggestion; drop the presales form actions; unit tests incl. no-form/no-direct-write guard (AC-1, AC-3)
+- [x] `T3` — MCP write tools close_opportunity_risk, remove_opportunity, resolve_suggestion; drop the presales form actions; unit tests incl. no-form/no-direct-write guard (AC-1, AC-3)
   Files: modules/presales/mcp.ts, modules/presales/actions.ts, modules/presales/tests/chat-first.test.ts
 - [ ] `T4` — Chat pre-fills the prompt when opened with a pin and no intent (AC-2)
   Files: apps/web/components/chat/Chat.tsx
