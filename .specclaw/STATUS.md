@@ -1,11 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:08 UTC
+**Last Updated:** 2026-10-17 19:24 UTC
 
 ## Active Changes
 
-_No active changes._
+
+- ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged
 
 ## Pending Proposals
 
@@ -69,6 +70,6 @@ _No active changes._
 
 ## Stats
 
-- **Total changes:** 25
-- **Active:** 0
+- **Total changes:** 26
+- **Active:** 1
 - **Completed:** 25
