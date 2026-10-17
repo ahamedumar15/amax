@@ -10,6 +10,8 @@ import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/aut
 import { createRegistry } from "@amax/mcp";
 import type { Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
+import { engineFromEnv, pruneRunsJob, signalHandlers, workflowRegistry, workflowsRetention, type WorkflowEngine } from "@amax/workflows/server";
+import { platformWorkflows } from "./platform-workflows";
 import { installed } from "./registry";
 
 // One database client per server process; null until DATABASE_URL is configured.
@@ -46,7 +48,22 @@ const core = { id: "core", jobs: [auditExportJob(() => storageFromEnv(), loadEnv
 export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 
 const auth = { id: "auth", events: { handles: authEventHandlers } };
-export const jobRegistry = () => registryFrom([core, auth, ...installed]);
+
+// 029: one workflow registry and engine (Postgres by default, Temporal when configured).
+let workflows: ReturnType<typeof workflowRegistry> | undefined;
+export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, ...installed]));
+let engine: Promise<WorkflowEngine> | undefined;
+export function workflowEngine(): Promise<WorkflowEngine> {
+  const db = getDb();
+  if (!db) throw new Error("amax: workflows need DATABASE_URL");
+  return (engine ??= engineFromEnv(db, workflowsRegistry()).catch((e) => {
+    engine = undefined;
+    throw e;
+  }));
+}
+const workflowsJobs = () => ({ id: "workflows", jobs: [pruneRunsJob], retention: workflowsRetention, events: { handles: signalHandlers(workflowsRegistry(), workflowEngine) } });
+
+export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), ...installed]);
 
 // 004/005: one tool registry and the chat intents, from the installed manifests.
 let registry: ReturnType<typeof createRegistry> | undefined;

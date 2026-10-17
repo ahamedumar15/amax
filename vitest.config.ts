@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { configDefaults, defineConfig } from "vitest/config";
 
-const platform = "core|db|auth|ui|mcp|chat|agents|testing|ai";
+const platform = "core|db|auth|ui|mcp|chat|agents|testing|ai|workflows";
 
 export default defineConfig({
   // Module DB suites seed every installed module's fixtures (hr alone is 184 people), so setup hooks get a minute.

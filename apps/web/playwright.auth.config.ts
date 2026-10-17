@@ -15,7 +15,7 @@ export default defineConfig({
   projects: [
     { name: "visual", testMatch: /delivery-visual\.spec\.ts/ },
     { name: "amx", testMatch: /amx\.setup\.ts/, dependencies: ["visual"] },
-    { name: "screens", testMatch: /(auth|delivery|ai|mcp|secrets)\.spec\.ts/, dependencies: ["amx"] },
+    { name: "screens", testMatch: /(auth|delivery|ai|mcp|secrets|workflows)\.spec\.ts/, dependencies: ["amx"] },
     { name: "writes", testMatch: /(chat|releases)\.spec\.ts/, dependencies: ["screens"] },
   ],
   workers: 1,

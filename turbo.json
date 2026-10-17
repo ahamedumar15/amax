@@ -21,7 +21,9 @@
       "outputs": [],
       "env": [
         "DATABASE_MIGRATE_URL",
-        "CI"
+        "CI",
+        "AMAX_TEMPORAL_TESTS",
+        "TEMPORAL_ADDRESS"
       ]
     },
     "@amax/web#build": {
