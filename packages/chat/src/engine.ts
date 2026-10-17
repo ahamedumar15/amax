@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, type DataItem, type Message, type Tool } from "@amax/ai";
-import { CancelledByKeyError, claimKey, retryable, withIdempotency } from "@amax/core/server";
+import { CancelledByKeyError, claimKey, lookupKey, retryable, withIdempotency } from "@amax/core/server";
 import type { Registry, RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
@@ -93,8 +93,8 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
-/** What happened to a card: confirmed (the write ran), cancelled, or failed for good. */
-export type Decision = "confirmed" | "cancelled" | "failed";
+/** What happened to a card: confirmed (the write ran), cancelled, failed for good, or unknown. */
+export type Decision = "confirmed" | "cancelled" | "failed" | "unknown";
 
 /**
  * The card isn't pending: `decision` says what happened to it earlier (perhaps by a request whose
@@ -107,19 +107,22 @@ export class NotPendingError extends Error {
   }
 }
 
-/** The write failed. `retry`: the card is still there and a retry is safe; otherwise it's closed as failed. */
+/**
+ * The write didn't complete. `retry`: nothing was written and the card is still there. `failed`: it
+ * can't succeed, the card is closed. `unknown`: whether it was done can't be told, the card is closed
+ * and the user is asked to check before trying again (never a blind retry).
+ */
 export class ActionFailedError extends Error {
-  constructor(message: string, public retry: boolean) {
+  constructor(message: string, public kind: "retry" | "failed" | "unknown") {
     super(message);
     this.name = "ActionFailedError";
   }
 }
 
-// Each card's write runs under its own idempotency key (review round 7). The key is recorded in the
-// service's transaction, with its result, so whatever goes wrong afterwards (a lost reply, a crash
-// before the card is updated, an error after commit) a retry returns the stored result instead of
-// writing twice, and two clicks at once get one write. Cancelling claims the same key, so a cancel
-// and a confirm can't both win.
+// Each card's write runs under its own idempotency key (core/idempotency.ts has the contract). The
+// stored outcome is checked first; the tool must make exactly one service write; an error is
+// resolved by reading the key back, so a write that committed is reported as done, never retried;
+// cancel claims the same key, so cancel and confirm can't both win (review rounds 7 and 8).
 const keyOf = (actionId: string) => `chat:${actionId}`;
 
 async function card(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
@@ -143,29 +146,47 @@ async function settle(tx: Tx, viewer: Viewer, conversationId: string, action: Pe
 const settleNow = (db: Db, viewer: Viewer, conversationId: string, action: PendingAction, decision: Decision, text: string) =>
   withTenant(db, viewer.tenantId, (tx) => settle(tx, viewer, conversationId, action, decision, text));
 
+const UNKNOWN = "I can't tell whether this was done. Check the record before trying again.";
+
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await card(db, viewer, conversationId, actionId);
-  let result: unknown;
-  try {
-    result = await withIdempotency(keyOf(actionId), () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
-  } catch (e) {
-    if (e instanceof CancelledByKeyError) {
-      await settleNow(db, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
-      throw new NotPendingError("cancelled");
-    }
-    const message = e instanceof Error ? e.message : String(e);
-    // Refused, invalid and the like can't succeed later: close the card. Anything else stays pending,
-    // and retrying it is safe because of the key.
-    if (retryable(e)) throw new ActionFailedError(message, true);
-    await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but it couldn't be done: ${message})`);
-    throw new ActionFailedError(message, false);
+  const key = keyOf(actionId);
+  const done = async (result: unknown) => {
+    await settleNow(db, viewer, conversationId, action, "confirmed", `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
+    return { action, result };
+  };
+  const cancelled = async () => {
+    await settleNow(db, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
+    return new NotPendingError("cancelled");
+  };
+  // 1. An earlier attempt's outcome comes first (its reply may have been lost).
+  const known = await lookupKey(db, viewer.tenantId, key);
+  if (known && "cancelled" in known) throw await cancelled();
+  if (known) return done(known.done);
+  // 2. Run the tool; it must make exactly one service write.
+  const run = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
+  if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
+  if (run.writes > 1) {
+    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but it made more than one change; check before trying again.)`);
+    throw new ActionFailedError(UNKNOWN, "unknown");
   }
-  await settleNow(db, viewer, conversationId, action, "confirmed", `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
-  return { action, result };
+  if (run.ok) {
+    if (run.writes === 1) return done(run.value);
+    // No service write: it went around the pipeline (or did nothing), so it can't be made safe.
+    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but couldn't confirm what it changed.)`);
+    throw new ActionFailedError(UNKNOWN, "unknown");
+  }
+  // 3. It threw. Read the key back: a write that committed before the error is done, not retried.
+  const after = await lookupKey(db, viewer.tenantId, key);
+  if (after && "done" in after) return done(after.done);
+  const message = run.error instanceof Error ? run.error.message : String(run.error);
+  if (retryable(run.error)) throw new ActionFailedError(message, "retry");
+  await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but it couldn't be done: ${message})`);
+  throw new ActionFailedError(message, "failed");
 }
 
-/** "Cancel": nothing is written. Cancelling twice is fine; a card that was already done or failed throws NotPendingError. */
+/** "Cancel": nothing is written. Cancelling twice is fine; a card that was already decided otherwise throws NotPendingError. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await card(db, viewer, conversationId, actionId).catch((e) => {
     if (e instanceof NotPendingError && e.decision === "cancelled") return null;
@@ -177,9 +198,9 @@ export async function cancelAction(db: Db, viewer: Viewer, conversationId: strin
     if (!prior || "cancelled" in prior) await settle(tx, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
     return prior;
   });
-  if (prior && !("cancelled" in prior)) {
+  if (prior && "done" in prior) {
     // The write had already run (its reply may have been lost): record it as done.
-    await settleNow(db, viewer, conversationId, action, "confirmed", `(I confirmed "${action.title}". Result: ${JSON.stringify(prior.result)})`);
+    await settleNow(db, viewer, conversationId, action, "confirmed", `(I confirmed "${action.title}". Result: ${JSON.stringify(prior.done)})`);
     throw new NotPendingError("confirmed");
   }
 }

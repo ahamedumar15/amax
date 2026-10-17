@@ -1,6 +1,6 @@
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
-import { auditExportJob, configureRuntime, registryFrom, storageFromEnv } from "@amax/core/server";
+import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { configureAi } from "@amax/ai";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
@@ -38,7 +38,7 @@ export function getDb(): Db | null {
 }
 
 // Core's own jobs ride alongside the modules'.
-const core = { id: "core", jobs: [auditExportJob(() => storageFromEnv(), loadEnv().AUDIT_RETENTION_DAYS)] };
+const core = { id: "core", jobs: [auditExportJob(() => storageFromEnv(), loadEnv().AUDIT_RETENTION_DAYS), pruneKeysJob] };
 // Sign-in is enforced once a database is configured; before that the app is a guest preview.
 export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 

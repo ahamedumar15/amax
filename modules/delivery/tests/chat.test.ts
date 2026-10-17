@@ -2,7 +2,8 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
-import { configureRuntime } from "@amax/core/server";
+import { configureRuntime, defineService } from "@amax/core/server";
+import { z } from "zod";
 import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer, setViewerScopeResolvers } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { configureAi } from "@amax/ai";
@@ -13,6 +14,7 @@ import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { chatIntents } from "../chat";
 import { managedProjectIds } from "../contracts";
+import { ctxFor } from "../server/context";
 
 const T = lumen.tenant.id;
 
@@ -158,51 +160,136 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
     expect(JSON.stringify(c.messages)).toContain('I confirmed \\"');
   });
 
-  it("idempotent decisions: errors after commit, cancel racing confirm, unknown ids, failures (review rounds 5 to 7)", async () => {
-    const card = async (title: string) => {
-      configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c", name: "create_proposal", input: { projectKey: "CON", title } }] }), () => ({ text: "ok" })]), db: app, model: "claude-haiku-5-5" });
-      const turn = await chatTurn(app, registry, maya, { text: `add ${title} to CON` });
+  describe("exactly-once confirm (review rounds 5 to 8)", () => {
+    // A test module: a write whose transaction can be held open, one that bypasses the service
+    // pipeline, and one that makes two writes.
+    let hold: { entered: () => void; gate: Promise<void> } | null = null;
+    const insertProposal = async (tx: Parameters<Parameters<typeof withTenant>[2]>[0], tenantId: string, title: string) => {
+      const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title)
+        select ${tenantId}, id, 'CON-T' || substr(md5(random()::text), 1, 6), ${title} from delivery.project where key = 'CON' returning id, key`);
+      return row as { id: string; key: string };
+    };
+    const testWrite = defineService({
+      name: "test.write", action: "delivery:proposal:create", resource: "delivery.proposal", input: z.object({ title: z.string() }),
+      async run(tx, input, ctx) {
+        const row = await insertProposal(tx, ctx.tenantId, input.title);
+        if (hold) { hold.entered(); await hold.gate; } // the write's transaction is open here
+        return { result: { key: row.key }, resourceId: row.id, after: input };
+      },
+    });
+    const tool = (name: string, run: (viewer: Viewer, input: { title: string }) => Promise<unknown>) =>
+      ({ name, description: `${name}.`, input: z.object({ title: z.string() }), permission: "", scope: "write" as const, run });
+    const testModule = { id: "t", mcpTools: [
+      tool("test_write", (v, i) => testWrite(ctxFor(v, "chat"), i)),
+      tool("raw_write", (v, i) => withTenant(app, T, (tx) => insertProposal(tx, v.tenantId, i.title))),
+      tool("double_write", async (v, i) => { await testWrite(ctxFor(v, "chat"), i); return testWrite(ctxFor(v, "chat"), { title: `${i.title} 2` }); }),
+    ] };
+    const reg = createRegistry([delivery, testModule as never]);
+    const card = async (name: string, title: string) => {
+      configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c", name, input: { title } }] }), () => ({ text: "ok" })]), db: app, model: "claude-haiku-5-5" });
+      const turn = await chatTurn(app, reg, maya, { text: title });
       return { convo: turn.conversationId, id: turn.pending[0].id };
     };
     const rows = async (title: string) => (await withTenant(app, T, (tx) => tx.execute(sql`select key from delivery.proposal where title = ${title}`))).map((r) => r.key);
+    const holdNext = () => {
+      let entered!: () => void, release!: () => void;
+      const inside = new Promise<void>((r) => { entered = r; });
+      hold = { entered, gate: new Promise<void>((r) => { release = r; }) };
+      return { inside, release: () => { release(); hold = null; } };
+    };
 
-    // The write commits, then the request dies before the card is updated: a retry returns the same
-    // result and writes nothing more.
-    const a = await card("Committed then lost");
-    const lost = { ...registry, call: async (...args: Parameters<typeof registry.call>) => { await registry.call(...args); throw new Error("connection reset"); } } as typeof registry;
-    await expect(confirmAction(app, lost, maya, a.convo, a.id)).rejects.toMatchObject({ retry: true });
-    const again = await confirmAction(app, registry, maya, a.convo, a.id);
-    expect(await rows("Committed then lost")).toEqual([(again.result as { key: string }).key]);
+    it("an error after the write committed is reported as done, not retried", async () => {
+      const a = await card("test_write", "Committed then error");
+      const lost = { ...reg, call: async (...args: Parameters<typeof reg.call>) => { await reg.call(...args); throw new Error("connection reset"); } } as typeof reg;
+      const r = await confirmAction(app, lost, maya, a.convo, a.id);
+      expect(await rows("Committed then error")).toEqual([(r.result as { key: string }).key]);
+    });
 
-    // A cancel that lands while the confirm is on its way wins; the write never happens.
-    const b = await card("Cancel wins");
-    let entered!: () => void, release!: () => void;
-    const inside = new Promise<void>((r) => { entered = r; });
-    const gate = new Promise<void>((r) => { release = r; });
-    const slow = { ...registry, call: async (...args: Parameters<typeof registry.call>) => { entered(); await gate; return registry.call(...args); } } as typeof registry;
-    const confirming = confirmAction(app, slow, maya, b.convo, b.id);
-    await inside;
-    await cancelAction(app, maya, b.convo, b.id);
-    release();
-    await expect(confirming).rejects.toMatchObject({ decision: "cancelled" });
-    expect(await rows("Cancel wins")).toEqual([]);
+    it("a retry after a committed write returns it first, even where a fresh attempt would be refused", async () => {
+      const { ForbiddenError } = await import("@amax/core/server");
+      const refusing = { ...reg, call: async () => { throw new ForbiddenError("x", "y"); } } as unknown as typeof reg;
+      const b = await card("test_write", "Settle lost");
+      const r1 = await confirmAction(app, reg, maya, b.convo, b.id);
+      await withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([{ id: b.id, tool: "test_write", title: "Settle lost", input: { title: "Settle lost" }, fields: ["title"] }])}::jsonb, decided = decided - ${b.id}::text where id = ${b.convo}`));
+      const r2 = await confirmAction(app, refusing, maya, b.convo, b.id);
+      expect(r2.result).toMatchObject({ replayed: true, key: (r1.result as { key: string }).key });
+      expect(await rows("Settle lost")).toHaveLength(1);
+    });
 
-    // A cancel after the write ran (reply lost) is told it was done; an unknown id is an error;
-    // cancelling twice is fine.
-    const c = await card("Done then cancel");
-    await expect(confirmAction(app, lost, maya, c.convo, c.id)).rejects.toMatchObject({ retry: true });
-    await expect(cancelAction(app, maya, c.convo, c.id)).rejects.toMatchObject({ decision: "confirmed" });
-    expect(await rows("Done then cancel")).toHaveLength(1);
-    await expect(cancelAction(app, maya, c.convo, "not-an-action")).rejects.toMatchObject({ decision: null });
-    await cancelAction(app, maya, b.convo, b.id);
+    it("a keyed service call returns the stored outcome before authorize and validation run (round 8)", async () => {
+      const { withIdempotency } = await import("@amax/core/server");
+      const key = `test:${Math.random()}`;
+      const first = await withIdempotency(key, () => testWrite(ctxFor(maya, "chat"), { title: "Keyed first" }));
+      expect(first).toMatchObject({ ok: true, writes: 1 });
+      const nobody = { tenantId: T, actor: { id: "user:nobody", kind: "user" as const, roles: [] }, source: "chat" as const };
+      const again = await withIdempotency(key, () => testWrite(nobody, { title: 42 } as never));
+      expect(again).toMatchObject({ ok: true, value: { replayed: true, key: (first as { value: { key: string } }).value.key } });
+      // Without the key the same call is refused.
+      await expect(testWrite(nobody, { title: "x" })).rejects.toThrow(/forbidden/);
+      expect(await rows("Keyed first")).toHaveLength(1);
+    });
 
-    // Refused can't succeed later: the card closes as failed and a retry is told so.
-    const d = await card("Refused");
-    const { ForbiddenError } = await import("@amax/core/server");
-    const refusing = { ...registry, call: async () => { throw new ForbiddenError("delivery:proposal:create", "delivery.proposal"); } } as unknown as typeof registry;
-    await expect(confirmAction(app, refusing, maya, d.convo, d.id)).rejects.toMatchObject({ retry: false });
-    await expect(confirmAction(app, registry, maya, d.convo, d.id)).rejects.toMatchObject({ decision: "failed" });
-    expect(await rows("Refused")).toEqual([]);
+    it("a cancel arriving while the write's transaction is open waits, then is told it was done", async () => {
+      const a = await card("test_write", "Cancel during write");
+      const h = holdNext();
+      const confirming = confirmAction(app, reg, maya, a.convo, a.id);
+      await h.inside;
+      const cancelling = cancelAction(app, maya, a.convo, a.id);
+      await new Promise((r) => setTimeout(r, 200)); // the cancel is now blocked on the key
+      h.release();
+      await confirming;
+      await expect(cancelling).rejects.toMatchObject({ decision: "confirmed" });
+      expect(await rows("Cancel during write")).toHaveLength(1);
+      const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select decided from chat.conversation where id = ${a.convo}`));
+      expect((c.decided as Record<string, string>)[a.id]).toBe("confirmed");
+    });
+
+    it("a cancel before the write starts wins; the write never happens", async () => {
+      const a = await card("test_write", "Cancel first");
+      let entered!: () => void, release!: () => void;
+      const inside = new Promise<void>((r) => { entered = r; });
+      const gate = new Promise<void>((r) => { release = r; });
+      const slow = { ...reg, call: async (...args: Parameters<typeof reg.call>) => { entered(); await gate; return reg.call(...args); } } as typeof reg;
+      const confirming = confirmAction(app, slow, maya, a.convo, a.id);
+      await inside;
+      await cancelAction(app, maya, a.convo, a.id);
+      release();
+      await expect(confirming).rejects.toMatchObject({ decision: "cancelled" });
+      expect(await rows("Cancel first")).toEqual([]);
+    });
+
+    it.each([
+      ["a write around the service pipeline", "raw_write", "Raw write"],
+      ["two writes", "double_write", "Two writes"],
+    ])("%s is an unknown outcome: the card closes and asks to check, no retry", async (_n, name, title) => {
+      const a = await card(name, title);
+      await expect(confirmAction(app, reg, maya, a.convo, a.id)).rejects.toMatchObject({ kind: "unknown" });
+      await expect(confirmAction(app, reg, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "unknown" });
+    });
+
+    it("refused can't succeed later: closed as failed; unknown ids are errors; cancelling twice is fine", async () => {
+      const a = await card("test_write", "Refused");
+      const { ForbiddenError } = await import("@amax/core/server");
+      const refusing = { ...reg, call: async () => { throw new ForbiddenError("x", "y"); } } as unknown as typeof reg;
+      await expect(confirmAction(app, refusing, maya, a.convo, a.id)).rejects.toMatchObject({ kind: "failed" });
+      await expect(confirmAction(app, reg, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "failed" });
+      await expect(cancelAction(app, maya, a.convo, "not-an-action")).rejects.toMatchObject({ decision: null });
+      const b = await card("test_write", "Cancel twice");
+      await cancelAction(app, maya, b.convo, b.id);
+      await expect(cancelAction(app, maya, b.convo, b.id)).resolves.toBeUndefined();
+      expect(await rows("Refused")).toEqual([]);
+    });
+
+    it("the stored record is a replay record only, and old records are pruned", async () => {
+      const a = await card("test_write", "Replay only");
+      await confirmAction(app, reg, maya, a.convo, a.id);
+      const [rec] = await t.owner`select outcome from core.idempotency where key = ${`chat:${a.id}`}`;
+      expect(Object.keys(rec.outcome.done).sort()).toEqual(["key", "replayed", "resourceId"]);
+      const { pruneKeysJob, KEY_DAYS } = await import("@amax/core/server");
+      await t.owner`update core.idempotency set created_at = now() - make_interval(days => ${KEY_DAYS + 1}) where key = ${`chat:${a.id}`}`;
+      await withTenant(app, T, (tx) => pruneKeysJob.run({ tx, tenantId: T } as never));
+      expect(await t.owner`select 1 from core.idempotency where key = ${`chat:${a.id}`}`).toHaveLength(0);
+    });
   });
 
   it("concurrent creates in one project get distinct keys", async () => {

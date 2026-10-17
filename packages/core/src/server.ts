@@ -9,4 +9,4 @@ export { memoryStorage, ObjectLockedError, s3Storage, storageFromEnv, type PutOp
 export { memoryCache, type Cache } from "./adapters/cache";
 export { auditExportJob, exportAuditDay } from "./audit-export";
 export { logError } from "./log";
-export { CancelledByKeyError, claimKey, retryable, settleKey, withIdempotency, type KeyOutcome } from "./idempotency";
+export { CancelledByKeyError, claimKey, KEY_DAYS, lookupKey, pruneKeysJob, retryable, settleKey, withIdempotency, type KeyOutcome, type Replay } from "./idempotency";
