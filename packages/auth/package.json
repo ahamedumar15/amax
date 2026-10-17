@@ -9,7 +9,8 @@
   "scripts": {
     "lint": "tsc --noEmit",
     "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests",
-    "seed": "tsx bin/seed.ts"
+    "seed": "tsx bin/seed.ts",
+    "admin": "tsx bin/admin.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",

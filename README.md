@@ -34,6 +34,21 @@ pnpm db:migrate
 pnpm test          # DB tests run when DATABASE_MIGRATE_URL is set (required in CI)
 ```
 
+### Sign-in (from change 002)
+
+With `DATABASE_URL` set, every screen needs sign-in (set `AUTH_SECRET` too). Two ways in:
+
+- **Email + password** (hosted or demo deployments without an identity provider):
+  ```bash
+  pnpm --filter @amax/auth admin tenant-add "Lumen Labs"          # prints the tenant id
+  export AMAX_AUTH_PASSWORD_TENANT=<tenant id>
+  pnpm --filter @amax/auth admin user-add --tenant <id> --email you@example.com --name "Your Name" --roles Admin
+  ```
+  Passwords are scrypt-hashed; five wrong attempts lock the account for 15 minutes.
+- **Microsoft Entra ID**: seed the first tenant with `AMAX_SEED_*` (see `packages/auth/src/seed.ts`) and run `pnpm --filter @amax/auth seed`. The app registration must emit the `groups` claim. A Microsoft button appears only for tenants with a provider.
+
+For local development, `AMAX_AUTH_DEMO=1` and `AMAX_AUTH_DEMO_TENANT=<id>` add a fixtures-only "sign in as" form (ignored in production).
+
 The app still boots without a database; `/api/jobs/tick` answers 503 until one is configured.
 
 GitHub Pages deploys from `main` through `.github/workflows/pages.yml`, with `BASE_PATH=/amax`.

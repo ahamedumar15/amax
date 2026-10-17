@@ -13,7 +13,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
     if (!db) throw new Error("amax: sign-in needs DATABASE_URL");
     if (!env.AUTH_SECRET) throw new Error("amax: AUTH_SECRET is required once DATABASE_URL is set");
     const demo = env.AMAX_AUTH_DEMO === "1" && env.AMAX_AUTH_DEMO_TENANT ? { tenantId: env.AMAX_AUTH_DEMO_TENANT } : null;
-    cached = { at: Date.now(), config: authConfig({ db, secret: env.AUTH_SECRET, demo }) };
+    const password = env.AMAX_AUTH_PASSWORD_TENANT ? { tenantId: env.AMAX_AUTH_PASSWORD_TENANT } : null;
+    cached = { at: Date.now(), config: authConfig({ db, secret: env.AUTH_SECRET, demo, password }) };
   }
   // @amax/auth resolves its own next-auth copy (different peer set), so the config type is nominally
   // distinct; the runtime objects are identical (one @auth/core).

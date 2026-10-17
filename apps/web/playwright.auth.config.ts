@@ -22,6 +22,7 @@ export default defineConfig({
       AUDIT_HASH_KEY: "e2e-audit-key-e2e-audit-key-e2e-audit",
       AMAX_AUTH_DEMO: "1",
       AMAX_AUTH_DEMO_TENANT: lumen.tenant.id,
+      AMAX_AUTH_PASSWORD_TENANT: lumen.tenant.id,
       NODE_ENV: "test",
       DATABASE_MIGRATE_URL: admin.toString(),
     },

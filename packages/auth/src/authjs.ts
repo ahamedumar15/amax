@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { sql } from "drizzle-orm";
 import type { Db } from "@amax/db";
+import { signInPassword } from "./password";
 import { loadViewer, SESSION_HOURS, signInDemo, signInFromDirectory, SignInDenied, signOutSession } from "./session";
 
 export type AuthDeps = {
@@ -10,6 +11,8 @@ export type AuthDeps = {
   secret: string;
   /** Fixtures-only "sign in as" for local and CI; refused in production. */
   demo?: { tenantId: string } | null;
+  /** Email + password sign-in for one tenant (deployments without an identity provider). */
+  password?: { tenantId: string } | null;
   env?: Record<string, string | undefined>;
 };
 
@@ -62,6 +65,23 @@ export async function authConfig(deps: AuthDeps): Promise<NextAuthConfig> {
           authorization: { params: { scope: "openid profile email" } },
         }),
       ),
+      ...(deps.password
+        ? [Credentials({
+            id: "password",
+            name: "Email and password",
+            credentials: { email: { label: "Email", type: "email" }, password: { label: "Password", type: "password" } },
+            async authorize(creds) {
+              const tenantId = deps.password!.tenantId;
+              try {
+                const stamp = await signInPassword(deps.db, tenantId, String(creds?.email ?? ""), String(creds?.password ?? ""));
+                return { id: stamp.userId, amax: stamp } as never;
+              } catch (e) {
+                if (e instanceof SignInDenied) return null;
+                throw e;
+              }
+            },
+          })]
+        : []),
       ...(demo
         ? [Credentials({
             id: "demo",
@@ -81,7 +101,7 @@ export async function authConfig(deps: AuthDeps): Promise<NextAuthConfig> {
     ],
     callbacks: {
       async signIn({ account, profile }) {
-        if (!account || account.provider === "demo") return true;
+        if (!account || account.provider === "demo" || account.provider === "password") return true;
         const p = byProvider.get(account.provider);
         if (!p || !profile) return "/signin?error=AccessDenied";
         try {

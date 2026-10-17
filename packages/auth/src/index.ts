@@ -5,3 +5,4 @@ export { canSee, isMasked, mask, SENSITIVITY_POLICY, type Masked, type MaskedRec
 export { defineQuery, type QuerySpec } from "./query";
 export { loadViewer, resolveTenant, setViewAs, signInDemo, signInFromDirectory, SignInDenied, signOutSession, type DirectoryClaims } from "./session";
 export { gate, isPublicPath } from "./gate";
+export { hashPassword, MIN_PASSWORD, signInPassword, upsertPasswordUser, verifyPassword } from "./password";

@@ -44,6 +44,19 @@ test("AC1 a deactivated user (a leaver) can't sign in", async ({ page }) => {
   await page.goto("/signin");
   await page.getByLabel("Demo user (fixtures only)").fill("rizwan@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByTestId("signin-error")).toContainText("Wrong email or password");
   await expect(page).toHaveURL(/\/signin/);
+});
+
+test("password sign-in (hosted, no identity provider): wrong password refused, right one signs in", async ({ page }) => {
+  await page.goto("/signin");
+  await expect(page.getByRole("button", { name: /Sign in with Microsoft/ })).toHaveCount(0);
+  await page.getByLabel("Email", { exact: true }).fill("ops@lumenlabs.test");
+  await page.getByLabel("Password").fill("not-the-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByTestId("signin-error")).toContainText("Wrong email or password");
+  await page.getByLabel("Email", { exact: true }).fill("ops@lumenlabs.test");
+  await page.getByLabel("Password").fill("e2e-ops-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Ops Admin, Admin, profile menu/ })).toBeVisible();
 });

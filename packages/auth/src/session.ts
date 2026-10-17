@@ -10,7 +10,7 @@ export const SESSION_HOURS = 12;
 const textArray = (xs: string[]) => `{${xs.map((x) => `"${x.replace(/[\\"]/g, "\\$&")}"`).join(",")}}`;
 
 export class SignInDenied extends Error {
-  constructor(public reason: "unknown-directory" | "wrong-tenant" | "no-role" | "deactivated" | "unknown-user") {
+  constructor(public reason: "unknown-directory" | "wrong-tenant" | "no-role" | "deactivated" | "unknown-user" | "bad-credentials" | "locked") {
     super(`sign-in denied: ${reason}`);
     this.name = "SignInDenied";
   }
@@ -70,7 +70,7 @@ export async function signInDemo(db: Db, tenantId: string, email: string) {
   });
 }
 
-async function openSession(tx: Tx, tenantId: string, userId: string, roles: string[]) {
+export async function openSession(tx: Tx, tenantId: string, userId: string, roles: string[]) {
   const [s] = await tx.execute(sql`insert into auth.session (tenant_id, user_id, expires_at)
     values (${tenantId}, ${userId}, now() + make_interval(hours => ${SESSION_HOURS})) returning id`);
   await audit(tx, tenantId, userId, "auth.signin", { roles });
