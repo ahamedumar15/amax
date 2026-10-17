@@ -40,3 +40,5 @@ What changes on screen, and where to see it: [`049-chat-history`](../../mock/ind
   Depends: T4
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan failed on this repo: `jq: Argument list too long`)
