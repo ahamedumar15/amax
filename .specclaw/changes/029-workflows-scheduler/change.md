@@ -41,7 +41,7 @@ Assumptions (stated per Rule 1):
 - [x] `T3` — Postgres engine: `workflows` schema (run, step, signal, schedule; RLS; claim functions as amax_claimer), leased claims with a fencing token, step checkpoints, timers, waits with buffered signals, retries with backoff, per-entity time-zone cron schedules (disabled = no runs), admin pause/resume/cancel/retry and schedule toggle with audit, masked run views, retention entry and prune job, outbox bridge; driven by `/api/jobs/tick` (AC-2, AC-4, AC-5, AC-6)
   Files: packages/db/migrations/0016_workflows.sql, packages/workflows/src/pg/{engine,schedules,admin}.ts, packages/workflows/src/retention.ts, apps/web/lib/{server,tick}.ts, apps/web/app/api/jobs/tick/route.ts
   Depends: T2
-- [ ] `T4` — Temporal adapter: generic interpreter workflow, plan/runStep/record activities, client engine (start, signal, pause/resume/cancel/retry), `startTemporalWorker`, config `AMAX_WORKFLOWS_ENGINE=postgres|temporal`, Helm values for the worker and the Temporal chart/Cloud (AC-3)
+- [x] `T4` — Temporal adapter: generic interpreter workflow, plan/runStep/record activities, client engine (start, signal, pause/resume/cancel/retry), `startTemporalWorker`, config `AMAX_WORKFLOWS_ENGINE=postgres|temporal`, Helm values for the worker and the Temporal chart/Cloud (AC-3)
   Files: packages/workflows/src/temporal/{workflow,activities,engine,worker}.ts, packages/workflows/src/config.ts, deploy/helm/amax/{values.yaml,templates/worker.yaml}
   Depends: T3
 - [ ] `T5` — Shared engine suite run on both engines (resume, retries, sleep, waitForEvent, admin actions, no step re-run), a kill test that SIGKILLs a worker process mid-run, schedule and time-zone tests, RLS check, tick route; CI runs the Temporal suite (AC-2, AC-3, AC-5, AC-6)
