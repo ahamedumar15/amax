@@ -14,6 +14,8 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
   const canDeploy = can(viewer, "delivery:deployment:record", { projectId: project.project.id });
   const name = `${release.projectKey} ${release.version}`;
   const ref = { label: name, tool: "get_release_history", args: { projectKey: release.projectKey, version: release.version } };
+  const deployPin = (d: { id: string; environment: string; at: string }) =>
+    ({ label: `${name} on ${d.environment}, ${day(d.at)}`, tool: "get_deployment", args: { projectKey: release.projectKey, version: release.version, deploymentId: d.id } });
   const pin = (label: string) => <PinButton inline pin={{ ...ref, label: `${name} ${label}` }} />;
   const included = release.proposals.filter((p) => p.included);
   return (
@@ -24,7 +26,7 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
         <div className="card pinnable">
           <div className="card-head"><h2>Tag and proposals</h2>{pin("proposals")}</div>
           <ul aria-label="Proposals in this release" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6, margin: "14px 0", maxHeight: 280, overflow: "auto" }}>
-            {included.map((p) => <li key={p.key}><b>{p.key}</b> {p.title} <PhaseChip phase={p.phase} /></li>)}
+            {included.map((p) => <li key={p.key} className="pinnable"><b>{p.key}</b> {p.title} <PhaseChip phase={p.phase} /><PinButton pin={{ label: `${p.key} ${p.title}`, tool: "get_proposal", args: { key: p.key } }} /></li>)}
             {included.length === 0 && <li className="muted">No proposals yet.</li>}
           </ul>
           {canEdit && <div className="actions">
@@ -50,8 +52,8 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
                 <td data-label="When">{day(d.at)}</td><td data-label="Environment">{d.environment}</td>
                 <td data-label="Status">{d.voidedAt ? <span className="chip">Voided: {d.voidReason}</span> : <span className={`chip ${d.status === "rolled-back" ? "bad" : d.status === "testing" ? "info" : "good"}`}>{d.status}</span>}</td>
                 <td data-label="Recorded by">{d.recordedBy}</td><td data-label="Note">{d.note ?? (d.run ? `Run ${d.run}` : "–")}</td>
-                <td className="num">{canDeploy && !d.voidedAt && <AskButton label="Void" name={`Void the ${d.environment} deployment of ${day(d.at)}`} pin={ref}
-                  prompt={`Void the ${d.environment} deployment of ${name} (id ${d.id}). Reason: `} />}<PinButton pin={{ ...ref, label: `${name} on ${d.environment}, ${day(d.at)}` }} /></td>
+                <td className="num">{canDeploy && !d.voidedAt && <AskButton label="Void" name={`Void the ${d.environment} deployment of ${day(d.at)}`} pin={deployPin(d)}
+                  prompt={`Void the ${d.environment} deployment of ${name} (id ${d.id}). Reason: `} />}<PinButton pin={deployPin(d)} /></td>
               </tr>
             ))}
           </tbody>

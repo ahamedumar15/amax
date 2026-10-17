@@ -7,6 +7,17 @@ import { EVENTS, numberOf, type OpportunityStageChanged, type Stage } from "../c
 export const actorOf = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
 export const nameOf = (ctx: ServiceContext) => viewerOf(ctx)?.name ?? actorOf(ctx);
 
+/**
+ * The account manager's user link for an owner name (057). Presales can't look people up, so it links
+ * only the one person it knows: the acting user, when the name is theirs (or no name is given). Any
+ * other name is free text with no link, and the write says so (`ownerLinked: false`).
+ */
+export function ownerLink(ctx: ServiceContext, ownerName: string | undefined): string | null {
+  const v = viewerOf(ctx);
+  if (!v?.userId) return null;
+  return ownerName === undefined || ownerName.trim().toLowerCase() === (v.name ?? "").trim().toLowerCase() ? v.userId : null;
+}
+
 export const NUMBER = /^PS-\d{1,6}$/;
 
 /** Loads a live opportunity by number (PS-0142) and locks it: every write to one serialises on its row. */

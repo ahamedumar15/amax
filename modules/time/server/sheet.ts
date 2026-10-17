@@ -11,6 +11,8 @@ export type SheetRef = { weekId?: string; week?: string; project?: string };
 async function own(v: Viewer, week: string | undefined, project?: string) {
   const m = await myWeek(v, wantedWeek(week));
   const rows = project ? m.rows.filter((r) => r.projectName === project) : m.rows;
+  // A row pin whose project is no longer on the week is gone, not "0 h logged".
+  if (project && !rows.length) return null;
   return { week: m.key, dates: m.days, person: "you", status: m.status, rows, total: rows.reduce((n, r) => n + r.total, 0), agentHours: project ? undefined : m.agentHours };
 }
 

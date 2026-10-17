@@ -1,11 +1,11 @@
 # Chat-first sweep review and fixes
 
 **Change:** 057-chat-first-review · **Created:** 2026-10-17
-**Lane:** Delivery · **Reviews:** [054](../054-chat-first-everywhere/change.md)
+**Lane:** Delivery
 
 ## Problem
 
-The review cadence calls for one review per module, at the end, capped at 5 rounds. 054 finished the chat-first sweep across time, allocations, delivery and presales. This change holds that review's rounds and the fixes for its blockers and majors. Scope: `4d42ff5..main`, which is #47.
+Reviews [054](../054-chat-first-everywhere/change.md), which is merged. The review cadence calls for one review per module, at the end, capped at 5 rounds. 054 finished the chat-first sweep across time, allocations, delivery and presales. This change holds that review's rounds and the fixes for its blockers and majors. Scope: `4d42ff5..main`, which is #47.
 
 ## Mock Delta
 

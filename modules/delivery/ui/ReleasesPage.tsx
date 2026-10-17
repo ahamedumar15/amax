@@ -1,6 +1,7 @@
 import { can, type Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
+import { releaseHref } from "../contracts";
 import { AskButton } from "./AskButton";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
 import { day, needViewer, SignInFirst } from "./parts";
@@ -40,7 +41,7 @@ export function nextStep(r: ReleaseRow): { label: string; environment: string | 
   return { label: "No Prod stage", environment: null, primary: false };
 }
 
-export const releaseHref = (r: Pick<ReleaseRow, "projectKey" | "version">) => `/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`;
+export { releaseHref };
 
 export type Action =
   | { kind: "text"; text: string }

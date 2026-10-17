@@ -1,7 +1,10 @@
 import { ActionFailedError, NotPendingError } from "@amax/chat";
+import type { Moved } from "./chat-move";
+
+export { movedOf } from "./chat-move";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; moved?: Moved };
 
 /**
  * What a failed confirm or cancel means for the card (review rounds 3 to 8). "cancelled" only when it

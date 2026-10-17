@@ -7,7 +7,7 @@ import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
-import { outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
+import { movedOf, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
@@ -36,7 +36,7 @@ export async function confirmChat(conversationId: string, actionId: string): Pro
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
     revalidatePath("/", "layout");
     const key = (result as { key?: string } | null)?.key;
-    return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.` };
+    return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.`, moved: movedOf(result) };
   } catch (e) {
     return outcomeOf(e);
   }

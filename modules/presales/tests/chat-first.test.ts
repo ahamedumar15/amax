@@ -55,4 +55,24 @@ describe.skipIf(!hasDb)("AC-3 the new write tools wait for chat's confirm (Postg
     const [audit] = await db.q(sql`select source from core.audit_event where action = ${action} order by seq desc limit 1`);
     expect(audit.source).toBe("chat");
   });
+
+  // 057: an owner name and the owner's user link never disagree, and an unlinked name is said, not silent.
+  it.each([
+    ["the current owner's name again", "PS-0142", "same", "kept", undefined],
+    ["someone presales can't link", "PS-0139", "Ama Perera (fictional)", null, false],
+    ["the acting user's own name, after that", "PS-0139", "self", "self", true],
+  ] as const)("057 update_opportunity owner: %s", async (_n, number, name, link, linked) => {
+    const liam = await db.as("liam");
+    const n = Number(number.slice(3));
+    const [o] = await db.q(sql`select owner_name, owner_user_id from presales.opportunity where number = ${n}`);
+    const ownerName = name === "same" ? (o.owner_name as string) : name === "self" ? liam.name : name;
+    const registry = createRegistry(db.modules);
+    configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "update_opportunity", input: { number, ownerName, nextStep: `Call back (${_n})` } }] }), () => ({ text: "Confirm?" })]), db: db.app, model: "claude-haiku-5-5" });
+    const turn = await chatTurn(db.app, registry, liam, { text: "please update" });
+    const { result } = await confirmAction(db.app, registry, liam, turn.conversationId, turn.pending[0].id);
+    const [after] = await db.q(sql`select owner_name, owner_user_id from presales.opportunity where number = ${n}`);
+    expect(after.owner_name).toBe(ownerName);
+    expect(after.owner_user_id).toBe(link === "kept" ? o.owner_user_id : link === "self" ? liam.userId : null);
+    expect((result as { ownerLinked?: boolean }).ownerLinked).toBe(linked);
+  });
 });

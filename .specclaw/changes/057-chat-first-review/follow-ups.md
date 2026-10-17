@@ -1,0 +1,8 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B3] `modules/time/server/sheet.ts:13` `getTimesheet` with a `project` that matches no row in the week returns an empty `rows` array with `total: 0` and the week's status, instead of not-found. A stale pin, for example after a project rename, then reads as '0 h logged' rather than 'record not found'. Fix: return null when `project` is given and no row matches. (round 1) <!-- fp:18e4abcedf1f -->
+- [minor B4] `packages/ai/src/scripted-writes.ts:10` Each Ask amax prompt is now written twice: as a template literal in the module UIs and as a regex in the scripted provider. A wording change in the UI quietly breaks the scripted path, and only e2e runs catch it. Fix: export the prompt builders from one place and have the scripted rules depend on them, or add a unit test that feeds every UI prompt template through `scriptedWrite`. (round 1) <!-- fp:c80419d3172e -->
+- [minor B10] `modules/delivery/ui/ReleasePage.tsx:25` The 'Tag and proposals' card used to list every candidate proposal with its include state. It now lists only the included ones, so a reviewer can no longer see which proposals could be added before asking chat to change the set. Fix: list the excluded candidates as well, read-only and marked as not included. (round 1) <!-- fp:854c791f48aa -->
+- [minor B6] `modules/allocations/ui/CopyMonth.tsx:6` `months[0]` is used unguarded (`monthLabel(months[0])`, `months[0].slice`). The old select rendered empty when there were no months; this throws during render if `grid.months.slice(0, -1)` is ever empty. Render the button only when months.length > 0. (round 1) <!-- fp:1262ca667eb9 -->

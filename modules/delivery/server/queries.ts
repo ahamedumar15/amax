@@ -211,3 +211,19 @@ export const getRelease = (v: Viewer, projectKey: string, version: string) =>
       .map((p) => ({ key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
     return { id: r.id as string, version: r.version as string, projectKey, projectName: r.project_name as string, history, proposals };
   });
+
+// One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.
+/** One proposal by key (CON-12), or null. */
+export const getProposal = async (v: Viewer, key: string) => (await listProposals(v)).find((p) => p.key === key) ?? null;
+
+/** One environment of a project by name, or null. */
+export const getEnvironment = async (v: Viewer, projectKey: string, name: string) => {
+  const e = (await listEnvironments(v, projectKey)).find((x) => x.name === name);
+  return e ? { projectKey, ...e } : null;
+};
+
+/** One deployment of a release by id, voided or not, or null. */
+export const getDeployment = async (v: Viewer, projectKey: string, version: string, deploymentId: string) => {
+  const d = (await getRelease(v, projectKey, version))?.history.find((x) => x.id === deploymentId);
+  return d ? { projectKey, version, ...d } : null;
+};

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { defineService } from "@amax/core/server";
-import { lockOpenOpportunity, NUMBER, toUsd } from "./common";
+import { lockOpenOpportunity, NUMBER, ownerLink, toUsd } from "./common";
 import { newOpportunity } from "./opportunities";
 
 const COLUMNS = {
@@ -22,7 +22,9 @@ export const updateOpportunity = defineService({
   input: opportunityChanges,
   async run(tx, input, ctx) {
     const o = await lockOpenOpportunity(tx, input.number);
-    const fields = (Object.keys(COLUMNS) as Field[]).filter((f) => input[f] !== undefined);
+    // Saying the current owner again changes nothing, so it keeps the owner's user link (057).
+    const same = input.ownerName !== undefined && input.ownerName.trim() === String(o.owner_name ?? "").trim();
+    const fields = (Object.keys(COLUMNS) as Field[]).filter((f) => input[f] !== undefined && !(f === "ownerName" && same));
     const sets = fields.map((f) => sql`${sql.identifier(COLUMNS[f])} = ${input[f]!}`);
     const money = input.value !== undefined || input.currency !== undefined;
     if (money) {
@@ -31,10 +33,15 @@ export const updateOpportunity = defineService({
       sets.push(sql`value_amount = ${value}`, sql`value_currency = ${currency}`, sql`usd_rate = ${rate}`, sql`value_usd = ${usd}`);
     }
     if (!sets.length) throw new Error(`say what to change on ${input.number}`);
-    if (input.ownerName !== undefined) sets.push(sql`owner_user_id = null`);
+    const owner = input.ownerName !== undefined && !same ? ownerLink(ctx, input.ownerName) : undefined;
+    if (owner !== undefined) sets.push(sql`owner_user_id = ${owner}`);
     await tx.execute(sql`update presales.opportunity set ${sql.join(sets, sql`, `)}, updated_at = now() where id = ${o.id}`);
-    const before = Object.fromEntries([...fields.map((f) => [f, o[COLUMNS[f]]]), ...(money ? [["value", o.value_amount], ["currency", o.value_currency]] : [])]);
-    const { number: _, ...after } = input;
-    return { result: { number: input.number, changed: Object.keys(after) }, resourceId: o.id as string, before, after };
+    const before = Object.fromEntries([...fields.map((f) => [f, o[COLUMNS[f]]]), ...(money ? [["value", o.value_amount], ["currency", o.value_currency]] : []),
+      ...(owner !== undefined ? [["ownerUserId", o.owner_user_id]] : [])]);
+    const { number: _, ...rest } = input;
+    const after = { ...Object.fromEntries(Object.entries(rest).filter(([k]) => !(k === "ownerName" && same))), ...(owner !== undefined ? { ownerUserId: owner } : {}) };
+    const note = owner === null ? `${input.ownerName} isn't linked to a user account; the owner is recorded by name only` : undefined;
+    return { result: { number: input.number, changed: Object.keys(after).filter((k) => k !== "ownerUserId"), ...(owner !== undefined ? { ownerLinked: owner !== null } : {}), ...(note ? { note } : {}) },
+      resourceId: o.id as string, before, after };
   },
 });
