@@ -33,7 +33,7 @@ New screen, Data retention: retention by data class and entity, the next purge, 
 - [x] `T4` — Privacy services in core: statutory minimums per country, tenant defaults, effective periods, lengthen-only overrides, legal holds, the purge (audited by class and count), access and erasure requests with a two-person rule behind one replaceable seam (AC-2, AC-3, AC-4, AC-5)
   Files: packages/core/src/privacy.ts, packages/core/src/privacy/*.ts, packages/core/tests/privacy*.test.ts
   Depends: T2, T3
-- [ ] `T5` — Integration: MCP read and write tools behind chat's confirm, the daily 029 purge workflow replacing workflows.prune, grants for HR, demo fixtures and the scripted chat phrases; tool, e2e, a11y and visual tests (AC-3, AC-4, AC-6)
+- [x] `T5` — Integration: MCP read and write tools behind chat's confirm, the daily 029 purge workflow replacing workflows.prune, grants for HR, demo fixtures and the scripted chat phrases; tool, e2e, a11y and visual tests (AC-3, AC-4, AC-6)
   Files: apps/web/lib/admin/privacy.ts, apps/web/lib/admin/index.ts, apps/web/lib/platform-workflows.ts, apps/web/lib/server.ts, apps/web/scripts/seed-demo.ts, packages/ai/src/scripted.ts, apps/web/tests/admin/privacy.test.ts, apps/web/tests/e2e/retention.spec.ts, apps/web/playwright.auth.config.ts, apps/web/playwright.config.ts, docs/architecture.md
   Depends: T1, T4
 

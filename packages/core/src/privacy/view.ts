@@ -33,12 +33,17 @@ export async function listRules(tx: Tx, entityId?: string | null) {
   const [p, held] = await Promise.all([loadPeriods(tx), heldIds(tx)]);
   const entity: Entity | null = p.entities.find((e) => e.id === entityId) ?? p.entities[0] ?? null;
   const rules: RuleView[] = privacyRules().map((r) => ({ id: r.id, table: r.table, module: r.module, class: r.class, action: r.action, start: r.start, label: r.label ?? r.table, paused: paused(r, held), ...effective(p, r, entity?.id ?? null) }));
-  return { entities: p.entities, entity, rules, appendOnly: APPEND_ONLY, defaults: Object.values(TENANT_DEFAULTS) };
+  return { entities: p.entities, entity, rules, appendOnly: APPEND_ONLY, defaults: Object.values(TENANT_DEFAULTS).filter((d) => !rules.some((r) => r.label === d.label)) };
 }
 
 export async function purgedSince(tx: Tx, days = 30) {
   const rows = await tx.execute(sql`select label, sum(n)::int as n from privacy.purge_log where at > now() - make_interval(days => ${days}) group by label order by 2 desc`);
   return rows.map((r) => ({ label: r.label as string, n: Number(r.n) }));
+}
+
+export async function accessPackage(tx: Tx, id: string) {
+  const [r] = await tx.execute(sql`select package from privacy.request where id = ${id} and kind = 'access' and status = 'completed' and package is not null`);
+  return (r?.package as Record<string, unknown> | undefined) ?? null;
 }
 
 export async function names(tx: Tx, actors: string[]) {

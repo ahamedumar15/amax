@@ -4,7 +4,7 @@ import { countRule } from "./apply";
 import { privacyRules, type Rule } from "./catalog";
 import { about } from "./match";
 import { statutoryFor } from "./periods";
-import type { Subject } from "./subjects";
+import { resolveSubject, type Subject } from "./subjects";
 
 export type Item = { source: string; label: string; class: string; n: number; action: Rule["action"] | "erase"; rule?: string; kept?: string };
 
@@ -51,3 +51,8 @@ export const summarise = (items: Item[]) => ({
   toErase: items.filter((i) => !i.kept).reduce((n, i) => n + i.n, 0),
   total: items.reduce((n, i) => n + i.n, 0),
 });
+
+export async function inventoryFor(tx: Tx, person: string) {
+  const subject = await resolveSubject(tx, person);
+  return { subject, items: await inventory(tx, subject) };
+}
