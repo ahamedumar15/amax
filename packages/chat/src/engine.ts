@@ -9,7 +9,7 @@ import type { Viewer } from "@amax/auth";
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type Pin = { label: string; tool: string; args: Record<string, unknown> };
 /** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string };
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string } };
 export type Highlight = { text: string; field: string; index: number };
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
 
@@ -53,6 +53,20 @@ export function highlightsFor(text: string, pending: PendingAction[]): Highlight
   return out.sort((a, b) => a.index - b.index);
 }
 
+// The gateway hands write tools the input it validated, so a field the tool doesn't declare (a
+// "value" the model made up, say) never reaches the card. A tool that takes a typed secret marks the
+// card, which then asks the person for it in a masked field (047 AC-4).
+function pendingFor(t: RegisteredTool, input: Record<string, unknown>): PendingAction {
+  return { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), ...(t.secretInput ? { secret: t.secretInput } : {}) };
+}
+
+// An error from a write that was given a secret never carries it on, even if some layer echoed it.
+function scrub(e: unknown, secret: string | undefined): unknown {
+  if (!secret || !(e instanceof Error) || !`${e.message}${e.stack ?? ""}`.includes(secret)) return e;
+  const clean = new Error(e.message.split(secret).join("••••"));
+  return Object.assign(clean, { name: e.name, retryable: (e as { retryable?: unknown }).retryable, code: (e as { code?: unknown }).code });
+}
+
 /** One user message: answer with read tools, turn write calls into confirm cards. */
 export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> {
   const convo = await load(db, viewer, opts.conversationId);
@@ -64,7 +78,7 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
-      const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString() };
+      const action = pendingFor(t, input);
       pending.push(action);
       return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
     },
@@ -176,7 +190,7 @@ const doneNote = (title: string, result: unknown) => {
 };
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
-export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
+export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string } = {}) {
   const action = await card(db, viewer, conversationId, actionId);
   const key = keyOf(actionId);
   const done = async (result: unknown) => {
@@ -193,7 +207,9 @@ export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, 
   if (known) return done(known.done);
   if (isExpired(action)) throw await expire(db, viewer, conversationId, action);
   // 2. Run the tool; it must make exactly one service write.
-  const run = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
+  if (action.secret && !opts.secret) throw new ActionFailedError(`type the ${action.secret.label.toLowerCase()} first`, "retry");
+  const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }));
+  const run = raw.ok ? raw : { ...raw, error: scrub(raw.error, opts.secret) };
   if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
   if (run.writes > 1) {
     await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but it made more than one change; check before trying again.)`);

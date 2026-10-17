@@ -53,7 +53,12 @@ export type McpToolDef = {
   destructive?: boolean;
   /** Classified fields in the result (002 classes), so the AI gateway can redact them per tenant policy. */
   sensitive?: Partial<Record<string, Sensitivity>>;
-  run: (viewer: never, input: never, source: "mcp" | "chat") => Promise<unknown>;
+  /**
+   * A value only a person types, into a masked field on chat's confirm card (047 AC-4). It is never
+   * part of `input`, so the model can neither see nor fill it; `run` gets it as `secret`.
+   */
+  secretInput?: { label: string };
+  run: (viewer: never, input: never, source: "mcp" | "chat", secret?: string) => Promise<unknown>;
 };
 
 /**
