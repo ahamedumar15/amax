@@ -65,7 +65,7 @@
 .presales .opp-num{display:flex;align-items:baseline;justify-content:space-between;margin:-4px 0 12px}
 .presales .opp-num b{font-size:17px;font-weight:600}
 .presales .opp-num b small{display:block;font-size:11.5px;font-weight:500;color:var(--ink-3)}
-.presales .opp-num span{white-space:nowrap;font-size:12.5px;font-weight:600;color:var(--chip-agent);background:var(--violet-soft);border-radius:7px;padding:1px 7px}
+.presales .opp-num span{font-size:12.5px;text-align:right;font-weight:600;color:var(--chip-agent);background:var(--violet-soft);border-radius:7px;padding:1px 7px}
 .presales .opp-act{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-2);flex-wrap:wrap}
 .presales .tcard form.opp-act{display:flex;align-items:stretch}
 .presales .opp-act .select.sm{flex:1 1 100%;min-width:0;height:32px}
