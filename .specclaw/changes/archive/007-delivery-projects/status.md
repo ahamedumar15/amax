@@ -1,6 +1,6 @@
-# Status: 039-specclaw-self-sync
+# Status: 007-delivery-projects
 
-**Change:** 039-specclaw-self-sync
+**Change:** 007-delivery-projects
 **Started:** -
 **Last Updated:** 2026-10-17
 
@@ -11,11 +11,11 @@
 | Proposal | ✅ Approved | Approved by product owner 2026-10-17: priority path to the spec-progress board (007) and amax tracking itself (039) |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | ✅ Done |  |
+| Tasks | - | - |
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
 | PR | - | - |
-| Archived | - | - |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

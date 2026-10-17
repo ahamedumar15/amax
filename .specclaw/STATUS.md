@@ -1,19 +1,11 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 12:31 UTC
+**Last Updated:** 2026-10-17 11:44 UTC
 
 ## Active Changes
 
-
-- 🔍 **004-mcp-gateway** — verify done | 3/3 tasks (100%) | 0 failed | PR #23 closed
-- 🔍 **005-amax-chat** — verify done | 3/3 tasks (100%) | 0 failed | PR #22 closed
-- 🔍 **007-delivery-projects** — verify done | 4/4 tasks (100%) | 0 failed | PR #17 closed
-- 🔍 **011-hr-core** — verify done | 6/6 tasks (100%) | 0 failed
-- 🔍 **033-ai-gateway-and-residency** — verify done | 3/3 tasks (100%) | 0 failed
-- 🔍 **039-specclaw-self-sync** — verify done | 3/3 tasks (100%) | 0 failed | PR #18 closed
-- ✅ **040-dependency-updates** — 2/2 tasks (100%) | 0 failed
-- 🔍 **042-release-management** — verify done | 3/3 tasks (100%) | 0 failed | PR #24 closed
+_No active changes._
 
 ## Pending Proposals
 
@@ -22,6 +14,7 @@
 - 📋 **008-delivery-ingestion** — proposal ready, awaiting planning
 - 📋 **009-time-and-approvals** — proposal ready, awaiting planning
 - 📋 **010-allocations-forecast** — proposal ready, awaiting planning
+- 📋 **011-hr-core** — proposal ready, awaiting planning
 - 📋 **012-leave** — proposal ready, awaiting planning
 - 📋 **013-onboarding-offboarding** — proposal ready, awaiting planning
 - 📋 **014-payroll-engine** — proposal ready, awaiting planning
@@ -58,9 +51,16 @@
 - ✅ **001-amax-foundation**
 - ✅ **002-identity-and-access**
 - ✅ **003-data-core**
+- ✅ **004-mcp-gateway**
+- ✅ **005-amax-chat**
+- ✅ **007-delivery-projects**
+- ✅ **033-ai-gateway-and-residency**
+- ✅ **039-specclaw-self-sync**
+- ✅ **040-dependency-updates**
+- ✅ **042-release-management**
 
 ## Stats
 
-- **Total changes:** 11
-- **Active:** 8
-- **Completed:** 3
+- **Total changes:** 10
+- **Active:** 0
+- **Completed:** 10

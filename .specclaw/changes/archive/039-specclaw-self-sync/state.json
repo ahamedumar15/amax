@@ -1,10 +1,11 @@
 {
   "change": "039-specclaw-self-sync",
-  "phase": "verify",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-17T07:10:05Z"},
     "build": {"status":"done","at":"2026-10-17T07:10:05Z"},
-    "verify": {"status":"done","at":"2026-10-17T07:10:05Z"}
+    "verify": {"status":"done","at":"2026-10-17T07:10:05Z"},
+    "archived": {"status":"done","at":"2026-10-17T11:44:32Z"}
   }
 }
