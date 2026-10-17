@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      next-react:
+        patterns: ["next", "react", "react-dom", "@types/react", "@types/react-dom", "@opennextjs/*", "wrangler"]
+      test-tooling:
+        patterns: ["vitest", "@playwright/test", "@axe-core/*", "pixelmatch", "pngjs", "@types/pngjs"]
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
