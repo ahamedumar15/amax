@@ -31,9 +31,6 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                    where pr.key = ${opts.projectKey} and p.source = 'specclaw'`));
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
-  // Keys taken by proposals someone created by hand are left alone and reported (review round 1).
-  const manual = new Set((await withTenant(db, ctx.tenantId, (tx) => tx.execute(sql`select p.key from delivery.proposal p join delivery.project pr on pr.id = p.project_id
-                   where pr.key = ${opts.projectKey} and p.source is distinct from 'specclaw'`))).map((r) => r.key as string));
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
   const project = { name: opts.projectName, client: opts.client };
 
@@ -42,7 +39,6 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const cur = byKey.get(d.key);
     byKey.delete(d.key);
     if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
-    if (manual.has(d.key)) { result.skipped.push(`${d.key}: key belongs to a proposal not created by the sync`); continue; }
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase as string, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
       continue;
@@ -50,7 +46,8 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     try {
       await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
     } catch (e) {
-      // Someone created a proposal with this key while the sync was running (review round 3).
+      // A proposal made by hand holds this key (before the project was first synced): it's left alone
+      // and reported, never overwritten (review rounds 1 to 4).
       if (!(e instanceof KeyTakenError)) throw e;
       result.skipped.push(`${d.key}: key belongs to a proposal not created by the sync`);
       continue;

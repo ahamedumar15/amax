@@ -25,7 +25,7 @@ export async function sendChat(input: { conversationId?: string; text: string; p
   }
 }
 
-export async function confirmChat(conversationId: string, actionId: string): Promise<{ ok: true; summary: string } | { ok: false; error: string; handled?: boolean }> {
+export async function confirmChat(conversationId: string, actionId: string): Promise<{ ok: true; summary: string } | { ok: false; error: string; earlier?: "confirmed" | "cancelled" }> {
   try {
     const viewer = await currentViewer();
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
@@ -33,8 +33,9 @@ export async function confirmChat(conversationId: string, actionId: string): Pro
     const key = (result as { key?: string } | null)?.key;
     return { ok: true, summary: key ? `Done: ${key} added.` : `Done: ${action.title}.` };
   } catch (e) {
-    // Already confirmed or cancelled, e.g. a retry after a lost reply: neutral, not "cancelled" (review round 3).
-    if (e instanceof NotPendingError) return { ok: false, handled: true, error: "This was already handled. Check the record to see the result." };
+    // A retry after a lost reply: say what happened the first time (review rounds 3 and 4). An action
+    // this conversation never had stays an error.
+    if (e instanceof NotPendingError && e.decision) return { ok: false, earlier: e.decision, error: e.decision === "confirmed" ? "This was already done." : "This was already cancelled. Nothing was changed." };
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }

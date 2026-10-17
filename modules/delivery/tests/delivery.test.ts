@@ -56,6 +56,23 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     expect(await tablesMissingRls(t.owner)).toEqual([]);
   });
 
+  it("every retention entry names real columns of its table, and an idle clock has updated_at (review round 4)", async () => {
+    const missing: string[] = [];
+    for (const r of manifest.retention ?? []) {
+      const [schema, table] = r.table.split(".");
+      const cols = new Set((await t.owner`select column_name from information_schema.columns where table_schema = ${schema} and table_name = ${table}`).map((c) => c.column_name as string));
+      for (const c of [...r.fields, ...r.start.at, ...(r.start.idle ? ["updated_at"] : [])]) if (!cols.has(c)) missing.push(`${r.table}.${c}`);
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("closing a project records when; reopening clears it (review round 4)", async () => {
+    await t.owner`update delivery.project set status = 'closed' where key = 'CON'`;
+    expect((await t.owner`select closed_at from delivery.project where key = 'CON'`)[0].closed_at).not.toBeNull();
+    await t.owner`update delivery.project set status = 'active' where key = 'CON'`;
+    expect((await t.owner`select closed_at from delivery.project where key = 'CON'`)[0].closed_at).toBeNull();
+  });
+
   it("AC-1 fixtures follow fixtures.md", async () => {
     const projects = await listProjects(maya);
     expect(projects.map((p) => [p.key, p.client, p.sprintDone, p.sprintTotal])).toEqual([["CON", "Contoso", 9, 16], ["FLT", "Wide World Importers", 5, 16], ["HRI", "Northwind HR", 14, 17]]);

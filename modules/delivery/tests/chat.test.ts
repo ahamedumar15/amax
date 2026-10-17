@@ -60,13 +60,17 @@ describe.skipIf(!hasDb)("005 chat engine with delivery (Postgres, scripted model
     expect(result).toMatchObject({ key: "CON-018" });
     const [audit] = await withTenant(app, T, (tx) => tx.execute(sql`select source from core.audit_event where action = 'delivery.proposal.create' order by seq desc limit 1`));
     expect(audit.source).toBe("chat");
-    await expect(confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id)).rejects.toThrow(/no longer pending/);
+    await expect(confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id)).rejects.toMatchObject({ decision: "confirmed" });
   });
 
   it("Cancel writes nothing", async () => {
     configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c2", name: "create_proposal", input: { projectKey: "CON", title: "Never" } }] }), () => ({ text: "ok" })]), db: app, model: "claude-haiku-5-5" });
     const turn = await chatTurn(app, registry, maya, { text: "add Never to CON" });
     await cancelAction(app, maya, turn.conversationId, turn.pending[0].id);
+    expect(await proposals("Never")).toHaveLength(0);
+    // A late "Add it" for a cancelled card says so; an id this conversation never had is unknown (review round 4).
+    await expect(confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id)).rejects.toMatchObject({ decision: "cancelled" });
+    await expect(confirmAction(app, registry, maya, turn.conversationId, "not-an-action")).rejects.toMatchObject({ decision: null });
     expect(await proposals("Never")).toHaveLength(0);
   });
 

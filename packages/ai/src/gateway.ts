@@ -116,18 +116,21 @@ export type Tool = ToolSpec & { run: (input: never) => Promise<unknown>; sensiti
  * A bounded tool loop for chat (005). Tool inputs are validated with their zod schema before they
  * run; tools run as the caller through module services, so permissions and audit apply.
  */
+// Keyed by error name or code: one phrase per kind of failure.
 const FAILURES: Record<string, string> = {
   ForbiddenError: "isn't allowed for this user",
+  forbidden: "isn't allowed for this user",
   ScopeError: "is outside this user's data scope",
   ZodError: "was given input it doesn't accept",
+  invalid_input: "was given input it doesn't accept",
+  not_found: "found no such record",
 };
 
 /** What the model is told when a tool throws: the kind of failure, never the message. */
 export function toolFailure(tool: string, e: unknown, ref: string) {
   const name = e instanceof Error ? e.name : "";
   const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code: unknown }).code) : "";
-  const why = FAILURES[name] ?? (code === "not_found" ? "found no such record" : code === "invalid_input" ? "was given input it doesn't accept" : code === "forbidden" ? "isn't allowed for this user" : "failed");
-  return `${tool} ${why} (reference ${ref}).`;
+  return `${tool} ${FAILURES[name] ?? FAILURES[code] ?? "failed"} (reference ${ref}).`;
 }
 
 export async function converse(caller: AiCaller, opts: { instructions: string; messages: Message[]; tools: Tool[]; data?: DataItem[]; maxSteps?: number }) {
@@ -166,8 +169,8 @@ export async function converse(caller: AiCaller, opts: { instructions: string; m
           return { type: "tool_result" as const, toolUseId: call.id, content: quoteData(`result of ${call.name}`, result) };
         } catch (e) {
           // Error messages can echo record values (classified or not) and attacker text, and can't be
-          // redacted by field. The model gets a fixed string by error kind; the message stays out of
-          // the prompt and the log, which keeps a reference only (review rounds 2 and 3).
+          // redacted by field. The model gets a fixed string by error kind. logError records only the
+          // error's name, code and a reference, never its message (review rounds 2 to 4).
           return { type: "tool_result" as const, toolUseId: call.id, content: toolFailure(call.name, e, logError(`ai.tool ${call.name}`, e)), isError: true };
         }
       }));

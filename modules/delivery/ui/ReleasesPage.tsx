@@ -48,7 +48,7 @@ function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: st
   const x = (i: number) => 300 + i * 180;
   const h = 70 * active.length + 60;
   return (
-    <svg viewBox={`0 0 ${Math.max(900, x(columns.length - 1) + 60)} ${h}`} role="img" aria-label={active.map((r) => `${r.projectName} ${r.version}: ${[...r.stages].sort((a, b) => a.position - b.position).filter((s) => s.status).at(-1)?.environment ?? "not deployed"}`).join(". ")}>
+    <svg viewBox={`0 0 ${Math.max(900, x(columns.length - 1) + 60)} ${h}`} role="img" aria-label={active.map((r) => `${r.projectName} ${r.version}: ${mapRow(r, columns).stations.find((s) => s.last)?.environment ?? "not deployed"}`).join(". ")}>
       <g className="env" textAnchor="middle">{columns.map((e, i) => <text key={e} x={x(i)} y={20}>{e}</text>)}</g>
       <g stroke="var(--line)" strokeWidth={1.5}>{columns.map((e, i) => <line key={e} x1={x(i)} y1={34} x2={x(i)} y2={h - 8} />)}</g>
       {active.map((r, row) => {

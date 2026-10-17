@@ -38,12 +38,13 @@ export default defineModule({
   mcpTools,
   search: search as never,
   retention: [
-    // Delivery evidence is kept seven years, then names are anonymised. The clock starts when a
-    // proposal's release reaches Prod, or after a year with no update for anything that never gets
-    // there (withdrawn, abandoned, a project left open).
-    { table: "delivery.project", fields: ["manager_name", "manager_user_id"], class: "personal", period: "P7Y", start: { events: [], idle: "P1Y" }, action: "anonymise" },
-    { table: "delivery.proposal", fields: ["owner_name"], class: "personal", period: "P7Y", start: { events: ["delivery.release.deployed"], idle: "P1Y" }, action: "anonymise" },
-    { table: "delivery.deployment", fields: ["recorded_by", "voided_by"], class: "personal", period: "P7Y", start: { events: [], idle: "P0D" }, action: "anonymise" },
+    // Delivery evidence is kept seven years, then names are anonymised. A proposal's clock starts
+    // when it's released (released_at, cleared again if the release is voided) or after a year with
+    // no change, which covers withdrawn and abandoned ones. A project's starts when it's closed: an
+    // open project is in use, so its manager stays named.
+    { table: "delivery.project", fields: ["manager_name", "manager_user_id"], class: "personal", period: "P7Y", start: { at: ["closed_at"] }, action: "anonymise" },
+    { table: "delivery.proposal", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["released_at"], idle: "P1Y" }, action: "anonymise" },
+    { table: "delivery.deployment", fields: ["recorded_by", "voided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
   ],
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,

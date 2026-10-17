@@ -82,7 +82,10 @@ export const createProposal = defineService({
     // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
     // creates, so two of them can't compute the same key (review round 1, B7).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
-    const [{ n }] = await tx.execute(sql`select coalesce(max(substring(key from '-(\\d+)$')::int), 0) + 1 as n from delivery.proposal where project_id = ${project.id}`);
+    // In a project synced from specclaw, numbers below 1000 belong to spec changes (AMX-042 is change
+    // 042), so hand-made ones start at 1001 and the two can never take each other's key (review round 4).
+    const [{ n }] = await tx.execute(sql`select greatest(coalesce(max(substring(key from '-(\\d+)$')::int), 0),
+        case when bool_or(source = 'specclaw') then 1000 else 0 end) + 1 as n from delivery.proposal where project_id = ${project.id}`);
     const key = `${project.key}-${String(n).padStart(3, "0")}`;
     const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, estimate_hours, owner_name)
       values (${ctx.tenantId}, ${project.id}, ${key}, ${input.title}, ${input.estimateHours ?? null}, ${input.ownerName ?? null}) returning id`);
@@ -200,11 +203,10 @@ export const syncProposal = defineService({
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
-    // Same project row lock as createProposal, so the two never compute or insert a key at the same
-    // moment (review round 2). The insert's foreign key would also wait on that lock; taking it
-    // explicitly keeps the guarantee from resting on the FK. Pinned by "a sync waits for the project
-    // lock". A key a person took first is refused below and reported by the sync (review round 3).
-    await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
+    // No explicit lock: the insert's foreign-key check waits on createProposal's project row lock,
+    // so a sync insert and a hand-made key computation never interleave (pinned by "a sync waits for
+    // the project lock"). Hand-made keys in synced projects start at 1001 (createProposal), so only a
+    // proposal made by hand before the first sync can hold a spec key; that one is refused below.
     const [before] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
     const meta = JSON.stringify(input.meta);
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)

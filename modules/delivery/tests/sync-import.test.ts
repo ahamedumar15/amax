@@ -106,19 +106,29 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
   });
   afterAll(() => t?.drop());
 
-  it("a hand-made proposal with a colliding key is skipped, never overwritten, and a re-run stays quiet", async () => {
+  it("in a synced project, hand-made proposals number from 1001, so every spec change still syncs (review round 4)", async () => {
     const repo = fakeRepo({ "001-a": { status: "✅ Approved" } });
     await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo), sha: "1" });
     const { createProposal } = await import("../server/services");
     const { ctxFor } = await import("../server/context");
-    const made = await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Made by hand" });
-    expect(made.key).toBe("RB-002");
+    expect((await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Made by hand" })).key).toBe("RB-1001");
+    expect((await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Also by hand" })).key).toBe("RB-1002");
     const repo2 = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
     const r = await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo2), sha: "2" });
-    expect(r.skipped).toEqual(["RB-002: key belongs to a proposal not created by the sync"]);
-    const [p] = await withTenant(app, T, (tx) => tx.execute(sql`select title, source from delivery.proposal where key = 'RB-002'`));
+    expect(r).toMatchObject({ created: 1, skipped: [] });
+  });
+
+  it("a proposal made by hand before the first sync keeps its key; that spec change is reported, the rest sync (review rounds 1 to 4)", async () => {
+    await t.owner`insert into delivery.project (tenant_id, key, name, client, billing, color) values (${T}, 'LG', 'legacy', 'x', 'internal', 'mint')`;
+    const { createProposal } = await import("../server/services");
+    const { ctxFor } = await import("../server/context");
+    expect((await createProposal(ctxFor(ops!), { projectKey: "LG", title: "Made by hand" })).key).toBe("LG-001");
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
+    const r = await syncSpecclaw(app, ctx, { projectKey: "LG", projectName: "lg", client: "x", records: readSpecclaw(repo), sha: "1" });
+    expect(r).toMatchObject({ created: 1, skipped: ["LG-001: key belongs to a proposal not created by the sync"] });
+    const [p] = await withTenant(app, T, (tx) => tx.execute(sql`select title, source from delivery.proposal where key = 'LG-001'`));
     expect(p).toEqual({ title: "Made by hand", source: null });
-    const again = await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo2), sha: "3" });
+    const again = await syncSpecclaw(app, ctx, { projectKey: "LG", projectName: "lg", client: "x", records: readSpecclaw(repo), sha: "2" });
     expect(again).toMatchObject({ created: 0, updated: 0 });
   });
 
@@ -160,7 +170,7 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     expect(records[0]).toMatchObject({ unreadable: true, source: "main@cccccccc" });
   });
 
-  it("a sync and hand-made creates racing in one project: distinct keys, nothing lost, collisions reported (review round 3)", async () => {
+  it("a sync and hand-made creates racing in one project: distinct keys, nothing lost (review rounds 3 and 4)", async () => {
     const { createProposal } = await import("../server/services");
     const { ctxFor } = await import("../server/context");
     const repo = fakeRepo(Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`00${i + 1}-c${i}`, { status: "✅ Approved" }])));
@@ -172,9 +182,8 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     const rows = await withTenant(app, T, (tx) => tx.execute(sql`select p.key, p.source, p.title from delivery.proposal p join delivery.project pr on pr.id = p.project_id where pr.key = 'RC' order by p.key`));
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
     for (const m of made) expect(rows.find((r) => r.key === m.key)?.source).toBeNull();
-    const synced = rows.filter((r) => r.source === "specclaw").map((r) => r.key as string);
-    expect(synced.length + sync.skipped.length).toBe(6);
-    for (const s of sync.skipped) expect(s).toMatch(/key belongs to a proposal not created by the sync/);
+    expect(rows.filter((r) => r.source === "specclaw")).toHaveLength(6);
+    expect(sync.skipped).toEqual([]);
   });
 
   it("a sync waits for the project lock a hand-made create holds (review round 3)", async () => {

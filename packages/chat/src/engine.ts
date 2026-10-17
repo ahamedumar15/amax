@@ -92,16 +92,20 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
+export type Decision = "confirmed" | "cancelled";
+
 // Takes the action out of the pending list under a row lock, so two confirms of the same card can't
-// both run it (review round 1, B7). Returns null when it was already taken.
-async function claim(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
+// both run it (review round 1, B7), and records the decision (review round 4). Throws
+// NotPendingError, carrying the earlier decision if there was one, when it was already taken.
+async function claim(db: Db, viewer: Viewer, conversationId: string, actionId: string, decision: Decision) {
   return withTenant(db, viewer.tenantId, async (tx) => {
-    const [row] = await tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
+    const [row] = await tx.execute(sql`select pending, decided from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
     if (!row) throw new Error("conversation not found");
     const pending = row.pending as PendingAction[];
     const action = pending.find((p) => p.id === actionId);
-    if (!action) return null;
-    await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== actionId))}::jsonb, updated_at = now() where id = ${conversationId}`);
+    if (!action) throw new NotPendingError(((row.decided as Record<string, Decision>)[actionId]) ?? null);
+    await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== actionId))}::jsonb,
+      decided = decided || ${JSON.stringify({ [actionId]: decision })}::jsonb, updated_at = now() where id = ${conversationId}`);
     return action;
   });
 }
@@ -112,24 +116,27 @@ async function note(db: Db, viewer: Viewer, conversationId: string, text: string
     where id = ${conversationId} and user_id = ${viewer.userId}`));
 }
 
-/** The card was already confirmed or cancelled (perhaps by a request whose reply was lost). */
+/**
+ * The card isn't pending: `decision` says whether it was confirmed or cancelled earlier (perhaps by a
+ * request whose reply was lost), or is null when this conversation never had that action.
+ */
 export class NotPendingError extends Error {
-  constructor() {
-    super("that action is no longer pending");
+  constructor(public decision: Decision | null) {
+    super(decision ? `that action was already ${decision}` : "that action isn't in this conversation");
     this.name = "NotPendingError";
   }
 }
 
 /** "Add it": claim the pending write, then run it as the user, source chat (AC-3). */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
-  const action = await claim(db, viewer, conversationId, actionId);
-  if (!action) throw new NotPendingError();
+  const action = await claim(db, viewer, conversationId, actionId, "confirmed");
   let result: unknown;
   try {
     result = await registry.call(viewer, action.tool, action.input, { source: "chat" });
   } catch (e) {
     // The write didn't happen: put the card back so the user can retry or cancel.
-    await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([action])}::jsonb where id = ${conversationId}`));
+    await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([action])}::jsonb,
+      decided = decided - ${actionId}::text where id = ${conversationId}`));
     throw e;
   }
   await note(db, viewer, conversationId, `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
@@ -138,6 +145,9 @@ export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, 
 
 /** "Cancel": nothing is written. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
-  const action = await claim(db, viewer, conversationId, actionId);
+  const action = await claim(db, viewer, conversationId, actionId, "cancelled").catch((e) => {
+    if (e instanceof NotPendingError) return null;
+    throw e;
+  });
   if (action) await note(db, viewer, conversationId, `(I cancelled "${action.title}".)`);
 }
