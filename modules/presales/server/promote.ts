@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { ForbiddenError, getRuntime, logError, lookupKey, withIdempotency, type Source } from "@amax/core/server";
+import { ForbiddenError, getRuntime, logError, withIdempotency, type Source } from "@amax/core/server";
 import * as delivery from "@amax/delivery/contracts";
 import { getOpportunityRef } from "../contracts";
 import { claimPromotion, createKey, recordPromotion, releasePromotion } from "./claim";
@@ -31,13 +31,13 @@ export const promoteInput = z.object({ number: z.string().regex(NUMBER), key: z.
 const projectOf = (r: unknown, key: string) => {
   const v = r as { id?: string; resourceId?: string | null; key?: string | null };
   const id = v.id ?? v.resourceId;
-  if (!id) throw new Error(`delivery didn't say which project it made for ${key}`);
-  return { id, key: v.key ?? key };
+  if (!id || !v.key) throw new Error(`delivery didn't say which project it made for ${key}`);
+  return { id, key: v.key };
 };
 
 /**
  * Promote to delivery: claim the opportunity, have delivery create the project through its contract
- * under an idempotency key for this opportunity and key, then link it. Whatever happens between the
+ * under the claim series' idempotency key, then link it. Whatever happens between the
  * create and the link (a crash, a timeout, a slow attempt overtaken), a retry with the same key gets
  * the same project back from delivery instead of making a second one.
  */
@@ -48,19 +48,26 @@ export async function promoteToDelivery(viewer: Viewer, raw: unknown, opts: { so
   if (!create) throw new PromotionUnavailableError();
   const ctx = ctxFor(viewer, opts.source);
   const db = getRuntime().db;
-  const claim = await claimPromotion(ctx, { number: input.number, key: input.key });
-  const key = createKey(claim.opportunityId, input.key);
+  const claim = await claimPromotion(ctx, { number: input.number, key: input.key, billing: input.billing });
+  let made = false;
   try {
     const { opp, existing } = await withTenant(db, viewer.tenantId, async (tx) => ({ opp: (await getOpportunityRef(tx, input.number))!, existing: await delivery.getProjectRef(tx, input.key) }));
     if (existing && !claim.resumed) throw new Error(`delivery already has a project ${input.key}; choose another key`);
-    const made = await withIdempotency(key, () => create(ctx, { key: input.key, name: opp.title, client: opp.client, billing: input.billing }));
-    if (!made.ok) throw made.error;
-    const project = projectOf(made.value, input.key);
-    return await recordPromotion(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key });
+    const created = await withIdempotency(createKey(claim.series), () => create(ctx, { key: input.key, name: opp.title, client: opp.client, billing: input.billing }));
+    if (!created.ok) throw created.error;
+    made = true;
+    const project = projectOf(created.value, input.key);
+    return await recordPromotion(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key }).catch((e: unknown) => {
+      // A project another opportunity holds will be refused on every replay: free the claim and say which project is left over.
+      if ((e as { cause?: { code?: string }; code?: string }).code === "23505" || (e as { cause?: { code?: string } }).cause?.code === "23505") {
+        throw Object.assign(new Error(`delivery's project ${project.key} already belongs to another opportunity, so it wasn't linked; choose another key`), { project, lasting: true });
+      }
+      throw e;
+    });
   } catch (e) {
-    // Give the claim back only when delivery has made nothing under it; otherwise keep it, so a retry
-    // with the same key resumes and links that project.
-    if (!(await lookupKey(db, viewer.tenantId, key))) await releasePromotion(ctx, { number: input.number, token: claim.token }).catch((r: unknown) => logError("presales.promote.release", r));
+    // Release in one transaction with the check that the series made nothing (or for good, after a lasting refusal).
+    const lasting = Boolean((e as { lasting?: boolean }).lasting);
+    if (!made || lasting) await releasePromotion(ctx, { number: input.number, token: claim.token, force: lasting }).catch((r: unknown) => logError("presales.promote.release", r));
     throw e;
   }
 }

@@ -55,6 +55,8 @@ create table presales.opportunity (
   -- before delivery made anything.
   claim_key text,
   claim_token uuid,
+  claim_series uuid,
+  claim_billing text,
   claimed_at timestamptz,
   removed_at timestamptz,
   removed_by text,

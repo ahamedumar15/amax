@@ -71,23 +71,26 @@ describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
     const go = (n: string) => promoteToDelivery(maya, { number: n, key: `X${n.slice(3)}`, billing: "fixed" }, { create: same }).then(() => "ok", (e: Error) => e.message);
     const outcomes = together ? await Promise.all([go(a), go(b)]) : [await go(a), await go(b)];
     expect(outcomes.filter((o) => o === "ok")).toHaveLength(1);
+    expect(outcomes.find((o) => o !== "ok")).toMatch(/already belongs to another opportunity/);
+    const loser = outcomes[0] === "ok" ? b : a;
+    const [l] = await db.q(sql`select claim_key, project_id from presales.opportunity where number = ${Number(loser.slice(3))}`);
+    expect(l).toEqual({ claim_key: null, project_id: null });
+    expect(await promoteToDelivery(maya, { number: loser, key: `Y${loser.slice(3)}`, billing: "fixed" }, { create: real() })).toMatchObject({ number: loser });
   });
 
-  it("review round 3: a slow first attempt overtaken by a same-key retry leaves one linked project; another key is refused while the claim stands", async () => {
+  it("review round 4: a slow attempt overtaken after its claim went stale is cancelled, so only the new key's project exists", async () => {
     const n = await wonDeal("Slow deal");
     let open!: () => void;
     const gate = new Promise<void>((r) => { open = r; });
     const create = real();
     const slow: CreateProject = async (c, p) => { await gate; return create(c, p); };
-    const first = promoteToDelivery(maya, { number: n, key: "SLO", billing: "fixed" }, { create: slow }).then(() => "ok", (e: Error) => e.message);
+    const first = promoteToDelivery(maya, { number: n, key: "SLO", billing: "fixed" }, { create: slow }).then(() => "ok", (e: Error) => e.name);
     await new Promise((r) => setTimeout(r, 200));
     await age(n);
-    await expect(promoteToDelivery(maya, { number: n, key: "OTH", billing: "fixed" }, { create })).rejects.toThrow(/promote it with that key/);
-    expect(await promoteToDelivery(maya, { number: n, key: "SLO", billing: "fixed" }, { create })).toEqual({ number: n, projectKey: "SLO" });
+    expect(await promoteToDelivery(maya, { number: n, key: "OTH", billing: "fixed" }, { create })).toEqual({ number: n, projectKey: "OTH" });
     open();
-    expect(await first).toMatch(/no longer claimed/);
-    expect(await projects("SLO")).toBe(1);
-    expect(await projects("OTH")).toBe(0);
+    expect(await first).toBe("CancelledByKeyError");
+    expect([await projects("SLO"), await projects("OTH")]).toEqual([0, 1]);
   });
 
   it.each([["the link fails after a real create", "link"], ["the process dies between create and link", "crash"]] as const)("review round 3: when %s, a retry links that project and makes no second", async (_, how) => {
@@ -99,12 +102,34 @@ describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
       const breakLink: CreateProject = async (c, p) => { const made = await create(c, p); await db.q(sql`update presales.opportunity set claim_token = gen_random_uuid() where id = ${o.id}`); return made; };
       await expect(promoteToDelivery(maya, { number: n, key, billing: "fixed" }, { create: breakLink })).rejects.toThrow(/no longer claimed/);
     } else {
-      const claim = await claimPromotion(ctxFor(maya), { number: n, key });
-      await withIdempotency(createKey(claim.opportunityId, key), () => create(ctxFor(maya), { key, name: "x", client: "y", billing: "fixed" }));
+      const claim = await claimPromotion(ctxFor(maya), { number: n, key, billing: "fixed" });
+      await withIdempotency(createKey(claim.series), () => create(ctxFor(maya), { key, name: "x", client: "y", billing: "fixed" }));
     }
+    await age(n);
+    await expect(promoteToDelivery(maya, { number: n, key: "ZZZ", billing: "fixed" }, { create })).rejects.toThrow(/promote it with those to finish/);
     await age(n);
     expect(await promoteToDelivery(maya, { number: n, key, billing: "fixed" }, { create })).toEqual({ number: n, projectKey: key });
     expect(await projects(key)).toBe(1);
+  });
+
+  it.each([
+    ["delivery refuses the input", new Error("invalid input for create_project")],
+    ["the viewer may not create projects", Object.assign(new Error("forbidden: create_project"), { code: "forbidden" })],
+    ["the create throws before it commits", new Error("connection reset")],
+  ])("review round 4: when %s, the claim is given back and another key works", async (label, failure) => {
+    const n = await wonDeal(`Refused ${label}`);
+    await expect(promoteToDelivery(maya, { number: n, key: "RFA", billing: "fixed" }, { create: async () => { throw failure; } })).rejects.toBe(failure);
+    const [o] = await db.q(sql`select claim_key from presales.opportunity where number = ${Number(n.slice(3))}`);
+    expect(o.claim_key).toBeNull();
+    expect(await promoteToDelivery(maya, { number: n, key: `R${n.slice(3)}`, billing: "retainer" }, { create: real() })).toMatchObject({ number: n });
+  });
+
+  it("review round 4: a stale claim that made nothing gives way to another key or billing; one that made a project doesn't", async () => {
+    const n = await wonDeal("Switch deal");
+    await claimPromotion(ctxFor(maya), { number: n, key: "SWA", billing: "fixed" });
+    await age(n);
+    await expect(promoteToDelivery(maya, { number: n, key: "SWB", billing: "fixed" }, { create: real() })).resolves.toMatchObject({ projectKey: "SWB" });
+    expect(await projects("SWA")).toBe(0);
   });
 
   it("review round 3: a key held by another project is refused and the claim is given back", async () => {
