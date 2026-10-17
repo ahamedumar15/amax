@@ -51,11 +51,11 @@ create table presales.opportunity (
   project_id uuid,
   project_key text,
   -- Promote to delivery claims the opportunity first (key, token, time), so two promotes can't both
-  -- create a project; the claim is cleared when the project is linked or the attempt fails.
+  -- create a project; the claim is cleared when the project is linked, or when an attempt fails
+  -- before delivery made anything.
   claim_key text,
   claim_token uuid,
   claimed_at timestamptz,
-  claim_project_id uuid,
   removed_at timestamptz,
   removed_by text,
   created_at timestamptz not null default now(),

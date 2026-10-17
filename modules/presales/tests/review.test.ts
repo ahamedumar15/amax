@@ -5,7 +5,9 @@ import { createRegistry } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 import { ctxFor } from "../server/context";
 import { createOpportunity, moveOpportunity } from "../server/opportunities";
-import { claimPromotion, noteClaimProject, promoteToDelivery, type CreateProject } from "../server/promote";
+import { withIdempotency } from "@amax/core/server";
+import { claimPromotion, createKey } from "../server/claim";
+import { promoteToDelivery, type CreateProject } from "../server/promote";
 import { logActivity } from "../server/records";
 import { closedWindow, winRateNote } from "../server/stats";
 import { acceptSuggestion } from "../server/suggestions";
@@ -53,45 +55,61 @@ describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
     await expect(logActivity(ctxFor(liam), { number: "PS-0139", title: "Late call", kind: "call", on: "2026-10-20" })).rejects.toThrow(/records are closed/);
   });
 
-  it.each([
-    ["one after the other", false],
-    ["at the same time", true],
-  ] as const)("review round 2: two opportunities can't hold one project (%s)", async (_, together) => {
-    const [p] = await db.q(sql`select id from delivery.project where key = 'HRI'`);
-    const [a, b] = await db.q(sql`select id from presales.opportunity where stage = 'won' and project_id is null order by number limit 2`);
-    const link = (id: unknown) => db.q(sql`update presales.opportunity set project_id = ${p.id}, project_key = 'HRI' where id = ${id}`);
-    const results = together ? await Promise.allSettled([link(a.id), link(b.id)]) : [await Promise.allSettled([link(a.id)]).then((r) => r[0]), await Promise.allSettled([link(b.id)]).then((r) => r[0])];
-    expect(results.map((r) => r.status)).toEqual(["rejected", "rejected"]);
+  const wonDeal = async (title: string) => {
+    const o = await createOpportunity(ctxFor(liam), { client: `${title} Co`, title, value: 10 });
+    await moveOpportunity(ctxFor(liam), { number: o.number, to: "won" });
+    return o.number;
+  };
+  const projects = async (key: string) => (await db.q(sql`select id from delivery.project where key = ${key}`)).length;
+  const age = (number: string) => db.q(sql`update presales.opportunity set claimed_at = now() - interval '1 hour' where number = ${Number(number.slice(3))}`);
+  const real = (): CreateProject => { const registry = createRegistry(db.modules); return async (c, p) => (await registry.call(c.viewer as Viewer, "create_project", p, { source: "mcp" })) as { id: string; key: string }; };
+
+  it.each([["one after the other", false], ["at the same time", true]] as const)("review round 3: two opportunities promoted onto one project, %s: exactly one wins", async (label, together) => {
+    const shared = await real()(ctxFor(maya), { key: together ? "SHB" : "SHA", name: "Shared", client: "Shared", billing: "fixed" });
+    const [a, b] = [await wonDeal(`Share ${label} A`), await wonDeal(`Share ${label} B`)];
+    const same: CreateProject = async (_, p) => ({ id: shared.id, key: p.key });
+    const go = (n: string) => promoteToDelivery(maya, { number: n, key: `X${n.slice(3)}`, billing: "fixed" }, { create: same }).then(() => "ok", (e: Error) => e.message);
+    const outcomes = together ? await Promise.all([go(a), go(b)]) : [await go(a), await go(b)];
+    expect(outcomes.filter((o) => o === "ok")).toHaveLength(1);
   });
 
-  it("review round 2: a resumed claim links only the project it made; a stale claim moves to another key only when nothing was made", async () => {
-    const registry = createRegistry(db.modules);
-    const create: CreateProject = async (c, p) => (await registry.call(c.viewer as Viewer, "create_project", p, { source: "mcp" })) as { id: string; key: string };
-    const ctx = ctxFor(maya);
-    const age = (n: number) => db.q(sql`update presales.opportunity set claimed_at = now() - interval '1 hour' where number = ${n}`);
-    const projects = async (key: string) => (await db.q(sql`select id from delivery.project where key = ${key}`)).length;
+  it("review round 3: a slow first attempt overtaken by a same-key retry leaves one linked project; another key is refused while the claim stands", async () => {
+    const n = await wonDeal("Slow deal");
+    let open!: () => void;
+    const gate = new Promise<void>((r) => { open = r; });
+    const create = real();
+    const slow: CreateProject = async (c, p) => { await gate; return create(c, p); };
+    const first = promoteToDelivery(maya, { number: n, key: "SLO", billing: "fixed" }, { create: slow }).then(() => "ok", (e: Error) => e.message);
+    await new Promise((r) => setTimeout(r, 200));
+    await age(n);
+    await expect(promoteToDelivery(maya, { number: n, key: "OTH", billing: "fixed" }, { create })).rejects.toThrow(/promote it with that key/);
+    expect(await promoteToDelivery(maya, { number: n, key: "SLO", billing: "fixed" }, { create })).toEqual({ number: n, projectKey: "SLO" });
+    open();
+    expect(await first).toMatch(/no longer claimed/);
+    expect(await projects("SLO")).toBe(1);
+    expect(await projects("OTH")).toBe(0);
+  });
 
-    // Made, then the link failed: the retry links that project and makes no second one.
-    await createOpportunity(ctxFor(liam), { client: "Resume Co", title: "Resume deal", value: 10 }).then((o) => moveOpportunity(ctxFor(liam), { number: o.number, to: "won" }));
-    const [r] = await db.q(sql`select number from presales.opportunity where title = 'Resume deal'`);
-    const n = `PS-0${r.number}`;
-    const claim = await claimPromotion(ctx, { number: n, key: "RES" });
-    const made = await create(ctx, { key: "RES", name: "Resume deal", client: "Resume Co", billing: "fixed" });
-    await noteClaimProject(ctx, { number: n, token: claim.token, projectId: made.id, projectKey: "RES" });
-    await expect(promoteToDelivery(maya, { number: n, key: "RES", billing: "fixed" }, { create })).rejects.toThrow(/being promoted as RES right now/);
-    await age(Number(r.number));
-    await expect(promoteToDelivery(maya, { number: n, key: "OTHER", billing: "fixed" }, { create })).rejects.toThrow(/promote it with that key/);
-    expect(await promoteToDelivery(maya, { number: n, key: "RES", billing: "fixed" }, { create })).toEqual({ number: n, projectKey: "RES" });
-    expect(await projects("RES")).toBe(1);
+  it.each([["the link fails after a real create", "link"], ["the process dies between create and link", "crash"]] as const)("review round 3: when %s, a retry links that project and makes no second", async (_, how) => {
+    const n = await wonDeal(`Resume ${how}`);
+    const key = how === "link" ? "RSL" : "RSC";
+    const create = real();
+    if (how === "link") {
+      const [o] = await db.q(sql`select id from presales.opportunity where number = ${Number(n.slice(3))}`);
+      const breakLink: CreateProject = async (c, p) => { const made = await create(c, p); await db.q(sql`update presales.opportunity set claim_token = gen_random_uuid() where id = ${o.id}`); return made; };
+      await expect(promoteToDelivery(maya, { number: n, key, billing: "fixed" }, { create: breakLink })).rejects.toThrow(/no longer claimed/);
+    } else {
+      const claim = await claimPromotion(ctxFor(maya), { number: n, key });
+      await withIdempotency(createKey(claim.opportunityId, key), () => create(ctxFor(maya), { key, name: "x", client: "y", billing: "fixed" }));
+    }
+    await age(n);
+    expect(await promoteToDelivery(maya, { number: n, key, billing: "fixed" }, { create })).toEqual({ number: n, projectKey: key });
+    expect(await projects(key)).toBe(1);
+  });
 
-    // A stale claim that made nothing gives way to another key; a key held by someone else's project is refused.
-    await createOpportunity(ctxFor(liam), { client: "Switch Co", title: "Switch deal", value: 10 }).then((o) => moveOpportunity(ctxFor(liam), { number: o.number, to: "won" }));
-    const [s2] = await db.q(sql`select number from presales.opportunity where title = 'Switch deal'`);
-    const m = `PS-0${s2.number}`;
-    await claimPromotion(ctx, { number: m, key: "SWA" });
-    await age(Number(s2.number));
-    await expect(promoteToDelivery(maya, { number: m, key: "CON", billing: "fixed" }, { create })).rejects.toThrow(/already has a project CON/);
-    expect(await promoteToDelivery(maya, { number: m, key: "SWB", billing: "fixed" }, { create })).toEqual({ number: m, projectKey: "SWB" });
-    expect(await projects("SWA")).toBe(0);
+  it("review round 3: a key held by another project is refused and the claim is given back", async () => {
+    const n = await wonDeal("Taken key deal");
+    await expect(promoteToDelivery(maya, { number: n, key: "CON", billing: "fixed" }, { create: real() })).rejects.toThrow(/already has a project CON/);
+    expect(await promoteToDelivery(maya, { number: n, key: "TKN", billing: "fixed" }, { create: real() })).toEqual({ number: n, projectKey: "TKN" });
   });
 });
