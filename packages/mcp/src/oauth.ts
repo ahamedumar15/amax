@@ -53,10 +53,14 @@ export const parseScopes = (s: string | null | undefined): Scope[] => {
   return asked as Scope[];
 };
 
+// Allowed redirect URIs (RFC 8252 / OAuth 2.1): https, http only on a loopback host, or a private-use
+// app scheme in reverse-domain form (e.g. com.example.app:/callback). Everything else is refused.
 const okRedirect = (uri: string) => {
   try {
     const u = new URL(uri);
-    return u.protocol === "https:" || (u.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname)) || /^[a-z][a-z0-9+.-]*:$/.test(u.protocol) && !["http:", "javascript:", "data:", "file:"].includes(u.protocol);
+    if (u.protocol === "https:") return true;
+    if (u.protocol === "http:") return ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname);
+    return /^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+:$/.test(u.protocol);
   } catch {
     return false;
   }
