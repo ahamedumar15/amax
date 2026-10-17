@@ -52,7 +52,7 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 - [x] `T4` — Module manifest type and build-time discovery: scan `modules/*/module.ts`, generate the git-ignored registry, mount through `app/(app)/[module]/[[...path]]`, nav from manifests; sample `modules/hello` (AC-2)
   Files: packages/core/src/module.ts, apps/web/scripts/gen-registry.mjs, apps/web/app/(app)/[module]/[[...path]]/page.tsx, modules/hello/**, apps/web/tests/registry.test.ts
   Depends: T3
-- [ ] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
+- [x] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
   Files: scripts/check-graph.mjs, packages/testing/boundaries/**, packages/testing/tests/boundaries.test.ts, package.json
   Depends: T4
 - [ ] `T6` — Config and ownership: zod-validated environment at boot with a clear error and `/healthz`; CODEOWNERS; `scripts/check-module-standard.mjs` run in CI (AC-7)
