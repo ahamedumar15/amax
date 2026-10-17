@@ -27,5 +27,5 @@ describe.skipIf(!hasDb)("049 migration 0020 backfill (Postgres)", () => {
     expect(rows[0]).toMatchObject({ title: `Submit my timesheet ${"w".repeat(60)}`, archived_at: null, pins: [] });
     expect(rows[1].title).toBeNull();
     expect(rows[1].archived_at).not.toBeNull();
-  });
+  }, 60_000);
 });
