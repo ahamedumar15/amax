@@ -1,0 +1,68 @@
+import { notFound } from "next/navigation";
+import { aiUsage, monthOf, USAGE_SOURCES, type UsageSource } from "@amax/ai/usage";
+import { compact, costLabel, plural } from "@amax/ai/usage-format";
+import { rolesOf } from "@amax/auth";
+import { PinButton, Ticket, type TicketTone } from "@amax/ui";
+import { getDb } from "../../../../../lib/server";
+import { getViewer } from "../../../../../lib/viewer";
+import { CostChart } from "./CostChart";
+import { UsageFilters } from "./UsageFilters";
+import { UsageTables } from "./UsageTables";
+import "../../settings.css";
+
+export const metadata = { title: "AI usage" };
+export const dynamic = "force-dynamic";
+
+const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+const lastMonths = (now: Date) => Array.from({ length: 12 }, (_, i) => monthOf(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))));
+const daysOf = (m: string, now: Date) => {
+  const [y, mo] = m.split("-").map(Number);
+  const last = m === monthOf(now) ? now.getUTCDate() : new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  return Array.from({ length: last }, (_, i) => `${m}-${String(i + 1).padStart(2, "0")}`);
+};
+
+export default async function AiUsagePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const viewer = await getViewer();
+  if (!viewer || !rolesOf(viewer).includes("Admin")) notFound();
+  const now = new Date();
+  const sp = await searchParams;
+  const months = lastMonths(now);
+  const month = months.includes(sp.month ?? "") ? sp.month! : months[0];
+  const source = sp.source && sp.source in USAGE_SOURCES ? (sp.source as UsageSource) : undefined;
+  const u = await aiUsage(getDb()!, { tenantId: viewer.tenantId, userId: viewer.userId, roles: rolesOf(viewer) }, { scope: "tenant", month, source });
+  const t = u.totals;
+  const top = u.byPerson.find((p) => p.name);
+  const args = { scope: "tenant", month, ...(source ? { source } : {}) };
+  const tickets: { tone: TicketTone; label: string; value: string; note: string }[] = [
+    { tone: "good", label: "Cost", value: costLabel(t), note: (Object.keys(USAGE_SOURCES) as UsageSource[]).map((s) => `${s[0].toUpperCase()}${s.slice(1)} ${costLabel(u.bySource[s])}`).join(", ") },
+    { tone: "good", label: "Calls", value: t.calls.toLocaleString("en-US"), note: plural(t.people, "person", "people") },
+    { tone: "info", label: "Tokens", value: compact(t.inputTokens + t.outputTokens), note: `${compact(t.inputTokens)} in, ${compact(t.outputTokens)} out` },
+    { tone: "attention", label: "Unknown cost", value: plural(t.unknownCostCalls, "call"), note: "Model without a price" },
+  ];
+  return (
+    <>
+      <nav className="crumb" aria-label="Breadcrumb"><span>Settings</span><span>/</span><a href="/settings/ai">AI and data</a><span>/</span>AI usage</nav>
+      <div className="row head">
+        <div>
+          <h1>AI usage</h1>
+          <p className="lede">
+            {monthName(month)}{month === months[0] ? " so far" : ""}: {costLabel(t)} across {plural(t.people, "person", "people")}.
+            {top ? ` ${top.name}'s AI use cost the most this month.` : " No AI calls yet."}
+            {t.unknownCostCalls ? ` ${plural(t.unknownCostCalls, "call")} used a model without a known price, so the total is a lower bound.` : ""}
+          </p>
+        </div>
+        <UsageFilters month={month} source={source ?? ""} months={months.map((m) => ({ value: m, label: monthName(m) }))} />
+      </div>
+      <div className="tickets four">
+        {tickets.map((k) => (
+          <div key={k.label} className="pinnable"><Ticket {...k} /><PinButton pin={{ label: `AI usage: ${k.label.toLowerCase()}, ${monthName(month)}`, tool: "get_ai_usage", args }} /></div>
+        ))}
+      </div>
+      <div className="card pinnable" style={{ marginTop: 28 }}>
+        <div className="card-head"><h2>Cost per day</h2><PinButton inline pin={{ label: `AI cost per day, ${monthName(month)}`, tool: "get_ai_usage", args: { ...args, groupBy: "day" } }} /></div>
+        <CostChart usage={u} days={daysOf(month, now)} />
+      </div>
+      <UsageTables usage={u} now={now} />
+    </>
+  );
+}

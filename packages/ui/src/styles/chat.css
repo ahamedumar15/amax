@@ -38,6 +38,8 @@ mark.x{background:none;color:inherit;outline:2px dashed var(--f,#6A6681);outline
 .c-send{width:36px;height:36px;border-radius:50%;border:0;background:var(--violet);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
 .c-send svg,.c-round svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .c-dock{display:flex;align-items:center;justify-content:center;gap:22px;padding:16px 0 20px}
+.c-usage{display:flex;align-items:center;justify-content:center;gap:2px;margin:-8px 20px 14px;font-size:12.5px;color:var(--ink-2)}
+.c-usage .pin.inline{margin:0 0 0 4px;width:24px;height:24px}
 .c-round{width:46px;height:46px;border-radius:50%;border:0;background:var(--card);color:var(--ink-2);display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 20px -10px rgba(40,30,110,.35)}
 .c-round[aria-pressed="true"]{background:var(--violet);color:#fff}
 .c-talk{width:72px;height:72px;border-radius:50%;border:0;background:var(--card);padding:10px;cursor:pointer;box-shadow:0 14px 30px -12px rgba(40,30,110,.45);position:relative;transition:transform .15s}

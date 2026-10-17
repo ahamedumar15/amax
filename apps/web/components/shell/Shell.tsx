@@ -16,9 +16,11 @@ type ShellProps = {
   onSignOut?: () => Promise<void>;
   /** Voice input allowed by the tenant's AI policy (033). */
   voice?: boolean;
+  /** The signed-in person's own AI usage this month, for the chat footer (048). */
+  usage?: string | null;
 };
 
-export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false }: ShellProps) {
+export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false, usage = null }: ShellProps) {
   const pathname = useRouteFocus();
   // The rail marks the deepest entry the page sits under (/delivery/p/CON → Projects).
   const current = items.map((i) => i.href).filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`))).sort((a, b) => b.length - a.length)[0] ?? pathname;
@@ -50,7 +52,7 @@ export function Shell({ items, children, profile = null, banner, onViewAs, onSig
         </div>
       </div>
       <MoreSheet ref={sheet} items={items} current={current} link={link} onClose={() => sheet.current?.close()} />
-      <Chat open={chatOpen} onClose={() => setChatOpen(false)} returnFocus={askRef} signedIn={Boolean(profile)} voice={voice} />
+      <Chat open={chatOpen} onClose={() => setChatOpen(false)} returnFocus={askRef} signedIn={Boolean(profile)} voice={voice} usage={usage} />
       <LiveRegion />
     </>
   );

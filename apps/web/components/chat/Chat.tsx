@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { announce, Mascot, type PinRef } from "@amax/ui";
+import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
 import type { Highlight, PendingAction } from "@amax/chat";
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
 
@@ -49,7 +49,7 @@ export function Markdown({ text }: { text: string }) {
 
 type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; start: () => void; stop: () => void };
 
-export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean }) {
+export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean; usage?: string | null }) {
   const [log, setLog] = useState<Entry[]>([]);
   const [pins, setPins] = useState<PinRef[]>([]);
   const [busy, setBusy] = useState(false);
@@ -57,6 +57,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
   const [intent, setIntent] = useState<string | undefined>();
   const [picking, setPicking] = useState(false);
   const [talking, setTalking] = useState(false);
+  const [turnUsage, setTurnUsage] = useState<string | null>(null);
   const convo = useRef<string | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -110,6 +111,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
     setBusy(false);
     if (!r.ok) { setLog((l) => [...l, { kind: "amax", text: r.error, tools: [], error: true }]); return; }
     convo.current = r.conversationId;
+    if (r.usage) setTurnUsage(r.usage);
     setIntent(undefined);
     fields.current = r.pending.flatMap((p) => p.fields);
     setLog((l) => {
@@ -198,6 +200,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
         <button className="c-talk" type="button" aria-pressed={talking} aria-label={voice ? "Talk to amax" : "Voice input is off; type instead"} onClick={talk}><Mascot /></button>
         <button className="c-round" type="button" title="New conversation" aria-label="New conversation" onClick={() => { convo.current = undefined; setLog([]); setPins([]); setIntent(undefined); }}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4" /></svg></button>
       </div>
+      {signedIn && (turnUsage ?? usage) && <p className="c-usage pinnable" data-testid="chat-usage"><span>{turnUsage ?? usage}</span><PinButton inline pin={{ label: "My AI usage this month", tool: "get_ai_usage", args: { scope: "self" } }} /></p>}
     </aside>
   );
 }
