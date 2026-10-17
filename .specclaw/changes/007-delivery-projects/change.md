@@ -1,7 +1,7 @@
 # Delivery: projects, proposals and releases
 
 **Change:** 007-delivery-projects · **Created:** 2026-10-17
-**Lane:** Delivery · **Module:** `modules/delivery` · **Depends on:** [002](../002-identity-and-access/change.md), [003](../003-data-core/change.md)
+**Lane:** Delivery · **Module:** `modules/delivery` · **Depends on:** [002](../002-identity-and-access/change.md), [003](../003-data-core/change.md) · **Integrates with (optional):** [004](../004-mcp-gateway/change.md)
 
 ## Problem
 
@@ -18,7 +18,7 @@ Projects (portfolio), project page with the board, Proposals with phase bar, Rel
 1. **AC-1** Tables in the `delivery` schema: project, proposal (project-scoped key such as `CON-014`, specclaw phase), release, environment and deployment. Fixtures follow fixtures.md.
 2. **AC-2** Projects, the project board, Proposals and Releases render from the database and match the mock at 1440 px within a 2% visual diff.
 3. **AC-3** "Released" means reached Prod. Stage moves on the board use an explicit Move action and are audited.
-4. **AC-4** MCP tools: `list_projects`, `get_project`, `list_proposals`, `get_release`, `record_deployment` (PM/Admin). Chat intents: new project, new proposal, new release.
+4. **AC-4** MCP tools: `list_projects`, `get_project`, `list_proposals`, `get_release`, `record_deployment` (PM/Admin). Chat intents: new project, new proposal, new release. Tools register with the 004 gateway when it is installed; without it the screens work and the tools are simply not exposed.
 5. **AC-5** `contracts.ts` exports project lookups and events `delivery.release.deployed` and `delivery.proposal.phase_changed`.
 6. **AC-6** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 

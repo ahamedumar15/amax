@@ -28,7 +28,7 @@ The category it competes in is **PSA + HCM + services finance**, against Kantata
 
 ## Modules
 
-### 1. Delivery (PSA core): changes 001–009
+### 1. Delivery (PSA core): changes 001–009, 039
 Projects, sprints and board, specclaw proposals, releases and environment promotion, risk/issue (RAID), change and decision logs, milestones, git and CI ingestion, git-identity mapping.
 
 ### 2. Resource management
@@ -102,7 +102,7 @@ Proposals in the same wave have no dependency on each other, so separate teams o
 | 0 | 001 amax-foundation (Platform) |
 | 1 | 002 identity-and-access (Platform), 003 data-core (Platform), 038 navigation-scale (Platform) |
 | 2 | 004 mcp-gateway (Platform), 007 delivery-projects (Delivery), 011 hr-core (People), 029 workflows-scheduler (Platform), 031 secrets-and-keys (Platform), 033 ai-gateway-and-residency (Platform) |
-| 3 | 005 amax-chat (Platform), 006 agent-governance (Platform), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 020 presales (Sales), 024 learning (Talent), 028 keyflow-sync (Integrations), 030 notifications (Platform), 032 data-retention-and-erasure (Platform), 034 backup-restore-and-export (Platform), 035 api-webhooks-and-rate-limits (Platform), 036 compliance-registers (IT) |
+| 3 | 005 amax-chat (Platform), 006 agent-governance (Platform), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 020 presales (Sales), 024 learning (Talent), 028 keyflow-sync (Integrations), 030 notifications (Platform), 039 specclaw-self-sync (Delivery), 032 data-retention-and-erasure (Platform), 034 backup-restore-and-export (Platform), 035 api-webhooks-and-rate-limits (Platform), 036 compliance-registers (IT) |
 | 4 | 008 delivery-ingestion (Delivery), 013 onboarding-offboarding (People), 014 payroll-engine (Payroll), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 021 it-access-licences (IT), 022 helpdesk (IT), 023 recruitment (Talent), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
 | 5 | 015 payroll-sri-lanka (Payroll), 016 payroll-australia (Payroll), 019 accounting-journals (Finance), 037 digital-experience (IT) |
 
@@ -146,6 +146,7 @@ graph LR
   P036["036 compliance-registers"]
   P037["037 digital-experience"]
   P038["038 navigation-scale"]
+  P039["039 specclaw-self-sync"]
   P001 --> P002
   P001 --> P003
   P001 --> P038
@@ -166,7 +167,10 @@ graph LR
   P029 --> P008
   P009 --> P008
   P035 --> P008
+  P004 --> P008
   P007 --> P009
+  P002 --> P039
+  P007 --> P039
   P002 --> P009
   P007 --> P010
   P011 --> P010
@@ -248,7 +252,7 @@ Each lane can be given to one team; the platform team owns the platform lane and
 | Lane | Proposals | Module folders (CODEOWNERS) |
 |---|---|---|
 | Platform | 001, 002, 003, 004, 005, 006, 029, 030, 031, 032, 033, 034, 035, 038 | `apps/web`, `deploy/`, `modules/notifications`, `packages/agents`, `packages/ai`, `packages/api`, `packages/auth`, `packages/chat`, `packages/core`, `packages/db`, `packages/mcp`, `packages/privacy`, `packages/workflows` |
-| Delivery | 007, 008, 009, 010, 027 | `modules/allocations`, `modules/delivery`, `modules/reports`, `modules/time` |
+| Delivery | 007, 008, 009, 010, 027, 039 | `modules/allocations`, `modules/delivery`, `modules/reports`, `modules/time` |
 | People | 011, 012, 013 | `modules/hr`, `modules/leave`, `modules/onboarding` |
 | Payroll | 014, 015, 016 | `modules/payroll-au`, `modules/payroll-lk`, `modules/payroll` |
 | Finance | 017, 018, 019 | `modules/accounting`, `modules/expenses`, `modules/finance` |

@@ -1,7 +1,7 @@
 # Delivery: specclaw and git ingestion
 
 **Change:** 008-delivery-ingestion · **Created:** 2026-10-17
-**Lane:** Delivery · **Module:** `modules/delivery (ingestion)` · **Depends on:** [007](../007-delivery-projects/change.md), [006](../006-agent-governance/change.md), [029](../029-workflows-scheduler/change.md), [009](../009-time-and-approvals/change.md), [035](../035-api-webhooks-and-rate-limits/change.md)
+**Lane:** Delivery · **Module:** `modules/delivery (ingestion)` · **Depends on:** [007](../007-delivery-projects/change.md), [006](../006-agent-governance/change.md), [029](../029-workflows-scheduler/change.md), [009](../009-time-and-approvals/change.md), [035](../035-api-webhooks-and-rate-limits/change.md), [004](../004-mcp-gateway/change.md)
 
 ## Problem
 
@@ -21,6 +21,7 @@ The Overview activity feed and the "Claude for <person>" attribution.
 4. **AC-4** Each ingested event shows on the Overview feed with agent and person attribution.
 5. **AC-5** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 6. **AC-6** Logging time from commits is switched on per legal entity by an Admin, after people are notified. Commit data is used only to draft timesheets, never for performance ratings.
+7. **AC-7** `sync_proposal` supersedes the 039 specclaw self-sync importer: proposals 039 imported keep their keys and history, and 039's importer is removed or reduced to a caller of `sync_proposal`.
 
 ## Tasks
 
