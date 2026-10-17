@@ -145,3 +145,29 @@ describe("release columns agree with every project's stage order (review round 2
     ["projects contradict each other: still every name once", [rel("A", "B"), rel("B", "A")], ["A", "B"]],
   ])("%s", (_n, releases, expected) => expect(stageColumns(releases as never)).toEqual(expected));
 });
+
+describe("release map rows follow the project's own order (review round 3)", async () => {
+  const { stageColumns } = await import("../server/queries");
+  const { mapRow } = await import("../ui/ReleasesPage");
+  const rel = (...envs: [string, string | null][]) => ({ stages: envs.map(([environment, status], i) => ({ environment, position: i + 1, isProd: false, status, at: null, note: null, run: null })) }) as never;
+  it("orders that agree: stations under their columns, line to the furthest reached", () => {
+    const a = rel(["Dev", "deployed"], ["QA", "deployed"], ["Prod", null]);
+    const b = rel(["Dev", "deployed"], ["UAT", null], ["QA", null], ["Prod", null]);
+    const cols = stageColumns([a, b]);
+    expect(mapRow(a, cols)).toMatchObject({ agrees: true, lineTo: cols.indexOf("QA"), aheadTo: cols.indexOf("Prod"), back: false });
+  });
+  it("opposite orders: the contradicting row is drawn by its own order, reaching only what it reached", () => {
+    const a = rel(["A", "deployed"], ["B", null]);
+    const b = rel(["B", "deployed"], ["A", null]);
+    const cols = stageColumns([a, b]);
+    const rows = [mapRow(a, cols), mapRow(b, cols)];
+    const bad = rows.find((r) => !r.agrees)!;
+    expect(rows.filter((r) => r.agrees)).toHaveLength(1);
+    expect(bad).toMatchObject({ lineTo: 0, aheadTo: 1 });
+    expect(bad.stations.map((s) => [s.environment, s.slot, s.reached])).toEqual([["B", 0, true], ["A", 1, false]]);
+  });
+  it("a rollback is read from the last reached stage in the project's own order", () => {
+    const a = rel(["Dev", "deployed"], ["QA", "rolled-back"], ["Prod", null]);
+    expect(mapRow(a, ["Dev", "QA", "Prod"])).toMatchObject({ back: true, lineTo: 1 });
+  });
+});

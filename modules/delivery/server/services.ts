@@ -168,6 +168,14 @@ export const recordDeployment = defineService({
 
 // 039 self-sync (and later 008 ingestion): upsert one proposal from an external source. Called only
 // when something changed, so an unchanged re-sync writes and audits nothing.
+/** The key is held by a proposal from another source (usually one made by hand); it's never overwritten. */
+export class KeyTakenError extends Error {
+  constructor(key: string, source: string) {
+    super(`${key} belongs to a proposal that wasn't created by ${source}`);
+    this.name = "KeyTakenError";
+  }
+}
+
 export const syncProposal = defineService({
   name: "delivery.proposal.sync",
   action: "delivery:proposal:sync",
@@ -192,7 +200,10 @@ export const syncProposal = defineService({
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
-    // Same project row lock as createProposal: keys share one namespace (review round 2).
+    // Same project row lock as createProposal, so the two never compute or insert a key at the same
+    // moment (review round 2). The insert's foreign key would also wait on that lock; taking it
+    // explicitly keeps the guarantee from resting on the FK. Pinned by "a sync waits for the project
+    // lock". A key a person took first is refused below and reported by the sync (review round 3).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [before] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
     const meta = JSON.stringify(input.meta);
@@ -204,7 +215,7 @@ export const syncProposal = defineService({
         where delivery.proposal.source = excluded.source
       returning *`);
     // A key already used by a proposal from another source is never overwritten.
-    if (!row) throw new Error(`${input.key} belongs to a proposal that wasn't created by ${input.source}`);
+    if (!row) throw new KeyTakenError(input.key, input.source);
     const events: Emitted[] = before && before.phase !== input.phase ? [phaseEvent(before, input.phase, ctx)] : [];
     return {
       result: { key: input.key, created: !before, phaseChanged: events.length > 0 },

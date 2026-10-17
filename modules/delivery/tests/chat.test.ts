@@ -8,7 +8,7 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { createRegistry } from "@amax/mcp";
-import { cancelAction, chatTurn, confirmAction, type Intent } from "@amax/chat";
+import { cancelAction, chatTurn, confirmAction, NotPendingError, type Intent } from "@amax/chat";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { chatIntents } from "../chat";
@@ -142,7 +142,8 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
     await confirmAction(app, registry, maya, first.conversationId, first.pending[0].id);
     release();
     await second;
-    await expect(confirmAction(app, registry, maya, first.conversationId, first.pending[0].id)).rejects.toThrow(/no longer pending/);
+    // A typed refusal, which the page shows as "already handled", not "cancelled" (review round 3).
+    await expect(confirmAction(app, registry, maya, first.conversationId, first.pending[0].id)).rejects.toBeInstanceOf(NotPendingError);
     const rows = await withTenant(app, T, (tx) => tx.execute(sql`select key from delivery.proposal where title = 'Mid-turn'`));
     expect(rows).toHaveLength(1);
     const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages from chat.conversation where id = ${first.conversationId}`));

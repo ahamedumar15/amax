@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { z } from "zod";
 import { type Db, textArray, withTenant } from "@amax/db";
-import type { Sensitivity, Source } from "@amax/core/server";
+import { logError, type Sensitivity, type Source } from "@amax/core/server";
 import { blockedReason, loadPolicy, type AiPolicy } from "./policy";
 import { DATA_RULES, looksLikeInjection, quoteData } from "./prompt";
 import { redactDeep, type Redactions } from "./redact";
@@ -116,6 +116,20 @@ export type Tool = ToolSpec & { run: (input: never) => Promise<unknown>; sensiti
  * A bounded tool loop for chat (005). Tool inputs are validated with their zod schema before they
  * run; tools run as the caller through module services, so permissions and audit apply.
  */
+const FAILURES: Record<string, string> = {
+  ForbiddenError: "isn't allowed for this user",
+  ScopeError: "is outside this user's data scope",
+  ZodError: "was given input it doesn't accept",
+};
+
+/** What the model is told when a tool throws: the kind of failure, never the message. */
+export function toolFailure(tool: string, e: unknown, ref: string) {
+  const name = e instanceof Error ? e.name : "";
+  const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code: unknown }).code) : "";
+  const why = FAILURES[name] ?? (code === "not_found" ? "found no such record" : code === "invalid_input" ? "was given input it doesn't accept" : code === "forbidden" ? "isn't allowed for this user" : "failed");
+  return `${tool} ${why} (reference ${ref}).`;
+}
+
 export async function converse(caller: AiCaller, opts: { instructions: string; messages: Message[]; tools: Tool[]; data?: DataItem[]; maxSteps?: number }) {
   const p = await prepare(caller, opts.instructions, opts.data ?? []);
   const messages: Message[] = [...opts.messages];
@@ -151,10 +165,10 @@ export async function converse(caller: AiCaller, opts: { instructions: string; m
           if (looksLikeInjection(result)) p.injection = true;
           return { type: "tool_result" as const, toolUseId: call.id, content: quoteData(`result of ${call.name}`, result) };
         } catch (e) {
-          // Errors can echo record values or attacker text: quoted and checked like results (review round 2).
-          const message = (e instanceof Error ? e.message : String(e)).slice(0, 500);
-          if (looksLikeInjection(message)) p.injection = true;
-          return { type: "tool_result" as const, toolUseId: call.id, content: quoteData(`error from ${call.name}`, message), isError: true };
+          // Error messages can echo record values (classified or not) and attacker text, and can't be
+          // redacted by field. The model gets a fixed string by error kind; the message stays out of
+          // the prompt and the log, which keeps a reference only (review rounds 2 and 3).
+          return { type: "tool_result" as const, toolUseId: call.id, content: toolFailure(call.name, e, logError(`ai.tool ${call.name}`, e)), isError: true };
         }
       }));
       messages.push({ role: "user", content: results });

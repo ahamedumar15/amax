@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
-import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { cancelAction, chatTurn, confirmAction, NotPendingError, type ChatTurn, type Pin } from "@amax/chat";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true } & ChatTurn) | { ok: false; error: string };
@@ -25,7 +25,7 @@ export async function sendChat(input: { conversationId?: string; text: string; p
   }
 }
 
-export async function confirmChat(conversationId: string, actionId: string): Promise<{ ok: true; summary: string } | { ok: false; error: string }> {
+export async function confirmChat(conversationId: string, actionId: string): Promise<{ ok: true; summary: string } | { ok: false; error: string; handled?: boolean }> {
   try {
     const viewer = await currentViewer();
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
@@ -33,6 +33,8 @@ export async function confirmChat(conversationId: string, actionId: string): Pro
     const key = (result as { key?: string } | null)?.key;
     return { ok: true, summary: key ? `Done: ${key} added.` : `Done: ${action.title}.` };
   } catch (e) {
+    // Already confirmed or cancelled, e.g. a retry after a lost reply: neutral, not "cancelled" (review round 3).
+    if (e instanceof NotPendingError) return { ok: false, handled: true, error: "This was already handled. Check the record to see the result." };
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }

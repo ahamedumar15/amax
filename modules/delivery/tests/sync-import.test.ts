@@ -62,10 +62,10 @@ describe.skipIf(!hasDb)("AC-2/AC-3 self-sync import", () => {
   });
 
   it("re-running with nothing changed writes and audits nothing", async () => {
-    const before = Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n);
+    const before = Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event`)))[0].n);
     const r = await syncSpecclaw(app, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(repoRoot), sha: "def456" });
     expect(r).toMatchObject({ created: 0, updated: 0, withdrawn: 0 });
-    expect(Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n)).toBe(before);
+    expect(Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event`)))[0].n)).toBe(before);
   });
 
   it("a branch overlay moves a change forward and emits phase_changed; a vanished folder is withdrawn", async () => {
@@ -150,6 +150,46 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     const again = await syncSpecclaw(app, ctx, { projectKey: "NC", projectName: "nc", client: "x", records: readSpecclaw({ dir: repo, ref: "main@2222222b" }), sha: "2222222b" });
     expect(again).toMatchObject({ created: 0, updated: 0, unchanged: 2 });
     expect(Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n)).toBe(before);
+  });
+
+  it("main's state.json unreadable but a readable overlay: still skipped and reported at main (review round 3)", async () => {
+    const main = fakeRepo({ "001-a": { status: "✅ Approved" } });
+    writeFileSync(join(main, ".specclaw/changes/001-a/state.json"), "{ not json");
+    const branch = fakeRepo({ "001-a": { status: "✅ Approved", claim: true } });
+    const records = readSpecclaw({ dir: main, ref: "main@cccccccc" }, [{ dir: branch, ref: "specclaw/001-a@dddddddd" }]);
+    expect(records[0]).toMatchObject({ unreadable: true, source: "main@cccccccc" });
+  });
+
+  it("a sync and hand-made creates racing in one project: distinct keys, nothing lost, collisions reported (review round 3)", async () => {
+    const { createProposal } = await import("../server/services");
+    const { ctxFor } = await import("../server/context");
+    const repo = fakeRepo(Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`00${i + 1}-c${i}`, { status: "✅ Approved" }])));
+    await syncSpecclaw(app, ctx, { projectKey: "RC", projectName: "rc", client: "x", records: readSpecclaw(repo).slice(0, 1), sha: "1" });
+    const [sync, ...made] = await Promise.all([
+      syncSpecclaw(app, ctx, { projectKey: "RC", projectName: "rc", client: "x", records: readSpecclaw(repo), sha: "2" }),
+      ...Array.from({ length: 4 }, (_, i) => createProposal(ctxFor(ops!), { projectKey: "RC", title: `By hand ${i}` })),
+    ]) as [Awaited<ReturnType<typeof syncSpecclaw>>, ...{ key: string }[]];
+    const rows = await withTenant(app, T, (tx) => tx.execute(sql`select p.key, p.source, p.title from delivery.proposal p join delivery.project pr on pr.id = p.project_id where pr.key = 'RC' order by p.key`));
+    expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
+    for (const m of made) expect(rows.find((r) => r.key === m.key)?.source).toBeNull();
+    const synced = rows.filter((r) => r.source === "specclaw").map((r) => r.key as string);
+    expect(synced.length + sync.skipped.length).toBe(6);
+    for (const s of sync.skipped) expect(s).toMatch(/key belongs to a proposal not created by the sync/);
+  });
+
+  it("a sync waits for the project lock a hand-made create holds (review round 3)", async () => {
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": { status: "✅ Approved" } });
+    await syncSpecclaw(app, ctx, { projectKey: "LK", projectName: "lk", client: "x", records: readSpecclaw(repo).slice(0, 1), sha: "1" });
+    let done = false;
+    await t.owner.begin(async (tx) => {
+      await tx`select 1 from delivery.project where key = 'LK' for update`;
+      const sync = syncSpecclaw(app, ctx, { projectKey: "LK", projectName: "lk", client: "x", records: readSpecclaw(repo), sha: "2" }).then((r) => { done = true; return r; });
+      await new Promise((r) => setTimeout(r, 400));
+      expect(done).toBe(false);
+      void sync;
+      // (Released when this transaction commits.)
+    });
+    await expect.poll(() => done, { timeout: 5000 }).toBe(true);
   });
 
   it("each record carries the branch and commit it was read from; withdrawn ones leave lists and counts", async () => {

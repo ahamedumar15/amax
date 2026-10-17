@@ -112,10 +112,18 @@ async function note(db: Db, viewer: Viewer, conversationId: string, text: string
     where id = ${conversationId} and user_id = ${viewer.userId}`));
 }
 
+/** The card was already confirmed or cancelled (perhaps by a request whose reply was lost). */
+export class NotPendingError extends Error {
+  constructor() {
+    super("that action is no longer pending");
+    this.name = "NotPendingError";
+  }
+}
+
 /** "Add it": claim the pending write, then run it as the user, source chat (AC-3). */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await claim(db, viewer, conversationId, actionId);
-  if (!action) throw new Error("that action is no longer pending");
+  if (!action) throw new NotPendingError();
   let result: unknown;
   try {
     result = await registry.call(viewer, action.tool, action.input, { source: "chat" });

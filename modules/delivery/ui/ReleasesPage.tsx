@@ -23,38 +23,52 @@ function cell(s: ReleaseRow["stages"][number]) {
   return s.isProd ? <span className="chip good">{day(s.at)}</span> : <>{day(s.at)}</>;
 }
 
-// Laid out by environment name over the same columns as the table, so projects with different or
-// reordered environments are drawn against their own stages (review rounds 1 and 2).
+/**
+ * One row of the release map, always in the project's own stage order. When that order agrees with
+ * the shared columns each station sits under its column; when it doesn't (projects contradict each
+ * other) the row is laid out by its own order and labels its stations (review rounds 1 to 3).
+ */
+export function mapRow(r: ReleaseRow, columns: string[]) {
+  const own = [...r.stages].sort((a, b) => a.position - b.position);
+  const cols = own.map((s) => columns.indexOf(s.environment));
+  const agrees = cols.every((c, i) => c >= 0 && (i === 0 || c > cols[i - 1]));
+  const slot = (i: number) => (agrees ? cols[i] : i);
+  const lastReached = own.reduce((last, s, i) => (s.status ? i : last), -1);
+  return {
+    agrees,
+    stations: own.map((s, i) => ({ environment: s.environment, slot: slot(i), reached: Boolean(s.status), last: i === lastReached })),
+    lineTo: lastReached >= 0 ? slot(lastReached) : null,
+    aheadTo: own.length ? slot(own.length - 1) : null,
+    back: lastReached >= 0 && own[lastReached].status === "rolled-back",
+  };
+}
+
 function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: string[] }) {
   const active = releases.filter((r) => r.stages.some((s) => s.status));
-  const envs = columns.map((environment) => ({ environment }));
   const x = (i: number) => 300 + i * 180;
   const h = 70 * active.length + 60;
   return (
-    <svg viewBox={`0 0 900 ${h}`} role="img" aria-label={active.map((r) => `${r.projectName} ${r.version}: ${r.stages.filter((s) => s.status).at(-1)?.environment ?? "not deployed"}`).join(". ")}>
-      <g className="env" textAnchor="middle">{envs.map((e, i) => <text key={e.environment} x={x(i)} y={20}>{e.environment}</text>)}</g>
-      <g stroke="var(--line)" strokeWidth={1.5}>{envs.map((e, i) => <line key={e.environment} x1={x(i)} y1={34} x2={x(i)} y2={h - 8} />)}</g>
+    <svg viewBox={`0 0 ${Math.max(900, x(columns.length - 1) + 60)} ${h}`} role="img" aria-label={active.map((r) => `${r.projectName} ${r.version}: ${[...r.stages].sort((a, b) => a.position - b.position).filter((s) => s.status).at(-1)?.environment ?? "not deployed"}`).join(". ")}>
+      <g className="env" textAnchor="middle">{columns.map((e, i) => <text key={e} x={x(i)} y={20}>{e}</text>)}</g>
+      <g stroke="var(--line)" strokeWidth={1.5}>{columns.map((e, i) => <line key={e} x1={x(i)} y1={34} x2={x(i)} y2={h - 8} />)}</g>
       {active.map((r, row) => {
         const y = 86 + row * 70;
         const c = HEX[r.projectColor] ?? "#7B61FF";
-        // Stages in the project's own order; columns agree with it (stageColumns), so the furthest
-        // reached stage is also the right-most reached column.
-        const own = [...r.stages].sort((a, b) => a.position - b.position);
-        const reached = own.filter((s) => s.status);
-        const lastI = Math.max(...reached.map((s) => columns.indexOf(s.environment)));
-        const lastCol = Math.max(...own.map((s) => columns.indexOf(s.environment)));
-        const back = reached.at(-1)?.status === "rolled-back";
+        const m = mapRow(r, columns);
+        const lastI = m.lineTo!;
         return (
           <g key={r.id}>
             <text className="lbl" x={0} y={y + 5}>{r.projectName}</text>
-            <text className="cap" x={0} y={y + 24}>{r.version}, {r.proposals} proposals</text>
-            <path className="line" d={`M240 ${y}H${x(lastI) - (back ? 12 : 0)}`} stroke={c} />
-            {lastI < lastCol && <path className="ahead" d={`M${x(lastI) + (back ? 12 : 0)} ${y}H${x(lastCol)}`} stroke={c} />}
-            {r.stages.map((s) => {
-              const col = columns.indexOf(s.environment);
-              return col === lastI && back ? <circle key={s.environment} cx={x(col)} cy={y} r={13} fill="#F26B5B" />
-                : <circle key={s.environment} className="station" cx={x(col)} cy={y} r={col === lastI ? 11 : 9} stroke={s.status ? c : "var(--line-2)"} />;
-            })}
+            <text className="cap" x={0} y={y + 24}>{r.version}, {r.proposals} proposals{m.agrees ? "" : ", own stage order"}</text>
+            <path className="line" d={`M240 ${y}H${x(lastI) - (m.back ? 12 : 0)}`} stroke={c} />
+            {m.aheadTo !== null && lastI < m.aheadTo && <path className="ahead" d={`M${x(lastI) + (m.back ? 12 : 0)} ${y}H${x(m.aheadTo)}`} stroke={c} />}
+            {m.stations.map((s) => (
+              <g key={s.environment}>
+                {s.last && m.back ? <circle cx={x(s.slot)} cy={y} r={13} fill="#F26B5B" />
+                  : <circle className="station" cx={x(s.slot)} cy={y} r={s.last ? 11 : 9} stroke={s.reached ? c : "var(--line-2)"} />}
+                {!m.agrees && <text className="cap" textAnchor="middle" x={x(s.slot)} y={y + 28}>{s.environment}</text>}
+              </g>
+            ))}
           </g>
         );
       })}

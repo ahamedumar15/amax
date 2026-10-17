@@ -70,10 +70,12 @@ describe.skipIf(!hasDb)("AC-2/AC-3 registry with delivery (Postgres)", () => {
   it("search: a forbidden module is silently empty, a failing one is reported, a working one answers (review round 2)", async () => {
     const { createRegistry } = await import("@amax/mcp");
     const { ForbiddenError } = await import("@amax/core/server");
+    const { ScopeError } = await import("@amax/auth");
     const hit = { type: "x", id: "OK-1", title: "ok" };
     const r = createRegistry([
       { id: "works", search: async () => [hit] },
       { id: "forbidden", search: async () => { throw new ForbiddenError("x:read", "x"); } },
+      { id: "out-of-scope", search: async () => { throw new ScopeError("x:read"); } },
       { id: "broken", search: async () => { throw new Error("connection reset"); } },
     ] as never);
     expect(await r.call(maya, "search", { query: "ok" }, { source: "mcp" })).toEqual({ hits: [hit], notSearched: ["broken"] });

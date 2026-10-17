@@ -129,7 +129,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
     try {
       if (!ok) { await cancelChat(convo.current, action.id); update("cancelled", "Cancelled. Nothing was changed."); return; }
       const r = await confirmChat(convo.current, action.id);
-      update(r.ok ? "done" : "cancelled", r.ok ? r.summary : r.error);
+      update(r.ok || r.handled ? "done" : "cancelled", r.ok ? r.summary : r.error);
       announce(r.ok ? r.summary : r.error);
     } catch {
       // The request itself failed (network, server): bring the buttons back so the user can retry.

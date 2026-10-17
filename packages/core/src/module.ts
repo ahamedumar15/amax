@@ -58,15 +58,17 @@ export type McpToolDef = {
 
 /**
  * One retention rule (032 AC-1): the data class (002 classes, or "personal" for identifying data
- * such as names), the period as an ISO 8601 duration ("P7Y"), the event that starts the clock, and
- * what happens when it runs out.
+ * such as names), the period as an ISO 8601 duration ("P7Y"), what starts the clock, and what
+ * happens when it runs out. The clock starts at the first of `start.events` (events this module
+ * emits) or once the row has gone `start.idle` without an update, whichever comes first, so a
+ * record that never reaches its happy-path end (withdrawn, abandoned) still has one (review round 3).
  */
 export type RetentionEntry = {
   table: string;
   fields: string[];
   class: Sensitivity | "personal";
   period: `P${string}`;
-  start: string;
+  start: { events: string[]; idle: `P${string}` };
   action: "delete" | "anonymise";
 };
 
@@ -109,5 +111,9 @@ export type ModuleManifest = {
 export function defineModule(manifest: ModuleManifest): ModuleManifest {
   if (!/^[a-z][a-z0-9-]*$/.test(manifest.id)) throw new Error(`module id "${manifest.id}" must be kebab-case`);
   if (!manifest.routes.some((r) => r.path === "")) throw new Error(`module "${manifest.id}" needs a root route ("")`);
+  for (const r of manifest.retention ?? []) {
+    const unknown = r.start.events.filter((e) => !manifest.events?.emits?.includes(e));
+    if (unknown.length) throw new Error(`module "${manifest.id}": retention for ${r.table} starts on ${unknown.join(", ")}, which it doesn't emit`);
+  }
   return manifest;
 }
