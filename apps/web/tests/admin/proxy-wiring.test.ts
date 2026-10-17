@@ -5,19 +5,19 @@ import { hasDb, migratedDatabase } from "@amax/db/testdb";
 // Cloudflare) or beside the app (k3s), in either order. Each "bundle" is a fresh module graph, as Next
 // compiles the proxy and the app separately; only globalThis is shared, as in one process.
 const T = "05805805-0000-4000-8000-000000000058";
-type Bundle = { wiring: typeof import("../../lib/rate-wiring"); core: typeof import("@amax/core/server") };
+type Bundle = { wiring: typeof import("../../lib/rate-wiring"); core: typeof import("@amax/core/server"); privacy: typeof import("@amax/core/privacy") };
 
 async function proxyBundle(): Promise<Bundle> {
   vi.resetModules();
   const wiring = await import("../../lib/rate-wiring");
   expect(wiring.wireProxy()).toBe(true);
-  return { wiring, core: await import("@amax/core/server") };
+  return { wiring, core: await import("@amax/core/server"), privacy: await import("@amax/core/privacy") };
 }
 async function appBundle(): Promise<Bundle> {
   vi.resetModules();
   const server = await import("../../lib/server");
   expect(server.getDb()).toBeTruthy();
-  return { wiring: await import("../../lib/rate-wiring"), core: await import("@amax/core/server") };
+  return { wiring: await import("../../lib/rate-wiring"), core: await import("@amax/core/server"), privacy: await import("@amax/core/privacy") };
 }
 
 describe.skipIf(!hasDb)("058 the proxy records page 429s on every host (Postgres)", () => {
@@ -45,6 +45,8 @@ describe.skipIf(!hasDb)("058 the proxy records page 429s on every host (Postgres
     for (const b of order) bundles[b] = b === "proxy" ? await proxyBundle() : await appBundle();
     // Every bundle wired its own runtime, whichever ran first.
     for (const b of Object.values(bundles)) expect(() => b.core.getRuntime()).not.toThrow();
+    // The app's bundle wired all of itself even when the proxy opened the shared Db client first.
+    if (bundles.app) expect(bundles.app.privacy.privacyRules().map((r) => r.table)).toEqual(expect.arrayContaining(["api.rate_limited", "hr.person", "chat.conversation"]));
     const proxy = bundles.proxy;
     const takes = [1, 2, 3].map(() => proxy.core.takeRate({ tenantId: T, userId: `u-${order.join("-")}`, channel: "page" }).ok);
     expect(takes).toEqual([true, true, false]);
@@ -52,4 +54,21 @@ describe.skipIf(!hasDb)("058 the proxy records page 429s on every host (Postgres
     const rows = await t.owner`select channel, count from api.rate_limited where tenant_id = ${T}`;
     expect(rows.map((r) => [r.channel, Number(r.count)])).toEqual([["page", 1]]);
   }, 60_000);
+
+  it.each([
+    ["no database (the guest preview)", { DATABASE_URL: "" }, false],
+    ["a database without the audit key", { AUDIT_HASH_KEY: "" }, /AUDIT_HASH_KEY is required/],
+  ] as const)("wireProxy with %s", async (_, env, want) => {
+    const before = { DATABASE_URL: process.env.DATABASE_URL, AUDIT_HASH_KEY: process.env.AUDIT_HASH_KEY };
+    for (const [k, v] of Object.entries(env)) if (v) process.env[k] = v; else delete process.env[k];
+    try {
+      vi.resetModules();
+      const wiring = await import("../../lib/rate-wiring");
+      if (want === false) expect(wiring.wireProxy()).toBe(false);
+      else expect(() => wiring.wireProxy()).toThrow(want);
+    } finally {
+      Object.assign(process.env, before);
+    }
+  });
 });
+

@@ -29,9 +29,12 @@ let proxyWired = false;
 export function wireProxy(): boolean {
   if (proxyWired) return true;
   const env = loadEnv();
-  if (!env.DATABASE_URL || !env.AUDIT_HASH_KEY) return false;
+  // No database: the guest preview, which limits nothing. A database without the audit key fails
+  // closed, as getDb() does, rather than limiting with defaults and dropping the counts (review 058).
+  if (!env.DATABASE_URL) return false;
+  if (!env.AUDIT_HASH_KEY) throw new Error("amax: AUDIT_HASH_KEY is required once DATABASE_URL is set");
   const db = (shared.amaxDb ??= createDb(env.DATABASE_URL).db);
-  if (!db) return false;
+  if (!db) throw new Error("amax: the proxy could not open the database");
   configureRuntime({ db, auditKey: env.AUDIT_HASH_KEY });
   installAuthorizer();
   wireRateLimits(env);

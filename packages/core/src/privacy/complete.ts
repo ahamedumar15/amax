@@ -7,25 +7,13 @@ import { secondApproval } from "./approval";
 import { PRIVACY_MANAGE, privacyRules } from "./catalog";
 import { held as heldNow } from "./holds";
 import { assertChecked, EXCLUDED_BY_APPROVER, inventory, matchOf, summarise, type Item } from "./inventory";
-import { about, byName, type Match } from "./match";
+import { about, type Match } from "./match";
+import { decideNameRows, includedRows, nameRows } from "./name-rows";
 import { buildPackage } from "./package";
 import { loadRequest, personOf, type RequestRow } from "./requests";
 import { PrivacyError, resolveSubject } from "./subjects";
 
 export const ERASED_LABEL = "Erased person";
-
-/** What the approver decided about rows found only by name, after checking them (review 058 round 3):
- * "include" treats them as this person's (erased or exported with the rest), "exclude" as someone
- * else's (kept, with that reason). A request with such rows can't complete without the decision. */
-export const BY_NAME = ["include", "exclude"] as const;
-export type ByName = (typeof BY_NAME)[number];
-
-function decide(items: Item[], byName: ByName | undefined): Item[] {
-  const review = items.filter((i) => i.review);
-  if (!review.length) return items;
-  if (!byName) throw new PrivacyError(`${review.map((i) => `${i.label} (${i.n})`).join(", ")} name the person only by name. Check them, then complete with byName "include" if they are this person's, or "exclude" if they are someone else's`);
-  return items.map((i) => (!i.review ? i : byName === "include" ? { ...i, review: undefined, byName: true } : { ...i, review: undefined, kept: EXCLUDED_BY_APPROVER }));
-}
 
 const lower = (s: string) => s.trim().toLowerCase();
 
@@ -34,11 +22,12 @@ async function erase(tx: Tx, req: RequestRow, who: Match, items: Item[], approve
   const names = new Set(held.names.map(lower));
   if (who.ids.some((id) => held.ids.includes(id)) || who.names.some((n) => names.has(lower(n)))) throw new PrivacyError("this person is under a legal hold; release the hold before erasing");
   let n = 0;
-  // Rows found by id, and rows found by name only if the approver included them (decide()).
+  // Rows found by id, and the name-only rows the approver included, by their ids (decideNameRows).
   for (const rule of privacyRules()) {
     const mine = items.filter((i) => i.rule === rule.id && !i.kept && !i.review);
-    if (mine.some((i) => !i.byName)) n += await applyRule(tx, rule, about(rule, who));
-    if (mine.some((i) => i.byName)) n += await applyRule(tx, rule, byName(rule, who));
+    if (mine.some((i) => !i.rows)) n += await applyRule(tx, rule, about(rule, who));
+    const rows = mine.flatMap((i) => i.rows ?? []);
+    if (rows.length) n += await applyRule(tx, rule, includedRows(rows));
   }
   // erase_request erases the audit and trace chains for the stored ids, so store every id the
   // inventory used, including ones resolved since the request was opened (review 058 B1).
@@ -56,22 +45,35 @@ async function access(tx: Tx, req: RequestRow, who: Match, items: Item[], approv
   return pkg.sections.reduce((n, s) => n + s.rows.length, 0);
 }
 
+// One set of ids and names for the inventory, the hold check, the rules and the chains, and the rows
+// found only by name that the approver must decide on.
+async function prepare(tx: Tx, req: RequestRow) {
+  if (!req.subjectUserId) throw new PrivacyError("this request has no person to act on");
+  const subject = await resolveSubject(tx, req.subjectUserId);
+  const who = matchOf({ ids: [...new Set([...req.subjects, ...subject.ids])], label: subject.label }, [req.subjectLabel]);
+  const found = await inventory(tx, { ...subject, ids: who.ids }, who.names);
+  return { who, found, named: await nameRows(tx, who, found) };
+}
+
+/** An open request's rows found only by name, for the approver to check before deciding (read). */
+export async function requestNameRows(tx: Tx, id: string) {
+  const req = await loadRequest(tx, id);
+  if (req.status !== "open") return [];
+  return (await prepare(tx, req)).named;
+}
+
 export const completePrivacyRequest = defineService({
   name: "privacy.request.complete",
   action: PRIVACY_MANAGE,
   resource: "privacy.request",
-  input: z.object({ id: z.uuid(), byName: z.enum(BY_NAME).optional() }),
+  input: z.object({ id: z.uuid(), nameRows: z.object({ include: z.array(z.string().max(100)).max(500).default([]), exclude: z.array(z.string().max(100)).max(500).default([]) }).optional() }),
   async run(tx, input, ctx) {
     const req = await loadRequest(tx, input.id, true);
     if (req.status !== "open") throw new PrivacyError(`this ${req.kind} request is already ${req.status}`);
     await secondApproval(ctx, req);
-    if (!req.subjectUserId) throw new PrivacyError("this request has no person to act on");
-    const subject = await resolveSubject(tx, req.subjectUserId);
-    // One set of ids and names for the inventory, the hold check, the rules and the chains.
-    const who = matchOf({ ids: [...new Set([...req.subjects, ...subject.ids])], label: subject.label }, [req.subjectLabel]);
-    const found = await inventory(tx, { ...subject, ids: who.ids }, who.names);
+    const { who, found, named } = await prepare(tx, req);
     assertChecked(found, `complete this ${req.kind} request`);
-    const items = decide(found, input.byName);
+    const items = decideNameRows(found, named, input.nameRows, EXCLUDED_BY_APPROVER);
     const n = req.kind === "erasure" ? await erase(tx, req, who, items, personOf(ctx)) : await access(tx, req, who, items, personOf(ctx));
     const after = { kind: req.kind, status: "completed", records: n, ...summarise(items) };
     return { result: { id: req.id, ...after, kept: items.filter((i) => i.kept) }, resourceId: req.id, before: { status: "open" }, after, events: [{ name: `privacy.request.completed`, payload: { id: req.id, kind: req.kind } }] };

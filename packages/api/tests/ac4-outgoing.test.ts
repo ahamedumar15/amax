@@ -12,7 +12,7 @@ const EVENT = "hr.person.updated";
 describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
   let db: Awaited<ReturnType<typeof apiDb>>;
   let engine: WorkflowEngine;
-  const platform = apiPlatform([{ name: EVENT, fields: { name: "plain", salary: "pay" } }], async () => engine);
+  const platform = apiPlatform([{ events: { emits: [EVENT], payloads: { [EVENT]: { name: "plain", salary: "pay" } } } }], async () => engine);
   const sent: { url: string; headers: Headers; body: string }[] = [];
 
   const emit = (payload: Record<string, unknown>) =>

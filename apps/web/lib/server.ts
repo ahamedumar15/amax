@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
-import { apiPlatform, webhookEvents } from "@amax/api/module";
+import { apiPlatform } from "@amax/api/module";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
 import { configureAi } from "@amax/ai";
@@ -34,6 +34,8 @@ export function getDb(): Db | null {
     if (env.NODE_ENV === "production" && !env.AMAX_BASE_URL) throw new Error("amax: AMAX_BASE_URL is required once DATABASE_URL is set in production");
     cache.amaxDb = createDb(env.DATABASE_URL).db;
   }
+  // `wired` is this bundle's own flag, never the shared Db cache: the proxy (wireProxy) may have opened
+  // the client first, and this bundle's copies of core, auth and the AI gateway still need wiring.
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
@@ -59,7 +61,7 @@ export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 const auth = { id: "auth", events: { handles: authEventHandlers } };
 
 // 035: outgoing webhooks for every event an installed module emits, delivered as 029 workflows.
-const api = () => apiPlatform(webhookEvents(installed), workflowEngine);
+const api = () => apiPlatform(installed, workflowEngine);
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
 export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), ...installed]));

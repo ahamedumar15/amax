@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { appendAudit, contextFor, type ServiceContext } from "../src/server";
-import { completePrivacyRequest, effective, EXCLUDED_BY_APPROVER, inventoryFor, loadPeriods, openPrivacyRequest, placeLegalHold, previewPurge, privacyOverview, purgeDue, releaseLegalHold, setRetentionPeriod, type PrivacySource } from "../src/privacy";
+import { completePrivacyRequest, effective, EXCLUDED_BY_APPROVER, requestNameRows, inventoryFor, loadPeriods, openPrivacyRequest, placeLegalHold, previewPurge, privacyOverview, purgeDue, releaseLegalHold, setRetentionPeriod, type PrivacySource } from "../src/privacy";
 import { as, privacyDb, T, USERS, useTestSources } from "./privacy-fixture";
 
 type Entry = NonNullable<PrivacySource["retention"]>[number];
@@ -16,8 +16,10 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
 
   beforeAll(async () => {
     db = await privacyDb();
-    await db.t.owner.unsafe(`create table pt.task (id uuid primary key default gen_random_uuid(), tenant_id uuid not null, owner_name text, created_at timestamptz not null default now());
-      select core.enable_tenant_rls('pt.task'); grant select, insert, update, delete on pt.task to amax_app;`);
+    for (const table of ["task", "risk"]) {
+      await db.t.owner.unsafe(`create table pt.${table} (id uuid primary key default gen_random_uuid(), tenant_id uuid not null, owner_name text, created_at timestamptz not null default now());
+        select core.enable_tenant_rls('pt.${table}'); grant select, insert, update, delete on pt.${table} to amax_app;`);
+    }
   }, 60_000);
   afterAll(() => db?.t.drop());
 
@@ -47,42 +49,56 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
     await db.t.owner`update privacy.request set status = 'cancelled' where id = ${opened.id}`;
   }, 60_000);
 
-  // B1 (rounds 2 and 3): a name doesn't identify a person. Rows found only by name are never acted on
-  // automatically: the approver checks them and decides, and the request records that decision.
-  const nameCase = async (spelled: string, kind: "erasure" | "access") => {
-    await withExtra(TASK);
+  // B1 (rounds 2 to 4): a name doesn't identify a person. Rows found only by name are never acted on
+  // automatically: the approver sees each one and decides row by row, across every table, and a
+  // namesake's row with the very same spelling is kept while the person's own is acted on.
+  const RISK: Entry = { table: "pt.risk", label: "Risks by name (fictional)", subjectName: ["owner_name"], fields: ["owner_name"], class: "personal", period: "P30D", start: { at: ["created_at"] }, action: "anonymise" };
+  const setup = async (kind: "erasure" | "access") => {
+    await withExtra(TASK, RISK);
     await db.t.owner`delete from pt.task`;
-    await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, ${spelled}), (${T}, 'Ivy Test')`;
+    await db.t.owner`delete from pt.risk`;
+    // Two "Rowan Test" tasks: one is Rowan's, one a namesake's (a client contact). One risk is Rowan's.
+    const [own, namesake] = await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, 'Rowan Test'), (${T}, 'rowan test') returning id::text`;
+    const [risk] = await db.t.owner`insert into pt.risk (tenant_id, owner_name) values (${T}, ' ROWAN TEST ') returning id::text`;
+    await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, 'Ivy Test')`;
     await db.t.owner`update privacy.request set status = 'cancelled' where status = 'open'`;
     await db.t.owner`update pt.person set name = 'Rowan Test' where user_id = ${USERS.rowan}`;
     const opened = await openPrivacyRequest(hana(), { kind, person: "rowan@example.test" });
-    expect(opened.inventory.find((i) => i.label === `${TASK.label}, by name`)).toMatchObject({ n: 1, review: expect.stringMatching(/^needs review/) });
-    expect(opened.review).toBe(1);
-    await expect(completePrivacyRequest(sam(), { id: opened.id })).rejects.toThrow(/name the person only by name/);
-    expect((await db.t.owner`select status from privacy.request where id = ${opened.id}`)[0].status).toBe("open");
-    return opened;
+    expect(opened.review).toBe(3);
+    const listed = await db.tx((tx) => requestNameRows(tx, opened.id));
+    expect(listed.map((l) => [l.label, l.rows.map((r) => r.id).sort()])).toEqual([[`${TASK.label}, by name`, [own.id, namesake.id].sort()], [`${RISK.label}, by name`, [risk.id]]]);
+    return { opened, own: own.id, namesake: namesake.id, risk: risk.id };
   };
-  const tasks = async () => (await db.t.owner`select owner_name from pt.task order by owner_name nulls first`).map((r) => r.owner_name);
+  const owners = async (table: "task" | "risk") => (await db.t.owner.unsafe(`select id::text, owner_name from pt.${table}`)).reduce((m, r) => ({ ...m, [r.id]: r.owner_name }), {} as Record<string, string | null>);
 
-  it.each([["exact", "Rowan Test"], ["other case", "ROWAN TEST"], ["padded", "  rowan test "]])("erasure: a name-only row spelled %s waits for the approver; include erases it", async (_, spelled) => {
-    const opened = await nameCase(spelled, "erasure");
-    await completePrivacyRequest(sam(), { id: opened.id, byName: "include" });
-    expect(await tasks()).toEqual([null, "Ivy Test"]);
+  it.each([
+    ["no decision", (_: Awaited<ReturnType<typeof setup>>) => undefined, /still need a decision: Tasks by name \(fictional\), by name \(2\), Risks by name \(fictional\), by name \(1\)/],
+    ["one table decided, the other not", (x: Awaited<ReturnType<typeof setup>>) => ({ include: [x.own], exclude: [x.namesake] }), /still need a decision: Risks by name/],
+    ["one row of a table left out", (x: Awaited<ReturnType<typeof setup>>) => ({ include: [x.own, x.risk], exclude: [] }), /still need a decision: Tasks by name \(fictional\), by name \(1\)/],
+    ["an id the request didn't list", (x: Awaited<ReturnType<typeof setup>>) => ({ include: [x.own, x.risk, "00000000-0000-4000-8000-00000000dead"], exclude: [x.namesake] }), /aren't rows this request found by name/],
+    ["a row in both lists", (x: Awaited<ReturnType<typeof setup>>) => ({ include: [x.own, x.risk, x.namesake], exclude: [x.namesake] }), /can't be both/],
+  ])("refuses to complete with %s, and the request stays open", async (_, decision, error) => {
+    const x = await setup("erasure");
+    await expect(completePrivacyRequest(sam(), { id: x.opened.id, nameRows: decision(x) as never })).rejects.toThrow(error);
+    expect((await db.t.owner`select status from privacy.request where id = ${x.opened.id}`)[0].status).toBe("open");
   }, 60_000);
 
-  it("erasure: exclude keeps the name-only rows as someone else's, and says so", async () => {
-    const opened = await nameCase("Rowan Test", "erasure");
-    const done = await completePrivacyRequest(sam(), { id: opened.id, byName: "exclude" });
-    expect(await tasks()).toEqual(["Ivy Test", "Rowan Test"]);
-    expect(done.kept.find((i) => i.label === `${TASK.label}, by name`)?.kept).toBe(EXCLUDED_BY_APPROVER);
+  it("erasure acts on exactly the rows the approver included, across tables, and keeps the namesake's", async () => {
+    const x = await setup("erasure");
+    const done = await completePrivacyRequest(sam(), { id: x.opened.id, nameRows: { include: [x.own, x.risk], exclude: [x.namesake] } });
+    expect(await owners("task")).toMatchObject({ [x.own]: null, [x.namesake]: "rowan test" });
+    expect(await owners("risk")).toEqual({ [x.risk]: null });
+    expect(done.kept.find((i) => i.kept === EXCLUDED_BY_APPROVER)).toMatchObject({ n: 1, rows: [x.namesake] });
     expect(done).toMatchObject({ status: "completed", review: 0 });
   }, 60_000);
 
-  it.each([["include", ["pt.task"]], ["exclude", []]] as const)("access: %s puts the name-only rows in the package or leaves them out", async (choice, tables) => {
-    const opened = await nameCase("Rowan Test", "access");
-    await completePrivacyRequest(sam(), { id: opened.id, byName: choice });
-    const [pkg] = await db.t.owner`select package from privacy.request where id = ${opened.id}`;
-    expect(pkg.package.sections.map((x: { table: string }) => x.table).filter((t: string) => t === "pt.task")).toEqual(tables);
+  it("access exports exactly the included rows", async () => {
+    const x = await setup("access");
+    await completePrivacyRequest(sam(), { id: x.opened.id, nameRows: { include: [x.own], exclude: [x.namesake, x.risk] } });
+    const [pkg] = await db.t.owner`select package from privacy.request where id = ${x.opened.id}`;
+    const named = pkg.package.sections.filter((p: { table: string }) => p.table === "pt.task" || p.table === "pt.risk");
+    expect(named.map((p: { table: string; rows: unknown[] }) => [p.table, p.rows.length])).toEqual([["pt.task", 1]]);
+    expect(await owners("task")).toMatchObject({ [x.own]: "Rowan Test", [x.namesake]: "rowan test" });
   }, 60_000);
 
   it("a person hold keeps their name-only rows out of the purge", async () => {

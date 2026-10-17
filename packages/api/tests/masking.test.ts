@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { maskEvent, webhookEvents } from "../src";
+import { apiPlatform, maskEvent, webhookEvents } from "../src";
 
 // Review 058 (rounds 1 and 2): outgoing payloads are masked by what the emitting module declared for
 // that event, and fail closed: a field it didn't declare never leaves amax in the clear.
@@ -37,6 +37,12 @@ describe("058 outgoing webhook masking follows the event's declaration and fails
   ] as const)("two emitters of one event: %s", (_, first, second, payload, want) => {
     const [e] = webhookEvents([{ events: { emits: ["x.y.z"], payloads: { "x.y.z": first } } }, { events: { emits: ["x.y.z"], payloads: second ? { "x.y.z": second } : {} } }]);
     expect(maskEvent(payload, e.fields)).toEqual(want);
+  });
+
+  it.each([[1], [2], [3]])("%i manifests emitting one event get one webhook handler", (copies) => {
+    const m = { events: { emits: ["x.y.z"], payloads: { "x.y.z": { amount: "plain" as const } } } };
+    const p = apiPlatform(Array.from({ length: copies }, () => m), async () => { throw new Error("unused"); });
+    expect(p.events.handles.map((h) => h.event)).toEqual(["x.y.z"]);
   });
 });
 

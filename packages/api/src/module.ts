@@ -51,9 +51,10 @@ function stricter(a: PayloadFields | undefined, b: PayloadFields | undefined, se
   return merged;
 }
 
-export const apiPlatform = (events: WebhookEvent[], engine: () => Promise<WorkflowEngine>) => ({
+/** Takes the manifests, not a list built elsewhere, so each event gets one handler with its merged declaration. */
+export const apiPlatform = (modules: Pick<ModuleManifest, "events">[], engine: () => Promise<WorkflowEngine>) => ({
   id: "api",
   workflows: [deliverWebhook],
   retention: apiRetention,
-  events: { handles: events.map((e) => fanOut(e.name, engine, e.fields)) },
+  events: { handles: webhookEvents(modules).map((e) => fanOut(e.name, engine, e.fields)) },
 });

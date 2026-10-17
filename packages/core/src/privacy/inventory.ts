@@ -7,12 +7,13 @@ import { statutoryFor } from "./periods";
 import { PrivacyError, resolveSubject, type Subject } from "./subjects";
 
 /** `review`: rows that name the person only by a free-text name. amax can't tell them from a namesake's,
- * so they are listed for a person to check and change in chat, and never erased or exported on their own. */
-export type Item = { source: string; label: string; class: string; n: number; action: Rule["action"] | "erase"; rule?: string; kept?: string; unchecked?: string; review?: string; byName?: boolean };
+ * so it never acts on them alone: the approver sees each row (get_privacy_request) and decides, row by
+ * row, when completing the request. `rows`: the ids of the name-only rows that decision covered. */
+export type Item = { source: string; label: string; class: string; n: number; action: Rule["action"] | "erase"; rule?: string; kept?: string; unchecked?: string; review?: string; rows?: string[] };
 
 export const EXCLUDED_BY_APPROVER = "kept: the approver judged these rows, recorded by name only, to be someone else's";
 
-export const NAME_REVIEW = "needs review: recorded by name only. amax can't tell this person from someone else with the same name, or find a spelling it doesn't know. Check these rows; the approver decides whether they are this person's when completing the request";
+export const NAME_REVIEW = "needs review: recorded by name only. amax can't tell this person from someone else with the same name, or find a spelling it doesn't know. The approver checks each row and decides whose it is when completing the request";
 
 export const V1_KEPT = "kept: pre-2026-10-17 audit format. Its hash covers the raw values, so erasing them would break the audit chain";
 const AI_KEPT = "kept: append-only AI usage ledger. It holds no content, only an id that no longer names anyone once the rest is erased";

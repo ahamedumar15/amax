@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { accessPackage, BY_NAME, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, setRetentionPeriod } from "@amax/core/privacy";
+import { accessPackage, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, requestNameRows, setRetentionPeriod } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
 import { chatOnly, ctxFor, notFound, read, tool, write } from "./tool";
 
@@ -42,8 +42,8 @@ export const privacyTools = [
     } }),
   tool({ ...read(PRIVACY_READ), name: "list_privacy_requests", description: "Access and erasure requests, open ones first, with what is kept and why.", input: z.object({ status: z.enum(["open", "completed"]).optional() }),
     run: async (v, a) => (await look(v, listRequests)).filter((r) => !a.status || r.status === a.status) }),
-  tool({ ...read(PRIVACY_READ), name: "get_privacy_request", description: "One access or erasure request: the person's records in every module, what is kept and why, and who opened and approved it.", input: z.object({ id }),
-    run: (v, a) => request(v, a.id) }),
+  tool({ ...read(PRIVACY_READ), name: "get_privacy_request", description: "One access or erasure request: the person's records in every module, what is kept and why, who opened and approved it, and (open requests) each row that names the person only by name, for the approver to decide on.", input: z.object({ id }),
+    run: async (v, a) => ({ ...(await request(v, a.id)), nameRows: await look(v, (tx) => requestNameRows(tx, a.id)) }) }),
   tool({ ...read(PRIVACY_READ), name: "list_legal_holds", description: "Active legal holds: whose records the purge and erasure must keep, and why.", input: z.object({}), run: (v) => look(v, listHolds) }),
   tool({ ...read(PRIVACY_READ), name: "retention_purge_history", description: "What the daily purge removed, by data class and count (never values); label narrows it to one kind of data.",
     input: z.object({ days: z.number().int().min(1).max(365).optional(), label: z.string().max(200).optional() }),
@@ -53,7 +53,8 @@ export const privacyTools = [
   tool({ ...write(PRIVACY_MANAGE), name: "open_privacy_request", description: "Open an access or erasure request for a person. amax lists their records in every module; a second Admin or HR person completes it.",
     input: z.object({ kind: z.enum(["access", "erasure"]), person }), run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), openPrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "complete_privacy_request", destructive: true, description: "Approve and complete an access or erasure request opened by someone else: export the data package, or erase and anonymise. Records the law still requires are kept.",
-    input: z.object({ id, byName: z.enum(BY_NAME).optional().describe("Rows that name the person only by name (the request lists them): 'include' once checked they are this person's, 'exclude' if they are someone else's. Required when the request has any") }),
+    input: z.object({ id, nameRows: z.object({ include: z.array(z.string().max(100)).max(500).default([]), exclude: z.array(z.string().max(100)).max(500).default([]) }).optional()
+      .describe("Rows that name the person only by name, listed by get_privacy_request: each row's id, as this person's (include) or someone else's (exclude). Every such row needs a decision") }),
     run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), completePrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "place_legal_hold", description: "Pause the purge and erasure for a person, or for a matter given the ids of its records.",
     input: z.discriminatedUnion("kind", [z.object({ kind: z.literal("person"), person, reason }), z.object({ kind: z.literal("matter"), matter: z.string().min(1).max(200), ids: z.array(z.string().min(1).max(200)).min(1).max(20), reason })]),
