@@ -1,13 +1,14 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:06 UTC
+**Last Updated:** 2026-10-17 19:10 UTC
 
 ## Active Changes
 
 
 - 🔀 **051-project-sections** — pr raised | 5/5 tasks (100%) | 0 failed | PR #42 merged
 - 🔀 **052-settings-review** — PR #43 merged
+- 📝 **054-chat-first-everywhere** — tasks done | 0/8 tasks (0%) | 0 failed
 
 ## Pending Proposals
 
@@ -39,7 +40,6 @@
 - 📋 **038-navigation-scale** — proposal ready, awaiting planning
 - 📋 **043-chat-write-tool-contract** — proposal ready, awaiting planning
 - 📋 **044-release-and-region-hardening** — proposal ready, awaiting planning
-- 📋 **054-chat-first-everywhere** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -70,6 +70,6 @@
 
 ## Stats
 
-- **Total changes:** 25
-- **Active:** 2
+- **Total changes:** 26
+- **Active:** 3
 - **Completed:** 23

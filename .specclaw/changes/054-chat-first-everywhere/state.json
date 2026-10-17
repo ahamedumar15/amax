@@ -1,8 +1,9 @@
 {
   "change": "054-chat-first-everywhere",
-  "phase": "proposal",
+  "phase": "tasks",
   "branch": "",
   "phases": {
-    "proposal": {"status":"approved","at":"2026-10-17T19:06:22Z"}
+    "proposal": {"status":"approved","at":"2026-10-17T19:06:22Z"},
+    "tasks": {"status":"done","at":"2026-10-17T19:10:26Z"}
   }
 }
