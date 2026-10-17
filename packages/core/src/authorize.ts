@@ -7,6 +7,8 @@ export type ServiceContext = {
   /** The person an agent or service principal acts for. */
   onBehalfOf?: string;
   source: Source;
+  /** The signed-in viewer (roles, data scopes) as resolved by @amax/auth; opaque to core. */
+  viewer?: unknown;
 };
 
 export type Authorizer = (ctx: ServiceContext, action: string, resource: string, input: unknown) => boolean | Promise<boolean>;

@@ -32,6 +32,11 @@ export const configureRuntime = (r: Runtime) => {
   runtime = r;
 };
 
+export function getRuntime(): Runtime {
+  if (!runtime) throw new Error("amax: configureRuntime({ db, auditKey }) before calling services");
+  return runtime;
+}
+
 export class ValidationError extends Error {
   constructor(public issues: z.core.$ZodIssue[]) {
     super(`invalid input: ${issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`);
@@ -43,8 +48,7 @@ export class ValidationError extends Error {
 // outbox events commit together or not at all.
 export function defineService<I, R>(spec: ServiceSpec<I, R>) {
   const call = async (ctx: ServiceContext, raw: unknown): Promise<R> => {
-    if (!runtime) throw new Error("amax: configureRuntime({ db, auditKey }) before calling services");
-    const { db, auditKey } = runtime;
+    const { db, auditKey } = getRuntime();
     if (!(await authorize(ctx, spec.action, spec.resource, raw))) throw new ForbiddenError(spec.action, spec.resource);
     const parsed = spec.input.safeParse(raw);
     if (!parsed.success) throw new ValidationError(parsed.error.issues);

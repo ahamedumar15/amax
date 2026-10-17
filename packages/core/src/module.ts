@@ -46,6 +46,12 @@ export type ModuleManifest = {
   dependsOn?: string[];
   integratesWith?: string[];
   permissions?: string[];
+  /**
+   * Which roles get which permissions. A permission may carry a data-scope qualifier:
+   * "time:approve@managed" (projects the viewer manages), "@assigned" (managed or assigned),
+   * "@own" (the viewer's own records). Admin holds every permission. Nav needs "<id>:read".
+   */
+  grants?: Partial<Record<"Admin" | "Leadership" | "PM" | "Engineer" | "Finance" | "Sales" | "HR" | "Payroll" | "Employee", string[]>>;
   routes: ModuleRoute[];
   mcpTools?: unknown[];
   chatIntents?: unknown[];
