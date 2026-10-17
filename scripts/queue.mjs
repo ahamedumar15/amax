@@ -81,4 +81,6 @@ function release() {
   console.log(`released ${it.dir}`);
 }
 
-({ status, next, release })[process.argv[2]]?.() ?? console.log("usage: queue.mjs status | next --machine <name> [--lanes A,B] | release <id> --machine <name>");
+const cmd = ({ status, next, release })[process.argv[2]];
+if (cmd) cmd();
+else console.log("usage: queue.mjs status | next --machine <name> [--lanes A,B] | release <id> --machine <name>");
