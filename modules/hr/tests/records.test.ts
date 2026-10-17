@@ -175,6 +175,32 @@ describe.skipIf(!hasDb)("hr records (Postgres)", () => {
     else await expect(change).rejects.toThrow(/forbidden/);
   });
 
+  it.each([
+    { who: "Engineering HR, grade change after a move to Finance", departments: ["Engineering"], change: { effectiveOn: "2027-03-01", grade: "E3" }, ok: false },
+    { who: "Finance HR, grade change after a move to Finance", departments: ["Finance"], change: { effectiveOn: "2027-03-01", grade: "E3" }, ok: true },
+    { who: "Finance HR, grade change today (Engineering until the move)", departments: ["Finance"], change: { grade: "E3" }, ok: false },
+    { who: "Engineering HR moving them to IT from today", departments: ["Engineering"], change: { department: "IT" }, ok: false },
+    { who: "Engineering and Finance HR, grade change today", departments: ["Engineering", "Finance"], change: { grade: "E3" }, ok: true },
+  ])("dated writes check every period they touch and the department they move into: $who", async ({ departments, change, ok }) => {
+    const { employeeNo } = await hire(`Mover ${departments.join(" ")} ${JSON.stringify(change)}`, "2026-01-05");
+    await changePerson(hr, { employeeNo, effectiveOn: "2027-01-01", department: "Finance" });
+    const v = { ...db.maya, viewAs: undefined, assignments: [{ role: "HR" as const, legalEntityIds: null, departments }] };
+    const run = changePerson(ctxFor(v), { employeeNo, ...change });
+    if (ok) await expect(run).resolves.toBeTruthy();
+    else await expect(run).rejects.toThrow(/forbidden/);
+  });
+
+  it.each([
+    { who: "Finance HR", departments: ["Finance"], ok: false },
+    { who: "Engineering HR", departments: ["Engineering"], ok: true },
+  ])("recording a leaver checks the department too: $who", async ({ departments, ok }) => {
+    const { employeeNo } = await hire(`Dept leaver ${departments[0]}`, "2026-01-05");
+    const v = { ...db.maya, viewAs: undefined, assignments: [{ role: "HR" as const, legalEntityIds: null, departments }] };
+    const run = recordLeaver(ctxFor(v), { employeeNo, leftOn: "2026-12-31" });
+    if (ok) await expect(run).resolves.toBeTruthy();
+    else await expect(run).rejects.toThrow(/forbidden/);
+  });
+
   it("a fixed-term period boundary is not a contract end: only the last period's end counts", async () => {
     const before = (await peopleStats(db.mayaAs("HR"), TODAY)).contractsEndingNextMonth;
     const { employeeNo } = await hire("Fixed Term Stepper", "2026-01-05", { contract: "fixed-term" });

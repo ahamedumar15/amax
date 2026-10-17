@@ -5,7 +5,7 @@ import { ScopeError } from "@amax/auth";
 import { defineService, isSystemContext } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contracts";
 import { changePersonRun, changeInput } from "./change";
-import { date, inScope, personByNo, subjectOf, today } from "./records";
+import { date, inScope, inScopeFrom, personByNo, today } from "./records";
 
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
@@ -68,7 +68,7 @@ export const recordLeaver = defineService({
   input: z.object({ employeeNo: z.string(), leftOn: date, reason: z.string().max(500).optional() }),
   async run(tx, input, ctx) {
     const p = await personByNo(tx, input.employeeNo);
-    inScope(ctx, "hr:person:leave", subjectOf(p));
+    await inScopeFrom(tx, ctx, "hr:person:leave", p, input.leftOn);
     if (p.status === "left") throw new Error(`${input.employeeNo} has already left`);
     const status = input.leftOn <= today() ? "left" : p.status;
     await tx.execute(sql`update hr.person set left_on = ${input.leftOn}, status = ${status}, updated_at = now() where id = ${p.id}`);
