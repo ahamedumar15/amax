@@ -23,7 +23,10 @@ export function nextStep(r: ReleaseRow): { label: string; environment: string | 
   if (next) return { label: `${last ? "Promote" : "Deploy"} to ${next.environment}`, environment: next.environment, primary: true };
   // Nothing after the last reached stage (it may sit after Prod): Prod is still the way to Live.
   const prod = own.find((s) => s.isProd);
-  if (prod) return { label: `Deploy to ${prod.environment}`, environment: prod.environment, primary: true };
+  if (prod) {
+    const verb = prod.status === "testing" ? "Finish" : prod.status === "rolled-back" ? "Retry" : "Deploy to";
+    return { label: `${verb} ${prod.environment}`, environment: prod.environment, primary: prod.status !== "rolled-back" };
+  }
   return { label: "No Prod stage", environment: null, primary: false };
 }
 

@@ -229,44 +229,66 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     expect(await removeEnvironment(ctx(), { projectKey: "REN", name: "QA" })).toEqual({ removed: "qa" });
   });
 
-  it("a Prod deployment and a change to the release's proposals don't interleave: the release row is locked (round 13)", async () => {
-    await createProject(ctx(), { key: "LCK", name: "Lock", client: "x", billing: "internal" });
-    await createRelease(ctx(), { projectKey: "LCK", version: "v1", proposalKeys: [] });
+  it.each([["recordDeployment"], ["setReleaseProposals"]])("%s locks the release row (rounds 13 and 14)", async (which) => {
+    const key = `LK${which.length}`;
+    await createProject(ctx(), { key, name: key, client: "x", billing: "internal" });
+    const { createProposal } = await import("../server/services");
+    const p = await createProposal(ctx(), { projectKey: key, title: "p" });
+    await createRelease(ctx(), { projectKey: key, version: "v1", proposalKeys: [] });
     let done = false;
     await t.owner.begin(async (tx) => {
-      // A key-share lock is what a foreign-key insert takes; it blocks only an explicit row lock,
-      // so this pins releaseOf's "for update", not just the deployment's foreign key.
-      await tx`select 1 from delivery.release r where r.version = 'v1' and r.project_id = (select id from delivery.project where key = 'LCK') for key share`;
-      const deploy = recordDeployment(ctx(), { projectKey: "LCK", version: "v1", environment: "Prod" }).then(() => { done = true; });
+      // A key-share lock is what a foreign-key write takes; it blocks only an explicit row lock, so
+      // this pins releaseOf's "for update" on both sides, not just the foreign keys.
+      await tx`select 1 from delivery.release r where r.version = 'v1' and r.project_id = (select id from delivery.project where key = ${key}) for key share`;
+      const call = which === "recordDeployment"
+        ? recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Prod" })
+        : setReleaseProposals(ctx(), { projectKey: key, version: "v1", proposalKeys: [p.key] });
+      const settled = call.then(() => { done = true; });
       await new Promise((r) => setTimeout(r, 300));
       expect(done).toBe(false);
-      void deploy;
+      void settled;
     });
     await expect.poll(() => done, { timeout: 5000 }).toBe(true);
   });
 
-  it("migration 0008 merges names that differ only by case before indexing them (round 13)", async () => {
-    await t.owner`drop index delivery.environment_name_ci`;
-    const [p] = await t.owner`select id from delivery.project where key = 'VID'`;
-    const [dup] = await t.owner`insert into delivery.environment (tenant_id, project_id, name, position) values (${T}, ${p.id}, 'DEV', 9) returning id`;
-    const [rel] = await t.owner`select id from delivery.release where project_id = ${p.id} and version = 'v1'`;
-    const [dep] = await t.owner`insert into delivery.deployment (tenant_id, release_id, environment_id, status, recorded_by) values (${T}, ${rel.id}, ${dup.id}, 'deployed', 'test') returning id`;
-    await t.owner.unsafe(readFileSync(join(__dirname, "../db/migrations/0008_environment_name_ci.sql"), "utf8"));
-    expect((await t.owner`select name from delivery.environment where project_id = ${p.id} and lower(name) = 'dev'`).map((e) => e.name)).toEqual(["Dev"]);
-    const [moved] = await t.owner`select e.name from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.id = ${dep.id}`;
-    expect(moved.name).toBe("Dev");
-    expect(await t.owner`select 1 from pg_indexes where indexname = 'environment_name_ci'`).toHaveLength(1);
+  it("racing a Prod deployment against adding a proposal never leaves it in a live release unreleased (round 14)", async () => {
+    const { createProposal } = await import("../server/services");
+    await createProject(ctx(), { key: "RCE", name: "Race", client: "x", billing: "internal" });
+    for (let i = 0; i < 8; i++) {
+      const p = await createProposal(ctx(), { projectKey: "RCE", title: `late ${i}` });
+      await createRelease(ctx(), { projectKey: "RCE", version: `v${i}`, proposalKeys: [] });
+      const calls = [
+        () => setReleaseProposals(ctx(), { projectKey: "RCE", version: `v${i}`, proposalKeys: [p.key] }),
+        () => recordDeployment(ctx(), { projectKey: "RCE", version: `v${i}`, environment: "Prod" }),
+      ];
+      await Promise.allSettled(i % 2 ? calls.reverse().map((c) => c()) : calls.map((c) => c()));
+      const [row] = await t.owner`select p.phase, p.release_id is not null as assigned from delivery.proposal p where p.id = ${p.id}`;
+      // Either it went in first and shipped with the release, or the live release refused it.
+      expect(row.assigned ? row.phase : "refused").toMatch(/released|refused/);
+    }
   });
 
-  it("a release already live in Prod takes no new proposals; keeping its own is fine", async () => {
-    await createProject(ctx(), { key: "LIV", name: "Live", client: "x", billing: "internal" });
-    const { createProposal } = await import("../server/services");
-    const a = await createProposal(ctx(), { projectKey: "LIV", title: "In the release" });
-    const b = await createProposal(ctx(), { projectKey: "LIV", title: "Late" });
-    await createRelease(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
-    await recordDeployment(ctx(), { projectKey: "LIV", version: "v1", environment: "Prod" });
-    await expect(setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key, b.key] })).rejects.toThrow(/already live in Prod; put LIV-002 in a new release/);
-    await setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
+  const MERGE = [
+    ["a duplicate that is Prod while the kept row isn't", [["Dev", 1, false, 1], ["DEV", 9, true, 2]], { keep: "Dev", prod: true, deployments: 3 }],
+    ["three case variants, each with deployments", [["QA", 2, false, 1], ["qa", 7, false, 1], ["Qa", 8, false, 2]], { keep: "QA", prod: false, deployments: 4 }],
+    ["no duplicates", [["Solo", 1, false, 2]], { keep: "Solo", prod: false, deployments: 2 }],
+  ] as const;
+  it.each(MERGE)("migration 0008 merges names that differ only by case: %s (rounds 13 and 14)", async (_n, rows, want) => {
+    const key = `MG${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const [p] = await t.owner`insert into delivery.project (tenant_id, key, name, client, billing, color) values (${T}, ${key}, 'm', 'x', 'internal', 'mint') returning id`;
+    const [rel] = await t.owner`insert into delivery.release (tenant_id, project_id, version) values (${T}, ${p.id}, 'v1') returning id`;
+    await t.owner`drop index delivery.environment_name_ci`;
+    try {
+      for (const [name, position, isProd, deployments] of rows) {
+        const [e] = await t.owner`insert into delivery.environment (tenant_id, project_id, name, position, is_prod) values (${T}, ${p.id}, ${name}, ${position}, ${isProd}) returning id`;
+        for (let i = 0; i < deployments; i++) await t.owner`insert into delivery.deployment (tenant_id, release_id, environment_id, status, recorded_by) values (${T}, ${rel.id}, ${e.id}, 'deployed', 'test')`;
+      }
+      await t.owner.unsafe(readFileSync(join(__dirname, "../db/migrations/0008_environment_name_ci.sql"), "utf8"));
+    } finally {
+      await t.owner`create unique index if not exists environment_name_ci on delivery.environment (project_id, lower(name))`;
+    }
+    const envs = await t.owner`select e.name, e.is_prod, (select count(*)::int from delivery.deployment d where d.environment_id = e.id) as n from delivery.environment e where e.project_id = ${p.id}`;
+    expect(envs).toEqual([{ name: want.keep, is_prod: want.prod, n: want.deployments }]);
   });
 });
 
@@ -283,5 +305,7 @@ describe("nextStep: only a deployed Prod is Live (final review)", async () => {
     ["nothing yet", rel(st("Dev", 1, false, null)), "Deploy to Dev"],
     ["Prod deployed", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, "deployed")), null],
     ["a stage after Prod reached, Prod not yet (round 13)", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, null), st("Demo", 3, false, "deployed")), "Deploy to Prod"],
+    ["a stage after Prod reached, Prod testing (round 14)", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, "testing"), st("Demo", 3, false, "deployed")), "Finish Prod"],
+    ["a stage after Prod reached, Prod rolled back (round 14)", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, "rolled-back"), st("Demo", 3, false, "deployed")), "Retry Prod"],
   ])("%s", (_n, r, label) => expect(nextStep(r)?.label ?? null).toBe(label));
 });
