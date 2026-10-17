@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Viewer } from "@amax/auth";
-import { employmentAt } from "./inforce";
+import { employmentAt, today as todayIso } from "./inforce";
 import { readHr } from "./read";
 
 export type PeopleStats = {
@@ -12,10 +12,11 @@ export type PeopleStats = {
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const monthStart = (y: number, m: number) => iso(new Date(Date.UTC(y, m, 1)));
 
-/** Ticket, chart and lede numbers for the People screen, as of `today`. */
-export const peopleStats = (v: Viewer, today = new Date(), entityId?: string) =>
+/** Ticket, chart and lede numbers for the People screen, as of `asOf` (a date, default today). */
+export const peopleStats = (v: Viewer, asOf: string | Date = todayIso(), entityId?: string) =>
   readHr(v, async (tx): Promise<PeopleStats> => {
-    const y = today.getUTCFullYear(), m = today.getUTCMonth(), now = iso(today);
+    const day0 = typeof asOf === "string" ? new Date(`${asOf}T00:00:00Z`) : asOf;
+    const y = day0.getUTCFullYear(), m = day0.getUTCMonth(), now = iso(day0);
     const ent = entityId ? sql`and p.legal_entity_id = ${entityId}` : sql``;
     const byEntity = await tx.execute(sql`select le.id, le.name, le.country, count(p.id)::int as n from core.legal_entity le
       left join hr.person p on p.legal_entity_id = le.id and p.status = 'active' ${ent} group by le.id order by n desc`);

@@ -19,8 +19,8 @@ const JOB_FIELDS = { department: "department", grade: "grade", contract: "contra
 
 /**
  * A job change starts a new employment period on `effectiveOn`; the period before it ends the day before.
- * Periods that already start later (a planned FTE step) carry the change too, or it would be undone
- * when they start.
+ * Periods that already start later carry the change too where they still hold the old value, or it
+ * would be undone when they start; a value a later period plans itself (an FTE step, a raise) stays.
  */
 async function newPeriod(tx: Tx, personId: string, on: string, set: Record<string, unknown>) {
   const [cur] = await tx.execute(sql`select *, starts_on::text as starts from hr.employment where person_id = ${personId} and starts_on <= ${on}::date order by starts_on desc limit 1 for update`);
@@ -35,8 +35,12 @@ async function newPeriod(tx: Tx, personId: string, on: string, set: Record<strin
     await tx.execute(sql`update hr.employment set department = ${next.department}, grade = ${next.grade}, manager_person_id = ${next.manager_person_id}, contract = ${next.contract},
       fte = ${next.fte}, next_review = ${next.next_review}, base_salary = ${next.base_salary}, updated_at = now() where id = ${cur.id}`);
   }
-  const cols = Object.entries(set).map(([col, v]) => sql`${sql.identifier(col)} = ${v}`);
-  await tx.execute(sql`update hr.employment set ${sql.join(cols, sql`, `)}, updated_at = now() where person_id = ${personId} and starts_on > ${on}::date`);
+  // Only where the later period still holds the old value: a column the later period plans itself
+  // (an FTE step, a raise) keeps its plan.
+  for (const [col, v] of Object.entries(set)) {
+    await tx.execute(sql`update hr.employment set ${sql.identifier(col)} = ${v}, updated_at = now()
+      where person_id = ${personId} and starts_on > ${on}::date and ${sql.identifier(col)} is not distinct from ${cur[col]}`);
+  }
 }
 
 export async function changePersonRun(tx: Tx, input: ChangeInput, ctx: ServiceContext) {

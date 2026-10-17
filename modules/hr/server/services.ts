@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
+import { ScopeError } from "@amax/auth";
 import { defineService } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contracts";
 import { changePersonRun, changeInput } from "./change";
@@ -73,10 +74,12 @@ export const recordLeaver = defineService({
     await tx.execute(sql`update hr.person set left_on = ${input.leftOn}, status = ${status}, updated_at = now() where id = ${p.id}`);
     // Periods that would only start after the last day never happen (a future FTE step, or the whole
     // employment of someone who leaves before their start date); the one in force ends that day.
-    await tx.execute(sql`delete from hr.employment where person_id = ${p.id} and starts_on > ${input.leftOn}::date`);
+    const removed = await tx.execute(sql`delete from hr.employment where person_id = ${p.id} and starts_on > ${input.leftOn}::date
+      returning starts_on::text as "startsOn", ends_on::text as "endsOn", department, grade, manager_person_id as "managerPersonId", contract, fte::float as fte,
+        next_review::text as "nextReview", (base_salary is not null) as "hadPay"`);
     await tx.execute(sql`update hr.employment set ends_on = ${input.leftOn}, updated_at = now() where person_id = ${p.id} and (ends_on is null or ends_on > ${input.leftOn}::date)`);
     const payload: PersonLeft = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, leftOn: input.leftOn };
-    return { result: { employeeNo: input.employeeNo, status, leftOn: input.leftOn }, resourceId: p.id as string, before: { status: p.status }, after: { status, ...input }, events: [{ name: EVENTS.personLeft, payload }] };
+    return { result: { employeeNo: input.employeeNo, status, leftOn: input.leftOn }, resourceId: p.id as string, before: { status: p.status, removedPeriods: removed.map((r) => ({ ...r })) }, after: { status, ...input }, events: [{ name: EVENTS.personLeft, payload }] };
   },
 });
 
@@ -89,7 +92,8 @@ export const applyStatusDates = defineService({
   action: "hr:person:update",
   resource: "hr.person",
   input: z.object({ on: date }),
-  async run(tx, { on }) {
+  async run(tx, { on }, ctx) {
+    if (ctx.actor.kind !== "system") throw new ScopeError("hr:person:update");
     const left = await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where status <> 'left' and left_on <= ${on}::date returning employee_no`);
     const started = await tx.execute(sql`update hr.person set status = 'active', updated_at = now()
       where status = 'joining' and joined_on <= ${on}::date returning employee_no`);

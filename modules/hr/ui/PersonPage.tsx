@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { ScreenProps } from "@amax/core";
 import { Card, EmptyState, PinButton } from "@amax/ui";
+import { today } from "../server/inforce";
 import { getPersonView } from "../server/queries";
 import { DocumentsCard } from "./DocumentsCard";
 import { EmploymentCard } from "./EmploymentCard";
@@ -9,10 +10,11 @@ import { avClass, countryName, longDate, needViewer, SignInFirst, statusChip } f
 export async function PersonPage({ params, viewer: raw }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Person</h1><SignInFirst /></>;
-  const view = await getPersonView(viewer, params.employeeNo);
+  const on = today();
+  const view = await getPersonView(viewer, params.employeeNo, on);
   if (!view) notFound();
   const { person: p } = view;
-  const [tone, label] = statusChip(p, new Date().toISOString().slice(0, 10));
+  const [tone, label] = statusChip(p, on);
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><a href="/hr">People</a><span aria-hidden="true">/</span>{p.name}</nav>
