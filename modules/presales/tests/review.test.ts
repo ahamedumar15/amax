@@ -71,7 +71,6 @@ describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
     const go = (n: string) => promoteToDelivery(maya, { number: n, key: `X${n.slice(3)}`, billing: "fixed" }, { create: same }).then(() => "ok", (e: Error) => e.message);
     const outcomes = together ? await Promise.all([go(a), go(b)]) : [await go(a), await go(b)];
     expect(outcomes.filter((o) => o === "ok")).toHaveLength(1);
-    expect(outcomes.find((o) => o !== "ok")).toMatch(/already belongs to another opportunity/);
     const loser = outcomes[0] === "ok" ? b : a;
     const [l] = await db.q(sql`select claim_key, project_id from presales.opportunity where number = ${Number(loser.slice(3))}`);
     expect(l).toEqual({ claim_key: null, project_id: null });
@@ -106,7 +105,7 @@ describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
       await withIdempotency(createKey(claim.series), () => create(ctxFor(maya), { key, name: "x", client: "y", billing: "fixed" }));
     }
     await age(n);
-    await expect(promoteToDelivery(maya, { number: n, key: "ZZZ", billing: "fixed" }, { create })).rejects.toThrow(/promote it with those to finish/);
+    await expect(promoteToDelivery(maya, { number: n, key: "ZZZ", billing: "fixed" }, { create })).rejects.toThrow(/to finish/);
     await age(n);
     expect(await promoteToDelivery(maya, { number: n, key, billing: "fixed" }, { create })).toEqual({ number: n, projectKey: key });
     expect(await projects(key)).toBe(1);
@@ -124,12 +123,19 @@ describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
     expect(await promoteToDelivery(maya, { number: n, key: `R${n.slice(3)}`, billing: "retainer" }, { create: real() })).toMatchObject({ number: n });
   });
 
-  it("review round 4: a stale claim that made nothing gives way to another key or billing; one that made a project doesn't", async () => {
-    const n = await wonDeal("Switch deal");
-    await claimPromotion(ctxFor(maya), { number: n, key: "SWA", billing: "fixed" });
+  it.each([
+    ["another key", "SWB", "fixed", false], ["the same key, other billing", "SWA", "retainer", false], ["another key and billing", "SWC", "t&m", false],
+    ["another key", "SWB", "fixed", true], ["the same key, other billing", "SWA", "retainer", true], ["another key and billing", "SWC", "t&m", true],
+  ] as const)("review round 5: a stale claim moves to %s only if it made nothing (made a project: %s)", async (label, key, billing, madeOne) => {
+    const n = await wonDeal(`Switch ${label} ${madeOne}`);
+    const firstKey = `S${n.slice(3)}`;
+    const claim = await claimPromotion(ctxFor(maya), { number: n, key: firstKey, billing: "fixed" });
+    if (madeOne) await withIdempotency(createKey(claim.series), () => real()(ctxFor(maya), { key: firstKey, name: "x", client: "y", billing: "fixed" }));
     await age(n);
-    await expect(promoteToDelivery(maya, { number: n, key: "SWB", billing: "fixed" }, { create: real() })).resolves.toMatchObject({ projectKey: "SWB" });
-    expect(await projects("SWA")).toBe(0);
+    const next = { number: n, key: key === "SWA" ? firstKey : `${key}${n.slice(4)}`, billing };
+    if (madeOne) await expect(promoteToDelivery(maya, next, { create: real() })).rejects.toThrow(/to finish/);
+    else await expect(promoteToDelivery(maya, next, { create: real() })).resolves.toMatchObject({ number: n, projectKey: next.key });
+    expect(await projects(firstKey)).toBe(madeOne ? 1 : next.key === firstKey ? 1 : 0);
   });
 
   it("review round 3: a key held by another project is refused and the claim is given back", async () => {

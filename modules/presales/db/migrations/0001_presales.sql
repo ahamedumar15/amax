@@ -56,7 +56,7 @@ create table presales.opportunity (
   claim_key text,
   claim_token uuid,
   claim_series uuid,
-  claim_billing text,
+  claim_fingerprint text,
   claimed_at timestamptz,
   removed_at timestamptz,
   removed_by text,

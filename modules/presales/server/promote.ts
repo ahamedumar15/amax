@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { ForbiddenError, getRuntime, logError, withIdempotency, type Source } from "@amax/core/server";
+import { ForbiddenError, getRuntime, logError, retryable, withIdempotency, type Source } from "@amax/core/server";
 import * as delivery from "@amax/delivery/contracts";
 import { getOpportunityRef } from "../contracts";
-import { claimPromotion, createKey, recordPromotion, releasePromotion } from "./claim";
+import { claimPromotion, createKey, PromotionRefused, recordPromotion, releasePromotion } from "./claim";
 import { NUMBER } from "./common";
 import { ctxFor } from "./context";
 
@@ -31,7 +31,7 @@ export const promoteInput = z.object({ number: z.string().regex(NUMBER), key: z.
 const projectOf = (r: unknown, key: string) => {
   const v = r as { id?: string; resourceId?: string | null; key?: string | null };
   const id = v.id ?? v.resourceId;
-  if (!id || !v.key) throw new Error(`delivery didn't say which project it made for ${key}`);
+  if (!id || v.key !== key) throw new PromotionRefused(`delivery's answer doesn't name project ${key}`);
   return { id, key: v.key };
 };
 
@@ -57,16 +57,11 @@ export async function promoteToDelivery(viewer: Viewer, raw: unknown, opts: { so
     if (!created.ok) throw created.error;
     made = true;
     const project = projectOf(created.value, input.key);
-    return await recordPromotion(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key }).catch((e: unknown) => {
-      // A project another opportunity holds will be refused on every replay: free the claim and say which project is left over.
-      if ((e as { cause?: { code?: string }; code?: string }).code === "23505" || (e as { cause?: { code?: string } }).cause?.code === "23505") {
-        throw Object.assign(new Error(`delivery's project ${project.key} already belongs to another opportunity, so it wasn't linked; choose another key`), { project, lasting: true });
-      }
-      throw e;
-    });
+    return await recordPromotion(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key });
   } catch (e) {
-    // Release in one transaction with the check that the series made nothing (or for good, after a lasting refusal).
-    const lasting = Boolean((e as { lasting?: boolean }).lasting);
+    // Release in one transaction with the check that the series made nothing. A refusal every replay
+    // would meet again (delivery's answer, a project another opportunity holds) frees the claim too.
+    const lasting = made && !retryable(e);
     if (!made || lasting) await releasePromotion(ctx, { number: input.number, token: claim.token, force: lasting }).catch((r: unknown) => logError("presales.promote.release", r));
     throw e;
   }
