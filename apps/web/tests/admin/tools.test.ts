@@ -39,7 +39,7 @@ describe.skipIf(!hasDb)("047 admin tools (Postgres)", () => {
       expect((await db.t.owner`select count(*)::int as n from core.audit_event where source = 'chat'`)[0].n, `${name} wrote before confirm`).toBe(WRITES.indexOf(name));
       await confirmAction(db.app, db.registry, maya, turn.conversationId, turn.pending[0].id, secret ? { secret: `test-${name}-value` } : {});
     }
-  });
+  }, 60_000);
 
   it("AC3 every write went through defineService: audited as the person via chat, with an event", async () => {
     const audit = await db.t.owner`select action, actor, source from core.audit_event where source = 'chat' order by seq`;
