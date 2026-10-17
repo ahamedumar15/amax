@@ -30,7 +30,7 @@ New screen, Data retention: retention by data class and entity, the next purge, 
   Files: packages/core/src/module.ts, scripts/check-module-standard.mjs, packages/testing/standard/no-retention/**, packages/testing/tests/ac7-config.test.ts, modules/*/module.ts, packages/chat/src/tools.ts, packages/workflows/src/retention.ts
 - [x] `T3` — Privacy schema (migration 0024): retention overrides, legal holds, requests, purge log; an amax_privacy role holds EXECUTE on core.erase_subject, reached only through a definer function that erases an approved request's subjects (AC-3, AC-4, AC-5)
   Files: packages/db/migrations/0024_privacy.sql
-- [ ] `T4` — Privacy services in core: statutory minimums per country, tenant defaults, effective periods, lengthen-only overrides, legal holds, the purge (audited by class and count), access and erasure requests with a two-person rule behind one replaceable seam (AC-2, AC-3, AC-4, AC-5)
+- [x] `T4` — Privacy services in core: statutory minimums per country, tenant defaults, effective periods, lengthen-only overrides, legal holds, the purge (audited by class and count), access and erasure requests with a two-person rule behind one replaceable seam (AC-2, AC-3, AC-4, AC-5)
   Files: packages/core/src/privacy.ts, packages/core/src/privacy/*.ts, packages/core/tests/privacy*.test.ts
   Depends: T2, T3
 - [ ] `T5` — Integration: MCP read and write tools behind chat's confirm, the daily 029 purge workflow replacing workflows.prune, grants for HR, demo fixtures and the scripted chat phrases; tool, e2e, a11y and visual tests (AC-3, AC-4, AC-6)
