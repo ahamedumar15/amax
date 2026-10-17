@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
@@ -45,6 +46,26 @@ export async function cancelChat(conversationId: string, actionId: string): Prom
     const viewer = await currentViewer();
     await cancelAction(getDb()!, viewer, conversationId, actionId);
     return { state: "cancelled", note: "Cancelled. Nothing was changed." };
+  } catch (e) {
+    return outcomeOf(e);
+  }
+}
+
+const secretForm = z.object({ secret: z.string().min(1).max(16_384) });
+
+/**
+ * Confirm a card whose tool takes a typed secret (047 AC-4). The value arrives only here, from the
+ * card's masked field, and is handed to the tool for this one call: it is never stored, logged,
+ * echoed back or sent to the model.
+ */
+export async function confirmSecretChat(conversationId: string, actionId: string, data: FormData): Promise<CardOutcome> {
+  try {
+    const parsed = secretForm.safeParse({ secret: data.get("secret") });
+    if (!parsed.success) return { state: "open", note: "Type the value first." };
+    const viewer = await currentViewer();
+    await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId, { secret: parsed.data.secret });
+    revalidatePath("/", "layout");
+    return { state: "done", note: "Done: saved to the vault. The value can't be shown again." };
   } catch (e) {
     return outcomeOf(e);
   }

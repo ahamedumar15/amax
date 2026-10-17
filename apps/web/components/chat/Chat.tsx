@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObjec
 import { announce, Mascot, type PinRef } from "@amax/ui";
 import type { Highlight, PendingAction } from "@amax/chat";
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
+import { SecretConfirm } from "./SecretConfirm";
 
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
@@ -174,11 +175,16 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
               <dl className="rec">{Object.entries(e.action.input).map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt className={fieldClass(e.action.fields, k)}><span className="fd" />{k}</dt><dd>{String(v)}</dd></div>)}</dl>
               {e.state === "open" ? (<>
                 {e.note && <p className="err">{e.note}</p>}
-                <div className="acts">
+                {e.action.secret && convo.current ? (
+                  <SecretConfirm conversationId={convo.current} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
+                    onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} />
+                ) : (
+                  <div className="acts">
                   <button className="btn sm primary" type="button" onClick={() => decide(e.action, true)}>Add it</button>
                   <button className="btn sm" type="button" onClick={() => { setText("Change "); input.current?.focus(); }}>Change something</button>
                   <button className="btn sm" type="button" onClick={() => decide(e.action, false)}>Cancel</button>
-                </div>
+                  </div>
+                )}
               </>) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
             </div></div>
           );
