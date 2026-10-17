@@ -35,7 +35,7 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
   Files: modules/presales/mcp.ts, modules/presales/actions.ts, modules/presales/tests/chat-first.test.ts
 - [x] `T4` — Chat pre-fills the prompt when opened with a pin and no intent (AC-2)
   Files: apps/web/components/chat/Chat.tsx
-- [ ] `T5` — Pin coverage in time, allocations, HR and delivery cards and rows (AC-5)
+- [x] `T5` — Pin coverage in time, allocations, HR and delivery cards and rows (AC-5)
   Files: modules/time/ui/*.tsx, modules/allocations/ui/*.tsx, modules/hr/ui/*.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/EnvironmentsCard.tsx
 - [ ] `T6` — Follow-up backlog of inline forms left in other modules (AC-6)
   Files: BACKLOG.md

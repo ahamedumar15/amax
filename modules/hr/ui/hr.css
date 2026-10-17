@@ -58,3 +58,5 @@
 .link{background:none;border:0;padding:0;color:var(--chip-agent);font-weight:600;cursor:pointer;font-size:13px}
 @media (max-width:900px){.cols,.cols.even,.profile{grid-template-columns:minmax(0,1fr)}.legend{padding-left:0}}
 .tbl td.nowrap{white-space:nowrap}
+.ticket{position:relative}
+.ticket:hover>.pin,.ticket:focus-within>.pin{opacity:1;transform:none}

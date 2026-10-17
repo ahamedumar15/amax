@@ -23,8 +23,8 @@ export async function TeamPage({ viewer: raw, params }: ScreenProps) {
       ) : (
         <>
           <div className="cols">
-            <WeekChart perDay={t.perDay} days={t.days} people={t.rows.length} />
-            <ThisWeek rows={t.rows} projects={t.projects} />
+            <WeekChart perDay={t.perDay} days={t.days} people={t.rows.length} week={t.key} />
+            <ThisWeek rows={t.rows} projects={t.projects} week={t.key} />
           </div>
           <Timesheets rows={t.rows} weekKey={t.key} />
         </>

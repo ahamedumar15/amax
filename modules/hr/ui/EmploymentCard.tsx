@@ -1,5 +1,5 @@
 import { isMasked } from "@amax/auth";
-import { Masked } from "@amax/ui";
+import { Masked, PinButton } from "@amax/ui";
 import type { Employment } from "../contracts";
 import { monthYear, shortDate } from "./parts";
 import { Reveal } from "./Reveal";
@@ -8,11 +8,13 @@ const CONTRACT: Record<string, string> = { permanent: "Permanent", "fixed-term":
 const last4 = (s: string) => `•••• ${s.replace(/\D/g, "").slice(-4)}`;
 const hidden = (v: unknown): v is { masked: true } => isMasked(v);
 
-export function EmploymentCard({ e, probationEnds }: { e: Employment | null; probationEnds: string | null }) {
-  if (!e) return <div className="card" id="employment"><h2>Employment</h2><p className="muted">No employment record yet.</p></div>;
+export function EmploymentCard({ e, probationEnds, employeeNo, name }: { e: Employment | null; probationEnds: string | null; employeeNo: string; name: string }) {
+  const pin = <PinButton pin={{ label: `${name}, employment`, tool: "get_person", args: { employeeNo } }} />;
+  if (!e) return <div className="card pinnable" id="employment">{pin}<h2>Employment</h2><p className="muted">No employment record yet.</p></div>;
   const hours = e.fte >= 1 ? "full time" : `part time, ${Math.round(e.fte * 100)}%`;
   return (
-    <div className="card" id="employment">
+    <div className="card pinnable" id="employment">
+      {pin}
       <h2>Employment</h2>
       <dl className="kv" style={{ marginTop: 18 }}>
         <dt>Contract</dt><dd>{CONTRACT[e.contract]}, {hours}{e.contractEndsOn ? `, ends ${shortDate(e.contractEndsOn)}` : ""}</dd>

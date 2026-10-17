@@ -1,3 +1,4 @@
+import { PinButton } from "@amax/ui";
 import { environmentAction } from "../actions";
 import type { EnvironmentRow } from "../server/queries";
 
@@ -7,14 +8,14 @@ export function EnvironmentsCard({ projectKey, envs, canEdit }: { projectKey: st
     <><input type="hidden" name="projectKey" value={projectKey} /><input type="hidden" name="name" value={name} />{position !== undefined && <input type="hidden" name="position" value={position} />}</>
   );
   return (
-    <div className="card flush" style={{ marginTop: 28 }}>
-      <div className="card-head"><h2>Environments</h2><span className="muted" style={{ fontSize: 13 }}>{envs.find((e) => e.isProd) ? `Released means it reached ${envs.find((e) => e.isProd)!.name}` : "No Prod: nothing counts as released"}</span></div>
+    <div className="card flush pinnable" style={{ marginTop: 28 }}>
+      <div className="card-head"><h2>Environments</h2><PinButton inline pin={{ label: `${projectKey} environments`, tool: "list_environments", args: { projectKey } }} /><span className="muted" style={{ fontSize: 13 }}>{envs.find((e) => e.isProd) ? `Released means it reached ${envs.find((e) => e.isProd)!.name}` : "No Prod: nothing counts as released"}</span></div>
       <div className="scroll-x"><table className="tbl">
         <caption className="sr">Environments</caption>
-        <thead><tr><th>Order</th><th>Name</th><th>Prod</th><th className="num">Deployments</th>{canEdit && <th className="num"><span className="sr">Actions</span></th>}</tr></thead>
+        <thead><tr><th>Order</th><th>Name</th><th>Prod</th><th className="num">Deployments</th><th className="num"><span className="sr">Actions</span></th></tr></thead>
         <tbody>
           {envs.map((e, i) => (
-            <tr key={e.name}>
+            <tr key={e.name} className="pinnable">
               <td data-label="Order">{e.position}</td>
               <td data-label="Name">{canEdit ? (
                 <form action={environmentAction} style={{ display: "flex", gap: 6 }}>{hidden(e.name)}<input type="hidden" name="op" value="rename" />
@@ -25,13 +26,11 @@ export function EnvironmentsCard({ projectKey, envs, canEdit }: { projectKey: st
                   <button className={`btn sm${e.isProd ? " primary" : ""}`} type="submit" aria-pressed={e.isProd} aria-label={`${e.name} is ${e.isProd ? "" : "not "}Prod`}>{e.isProd ? "Prod" : "Make Prod"}</button></form>
               ) : e.isProd ? <span className="chip good">Prod</span> : <span className="muted">–</span>}</td>
               <td data-label="Deployments" className="num">{e.deployments}</td>
-              {canEdit && (
-                <td className="num" style={{ whiteSpace: "nowrap" }}>
+              <td className="num" style={{ whiteSpace: "nowrap" }}>{canEdit && (<>
                   <form action={environmentAction} style={{ display: "inline" }}>{hidden(e.name, e.position)}<button className="btn sm" name="op" value="up" type="submit" disabled={i === 0} aria-label={`Move ${e.name} earlier`}>↑</button></form>{" "}
                   <form action={environmentAction} style={{ display: "inline" }}>{hidden(e.name, e.position)}<button className="btn sm" name="op" value="down" type="submit" disabled={i === envs.length - 1} aria-label={`Move ${e.name} later`}>↓</button></form>{" "}
                   <form action={environmentAction} style={{ display: "inline" }}>{hidden(e.name)}<button className="btn sm" name="op" value="remove" type="submit" disabled={e.deployments > 0} aria-label={`Remove ${e.name}`}>Remove</button></form>
-                </td>
-              )}
+                </>)}<PinButton pin={{ label: `${projectKey} ${e.name}`, tool: "list_environments", args: { projectKey } }} /></td>
             </tr>
           ))}
         </tbody>
