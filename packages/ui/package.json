@@ -12,6 +12,6 @@
     "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests"
   },
   "peerDependencies": {
-    "react": "^19.2.0"
+    "react": "^19.3.0"
   }
 }
