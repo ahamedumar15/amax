@@ -37,7 +37,8 @@ describe("AC-4 worker command", () => {
     const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/jobs/tick`;
     const stop = new AbortController();
     const done = runWorker({ url, secret: "s3cret", intervalMs: 20, signal: stop.signal, log: () => {} });
-    await new Promise((r) => setTimeout(r, 90));
+    // Wait for three ticks rather than a fixed time, so slow CI runners don't flake.
+    for (let i = 0; i < 200 && seen.length < 3; i++) await new Promise((r) => setTimeout(r, 10));
     stop.abort();
     await done;
     server.close();
