@@ -25,7 +25,7 @@ export const putSecret = defineService({
   input: z.object({
     connector: z.enum(CONNECTOR_IDS),
     value: z.string().min(1).max(16_384),
-    expiresAt: z.iso.datetime({ offset: true }).nullable().default(null),
+    expiresAt: z.iso.datetime({ offset: true }).refine((v) => new Date(v) > new Date(), "must be in the future").nullable().default(null),
     graceHours: z.number().int().min(0).max(24 * 30).default(72),
   }),
   async run(tx, input, ctx) {

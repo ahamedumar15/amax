@@ -1,4 +1,4 @@
-import { CONNECTORS, type CredentialRow } from "@amax/core/secrets";
+import { CONNECTORS, EXPIRY_WINDOW_DAYS, type CredentialRow } from "@amax/core/secrets";
 
 const DAY = 86_400_000;
 const WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
@@ -22,7 +22,7 @@ export function lastUsed(r: CredentialRow, now: Date) {
   return r.lastUsedPurpose ? `${when}, ${r.lastUsedPurpose}` : when;
 }
 
-export const expiringSoon = (r: CredentialRow, now: Date) => r.status === "active" && !!r.expiresAt && daysUntil(r.expiresAt, now) <= 30;
+export const expiringSoon = (r: CredentialRow, now: Date) => r.status === "active" && !!r.expiresAt && daysUntil(r.expiresAt, now) <= EXPIRY_WINDOW_DAYS;
 
 export function statusChip(r: CredentialRow, now: Date): { tone: string; text: string } {
   if (r.status === "revoked") return { tone: "draft", text: "Revoked" };

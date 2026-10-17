@@ -11,10 +11,11 @@ export type Kms = {
 };
 
 export class KmsError extends Error {
-  readonly retryable = true;
+  readonly retryable: boolean;
   constructor(op: string, status: number) {
     super(`secrets: key service ${op} failed (${status})`);
     this.name = "KmsError";
+    this.retryable = status >= 500 || status === 429;
   }
 }
 

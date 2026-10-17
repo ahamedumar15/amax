@@ -2,15 +2,15 @@ import { CONNECTORS, REVOKE_REASONS, type ConnectorId } from "@amax/core/secrets
 import { putSecretAction, revokeSecretAction } from "./actions";
 
 const ERRORS: Record<string, string> = {
-  invalid: "That didn't save: check the value and the expiry date.",
+  invalid: "That didn't save: check the value, and that the expiry date is in the future.",
   nokms: "That didn't save: no key service is configured on the server.",
   failed: "That didn't save. Try again.",
 };
 const GRACE = [[0, "No overlap, stop it now"], [24, "1 day"], [72, "3 days"], [168, "7 days"]] as const;
 
-type Props = { mode: "add" | "rotate"; connector?: ConnectorId; choices: ConnectorId[]; error?: string };
+type Props = { mode: "add" | "rotate"; connector?: ConnectorId; expiresAt?: Date | null; choices: ConnectorId[]; error?: string };
 
-export function KeyForm({ mode, connector, choices, error }: Props) {
+export function KeyForm({ mode, connector, expiresAt, choices, error }: Props) {
   const title = mode === "rotate" && connector ? `Rotate ${CONNECTORS[connector].name}` : "Add credential";
   return (
     <section className="card keyform" aria-labelledby="keyform-h">
@@ -22,7 +22,7 @@ export function KeyForm({ mode, connector, choices, error }: Props) {
           <label>Connector <select className="select" name="connector" required>{choices.map((c) => <option key={c} value={c}>{CONNECTORS[c].name}</option>)}</select></label>
         )}
         <label>{mode === "rotate" ? "New value" : "Value"} <input className="select" type="password" name="value" required autoComplete="off" spellCheck={false} /></label>
-        <label>Expires <input className="select" type="date" name="expiresAt" /></label>
+        <label>Expires <input className="select" type="date" name="expiresAt" defaultValue={expiresAt && expiresAt > new Date() ? expiresAt.toISOString().slice(0, 10) : undefined} /></label>
         {mode === "rotate" && (
           <label>Keep the old value working for <select className="select" name="graceHours" defaultValue="72">{GRACE.map(([h, t]) => <option key={h} value={h}>{t}</option>)}</select></label>
         )}

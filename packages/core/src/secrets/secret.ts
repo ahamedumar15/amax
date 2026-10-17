@@ -1,4 +1,5 @@
 import { inspect } from "node:util";
+import { hide } from "./forms";
 
 const HIDDEN = "[secret]";
 
@@ -29,15 +30,12 @@ export class SecretLeakError extends Error {
   }
 }
 
-export const formsOf = (value: string) => [...new Set([value, Buffer.from(value).toString("base64"), encodeURIComponent(value)])];
-
-const hide = (text: string, values: string[]) => values.reduce((t, v) => t.split(v).join(HIDDEN), text);
 const KEPT = ["code", "status", "retryable"] as const;
 
 export function scrubError(e: unknown, values: string[]): Error {
   const source = e instanceof Error ? e : new Error(typeof e === "string" ? e : "connector call failed");
   const clean = new Error(hide(source.message, values));
-  clean.name = source.name;
+  clean.name = hide(source.name, values);
   clean.stack = hide(source.stack ?? "", values);
   for (const k of KEPT) {
     const v = (source as unknown as Record<string, unknown>)[k];
@@ -46,16 +44,17 @@ export function scrubError(e: unknown, values: string[]): Error {
   return clean;
 }
 
-function serialised(value: unknown): string {
-  try {
-    return typeof value === "string" ? value : JSON.stringify(value) ?? "";
-  } catch {
-    return inspect(value, { depth: 6 });
-  }
+function leaks(value: unknown, values: string[], seen: Set<object>): boolean {
+  if (typeof value === "string") return hide(value, values) !== value;
+  if (value instanceof Secret) return true;
+  if (value === null || typeof value !== "object" || seen.has(value)) return false;
+  seen.add(value);
+  const parts: unknown[] = value instanceof Map ? [...value.keys(), ...value.values()] : value instanceof Set ? [...value] : [...Object.keys(value), ...Object.values(value)];
+  if (ArrayBuffer.isView(value)) parts.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("latin1"));
+  return parts.some((p) => leaks(p, values, seen));
 }
 
 export function assertNoLeak<T>(result: T, values: string[], connector: string): T {
-  const text = serialised(result);
-  if (values.some((v) => text.includes(v))) throw new SecretLeakError(connector);
+  if (leaks(result, values, new Set())) throw new SecretLeakError(connector);
   return result;
 }

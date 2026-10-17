@@ -22,7 +22,7 @@ function failure(e: unknown) {
   return "failed";
 }
 
-const expiry = (v: FormDataEntryValue | null) => (v ? `${String(v)}T00:00:00Z` : null);
+const expiry = (v: FormDataEntryValue | null) => (v ? `${String(v)}T23:59:59Z` : null);
 
 async function attempt(back: string, fn: (ctx: ServiceContext) => Promise<unknown>) {
   let error: string | null = null;

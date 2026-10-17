@@ -70,5 +70,8 @@ test("031 AC4 values are write-only: add, rotate and revoke never show them", as
 
 test("031 AC4 Connections and keys is Admin only", async ({ page }) => {
   await signIn(page, "nimal@lumenlabs.test");
-  await expect(page.getByRole("heading", { level: 1 })).not.toHaveText("Connections and keys");
+  await expect(page).toHaveURL(/\/settings\/keys$/);
+  expect((await page.goto("/settings/keys"))?.status()).toBe(404);
+  await expect(page.getByText("This page could not be found")).toBeVisible();
+  await expect(page.locator("table.tbl")).toHaveCount(0);
 });
