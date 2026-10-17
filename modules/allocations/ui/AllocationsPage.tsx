@@ -54,10 +54,10 @@ export async function AllocationsPage({ params, viewer: raw }: ScreenProps) {
           <div className="actions">
             <span className="chip">{f.team}</span>
             <a className="btn" href={everyone ? "/allocations" : "/allocations/everyone"}>{everyone ? "My projects" : "Everyone"}</a>
-            {canEver(viewer, "allocations:copy") && <CopyMonth months={grid.months.slice(0, -1).map((m) => m.month)} team={f.team} />}
+            {canEver(viewer, "allocations:copy") && <CopyMonth months={grid.months.slice(0, -1).map((m) => m.month)} team={f.team} everyone={everyone} />}
           </div>
         </div>
-        {grid.people.length ? <Grid grid={grid} everyone={everyone} />
+        {grid.people.length ? <Grid grid={grid} />
           : grid.hidden ? <EmptyState icon="people" title="No one you can see here" hint={`${grid.hidden} ${grid.hidden === 1 ? "person is" : "people are"} outside your HR access.`} />
           : <EmptyState icon="people" title="No allocations yet" hint="Use Allocate to plan people onto projects by month." />}
         {grid.people.length > 0 && grid.hidden > 0 && <p className="muted" style={{ fontSize: 13 }}>{grid.hidden} more {grid.hidden === 1 ? "person is" : "people are"} outside your HR access and not shown.</p>}
