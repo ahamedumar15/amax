@@ -15,9 +15,23 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: amax
+          POSTGRES_PASSWORD: amax
+          POSTGRES_DB: amax
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_MIGRATE_URL: postgres://amax:amax@localhost:5432/amax
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      - name: App role for row-level security tests
+        run: psql "$DATABASE_MIGRATE_URL" -c "create role amax_app login password 'amax_app'"
+      - run: pnpm db:migrate
       - run: pnpm lint
       - run: pnpm test
       - run: node scripts/check-module-standard.mjs
