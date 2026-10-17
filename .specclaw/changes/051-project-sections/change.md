@@ -33,8 +33,8 @@ What changes on screen, and where to see it: [`051-project-sections`](../../mock
 
 - [x] `T1` — Section tabs become links with `aria-current="page"` under a shared project header; Risks and decisions and Contract open empty states with an "Ask amax" chip; delivery routes `p/:key/<section>` (AC-1, AC-4)
   Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProjectSections.tsx, modules/delivery/ui/delivery.css, modules/delivery/module.ts, modules/delivery/contracts.ts
-- [ ] `T2` — Proposals and Releases sections reuse the global list components, scoped to the project in the query (AC-2)
-  Files: modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/server/queries.ts
+- [x] `T2` — Proposals and Releases sections reuse the global list components, scoped to the project in the query (AC-2)
+  Files: modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/server/queries.ts, modules/delivery/mcp.ts
   Depends: T1
 - [ ] `T3` — Route mounts: a module may contribute a route under another module's URL space, and a contribution wins over the owner's fallback. Needed because delivery can't import allocations (allocations depends on delivery; R5 forbids the cycle) (AC-3)
   Files: packages/core/src/module.ts, apps/web/lib/registry.ts, apps/web/tests/registry-mount.test.ts

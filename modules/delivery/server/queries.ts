@@ -139,12 +139,12 @@ export type ReleaseRow = {
   stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
-export const listReleases = (v: Viewer) =>
+export const listReleases = (v: Viewer, opts: { projectKey?: string } = {}) =>
   read(v, async (tx) => {
     const envs = await tx.execute(sql`select * from delivery.environment order by project_id, position`);
     const releases = await tx.execute(sql`select r.*, pr.key as project_key, pr.name as project_name, pr.color as project_color,
       (select count(*)::int from delivery.proposal p where p.release_id = r.id) as proposals
-      from delivery.release r join delivery.project pr on pr.id = r.project_id order by r.created_at desc`);
+      from delivery.release r join delivery.project pr on pr.id = r.project_id ${opts.projectKey ? sql`where pr.key = ${opts.projectKey}` : sql``} order by r.created_at desc`);
     const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
       id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
