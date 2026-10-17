@@ -6,8 +6,9 @@ import { ctxFor } from "./server/context";
 import { openSuggestions, recordsOf } from "./server/detail";
 import { promoteInput, promoteToDelivery } from "./server/promote";
 import { getOpportunity, historyOf, listOpportunities } from "./server/queries";
-import { addRisk, addTask, logActivity } from "./server/records";
-import { createOpportunity, moveOpportunity, newOpportunity } from "./server/opportunities";
+import { addRisk, addTask, logActivity, setRiskStatus } from "./server/records";
+import { createOpportunity, moveOpportunity, newOpportunity, removeOpportunity } from "./server/opportunities";
+import { acceptSuggestion, dismissSuggestion } from "./server/suggestions";
 import { pipelineStats } from "./server/stats";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -23,6 +24,8 @@ export const mcpTools: McpToolDef[] = [
     run: async (v, a) => (await listOpportunities(v, today())).filter((o) => !a.open || (o.stage !== "won" && o.stage !== "lost")) }),
   tool({ ...read, name: "get_opportunity", description: "One opportunity with its stage history, activities, tasks and risks.", input: z.object({ number }),
     run: async (v, a) => { const o = await getOpportunity(v, a.number, today()); return o && { ...o, history: await historyOf(v, o.id), ...(await recordsOf(v, o.id)) }; } }),
+  tool({ ...read, name: "get_opportunity_item", description: "One activity, task or risk on an opportunity, by its id.", input: z.object({ number, id: z.string().uuid() }),
+    run: async (v, a) => { const o = await getOpportunity(v, a.number, today()); return o && itemOf(await recordsOf(v, o.id), a.id); } }),
   tool({ ...read, name: "get_suggestion", description: "One opportunity the inbox agent found (client, summary, value, source); its text came from email or Teams.", input: z.object({ id: z.string().uuid() }),
     run: async (v, a) => (await openSuggestions(v)).find((s) => s.id === a.id) ?? null }),
   tool({ ...read, name: "pipeline_summary", description: "Open pipeline in USD, weighted by win chance, 12-month win rate and average days to close.", input: z.object({}), run: (v) => pipelineStats(v, today()) }),
@@ -39,9 +42,21 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...write("presales:opportunity:edit"), name: "add_opportunity_risk", description: "Add a risk, issue, assumption or decision. Open high-impact risks and issues change the calculated health.",
     input: z.object({ number, kind: z.enum(["risk", "issue", "assumption", "decision"]), title: z.string(), impact: z.enum(["low", "medium", "high"]).optional(), ownerName: z.string().optional() }),
     run: (v, a, s = "mcp") => addRisk(ctxFor(v, s), a) }),
+  tool({ ...write("presales:opportunity:edit"), name: "close_opportunity_risk", description: "Close a risk, issue or assumption on an opportunity. Closing open high-impact risks turns its health back to green.",
+    input: z.object({ number, riskId: z.string().uuid() }), run: (v, a, s = "mcp") => setRiskStatus(ctxFor(v, s), { ...a, status: "closed" }) }),
+  tool({ ...write("presales:opportunity:remove"), name: "remove_opportunity", description: "Remove an open opportunity that was a duplicate or a mistake. A lost deal is marked lost instead, so it counts in win rates.",
+    input: z.object({ number }), run: (v, a, s = "mcp") => removeOpportunity(ctxFor(v, s), a) }),
+  tool({ ...write("presales:opportunity:create"), name: "resolve_suggestion", description: "Accept an opportunity the inbox agent found (it becomes a new idea) or dismiss it.",
+    input: z.object({ id: z.string().uuid(), decision: z.enum(["accept", "dismiss"]) }),
+    run: (v, a, s = "mcp") => (a.decision === "accept" ? acceptSuggestion : dismissSuggestion)(ctxFor(v, s), { id: a.id }) }),
   tool({ ...write("presales:promote"), name: "promote_opportunity", description: "Turn a won opportunity into a delivery project with the given key and billing.", input: promoteInput,
     run: (v, a, s = "mcp") => promoteToDelivery(v, a, { source: s }) }),
 ];
+
+function itemOf(r: Awaited<ReturnType<typeof recordsOf>>, id: string) {
+  const found = ([["activity", r.activities], ["task", r.tasks], ["risk", r.risks]] as const).flatMap(([kind, rows]) => rows.filter((x) => x.id === id).map((x) => ({ kind, ...x })));
+  return found[0] ?? null;
+}
 
 export async function search(viewer: Viewer, query: string): Promise<SearchHit[]> {
   const q = query.toLowerCase();

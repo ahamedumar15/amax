@@ -1,5 +1,5 @@
 import type { ScreenProps } from "@amax/core";
-import { IntentButton } from "@amax/ui";
+import { IntentButton, PinButton } from "@amax/ui";
 import { logAction, submitAction } from "../actions";
 import { myWeek } from "../server/my";
 import { DAY_NAMES, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
@@ -10,14 +10,16 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
   const m = await myWeek(viewer, weekParam(params.week));
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
+  const pin = (label: string) => <PinButton pin={{ label, tool: "get_my_week", args: { week: m.key } }} />;
   const lede = `${weekSpan(m.week, m.days)}. ${m.total.toFixed(1)} h logged${m.total ? `, ${Math.round((m.agentHours / m.total) * 100)}% by agents` : ""}.${m.status === "approved" ? " Approved and locked." : ""}`;
   return (
     <div className="time">
       <Head title="My timesheet" lede={lede} week={m.week} base="/my" />
       {m.rejectComment && m.status === "rejected" && <p className="chip bad" role="status">Sent back: {m.rejectComment}</p>}
-      <div className="card flush">
+      <div className="card flush pinnable">
         <div className="card-head">
           <h2>{m.key}{m.status && <> <span className={`chip ${STATUS[m.status][0]}`}>{STATUS[m.status][1]}</span></>}</h2>
+          <PinButton inline pin={{ label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } }} />
           <div className="actions">
             {open && <IntentButton intent="time.log" label="Log time" primary={false} />}
             {canSubmit && <form action={submitAction}><input type="hidden" name="week" value={m.key} /><button className="btn primary" type="submit">Submit {hrs(m.total)} h</button></form>}
@@ -27,14 +29,15 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
           <caption className="sr">My hours for {m.key}</caption>
           <thead><tr><th>Project</th>{DAY_NAMES.map((d) => <th className="num" key={d}>{d}</th>)}<th className="num">Total</th></tr></thead>
           <tbody>
-            {m.rows.map((r) => <tr key={r.projectName}><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td></tr>)}
+            {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b>{pin(`${r.projectName}, ${m.key}`)}</td></tr>)}
             {m.rows.length === 0 && <tr><td colSpan={7} className="muted">No time logged this week.</td></tr>}
           </tbody>
           <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" key={i}>{hrs(h)}</td>)}<td className="num"><b>{m.total.toFixed(1)}</b></td></tr></tfoot>
         </table></div>
       </div>
       {open && (
-        <form action={logAction} className="card logform" style={{ marginTop: 28 }} aria-label="Log time">
+        <form action={logAction} className="card logform pinnable" style={{ marginTop: 28 }} aria-label="Log time">
+          {pin(`My timesheet ${m.key}`)}
           <label>Project<select name="projectKey" required>{m.projects.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}</select></label>
           <label>Day<select name="day">{m.days.map((d, i) => <option key={d} value={d}>{DAY_NAMES[i]} {d.slice(5)}</option>)}</select></label>
           <label>Hours<input name="hours" type="number" min="0.25" max="24" step="0.25" required /></label>

@@ -71,6 +71,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
       if (d.pin) { setPins((p) => (p.some((x) => x.label === d.pin!.label) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
+      else if (d.prompt) { setText(d.prompt); requestAnimationFrame(() => input.current?.focus()); }
     };
     window.addEventListener("amax:chat", onEvent);
     return () => window.removeEventListener("amax:chat", onEvent);

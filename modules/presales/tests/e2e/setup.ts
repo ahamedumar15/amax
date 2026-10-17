@@ -5,7 +5,7 @@ import { loadFixtures, lumen } from "@amax/testing";
 import { installedModules } from "../installed";
 import { SHIFT_SQL, shiftDays } from "./shift";
 
-export const E2E_DB = "amax_e2e_020";
+export const E2E_DB = process.env.PRESALES_E2E_DB ?? "amax_e2e_020";
 const root = join(import.meta.dirname, "../../../..");
 
 const admin = process.env.DATABASE_MIGRATE_URL;
@@ -23,4 +23,5 @@ await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }, ...(await inst
 await client.end();
 const shifted = createDb(ownerUrl, { max: 1 }).client;
 if (shiftDays() > 0) await shifted.unsafe(SHIFT_SQL(shiftDays()));
+await shifted`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`;
 await shifted.end();
