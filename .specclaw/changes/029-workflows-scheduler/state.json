@@ -1,8 +1,9 @@
 {
   "change": "029-workflows-scheduler",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-17T13:07:35Z"}
+    "tasks": {"status":"done","at":"2026-10-17T13:07:35Z"},
+    "verify": {"status":"done","at":"2026-10-17T13:28:24Z"}
   }
 }

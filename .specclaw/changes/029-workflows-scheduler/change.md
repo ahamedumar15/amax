@@ -47,3 +47,21 @@ Assumptions (stated per Rule 1):
 - [x] `T5` — Shared engine suite run on both engines (resume, retries, sleep, waitForEvent, admin actions, no step re-run), a kill test that SIGKILLs a worker process mid-run, schedule and time-zone tests, RLS check, tick route; CI runs the Temporal suite (AC-2, AC-3, AC-5, AC-6)
   Files: packages/workflows/tests/{conformance,kill,schedules,admin}.test.ts, packages/workflows/tests/fixtures/*, .github/workflows/ci.yml
   Depends: T3, T4
+
+## Verify
+
+**Verdict:** PASS
+- AC-1: pass — `packages/workflows/tests/replay.test.ts`: `defineWorkflow`/`step`/`sleep`/`waitForEvent`/`cron` replay recorded steps and stop at the first unseen timer or event; names, cron fields, zones and the registry (schedule → unknown workflow) are validated; `step()` outside a run throws. Manifests gain opaque `workflows`/`schedules` fields; nothing outside `@amax/workflows` and the host (`apps/web/lib/server.ts`) imports an engine (graph check ok).
+- AC-2: pass — `tests/kill.test.ts` SIGKILLs a real worker process (tsx child) in step two: the next worker re-runs only the in-flight step (`one`, `three` once; `two` started twice, completed once). `tests/conformance.test.ts` (Postgres): checkpointed steps, backoff retries, durable sleep, retry after failure re-runs only the failed step. Driven by `/api/jobs/tick` (smoke: real tick fired the platform's `core.audit-check` schedule and completed the run, `{"runs":1,"schedulesFired":1}`).
+- AC-3: pass — the same `conformance.test.ts` suite runs on Temporal (local dev server via `@temporalio/testing`, `AMAX_TEMPORAL_TESTS=1`, now set in CI): 3/3 pass on both engines. `engineConfig` selects the engine per deployment; Helm passes `workflows.engine` and `TEMPORAL_*` to web and worker pods (`helm lint`, `helm template --set workflows.engine=temporal`).
+- AC-4: pass — `replay.test.ts`: step timeouts abort and report retryable, `NonRetryableError` fails at once, `idempotencyKey` is stable across attempts; conformance: a run waits on an event with no time limit (no wake-up, `wake_at` null), wakes on a matching signal only, and a `timeout` resolves to null.
+- AC-5: pass — conformance: inputs, steps, tool calls, cost and `actsFor` recorded per run; `tests/admin.test.ts`: classified input/output masked for viewers without the class, pause/resume/cancel/retry audited (`workflows.run.*`), non-admins refused, RLS forced on every `workflows.*` table, other tenants see nothing; `workflowsRetention` (032 entries) plus the daily `workflows.prune` job.
+- AC-6: pass — `tests/schedules.test.ts`: one schedule per legal entity, 06:00 in Asia/Colombo (00:30 UTC) and Australia/Sydney; a disabled schedule creates no runs; toggles are audited. `/settings/workflows` renders the switch (e2e `tests/e2e/workflows.spec.ts`: toggle off/on, axe clean, Admin only).
+
+Commands (exit 0 unless noted, `DATABASE_MIGRATE_URL` on a private Postgres): `pnpm lint` (14 tasks + graph check), `AMAX_TEMPORAL_TESTS=1 pnpm test` (all packages; workflows 13 tests), `pnpm --filter @amax/web build`, `node scripts/check-module-standard.mjs`, `E2E_PORT=3529 playwright test --config playwright.auth.config.ts workflows.spec.ts` (2 passed), `helm lint deploy/helm/amax`. `specclaw-preset-check .` exits 1 and `specclaw-quality-scan . --gate` exits 1 on pre-existing findings only (comment rule repo-wide; `delivery/sync/specclaw.ts parse` and `AiSettingsPage` complexity; oauth/delivery duplicates); the new UI files have none.
+Quality: 0 → 0 duplicated lines in this change (the shared step upsert was still folded into `writeStep()`).
+Screenshots: `.specclaw/changes/029-workflows-scheduler/shots/app.png`, `app-phone.png` (signed in as Admin), `mock.png` (Insights, whose "Recurring agent work" card the scheduler table matches).
+
+Notes for dependants:
+- Insights (026) can embed `SchedulesCard` with `listSchedules()`; modules register `workflows`/`schedules` in their manifest and wait on outbox events by listing them in `waitsFor`.
+- Packaging the Temporal worker into the production image (a bundled `createTemporalWorker` entry on a glibc base) is a follow-up; the Postgres engine needs nothing new.
