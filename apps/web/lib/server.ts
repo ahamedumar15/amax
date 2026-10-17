@@ -4,6 +4,7 @@ import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { configureAi } from "@amax/ai";
+import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
 import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/auth";
@@ -65,9 +66,10 @@ const workflowsJobs = () => ({ id: "workflows", jobs: [pruneRunsJob], retention:
 
 export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), ...installed]);
 
-// 004/005: one tool registry and the chat intents, from the installed manifests.
+// 004/005: one tool registry and the chat intents, from the installed manifests. The AI gateway's
+// own read tool (048 get_ai_usage) sits beside them.
 let registry: ReturnType<typeof createRegistry> | undefined;
-export const toolRegistry = () => (registry ??= createRegistry(installed));
+export const toolRegistry = () => (registry ??= createRegistry([aiTools, ...installed]));
 export const chatIntents = () => installed.flatMap((m) => (m.chatIntents ?? []) as Intent[]);
 
 // Voice input is a per-tenant AI policy switch (033 AC-5).
