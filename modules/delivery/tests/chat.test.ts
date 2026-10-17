@@ -185,6 +185,7 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       tool("test_write", (v, i) => testWrite(ctxFor(v, "chat"), i)),
       tool("raw_write", (v, i) => withTenant(app, T, (tx) => insertProposal(tx, v.tenantId, i.title))),
       tool("double_write", async (v, i) => { await testWrite(ctxFor(v, "chat"), i); return testWrite(ctxFor(v, "chat"), { title: `${i.title} 2` }); }),
+      { name: "test_broken_read", description: "test_broken_read.", input: z.object({}), permission: "", scope: "read" as const, readOnly: true, run: async () => { throw new Error("row gross 285000 not found"); } },
     ] };
     const reg = createRegistry([delivery, testModule as never]);
     const card = async (name: string, title: string) => {
@@ -324,6 +325,27 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       await withIdempotency(`chat:${a.id}`, () => reg.call(maya, "test_write", pending.input, { source: "chat" }));
       await setCreatedAt(a.convo, old());
       await expect(cancelAction(app, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "confirmed" });
+    });
+
+    it.each([
+      ["a pin whose read fails", { label: "Broken", tool: "test_broken_read", args: {} }, /test_broken_read failed \(reference/],
+      ["a pin this user can't read", { label: "Hidden", tool: "no_such_read_tool", args: {} }, /not available to this user/],
+    ])("%s is sent as a marker, never an error message (final review)", async (_n, pin, marker) => {
+      const provider = fakeProvider(() => ({ text: "ok" }));
+      configureAi({ provider, db: app, model: "claude-haiku-5-5" });
+      await chatTurn(app, reg, maya, { text: "about this", pins: [pin] });
+      const sent = JSON.stringify(provider.calls[0]);
+      expect(sent).toMatch(marker);
+      expect(sent).not.toContain("285000");
+    });
+
+    it("a failed confirm's note carries the failure kind, never the message (final review)", async () => {
+      const a = await card("test_write", "Fails with detail");
+      const leaky = { ...reg, call: async () => { throw Object.assign(new Error("duplicate gross 285000"), { code: "23505" }); } } as unknown as typeof reg;
+      await expect(confirmAction(app, leaky, maya, a.convo, a.id)).rejects.toMatchObject({ kind: "failed" });
+      const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages->-1 as last from chat.conversation where id = ${a.convo}`));
+      expect(JSON.stringify(c.last)).toMatch(/test_write failed \(reference/);
+      expect(JSON.stringify(c.last)).not.toContain("285000");
     });
 
     it("notes keep only the record key (review round 9)", async () => {

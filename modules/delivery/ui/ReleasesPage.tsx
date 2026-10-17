@@ -6,14 +6,22 @@ import { day, needViewer, SignInFirst, Tabs } from "./parts";
 
 const HEX: Record<string, string> = { violet: "#7B61FF", amber: "#F2A93B", pink: "#F48B9B", mint: "#2FCB8C" };
 
-// Where a release stands and what the next action is.
-export function nextStep(r: ReleaseRow): { label: string; environment: string; primary: boolean } | null {
-  const reached = r.stages.filter((s) => s.status);
-  const last = reached.at(-1);
+/**
+ * Where a release stands and what the next action is. Null means Live: only a deployed Prod record
+ * says that. Stages are taken in order (gaps in positions after a removal don't end the chain); Prod
+ * still testing is finished in place; a project with no Prod stage says so (final review).
+ */
+export function nextStep(r: ReleaseRow): { label: string; environment: string | null; primary: boolean } | null {
+  const own = [...r.stages].sort((a, b) => a.position - b.position);
+  if (own.some((s) => s.isProd && s.status === "deployed")) return null;
+  const lastI = own.reduce((at, s, i) => (s.status ? i : at), -1);
+  const last = lastI >= 0 ? own[lastI] : undefined;
   if (last?.status === "rolled-back") return { label: `Retry ${last.environment}`, environment: last.environment, primary: false };
-  if (last?.isProd && last.status === "deployed") return null;
-  const next = r.stages.find((s) => s.position === (last?.position ?? 0) + 1);
-  return next ? { label: `${last ? "Promote" : "Deploy"} to ${next.environment}`, environment: next.environment, primary: true } : null;
+  // A stage still testing can be promoted past (as in the mock), except Prod: that one is finished in place.
+  if (last?.status === "testing" && last.isProd) return { label: `Finish ${last.environment}`, environment: last.environment, primary: true };
+  const next = own[lastI + 1];
+  if (next) return { label: `${last ? "Promote" : "Deploy"} to ${next.environment}`, environment: next.environment, primary: true };
+  return { label: "No Prod stage", environment: null, primary: false };
 }
 
 function cell(s: ReleaseRow["stages"][number]) {
@@ -109,11 +117,11 @@ export async function ReleasesPage({ viewer: raw }: ScreenProps) {
                     <td data-label="Proposals" className="num">{r.proposals}</td>
                     {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
                     <td data-label="" className="num">
-                      {!step ? <span className="muted">Live</span> : !allowed ? <span className="muted">{r.stages.some((s) => s.status) ? step.label.replace(/^(Promote|Deploy|Retry) /, "Next: ") : "Building"}</span> : (
+                      {!step ? <span className="muted">Live</span> : !step.environment ? <span className="muted">{step.label}</span> : !allowed ? <span className="muted">{r.stages.some((s) => s.status) ? step.label.replace(/^(Promote|Deploy|Retry|Finish) /, "Next: ") : "Building"}</span> : (
                         <form action={promoteAction}>
                           <input type="hidden" name="projectKey" value={r.projectKey} />
                           <input type="hidden" name="version" value={r.version} />
-                          <input type="hidden" name="environment" value={step.environment} />
+                          <input type="hidden" name="environment" value={step.environment ?? ""} />
                           <button className={`btn sm${step.primary ? " primary" : ""}`} type="submit">{step.label}</button>
                         </form>
                       )}

@@ -54,7 +54,7 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
                 <td data-label="Status">{d.voidedAt ? <span className="chip">Voided: {d.voidReason}</span> : <span className={`chip ${d.status === "rolled-back" ? "bad" : d.status === "testing" ? "info" : "good"}`}>{d.status}</span>}</td>
                 <td data-label="Recorded by">{d.recordedBy}</td><td data-label="Note">{d.note ?? (d.run ? `Run ${d.run}` : "–")}</td>
                 <td className="num">{canDeploy && !d.voidedAt && (
-                  <form action={voidAction} style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>{hid}<input type="hidden" name="environment" value={d.environment} />
+                  <form action={voidAction} style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>{hid}<input type="hidden" name="environment" value={d.environment} /><input type="hidden" name="deploymentId" value={d.id} />
                     <label className="sr" htmlFor={`void-${i}`}>Reason to void the {d.environment} deployment</label><input id={`void-${i}`} className="select" name="reason" placeholder="Reason" required minLength={3} style={{ width: 160 }} />
                     <button className="btn sm" type="submit">Void</button></form>
                 )}</td>

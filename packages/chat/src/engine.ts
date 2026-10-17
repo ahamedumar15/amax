@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
-import { converse, type DataItem, type Message, type Tool } from "@amax/ai";
-import { CancelledByKeyError, claimKey, KEY_DAYS, lookupKey, retryable, withIdempotency } from "@amax/core/server";
+import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
+import { CancelledByKeyError, claimKey, KEY_DAYS, logError, lookupKey, retryable, withIdempotency } from "@amax/core/server";
 import type { Registry, RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
@@ -73,9 +73,12 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   // Pinned records are fetched with the user's own permissions and sent as quoted data (AC-4).
   const data: DataItem[] = [];
   for (const pin of opts.pins ?? []) {
+    // A pin that can't be read is still sent, as a fixed marker: the model must not answer as if it
+    // had the record, and an error message never reaches it (it can echo values; final review).
     const tool = registry.toolsFor(viewer, ["read"]).find((t) => t.name === pin.tool);
-    if (!tool) continue;
-    const record = await registry.call(viewer, pin.tool, pin.args, { scopes: ["read"], source: "chat" }).catch((e: Error) => ({ error: e.message }));
+    if (!tool) { data.push({ label: pin.label, record: { unavailable: "not available to this user" } }); continue; }
+    const record = await registry.call(viewer, pin.tool, pin.args, { scopes: ["read"], source: "chat" })
+      .catch((e: unknown) => ({ unavailable: toolFailure(pin.tool, e, logError(`chat.pin ${pin.tool}`, e)) }));
     // A record, not text, so the gateway redacts its classified fields like any other record.
     data.push({ label: pin.label, record, sensitive: tool.sensitive });
   }
@@ -207,7 +210,8 @@ export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, 
   if (after && "done" in after) return done(after.done);
   const message = run.error instanceof Error ? run.error.message : String(run.error);
   if (retryable(run.error)) throw new ActionFailedError(message, "retry");
-  await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but it couldn't be done: ${message})`);
+  // The note is read back by the model: the failure kind and a reference, never the message (final review).
+  await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but ${toolFailure(action.tool, run.error, logError(`chat.confirm ${action.tool}`, run.error))})`);
   throw new ActionFailedError(message, "failed");
 }
 

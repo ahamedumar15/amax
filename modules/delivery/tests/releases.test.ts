@@ -54,7 +54,7 @@ describe.skipIf(!hasDb)("042 release management (Postgres)", () => {
     await upsertEnvironment(ctxFor(sahan), { projectKey: "LAB", name: "Staging", isProd: false });
     expect((await envNames("LAB")).some((n) => n.endsWith("*"))).toBe(false);
     await removeEnvironment(ctxFor(sahan), { projectKey: "LAB", name: "Prod" });
-    await expect(removeEnvironment(ctxFor(sahan), { projectKey: "CON", name: "Dev" })).rejects.toThrow(/has deployments/);
+    await expect(removeEnvironment(ctxFor(sahan), { projectKey: "CON", name: "Dev" })).rejects.toThrow(/deployment records? .*kept as history/);
     await expect(upsertEnvironment(ctxFor(maya), { projectKey: "FLT", name: "X" })).rejects.toThrow(/data scope/);
   });
 
@@ -126,7 +126,8 @@ describe.skipIf(!hasDb)("voiding only un-releases through the record that releas
   });
 
   it("a shipped proposal can't be moved into another release; unknown keys are refused in both paths", async () => {
-    await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-100", "HRI-101", "HRI-102", "HRI-103", "HRI-001"] })).resolves.toBeTruthy();
+    // v0.9.2 is live in Prod: it keeps its own proposals but takes no new one (final review).
+    await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-100", "HRI-101", "HRI-102", "HRI-103", "HRI-001"] })).rejects.toThrow(/already live in Prod; put HRI-001 in a new release/);
     await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-104"] })).rejects.toThrow(/already shipped/);
     await expect(createRelease(ctxFor(sahan), { projectKey: "HRI", version: "v1.0.0", proposalKeys: ["HRI-100"] })).rejects.toThrow(/already shipped/);
     await expect(createRelease(ctxFor(sahan), { projectKey: "HRI", version: "v1.0.1", proposalKeys: ["HRI-999"] })).rejects.toThrow(/no proposal HRI-999/);
@@ -170,4 +171,75 @@ describe("release map rows follow the project's own order (review round 3)", asy
     const a = rel(["Dev", "deployed"], ["QA", "rolled-back"], ["Prod", null]);
     expect(mapRow(a, ["Dev", "QA", "Prod"])).toMatchObject({ back: true, lineTo: 1 });
   });
+});
+
+describe.skipIf(!hasDb)("final review: release bugs", () => {
+  let t: Awaited<ReturnType<typeof migratedDatabase>>;
+  let app: Db;
+  let sahan: Viewer;
+  beforeAll(async () => {
+    t = await migratedDatabase();
+    app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
+    setGrants([delivery]);
+    setViewerScopeResolvers([delivery.viewerScopes!]);
+    installAuthorizer();
+    await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, delivery], lumen);
+    const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = 'sahan@lumenlabs.test'`));
+    sahan = (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
+  });
+  afterAll(() => t?.drop());
+  const ctx = () => ctxFor(sahan);
+
+  it("environment names match without regard to case in every service, and the database enforces it", async () => {
+    await createProject(ctx(), { key: "ENV", name: "Env", client: "x", billing: "internal" });
+    await upsertEnvironment(ctx(), { projectKey: "ENV", name: "prod", isProd: true });
+    expect((await listEnvironments(sahan, "ENV")).map((e) => e.name)).toEqual(["Dev", "QA", "UAT", "Prod"]);
+    await createRelease(ctx(), { projectKey: "ENV", version: "v1", proposalKeys: [] });
+    await recordDeployment(ctx(), { projectKey: "ENV", version: "v1", environment: "pRoD" });
+    const [ev] = await t.owner`select payload from core.event where name = 'delivery.release.deployed' and payload->>'version' = 'v1' order by created_at desc limit 1`;
+    expect(ev.payload.environment).toBe("Prod");
+    await expect(t.owner`insert into delivery.environment (tenant_id, project_id, name, position) select ${T}, id, 'PROD', 9 from delivery.project where key = 'ENV'`).rejects.toThrow(/environment_name_ci/);
+    await expect(removeEnvironment(ctx(), { projectKey: "ENV", name: "PROD" })).rejects.toThrow(/Prod has 1 deployment record .*kept as history/);
+  });
+
+  it("Void on a history row voids exactly that record", async () => {
+    await createProject(ctx(), { key: "VID", name: "Vid", client: "x", billing: "internal" });
+    await createRelease(ctx(), { projectKey: "VID", version: "v1", proposalKeys: [] });
+    await recordDeployment(ctx(), { projectKey: "VID", version: "v1", environment: "Dev" });
+    await recordDeployment(ctx(), { projectKey: "VID", version: "v1", environment: "Dev" });
+    const history = (await getRelease(sahan, "VID", "v1"))!.history; // newest first
+    await voidDeployment(ctx(), { projectKey: "VID", version: "v1", environment: "Dev", deploymentId: history[1].id, reason: "the older one" });
+    const after = (await getRelease(sahan, "VID", "v1"))!.history;
+    expect(after.find((d) => d.id === history[1].id)!.voidedAt).not.toBeNull();
+    expect(after.find((d) => d.id === history[0].id)!.voidedAt).toBeNull();
+    await createRelease(ctx(), { projectKey: "VID", version: "v2", proposalKeys: [] });
+    await expect(voidDeployment(ctx(), { projectKey: "VID", version: "v2", environment: "Dev", deploymentId: history[0].id, reason: "wrong release" })).rejects.toThrow(/isn't a live record of v2/);
+  });
+
+  it("a release already live in Prod takes no new proposals; keeping its own is fine", async () => {
+    await createProject(ctx(), { key: "LIV", name: "Live", client: "x", billing: "internal" });
+    const { createProposal } = await import("../server/services");
+    const a = await createProposal(ctx(), { projectKey: "LIV", title: "In the release" });
+    const b = await createProposal(ctx(), { projectKey: "LIV", title: "Late" });
+    await createRelease(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
+    await recordDeployment(ctx(), { projectKey: "LIV", version: "v1", environment: "Prod" });
+    await expect(setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key, b.key] })).rejects.toThrow(/already live in Prod; put LIV-002 in a new release/);
+    await setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
+  });
+});
+
+describe("nextStep: only a deployed Prod is Live (final review)", async () => {
+  const { nextStep } = await import("../ui/ReleasesPage");
+  const st = (environment: string, position: number, isProd: boolean, status: string | null) => ({ environment, position, isProd, status, at: null, note: null, run: null });
+  const rel = (...stages: ReturnType<typeof st>[]) => ({ stages }) as never;
+  it.each([
+    ["a gap in positions after a removal", rel(st("Dev", 1, false, "deployed"), st("UAT", 3, false, null), st("Prod", 4, true, null)), "Promote to UAT"],
+    ["Prod still testing", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, "testing")), "Finish Prod"],
+    ["QA still testing (promotable, as in the mock)", rel(st("Dev", 1, false, "deployed"), st("QA", 2, false, "testing"), st("Prod", 3, true, null)), "Promote to Prod"],
+    ["a project with no Prod, every stage reached", rel(st("Dev", 1, false, "deployed"), st("QA", 2, false, "deployed")), "No Prod stage"],
+    ["a rollback", rel(st("Dev", 1, false, "deployed"), st("QA", 2, false, "rolled-back")), "Retry QA"],
+    ["nothing yet", rel(st("Dev", 1, false, null)), "Deploy to Dev"],
+    ["Prod deployed", rel(st("Dev", 1, false, "deployed"), st("Prod", 2, true, "deployed")), null],
+  ])("%s", (_n, r, label) => expect(nextStep(r)?.label ?? null).toBe(label));
 });

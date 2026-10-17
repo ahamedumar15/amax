@@ -44,7 +44,9 @@ export default defineModule({
     // open project is in use, so its manager stays named.
     { table: "delivery.project", fields: ["manager_name", "manager_user_id"], class: "personal", period: "P7Y", start: { at: ["closed_at"] }, action: "anonymise" },
     { table: "delivery.proposal", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["released_at"], idle: "P1Y" }, action: "anonymise" },
-    { table: "delivery.deployment", fields: ["recorded_by", "voided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
+    { table: "delivery.deployment", fields: ["recorded_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
+    // The voider's clock starts at the void, which can be years after the deployment (final review).
+    { table: "delivery.deployment", fields: ["voided_by"], class: "personal", period: "P7Y", start: { at: ["voided_at"] }, action: "anonymise" },
   ],
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
