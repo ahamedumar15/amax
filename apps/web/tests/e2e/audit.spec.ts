@@ -20,10 +20,10 @@ test("050 AC-4 Audit and trace: chain status, events with pins, a trace timeline
   const rows = page.locator("tbody tr.pinnable");
   await expect(rows.first()).toBeVisible();
   await expect(rows.first().getByRole("button", { name: /^Add (Audit|Trace) event \d+ to chat$/ })).toHaveCount(1);
-  await page.getByLabel("Kind").selectOption("trace");
-  await page.getByLabel("Person, agent, tool or record").fill("decided");
+  await page.getByLabel("Kind").selectOption("audit");
+  await page.getByLabel("Person, agent, tool or record").fill("delivery.proposal.create");
   await page.getByRole("button", { name: "Filter" }).click();
-  await page.locator("tbody tr", { hasText: "decided" }).first().getByRole("link", { name: /^Open trace/ }).click();
+  await page.locator("tbody tr", { hasText: "via amax chat" }).first().getByRole("link", { name: /^Open trace/ }).click();
   const timeline = page.getByRole("region", { name: /^Trace t-/ });
   await expect(timeline).toContainText("Prompt received from Maya");
   await expect(timeline).toContainText("Pending write");
