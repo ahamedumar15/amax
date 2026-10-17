@@ -8,7 +8,9 @@
 /modules/hello/ @chan4lk
 /modules/delivery/ @chan4lk
 /modules/time/ @chan4lk
-# /modules/hr/ @org/people-team
+/modules/hr/ @chan4lk
+/modules/allocations/ @chan4lk
+/modules/presales/ @chan4lk
 # /modules/leave/ @org/people-team
 # /modules/payroll/ @org/payroll-team
 # /modules/finance/ @org/finance-team

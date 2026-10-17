@@ -1,0 +1,108 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "modules/allocations/README.md",
+  "modules/allocations/contracts.ts",
+  "modules/allocations/server/forecast.ts",
+  "modules/allocations/server/grid.ts",
+  "modules/allocations/server/services.ts",
+  "modules/allocations/tests/contracts.test.ts",
+  "modules/allocations/tests/scope.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/allocations/contracts.ts",
+   "fp": "267282dfb908",
+   "line": 39,
+   "message": "This is an instance fix of last round's B3 finding. `hidden` only counts people who have allocation rows in the range (`ids` comes from `rows`). A requested `personIds` entry that is out of scope and has no rows gives `{ rows: [], hidden: 0 }`. That is the same answer as \"you may see this person and they have nothing allocated\", so the read still reports \"could not ask\" as \"nothing there\". Counting this way also leaks something: an out-of-scope reader can query one id at a time and learn whether a person they may not see has any allocations (hidden 1 vs 0). Fix: when `personIds` is given, check those ids against `listPeople(tx, reader, { ids: personIds })` and count every requested id outside the scope, whether or not it has rows. When `personIds` is not given, keep the current count. Add a variant where the AU-limited reader asks for an out-of-scope person who has no rows in the month and expect `hidden: 1`.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "HR limited to Australia calls personMonthTotals(tx, auOnly, { from: '2027-06-01', to: '2027-06-01', personIds: [<LK person with no June allocations>] }). It gets { rows: [], hidden: 0 }, the same as for a visible bench person. A consumer shows that person as 0% allocated and confirmed. With an LK person who does have rows, it gets hidden: 1, which shows that person has allocations.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/allocations/tests/scope.test.ts",
+   "fp": "1a5bb9f59b0e",
+   "in_delta": true,
+   "line": 49,
+   "message": "The hidden-count table only covers a request for a person who has rows. There is no variant for an out-of-scope person without rows, and none for an unfiltered request (`personIds` omitted) where the reader's scope hides some people. Add both rows so the test pins what `hidden` means.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/allocations/tests/scope.test.ts",
+   "fp": "fd5e42dfd541",
+   "in_delta": true,
+   "line": 76,
+   "message": "The new copyMonth test accepts two outcomes for a context with no viewer that isn't a system context: an error, or `{ copied: 0, skipped: N>0 }`. The second outcome is what copyMonth actually returns: its `allowed` filter drops the rows it is not allowed to copy and counts them as `skipped`. That is the same `skipped` count used for 'already present in the next month'. So 'you are not allowed to copy' looks like 'nothing left to copy', and the test locks that ambiguity in. Fix: make copyMonth throw forbidden (as allocate does) when the context has no viewer and isSystemContext(ctx) is false. Or return forbidden/hidden separately from skipped. Then tighten the test to expect only that outcome.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "A service principal with no viewer calls copy_allocations_to_next_month({from:'2026-12'}) and gets {copied:0, skipped:12}. The caller reads this as 'January is already planned', but in fact nothing was copied because it was forbidden.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/allocations/README.md",
+   "fp": "ccb5f599a7de",
+   "in_delta": true,
+   "line": 8,
+   "message": "The return type of `listAllocations` and `personMonthTotals` changed from an array to `{ rows, hidden }`, but the contract is still labelled v2 and the README only says how v1 differs. If anything already builds against v2, bump the version and record the shape change, as module-standard.md requires. If nothing does yet, say that v2 is unreleased.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B10",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "a6c5f397b418ca815c08f58053e6017a519155bb",
+ "impact": [
+  "apps/mock/app/globals.css",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/settings.css",
+  "apps/web/tests/e2e/diff.ts",
+  "apps/web/tests/tick.test.ts",
+  "modules/allocations/fixtures/index.ts",
+  "modules/allocations/server/months.ts",
+  "modules/allocations/ui/allocations.css",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/ui/delivery.css",
+  "modules/hr/contracts.ts",
+  "modules/hr/tests/contracts.test.ts",
+  "modules/hr/ui/hr.css",
+  "packages/core/tests/ac4-jobs.test.ts",
+  "packages/mcp/src/registry.ts",
+  "packages/ui/src/styles/chat.css",
+  "packages/ui/src/styles/responsive.css",
+  "packages/ui/src/styles/shell.css",
+  "packages/ui/src/styles/tokens.css"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 46751,
+ "round": 3,
+ "since": "0f72c39",
+ "status": "open",
+ "system_chars": 20813,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792243540,
+ "ts_start": 1792243453
+}
