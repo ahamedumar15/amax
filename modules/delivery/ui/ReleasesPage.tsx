@@ -1,8 +1,8 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { promoteAction } from "../actions";
-import { listReleases, type ReleaseRow } from "../server/queries";
-import { day, needViewer, SignInFirst, Tabs } from "./parts";
+import { listReleases, today, type ReleaseRow } from "../server/queries";
+import { day, needViewer, SignInFirst } from "./parts";
 
 const HEX: Record<string, string> = { violet: "#7B61FF", amber: "#F2A93B", pink: "#F48B9B", mint: "#2FCB8C" };
 
@@ -23,30 +23,46 @@ function cell(s: ReleaseRow["stages"][number]) {
   return s.isProd ? <span className="chip good">{day(s.at)}</span> : <>{day(s.at)}</>;
 }
 
+const dayName = (iso: string) => new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).replace(",", "");
+
+// The mock's release map: one line per active release, stations per environment, and a pill that
+// says where it stands ("Testing since Oct 15", "Rolled back Wed Oct 14", "Live since Oct 1").
 function ReleaseMap({ releases }: { releases: ReleaseRow[] }) {
-  const active = releases.filter((r) => r.stages.some((s) => s.status));
   const envs = releases[0]?.stages ?? [];
   const x = (i: number) => 300 + i * 180;
-  const h = 70 * active.length + 60;
+  const h = 70 * releases.length + 60;
   return (
-    <svg viewBox={`0 0 900 ${h}`} role="img" aria-label={active.map((r) => `${r.projectName} ${r.version}: ${r.stages.filter((s) => s.status).at(-1)?.environment ?? "not deployed"}`).join(". ")}>
+    <svg viewBox={`0 0 900 ${h}`} role="img" aria-label={releases.map((r) => { const last = r.stages.filter((s) => s.status).at(-1); return `${r.projectName} ${r.version} ${last ? (last.status === "rolled-back" ? `was rolled back from ${last.environment}` : last.status === "testing" ? `is in ${last.environment}` : `is in ${last.environment}`) : "isn't deployed"}`; }).join(". ") + "."}>
       <g className="env" textAnchor="middle">{envs.map((e, i) => <text key={e.environment} x={x(i)} y={20}>{e.environment}</text>)}</g>
       <g stroke="var(--line)" strokeWidth={1.5}>{envs.map((e, i) => <line key={e.environment} x1={x(i)} y1={34} x2={x(i)} y2={h - 8} />)}</g>
-      {active.map((r, row) => {
+      {releases.map((r, row) => {
         const y = 86 + row * 70;
         const c = HEX[r.projectColor] ?? "#7B61FF";
         const reached = r.stages.filter((s) => s.status);
-        const lastI = r.stages.indexOf(reached.at(-1)!);
-        const back = reached.at(-1)?.status === "rolled-back";
+        const lastStage = reached.at(-1)!;
+        const li = r.stages.indexOf(lastStage);
+        const back = lastStage.status === "rolled-back";
+        const live = lastStage.isProd && lastStage.status === "deployed";
+        const pill = back ? { text: `Rolled back ${dayName(lastStage.at!)}`, fill: "#FDE7E4", ink: "#C2412F", w: 128 }
+          : live ? { text: `Live since ${day(lastStage.at)}`, fill: "#E3F8EF", ink: "#14845A", w: 118 }
+          : lastStage.status === "testing" ? { text: `Testing since ${day(lastStage.at)}`, fill: "#ECE8FF", ink: "#5B44D6", w: 132 }
+          : { text: `In ${lastStage.environment} since ${day(lastStage.at)}`, fill: "#ECE8FF", ink: "#5B44D6", w: 150 };
+        const px = live ? x(li) - 144 : x(li) + (back ? 26 : 26);
+        const py = live ? y - 30 : y - 14;
         return (
           <g key={r.id}>
             <text className="lbl" x={0} y={y + 5}>{r.projectName}</text>
             <text className="cap" x={0} y={y + 24}>{r.version}, {r.proposals} proposals</text>
-            <path className="line" d={`M240 ${y}H${x(lastI) - (back ? 12 : 0)}`} stroke={c} />
-            {lastI < envs.length - 1 && <path className="ahead" d={`M${x(lastI) + (back ? 12 : 0)} ${y}H${x(envs.length - 1)}`} stroke={c} />}
-            {r.stages.map((s, i) =>
-              i === lastI && back ? <circle key={i} cx={x(i)} cy={y} r={13} fill="#F26B5B" />
-                : <circle key={i} className="station" cx={x(i)} cy={y} r={i === lastI ? 11 : 9} stroke={s.status ? c : "var(--line-2)"} />)}
+            <path className="line" pathLength={1} d={`M240 ${y}H${x(li) - (back ? 12 : 0)}`} stroke={c} />
+            {li < envs.length - 1 && <path className="ahead" d={`M${x(li) + (back ? 12 : 0)} ${y}H${x(envs.length - 1)}`} stroke={c} />}
+            {r.stages.map((s, i) => {
+              if (i === li && back) return <g key={i}><circle cx={x(i)} cy={y} r={13} fill="#F26B5B" /><path d={`m${x(i) - 5} ${y - 5} 10 10m0-10-10 10`} stroke="#fff" strokeWidth={2.6} strokeLinecap="round" /></g>;
+              if (i === li && live) return <g key={i}><circle cx={x(i)} cy={y} r={13} fill={c} /><circle cx={x(i)} cy={y} r={5} fill="#fff" /></g>;
+              if (i === li) return <g key={i}><circle className="station" cx={x(i)} cy={y} r={11} stroke={c} /><circle cx={x(i)} cy={y} r={4.5} fill={c} /></g>;
+              return <circle key={i} className="station" cx={x(i)} cy={y} r={s.status ? 9 : 8} stroke={s.status ? c : "var(--line-2)"} />;
+            })}
+            <rect x={px} y={py} width={pill.w} height={live ? 24 : 28} rx={live ? 9 : 10} fill={pill.fill} />
+            <text x={px + pill.w / 2} y={py + (live ? 17 : 19)} textAnchor="middle" fill={pill.ink} fontSize={live ? 12 : 12.5} fontWeight={600} fontFamily="Avenir Next,system-ui">{pill.text}</text>
           </g>
         );
       })}
@@ -54,7 +70,7 @@ function ReleaseMap({ releases }: { releases: ReleaseRow[] }) {
   );
 }
 
-export async function ReleasesPage({ viewer: raw }: ScreenProps) {
+export async function ReleasesPage({ viewer: raw, searchParams }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Releases</h1><SignInFirst /></>;
   const releases = await listReleases(viewer);
@@ -64,10 +80,11 @@ export async function ReleasesPage({ viewer: raw }: ScreenProps) {
     <>
       <h1>Releases</h1>
       <p className="lede">A release moves when a pipeline reports a deployment, when an agent records one, or when you promote it here.</p>
-      <Tabs current="releases" />
-      <div className="card map scroll-x" style={{ margin: "24px 0 28px" }}>
-        <div className="card-head"><h2>Release map</h2></div>
-        <ReleaseMap releases={releases} />
+      <div className="card map scroll-x" style={{ marginBottom: 28 }}>
+        <div className="card-head"><h2>Release map</h2>
+          <nav className="seg" aria-label="Range"><a href="/delivery/releases" aria-current={searchParams.map !== "all" ? "true" : undefined}>Active</a><a href="/delivery/releases?map=all" aria-current={searchParams.map === "all" ? "true" : undefined}>All</a></nav>
+        </div>
+        <ReleaseMap releases={releases.filter((r) => r.stages.some((s) => s.status) && (searchParams.map === "all" || !r.stages.some((s) => s.isProd && s.status === "deployed" && s.at && today().getTime() - Date.parse(s.at) > 45 * 86_400_000)))} />
       </div>
       <div className="card flush">
         <div className="card-head"><h2>All releases</h2></div>
