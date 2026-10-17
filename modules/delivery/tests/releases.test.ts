@@ -260,6 +260,15 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     await recordDeployment(ctx(), { projectKey: "LIV", version: "v1", environment: "Prod" });
     await expect(setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key, b.key] })).rejects.toThrow(/already live in Prod; put LIV-002 in a new release/);
     await setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
+    const rows = await t.owner`select key, phase, release_id is not null as assigned from delivery.proposal p where key in (${a.key}, ${b.key}) order by key`;
+    expect(rows).toEqual([{ key: a.key, phase: "released", assigned: true }, { key: b.key, phase: "proposed", assigned: false }]);
+  });
+
+  it("assignProposals has two callers: setReleaseProposals (raced below) and createRelease, whose release is new and invisible to other transactions until it commits (round 16)", () => {
+    const src = readFileSync(join(__dirname, "../server/services.ts"), "utf8");
+    const callers = [...src.matchAll(/export const (\w+) = defineService\([\s\S]*?(?=\nexport const |$)/g)].filter((m) => m[0].includes("assignProposals(")).map((m) => m[1]);
+    // A new caller must get its own race test against a Prod deployment.
+    expect(callers.sort()).toEqual(["createRelease", "setReleaseProposals"]);
   });
 
   // Holds the first service that locks a release inside its transaction, right after the lock, until
@@ -268,7 +277,7 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     let entered!: () => void, release!: () => void;
     const inside = new Promise<void>((r) => { entered = r; });
     const gate = new Promise<void>((r) => { release = r; });
-    let armed = true;
+    let armed = true, done = false;
     const text = (q: { queryChunks?: { value?: unknown }[] }) => (q.queryChunks ?? []).map((c) => (Array.isArray(c?.value) ? c.value.join("") : "")).join("");
     const wrapTx = (tx: Db) => new Proxy(tx, { get: (target, prop) => prop !== "execute" ? Reflect.get(target, prop) : async (q: never) => {
       const out = await target.execute(q);
@@ -278,7 +287,9 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     const db = new Proxy(app, { get: (target, prop) => prop !== "transaction" ? Reflect.get(target, prop)
       : (fn: (tx: Db) => Promise<unknown>) => target.transaction((tx) => fn(wrapTx(tx as never))) });
     configureRuntime({ db: db as Db, auditKey: "k".repeat(32) });
-    return { inside, release: () => { release(); configureRuntime({ db: app, auditKey: "k".repeat(32) }); } };
+    // Safe to call twice; always called from a finally, so a failed test never leaves the hold or the
+    // wrapped runtime behind.
+    return { inside, release: () => { if (done) return; done = true; armed = false; release(); configureRuntime({ db: app, auditKey: "k".repeat(32) }); } };
   };
 
   it.each([
@@ -293,13 +304,17 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     const assign = () => setReleaseProposals(ctx(), { projectKey: key, version: "v1", proposalKeys: [p.key] });
     const deploy = () => recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Prod" });
     const h = holdAfterReleaseLock();
-    const first = order === "assign-first" ? assign() : deploy();
-    await h.inside;
-    let secondDone = false;
-    const second = (order === "assign-first" ? deploy() : assign()).finally(() => { secondDone = true; });
-    await new Promise((r) => setTimeout(r, 300));
-    expect(secondDone).toBe(false); // waiting on the held release row
-    h.release();
+    let first: Promise<unknown> = Promise.resolve(), second: Promise<unknown> = Promise.resolve();
+    try {
+      first = order === "assign-first" ? assign() : deploy();
+      await h.inside;
+      let secondDone = false;
+      second = (order === "assign-first" ? deploy() : assign()).finally(() => { secondDone = true; });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(secondDone).toBe(false); // waiting on the held release row
+    } finally {
+      h.release();
+    }
     await first;
     if (order === "assign-first") await expect(second).resolves.toMatchObject({ released: true });
     else await expect(second).rejects.toThrow(/already live in Prod/);
