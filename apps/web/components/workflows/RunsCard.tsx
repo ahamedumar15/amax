@@ -1,11 +1,11 @@
 import type { Masked as MaskedValue, RunView, StepView } from "@amax/workflows/server";
-import { EmptyState, Masked } from "@amax/ui";
-
-type Props = { runs: RunView[]; control: (data: FormData) => Promise<void> };
+import { EmptyState, Masked, PinButton } from "@amax/ui";
+import { AskButton } from "../settings/AskButton";
 
 const TONE: Record<string, string> = { completed: "good", failed: "bad", cancelled: "draft", paused: "warn", waiting: "agent", sleeping: "info", running: "info" };
 const ACTIONS: Record<string, ("pause" | "resume" | "cancel" | "retry")[]> = { running: ["pause", "cancel"], sleeping: ["pause", "cancel"], waiting: ["pause", "cancel"], paused: ["resume", "cancel"], failed: ["retry"] };
 const isMasked = (v: unknown): v is MaskedValue => typeof v === "object" && v !== null && (v as MaskedValue).masked === true;
+const pinOf = (r: RunView) => ({ label: `${r.title} run ${r.id.slice(0, 8)}`, tool: "get_workflow_run", args: { runId: r.id } });
 const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 
 function stepLine(s: StepView) {
@@ -24,35 +24,33 @@ function Value({ v }: { v: unknown }) {
   return <>{JSON.stringify(v)}</>;
 }
 
-export function RunsCard({ runs, control }: Props) {
+export function RunsCard({ runs }: { runs: RunView[] }) {
   return (
-    <div className="card flush" style={{ marginTop: 28 }}>
-      <div className="card-head"><h2>Runs</h2><span className="muted" style={{ fontSize: 13 }}>Latest {runs.length}</span></div>
+    <div className="card flush pinnable" style={{ marginTop: 28 }}>
+      <div className="card-head"><h2>Runs</h2><PinButton inline pin={{ label: "Workflow runs", tool: "list_workflow_runs", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>Latest {runs.length}</span></div>
       {runs.length === 0 ? (
         <EmptyState icon="spark" title="No runs yet" hint="Agent tasks and scheduled jobs show here with every step they take." />
       ) : (
         <div className="scroll-x">
           <table className="tbl">
             <caption className="sr">Workflow runs</caption>
-            <thead><tr><th>Run</th><th>Status</th><th>Steps</th><th>Acts for</th><th className="num">Cost</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Run</th><th>Status</th><th>Steps</th><th>Acts for</th><th className="num">Cost</th><th className="num"><span className="sr">Ask</span></th></tr></thead>
             <tbody>
               {runs.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} className="pinnable">
                   <td data-label="Run"><b>{r.title}</b>{r.input !== null && <small>Input: <Value v={r.input} /></small>}{r.output !== null && <small>Output: <Value v={r.output} /></small>}</td>
                   <td data-label="Status"><span className={`chip ${TONE[r.status] ?? ""}`}>{r.status}</span>{r.error && <small>{isMasked(r.error) ? <Masked masked /> : r.error}</small>}</td>
                   <td data-label="Steps"><ol style={{ margin: 0, paddingLeft: 18 }}>{r.steps.map((s) => <li key={s.name}><b>{s.name}</b> {stepLine(s)}{Array.isArray(s.toolCalls) && s.toolCalls.length > 0 && <small>Tools: {s.toolCalls.map((t) => t.tool).join(", ")}</small>}</li>)}</ol></td>
                   <td data-label="Acts for">{r.actsFor ?? <span className="muted">{r.startedBy}</span>}</td>
                   <td data-label="Cost" className="num">{usd(r.costUsd)}</td>
-                  <td data-label="Actions">
-                    <div className="actions">
-                      {(ACTIONS[r.status] ?? []).map((a) => (
-                        <form key={a} action={control}>
-                          <input type="hidden" name="id" value={r.id} />
-                          <input type="hidden" name="action" value={a} />
-                          <button type="submit" className="btn sm" aria-label={`${a[0].toUpperCase()}${a.slice(1)} ${r.title}`}>{a[0].toUpperCase() + a.slice(1)}</button>
-                        </form>
-                      ))}
+                  <td className="num">
+                    <div className="ask-row">
+                      {(ACTIONS[r.status] ?? []).map((a) => {
+                        const verb = `${a[0].toUpperCase()}${a.slice(1)}`;
+                        return <AskButton key={a} label={`Ask to ${a}`} prompt={`${verb} this run of ${r.title}`} pin={pinOf(r)} tool="control_workflow_run" name={`Ask to ${a} ${r.title}`} />;
+                      })}
                     </div>
+                    <PinButton pin={pinOf(r)} />
                   </td>
                 </tr>
               ))}

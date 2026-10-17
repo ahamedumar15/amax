@@ -1,9 +1,10 @@
 import { CONNECTORS, EXPIRY_WINDOW_DAYS, type CredentialRow } from "@amax/core/secrets";
-import { Ticket } from "@amax/ui";
+import { PinnedTicket as Ticket } from "../../../../components/settings/PinnedTicket";
 import { Art } from "./Art";
 import { expiringSoon, shortDate } from "./format";
 
 const ROTATION_DAYS = 90;
+const pin = (label: string) => ({ label, tool: "list_secrets", args: {} });
 
 function breakdown(rows: CredentialRow[]) {
   const n = (s: CredentialRow["status"]) => rows.filter((r) => r.status === s).length;
@@ -17,12 +18,12 @@ export function KeyTickets({ rows, now }: { rows: CredentialRow[]; now: Date }) 
   const pct = active.length ? Math.round((fresh / active.length) * 100) : 0;
   return (
     <div className="tickets four">
-      <Ticket tone="info" label="Credentials" value={String(rows.length)} note={breakdown(rows)} art={<Art name="key" />} />
-      <Ticket tone="attention" label={`Expiring in ${EXPIRY_WINDOW_DAYS} days`} value={String(soon.length)}
+      <Ticket pin={pin("Credentials")} tone="info" label="Credentials" value={String(rows.length)} note={breakdown(rows)} art={<Art name="key" />} />
+      <Ticket pin={pin(`Expiring in ${EXPIRY_WINDOW_DAYS} days`)} tone="attention" label={`Expiring in ${EXPIRY_WINDOW_DAYS} days`} value={String(soon.length)}
         note={soon.length ? soon.slice(0, 2).map((r) => `${CONNECTORS[r.connector].name}, ${shortDate(r.expiresAt!, now, false)}`).join("; ") : "Nothing due"} art={<Art name="calendar" />} />
-      <Ticket tone="good" label={`Rotated in ${ROTATION_DAYS} days`} value={active.length ? `${fresh} of ${active.length}` : "0"}
+      <Ticket pin={pin(`Rotated in ${ROTATION_DAYS} days`)} tone="good" label={`Rotated in ${ROTATION_DAYS} days`} value={active.length ? `${fresh} of ${active.length}` : "0"}
         progress={active.length ? { percent: pct, label: `${pct}% of ${active.length} active` } : undefined} note={active.length ? undefined : "No active credentials"} art={<Art name="shield" />} />
-      <Ticket tone="good" label="Values shown to anyone" value="0" note="Write-only, never displayed" art={<Art name="shield" />} />
+      <Ticket pin={pin("Values shown to anyone")} tone="good" label="Values shown to anyone" value="0" note="Write-only, never displayed" art={<Art name="shield" />} />
     </div>
   );
 }

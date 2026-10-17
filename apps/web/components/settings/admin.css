@@ -1,0 +1,5 @@
+/* 047: Ask chips and pinned tickets on the admin screens. */
+.btn.ask svg{width:14px;height:14px;fill:currentColor;stroke:none;flex:none}
+.ticket:hover>.pin,.ticket:focus-within>.pin{opacity:1;transform:none}
+.hint{font-size:13px;color:var(--ink-3);margin:-14px 0 24px}
+.ask-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
