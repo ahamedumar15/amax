@@ -8,7 +8,7 @@ import { cancelChat, confirmChat, sendChat } from "../../app/actions/chat";
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
   | { kind: "amax"; text: string; tools: string[]; error?: boolean }
-  | { kind: "confirm"; action: PendingAction; state: "open" | "done" | "cancelled"; note?: string };
+  | { kind: "confirm"; action: PendingAction; state: "open" | "working" | "done" | "cancelled"; note?: string };
 
 const FIELD_CLASSES = ["f-client", "f-value", "f-dates", "f-person", "f-stage", "f-name"];
 const fieldClass = (fields: string[], field: string) => FIELD_CLASSES[Math.max(0, fields.indexOf(field)) % FIELD_CLASSES.length];
@@ -123,6 +123,8 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
 
   async function decide(action: PendingAction, ok: boolean) {
     if (!convo.current) return;
+    // One decision per card: the buttons go away while the request is in flight.
+    setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working" } : x)));
     const update = (state: "done" | "cancelled", note: string) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state, note } : x)));
     if (!ok) { await cancelChat(convo.current, action.id); update("cancelled", "Cancelled. Nothing was changed."); return; }
     const r = await confirmChat(convo.current, action.id);
@@ -169,7 +171,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
                   <button className="btn sm" type="button" onClick={() => { setText("Change "); input.current?.focus(); }}>Change something</button>
                   <button className="btn sm" type="button" onClick={() => decide(e.action, false)}>Cancel</button>
                 </div>
-              ) : <p className="muted" style={{ marginTop: 10 }}>{e.note}</p>}
+              ) : <p className="muted" style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
             </div></div>
           );
         })}

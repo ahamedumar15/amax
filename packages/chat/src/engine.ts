@@ -91,24 +91,44 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
-/** "Add it": run the pending write as the user, source chat (AC-3). */
+// Takes the action out of the pending list under a row lock, so two confirms of the same card can't
+// both run it (review round 1, B7). Returns null when it was already taken.
+async function claim(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
+  return withTenant(db, viewer.tenantId, async (tx) => {
+    const [row] = await tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
+    if (!row) throw new Error("conversation not found");
+    const pending = row.pending as PendingAction[];
+    const action = pending.find((p) => p.id === actionId);
+    if (!action) return null;
+    await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== actionId))}::jsonb, updated_at = now() where id = ${conversationId}`);
+    return action;
+  });
+}
+
+async function note(db: Db, viewer: Viewer, conversationId: string, text: string) {
+  await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation
+    set messages = messages || ${JSON.stringify([{ role: "user", content: [{ type: "text", text }] }])}::jsonb, updated_at = now()
+    where id = ${conversationId} and user_id = ${viewer.userId}`));
+}
+
+/** "Add it": claim the pending write, then run it as the user, source chat (AC-3). */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
-  const convo = await load(db, viewer, conversationId);
-  const action = convo.pending.find((p) => p.id === actionId);
+  const action = await claim(db, viewer, conversationId, actionId);
   if (!action) throw new Error("that action is no longer pending");
-  const result = await registry.call(viewer, action.tool, action.input, { source: "chat" });
-  convo.pending = convo.pending.filter((p) => p.id !== actionId);
-  convo.messages.push({ role: "user", content: [{ type: "text", text: `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})` }] });
-  // Keep the transcript well-formed: the next model turn follows a user message.
-  await save(db, viewer, convo);
+  let result: unknown;
+  try {
+    result = await registry.call(viewer, action.tool, action.input, { source: "chat" });
+  } catch (e) {
+    // The write didn't happen: put the card back so the user can retry or cancel.
+    await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([action])}::jsonb where id = ${conversationId}`));
+    throw e;
+  }
+  await note(db, viewer, conversationId, `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
   return { action, result };
 }
 
 /** "Cancel": nothing is written. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
-  const convo = await load(db, viewer, conversationId);
-  const action = convo.pending.find((p) => p.id === actionId);
-  convo.pending = convo.pending.filter((p) => p.id !== actionId);
-  if (action) convo.messages.push({ role: "user", content: [{ type: "text", text: `(I cancelled "${action.title}".)` }] });
-  await save(db, viewer, convo);
+  const action = await claim(db, viewer, conversationId, actionId);
+  if (action) await note(db, viewer, conversationId, `(I cancelled "${action.title}".)`);
 }

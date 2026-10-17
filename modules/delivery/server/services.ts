@@ -68,7 +68,9 @@ export const createProposal = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:create", project.id as string);
-    // Next key in the project: CON-018 after CON-017.
+    // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
+    // creates, so two of them can't compute the same key (review round 1, B7).
+    await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [{ n }] = await tx.execute(sql`select coalesce(max(substring(key from '-(\\d+)$')::int), 0) + 1 as n from delivery.proposal where project_id = ${project.id}`);
     const key = `${project.key}-${String(n).padStart(3, "0")}`;
     const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, estimate_hours, owner_name)

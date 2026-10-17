@@ -101,3 +101,39 @@ describe.skipIf(!hasDb)("005 chat engine with delivery (Postgres, scripted model
     await expect(chatTurn(app, registry, liam, { conversationId: a.conversationId, text: "peek" })).rejects.toThrow(/not found/);
   });
 });
+
+describe.skipIf(!hasDb)("races (review round 1)", () => {
+  let t: Awaited<ReturnType<typeof migratedDatabase>>;
+  let app: Db;
+  let maya: Viewer;
+  const registry = createRegistry([delivery]);
+  beforeAll(async () => {
+    t = await migratedDatabase();
+    app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
+    setGrants([delivery]);
+    setViewerScopeResolvers([delivery.viewerScopes!]);
+    installAuthorizer();
+    await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, delivery], lumen);
+    await t.owner`insert into ai.settings (tenant_id, zdr_confirmed) values (${T}, true)`;
+    const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = 'maya@lumenlabs.test'`));
+    maya = applyViewAs((await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!, "PM");
+  });
+  afterAll(() => t?.drop());
+
+  it.each([2, 5])("%i concurrent confirms of one card run the write once", async (n) => {
+    configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c", name: "create_proposal", input: { projectKey: "CON", title: `Race ${n}` } }] }), () => ({ text: "ok" })]), db: app, model: "claude-haiku-5-5" });
+    const turn = await chatTurn(app, registry, maya, { text: `add Race ${n} to CON` });
+    const results = await Promise.allSettled(Array.from({ length: n }, () => confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id)));
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const rows = await withTenant(app, T, (tx) => tx.execute(sql`select key from delivery.proposal where title = ${`Race ${n}`}`));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("concurrent creates in one project get distinct keys", async () => {
+    const { createProposal } = await import("../server/services");
+    const { ctxFor } = await import("../server/context");
+    const out = await Promise.all(Array.from({ length: 6 }, (_, i) => createProposal(ctxFor(maya), { projectKey: "CON", title: `Parallel ${i}` })));
+    expect(new Set(out.map((o) => o.key)).size).toBe(6);
+  });
+});
