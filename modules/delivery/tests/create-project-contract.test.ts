@@ -67,8 +67,8 @@ describe.skipIf(!hasDb)("045 createProject contract (Postgres)", () => {
     ["contract: a taken key with a new sourceRef", () => make("CON", "presales.opportunity:OPP0050"), "CON"],
     ["contract: a sourceRef that made another key", () => make("SRZ", "presales.opportunity:OPP0042"), "SRA"],
     ["service (behind create_project): a taken key", () => createProjectService(ctxFor(admin), { key: "CON", name: "C", client: "x", billing: "fixed" }), "CON"],
-    ["MCP create_project: a taken key", mcpCreate("mcp"), "CON"],
-    ["chat create_project: a taken key", mcpCreate("chat"), "CON"],
+    ["registry create_project, source mcp: a taken key", mcpCreate("mcp"), "CON"],
+    ["registry create_project, source chat: a taken key", mcpCreate("chat"), "CON"],
   ])("AC-3 %s is a ProjectConflictError that names the clash", async (_name, run, existingKey) => {
     const e = await (run as () => Promise<unknown>)().catch((x: unknown) => x);
     expect(e).toBeInstanceOf(ProjectConflictError);

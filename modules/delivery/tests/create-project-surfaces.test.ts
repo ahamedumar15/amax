@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
@@ -20,7 +22,6 @@ const REDIRECT = "http://127.0.0.1:7777/cb";
 const TAKEN = { key: "CON", name: "Again", client: "x", billing: "fixed" };
 
 // 045 review round 3: what an MCP client and a chat user actually see when a project key is taken.
-// (No screen creates projects; MCP and chat are the user-facing paths.)
 describe.skipIf(!hasDb)("045 a taken project key, as each caller sees it (Postgres)", () => {
   let t: Awaited<ReturnType<typeof migratedDatabase>>;
   let app: Db;
@@ -49,6 +50,11 @@ describe.skipIf(!hasDb)("045 a taken project key, as each caller sees it (Postgr
     const code = new URL(redirect).searchParams.get("code")!;
     return (await exchangeToken(app, new URLSearchParams({ grant_type: "authorization_code", code, code_verifier: verifier, redirect_uri: REDIRECT, client_id: client.client_id }))).access_token;
   };
+
+  it("AC-3 no screen creates projects: MCP and chat are the only user-facing paths", () => {
+    const actions = readFileSync(join(__dirname, "..", "actions.ts"), "utf8");
+    expect(actions).not.toMatch(/createProject|create_project|insert into delivery\.project/);
+  });
 
   it("AC-3 an MCP client gets a tool error that says the key is taken", async () => {
     const req = new Request(`${BASE}/api/mcp`, {

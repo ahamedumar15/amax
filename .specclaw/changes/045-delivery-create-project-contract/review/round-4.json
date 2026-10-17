@@ -1,0 +1,105 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/server/project-create.ts",
+  "modules/delivery/tests/create-project-contract.test.ts",
+  "modules/delivery/tests/create-project-surfaces.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/create-project-surfaces.test.ts",
+   "fp": "7a106691a6ef",
+   "in_delta": true,
+   "line": 22,
+   "message": "This is only a partial class fix. The round-3 finding named three entry points: MCP, chat confirm and the server action in actions.ts. This round covers MCP and chat. The third one is handled by renaming the old row to 'service (behind create_project)' and adding a comment that says 'No screen creates projects'. No test backs that up and nothing removes an action. If modules/delivery/actions.ts (or any UI form) can create a project, its error mapping for ProjectConflictError is still untested. Fix: if the action exists, drive the taken-key case through it and assert the message the user sees. If it does not exist, remove the round-3 reference properly, for example with a test that the module has no create-project action, rather than relying on a comment.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "A server action calls createProjectService with key CON, which is taken \u2192 its catch maps the error to a generic 'Something went wrong' (or rethrows a 500) \u2192 no test notices, because no test drives the action.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/server/project-create.ts",
+   "fp": "c57cbf593efe",
+   "in_delta": true,
+   "line": 51,
+   "message": "This changes the unidentified-clash branch from a non-retryable ProjectConflictError to a plain Error that callers should treat as retryable. No test covers it. Nothing checks how MCP (internal error vs. tool error) or chat confirm ('retry' vs. 'failed') report this unknown outcome, so it could silently regress to reading as a conflict, or to looking like a success. Add a row that forces a unique violation when neither the key row nor the sourceRef row is visible (for example, a concurrent delete or a different unique index), and assert the retryable classification on each surface.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/tests/create-project-contract.test.ts",
+   "fp": "1352ec442506",
+   "in_delta": false,
+   "line": 71,
+   "message": "The row is still called 'chat create_project: a taken key', but it only calls registry.call with { source: 'chat' }. That is not the chat path: a chat create goes through chatTurn and then confirmAction, which the new surfaces test now covers. The name overstates what the row checks. Rename it, for example to 'registry.call source=chat', or remove it.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/tests/create-project-surfaces.test.ts",
+   "fp": "fce5bc063969",
+   "in_delta": true,
+   "line": 63,
+   "message": "configureAi installs a fake provider as process-wide state, and nothing resets it in afterAll. Any test that runs later in the same worker and relies on the default or another provider gets this two-step fake instead. Restore the previous AI configuration in afterAll.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "21f028d58922c2984f613adbfb92d878f1501c0b",
+ "impact": [
+  "apps/web/app/(app)/[module]/[[...path]]/page.tsx",
+  "apps/web/app/(app)/layout.tsx",
+  "apps/web/app/api/mcp/route.ts",
+  "apps/web/app/healthz/route.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/package.json",
+  "apps/web/scripts/gen-registry.mjs",
+  "apps/web/scripts/worker.mjs",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "apps/web/tests/nav.test.ts",
+  "apps/web/tests/routes.test.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/server/project-contract.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/mcp-registry.test.ts",
+  "modules/time/tests/installed.ts",
+  "modules/time/tests/mcp.test.ts",
+  "modules/time/tests/standard.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/mcp/tests/oauth-reuse.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 34949,
+ "round": 4,
+ "since": "1ca785059d",
+ "status": "open",
+ "system_chars": 20938,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792247129,
+ "ts_start": 1792247073
+}
