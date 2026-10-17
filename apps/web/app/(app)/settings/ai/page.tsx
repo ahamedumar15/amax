@@ -51,7 +51,7 @@ export default async function AiSettingsPage() {
             Agents use Claude through the Claude API{p.providerRegion ? ` in ${p.providerRegion}` : ""}{p.zdrRequired ? ", with no data retained by the provider" : ""}, and {p.allowedClasses.length ? `only ${p.allowedClasses.join(", ")} of the classified fields may be sent` : "classified fields such as pay and health are never sent"}. Changes happen in chat. Pin anything, then ask.
           </p>
         </div>
-        <div className="actions"><AskButton primary label="Ask amax to change the policy" prompt="Change the AI policy: " pin={POLICY} tool="set_ai_policy" /></div>
+        <div className="actions"><a className="btn sm pillbtn" href="/settings/ai/usage">AI usage</a><AskButton primary label="Ask amax to change the policy" prompt="Change the AI policy: " pin={POLICY} tool="set_ai_policy" /></div>
       </div>
       {blocked && <div className="viewbanner" role="alert">AI features are off: {blocked}.</div>}
       <div className="tickets four">

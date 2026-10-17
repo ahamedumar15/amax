@@ -6,10 +6,11 @@ import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { myChatUsage } from "../../lib/chat-usage";
 import { outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
-export type ChatResult = ({ ok: true } & ChatTurn) | { ok: false; error: string };
+export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
 
 const friendly = (e: unknown) =>
   e instanceof AiDisabledError ? e.message : e instanceof Error && /forbidden|scope/.test(e.message) ? e.message : "Sorry, something went wrong. Try again.";
@@ -20,7 +21,7 @@ export async function sendChat(input: { conversationId?: string; text: string; p
     if (!aiConfigured()) return { ok: false, error: "AI is off: no API key is configured on the server." };
     const intent = input.intentId ? chatIntents().find((i) => i.id === input.intentId) : undefined;
     const turn = await chatTurn(getDb()!, toolRegistry(), viewer, { conversationId: input.conversationId, text: input.text.slice(0, 4000), pins: input.pins?.slice(0, 8), intent });
-    return { ok: true, ...turn };
+    return { ok: true, ...turn, usage: await myChatUsage(viewer) };
   } catch (e) {
     const id = logError("chat", e);
     return { ok: false, error: `${friendly(e)} (ref ${id.slice(0, 8)})` };

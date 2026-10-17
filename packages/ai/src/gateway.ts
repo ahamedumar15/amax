@@ -31,8 +31,8 @@ export class AiOutputError extends Error {
   }
 }
 
-/** Who is asking, for the call log and permissions. */
-export type AiCaller = { tenantId: string; caller: string; source: Source; purpose: string };
+/** Who is asking, for the call log and permissions. `userId` and `conversationId` attribute the cost (048); jobs leave them out. */
+export type AiCaller = { tenantId: string; caller: string; source: Source; purpose: string; userId?: string; conversationId?: string };
 
 /** Material for the model. Records are redacted by class at every depth; text is quoted as untrusted data. */
 export type DataItem = { label: string; text: string } | { label: string; record: unknown; sensitive?: Partial<Record<string, Sensitivity>> };
@@ -62,8 +62,8 @@ async function log(caller: AiCaller, entry: LogEntry) {
   const priced = entry.providerModel ?? entry.model;
   // The error text can quote model output, so only its first line, capped, is kept.
   const error = entry.error ? entry.error.split("\n")[0].slice(0, 200) : null;
-  await withTenant(db, caller.tenantId, (tx) => tx.execute(sql`insert into ai.call (tenant_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
-    values (${caller.tenantId}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
+  await withTenant(db, caller.tenantId, (tx) => tx.execute(sql`insert into ai.call (tenant_id, user_id, conversation_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
+    values (${caller.tenantId}, ${caller.userId ?? null}, ${caller.conversationId ?? null}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
             ${costOf(priced, entry.usage)}, ${JSON.stringify(entry.redactions)}::jsonb, ${entry.injection}, ${textArray(entry.toolsRun ?? [])}, ${entry.ok}, ${error})`));
 }
 

@@ -16,7 +16,7 @@ export default defineConfig({
     { name: "visual", testMatch: /delivery-visual\.spec\.ts/ },
     { name: "amx", testMatch: /amx\.setup\.ts/, dependencies: ["visual"] },
     { name: "screens", testMatch: /(auth|delivery|ai|mcp|pins|secrets|workflows)\.spec\.ts/, dependencies: ["amx"] },
-    { name: "writes", testMatch: /(chat|releases|admin)\.spec\.ts/, dependencies: ["screens"] },
+    { name: "writes", testMatch: /(chat|releases|admin|ai-usage)\.spec\.ts/, dependencies: ["screens"] },
   ],
   workers: 1,
   forbidOnly: !!process.env.CI,
