@@ -2,12 +2,13 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
-import { configureRuntime, withIdempotency } from "@amax/core/server";
+import { configureRuntime, retryable, withIdempotency } from "@amax/core/server";
 import { applyViewAs, installAuthorizer, setGrants, setViewerScopeResolvers, viewerForUser, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
-import { createProject, createProjectInTx, getProjectRef, PROJECT_CREATE_PERMISSION } from "../contracts";
+import { createProject, getProjectRef, PROJECT_CREATE_PERMISSION, ProjectConflictError } from "../contracts";
+import { createProjectService } from "../server/project-create";
 import { ctxFor } from "../server/context";
 import { listEnvironments } from "../server/queries";
 
@@ -46,34 +47,41 @@ describe.skipIf(!hasDb)("045 createProject contract (Postgres)", () => {
     expect((await listEnvironments(admin, "PRA")).map((e) => e.name)).toEqual(["Dev", "QA", "UAT", "Prod"]);
   });
 
+  const make = (key: string, sourceRef?: string) => createProject(ctxFor(admin), { key, name: key, client: "x", billing: "fixed", sourceRef });
+  const settle = (ps: Promise<unknown>[]) => Promise.allSettled(ps).then((rs) => rs.map((r) => r.status === "fulfilled" ? "made" : (r.reason as Error).name));
+
   it("AC-2 a sourceRef makes one project, also when creates retry or race", async () => {
-    const source = "presales.opportunity:OPP0042";
-    const made = await createProject(ctxFor(admin), { key: "SRA", name: "A", client: "x", billing: "fixed", sourceRef: source });
-    await expect(createProject(ctxFor(admin), { key: "SRB", name: "B", client: "x", billing: "fixed", sourceRef: source }))
-      .resolves.toEqual({ id: made.id, key: "SRA", existing: true });
-    const race = await Promise.all(["SRC", "SRD"].map((key) => createProject(ctxFor(admin), { key, name: key, client: "x", billing: "fixed", sourceRef: "race:1" })));
+    const made = await make("SRA", "presales.opportunity:OPP0042");
+    await expect(make("SRA", "presales.opportunity:OPP0042")).resolves.toEqual({ id: made.id, key: "SRA", existing: true });
+    const race = await Promise.all([make("SRC", "presales.opportunity:OPP0043"), make("SRC", "presales.opportunity:OPP0043")]);
     expect(race[0].id).toBe(race[1].id);
     expect(race.filter((r) => r.existing)).toHaveLength(1);
-    expect(await bySource("race:1")).toHaveLength(1);
-    expect(await ref("SRB")).toBeNull();
+    expect(await bySource("presales.opportunity:OPP0043")).toHaveLength(1);
   });
 
-  it("AC-3 createProjectInTx commits or rolls back with the caller, audited, in the caller's tenant only", async () => {
-    const input = { key: "TXA", name: "Tx", client: "x", billing: "retainer" as const };
-    await expect(withTenant(app, T, async (tx) => { await createProjectInTx(tx, ctxFor(admin), input); throw new Error("caller failed"); })).rejects.toThrow("caller failed");
-    expect(await ref("TXA")).toBeNull();
-    const made = await withTenant(app, T, (tx) => createProjectInTx(tx, ctxFor(admin), input));
-    expect((await ref("TXA"))?.id).toBe(made.id);
-    const audit = await withTenant(app, T, (tx) => tx.execute(sql`select action from core.audit_event where resource_id = ${made.id}`));
-    expect(audit.map((a) => a.action)).toEqual(["delivery.project.create"]);
-    await expect(app.transaction((tx) => createProjectInTx(tx, ctxFor(admin), { ...input, key: "TXB" }))).rejects.toThrow(/withTenant/);
+  it.each([
+    ["a taken key", () => make("CON"), "CON"],
+    ["a taken key with a new sourceRef", () => make("CON", "presales.opportunity:OPP0050"), "CON"],
+    ["a sourceRef that made another key", () => make("SRZ", "presales.opportunity:OPP0042"), "SRA"],
+  ])("AC-3 %s is a ProjectConflictError a retry won't fix", async (_name, run, existingKey) => {
+    const e = await run().catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(ProjectConflictError);
+    expect(e).toMatchObject({ existingKey });
+    expect(retryable(e)).toBe(false);
+  });
+
+  it("AC-3 racing creates for one key: one project, the other a conflict; sourceRef is the contract's, in module.record:id form", async () => {
+    expect((await settle([make("RKY", "presales.opportunity:OPP0060"), make("RKY", "presales.opportunity:OPP0061")])).sort()).toEqual(["ProjectConflictError", "made"]);
+    expect(await ref("SRZ")).toBeNull();
+    await expect(make("BAD", "OPP0001")).rejects.toThrow(/module.record:id/);
+    await createProjectService(ctxFor(admin), { key: "MCP", name: "M", client: "x", billing: "fixed", sourceRef: "presales.opportunity:OPP0070" });
+    expect(await bySource("presales.opportunity:OPP0070")).toHaveLength(0);
   });
 
   it("AC-4 the published permission gates both entry points; bad input is refused", async () => {
     expect(delivery.permissions).toContain(PROJECT_CREATE_PERMISSION);
     const input = { key: "NOP", name: "No", client: "x", billing: "fixed" as const };
     await expect(createProject(ctxFor(engineer), input)).rejects.toThrow(/forbidden: delivery:project:create/);
-    await expect(withTenant(app, T, (tx) => createProjectInTx(tx, ctxFor(engineer), input))).rejects.toThrow(/forbidden/);
-    await expect(withTenant(app, T, (tx) => createProjectInTx(tx, ctxFor(admin), { ...input, key: "no" }))).rejects.toThrow(/invalid input/);
+    await expect(createProject(ctxFor(admin), { ...input, key: "no" })).rejects.toThrow(/invalid input/);
   });
 });

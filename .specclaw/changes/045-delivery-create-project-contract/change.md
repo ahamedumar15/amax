@@ -14,18 +14,20 @@ None. This changes a contract only and nothing on screen. Presales' Promote butt
 ## Acceptance Criteria
 
 1. **AC-1** `@amax/delivery/contracts` exports `createProject(ctx, { key, name, client, billing, managerName? })`, returning `{ id, key }`. It makes the same project, environments and audit as the service, so presales' current call works unchanged, including under `withIdempotency` (one counted write, and a replay comes back with the project's id and key).
-2. **AC-2** Optional `sourceRef` (e.g. `presales.opportunity:OPP0042`), stored on `delivery.project` and unique per tenant. A second create with the same `sourceRef` makes nothing new and returns the existing project with `existing: true`, also when two creates race.
-3. **AC-3** `createProjectInTx(tx, ctx, input)` creates the project in the caller's tenant transaction, with the same authorization, validation and audit, so the project commits or rolls back with the caller's writes. It refuses a transaction whose tenant isn't `ctx.tenantId`.
-4. **AC-4** The contract exports `PROJECT_CREATE_PERMISSION = "delivery:project:create"`, and contract tests cover every new export: shape, permission refusal, invalid input, sourceRef replay and race, and in-transaction rollback.
+2. **AC-2** The contract also takes an optional `sourceRef` (`module.record:id`, e.g. `presales.opportunity:OPP0042`), stored on `delivery.project` and unique per tenant. A second create with the same `sourceRef` and key makes nothing new and returns the existing project with `existing: true`, also when two creates race.
+3. **AC-3** A taken key, or a `sourceRef` that already made a project under another key, throws `ProjectConflictError` (not retryable, with `existingKey`), also when creates race. Only the contract accepts `sourceRef`: the MCP/UI service drops it.
+4. **AC-4** The contract exports `PROJECT_CREATE_PERMISSION` (`delivery:project:create`, the permission the service checks), and contract tests cover every new export: shape, idempotency replay, permission refusal, invalid input, sourceRef replay and race, and conflicts.
+
+Not in scope (review round 1): creating the project inside the caller's transaction. Doing it without a second copy of core's authorize→validate→write→audit pipeline needs core to run a service spec in an existing transaction, which is outside `modules/delivery`. Recorded in follow-ups.md.
 
 ## Tasks
 
 - [x] `T1` — Project source reference: migration and in-service replay by sourceRef (AC-2)
   Files: modules/delivery/db/migrations/0011_project_source_ref.sql, modules/delivery/server/project-create.ts, modules/delivery/server/services.ts
-- [x] `T2` — Publish createProject, createProjectInTx and PROJECT_CREATE_PERMISSION on the contract (AC-1, AC-3, AC-4)
+- [x] `T2` — Publish createProject, PROJECT_CREATE_PERMISSION and ProjectConflictError on the contract (AC-1, AC-3, AC-4)
   Files: modules/delivery/contracts.ts, modules/delivery/server/project-create.ts, modules/delivery/README.md
   Depends: T1
-- [x] `T3` — Contract tests: shape, idempotency key, permission, validation, sourceRef replay and race, in-transaction rollback and tenant guard (AC-1–AC-4)
+- [x] `T3` — Contract tests: shape, idempotency key, permission, validation, sourceRef replay and race, conflicts (AC-1–AC-4)
   Files: modules/delivery/tests/create-project-contract.test.ts
   Depends: T2
 
