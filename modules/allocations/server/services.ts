@@ -14,10 +14,14 @@ const nextMonth = (m: string) => { const d = new Date(`${m}T00:00:00Z`); d.setUT
 const monthsBetween = (from: string, to: string) => { const out = [from]; while (out[out.length - 1] < to) out.push(nextMonth(out[out.length - 1])); return out; };
 
 /** Allocating on a project needs the grant for that project (PMs: the projects they manage); other work needs an unscoped grant. */
+/** Fails closed: without a viewer only trusted system code (a job) may allocate. */
 const mayAllocate = (ctx: ServiceContext, projectId: string | null) => {
   const v = viewerOf(ctx);
-  return !v || can(v, "allocations:allocate", projectId ? { projectId } : {});
+  return v ? can(v, "allocations:allocate", projectId ? { projectId } : {}) : ctx.actor.kind === "system";
 };
+/** Longest range one allocate call may write. */
+export const MAX_MONTHS = 24;
+const span = (from: string, to: string) => (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7)) + 1;
 
 async function personOf(tx: Tx, ctx: ServiceContext, who: string) {
   const exact = await getPerson(tx, ctx, who);
@@ -33,7 +37,9 @@ export const allocate = defineService({
   action: "allocations:allocate",
   resource: "allocations.allocation",
   input: z.object({ person: z.string().min(2), projectKey: z.string().optional(), work: z.string().min(2).optional(), month, through: month.optional(), percent: z.number().int().min(0).max(200) })
-    .refine((i) => Boolean(i.projectKey) !== Boolean(i.work), "name a project key or other work, not both"),
+    .refine((i) => Boolean(i.projectKey) !== Boolean(i.work), "name a project key or other work, not both")
+    .refine((i) => !i.through || i.through >= i.month, { message: "through can't be before month", path: ["through"] })
+    .refine((i) => !i.through || span(i.month, i.through) <= MAX_MONTHS, { message: `at most ${MAX_MONTHS} months at a time`, path: ["through"] }),
   async run(tx, input, ctx) {
     const person = await personOf(tx, ctx, input.person);
     const project = input.projectKey ? await getProjectRef(tx, input.projectKey) : null;

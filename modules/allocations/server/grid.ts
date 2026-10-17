@@ -2,17 +2,20 @@ import type { Tx } from "@amax/db";
 import type { Viewer } from "@amax/auth";
 import { listProjectRefs } from "@amax/delivery/contracts";
 import { listEmploymentPeriods, listPeople } from "@amax/hr/contracts";
+import { contextFor } from "@amax/core/server";
 import { listAllocations } from "../contracts";
 import { fteIn, isForecast, windowMonths } from "./months";
 import { readAlloc } from "./read";
 
 export type GridLine = { projectId: string | null; label: string; manages: boolean; percents: (number | null)[] };
 export type GridPerson = { personId: string; employeeNo: string; name: string; initials: string; lines: GridLine[]; totals: number[]; capacity: number[] };
-export type Grid = { months: { month: string; forecast: boolean }[]; people: GridPerson[]; scope: "managed" | "projects" | "everyone" };
+/** `hidden`: people in this view the viewer's hr access doesn't reach; their rows are left out, and the screen says so. */
+export type Grid = { months: { month: string; forecast: boolean }[]; people: GridPerson[]; scope: "managed" | "projects" | "everyone"; hidden: number };
 
 /** Whose rows to show: people on the projects the viewer manages, else on any delivery project, else everyone. */
 async function peopleIn(tx: Tx, v: Viewer, months: string[], everyone: boolean) {
-  const all = await listAllocations(tx, { from: months[0], to: months[months.length - 1] });
+  // Whose rows belong in the view is decided on every allocation; gridIn then shows only the people the viewer may see.
+  const all = await listAllocations(tx, contextFor.job(v.tenantId, "allocations.grid"), { from: months[0], to: months[months.length - 1] });
   const managed = all.filter((a) => a.projectId && v.managedProjects.includes(a.projectId));
   const scope: Grid["scope"] = everyone ? "everyone" : managed.length ? "managed" : "projects";
   const pick = scope === "everyone" ? all : scope === "managed" ? managed : all.filter((a) => a.projectId);
@@ -24,7 +27,7 @@ export async function gridIn(tx: Tx, v: Viewer, months: string[], today: Date, e
   const { scope, ids, rows } = await peopleIn(tx, v, months, everyone);
   const [people, periods, projects] = await Promise.all([listPeople(tx, v, { ids }), listEmploymentPeriods(tx, v, ids), listProjectRefs(tx)]);
   return {
-    scope, months: months.map((month) => ({ month, forecast: isForecast(month, today) })),
+    scope, hidden: ids.length - people.length, months: months.map((month) => ({ month, forecast: isForecast(month, today) })),
     people: people.map((p): GridPerson => {
       const mine = rows.filter((a) => a.personId === p.id);
       const keys = [...new Set(mine.map((a) => a.projectId ?? `work:${a.work}`))];

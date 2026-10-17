@@ -1,7 +1,11 @@
 // The only import surface for other modules (docs/module-standard.md). Reads run in the caller's
-// tenant transaction. Months are the first day of the month, "2026-10-01".
+// tenant transaction and take an hr Reader: a viewer gets the allocations of the people their hr:read
+// reaches, a system job gets everyone's. Months are the first day of the month, "2026-10-01".
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
+import { listPeople, type Reader } from "@amax/hr/contracts";
+
+export type { Reader } from "@amax/hr/contracts";
 
 /** One person's share of a month on a delivery project (projectId) or on other work (work). Percent of a full-time month. */
 export type Allocation = { id: string; personId: string; projectId: string | null; work: string | null; month: string; percent: number };
@@ -22,15 +26,23 @@ const toAllocation = (r: Record<string, unknown>): Allocation => ({
 
 const ids = (col: string, list?: string[]) => (list ? (list.length ? sql`and ${sql.identifier(col)}::text in (${sql.join(list.map((i) => sql`${i}`), sql`, `)})` : sql`and false`) : sql``);
 
-/** Allocations between two months (inclusive), optionally for some people or projects. */
-export async function listAllocations(tx: Tx, opts: { from: string; to: string; personIds?: string[]; projectIds?: string[] }): Promise<Allocation[]> {
-  return (await tx.execute(sql`select * from allocations.allocation where month between ${monthOf(opts.from)}::date and ${monthOf(opts.to)}::date
-    ${ids("person_id", opts.personIds)} ${ids("project_id", opts.projectIds)} order by person_id, month, project_id nulls last, work`)).map(toAllocation);
+/** Keeps the rows of people the reader may see in hr. */
+async function visible<T extends { personId: string }>(tx: Tx, reader: Reader, rows: T[]): Promise<T[]> {
+  const ids = [...new Set(rows.map((r) => r.personId))];
+  if (!ids.length) return rows;
+  const seen = new Set((await listPeople(tx, reader, { ids })).map((p) => p.id));
+  return rows.filter((r) => seen.has(r.personId));
 }
 
-/** Each person's total percent per month: what over-allocation (above their FTE) is judged on. */
-export async function personMonthTotals(tx: Tx, opts: { from: string; to: string; personIds?: string[] }): Promise<{ personId: string; month: string; percent: number }[]> {
-  return (await tx.execute(sql`select person_id, month, sum(percent)::int as percent from allocations.allocation
+/** Allocations between two months (inclusive), optionally for some people or projects, of the people the reader may see. */
+export async function listAllocations(tx: Tx, reader: Reader, opts: { from: string; to: string; personIds?: string[]; projectIds?: string[] }): Promise<Allocation[]> {
+  return visible(tx, reader, (await tx.execute(sql`select * from allocations.allocation where month between ${monthOf(opts.from)}::date and ${monthOf(opts.to)}::date
+    ${ids("person_id", opts.personIds)} ${ids("project_id", opts.projectIds)} order by person_id, month, project_id nulls last, work`)).map(toAllocation));
+}
+
+/** Each person's total percent per month (people the reader may see): what over-allocation (above their FTE) is judged on. */
+export async function personMonthTotals(tx: Tx, reader: Reader, opts: { from: string; to: string; personIds?: string[] }): Promise<{ personId: string; month: string; percent: number }[]> {
+  return visible(tx, reader, (await tx.execute(sql`select person_id, month, sum(percent)::int as percent from allocations.allocation
     where month between ${monthOf(opts.from)}::date and ${monthOf(opts.to)}::date ${ids("person_id", opts.personIds)} group by person_id, month order by person_id, month`))
-    .map((r) => ({ personId: r.person_id as string, month: day(r.month), percent: Number(r.percent) }));
+    .map((r) => ({ personId: r.person_id as string, month: day(r.month), percent: Number(r.percent) })));
 }

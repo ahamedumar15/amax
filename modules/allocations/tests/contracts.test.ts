@@ -21,12 +21,13 @@ describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
 
   it("listAllocations and personMonthTotals: Ayesha is at 120% in December", async () => {
     await db.tx(async (tx) => {
-      const ayesha = (await getPerson(tx, contextFor.job(T, "allocations.test"), "LL-0291"))!;
-      const rows = await listAllocations(tx, { from: "2026-12-01", to: "2026-12-31", personIds: [ayesha.id] });
+      const sys = contextFor.job(T, "allocations.test");
+      const ayesha = (await getPerson(tx, sys, "LL-0291"))!;
+      const rows = await listAllocations(tx, sys, { from: "2026-12-01", to: "2026-12-31", personIds: [ayesha.id] });
       expect(rows.map((r) => r.percent).sort()).toEqual([50, 70]);
-      expect(await personMonthTotals(tx, { from: "2026-10-01", to: "2027-02-01", personIds: [ayesha.id] })).toEqual(
+      expect(await personMonthTotals(tx, sys, { from: "2026-10-01", to: "2027-02-01", personIds: [ayesha.id] })).toEqual(
         ["2026-10-01", "2026-11-01", "2026-12-01", "2027-01-01", "2027-02-01"].map((month, i) => ({ personId: ayesha.id, month, percent: i === 2 ? 120 : 100 })));
-      expect(await listAllocations(tx, { from: "2026-10-01", to: "2026-10-01", personIds: [] })).toEqual([]);
+      expect(await listAllocations(tx, sys, { from: "2026-10-01", to: "2026-10-01", personIds: [] })).toEqual([]);
     });
   });
 });

@@ -5,8 +5,9 @@ Plan people across projects by month, and see over-allocation and the bench ahea
 - **Owner:** `/modules/allocations/` in `.github/CODEOWNERS`
 - **Screens:** `/allocations` (capacity vs demand, bench by skill for the first forecast month, per-person monthly grid for the projects you manage), `/allocations/everyone`
 - **Depends on:** `hr` (people, FTE and dates via `listPeople`, `getPerson`, `listEmploymentPeriods`) and `delivery` (projects via `listProjectRefs`, `getProjectRef`). **Integrates with (optional):** `leave` (012). It isn't installed yet, so capacity doesn't subtract booked leave (`leaveAdjusted: false`, said on screen).
-- **Contracts** (`contracts.ts`, v1): `listAllocations`, `personMonthTotals`, `monthOf`, `EVENTS`, payload types
+- **Contracts** (`contracts.ts`, v2; v1 reads took no reader): `listAllocations(tx, reader, opts)`, `personMonthTotals(tx, reader, opts)` (an hr `Reader`: a viewer gets the people their hr:read reaches, a system job everyone), `monthOf`, `EVENTS`, payload types
 - **Events:** `allocations.allocation.set`, `allocations.month.copied`
+- **Data scope:** capacity, demand and bench are team aggregates and count every member; the grid shows only people the viewer's hr access reaches and says how many it hides. Allocating without a viewer is refused unless a system job does it; one call writes at most 24 months.
 - **Rules:** capacity = the team's FTE on the 15th of each month (hr employment periods); demand = allocated percent / 100 plus unstaffed forecast demand; bench = members employed that month with nothing allocated; a person is over-allocated when their total is above their FTE. Months after the current quarter are a forecast.
 - **MCP tools** (`mcp.ts`): read `get_capacity_forecast`, `list_allocations`; write `allocate`, `copy_allocations_to_next_month`
 - **Chat intents** (`chat.ts`): Allocate (`allocations.allocate`)
