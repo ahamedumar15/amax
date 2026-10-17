@@ -20,3 +20,7 @@ None. Fixes only.
 ## Tasks
 
 ## Verify
+
+- Rounds (cap 5, final included): 1 exit 1 (4/12/6 b/M/m), 2 exit 1 (1/8/4), 3 exit 1 (0/3/3), 4 exit 1 (0/4/1), 5 `--final` exit 4 (escalate, 2/9/9). Records in `review/`.
+- Every round 1 to 4 blocker and major was fixed by class with a table-driven variant test. Round 5's are open after the cap and listed, with proposed redesigns, in `follow-ups.md`.
+- Typecheck and lint, unit tests (`turbo run test --concurrency=1`), the guest e2e (1) and the signed-in e2e (57) pass at the last fix commit.
