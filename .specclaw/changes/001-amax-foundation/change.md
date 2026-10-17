@@ -61,7 +61,7 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 - [x] `T7` — Deploy anywhere: Vercel config, OpenNext Cloudflare build (`wrangler.jsonc`), Dockerfile (standalone, serves `/healthz`), Helm chart `deploy/helm/amax`, and a CI workflow building all three plus lint, test, boundaries, module standard and a k3d smoke install (AC-6, AC-1)
   Files: apps/web/vercel.json, apps/web/wrangler.jsonc, apps/web/open-next.config.ts, Dockerfile, deploy/helm/amax/**, .github/workflows/ci.yml
   Depends: T5, T6
-- [ ] `T8` — Visual and accessibility checks: Playwright visual diff of the shell against the mock at 1440 and 390 px (≤2%), no horizontal scroll, keyboard and axe checks (AC-5)
+- [x] `T8` — Visual and accessibility checks: Playwright visual diff of the shell against the mock at 1440 and 390 px (≤2%), no horizontal scroll, keyboard and axe checks (AC-5)
   Files: apps/web/tests/e2e/shell.spec.ts, apps/web/playwright.config.ts, apps/web/tests/e2e/__screenshots__/**
   Depends: T3, T7
 

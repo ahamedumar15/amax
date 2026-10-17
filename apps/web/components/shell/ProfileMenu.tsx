@@ -19,7 +19,7 @@ export function ProfileMenu() {
   const choose = (t: ThemeChoice) => (applyTheme(t), setTheme(t));
   return (
     <div className="mewrap">
-      <button ref={button} className="me" type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button ref={button} className="me" type="button" aria-label="Guest, profile and theme" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="av" aria-hidden="true">G</span>
         <div>Guest<small>Sign-in arrives with change 002</small></div>
       </button>

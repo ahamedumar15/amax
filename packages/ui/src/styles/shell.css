@@ -2,7 +2,7 @@
 .rail{display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:28px 0 24px;position:sticky;top:0;align-self:start;height:calc(100dvh - 48px);overflow-y:auto;scrollbar-width:none;width:96px;z-index:20;transition:width .18s ease,box-shadow .18s ease}
 .rail::-webkit-scrollbar{display:none}
 .rail:hover,.rail:focus-within{width:252px;background:var(--card);box-shadow:16px 0 40px -24px rgba(40,30,110,.45);border-radius:0 var(--r-frame) var(--r-frame) 0}
-.rail .logo{width:44px;height:44px;margin:0 0 16px 26px;flex:none;stroke:none}
+.rail .logo{margin:0 0 16px 26px;flex:none}
 .rail a{position:relative;margin:0 20px;height:44px;display:flex;align-items:center;gap:14px;padding:0 17px;border-radius:16px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-decoration:none;font-size:14px;font-weight:600;flex:none;transition:background .18s,color .18s}
 .rail a:hover{background:var(--sunken);color:var(--ink)}
 .rail a[aria-current="page"]{background:var(--violet-soft);color:var(--violet)}

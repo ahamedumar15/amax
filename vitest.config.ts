@@ -1,9 +1,10 @@
 import { resolve } from "node:path";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 const platform = "core|db|auth|ui|mcp|chat|agents|testing";
 
 export default defineConfig({
+  test: { exclude: [...configDefaults.exclude, "**/tests/e2e/**"] },
   resolve: {
     alias: [
       { find: new RegExp(`^@amax/(${platform})$`), replacement: resolve(__dirname, "packages/$1/src/index.ts") },

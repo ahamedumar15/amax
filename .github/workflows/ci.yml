@@ -22,6 +22,8 @@ jobs:
       - run: pnpm test
       - run: node scripts/check-module-standard.mjs
       - run: pnpm build
+      - run: pnpm --filter @amax/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @amax/web e2e
 
   vercel:
     runs-on: ubuntu-latest
