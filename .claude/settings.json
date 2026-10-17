@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty'); case \"$f\" in */modules/*|*/packages/*) node \"$CLAUDE_PROJECT_DIR/scripts/check-graph.mjs\" --file \"$f\" ;; esac",
+            "timeout": 20,
+            "statusMessage": "Checking module boundaries"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/check-graph.mjs\"",
+            "timeout": 60,
+            "statusMessage": "Checking module and proposal graph before commit"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git push*)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/check-graph.mjs\"",
+            "timeout": 60,
+            "statusMessage": "Checking module and proposal graph before push"
+          }
+        ]
+      }
+    ]
+  }
+}

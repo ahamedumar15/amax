@@ -33,7 +33,7 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 
 1. **AC-1** pnpm workspaces and Turborepo hold `apps/web` (Next.js 16, App Router, standalone output), `packages/{core,db,auth,ui,mcp,chat,agents,testing}` and `modules/*`. `pnpm build`, `pnpm lint` and `pnpm test` pass at the root.
 2. **AC-2** A module is a package with a `module.ts` manifest (id, nav entries, routes, permissions; the MCP tools, chat intents, jobs and fixtures slots can be empty for now). `apps/web` discovers modules at build time by scanning `modules/*/module.ts` (generated registry, git-ignored) and mounts them through a catch-all route, so a module change never edits a shared file. A sample `modules/hello` proves it: creating the folder is enough for it to appear in the rail and at `/hello`, and deleting the folder removes it cleanly.
-3. **AC-3** An import-boundary rule fails CI when a module imports anything from another module except its `contracts.ts`. A test fixture with a forbidden import fails the check.
+3. **AC-3** `scripts/check-graph.mjs` (no dependencies) fails CI when a module imports anything from another module except its `contracts.ts`, reaches outside its folder, or imports a module it doesn't declare; when a platform package imports a module; or when modules or proposals form a cycle. Test fixtures with each forbidden pattern fail the check. The same script runs in Claude Code hooks on every edit and before every commit and push.
 4. **AC-4** `@amax/ui` holds the design tokens as CSS variables (light and dark, contrast at least WCAG AA) and the components the mock uses: rail, top bar, cards, ticket stat cards, tables (stacked cards under 600 px), chips, segmented control, empty state, toast and live region. No component hard-codes a colour.
 5. **AC-5** The shell matches the mock at 1440 px and 390 px within a 2% visual diff, with no horizontal scroll. It is keyboard-complete: skip link, `main` landmark, focus moved to the heading and announced on navigation, and reduced motion respected.
 6. **AC-6** CI builds three targets on every pull request: Vercel (`vercel build`), Cloudflare (OpenNext `wrangler.jsonc` build) and a Docker image that starts and serves `/healthz`. `deploy/helm/amax` installs on k3s (checked with `helm template` and a kind or k3d smoke test).
@@ -52,8 +52,8 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 - [ ] `T4` — Module manifest type and build-time discovery: scan `modules/*/module.ts`, generate the git-ignored registry, mount through `app/(app)/[module]/[[...path]]`, nav from manifests; sample `modules/hello` (AC-2)
   Files: packages/core/src/module.ts, apps/web/scripts/gen-registry.mjs, apps/web/app/(app)/[module]/[[...path]]/page.tsx, modules/hello/**, apps/web/tests/registry.test.ts
   Depends: T3
-- [ ] `T5` — Import boundaries: ESLint rule allowing modules only `@amax/*` platform packages and other modules' `contracts.ts`, with a failing fixture test (AC-3)
-  Files: eslint.config.mjs, packages/testing/boundaries/**, packages/testing/tests/boundaries.test.ts
+- [ ] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
+  Files: scripts/check-graph.mjs, packages/testing/boundaries/**, packages/testing/tests/boundaries.test.ts, package.json
   Depends: T4
 - [ ] `T6` — Config and ownership: zod-validated environment at boot with a clear error and `/healthz`; CODEOWNERS; `scripts/check-module-standard.mjs` run in CI (AC-7)
   Files: packages/core/src/env.ts, apps/web/app/healthz/route.ts, .github/CODEOWNERS, scripts/check-module-standard.mjs

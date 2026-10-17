@@ -2,6 +2,8 @@
 
 Every module change (lanes other than Platform) must meet this before it is verified. CI checks the parts marked ✓auto.
 
+**Checked as you work.** `scripts/check-graph.mjs` (no dependencies) enforces the boundary and graph rules. Project hooks in `.claude/settings.json` run it on every Claude Code edit under `modules/` or `packages/`, and in full before every `git commit` and `git push`; a violation blocks the action and says which rule broke. Run it yourself with `npm run check:graph`, and see the module and proposal graphs with `npm run graph`.
+
 ## Ownership and boundaries
 
 - ✓auto **The change touches only `modules/<name>/`**, plus one `CODEOWNERS` line. Modules are discovered by scanning `modules/*/module.ts`, so no shared registry file is edited.

@@ -7,7 +7,9 @@
     "copy-mock": "node scripts/copy-mock.mjs",
     "dev": "npm run copy-mock && next dev",
     "build": "npm run copy-mock && next build",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "check:graph": "node scripts/check-graph.mjs",
+    "graph": "node scripts/check-graph.mjs --graph"
   },
   "dependencies": {
     "next": "16.4.2",

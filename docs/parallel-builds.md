@@ -34,6 +34,8 @@ When one machine runs out of ready work in its lanes, run `next` with no `--lane
 
 ## Rules for both machines
 
+- The project's Claude Code hooks (`.claude/settings.json`) are in the repo, so both machines run the same boundary and graph checks on every edit, commit and push.
+
 - Follow `docs/module-standard.md`: touch only your module's folder. The mock is read-only during builds.
 - Platform packages (`packages/*`, `apps/web`) are changed only by Platform-lane changes. If a module needs something from a platform package, raise it in a Platform change; don't edit the package from the module.
 - Each module change publishes its `contracts.ts` (with stubs) in its first task and pushes it early, so the other machine can build against it.
