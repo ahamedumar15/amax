@@ -29,12 +29,13 @@ export default defineModule({
   search: search as never,
   retention: [
     // Sales records are kept seven years after the deal closes (or two idle years), then names are anonymised.
-    { table: "presales.opportunity", label: "Opportunity owners and leads", subject: ["owner_user_id", "removed_by"], fields: ["owner_name", "owner_user_id", "lead_name", "removed_by"], class: "personal", period: "P7Y", start: { at: ["closed_at", "removed_at"], idle: "P2Y" }, action: "anonymise" },
+    // Rows that record a person only by name are found by it (subjectName), so requests and holds reach them.
+    { table: "presales.opportunity", label: "Opportunity owners and leads", subject: ["owner_user_id", "removed_by"], subjectName: ["owner_name"], fields: ["owner_name", "owner_user_id", "lead_name", "removed_by"], class: "personal", period: "P7Y", start: { at: ["closed_at", "removed_at"], idle: "P2Y" }, action: "anonymise" },
     { table: "presales.stage_change", label: "Stage changes", subject: ["by_actor"], fields: ["by_name", "by_actor"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
-    { table: "presales.activity", label: "Sales activities", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "presales.task", label: "Sales tasks", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "presales.risk", label: "Deal risks", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "presales.suggestion", label: "Agent suggestions", fields: ["owner_name", "decided_by", "summary"], class: "personal", period: "P1Y", start: { at: ["decided_at", "found_at"] }, action: "anonymise" },
+    { table: "presales.activity", subjectName: ["owner_name"], label: "Sales activities", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    { table: "presales.task", subjectName: ["owner_name"], label: "Sales tasks", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    { table: "presales.risk", subjectName: ["owner_name"], label: "Deal risks", fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    { table: "presales.suggestion", subject: ["decided_by"], subjectName: ["owner_name"], label: "Agent suggestions", fields: ["owner_name", "decided_by", "summary"], class: "personal", period: "P1Y", start: { at: ["decided_at", "found_at"] }, action: "anonymise" },
   ],
   chatIntents,
   jobs,

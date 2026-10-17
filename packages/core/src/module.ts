@@ -92,6 +92,9 @@ export type RetentionEntry = {
   /** Columns naming the person or matter a row is about (a user id, an hr.person id, "user:<id>", a
    * project id). Legal holds and access and erasure requests find rows through them. */
   subject?: string[];
+  /** Free-text columns holding the person's name where no id column names them (an owner_name on a
+   * sales task). Requests and holds match them case-insensitively against the person's name. */
+  subjectName?: string[];
   /** The row's legal entity column, so each entity's statutory minimum applies to its own rows. */
   entity?: string;
 };

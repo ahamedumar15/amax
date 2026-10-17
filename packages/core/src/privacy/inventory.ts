@@ -2,22 +2,30 @@ import { sql } from "drizzle-orm";
 import { textArray, type Tx } from "@amax/db";
 import { countRule } from "./apply";
 import { privacyRules, type Rule } from "./catalog";
-import { about } from "./match";
+import { about, searchable as findable, type Match } from "./match";
 import { statutoryFor } from "./periods";
-import { resolveSubject, type Subject } from "./subjects";
+import { PrivacyError, resolveSubject, type Subject } from "./subjects";
 
-export type Item = { source: string; label: string; class: string; n: number; action: Rule["action"] | "erase"; rule?: string; kept?: string };
+export type Item = { source: string; label: string; class: string; n: number; action: Rule["action"] | "erase"; rule?: string; kept?: string; unchecked?: string };
 
 export const V1_KEPT = "kept: pre-2026-10-17 audit format. Its hash covers the raw values, so erasing them would break the audit chain";
 const AI_KEPT = "kept: append-only AI usage ledger. It holds no content, only an id that no longer names anyone once the rest is erased";
 const ACCOUNT_KEPT = "kept: the sign-in account. Remove it in your identity provider; SCIM deactivates it here";
 
-const searchable = (r: Rule) => !!r.subject?.length && r.module !== "privacy";
+const searchable = (r: Rule) => findable(r) && r.module !== "privacy";
 
-async function ruleItems(tx: Tx, s: Subject): Promise<Item[]> {
+export const matchOf = (s: Pick<Subject, "ids" | "label">, names: string[] = []): Match => ({ ids: s.ids, names: [...new Set([s.label, ...names])] });
+
+async function ruleItems(tx: Tx, s: Subject, names: string[]): Promise<Item[]> {
   const out: Item[] = [];
   for (const rule of privacyRules().filter(searchable)) {
-    const n = await tx.transaction((sp) => countRule(sp, rule, about(rule, s.ids))).catch(() => 0);
+    // A rule that can't be counted is "could not check", never 0 (review 058 B3): dropping it would
+    // let a request complete as erased while that table still holds the person's data.
+    const n = await tx.transaction((sp) => countRule(sp, rule, about(rule, matchOf(s, names)))).catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
+    if (n instanceof Error) {
+      out.push({ source: rule.table, rule: rule.id, label: rule.label ?? rule.table, class: rule.class, n: 0, action: rule.action, unchecked: `could not check: ${n.message.split("\n")[0].slice(0, 200)}` });
+      continue;
+    }
     if (!n) continue;
     const law = statutoryFor(rule, s.country);
     const kept = law ? `kept: statutory minimum, ${law.period.slice(1).toLowerCase()} (${law.reason})` : undefined;
@@ -42,11 +50,18 @@ async function coreItems(tx: Tx, s: Subject): Promise<Item[]> {
   return items.filter((i) => i.n > 0);
 }
 
-export async function inventory(tx: Tx, s: Subject): Promise<Item[]> {
-  return [...(await ruleItems(tx, s)), ...(await coreItems(tx, s))];
+export async function inventory(tx: Tx, s: Subject, names: string[] = []): Promise<Item[]> {
+  return [...(await ruleItems(tx, s, names)), ...(await coreItems(tx, s))];
+}
+
+/** Refuses to act on an inventory with a rule it could not count (review 058 B3). */
+export function assertChecked(items: Item[], doing: string) {
+  const bad = items.filter((i) => i.unchecked);
+  if (bad.length) throw new PrivacyError(`can't ${doing}: amax could not check ${bad.map((i) => i.label).join(", ")}. Fix ${bad.length === 1 ? "that rule" : "those rules"} first, so nothing is left behind`);
 }
 
 export const summarise = (items: Item[]) => ({
+  unchecked: items.filter((i) => i.unchecked).length,
   kept: items.filter((i) => i.kept).reduce((n, i) => n + i.n, 0),
   toErase: items.filter((i) => !i.kept).reduce((n, i) => n + i.n, 0),
   total: items.reduce((n, i) => n + i.n, 0),

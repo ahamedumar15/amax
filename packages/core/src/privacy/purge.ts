@@ -5,7 +5,7 @@ import { logError } from "../log";
 import { defineService } from "../service";
 import { applyRule, countRule } from "./apply";
 import { privacyRules, type Rule } from "./catalog";
-import { heldIds } from "./holds";
+import { held as heldNow } from "./holds";
 import { due, notHeld, paused } from "./match";
 import { loadPeriods } from "./periods";
 
@@ -15,7 +15,7 @@ export type PurgeOutcome = { counts: PurgeCount[]; paused: string[]; failed: str
 const labelOf = (r: Rule) => r.label ?? r.table;
 
 async function visit(tx: Tx, act: (sp: Tx, rule: Rule, where: ReturnType<typeof due>) => Promise<number>): Promise<PurgeOutcome> {
-  const [p, held] = await Promise.all([loadPeriods(tx), heldIds(tx)]);
+  const [p, held] = await Promise.all([loadPeriods(tx), heldNow(tx)]);
   const out: PurgeOutcome = { counts: [], paused: [], failed: [] };
   for (const rule of privacyRules()) {
     if (paused(rule, held)) {

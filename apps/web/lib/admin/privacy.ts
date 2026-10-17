@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { accessPackage, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, setRetentionPeriod } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
+import { ToolError } from "@amax/mcp";
 import { ctxFor, notFound, read, tool, write } from "./tool";
 
 const entity = z.string().min(1).max(200).describe("A legal entity's id or name; default the first");
@@ -9,6 +10,12 @@ const person = z.string().min(1).max(200).describe("The person's email, full nam
 const reason = z.string().min(3).max(500);
 
 const ctx = (v: Viewer) => ctxFor(v, "chat");
+
+// Privacy requests open and complete only on chat's confirm card, with a person at the keyboard: never
+// over MCP or the REST API, where a credential or agent could act with no confirm (review 058 B10).
+function chatOnly(source: string) {
+  if (source !== "chat") throw new ToolError("privacy requests are opened and completed only on amax chat's confirm card", "invalid_input");
+}
 const look = <T>(v: Viewer, fn: Parameters<typeof readPrivacy<T>>[1]) => readPrivacy(ctx(v), fn);
 
 async function entityId(v: Viewer, ref: string | undefined) {
@@ -47,9 +54,9 @@ export const privacyTools = [
   tool({ scope: "sensitive", permission: PRIVACY_MANAGE, readOnly: true, name: "get_access_package", description: "The data package of a completed access request, to send to the person.", input: z.object({ id }),
     run: async (v, a) => (await look(v, (tx) => accessPackage(tx, a.id))) ?? Promise.reject(notFound(`access package ${a.id}`)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "open_privacy_request", description: "Open an access or erasure request for a person. amax lists their records in every module; a second Admin or HR person completes it.",
-    input: z.object({ kind: z.enum(["access", "erasure"]), person }), run: (v, a, s) => openPrivacyRequest(ctxFor(v, s), a) }),
+    input: z.object({ kind: z.enum(["access", "erasure"]), person }), run: async (v, a, s) => (chatOnly(s), openPrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "complete_privacy_request", destructive: true, description: "Approve and complete an access or erasure request opened by someone else: export the data package, or erase and anonymise. Records the law still requires are kept.",
-    input: z.object({ id }), run: (v, a, s) => completePrivacyRequest(ctxFor(v, s), a) }),
+    input: z.object({ id }), run: async (v, a, s) => (chatOnly(s), completePrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "place_legal_hold", description: "Pause the purge and erasure for a person, or for a matter given the ids of its records.",
     input: z.discriminatedUnion("kind", [z.object({ kind: z.literal("person"), person, reason }), z.object({ kind: z.literal("matter"), matter: z.string().min(1).max(200), ids: z.array(z.string().min(1).max(200)).min(1).max(20), reason })]),
     run: (v, a, s) => placeLegalHold(ctxFor(v, s), a) }),

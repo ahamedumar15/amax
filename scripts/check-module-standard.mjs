@@ -12,24 +12,101 @@ const REQUIRED = ["module.ts", "README.md", "contracts.ts", "fixtures", "tests",
 const PERSONAL = /^(initials|[a-z_]*_name|[a-z_]*email[a-z_]*|phone[a-z_]*|[a-z_]+_by|by_actor|[a-z_]*user_id|[a-z_]*person_id|note|[a-z_]+_note|comment|[a-z_]+_comment|base_salary|epf_number|bank_[a-z_]+|acts_for)$/;
 const PSEUDONYMOUS = /(^|_)(user|person)_id$/;
 
-function personalTables(name) {
-  const dir = join(modulesDir, name, "db/migrations");
-  if (!existsSync(dir)) return [];
-  const found = new Set();
-  const note = (table, column) => PERSONAL.test(column) && !PSEUDONYMOUS.test(column) && found.add(table);
-  for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql"))) {
-    const src = readFileSync(join(dir, f), "utf8");
-    for (const t of src.matchAll(/create table ([a-z_]+\.[a-z_]+) \(([\s\S]*?)\n\);/g)) for (const c of t[2].matchAll(/^\s+([a-z_]+) /gm)) note(t[1], c[1]);
-    for (const a of src.matchAll(/alter table ([a-z_]+\.[a-z_]+)([^;]*);/g)) for (const c of a[2].matchAll(/add column (?:if not exists )?([a-z_]+)/g)) note(a[1], c[1]);
+// Review 058 B3: the scan reads SQL the way Postgres does (any case, `if not exists`, one-line
+// tables, `alter table … add` without `column`) and reports a statement it can't read instead of
+// passing it silently.
+const stripSql = (src) => src.replace(/\$([a-z_]*)\$[\s\S]*?\$\1\$/gi, "''").replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+const ident = String.raw`"?([a-z_][a-z0-9_]*)"?`;
+const qualified = String.raw`${ident}\s*\.\s*${ident}`;
+const CONSTRAINT = /^(constraint|primary|unique|check|foreign|exclude|like)\b/i;
+
+function topLevel(body) {
+  const parts = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of body) {
+    if (ch === "(") depth++;
+    if (ch === ")") depth--;
+    if (ch === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else cur += ch;
   }
-  return [...found];
+  return [...parts, cur].map((x) => x.trim()).filter(Boolean);
+}
+
+export function scanSql(src) {
+  const columns = [];
+  const unreadable = [];
+  for (const raw of stripSql(src).split(";")) {
+    const stmt = raw.trim();
+    if (!stmt) continue;
+    // A temporary table lives for one session and holds nothing to retain.
+    if (/^create\s+(?:(?:global|local)\s+)?temp(?:orary)?\s+table\b/i.test(stmt)) continue;
+    if (/^create\s+(?:unlogged\s+)?table\b/i.test(stmt)) {
+      const m = stmt.match(new RegExp(String.raw`^create\s+(?:unlogged\s+)?table\s+(?:if\s+not\s+exists\s+)?${qualified}\s*\(([\s\S]*)\)[^()]*$`, "i"));
+      if (!m) {
+        unreadable.push(stmt.split("\n")[0].slice(0, 80));
+        continue;
+      }
+      const table = `${m[1]}.${m[2]}`.toLowerCase();
+      for (const part of topLevel(m[3])) if (!CONSTRAINT.test(part)) columns.push([table, part.match(/^"?([a-z_][a-z0-9_]*)"?/i)?.[1]?.toLowerCase()]);
+      continue;
+    }
+    const alter = stmt.match(new RegExp(String.raw`^alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${qualified}\s+([\s\S]*)$`, "i"));
+    if (alter) {
+      const table = `${alter[1]}.${alter[2]}`.toLowerCase();
+      for (const action of topLevel(alter[3])) {
+        const add = action.match(/^add\s+(?:column\s+)?(?:if\s+not\s+exists\s+)?"?([a-z_][a-z0-9_]*)"?/i);
+        if (add && !CONSTRAINT.test(add[1])) columns.push([table, add[1].toLowerCase()]);
+      }
+    }
+  }
+  return { columns: columns.filter(([, c]) => c), unreadable };
+}
+
+function scanModule(name) {
+  const dir = join(modulesDir, name, "db/migrations");
+  if (!existsSync(dir)) return { tables: [], problems: [] };
+  const found = new Set();
+  const problems = [];
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql"))) {
+    const { columns, unreadable } = scanSql(readFileSync(join(dir, f), "utf8"));
+    for (const [table, column] of columns) if (PERSONAL.test(column) && !PSEUDONYMOUS.test(column)) found.add(table);
+    for (const u of unreadable) problems.push(`modules/${name}: can't read "${u}" in ${f}; the retention check needs every create table (032)`);
+  }
+  return { tables: [...found], problems };
+}
+
+// The manifest's retention entries, read from code with comments removed, so a mention in a comment
+// is not an entry. Each entry must name the columns requests and holds find the person by.
+const stripTs = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+
+export function retentionEntries(manifest) {
+  const code = stripTs(manifest);
+  const hits = [...code.matchAll(/\btable:\s*"([^"]+)"/g)];
+  return hits.map((h, i) => {
+    const body = code.slice(h.index, hits[i + 1]?.index ?? code.length);
+    return { table: h[1], findable: /\bsubject(Name)?:\s*\[\s*"/.test(body) };
+  });
 }
 
 function unretained(name) {
   const manifest = existsSync(join(modulesDir, name, "module.ts")) ? readFileSync(join(modulesDir, name, "module.ts"), "utf8") : "";
-  return personalTables(name).filter((t) => !manifest.includes(`table: "${t}"`)).map((t) => `modules/${name}: personal-data table ${t} has no retention entry (032)`);
+  const entries = retentionEntries(manifest);
+  const { tables, problems } = scanModule(name);
+  return [
+    ...problems,
+    ...tables.filter((t) => !entries.some((e) => e.table === t)).map((t) => `modules/${name}: personal-data table ${t} has no retention entry (032)`),
+    ...[...new Set(entries.filter((e) => !e.findable).map((e) => e.table))].map((t) => `modules/${name}: retention entry for ${t} names no subject or subjectName column, so access and erasure requests can't find its rows (032)`),
+  ];
 }
 
+if (import.meta.url !== `file://${process.argv[1]}`) {
+  // Imported for its parsers (tests); only the CLI checks the tree.
+} else main();
+
+function main() {
 const names = existsSync(modulesDir) ? readdirSync(modulesDir).filter((d) => statSync(join(modulesDir, d)).isDirectory()) : [];
 const problems = names.flatMap((name) => [
   ...REQUIRED.filter((f) => !existsSync(join(modulesDir, name, f))).map((f) => `modules/${name}: missing ${f}`),
@@ -42,3 +119,4 @@ if (problems.length) {
   process.exit(2);
 }
 console.log(`module standard: ok (${names.length} modules)`);
+}

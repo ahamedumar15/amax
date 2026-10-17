@@ -2,7 +2,7 @@ import { z } from "zod";
 import { withTenant, type Db } from "@amax/db";
 import { defineService } from "@amax/core/server";
 import type { McpToolDef } from "@amax/core";
-import { createApiToken, setGrants, upsertPasswordUser, viewerForUser, type Viewer } from "@amax/auth";
+import { contextForViewer, createApiToken, setGrants, upsertPasswordUser, viewerForUser, type Viewer } from "@amax/auth";
 import { createRegistry } from "@amax/mcp";
 
 const addNote = defineService({
@@ -15,7 +15,7 @@ const addNote = defineService({
 
 const tools = [
   { name: "add_note", description: "Add a note.", input: z.object({ text: z.string().min(1) }).strict(), permission: "demo:note:add", scope: "write",
-    run: (v: Viewer, a: { text: string }, source: "api") => addNote({ tenantId: v.tenantId, actor: { id: `user:${v.userId}`, kind: "user" }, source, viewer: v }, a) },
+    run: (v: Viewer, a: { text: string }, source: "api") => addNote(contextForViewer(v, source), a) },
 ] as unknown as McpToolDef[];
 
 export const demoRegistry = () => createRegistry([{ id: "demo", mcpTools: tools }]);

@@ -2,14 +2,15 @@ import { sql } from "drizzle-orm";
 import { textArray, type Tx } from "@amax/db";
 import { privacyRules } from "./catalog";
 import type { Item } from "./inventory";
-import { about, tableOf } from "./match";
+import { about, tableOf, type Match } from "./match";
 
-export async function buildPackage(tx: Tx, label: string, ids: string[], items: Item[]) {
+export async function buildPackage(tx: Tx, label: string, who: Match, items: Item[]) {
+  const ids = who.ids;
   const sections = [];
   for (const item of items.filter((i) => i.rule)) {
     const rule = privacyRules().find((r) => r.id === item.rule)!;
     const cols = [...new Set([...rule.fields, ...rule.start.at])].map((c) => sql.identifier(c));
-    const rows = await tx.execute(sql`select ${sql.join(cols, sql`, `)} from ${tableOf(rule)} where ${about(rule, ids)} limit 5000`);
+    const rows = await tx.execute(sql`select ${sql.join(cols, sql`, `)} from ${tableOf(rule)} where ${about(rule, who)} limit 5000`);
     sections.push({ label: item.label, table: rule.table, rows });
   }
   const list = textArray(ids);

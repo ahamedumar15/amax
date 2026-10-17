@@ -1,10 +1,15 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { gate, isPublicPath } from "@amax/auth/gate";
 import { sessionStamp } from "@amax/auth/authjs";
-import { countsAsPage, takeRate } from "@amax/core/rate-limit";
+import { countsAsPage, ensureRateLimits, limitsFromEnv, takeRate } from "@amax/core/rate-limit";
+import { loadEnv } from "@amax/core/env";
 import { auth } from "./auth";
 
 type Handler = (req: NextRequest, ev: NextFetchEvent) => Promise<Response>;
+
+// The limiter's state is shared with the app's bundle (core/rate-limit keeps it on globalThis), so the
+// app's sink records page 429s too. Until the app has wired it, the proxy applies the env limits.
+if (process.env.DATABASE_URL) ensureRateLimits(limitsFromEnv(loadEnv()));
 
 // With a lazily configured NextAuth, auth(fn) resolves to the wrapped handler.
 const guarded: Promise<Handler> | null = process.env.DATABASE_URL

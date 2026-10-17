@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { canEver } from "@amax/auth";
 import { listCredentialViews } from "@amax/auth/credentials-read";
-import { apiStats } from "@amax/api";
+import { apiStats, MAX_FAILURES, REPLAY_WINDOW_MS } from "@amax/api";
+import { rateLimits } from "@amax/core/server";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "../../../../components/settings/AskButton";
 import { getDb } from "../../../../lib/server";
@@ -50,16 +51,16 @@ export default async function ApiPage() {
         <CredentialTable rows={rows} now={now} />
       </div>
       <div className="card flush pinnable">
-        <div className="card-head"><h2>Outgoing webhooks</h2><PinButton inline pin={HOOKS} /><span className="muted" style={{ fontSize: 13 }}>Signed with HMAC-SHA256 and a timestamp; switched off after 5 failures in a row</span></div>
+        <div className="card-head"><h2>Outgoing webhooks</h2><PinButton inline pin={HOOKS} /><span className="muted" style={{ fontSize: 13 }}>Signed with HMAC-SHA256 and a timestamp; switched off after {MAX_FAILURES} failures in a row</span></div>
         <OutgoingTable hooks={stats.webhooks} now={now} />
       </div>
       <div className="card flush pinnable">
-        <div className="card-head"><h2>Incoming webhooks</h2><PinButton inline pin={OVERVIEW} /><span className="muted" style={{ fontSize: 13 }}>Verified with your secrets from Connections and keys, within 5 minutes, each event once</span></div>
+        <div className="card-head"><h2>Incoming webhooks</h2><PinButton inline pin={OVERVIEW} /><span className="muted" style={{ fontSize: 13 }}>Verified with your secrets from Connections and keys, within {REPLAY_WINDOW_MS / 60_000} minutes, each signed event once</span></div>
         <IncomingTable inbound={stats.inbound} now={now} />
       </div>
       <div className="card flush pinnable">
         <div className="card-head"><h2>Rate limits this week</h2><PinButton inline pin={OVERVIEW} /><span className="muted" style={{ fontSize: 13 }}>Per token, person and organisation, across pages, the API and MCP</span></div>
-        <LimitTable limited={stats.limited} />
+        <LimitTable limited={stats.limited} limits={rateLimits()} />
       </div>
     </div>
   );

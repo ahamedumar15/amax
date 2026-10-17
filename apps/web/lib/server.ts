@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
-import { auditExportJob, configureRateLimits, configureRuntime, limitsFromEnv, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { auditExportJob, configureRateLimits, declaredFieldClasses, configureRuntime, limitsFromEnv, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { apiPlatform } from "@amax/api/module";
 import { rateLimitRecorder } from "@amax/api/limits";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
@@ -14,10 +14,11 @@ import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/aut
 import { createRegistry } from "@amax/mcp";
 import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
-import { engineFromEnv, signalHandlers, workflowRegistry, workflowsRetention, type WorkflowEngine } from "@amax/workflows/server";
+import { engineFromEnv, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
 import { platformWorkflows } from "./platform-workflows";
 import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
+import { privacySources } from "./privacy-sources";
 
 // One database client per server process; null until DATABASE_URL is configured.
 const cache = globalThis as unknown as { amaxDb?: Db | null };
@@ -37,7 +38,7 @@ export function getDb(): Db | null {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
     setGrants([...installed, chatPlatform, privacyGrants]);
-    setPrivacySources([...installed, chatPlatform, { id: "workflows", retention: workflowsRetention }]);
+    setPrivacySources(privacySources(installed));
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     // 035 AC-5: limited requests are counted for the API and webhooks screen.
@@ -58,7 +59,7 @@ export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 const auth = { id: "auth", events: { handles: authEventHandlers } };
 
 // 035: outgoing webhooks for every event an installed module emits, delivered as 029 workflows.
-const api = () => apiPlatform(installed.flatMap((m) => m.events?.emits ?? []), workflowEngine);
+const api = () => apiPlatform(installed.flatMap((m) => m.events?.emits ?? []), workflowEngine, declaredFieldClasses(installed));
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
 export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), ...installed]));

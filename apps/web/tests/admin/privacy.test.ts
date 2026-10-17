@@ -3,9 +3,10 @@ import { hasDb } from "@amax/db/testdb";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { setGrants } from "@amax/auth";
-import { chatPlatform, chatTurn, confirmAction } from "@amax/chat";
+import { chatTurn, confirmAction } from "@amax/chat";
 import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
-import { workflowsRetention } from "@amax/workflows/server";
+import { PLATFORM_PRIVACY_SOURCES, privacySources } from "../../lib/privacy-sources";
+import { apiPlatform } from "@amax/api/module";
 import { adminDb, T } from "./fixture";
 
 const PRIVACY_WRITES = ["open_privacy_request", "complete_privacy_request", "place_legal_hold", "release_legal_hold", "set_retention_period"];
@@ -15,7 +16,7 @@ describe.skipIf(!hasDb)("032 privacy tools (Postgres)", () => {
   beforeAll(async () => {
     db = await adminDb();
     setGrants([privacyGrants]);
-    setPrivacySources([chatPlatform, { id: "workflows", retention: workflowsRetention }]);
+    setPrivacySources(PLATFORM_PRIVACY_SOURCES);
     const [u] = await db.t.owner`insert into auth.user (tenant_id, email, name) values (${T}, 'hira@lumenlabs.test', 'Hira Test (fictional HR)') returning id`;
     await db.t.owner`insert into auth.role_assignment (tenant_id, user_id, role, source) values (${T}, ${u.id}, 'HR', 'manual')`;
   });
@@ -48,4 +49,26 @@ describe.skipIf(!hasDb)("032 privacy tools (Postgres)", () => {
     const pinned = await db.registry.call(await db.as("hira"), "get_privacy_request", { id: req.id }, { source: "chat", scopes: ["read"] });
     expect(pinned).toMatchObject({ id: req.id, status: "completed" });
   }, 60_000);
+
+  // Review 058 B10: requests open and complete only on chat's confirm card, never over MCP or the API,
+  // where a credential or agent could act with no person confirming.
+  it.each([
+    ["open_privacy_request", "mcp"], ["open_privacy_request", "api"], ["complete_privacy_request", "mcp"], ["complete_privacy_request", "api"],
+  ] as const)("058 %s over %s is refused", async (tool, source) => {
+    const args = tool === "open_privacy_request" ? { kind: "access", person: "maya@lumenlabs.test" } : { id: "00000000-0000-4000-8000-000000000058" };
+    const before = (await db.t.owner`select count(*)::int as n from privacy.request`)[0].n;
+    await expect(db.registry.call(await db.as("hira"), tool, args, { source })).rejects.toThrow(/only on amax chat's confirm card/);
+    expect((await db.t.owner`select count(*)::int as n from privacy.request`)[0].n).toBe(before);
+  }, 60_000);
+});
+
+// Review 058 B4: one list of the platform's retention for the app, the seed and the tests, so the API's
+// logs reach the purge, legal holds and the screen; nothing deletes them on the side.
+describe("058 every platform retention rule is a privacy source", () => {
+  it.each(["chat.conversation", "workflows.run", "workflows.step", "api.rate_limited", "api.inbound", "api.delivery"])("%s is in the purge's catalog", (table) => {
+    expect(privacySources([]).flatMap((s) => s.retention ?? []).map((r) => r.table)).toContain(table);
+  });
+  it("the API platform runs no prune job of its own", () => {
+    expect((apiPlatform([], async () => { throw new Error("unused"); }) as { jobs?: unknown[] }).jobs ?? []).toEqual([]);
+  });
 });

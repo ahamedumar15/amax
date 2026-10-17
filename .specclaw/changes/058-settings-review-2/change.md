@@ -1,7 +1,7 @@
 # Settings module review, second pass (032, 035)
 
 **Change:** 058-settings-review-2 · **Created:** 2026-10-17
-**Lane:** Platform · **Reviews:** [032](../032-data-retention-and-erasure/change.md), [035](../035-api-webhooks-and-rate-limits/change.md)
+**Lane:** Platform · **Reviews:** 032 (retention and erasure) and 035 (API, webhooks and rate limits), both merged
 
 ## Problem
 

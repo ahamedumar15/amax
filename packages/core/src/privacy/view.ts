@@ -3,7 +3,7 @@ import { textArray, withTenant, type Tx } from "@amax/db";
 import { authorize, ForbiddenError, type ServiceContext } from "../authorize";
 import { getRuntime } from "../service";
 import { APPEND_ONLY, PRIVACY_READ, privacyRules, TENANT_DEFAULTS, type Rule } from "./catalog";
-import { heldIds } from "./holds";
+import { held as heldNow } from "./holds";
 import { summarise } from "./inventory";
 import { paused } from "./match";
 import { effective, loadPeriods, type Effective, type Entity } from "./periods";
@@ -30,7 +30,7 @@ export async function listHolds(tx: Tx): Promise<Hold[]> {
 }
 
 export async function listRules(tx: Tx, entityId?: string | null) {
-  const [p, held] = await Promise.all([loadPeriods(tx), heldIds(tx)]);
+  const [p, held] = await Promise.all([loadPeriods(tx), heldNow(tx)]);
   const entity: Entity | null = p.entities.find((e) => e.id === entityId) ?? p.entities[0] ?? null;
   const rules: RuleView[] = privacyRules().map((r) => ({ id: r.id, table: r.table, module: r.module, class: r.class, action: r.action, start: r.start, label: r.label ?? r.table, paused: paused(r, held), ...effective(p, r, entity?.id ?? null) }));
   return { entities: p.entities, entity, rules, appendOnly: APPEND_ONLY, defaults: Object.values(TENANT_DEFAULTS).filter((d) => !rules.some((r) => r.label === d.label)) };
@@ -57,7 +57,9 @@ export async function privacyOverview(ctx: ServiceContext, opts: { entityId?: st
     const [rules, preview, requests, holds, purged] = [await listRules(tx, opts.entityId), await previewPurge(tx), await listRequests(tx), await listHolds(tx), await purgedSince(tx)];
     const due = { delete: 0, anonymise: 0 };
     for (const c of preview.counts) due[c.action] += c.n;
+    // A rule whose preview failed is unknown, never 0 (review 058 B3): the screen says so.
+    const unchecked = preview.failed.map((id) => rules.rules.find((r) => r.id === id)?.label ?? id);
     const who = await names(tx, [...requests.flatMap((r) => [r.openedBy, r.approvedBy ?? ""]), ...holds.map((h) => h.placedBy)]);
-    return { ...rules, due, dueByRule: preview.counts.filter((c) => c.n > 0), requests, holds, purged, names: who };
+    return { ...rules, due, dueByRule: preview.counts.filter((c) => c.n > 0), unchecked, requests, holds, purged, names: who };
   });
 }

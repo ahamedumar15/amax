@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant } from "@amax/db";
 import { hasDb } from "@amax/db/testdb";
 import { createPostgresEngine, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
-import { apiPlatform, MAX_FAILURES, RETRY, subscribeWebhook, verifyWebhook } from "../src";
+import { apiPlatform, MAX_FAILURES, RETRY, setEgress, subscribeWebhook, verifyWebhook } from "../src";
 import { apiDb, job, T } from "./setup";
 
 const SECRET = "test-amax-webhook-signing-secret";
@@ -31,13 +31,18 @@ describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
     db = await apiDb();
     await db.secret("amax-webhook", SECRET);
     engine = createPostgresEngine({ db: db.app, registry: workflowRegistry([platform]) });
-    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
-      sent.push({ url, headers: new Headers(init.headers), body: String(init.body) });
-      return new Response(null, { status: url.includes("/broken") ? 500 : 204 });
+    // The wire is faked; the address checks in safePost still run on the fake resolver's answer.
+    setEgress({
+      resolve: async () => [{ address: "1.1.1.1", family: 4 }],
+      send: (url, init, lookup) => new Promise((ok, fail) => lookup(url.hostname, { all: true }, (e) => {
+        if (e) return fail(e);
+        sent.push({ url: url.href, headers: new Headers(init.headers), body: init.body });
+        ok(url.pathname.includes("/broken") ? 500 : 204);
+      })),
     });
   });
   afterAll(async () => {
-    vi.unstubAllGlobals();
+    setEgress({});
     await db?.t.drop();
   });
 

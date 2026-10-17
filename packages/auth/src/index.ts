@@ -1,4 +1,5 @@
 export { ROLES, isRole, type Role } from "./roles";
+export { contextForViewer } from "./context";
 export { applyViewAs, currentViewer, rolesOf, setViewerResolver, type Assignment, type Viewer } from "./viewer";
 export { assertCan, can, canEver, installAuthorizer, ScopeError, setGrants, viewerOf, type ResourceAttrs } from "./can";
 export { canSee, isMasked, mask, SENSITIVITY_POLICY, type Masked, type MaskedRecord, type Subject } from "./sensitivity";

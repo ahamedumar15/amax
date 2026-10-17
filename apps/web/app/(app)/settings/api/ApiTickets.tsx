@@ -17,7 +17,7 @@ export function ApiTickets({ rows, stats }: { rows: CredentialView[]; stats: Api
       <Ticket pin={OVERVIEW("Rejected webhook calls")} tone="problem" label="Rejected webhook calls" value={String(rejected)}
         note={rejected ? "Bad or missing signature" : "None this week"} art={<Art name="shield" />} />
       <Ticket pin={OVERVIEW("Outgoing deliveries")} tone="good" label="Outgoing deliveries" value={rate.value}
-        progress={stats.deliveries.total ? { percent: rate.pct, label: rate.label } : undefined} note="Nothing sent this week" art={<Art name="rocket" />} />
+        progress={stats.deliveries.total ? { percent: rate.pct, label: rate.label } : undefined} note={stats.deliveries.total ? undefined : "Nothing sent this week"} art={<Art name="rocket" />} />
       <Ticket pin={OVERVIEW("Requests rate-limited")} tone="attention" label="Requests rate-limited" value={String(stats.limited.total)}
         note={limitedNote(stats.limited)} art={<Art name="clock" />} />
     </div>
