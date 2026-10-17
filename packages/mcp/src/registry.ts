@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
-import { ForbiddenError, logError, traceStep } from "@amax/core/server";
+import { ForbiddenError, traceStep } from "@amax/core/server";
 import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
 import { auditTools } from "./audit-tools";
 
@@ -61,11 +61,9 @@ export function createRegistry(modules: Registrable[]) {
       const tool = tools.find((t) => t.name === name);
       if (!tool) throw new ToolError(`no tool named ${name}`, "not_found");
       // 050: inside a trace (chat turn, confirm, MCP call) every tool call is a step, refusals included.
-      // Recording the step never changes what the caller is told: a write that ran is reported as
-      // done, a refusal or failure as itself, never as the trace store's error (052 review). The
-      // audited write still carries the trace id, so a missing step shows in the timeline.
-      const step = (outcome: string) =>
-        traceStep({ kind: "tool_call", tool: name, args: args ?? {}, detail: { scope: tool.scope, outcome } }).catch((x) => void logError(`mcp.trace ${name}`, x));
+      // traceStep is best-effort (053), so recording the step never changes what the caller is told.
+      // The audited write still carries the trace id, so a missing step shows in the timeline.
+      const step = (outcome: string) => traceStep({ kind: "tool_call", tool: name, args: args ?? {}, detail: { scope: tool.scope, outcome } });
       if (!allowed(viewer, tool, opts.scopes ?? ALL_SCOPES)) {
         await step("denied");
         throw new ToolError(`forbidden: ${name}`, "forbidden");
