@@ -78,8 +78,12 @@ export function installAuthorizer() {
   setAuthorizer((ctx, action, _resource, _input, opts) => {
     if (ctx.actor.kind === "system") return true;
     // principalContext() has already checked scopes, expiry and acts-for (and audited refusals).
-    if (ctx.actor.kind === "service") return Boolean((ctx as { principal?: unknown }).principal);
     const v = viewerOf(ctx);
+    // principalContext() has checked the principal's own scopes. A credential acting for a person
+    // through a tool (contextForViewer) has had its scopes checked by the API caller, and may do only
+    // what that person may do.
+    if (ctx.actor.kind === "service" && (ctx as { principal?: unknown }).principal) return true;
+    if (ctx.actor.kind === "service" && !v?.principal) return false;
     // Strict by default; only services that check the record themselves (scoped) accept qualified grants.
     return !!v && (opts?.scoped ? canEver(v, action) : can(v, action));
   });

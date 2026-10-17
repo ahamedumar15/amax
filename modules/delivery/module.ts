@@ -1,8 +1,8 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
-import { managedProjectIds } from "./contracts";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -53,7 +53,7 @@ export default defineModule({
     // no change, which covers withdrawn and abandoned ones. A project's starts when it's closed: an
     // open project is in use, so its manager stays named.
     { table: "delivery.project", label: "Project managers", subject: ["id", "manager_user_id"], entity: "legal_entity_id", fields: ["manager_name", "manager_user_id"], class: "personal", period: "P7Y", start: { at: ["closed_at"] }, action: "anonymise" },
-    { table: "delivery.proposal", label: "Proposal owners", subject: ["project_id"], fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["released_at"], idle: "P1Y" }, action: "anonymise" },
+    { table: "delivery.proposal", label: "Proposal owners", subject: ["project_id"], subjectName: ["owner_name"], fields: ["owner_name"], class: "personal", period: "P7Y", start: { at: ["released_at"], idle: "P1Y" }, action: "anonymise" },
     { table: "delivery.deployment", label: "Who recorded a deployment", subject: ["recorded_by"], fields: ["recorded_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
     // The voider's clock starts at the void, which can be years after the deployment (final review).
     { table: "delivery.deployment", label: "Who voided a deployment", subject: ["voided_by"], fields: ["voided_by"], class: "personal", period: "P7Y", start: { at: ["voided_at"] }, action: "anonymise" },
@@ -61,6 +61,14 @@ export default defineModule({
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
   jobs: [],
-  events: { emits: ["delivery.release.deployed", "delivery.proposal.phase_changed", "delivery.proposal.rekeyed"] },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: {
+    emits: Object.values(EVENTS),
+    payloads: {
+      [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
+      [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain" }),
+      [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
+    },
+  },
   fixtures: [deliveryFixtures],
 });

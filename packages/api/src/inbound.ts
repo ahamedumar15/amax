@@ -32,7 +32,7 @@ async function verdictFor(tenantId: string, provider: Provider, headers: Headers
     return await useValidSecrets(ctx, { connector: SECRET_OF[provider], purpose: `verify ${provider} webhook` }, async (secrets) =>
       verifyWebhook({ provider, headers, body, secrets: secrets.map((s) => s.reveal()) }));
   } catch (e) {
-    if (e instanceof SecretNotConfiguredError) return { ok: false, reason: "missing", eventId: null };
+    if (e instanceof SecretNotConfiguredError) return { ok: false, reason: "not_configured", eventId: null };
     throw e;
   }
 }

@@ -5,7 +5,7 @@ import { keyed } from "../chain-key";
 import type { ServiceContext } from "../authorize";
 import { defineService } from "../service";
 import { PRIVACY_MANAGE } from "./catalog";
-import { inventory, summarise, type Item } from "./inventory";
+import { assertChecked, inventory, summarise, type Item } from "./inventory";
 import { PrivacyError, resolveSubject } from "./subjects";
 
 export type RequestRow = { id: string; kind: "access" | "erasure"; status: string; subjectUserId: string | null; subjectLabel: string; subjects: string[]; inventory: Item[]; openedBy: string; openedAt: string; approvedBy: string | null; completedAt: string | null; erased: number | null };
@@ -35,6 +35,7 @@ export const openPrivacyRequest = defineService({
     const [dup] = await tx.execute(sql`select id from privacy.request where subject_user_id = ${s.userId} and kind = ${input.kind} and status in ('open', 'approved')`);
     if (dup) throw new PrivacyError(`${s.label} already has an open ${input.kind} request`);
     const items = await inventory(tx, s);
+    assertChecked(items, `open this ${input.kind} request`);
     const [row] = await tx.execute(sql`insert into privacy.request (tenant_id, kind, subject_user_id, subject_label, subject_key, subjects, inventory, opened_by)
       values (${ctx.tenantId}, ${input.kind}, ${s.userId}, ${s.label}, ${keyed(s.userId)}, ${textArray(s.ids)}, ${JSON.stringify(items)}::jsonb, ${personOf(ctx)}) returning id`);
     const after = { kind: input.kind, ...summarise(items) };

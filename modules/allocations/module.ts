@@ -1,6 +1,6 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
-import { EVENTS } from "./contracts";
+import { EVENTS, type AllocationSet, type MonthCopied } from "./contracts";
 import { allocationsFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { assignedProjectIds } from "./server/scopes";
@@ -37,6 +37,10 @@ export default defineModule({
   viewerScopes: async (tx, user) => ({ assignedProjects: await assignedProjectIds(tx, user) }),
   chatIntents,
   jobs: [],
-  events: { emits: Object.values(EVENTS) },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: { emits: Object.values(EVENTS), payloads: {
+    [EVENTS.allocationSet]: declarePayload<AllocationSet>({ personId: "plain", projectId: "plain", work: "plain", months: "plain", percent: "plain", by: "plain" }),
+    [EVENTS.monthCopied]: declarePayload<MonthCopied>({ team: "plain", from: "plain", to: "plain", rows: "plain", by: "plain" }),
+  } },
   fixtures: [allocationsFixtures],
 });

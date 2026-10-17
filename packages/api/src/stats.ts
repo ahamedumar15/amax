@@ -3,7 +3,8 @@ import { withTenant, type Db } from "@amax/db";
 import { PROVIDERS, type Provider } from "./verify";
 
 export type WebhookView = { id: string; name: string; url: string; events: string[]; status: "active" | "off"; offReason: string | null; failures: number; delivered: number; total: number; lastDeliveryAt: string | null };
-export type InboundView = { provider: Provider; verified: number; rejected: number; lastVerifiedAt: string | null };
+/** `unconfigured`: calls that arrived with no secret set up for the provider; not counted as rejected. */
+export type InboundView = { provider: Provider; verified: number; rejected: number; unconfigured: number; lastVerifiedAt: string | null };
 export type LimitedView = { total: number; byChannel: { channel: string; subjects: number; count: number }[]; peakDay: string | null };
 export type ApiStats = { webhooks: WebhookView[]; inbound: InboundView[]; limited: LimitedView; deliveries: { ok: number; total: number } };
 
@@ -24,7 +25,8 @@ export async function listWebhooks(db: Db, tenantId: string): Promise<WebhookVie
 
 export async function apiStats(db: Db, tenantId: string): Promise<ApiStats> {
   return withTenant(db, tenantId, async (tx) => {
-    const inbound = await tx.execute(sql`select provider, count(*) filter (where verified)::int as ok, count(*) filter (where not verified)::int as bad,
+    const inbound = await tx.execute(sql`select provider, count(*) filter (where verified)::int as ok, count(*) filter (where not verified and reason is distinct from 'not_configured')::int as bad,
+      count(*) filter (where reason = 'not_configured')::int as unset,
       max(received_at) filter (where verified) as last from api.inbound where received_at > ${WEEK} group by provider`);
     const limited = await tx.execute(sql`select channel, count(distinct subject)::int as subjects, sum(count)::int as n from api.rate_limited where hour > ${WEEK} group by channel order by n desc`);
     const [peak] = await tx.execute(sql`select to_char(date_trunc('day', hour), 'FMDay') as day from api.rate_limited where hour > ${WEEK}
@@ -35,7 +37,7 @@ export async function apiStats(db: Db, tenantId: string): Promise<ApiStats> {
       webhooks: await listWebhooks(db, tenantId),
       inbound: PROVIDERS.map((provider) => {
         const r = inbound.find((x) => x.provider === provider);
-        return { provider, verified: Number(r?.ok ?? 0), rejected: Number(r?.bad ?? 0), lastVerifiedAt: iso(r?.last) };
+        return { provider, verified: Number(r?.ok ?? 0), rejected: Number(r?.bad ?? 0), unconfigured: Number(r?.unset ?? 0), lastVerifiedAt: iso(r?.last) };
       }),
       limited: { total: byChannel.reduce((n, c) => n + c.count, 0), byChannel, peakDay: (peak?.day as string | undefined) ?? null },
       deliveries: { ok: Number(d?.ok ?? 0), total: Number(d?.total ?? 0) },

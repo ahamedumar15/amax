@@ -3,11 +3,21 @@ import { z } from "zod";
 import { textArray, type Tx } from "@amax/db";
 import { defineService } from "../service";
 import { PRIVACY_MANAGE } from "./catalog";
+import type { Match } from "./match";
 import { PrivacyError, resolveSubject } from "./subjects";
 
 export async function heldIds(tx: Tx): Promise<string[]> {
-  const rows = await tx.execute(sql`select distinct unnest(subjects) as id from privacy.legal_hold where released_at is null`);
-  return rows.map((r) => r.id as string);
+  return (await held(tx)).ids;
+}
+
+/** Everyone under an active hold: their ids, and for a person hold their name, so rows that record
+ * them only by name (subjectName) are held too. */
+export async function held(tx: Tx): Promise<Match> {
+  const rows = await tx.execute(sql`select kind, label, subjects from privacy.legal_hold where released_at is null`);
+  return {
+    ids: [...new Set(rows.flatMap((r) => r.subjects as string[]))],
+    names: [...new Set(rows.filter((r) => r.kind === "person").map((r) => r.label as string))],
+  };
 }
 
 const Place = z.discriminatedUnion("kind", [
