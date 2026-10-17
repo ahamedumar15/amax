@@ -1,8 +1,6 @@
 const DAYS = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
 const two = (n: string) => n.padStart(2, "0");
 
-// Plain words for the common cron shapes ("Daily 06:00", "Mondays 09:30", "Hourly"); anything
-// else shows as written.
 export function cronLabel(cron: string): string {
   const [min, hour, dom, mon, dow] = cron.trim().split(/\s+/);
   const num = (s: string) => /^\d+$/.test(s);

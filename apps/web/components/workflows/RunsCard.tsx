@@ -23,7 +23,6 @@ function Value({ v }: { v: unknown }) {
   return <>{JSON.stringify(v)}</>;
 }
 
-// The admin Runs list: each run's steps, waits and retries, who it acts for, its cost, and controls.
 export function RunsCard({ runs, control }: Props) {
   return (
     <div className="card flush" style={{ marginTop: 28 }}>

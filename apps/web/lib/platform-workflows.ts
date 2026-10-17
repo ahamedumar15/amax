@@ -2,7 +2,6 @@ import { withTenant } from "@amax/db";
 import { getRuntime, verifyAuditChain } from "@amax/core/server";
 import { cron, defineWorkflow, step } from "@amax/workflows";
 
-// The platform's own recurring work: re-verify each tenant's audit hash chain every night.
 export const auditCheck = defineWorkflow({
   name: "core.audit-check",
   title: "Audit chain check",

@@ -6,7 +6,6 @@ type Props = { schedules: ScheduleView[]; toggle: (data: FormData) => Promise<vo
 
 const lastResult = (s: ScheduleView) => s.lastSummary ?? (s.lastStatus ? s.lastStatus[0].toUpperCase() + s.lastStatus.slice(1) : "No runs yet");
 
-// The mock's "Recurring agent work" card: each schedule's timing, last and next run, and its switch.
 export function SchedulesCard({ schedules, toggle }: Props) {
   return (
     <div className="card flush">

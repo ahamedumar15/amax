@@ -19,7 +19,6 @@ export default async function WorkflowsSettingsPage() {
   if (!viewer || !rolesOf(viewer).includes("Admin")) notFound();
   const db = getDb()!;
   const registry = workflowsRegistry();
-  // Declared schedules show up before the first tick has created their rows.
   await syncSchedules(db, registry);
   const [schedules, runs] = await Promise.all([
     listSchedules(db, registry, viewer.tenantId),
