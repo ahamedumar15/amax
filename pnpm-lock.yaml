@@ -102,6 +102,9 @@ importers:
 
   packages/core:
     dependencies:
+      aws4fetch:
+        specifier: 1.0.20
+        version: 1.0.20
       cron-parser:
         specifier: 5.10.2
         version: 5.10.2

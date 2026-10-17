@@ -13,6 +13,14 @@ const schema = z.object({
   DATABASE_MIGRATE_URL: postgresUrl.optional(),
   // Keys the HMAC that replaces classified values in the audit. Moves to 031 secrets later.
   AUDIT_HASH_KEY: z.string().min(32, "at least 32 characters").optional(),
+  CRON_SECRET: z.string().min(16, "at least 16 characters").optional(),
+  // S3-compatible object storage (S3, R2, MinIO). The audit export bucket needs object lock.
+  S3_ENDPOINT: z.url().optional(),
+  S3_BUCKET: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_REGION: z.string().optional(),
+  AUDIT_RETENTION_DAYS: z.coerce.number().int().positive().default(2555),
 });
 
 export type Env = z.infer<typeof schema>;
