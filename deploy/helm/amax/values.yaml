@@ -35,3 +35,25 @@ worker:
       memory: 32Mi
     limits:
       memory: 64Mi
+
+# 029 durable workflows. "postgres" (default) keeps runs in the workflows schema and drives them from
+# the tick above. "temporal" runs the same definitions on Temporal: self-hosted on the cluster with
+# the temporalio/temporal Helm chart, or Temporal Cloud (address <ns>.tmprl.cloud:7233, and
+# TEMPORAL_API_KEY in envFromSecret, which turns TLS on). With temporal, a temporal-worker Deployment
+# runs the image built with `docker build --target temporal-worker` (tagged <tag>-temporal-worker);
+# it needs DATABASE_URL and AUDIT_HASH_KEY in envFromSecret. Keep worker.enabled for jobs and schedules.
+workflows:
+  engine: postgres
+  temporal:
+    address: temporal-frontend.temporal.svc:7233
+    namespace: default
+    taskQueue: amax-workflows
+    worker:
+      replicas: 1
+      tag: ""
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 768Mi

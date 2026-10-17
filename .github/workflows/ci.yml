@@ -26,6 +26,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_MIGRATE_URL: postgres://amax:amax@localhost:5432/amax
+      # 029 AC-3: the workflow suite also runs on a local Temporal dev server.
+      AMAX_TEMPORAL_TESTS: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup

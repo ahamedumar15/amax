@@ -1,0 +1,80 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "modules/allocations/README.md",
+  "modules/allocations/server/services.ts",
+  "modules/allocations/tests/allocations.test.ts",
+  "modules/allocations/tests/scope.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/allocations/actions.ts",
+   "fp": "725b971f33b1",
+   "in_delta": false,
+   "line": 11,
+   "message": "The fix is a class fix for the service and the MCP tool, but not for the screen. copyMonth now returns `forbidden` apart from `skipped`, and the MCP tool returns that result. The screen's server action still runs `await copyMonth(...)` and throws the result away. A PM using the screen, who is the user the previous finding was about, still can't tell 'you may not copy these' apart from 'nothing left to copy'. The README line in this diff says Copy to next month 'reports rows already planned (skipped) apart from rows it may not copy (forbidden)', which isn't true on that path. I couldn't open actions.ts or the screen because file reads were denied, so this is based only on the impact-set line. Fix: return `{ copied, skipped, forbidden }` from the action and show the forbidden count on screen (for example '2 rows on projects you don't manage were not copied'). Add a test that drives the action with a partial-scope viewer.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "A PM whose scope covers only some of the team's projects clicks Copy to next month for 2027-02. The service returns { copied: 3, skipped: 141, forbidden: 2 }, but the action drops it. The screen says nothing about the 2 rows it would not copy, which looks the same as a month with nothing left to copy.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/allocations/server/services.ts",
+   "fp": "ebe637706c4b",
+   "in_delta": true,
+   "line": 76,
+   "message": "`skipped` is counted before the scope filter. It includes already-planned rows on projects the caller may not allocate, and the new test expects `skipped: 141` against `copied: 3`. For a scoped PM, the count mostly describes other managers' projects and reveals how many rows they have. Count `skipped` only over rows the caller may allocate, or document that it is team-wide.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "A PM managing one project copies 2027-02 and gets `skipped: 141`. Almost all of those rows are on projects outside the PM's scope.",
+   "severity": "minor"
+  }
+ ],
+ "head": "fd2cf742ad1502547e0013a0ef08ca90f2fb8714",
+ "impact": [
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/playwright.auth.config.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "modules/allocations/actions.ts",
+  "modules/allocations/contracts.ts",
+  "modules/allocations/fixtures/index.ts",
+  "modules/allocations/fixtures/plan.ts",
+  "modules/allocations/mcp.ts",
+  "modules/allocations/server/forecast.ts",
+  "modules/allocations/server/grid.ts",
+  "modules/allocations/tests/contracts.test.ts",
+  "modules/allocations/ui/charts.tsx",
+  "modules/delivery/db/migrations/0001_delivery.sql",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/chat.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 38806,
+ "round": 5,
+ "since": "989b59a",
+ "status": "clean",
+ "system_chars": 20822,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792243857,
+ "ts_start": 1792243807
+}

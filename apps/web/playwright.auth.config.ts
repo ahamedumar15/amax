@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
 import { lumen } from "@amax/testing";
 
@@ -13,7 +15,7 @@ export default defineConfig({
   projects: [
     { name: "visual", testMatch: /delivery-visual\.spec\.ts/ },
     { name: "amx", testMatch: /amx\.setup\.ts/, dependencies: ["visual"] },
-    { name: "screens", testMatch: /(auth|delivery|ai|mcp)\.spec\.ts/, dependencies: ["amx"] },
+    { name: "screens", testMatch: /(auth|delivery|ai|mcp|secrets|workflows)\.spec\.ts/, dependencies: ["amx"] },
     { name: "writes", testMatch: /(chat|releases)\.spec\.ts/, dependencies: ["screens"] },
   ],
   workers: 1,
@@ -34,6 +36,8 @@ export default defineConfig({
       AMAX_AI_PROVIDER: "scripted",
       NODE_ENV: "test",
       DATABASE_MIGRATE_URL: admin.toString(),
+      AMAX_KMS: "local",
+      AMAX_KMS_KEY_FILE: join(tmpdir(), `amax-e2e-kms-${process.env.E2E_DB ?? "amax_e2e"}.key`),
     },
   },
 });

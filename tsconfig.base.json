@@ -71,6 +71,12 @@
       "@amax/ai/*": [
         "./packages/ai/src/*"
       ],
+      "@amax/workflows": [
+        "./packages/workflows/src/index.ts"
+      ],
+      "@amax/workflows/*": [
+        "./packages/workflows/src/*"
+      ],
       "@amax/*": [
         "./modules/*"
       ]

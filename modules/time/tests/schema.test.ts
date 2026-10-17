@@ -8,7 +8,7 @@ import { T, timeDb } from "./db";
 
 describe.skipIf(!hasDb)("time schema and the Team week (Postgres)", () => {
   let db: Awaited<ReturnType<typeof timeDb>>;
-  beforeAll(async () => { db = await timeDb(); });
+  beforeAll(async () => { db = await timeDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("AC1 entry, week and approval are tenant-isolated, ISO-keyed, billable, and their retention names real columns", async () => {

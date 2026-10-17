@@ -1,0 +1,127 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 3,
+  "minor": 2
+ },
+ "escalated": [
+  "f7cca8395b93",
+  "102d7e6696bb",
+  "8924d711e87a"
+ ],
+ "files": [
+  "apps/web/tests/e2e/secrets.spec.ts",
+  "packages/core/src/secrets/datakey.ts",
+  "packages/core/src/secrets/forms.ts",
+  "packages/core/src/secrets/manage.ts",
+  "packages/core/src/secrets/runtime.ts",
+  "packages/core/src/secrets/secret.ts",
+  "packages/core/tests/secrets-ac1-datakey.test.ts",
+  "packages/core/tests/secrets-ac2-variants.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/core/tests/secrets-ac1-datakey.test.ts",
+   "fp": "f7cca8395b93",
+   "in_delta": true,
+   "line": 39,
+   "message": "The new OUTER rows never run putSecret inside the outer transaction or savepoint. Both `db.app.transaction(async () => \u2026)` and `tx.transaction(async () => \u2026)` drop the `tx` they are given. putSecret then runs ensureDataKey (withTenant plus defineService) and storeVersion on their own connections, from getRuntime().db, and commits them on their own. Rolling back the outer transaction or savepoint touches no row the put wrote, so the 'savepoint that rolls back' variant is never exercised. That is why the assertion passes: the value is still readable after the 'rollback'. If putSecret had really been nested, its version row would have rolled back too and the value would be gone. The table would also stay green with the round-2 xmin code restored, because no put happens inside a subtransaction. Fix: drive the real nesting path, so putSecret runs on the outer tx or a SAVEPOINT on it. Then assert the property that matters: after the rollback, a later putSecret plus useSecret in a fresh runtime (cache reset) still decrypt, and no data_key row is cached when it was never committed.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Restore the round-2 ensureDataKey/xmin code \u2192 rows 'an outer transaction' and 'a savepoint' still pass, because putSecret never joins the rolled-back transaction.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/src/secrets/secret.ts",
+   "fp": "102d7e6696bb",
+   "in_delta": true,
+   "line": 47,
+   "message": "plainEntries checks the prototype, the own keys and the property descriptors, and all of these can be faked by a Proxy. Its getPrototypeOf, ownKeys and getOwnPropertyDescriptor traps (or a harmless target) can report clean plain data while its `get` trap, a closure, hands back the revealed value. The checker reads descriptor values, not the values the caller will read through `get`, so the result passes as plain JSON. Fix: refuse proxies (`util.types.isProxy`) at every level of the walk, or check and return a structuredClone/JSON round-trip of the result instead of the caller's object. Add a Proxy row to the AC-2 table.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "useSecret(ctx, {connector:'xero'}, async (s) => new Proxy({ token: 'x' }, { get: () => s.reveal() })) \u2192 leaks() returns false \u2192 the caller reads result.token and gets the credential value.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/src/secrets/datakey.ts",
+   "fp": "98c64bbd824e",
+   "in_delta": true,
+   "line": 17,
+   "message": "createDataKey calls the external KMS (`k.wrap`) inside the service's database transaction. The transaction stays open (holding a connection and the tenant's locks) for the length of a network call. When a concurrent create loses the `on conflict do nothing` race, it still writes an audit record with created:false and a wrapped key that is thrown away. Fix: wrap the key before entering the transaction, or skip the audit and event when nothing was inserted.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B10",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "packages/core/src/secrets/forms.ts",
+   "fp": "8924d711e87a",
+   "in_delta": true,
+   "line": 2,
+   "message": "The percent-encoding fix regresses the plain `key=value` case. ENCODED_RUN now accepts '=' anywhere in a run, not just as trailing padding. In a query string or form body, the run therefore starts at the parameter name ('auth=\u2026', 'token=\u2026', 'client_secret=\u2026') rather than after the '='. decodings() only tries offsets 0\u20133 from the start of the run, and Node's base64/base64url decoder stops at the first '='. So when the name is 4 or more characters, every offset hits the '=' and the payload is never decoded. Before this diff '=' was allowed only at the end, so the match started right after 'auth=' and decoded at offset 0. Fix: use '=' only as trailing padding, as before (`(?:[A-Za-z0-9+/_-]|%[0-9A-Fa-f]{2})+(?:=|%3[Dd]){0,2}`). Or split the percent-decoded text on '=' and '&' before taking offsets. Then add a table row with a misaligned payload behind a parameter name.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "useSecret returns `grant=x&auth=${Buffer.from(`user:${VALUE}`).toString('base64')}` ('user:' is 5 bytes, so the VALUE bytes are misaligned and no direct base64(VALUE) form matches). The run is 'auth=dXNlcjo\u2026'. Offsets 0\u20133 all decode only the text before '=', so hide() returns the text unchanged and the credential leaves useSecret. The pre-diff regex caught this.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/src/secrets/datakey.ts",
+   "fp": "e70f930123b2",
+   "in_delta": true,
+   "line": 24,
+   "message": "ensureDataKey checks for an existing key and then inserts it, with nothing in between to stop a race. When two first writes run at once, both see no row and both run secrets.data_key.create. Each one wraps a fresh key with KMS and writes an audit record and event. One of them reports created:false, so the log shows a 'create' that did nothing. The data stays correct thanks to `on conflict do nothing`, but the audit trail is noisy. Fix: have the service skip the audit and event when the insert returned no row, or take an advisory lock on the tenant id first.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "Two concurrent putSecret calls for a new tenant \u2192 two secrets.data_key.create audit rows, one of them with after.created=false.",
+   "severity": "minor"
+  }
+ ],
+ "head": "339967a5f5eb02bbd68a4fb27cb6d2d04f4b5069",
+ "impact": [
+  "apps/web/app/(app)/settings/keys/actions.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/tests/e2e/secrets-seed.ts",
+  "modules/delivery/db/migrations/0003_default_environments.sql",
+  "modules/delivery/db/migrations/0007_project_closed_at_insert.sql",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/sync/bin.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "packages/auth/bin/seed.ts",
+  "packages/auth/src/scim.ts",
+  "packages/auth/src/seed.ts",
+  "packages/auth/tests/ac8-scim.test.ts",
+  "packages/auth/tests/schema.test.ts",
+  "packages/core/src/secrets.ts",
+  "packages/core/tests/secrets-ac1-envelope.test.ts",
+  "packages/core/tests/secrets-ac1-use-permission.test.ts",
+  "packages/core/tests/secrets-ac2-leaks.test.ts",
+  "packages/core/tests/secrets-ac3-rotation.test.ts",
+  "packages/core/tests/secrets-fixture.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 46801,
+ "round": 4,
+ "since": "3c9f644187",
+ "status": "escalate",
+ "system_chars": 20880,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792245585,
+ "ts_start": 1792245428
+}

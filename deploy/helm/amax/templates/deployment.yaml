@@ -23,6 +23,7 @@ spec:
             - name: http
               containerPort: 3000
           env:
+            {{- include "amax.workflowsEnv" . | nindent 12 }}
             {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

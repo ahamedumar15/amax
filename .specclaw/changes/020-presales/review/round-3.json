@@ -1,0 +1,139 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 4,
+  "minor": 2
+ },
+ "escalated": [
+  "cccddb259f3a",
+  "6a90af02e6c4"
+ ],
+ "files": [
+  "modules/presales/db/migrations/0001_presales.sql",
+  "modules/presales/mcp.ts",
+  "modules/presales/server/promote.ts",
+  "modules/presales/server/records.ts",
+  "modules/presales/tests/review.test.ts",
+  "modules/presales/ui/FillButton.tsx",
+  "modules/presales/ui/FoundStrip.tsx",
+  "modules/presales/ui/presales.css"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/presales/server/promote.ts",
+   "fp": "cccddb259f3a",
+   "in_delta": true,
+   "line": 133,
+   "message": "Resuming now depends on noteClaimProject committing in its own transaction after delivery's create has committed. If the process dies, times out, or the note's transaction fails between those two steps, the project exists but the claim has no claim_project_id. That gap is the 'created, then the link failed' case the resume path exists for. After it, a retry with the same key gets claim.projectId = null, finds `existing`, and is refused with 'choose another key'. A retry with another key is refused by claimPromotion with 'promote it with that key to finish'. The opportunity can never be promoted, and the project is orphaned. Fix: write the claim's project id where delivery creates the project. One way is to pass the claim token to delivery's create, stored on the project, so a resume can match on it. Another is to reserve the id before the create (generate the uuid in claimPromotion and have delivery create the project with that id).",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Promote PS-0150 with key RES. Delivery creates RES. noteClaimProject throws (connection drop). Wait more than 120 s. Retry with key RES \u2192 'delivery already has a project RES; choose another key'. Retry with key OTH \u2192 'was promoted as RES; promote it with that key'. The deal is stuck and RES is orphaned.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/server/promote.ts",
+   "fp": "6a90af02e6c4",
+   "in_delta": true,
+   "line": 76,
+   "message": "stillClaimed is check-then-act in a separate read transaction, so the lease is still not enforced against the create. The round-2 finding named a create slower than CLAIM_SECONDS, and that case still orphans a project. Attempt A passes stillClaimed and calls create. While that create runs, 120 s pass. Attempt B with another key finds no claim_project_id and no project under A's key yet, so it takes the claim. A's create then commits, noteClaimProject fails the token check, and A's project is left orphaned. Fix: make the create conditional on the claim in the same transaction. Otherwise, when noteClaimProject refuses, have the losing attempt void the project it just made through delivery's contract.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "A claims key AAA and its create takes 150 s. At t=130 s, B promotes with key BBB and takes over the stale claim. A's create returns, noteClaimProject throws 'claimed by another promotion', and project AAA is left in delivery with no opportunity.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/tests/review.test.ts",
+   "fp": "ab4138fa10f6",
+   "in_delta": true,
+   "line": 68,
+   "message": "The round-2 finding asked for a race test with a create stub slower than CLAIM_SECONDS. None was added, so the stillClaimed guard and noteClaimProject's token check have no test. The resume test also leaves out two cases: the link failing after a real create inside promoteToDelivery, and a crash between create and noteClaimProject. Add table rows that run two promoteToDelivery calls with a slow or blocking create stub and claimed_at aged in between. Assert that no orphaned project is left, or that it gets voided. Also add a row whose recordPromotion really fails and then resumes.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "With stillClaimed removed from promoteToDelivery, every current test still passes.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/tests/review.test.ts",
+   "fp": "414988cf1c0b",
+   "in_delta": true,
+   "line": 56,
+   "message": "The opportunity_project test plants the state with raw `update` SQL instead of driving promoteToDelivery or recordPromotion, and the finding asked for the resumed-claim path, which it does not cover. Both rows expect two rejections against HRI, so the test only shows that an existing holder blocks later links. It never races two new links where exactly one should win. Fix: run two promotions (sequential, concurrent, and through a resumed claim) whose create stubs return the same project id. Expect exactly one fulfilled and one rejected, and check that the test fails once the index is dropped.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "If HRI is not already linked in the fixtures, the 'one after the other' row fails on its first link. If it is linked, both rows pass without ever testing two unlinked opportunities competing for one project.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/server/promote.ts",
+   "fp": "e941880712c6",
+   "in_delta": true,
+   "line": 78,
+   "message": "stillClaimed parses the opportunity number itself (`Number(number.slice(3))`), a second copy next to numberOf/NUMBER in contracts and common. The two can disagree if the number format changes. Use the shared parser, or lock the row through lockOpportunity.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/presales/server/promote.ts",
+   "fp": "bbeb1d7aa6de",
+   "in_delta": true,
+   "line": 100,
+   "message": "recordPromotion clears claim_key, claim_token and claimed_at but leaves claim_project_id set, so a linked opportunity keeps an old claim pointer. Clear it along with the other claim columns.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "210fda9a896a83a8923a44ba578cc85f10e4bb63",
+ "impact": [
+  ".github/workflows/ci.yml",
+  "apps/web/tests/e2e/chat.spec.ts",
+  "apps/web/tests/e2e/global-auth.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/ui-logic.test.ts",
+  "modules/delivery/ui/ProjectPage.tsx",
+  "modules/delivery/ui/ReleasePage.tsx",
+  "modules/delivery/ui/ReleasesPage.tsx",
+  "modules/presales/actions.ts",
+  "modules/presales/contracts.ts",
+  "modules/presales/tests/presales.test.ts",
+  "modules/time/contracts.ts",
+  "modules/time/server/chain.ts",
+  "modules/time/server/log.ts",
+  "modules/time/tests/review.test.ts",
+  "packages/auth/src/can.ts",
+  "packages/auth/tests/ac3-can.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 55366,
+ "round": 3,
+ "since": "fffe3783e8",
+ "status": "escalate",
+ "system_chars": 20873,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792244824,
+ "ts_start": 1792244728
+}

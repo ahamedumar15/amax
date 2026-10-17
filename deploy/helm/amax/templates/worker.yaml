@@ -30,6 +30,7 @@ spec:
               value: "http://{{ include "amax.name" . }}:{{ .Values.service.port }}/api/jobs/tick"
             - name: AMAX_TICK_SECONDS
               value: {{ .Values.worker.intervalSeconds | quote }}
+            {{- include "amax.workflowsEnv" . | nindent 12 }}
           {{- with .Values.envFromSecret }}
           envFrom:
             - secretRef:
