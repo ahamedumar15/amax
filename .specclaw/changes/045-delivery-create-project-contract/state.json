@@ -1,10 +1,11 @@
 {
   "change": "045-delivery-create-project-contract",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T14:10:18Z"},
     "tasks": {"status":"done","at":"2026-10-17T14:10:27Z"},
-    "verify": {"status":"done","at":"2026-10-17T14:27:54Z"}
+    "verify": {"status":"done","at":"2026-10-17T14:27:54Z"},
+    "pr": {"status":"raised","at":"2026-10-17T14:28:28Z","url":"https://github.com/chan4lk/amax/pull/34"}
   }
 }
