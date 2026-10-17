@@ -17,7 +17,8 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
       <p>{p.title}</p>
       {p.phase !== "proposed" && p.phase !== "released" && <div className="prog"><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
       <div className="foot">
-        {p.agent ? <span className="chip agent">{p.agent}</span> : <span className="av sm a2" title={p.ownerName ?? undefined}>{initials(p.ownerName)}</span>}
+        {p.phase === "released" ? <span className="chip">{p.release ?? "Released"}</span>
+          : p.agent ? <span className="chip agent">{p.agent}</span> : <span className="av sm a2" title={p.ownerName ?? undefined}>{initials(p.ownerName)}</span>}
         <span>
           {p.phase === "proposed" && (p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`)}
           {(p.phase === "planned" || p.phase === "building") && `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}`}

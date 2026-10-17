@@ -20,7 +20,7 @@ const NAMED: P[] = [
   { key: "CON-011", title: "Global search", phase: "building", done: 1, total: 5, hours: 2, owner: "Kasun Dias", release: "CON v2.5.0" },
   { key: "CON-012", title: "SSO token refresh", phase: "verified", done: 4, total: 4, hours: 9, owner: "Ayesha Rahman", agent: "specclaw", release: "CON v2.4.0" },
   { key: "CON-010", title: "Email digest", phase: "verified", done: 6, total: 6, hours: 14, owner: "Kasun Dias", agent: "specclaw", release: "CON v2.4.0" },
-  { key: "CON-009", title: "Reports v2", phase: "released", done: 8, total: 8, hours: 22.5, owner: "Nimal Silva", releasedAt: "2026-09-30T10:00:00Z" },
+  { key: "CON-009", title: "Reports v2", phase: "released", done: 8, total: 8, hours: 22.5, owner: "Nimal Silva", release: "CON v2.3.0", releasedAt: "2026-09-30T10:00:00Z" },
   { key: "FLT-015", title: "Bulk upload", phase: "proposed", hours: 0.5, owner: "Kasun Dias" },
 ];
 
@@ -53,6 +53,7 @@ const RELEASES: { project: string; version: string; deployments: [string, string
   { project: "CON", version: "v2.4.0", deployments: [["Dev", "deployed", "2026-10-12T09:00:00Z"], ["QA", "testing", "2026-10-15T09:00:00Z"]] },
   { project: "FLT", version: "v1.8.0", deployments: [["Dev", "deployed", "2026-10-08T09:00:00Z"], ["QA", "deployed", "2026-10-12T09:00:00Z"],
     ["UAT", "rolled-back", "2026-10-14T11:00:00Z", "Smoke test \"upload over 20 MB\" failed. Waiting on Maya, 2 d", "1190"]] },
+  { project: "CON", version: "v2.3.0", deployments: [["Dev", "deployed", "2026-09-18T09:00:00Z"], ["QA", "deployed", "2026-09-22T09:00:00Z"], ["UAT", "deployed", "2026-09-25T09:00:00Z"], ["Prod", "deployed", "2026-09-30T10:00:00Z"]] },
   { project: "HRI", version: "v0.9.2", deployments: [["Dev", "deployed", "2026-09-22T09:00:00Z"], ["QA", "deployed", "2026-09-25T09:00:00Z"], ["UAT", "deployed", "2026-09-29T09:00:00Z"], ["Prod", "deployed", "2026-10-01T09:00:00Z"]] },
 ];
 

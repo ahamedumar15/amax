@@ -30,20 +30,30 @@ Assumptions (Rule 1):
 - Without 004, `mcp.ts` tool definitions sit in the manifest unused; with it they register. Chat intents are plain manifest data.
 - Fixtures reproduce fixtures.md's delivery numbers (3 projects, 37 in flight = 6 + 4 + 18 + 9, 5 released this month, the Contoso board, the three releases), filling unnamed proposals with neutral titles.
 
-- [ ] `T1` — Contract first: `contracts.ts` (project lookups, proposal/release types, `delivery.release.deployed` and `delivery.proposal.phase_changed` payloads) with stubs and contract tests; manifest (grants, nav, routes); README; CODEOWNERS line (AC-5, AC-6)
+- [x] `T1` — Contract first: `contracts.ts` (project lookups, proposal/release types, `delivery.release.deployed` and `delivery.proposal.phase_changed` payloads) with stubs and contract tests; manifest (grants, nav, routes); README; CODEOWNERS line (AC-5, AC-6)
   Kind: impl
   Files: modules/delivery/{module.ts,contracts.ts,package.json,tsconfig.json,README.md}, modules/delivery/tests/contracts.test.ts, .github/CODEOWNERS
-- [ ] `T2` — Schema and fixtures: `delivery.project`, `delivery.proposal` (project-scoped key, phase, tasks, hours, owner, release), `delivery.release`, `delivery.environment`, `delivery.deployment`, RLS on all; fixture seed matching fixtures.md (AC-1)
+- [x] `T2` — Schema and fixtures: `delivery.project`, `delivery.proposal` (project-scoped key, phase, tasks, hours, owner, release), `delivery.release`, `delivery.environment`, `delivery.deployment`, RLS on all; fixture seed matching fixtures.md (AC-1)
   Kind: migration
   Files: modules/delivery/db/{schema.ts,migrations/0001_delivery.sql}, modules/delivery/fixtures/index.ts, modules/delivery/tests/schema.test.ts
   Depends: T1
-- [ ] `T3` — Services and queries: create project/proposal/release, `moveProposal` (explicit, audited, can't move into released), `recordDeployment` (Prod ⇒ proposals released; emits events), list/get queries behind `can()`; MCP tool and chat intent definitions (AC-3, AC-4, AC-5)
+- [x] `T3` — Services and queries: create project/proposal/release, `moveProposal` (explicit, audited, can't move into released), `recordDeployment` (Prod ⇒ proposals released; emits events), list/get queries behind `can()`; MCP tool and chat intent definitions (AC-3, AC-4, AC-5)
   Kind: impl
   Files: modules/delivery/server/{services,queries}.ts, modules/delivery/mcp.ts, modules/delivery/chat.ts, modules/delivery/tests/{services,mcp}.test.ts
   Depends: T2
-- [ ] `T4` — Screens: Projects (tickets, portfolio), project page with the board and Move action, Proposals (phase bar, table), Releases (map, table) from the database; e2e visual check against the mock at 1440 px (≤2%) and axe (AC-2, AC-3)
+- [x] `T4` — Screens: Projects (tickets, portfolio), project page with the board and Move action, Proposals (phase bar, table), Releases (map, table) from the database; e2e visual check against the mock at 1440 px (≤2%) and axe (AC-2, AC-3)
   Kind: impl
   Files: modules/delivery/ui/*, modules/delivery/actions.ts, apps/web/tests/e2e/delivery.spec.ts
   Depends: T3
 
 ## Verify
+
+**Verdict:** PASS
+- AC-1: pass — `modules/delivery/tests/delivery.test.ts`: five `delivery` tables, all RLS-forced; fixtures reproduce fixtures.md (CON/FLT/HRI with clients and sprint progress, $774,000 contract value, 6/4/18/9 = 37 in flight, 5 released this month, the Contoso lanes, the releases).
+- AC-2: pass — `apps/web/tests/e2e/delivery.spec.ts` (signed in, Postgres): portfolio, board, proposals (phase bar, filters) and releases (map, table, promotion) render from the database; the board's released lane header and card match the mock at 1440 px within 2%; axe clean on every screen.
+- AC-3: pass — unit + e2e: Move is an explicit form action, data-scoped (a PM moves only their projects), audited with before/after and a `phase_changed` event; `released` can't be chosen on the board and is set only by a Prod deployment, after which the card can't move back.
+- AC-4: pass — `mcp.ts` defines `list_projects`, `get_project`, `list_proposals`, `get_release`, `record_deployment` over the same queries/services (audited with source `mcp`; `record_deployment` needs PM on that project or Admin); three chat intents in the manifest; nothing is exposed until 004 registers them.
+- AC-5: pass — `contracts.ts`: `listProjectRefs`, `getProjectRef`, `managedProjectIds`, `PHASES`, `EVENTS` and both payload types; contract tests.
+- AC-6: pass — `node scripts/check-module-standard.mjs` and the graph check pass; README, fixtures, manifest, CODEOWNERS line; `AMAX_MODULES_DISABLED=delivery` removes it like any module. Outside the module: small platform additions the first real module needed (`:param` routes, `ScreenProps`, `canEver()`, a viewer resolver for module server actions) and the e2e setup.
+
+Commands (all exit 0 with `DATABASE_MIGRATE_URL`): `pnpm test`, `pnpm lint`, `pnpm build`, `pnpm --filter @amax/web e2e`, `pnpm --filter @amax/web e2e:auth` (11 flows), `build:cloudflare`, graph and module-standard checks.

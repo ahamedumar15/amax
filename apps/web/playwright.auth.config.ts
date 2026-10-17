@@ -8,7 +8,8 @@ const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "
 
 export default defineConfig({
   testDir: "tests/e2e",
-  testMatch: /auth\.spec\.ts/,
+  testMatch: /(auth|delivery)\.spec\.ts/,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL: `http://localhost:${port}`, colorScheme: "light", reducedMotion: "reduce", browserName: "chromium" },

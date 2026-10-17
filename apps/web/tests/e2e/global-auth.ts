@@ -4,6 +4,7 @@ import { createDb, migrate, migrationScopes } from "@amax/db";
 import { loadFixtures, lumen } from "@amax/testing";
 import { authFixtures } from "@amax/auth/fixtures";
 import { upsertPasswordUser } from "@amax/auth/password";
+import { deliveryFixtures } from "../../../../modules/delivery/fixtures/index";
 
 // Fresh amax_e2e database: migrate, then seed Lumen Labs and its demo users as the app role.
 export const E2E_DB = "amax_e2e";
@@ -20,7 +21,7 @@ export default async function setupE2eDatabase() {
   await migrate(owner, migrationScopes(join(import.meta.dirname, "../../../..")));
   await owner.end();
   const { db, client } = createDb(ownerUrl, { max: 1, connection: { options: "-c role=amax_app" } as never });
-  await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }], lumen);
+  await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }, { id: "delivery", dependsOn: ["auth"], fixtures: [deliveryFixtures] }], lumen);
   await upsertPasswordUser(db, lumen.tenant.id, { email: "ops@lumenlabs.test", name: "Ops Admin", roles: ["Admin"], password: "e2e-ops-password" });
   await client.end();
 }
