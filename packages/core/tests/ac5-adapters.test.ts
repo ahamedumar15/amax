@@ -4,7 +4,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { memoryCache } from "../src/adapters/cache";
 import { memoryStorage, ObjectLockedError, s3Storage, storageFromEnv } from "../src/adapters/storage";
-import { repoRoot } from "@amax/db";
+import { repoRoot } from "@amax/db/testdb";
 // @ts-ignore — plain ESM helper from the graph checker
 import { walk } from "../../../scripts/graph/scan.mjs";
 

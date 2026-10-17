@@ -1,1 +1,1 @@
-export { hasDb, migratedDatabase, repoRoot } from "@amax/db";
+export { hasDb, migratedDatabase, repoRoot } from "@amax/db/testdb";

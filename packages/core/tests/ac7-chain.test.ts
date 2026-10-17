@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { hasDb, migratedDatabase, withTenant, type Db } from "@amax/db";
+import { withTenant, type Db } from "@amax/db";
+import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { appendAudit } from "../src/audit";
 import { contextFor, verifyAuditChain } from "../src/server";
 

@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { hasDb, migratedDatabase, withTenant, type Db } from "@amax/db";
+import { withTenant, type Db } from "@amax/db";
+import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { configureRuntime, contextFor, defineService, ForbiddenError, setAuthorizer, ValidationError, type ServiceContext } from "../src/server";
 
 const T = "00000000-0000-4000-8000-0000000000c3";

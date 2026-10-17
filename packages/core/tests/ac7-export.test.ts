@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { hasDb, migratedDatabase, withTenant, type Db } from "@amax/db";
+import { withTenant, type Db } from "@amax/db";
+import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { memoryStorage, ObjectLockedError } from "../src/adapters/storage";
 import { exportAuditDay } from "../src/audit-export";
 import { appendAudit } from "../src/audit";
