@@ -1,0 +1,12 @@
+{
+  "change": "041-delivery-mock-parity",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-17T12:14:45Z"},
+    "build": {"status":"done","at":"2026-10-17T12:42:34Z"},
+    "verify": {"status":"done","at":"2026-10-17T12:42:34Z"},
+    "pr": {"status":"done","at":"2026-10-17T12:43:26Z"},
+    "archived": {"status":"done","at":"2026-10-17T18:05:15Z"}
+  }
+}

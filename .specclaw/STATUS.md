@@ -1,24 +1,11 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 18:32 UTC
+**Last Updated:** 2026-10-17 18:33 UTC
 
 ## Active Changes
 
 
-- 🔀 **009-time-and-approvals** — pr raised | 6/6 tasks (100%) | 0 failed | PR #28 merged
-- 🔀 **010-allocations-forecast** — pr raised | 6/6 tasks (100%) | 0 failed | PR #29 merged
-- 🔀 **011-hr-core** — pr raised | 6/6 tasks (100%) | 0 failed | PR #27 merged
-- 🔀 **020-presales** — pr raised | 6/6 tasks (100%) | 0 failed | PR #32 merged
-- 🔀 **029-workflows-scheduler** — pr raised | 5/5 tasks (100%) | 0 failed | PR #33 merged
-- 🔀 **031-secrets-and-keys** — pr raised | 5/5 tasks (100%) | 0 failed | PR #31 merged
-- 🔀 **041-delivery-mock-parity** — pr done | 6/6 tasks (100%) | 0 failed | PR #30 merged
-- 🔀 **045-delivery-create-project-contract** — pr raised | 3/3 tasks (100%) | 0 failed | PR #34 merged
-- 🔀 **046-chat-first-and-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #36 merged
-- 🔀 **047-admin-end-to-end** — pr raised | 7/7 tasks (100%) | 0 failed | PR #40 merged
-- 🔀 **048-chat-cost** — pr raised | 5/5 tasks (100%) | 0 failed | PR #38 merged
-- 🔀 **049-chat-history** — pr raised | 5/5 tasks (100%) | 0 failed | PR #37 merged
-- 🔀 **050-immutable-trace** — pr raised | 6/6 tasks (100%) | 0 failed | PR #39 merged
 - 🔍 **051-project-sections** — verify done | 5/5 tasks (100%) | 0 failed
 
 ## Pending Proposals
@@ -61,13 +48,26 @@
 - ✅ **004-mcp-gateway**
 - ✅ **005-amax-chat**
 - ✅ **007-delivery-projects**
+- ✅ **009-time-and-approvals**
+- ✅ **010-allocations-forecast**
+- ✅ **011-hr-core**
+- ✅ **020-presales**
+- ✅ **029-workflows-scheduler**
+- ✅ **031-secrets-and-keys**
 - ✅ **033-ai-gateway-and-residency**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
+- ✅ **041-delivery-mock-parity**
 - ✅ **042-release-management**
+- ✅ **045-delivery-create-project-contract**
+- ✅ **046-chat-first-and-pins**
+- ✅ **047-admin-end-to-end**
+- ✅ **048-chat-cost**
+- ✅ **049-chat-history**
+- ✅ **050-immutable-trace**
 
 ## Stats
 
 - **Total changes:** 24
-- **Active:** 14
-- **Completed:** 10
+- **Active:** 1
+- **Completed:** 23

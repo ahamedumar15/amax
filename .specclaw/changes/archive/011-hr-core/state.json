@@ -1,0 +1,11 @@
+{
+  "change": "011-hr-core",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-17T12:15:22Z"},
+    "verify": {"status":"done","at":"2026-10-17T12:30:56Z"},
+    "pr": {"status":"raised","at":"2026-10-17T12:31:35Z","url":"https://github.com/chan4lk/amax/pull/27"},
+    "archived": {"status":"done","at":"2026-10-17T18:05:14Z"}
+  }
+}

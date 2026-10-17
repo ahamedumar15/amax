@@ -1,0 +1,11 @@
+{
+  "change": "029-workflows-scheduler",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-17T13:07:35Z"},
+    "verify": {"status":"done","at":"2026-10-17T13:28:24Z"},
+    "pr": {"status":"raised","at":"2026-10-17T14:10:26Z","url":"https://github.com/chan4lk/amax/pull/33"},
+    "archived": {"status":"done","at":"2026-10-17T18:05:14Z"}
+  }
+}
