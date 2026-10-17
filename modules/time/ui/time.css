@@ -35,6 +35,7 @@
 .time .a2{background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
 .time .a3{background:linear-gradient(135deg,#7BE3B4,#2FB5A0)}
 .time .a4{background:linear-gradient(135deg,#C3B5FF,#8E6CF0)}
+.time .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
 .time .btn.ghost{border-color:transparent;color:var(--ink-2)}
 .time .chip.draft{background:var(--sunken);color:var(--ink-2)}
 .time .chip.bad{background:#FFE1DC;color:#A8321F}
