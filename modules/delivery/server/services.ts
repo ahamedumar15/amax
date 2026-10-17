@@ -140,7 +140,10 @@ export const createRelease = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);
-    const [r] = await tx.execute(sql`insert into delivery.release (tenant_id, project_id, version) values (${ctx.tenantId}, ${project.id}, ${input.version}) returning id`);
+    // A version that exists (or is being created right now) is refused clearly, not as a raw unique violation.
+    const [r] = await tx.execute(sql`insert into delivery.release (tenant_id, project_id, version) values (${ctx.tenantId}, ${project.id}, ${input.version})
+      on conflict (project_id, version) do nothing returning id`);
+    if (!r) throw new Error(`${input.projectKey} already has a release ${input.version}`);
     await assignProposals(tx, project.id, r.id, input.proposalKeys);
     return { result: { id: r.id as string }, resourceId: r.id as string, after: input };
   },

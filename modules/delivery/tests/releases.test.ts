@@ -264,16 +264,19 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     expect(rows).toEqual([{ key: a.key, phase: "released", assigned: true }, { key: b.key, phase: "proposed", assigned: false }]);
   });
 
-  it("assignProposals has two callers: setReleaseProposals (raced below) and createRelease, whose release is new and invisible to other transactions until it commits (round 16)", () => {
-    const src = readFileSync(join(__dirname, "../server/services.ts"), "utf8");
-    const callers = [...src.matchAll(/export const (\w+) = defineService\([\s\S]*?(?=\nexport const |$)/g)].filter((m) => m[0].includes("assignProposals(")).map((m) => m[1]);
-    // A new caller must get its own race test against a Prod deployment.
-    expect(callers.sort()).toEqual(["createRelease", "setReleaseProposals"]);
+  it("assignProposals is private to services.ts with exactly two call sites, both raced below (rounds 16 and 17)", async () => {
+    const { readdirSync, statSync } = await import("node:fs");
+    const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? (f === "tests" || f === "node_modules" ? [] : files(p)) : /\.tsx?$/.test(f) ? [p] : []; });
+    const sources = files(join(__dirname, ".."));
+    const calls = sources.flatMap((f) => [...readFileSync(f, "utf8").matchAll(/(?<!function )\bassignProposals\(tx\b/g)].map(() => f.replace(/.*modules\/delivery\//, "")));
+    // Not exported, so nothing outside services.ts can call it; a new call site needs its own race test.
+    expect(readFileSync(join(__dirname, "../server/services.ts"), "utf8")).not.toMatch(/export (async )?function assignProposals/);
+    expect(calls).toEqual(["server/services.ts", "server/services.ts"]);
   });
 
   // Holds the first service that locks a release inside its transaction, right after the lock, until
   // released: the other service then runs against it for real (round 15). Test-only runtime wrapper.
-  const holdAfterReleaseLock = () => {
+  const holdAfterReleaseLock = (at: RegExp = /from delivery\.release .*for update/s) => {
     let entered!: () => void, release!: () => void;
     const inside = new Promise<void>((r) => { entered = r; });
     const gate = new Promise<void>((r) => { release = r; });
@@ -281,7 +284,7 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     const text = (q: { queryChunks?: { value?: unknown }[] }) => (q.queryChunks ?? []).map((c) => (Array.isArray(c?.value) ? c.value.join("") : "")).join("");
     const wrapTx = (tx: Db) => new Proxy(tx, { get: (target, prop) => prop !== "execute" ? Reflect.get(target, prop) : async (q: never) => {
       const out = await target.execute(q);
-      if (armed && /from delivery\.release .*for update/s.test(text(q))) { armed = false; entered(); await gate; }
+      if (armed && at.test(text(q))) { armed = false; entered(); await gate; }
       return out;
     } });
     const db = new Proxy(app, { get: (target, prop) => prop !== "transaction" ? Reflect.get(target, prop)
@@ -314,12 +317,55 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
       expect(secondDone).toBe(false); // waiting on the held release row
     } finally {
       h.release();
+      await Promise.allSettled([first, second]); // nothing keeps writing after the test, whatever failed
     }
     await first;
     if (order === "assign-first") await expect(second).resolves.toMatchObject({ released: true });
     else await expect(second).rejects.toThrow(/already live in Prod/);
     const [row] = await t.owner`select phase, release_id is not null as assigned from delivery.proposal where id = ${p.id}`;
     expect(row).toEqual(order === "assign-first" ? { phase: "released", assigned: true } : { phase: "proposed", assigned: false });
+  });
+
+  it("createRelease held after inserting its release: a Prod deployment of that version can't see it yet and is refused; nothing is released (round 17)", async () => {
+    const { createProposal } = await import("../server/services");
+    await createProject(ctx(), { key: "CRA", name: "CRA", client: "x", billing: "internal" });
+    const p = await createProposal(ctx(), { projectKey: "CRA", title: "p" });
+    const h = holdAfterReleaseLock(/insert into delivery\.release/);
+    let first: Promise<unknown> = Promise.resolve(), deploy: Promise<unknown> = Promise.resolve();
+    try {
+      first = createRelease(ctx(), { projectKey: "CRA", version: "v1", proposalKeys: [p.key] });
+      await h.inside;
+      deploy = recordDeployment(ctx(), { projectKey: "CRA", version: "v1", environment: "Prod" });
+      await expect(deploy).rejects.toThrow(/no release v1/);
+    } finally {
+      h.release();
+      await Promise.allSettled([first, deploy]);
+    }
+    await first;
+    const [row] = await t.owner`select phase, release_id is not null as assigned from delivery.proposal where id = ${p.id}`;
+    expect(row).toEqual({ phase: "proposed", assigned: true });
+  });
+
+  it("two createRelease calls for one version: the second waits, then fails; one release, proposals assigned once (round 17)", async () => {
+    const { createProposal } = await import("../server/services");
+    await createProject(ctx(), { key: "CRB", name: "CRB", client: "x", billing: "internal" });
+    const p = await createProposal(ctx(), { projectKey: "CRB", title: "p" });
+    const h = holdAfterReleaseLock(/insert into delivery\.release/);
+    let first: Promise<unknown> = Promise.resolve(), second: Promise<unknown> = Promise.resolve();
+    let secondDone = false;
+    try {
+      first = createRelease(ctx(), { projectKey: "CRB", version: "v1", proposalKeys: [p.key] });
+      await h.inside;
+      second = createRelease(ctx(), { projectKey: "CRB", version: "v1", proposalKeys: [p.key] }).finally(() => { secondDone = true; });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(secondDone).toBe(false); // waiting on the first insert's unique key
+    } finally {
+      h.release();
+      await Promise.allSettled([first, second]);
+    }
+    await expect(first).resolves.toBeTruthy();
+    await expect(second).rejects.toThrow(/CRB already has a release v1/);
+    expect(await t.owner`select 1 from delivery.release r join delivery.project pr on pr.id = r.project_id where pr.key = 'CRB'`).toHaveLength(1);
   });
 
   const MERGE = [
