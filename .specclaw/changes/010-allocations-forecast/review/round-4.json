@@ -1,0 +1,93 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "modules/allocations/README.md",
+  "modules/allocations/contracts.ts",
+  "modules/allocations/server/services.ts",
+  "modules/allocations/tests/scope.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/allocations/server/services.ts",
+   "fp": "687ae02c032f",
+   "in_delta": true,
+   "line": 68,
+   "message": "This fixes only the case that was named, not the whole class. copyMonth now throws when there is no viewer. But when a viewer is present, the `allowed` filter still drops rows outside the viewer's project scope and counts them in `skipped`. That is the same counter used for 'already present in the next month'. So 'you may not copy these' still looks like 'nothing left to copy' to any real user whose scope covers only part of the team. The last round asked for either a refusal or a separate count, and this applies it to the no-viewer path only. Fix: return forbidden rows as their own count (for example `hidden` or `forbidden`), separate from `skipped`. Add a test row with a viewer who has partial scope and expect that count to be greater than 0 and `skipped` to count only the rows already present.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "A project manager who manages project A only runs Copy to next month for 2026-12. The team also has December rows on project B that are not yet in January. Result: `{ copied: n, skipped: k }`, where `k` includes the project B rows. That is the same answer as 'those rows were already copied', so the manager thinks January is complete.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/allocations/README.md",
+   "fp": "3425d89bd7df",
+   "in_delta": true,
+   "line": 8,
+   "message": "The contract docs no longer match the code. The README still says `hidden` counts 'people with rows the reader may not see'. When `personIds` is given, it now counts every requested person outside the reader's scope, whether or not they have rows. Update the README to describe both cases.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/allocations/contracts.ts",
+   "fp": "f35c6025844b",
+   "in_delta": true,
+   "line": 38,
+   "message": "With `personIds`, any id that `listPeople` doesn't return counts as `hidden`. That includes ids that don't exist at all, even for a system reader who can see everyone. So 'no such person' reads as 'you may not see this person'. Consider reporting unknown ids apart from hidden ones, or rejecting them.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "listAllocations(tx, sys(), { from: '2026-12-01', to: '2026-12-31', personIds: [<uuid with a typo>] }) returns { rows: [], hidden: 1 }, which reads as 'the system job can't see this person'.",
+   "severity": "minor"
+  }
+ ],
+ "head": "989b59a3b2766514d5c4b7fefac703d80efdc7d7",
+ "impact": [
+  "apps/mock/app/globals.css",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/settings.css",
+  "apps/web/tests/e2e/diff.ts",
+  "apps/web/tests/tick.test.ts",
+  "modules/allocations/server/grid.ts",
+  "modules/allocations/tests/contracts.test.ts",
+  "modules/allocations/ui/allocations.css",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/ui/delivery.css",
+  "modules/hr/contracts.ts",
+  "modules/hr/tests/contracts.test.ts",
+  "modules/hr/ui/hr.css",
+  "packages/core/tests/ac4-jobs.test.ts",
+  "packages/mcp/src/registry.ts",
+  "packages/ui/src/styles/chat.css",
+  "packages/ui/src/styles/responsive.css",
+  "packages/ui/src/styles/shell.css",
+  "packages/ui/src/styles/tokens.css"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 38997,
+ "round": 4,
+ "since": "a6c5f39",
+ "status": "open",
+ "system_chars": 20822,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792243700,
+ "ts_start": 1792243645
+}

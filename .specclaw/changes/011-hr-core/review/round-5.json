@@ -1,0 +1,110 @@
+{
+ "counts": {
+  "blocker": 1,
+  "major": 1,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "modules/hr/contracts.ts",
+  "modules/hr/server/change.ts",
+  "modules/hr/server/inforce.ts",
+  "modules/hr/server/records.ts",
+  "modules/hr/server/services.ts",
+  "modules/hr/tests/records.test.ts",
+  "packages/core/src/authorize.ts",
+  "packages/core/tests/system-context.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/core/src/authorize.ts",
+   "fp": "ac67603ca54e",
+   "in_delta": true,
+   "line": 39,
+   "message": "This only fixes one case of the earlier blocker. Freezing the context stops callers changing it after issue. The main part of the finding is not fixed: `contextFor.job` is still exported from `@amax/core/server`, and every module, chat intent and MCP tool can import it. Any code can still call `contextFor.job(anyTenantId, \"made-up\")` and get a context that `isSystemContext` accepts. That context reads unmasked pay and bank data through getEmployment and passes `inScope` and `applyStatusDates`. The audit row then records a job name the caller invented. `modules/hr/server/jobs.ts:11` still mints its own context, and the diff adds no test showing that module code can't get an accepted system context. Fix: only the job runner (runDueJobs or the workflow engine) should mint system contexts, through a capability or factory that is not on the module import surface. The runner passes the context to the handler. Add a test showing that importing `@amax/core/server` from module code does not yield an accepted system context.",
+   "original_severity": "blocker",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B8",
+   "scenario": "An MCP tool or chat intent in any module calls `getEmployment(contextFor.job(tenantId, \"x\"), personId)` \u2192 salary, EPF and bank account come back unmasked, with an audit actor of `job:x`.",
+   "severity": "blocker"
+  },
+  {
+   "file": "modules/hr/server/records.ts",
+   "fp": "ba3773fdcd46",
+   "in_delta": true,
+   "line": 24,
+   "message": "The department scope for writes is taken from the employment in force today (`employmentAt(today())`). The write itself is applied at `effectiveOn`, and `newPeriod` also rewrites later periods. So the check looks at a different period from the one being changed. A department change is also not checked against the department it moves the person into. Fix: check scope against the department of every period the write touches (the period in force on `effectiveOn` and every later period it rewrites). When the input sets `department`, check the target department too.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "A person is in Finance today and has a planned transfer to Engineering on 2026-12-01. An HR user scoped to Finance calls `changePerson({ employeeNo, effectiveOn: \"2027-01-01\", grade: \"E5\" })` \u2192 `inScope` passes on Finance, and the HR user changes a period that belongs to Engineering.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/hr/server/records.ts",
+   "fp": "0e5ae1cb1a65",
+   "in_delta": true,
+   "line": 16,
+   "message": "The new `inforce.ts` comment says reads, masking and writes 'all check this one subject'. But `inScope` takes its own subject shape `{ legalEntityId, department }` and passes on only those two fields. It drops `ownerUserId`, which `subjectOf` (and the read path) includes. Reads and writes can therefore still evaluate different subjects for an owner-narrowed assignment. Pass the full `subjectOf` result through to `assertCan`, or correct the comment.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/hr/tests/records.test.ts",
+   "fp": "31ca7d84cf91",
+   "in_delta": true,
+   "line": 162,
+   "message": "The new department-scope test covers addPerson and changePerson but not recordLeaver, which also switched to `subjectOf(p)`. It also has no case where today's department differs from the department at `effectiveOn`. Add a recordLeaver row and a future-dated case.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "c4583cb5282263f55d87fd059c43fe058a1665f5",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "modules/hr/mcp.ts",
+  "modules/hr/server/jobs.ts",
+  "modules/hr/server/queries.ts",
+  "modules/hr/server/stats.ts",
+  "modules/hr/tests/contracts.test.ts",
+  "modules/hr/ui/Directory.tsx",
+  "modules/hr/ui/PeoplePage.tsx",
+  "modules/hr/ui/PersonPage.tsx",
+  "modules/hr/ui/parts.tsx",
+  "packages/auth/tests/ac4-masking.test.ts",
+  "packages/auth/tests/ac8-scim.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/module.ts",
+  "packages/core/src/service.ts",
+  "packages/core/tests/ac4-jobs.test.ts",
+  "packages/core/tests/ac7-export.test.ts",
+  "packages/db/migrations/0004_auth.sql",
+  "packages/testing/tests/ac2-rls.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 42187,
+ "round": 5,
+ "since": "82e9a80",
+ "status": "open",
+ "system_chars": 20773,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792243504,
+ "ts_start": 1792243445
+}

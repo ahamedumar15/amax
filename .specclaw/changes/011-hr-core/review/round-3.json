@@ -1,0 +1,153 @@
+{
+ "counts": {
+  "blocker": 1,
+  "major": 3,
+  "minor": 3
+ },
+ "escalated": [
+  "1d7c65432d76"
+ ],
+ "files": [
+  "modules/hr/README.md",
+  "modules/hr/contracts.ts",
+  "modules/hr/server/change.ts",
+  "modules/hr/server/queries.ts",
+  "modules/hr/server/services.ts",
+  "modules/hr/server/stats.ts",
+  "modules/hr/tests/contracts.test.ts",
+  "modules/hr/tests/records.test.ts",
+  "modules/hr/ui/PeoplePage.tsx",
+  "modules/hr/ui/PersonPage.tsx"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/hr/server/change.ts",
+   "fp": "1d7c65432d76",
+   "in_delta": true,
+   "line": 40,
+   "message": "The carry-forward check compares every later period with the value in force at `effectiveOn` (`cur[col]`). It should compare with the value of the period just before it. A later period that plans a return to the old value (an FTE step down and then back up, or a temporary acting grade that then reverts) holds a value equal to `cur[col]`, so it is overwritten as if it had only inherited that value. The new table test has just one later period, so it can't catch this. Fix: walk the later periods in `starts_on` order and stop carrying a column at the first period whose value differs from the period before it, or compare each period with its predecessor. Add a test with a step down followed by a step back up.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "fte is 1.0 now. Planned steps: 2027-02-01 fte 0.5, then 2027-06-01 fte 1.0. changePerson(effectiveOn 2026-11-01, fte 0.8) gives [0.8, 0.5, 0.8]. Expected: [0.8, 0.5, 1.0]. The planned return to full time is silently lost.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/hr/contracts.ts",
+   "fp": "c849aaf0b5bf",
+   "in_delta": true,
+   "line": 20,
+   "message": "This is the same class as the earlier 'system' string blocker. The new code decides who gets unmasked pay and bank data from a structural field (`actor.kind === \"system\"`) on a plain object, and any caller can forge that object. The diff's own test builds a ServiceContext literal by hand (`{ tenantId, actor: { id, kind }, source } as ServiceContext`). Set `kind: \"system\"` instead and any module, chat or MCP path gets salary, EPF and bank account for every entity. The audit row then records the forged actor id. The previous finding asked for an actor that core issues and checks. Fix: accept only contexts made by `contextFor.job` (for example, a core-private brand or WeakSet checked through a core verifier), and add a test showing that a hand-built system context is refused.",
+   "original_severity": "blocker",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B8",
+   "scenario": "getEmployment(tx, kasunId, { tenantId: T, actor: { id: 'job:anything', kind: 'system' }, source: 'api' } as ServiceContext) returns baseSalary '285000.0000' and the bank account unmasked.",
+   "severity": "blocker"
+  },
+  {
+   "file": "modules/hr/server/services.ts",
+   "fp": "4d65b2cc0b59",
+   "in_delta": true,
+   "line": 77,
+   "message": "recordLeaver's audit still can't undo a mistaken leaver, so this fixes only the case that was named. First, the removed periods leave out base_salary (only `hadPay` is kept), along with currency, epf_number, bank_name, bank_account and the row ids, so a deleted planned raise can't be restored. Second, the next statement overwrites `ends_on` on the period in force, and the old end date is not in `before` at all. Fix: end and void the later periods instead of deleting them, so the data stays in the table, or keep the full rows somewhere they can be restored from. Also record the old `ends_on` of every period the update changes.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "module-standard",
+   "scenario": "A fixed-term person's period ends 2027-03-31 and a raise to 120000 is planned for 2027-02-01. recordLeaver(leftOn 2026-12-31) is entered by mistake. Afterwards, neither the table nor the audit holds the 2027-03-31 contract end or the 120000 raise.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/hr/server/stats.ts",
+   "fp": "e64afd25e22e",
+   "in_delta": true,
+   "line": 16,
+   "message": "peopleStats still accepts a JS `Date` as well as an ISO day, so a caller can still pass `new Date()` and read a different day from the directory, which uses `today()`. Accept only the ISO day string that every other read takes.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/hr/README.md",
+   "fp": "d8daeb2519e5",
+   "in_delta": true,
+   "line": 7,
+   "message": "The signatures of getPerson, listPeople, listEmploymentPeriods and getEmployment changed in a breaking way (new `reader` argument), but the README still calls the contract v1 and has no version note. The module standard asks for a new version and a README note when a contract changes.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "module-standard",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/hr/tests/contracts.test.ts",
+   "fp": "3d4f7a4a8f6f",
+   "in_delta": true,
+   "line": 66,
+   "message": "The scoping table test passes only bare Viewers. Nothing tests a ServiceContext that carries a viewer, which is the `r.viewer` branch of readerOf, for out-of-entity refusal.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/hr/contracts.ts",
+   "fp": "c4eb38165f5e",
+   "in_delta": true,
+   "line": 26,
+   "message": "`sees` passes only `{ legalEntityId }` to `can(viewer, 'hr:read', ...)`. But role assignments also carry `departments` (the tests set `departments: null`). An HR assignment limited to some departments is either granted the whole entity or decided without the row's department. The row already has the department (`emp.department` in people(), `department` in the employment rows). Fix: pass the row's department, along with every other scope dimension the auth model has, to the same subject used for masking. Add a department-scoped case to the scoping table test.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Viewer with HR assignment { legalEntityIds:[lk], departments:['Finance'] } calls listPeople \u2192 the result includes Engineering people such as Kasun Dias, if can() treats a missing department as unrestricted.",
+   "severity": "major"
+  }
+ ],
+ "head": "b448745cfcd2bbdf0f48b01f174874099362146c",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/tests/e2e/auth.spec.ts",
+  "apps/web/tests/e2e/global-auth.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/db/migrations/0002_release_management.sql",
+  "modules/delivery/db/migrations/0003_default_environments.sql",
+  "modules/delivery/db/migrations/0005_released_by.sql",
+  "modules/delivery/db/migrations/0007_project_closed_at_insert.sql",
+  "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/server/services.ts",
+  "modules/hr/mcp.ts",
+  "packages/auth/tests/ac4-masking.test.ts",
+  "packages/auth/tests/ac8-scim.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/tests/ac4-jobs.test.ts",
+  "packages/testing/tests/ac2-rls.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 72570,
+ "round": 3,
+ "since": "52c3e06",
+ "status": "escalate",
+ "system_chars": 20791,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792242696,
+ "ts_start": 1792242565
+}

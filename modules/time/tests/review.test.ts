@@ -63,7 +63,7 @@ describe("CSV export cells", () => {
 
 describe.skipIf(!hasDb)("review fixes (Postgres)", () => {
   let db: Awaited<ReturnType<typeof timeDb>>;
-  beforeAll(async () => { db = await timeDb(); });
+  beforeAll(async () => { db = await timeDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it.each([

@@ -21,7 +21,7 @@ describe("module standard", () => {
 
 describe.skipIf(!hasDb)("contracts and optional hr (Postgres)", () => {
   let db: Awaited<ReturnType<typeof timeDb>>;
-  beforeAll(async () => { db = await timeDb(); });
+  beforeAll(async () => { db = await timeDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("AC5 contract reads return the fixture week, and without hr the project chain still routes approvals", async () => {
