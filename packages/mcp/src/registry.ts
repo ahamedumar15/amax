@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
-import { ForbiddenError, traceStep } from "@amax/core/server";
+import { enforceRate, ForbiddenError, traceStep } from "@amax/core/server";
 import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
 import { auditTools } from "./audit-tools";
 
@@ -57,7 +57,8 @@ export function createRegistry(modules: Registrable[]) {
     /** Only tools this viewer's roles and this token's scopes allow (AC-3). */
     toolsFor: (viewer: Viewer, scopes: Scope[] = ALL_SCOPES) => tools.filter((t) => allowed(viewer, t, scopes)),
     /** Re-checks access, validates input and runs the tool; module services do the record-level checks and audit. */
-    async call(viewer: Viewer, name: string, args: unknown, opts: { scopes?: Scope[]; source: "mcp" | "chat"; secret?: string }) {
+    async call(viewer: Viewer, name: string, args: unknown, opts: { scopes?: Scope[]; source: "mcp" | "chat" | "api"; secret?: string; token?: string }) {
+      enforceRate({ tenantId: viewer.tenantId, userId: viewer.userId, token: opts.token, channel: opts.source === "api" ? "rest" : opts.source });
       const tool = tools.find((t) => t.name === name);
       if (!tool) throw new ToolError(`no tool named ${name}`, "not_found");
       // 050: inside a trace (chat turn, confirm, MCP call) every tool call is a step, refusals included.

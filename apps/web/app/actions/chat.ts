@@ -7,7 +7,7 @@ import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, repinConversations, repinOf, type ChatTurn, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
-import { movedOf, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
+import { movedOf, outcomeOf, revealOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
@@ -39,6 +39,8 @@ export async function confirmChat(conversationId: string, actionId: string): Pro
     const pins = repin ? await repinConversations(getDb()!, viewer, conversationId, repin) : undefined;
     revalidatePath("/", "layout");
     const key = (result as { key?: string } | null)?.key;
+    const reveal = revealOf(result);
+    if (reveal) return { state: "done", note: `Done. Copy the ${reveal.label.toLowerCase()} now: it is shown only this once.`, reveal };
     return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.`, moved: movedOf(result), ...(pins ? { pins } : {}) };
   } catch (e) {
     return outcomeOf(e);

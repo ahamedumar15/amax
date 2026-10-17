@@ -4,6 +4,9 @@ import type { SharedFixtures } from "@amax/core";
 import { createDb, withTenant, type Db } from "@amax/db";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
+import { chatPlatform } from "@amax/chat";
+import { workflowsRetention } from "@amax/workflows/server";
+import { privacyFixtures } from "../lib/privacy-fixtures";
 
 // Module manifests import their pages, and pages import CSS. Outside Next (tsx), stub CSS so the
 // registry loads. Vitest transforms CSS itself and never reaches this hook.
@@ -15,6 +18,8 @@ export async function installedSeeds() {
   return [
     { id: "auth", dependsOn: [] as string[], fixtures: [authFixtures] },
     ...modules.map((m) => ({ id: m.id, dependsOn: ["auth", ...(m.dependsOn ?? [])], fixtures: m.fixtures ?? [] })),
+    // 032: after every module, so the demo erasure request lists the person's records everywhere.
+    { id: "privacy", dependsOn: ["auth", ...modules.map((m) => m.id)], fixtures: [privacyFixtures([...modules, chatPlatform, { id: "workflows", retention: workflowsRetention }])] },
   ];
 }
 

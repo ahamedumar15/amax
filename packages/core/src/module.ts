@@ -64,7 +64,7 @@ export type McpToolDef = {
    * part of `input`, so the model can neither see nor fill it; `run` gets it as `secret`.
    */
   secretInput?: { label: string };
-  run: (viewer: never, input: never, source: "mcp" | "chat", secret?: string) => Promise<unknown>;
+  run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
   /**
    * A write tool's check when chat proposes its card, before the person types anything (053). Throw
    * a ToolError (code invalid_input) to refuse the card; its message is what the model is told.
@@ -87,7 +87,17 @@ export type RetentionEntry = {
   period: `P${string}`;
   start: { at: string[]; idle?: `P${string}` };
   action: "delete" | "anonymise";
+  /** What the Data retention screen calls it, e.g. "Leavers' HR record". */
+  label?: string;
+  /** Columns naming the person or matter a row is about (a user id, an hr.person id, "user:<id>", a
+   * project id). Legal holds and access and erasure requests find rows through them. */
+  subject?: string[];
+  /** The row's legal entity column, so each entity's statutory minimum applies to its own rows. */
+  entity?: string;
 };
+
+/** A country pack's statutory minimum (032 AC-2): no tenant may keep this class for less. */
+export type StatutoryMinimum = { country: string; class: Sensitivity | "personal"; period: `P${string}`; reason: string };
 
 /** A search hit for the built-in `search` tool and the chat. */
 export type SearchHit = { type: string; id: string; title: string; url?: string; summary?: string };
@@ -119,6 +129,10 @@ export type ModuleManifest = {
   viewerScopes?: (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
   /** Retention for tables holding personal data, in the 032 AC-1 shape so it can be enforced. */
   retention?: RetentionEntry[];
+  /** Country packs' statutory minimum periods per class (032 AC-2). */
+  statutory?: StatutoryMinimum[];
+  /** Ids this module knows a signed-in person by (an hr.person id, say), for access and erasure (032 AC-4). */
+  subjectIds?: (tx: Tx, userId: string) => Promise<string[]>;
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];

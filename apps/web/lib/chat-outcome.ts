@@ -5,7 +5,14 @@ import type { Moved } from "./chat-move";
 export { movedOf } from "./chat-move";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; moved?: Moved; pins?: Pin[] };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; reveal?: Reveal; moved?: Moved; pins?: Pin[] };
+
+/** 035: a value shown once on the card (a new API key). It goes nowhere else: not the model, the conversation or the logs. */
+export type Reveal = { label: string; value: string };
+export const revealOf = (result: unknown): Reveal | undefined => {
+  const r = (result as { reveal?: Partial<Reveal> } | null)?.reveal;
+  return r && typeof r.label === "string" && typeof r.value === "string" ? { label: r.label, value: r.value } : undefined;
+};
 
 /**
  * What a failed confirm or cancel means for the card (review rounds 3 to 8). "cancelled" only when it

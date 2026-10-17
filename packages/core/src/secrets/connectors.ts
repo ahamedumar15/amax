@@ -10,6 +10,10 @@ export const CONNECTORS = {
   keyflow: { name: "Keyflow", usedFor: "Two-way people and goals sync", noun: "key", logo: "K", color: "linear-gradient(135deg,#7B61FF,#2FCB8C)" },
   "zoho-sign": { name: "Zoho Sign", usedFor: "Offers and contracts", noun: "token", logo: "Z", color: "#E42527" },
   teams: { name: "Microsoft Teams", usedFor: "Notifications and approvals in Teams", noun: "secret", logo: "T", color: "#5059C9" },
+  "github-webhook": { name: "GitHub webhooks", usedFor: "Verifying incoming GitHub webhooks", noun: "secret", logo: "G", color: "#24292F" },
+  "azure-devops-webhook": { name: "Azure DevOps webhooks", usedFor: "Verifying incoming service hooks", noun: "secret", logo: "D", color: "#0078D4" },
+  "msgraph-webhook": { name: "Microsoft Graph notifications", usedFor: "Verifying change notifications (clientState)", noun: "secret", logo: "E", color: "#2F6FEB" },
+  "amax-webhook": { name: "amax webhook signing", usedFor: "Signing outgoing webhooks and verifying signed calls", noun: "secret", logo: "A", color: "#6A6681" },
 } as const satisfies Record<string, Connector>;
 
 export type ConnectorId = keyof typeof CONNECTORS;

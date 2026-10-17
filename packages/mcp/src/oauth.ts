@@ -45,9 +45,9 @@ export const metadata = {
       registration_endpoint: `${b}/oauth/register`,
       revocation_endpoint: `${b}/oauth/revoke`,
       response_types_supported: ["code"],
-      grant_types_supported: ["authorization_code", "refresh_token"],
+      grant_types_supported: ["authorization_code", "refresh_token", "client_credentials"],
       code_challenge_methods_supported: ["S256"],
-      token_endpoint_auth_methods_supported: ["none"],
+      token_endpoint_auth_methods_supported: ["none", "client_secret_post"],
       scopes_supported: ALL_SCOPES,
     };
   },

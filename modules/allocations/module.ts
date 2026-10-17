@@ -30,8 +30,10 @@ export default defineModule({
     { path: "p/:key/team", title: "Team", mount: "delivery", component: ProjectTeamPage },
   ],
   mcpTools,
-  // Allocations hold no personal fields of their own: people are hr.person ids, names stay in hr.
-  retention: [],
+  // People are hr.person ids and their names stay in hr; only who last changed an allocation is personal.
+  retention: [
+    { table: "allocations.allocation", label: "Who changed an allocation", subject: ["person_id", "project_id", "updated_by"], fields: ["updated_by"], class: "personal", period: "P7Y", start: { at: ["month"] }, action: "anonymise" },
+  ],
   viewerScopes: async (tx, user) => ({ assignedProjects: await assignedProjectIds(tx, user) }),
   chatIntents,
   jobs: [],
