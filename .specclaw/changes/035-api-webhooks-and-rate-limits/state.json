@@ -1,9 +1,10 @@
 {
   "change": "035-api-webhooks-and-rate-limits",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T19:06:53Z"},
-    "tasks": {"status":"done","at":"2026-10-17T19:12:03Z"}
+    "tasks": {"status":"done","at":"2026-10-17T19:12:03Z"},
+    "verify": {"status":"done","at":"2026-10-17T19:36:30Z"}
   }
 }

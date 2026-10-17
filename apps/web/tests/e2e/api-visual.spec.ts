@@ -35,6 +35,7 @@ test("035 AC6 API and webhooks matches the mock within 2%, in light and dark, wi
     if (process.env.DIFF_DIR) { const { writeFileSync } = await import("node:fs"); const n = sel.replace(/\W+/g, "_"); writeFileSync(`${process.env.DIFF_DIR}/${n}-mock.png`, want.png); writeFileSync(`${process.env.DIFF_DIR}/${n}-app.png`, got.png); }
     expect(diffRatio(want, got), sel).toBeLessThanOrEqual(0.02);
   }
+  if (process.env.DIFF_DIR) await page.screenshot({ path: `${process.env.DIFF_DIR}/app.png`, fullPage: true });
   expect(await axe(page)).toEqual([]);
   await page.emulateMedia({ colorScheme: "dark" });
   expect(await axe(page)).toEqual([]);

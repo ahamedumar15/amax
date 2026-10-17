@@ -47,5 +47,22 @@ New admin screen, API and webhooks: service credentials with owner, scopes, expi
 
 ## Verify
 
-Quality: not_run (specclaw-quality-scan fails with jq "Argument list too long", a known tool issue)
+**Verdict:** PASS
+- AC-1: pass — `packages/api/tests/ac1-rest.test.ts` (OpenAPI 3.1 doc from the registry; REST call audited as the person with source api and traced as mcp_call then tool_call; 401/400/403 paths); e2e `api.spec.ts` serves /api/v1/openapi.json and refuses a keyless call.
+- AC-2: pass — `ac1-rest.test.ts` AC2 (module scopes, acts-for list, expiry capped at 365 days, hash stored, client-credentials token works and can't mint more, refusals audited); `apps/web/tests/admin/api-reveal.test.ts` (key absent from the model's input, chat.conversation, ai.call, core.trace_event, core.audit_event, every other table and console logs; MCP create refused); e2e `api.spec.ts` (key shown once on the card, gone after reload, not in page HTML).
+- AC-3: pass — `packages/api/tests/ac3-incoming.test.ts` (GitHub sha256, Azure DevOps basic auth + createdDate window, Graph clientState, amax-signed stale; per-tenant 031 secrets, event-ID dedupe, rejections counted in api.inbound, secret not in the audit).
+- AC-4: pass — `packages/api/tests/ac4-outgoing.test.ts` (classified fields masked, HMAC-SHA256 with timestamp verifies, 5 attempts with backoff via the 029 Postgres engine, switched off after 5 failed deliveries, no delivery after).
+- AC-5: pass — `packages/api/tests/ac5-rate-limits.test.ts` (MCP flood from one tenant gets 429 with Retry-After, the other tenant's call succeeds; REST 429; page limit per user; limited requests recorded per channel).
+- AC-6: pass — e2e `api-visual.spec.ts`: the four tickets each within 2% of the mock at 1440 px, axe clean in light and dark; `api.spec.ts` and `admin.spec.ts`: non-Admin gets 404, no forms, every card/ticket/row pinned.
 
+Commands:
+- `npx vitest run --config vitest.config.ts` (DATABASE_MIGRATE_URL set): exit 0, 106 files, 725 passed, 6 skipped
+- `pnpm lint` (tsc in every package + check:graph): exit 0; `node scripts/check-module-standard.mjs`: exit 0
+- `pnpm build`: exit 0
+- `npx playwright test --config playwright.auth.config.ts` (E2E_DB=amax_e2e_035, E2E_AUTH_PORT=3535): exit 0, 51 passed
+- `npx playwright test` (guest, E2E_PORT=3536): exit 0, 1 passed
+- `specclaw-preset-check .`: exit 1 on 717 pre-existing repo-wide violations; none in the files this change adds
+- Quality: not_run (specclaw-quality-scan fails with jq "Argument list too long", a known tool issue)
+- specclaw-review: not run (operator: review once per module, at the end)
+
+Screenshots: `.specclaw/changes/035-api-webhooks-and-rate-limits/shots/app.png`, `.specclaw/changes/035-api-webhooks-and-rate-limits/shots/mock.png`
