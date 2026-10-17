@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { ForbiddenError, getRuntime, now as clock } from "@amax/core/server";
+import { ForbiddenError, getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
@@ -71,8 +71,15 @@ export const getProject = (v: Viewer, key: string) =>
     return { project: project(r), proposals };
   });
 
-// "Today" for date windows: core's clock (env AMAX_TODAY, validated at boot, pins it for visual tests).
-export const today = () => clock();
+/**
+ * "Today" for a tenant's date windows: its delivery.clock_pin row (a validated date; the visual tests
+ * pin fixtures.md's Oct 16, 2026), else the real date. Per tenant, module data, no process env.
+ */
+const clockOf = async (tx: Tx): Promise<Date> => {
+  const [r] = await tx.execute(sql`select today::text as today from delivery.clock_pin`);
+  return r ? new Date(`${r.today as string}T15:00:00Z`) : new Date();
+};
+export const today = (v: Viewer) => read(v, clockOf);
 
 const isoWeek = (d: Date) => {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -82,7 +89,7 @@ const isoWeek = (d: Date) => {
 const monday = (d: Date) => { const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t; };
 
 /** Last 8 ISO weeks ending this week: labels W35…W42 and their Mondays. */
-export function lastWeeks(now = today(), n = 8) {
+export function lastWeeks(now: Date, n = 8) {
   const m = monday(now);
   return Array.from({ length: n }, (_, i) => { const d = new Date(m.getTime() - (n - 1 - i) * 7 * 86_400_000); return { label: `W${isoWeek(d)}`, monday: d.toISOString().slice(0, 10) }; });
 }
@@ -92,9 +99,9 @@ export function lastWeeks(now = today(), n = 8) {
  * per-project rows are not summed into it, review round 1). A week with no roll-up is null, not 0:
  * until ingestion (008) writes them there is no data, and the chart says so.
  */
-export const weeklyThroughput = (v: Viewer, now = today()) =>
+export const weeklyThroughput = (v: Viewer, now?: Date) =>
   read(v, async (tx) => {
-    const weeks = lastWeeks(now);
+    const weeks = lastWeeks(now ?? (await clockOf(tx)));
     const rows = await tx.execute(sql`select week::text as week, planned, done from delivery.weekly_stat where project_id is null and week >= ${weeks[0].monday}`);
     const at = (w: string) => rows.find((r) => r.week === w);
     const col = (k: "planned" | "done") => weeks.map((w) => { const r = at(w.monday); return r ? Number(r[k]) : null; });
@@ -105,17 +112,18 @@ export const weeklyThroughput = (v: Viewer, now = today()) =>
  * Proposals that reached Prod per ISO week, from proposal.released_at: the same source as
  * phaseCounts' "Released this month", so the two never disagree (review round 1).
  */
-export const shippedPerWeek = (v: Viewer, now = today()) =>
+export const shippedPerWeek = (v: Viewer, now?: Date) =>
   read(v, async (tx) => {
-    const weeks = lastWeeks(now);
+    const weeks = lastWeeks(now ?? (await clockOf(tx)));
     const rows = await tx.execute(sql`select date_trunc('week', released_at at time zone 'UTC')::date::text as week, count(*)::int as n
       from delivery.proposal p where p.phase = 'released' and released_at >= ${`${weeks[0].monday}T00:00:00Z`} and ${ACTIVE} group by 1`);
     return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
   });
 
 // In flight = not released; released this month = reached Prod since the 1st (UTC).
-export const phaseCounts = (v: Viewer, now = today()) =>
+export const phaseCounts = (v: Viewer, at?: Date) =>
   read(v, async (tx) => {
+    const now = at ?? (await clockOf(tx));
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
     const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal p where ${ACTIVE} group by phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
@@ -124,7 +132,7 @@ export const phaseCounts = (v: Viewer, now = today()) =>
   });
 
 export type ReleaseRow = {
-  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt: string;
+  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
   stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
@@ -137,7 +145,7 @@ export const listReleases = (v: Viewer) =>
     const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
       id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
-      projectColor: r.project_color as string, proposals: Number(r.proposals), createdAt: new Date(r.created_at as string).toISOString(),
+      projectColor: r.project_color as string, proposals: Number(r.proposals),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
         return { environment: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,

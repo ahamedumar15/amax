@@ -63,15 +63,19 @@ export function actionFor(r: ReleaseRow, allowed: boolean): Action {
 
 /**
  * The map's Active range: every release that has reached a stage, except a Live one that is stale
- * (Prod more than 45 days ago) or superseded by a newer release of its project that is moving.
+ * (Prod more than 45 days ago) or superseded: another release of its project was first deployed
+ * after this one reached Prod. Deployment order, not when the row was written, so a backfilled or
+ * imported older version never hides the current one (review round 2).
  */
 export function onActiveMap(releases: ReleaseRow[], now: Date): ReleaseRow[] {
+  const firstAt = (r: ReleaseRow) => Math.min(...r.stages.map((s) => (s.status && s.at ? Date.parse(s.at) : Infinity)));
   return releases.filter((r) => {
     const { last, live } = standing(r);
     if (!last) return false;
-    if (!live) return true;
-    const stale = live.at !== null && now.getTime() - Date.parse(live.at) > 45 * 86_400_000;
-    const superseded = releases.some((o) => o.projectId === r.projectId && o.createdAt > r.createdAt && standing(o).last);
+    if (!live?.at) return true;
+    const prodAt = Date.parse(live.at);
+    const stale = now.getTime() - prodAt > 45 * 86_400_000;
+    const superseded = releases.some((o) => o !== r && o.projectId === r.projectId && firstAt(o) > prodAt && firstAt(o) !== Infinity);
     return !stale && !superseded;
   });
 }
@@ -163,7 +167,7 @@ function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: st
 export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Releases</h1><SignInFirst /></>;
-  const releases = await listReleases(viewer);
+  const [releases, now] = await Promise.all([listReleases(viewer), today(viewer)]);
   // 042: projects have their own environments; columns are the union in stage order.
   const envs = stageColumns(releases);
   return (
@@ -174,7 +178,7 @@ export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenPro
         <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: {} }} />
           <nav className="seg" aria-label="Range"><a href="/delivery/releases" aria-current={searchParams.map !== "all" ? "true" : undefined}>Active</a><a href="/delivery/releases?map=all" aria-current={searchParams.map === "all" ? "true" : undefined}>All</a></nav>
         </div>
-        <ReleaseMap releases={searchParams.map === "all" ? releases : onActiveMap(releases, today())} columns={envs} />
+        <ReleaseMap releases={searchParams.map === "all" ? releases : onActiveMap(releases, now)} columns={envs} />
       </div>
       <div className="card flush pinnable">
         <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: {} }} /><IntentButton intent="delivery.new-release" label="New release" /></div>

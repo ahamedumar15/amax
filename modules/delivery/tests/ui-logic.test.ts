@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ReleaseRow } from "../server/queries";
+import { runs } from "../ui/charts";
 import { csvCell, csvText } from "../ui/csv";
 import { count } from "../ui/ProjectsPage";
 import { actionFor, mapPill, mapRow, nextStep, onActiveMap, standing } from "../ui/ReleasesPage";
@@ -26,7 +27,7 @@ describe("pluralise on the same count", () => {
 
 const st = (environment: string, position: number, isProd: boolean, status: string | null, at: string | null = null) => ({ environment, position, isProd, status, at, note: null, run: null });
 const rel = (over: Partial<ReleaseRow>, ...stages: ReturnType<typeof st>[]): ReleaseRow =>
-  ({ id: over.version ?? "r", projectId: "p1", version: "v1", projectKey: "CON", projectName: "Contoso", projectColor: "violet", proposals: 1, createdAt: "2026-10-01T00:00:00.000Z", ...over, stages });
+  ({ id: over.version ?? "r", projectId: "p1", version: "v1", projectKey: "CON", projectName: "Contoso", projectColor: "violet", proposals: 1, ...over, stages });
 
 describe("one standing for the table, the map and the pill", () => {
   const cases: [string, ReleaseRow, string | null, string | null, string][] = [
@@ -61,14 +62,27 @@ describe("the action cell keeps the first deployment reachable", () => {
 
 describe("the Active map", () => {
   const now = new Date("2026-10-16T15:00:00Z");
-  const live = (version: string, at: string, createdAt: string, projectId = "p1") => rel({ version, createdAt, projectId }, st("Prod", 1, true, "deployed", at));
-  const moving = (version: string, createdAt: string, projectId = "p1") => rel({ version, createdAt, projectId }, st("Dev", 1, false, "deployed", "2026-10-12T09:00:00Z"), st("Prod", 2, true, null));
-  const fresh = (version: string, createdAt: string) => rel({ version, createdAt }, st("Dev", 1, false, null), st("Prod", 2, true, null));
+  const live = (version: string, at: string, projectId = "p1") => rel({ version, projectId }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, "deployed", at));
+  const moving = (version: string, at: string, projectId = "p1") => rel({ version, projectId }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, null));
+  const fresh = (version: string) => rel({ version }, st("Dev", 1, false, null), st("Prod", 2, true, null));
+  // Rows are listed newest-written first; supersession must not depend on that (review round 2).
   it.each([
-    ["a recent live release, nothing newer", [live("v1", "2026-10-01T09:00:00Z", "2026-09-20T00:00:00Z")], ["v1"]],
-    ["a live release more than 45 days old", [live("v1", "2026-08-20T09:00:00Z", "2026-08-01T00:00:00Z")], []],
-    ["a live release superseded by a newer one that is moving", [moving("v2", "2026-10-05T00:00:00Z"), live("v1", "2026-10-01T09:00:00Z", "2026-09-20T00:00:00Z")], ["v2"]],
-    ["a newer release not deployed anywhere does not supersede", [fresh("v2", "2026-10-05T00:00:00Z"), live("v1", "2026-10-01T09:00:00Z", "2026-09-20T00:00:00Z")], ["v1"]],
-    ["another project's newer release does not supersede", [moving("v9", "2026-10-05T00:00:00Z", "p2"), live("v1", "2026-10-01T09:00:00Z", "2026-09-20T00:00:00Z")], ["v9", "v1"]],
+    ["a recent live release, nothing after it", [live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["a live release more than 45 days old", [live("v1", "2026-08-20T09:00:00Z")], []],
+    ["superseded by a release first deployed after its Prod", [moving("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
+    ["an older version written later (backfill, import) does not hide the current one", [live("v0.9", "2026-09-01T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["a newer release not deployed anywhere does not supersede", [fresh("v2"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["another project's later release does not supersede", [moving("v9", "2026-10-05T09:00:00Z", "p2"), live("v1", "2026-10-01T09:00:00Z")], ["v9", "v1"]],
   ])("%s", (_, releases, want) => expect(onActiveMap(releases as ReleaseRow[], now).map((r) => r.version)).toEqual(want));
+});
+
+describe("line chart runs never bridge a missing week", () => {
+  it.each([
+    ["no gaps", [1, 2, 3], [[[0, 1], [1, 2], [2, 3]]]],
+    ["a gap in the middle", [1, null, 3, 4], [[[0, 1]], [[2, 3], [3, 4]]]],
+    ["a gap at the start", [null, 2, 3], [[[1, 2], [2, 3]]]],
+    ["a gap at the end", [1, 2, null], [[[0, 1], [1, 2]]]],
+    ["all missing", [null, null], []],
+    ["a zero is data, not a gap", [0, null, 0], [[[0, 0]], [[2, 0]]]],
+  ])("%s", (_, data, want) => expect(runs(data as (number | null)[])).toEqual(want));
 });

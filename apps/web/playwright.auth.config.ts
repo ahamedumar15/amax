@@ -32,8 +32,6 @@ export default defineConfig({
       AMAX_AUTH_DEMO_TENANT: lumen.tenant.id,
       AMAX_AUTH_PASSWORD_TENANT: lumen.tenant.id,
       AMAX_AI_PROVIDER: "scripted",
-      // fixtures.md's "today", so date windows match the mock.
-      AMAX_TODAY: "2026-10-16",
       NODE_ENV: "test",
       DATABASE_MIGRATE_URL: admin.toString(),
     },

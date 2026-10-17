@@ -1,13 +1,13 @@
--- 041: weekly task roll-ups for the portfolio's "Tasks done per week" (planned vs done). Fixtures seed
--- them; 008 ingestion will write them from task events. project_id null = the whole portfolio (its
--- own total, never the sum of the per-project rows). "Shipped to Prod per week" is not rolled up: it
--- counts proposal.released_at, like "Released this month".
+-- 041: weekly roll-ups for the charts: the portfolio's "Tasks done per week" (planned vs done) and
+-- Proposals' "Shipped to Prod per week". Fixtures seed them; 008 ingestion will write them from task
+-- and deployment events. project_id null = the whole portfolio.
 create table delivery.weekly_stat (
   tenant_id uuid not null references core.tenant(id),
   project_id uuid references delivery.project(id),
   week date not null,
   planned int not null default 0,
   done int not null default 0,
+  shipped int not null default 0,
   unique nulls not distinct (tenant_id, project_id, week)
 );
 select core.enable_tenant_rls('delivery.weekly_stat');

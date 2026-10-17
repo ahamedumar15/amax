@@ -1,5 +1,5 @@
 import { createDb, type Db } from "@amax/db";
-import { clockFromEnv, loadEnv } from "@amax/core/env";
+import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { configureAi } from "@amax/ai";
 import { anthropicProvider } from "@amax/ai/anthropic";
@@ -25,7 +25,7 @@ export function getDb(): Db | null {
     cache.amaxDb = createDb(env.DATABASE_URL).db;
   }
   if (cache.amaxDb && !wired) {
-    configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY!, now: clockFromEnv(loadEnv()) });
+    configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     setGrants(installed);
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();

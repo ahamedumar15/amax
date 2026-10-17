@@ -130,7 +130,7 @@ describe.skipIf(!hasDb)("voiding only un-releases through the record that releas
   it("a shipped proposal can't be moved into another release; unknown keys are refused in both paths", async () => {
     // v0.9.2 is live in Prod: it keeps its own proposals but takes no new one (final review).
     await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-100", "HRI-101", "HRI-102", "HRI-103", "HRI-001"] })).rejects.toThrow(/already live in Prod; put HRI-001 in a new release/);
-    await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-104"] })).rejects.toThrow(/already shipped/);
+    await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-090"] })).rejects.toThrow(/already shipped/);
     await expect(createRelease(ctxFor(sahan), { projectKey: "HRI", version: "v1.0.0", proposalKeys: ["HRI-100"] })).rejects.toThrow(/already shipped/);
     await expect(createRelease(ctxFor(sahan), { projectKey: "HRI", version: "v1.0.1", proposalKeys: ["HRI-999"] })).rejects.toThrow(/no proposal HRI-999/);
     await expect(setReleaseProposals(ctxFor(sahan), { projectKey: "HRI", version: "v0.9.2", proposalKeys: ["HRI-999"] })).rejects.toThrow(/no proposal HRI-999/);

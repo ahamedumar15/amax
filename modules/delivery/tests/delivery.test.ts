@@ -12,7 +12,7 @@ import manifest from "../module";
 import { EVENTS, getProjectRef, listProjectRefs, managedProjectIds, PHASES } from "../contracts";
 import { mcpTools } from "../mcp";
 import { ctxFor } from "../server/context";
-import { getProject, listProjects, listProposals, listReleases, phaseCounts, shippedPerWeek, weeklyThroughput } from "../server/queries";
+import { getProject, listProjects, listProposals, listReleases, phaseCounts, shippedPerWeek, today, weeklyThroughput } from "../server/queries";
 import { moveProposal, recordDeployment } from "../server/services";
 import { nextStep, onActiveMap } from "../ui/ReleasesPage";
 
@@ -94,10 +94,13 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     expect([lane("proposed"), lane("planned"), lane("building"), lane("verified"), lane("released")]).toEqual([["CON-016", "CON-017"], ["CON-013"], ["CON-011", "CON-014"], ["CON-010", "CON-012"], ["CON-009"]]);
     const rel = await listReleases(maya);
     expect(rel.map((r) => `${r.projectKey} ${r.version} ${r.proposals}`)).toEqual(["CON v2.5.0 3", "CON v2.4.0 2", "FLT v1.8.0 5", "HRI v0.9.2 4",
-      "CON v2.3.0 1", "FLT v1.7.0 2", "HRI v0.9.0 3", "FLT v1.7.1 1", "HRI v0.9.1 4", "FLT v1.7.2 3"]);
+      "CON v2.3.0 1", "FLT v1.7.0 2", "HRI v0.9.0 3", "FLT v1.7.1 1", "HRI v0.9.1 4", "FLT v1.7.2 3", "FLT v1.7.3 1"]);
     // The Active map is the mock's four: in flight, plus HRI's live v0.9.2; superseded live releases drop off.
     expect(onActiveMap(rel, new Date("2026-10-16T15:00:00Z")).map((r) => `${r.projectKey} ${r.version}`)).toEqual(["CON v2.4.0", "FLT v1.8.0", "HRI v0.9.2"]);
-    // A released proposal has a real release (review round 1: no fixture-only label).
+    // Every released proposal, in every project, has a real release that reached Prod (review rounds 1 and 2).
+    const orphans = await withTenant(app, T, (tx) => tx.execute(sql`select p.key from delivery.proposal p where p.phase = 'released' and not exists (
+      select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = p.release_id and e.is_prod and d.status = 'deployed' and d.voided_at is null)`));
+    expect(orphans.map((o) => o.key)).toEqual([]);
     expect((await listProposals(maya, { projectKey: "CON", phase: "released" })).map((p) => [p.key, p.release])).toEqual([["CON-009", "v2.3.0"]]);
   });
 
@@ -114,12 +117,32 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     // Per-project rows beside the portfolio row (ingestion writes both) don't change the portfolio.
     const [con] = await withTenant(app, T, (tx) => tx.execute(sql`select id from delivery.project where key = 'CON'`));
     await withTenant(app, T, (tx) => tx.execute(sql`insert into delivery.weekly_stat (tenant_id, project_id, week, planned, done) values (${T}, ${con.id}, '2026-10-12', 12, 11)`));
-    expect((await weeklyThroughput(maya, now)).done).toEqual(before.done);
-    // A week with no roll-up is null, never 0; a tenant with none at all gets all nulls.
+    try {
+      expect((await weeklyThroughput(maya, now)).done).toEqual(before.done);
+    } finally {
+      await withTenant(app, T, (tx) => tx.execute(sql`delete from delivery.weekly_stat where project_id = ${con.id}`));
+    }
+    // A week with no roll-up is null, never 0; a window with none at all is all nulls.
     const later = await weeklyThroughput(maya, new Date("2026-11-03T15:00:00Z"));
     expect(later.labels.slice(-3)).toEqual(["W43", "W44", "W45"]);
     expect(later.done.slice(-3)).toEqual([null, null, null]);
     expect((await weeklyThroughput(maya, new Date("2027-06-01T15:00:00Z"))).planned.every((x) => x === null)).toBe(true);
+  });
+
+  it("today is the tenant's clock pin, else the real date; the windows follow it (review round 2)", async () => {
+    const before = Date.now();
+    expect((await today(maya)).getTime()).toBeGreaterThanOrEqual(before);
+    await withTenant(app, T, (tx) => tx.execute(sql`insert into delivery.clock_pin (tenant_id, today) values (${T}, '2026-10-16')`));
+    try {
+      expect((await today(maya)).toISOString()).toBe("2026-10-16T15:00:00.000Z");
+      expect((await shippedPerWeek(maya)).labels.at(-1)).toBe("W42");
+      expect((await weeklyThroughput(maya)).done.at(-1)).toBe(38);
+      expect((await phaseCounts(maya)).releasedThisMonth).toBe(5);
+      // A pin is a date: anything else is refused by the column.
+      await expect(withTenant(app, T, (tx) => tx.execute(sql`update delivery.clock_pin set today = 'yesterday-ish'`))).rejects.toThrow();
+    } finally {
+      await withTenant(app, T, (tx) => tx.execute(sql`delete from delivery.clock_pin`));
+    }
   });
 
   it("AC-5 contract lookups", async () => {

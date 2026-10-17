@@ -5,13 +5,13 @@ import { expect, test, type Page } from "@playwright/test";
 import { capture, diffRatio } from "./diff";
 
 // 041 AC-6: every delivery section against the mock, region by region, at 1440 and 390 px, within 2%. Runs before
-// AMX is imported (see playwright.auth.config.ts) and with AMAX_TODAY pinned to fixtures.md's Oct 16.
+// AMX is imported (see playwright.auth.config.ts) and with the tenant's delivery.clock_pin at fixtures.md's Oct 16 (global-auth.ts).
 const mockUrl = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
 
 const SECTIONS: { id: string; path: string; regions: string[] }[] = [
   { id: "001-amax-foundation-projects", path: "/delivery", regions: [".row.head", ".tickets .ticket", ".cols.even > .card", ".card.flush .card-head", ".card.flush tbody tr"] },
   { id: "001-amax-foundation-project", path: "/delivery/p/CON", regions: [".crumb", ".row.head", ".tabs", ".board .lane"] },
-  { id: "001-amax-foundation-proposals", path: "/delivery/proposals", regions: ["h1", ".lede", ".cols.even > .card", ".card.flush .card-head", ".card.flush tbody tr"] },
+  { id: "001-amax-foundation-proposals", path: "/delivery/proposals", regions: ["h1", ".lede", ".cols.even > .card:first-child", ".cols.even > .card:last-child", ".card.flush .card-head", ".card.flush tbody tr"] },
   { id: "001-amax-foundation-releases", path: "/delivery/releases", regions: ["h1", ".lede", ".card.map", ".card.flush .card-head", ".card.flush tbody tr"] },
 ];
 
@@ -19,7 +19,7 @@ const SECTIONS: { id: string; path: string; regions: string[] }[] = [
 const ALLOW: Record<string, [number, string]> = {
   "* /delivery/proposals .card.flush tbody tr": [0.03, "the mock's table says \"Invoice export\"; fixtures.md and the mock's own board say \"Invoice export to PDF\", which widens the column"],
   "* /delivery .tickets .ticket": [0.04, "the mock's \"1 more in presales handover\" needs presales data (020); the app says \"For 3 clients\""],
-  "* /delivery/proposals .cols.even > .card": [0.04, "the mock's shipped bars (W41 4, W42 6) disagree with its own \"5 released this month\"; the chart counts proposal.released_at, the phase card's source too (041 review round 1), so W41 and W42 and the trend differ"],
+  "* /delivery/proposals .cols.even > .card:last-child": [0.04, "the mock's shipped bars (W41 4, W42 6) disagree with its own \"5 released this month\"; the chart counts proposal.released_at, the phase card's source too (041 review round 1), so W41, W42 and the trend differ (module README)"],
   "390 /delivery/p/CON .crumb": [0.03, "same text and box; Chromium antialiases it in greyscale in the app and subpixel in the mock at phone width"],
   "390 /delivery/p/CON .tabs": [0.03, "same as the breadcrumb"],
 };

@@ -18,7 +18,21 @@ function SrTable({ caption, head, rows }: { caption: string; head: string[]; row
   );
 }
 
-/** A null point is a week with no data: the line skips it rather than drawing a zero. */
+/**
+ * Runs of consecutive non-null points, as [index, value] pairs. A null is a week with no data: the
+ * line and its area break there, never interpolate across it (review round 2).
+ */
+export function runs(data: (number | null)[]): [number, number][][] {
+  const out: [number, number][][] = [];
+  let cur: [number, number][] = [];
+  data.forEach((v, i) => {
+    if (v === null) { if (cur.length) out.push(cur); cur = []; } else cur.push([i, v]);
+  });
+  if (cur.length) out.push(cur);
+  return out;
+}
+
+/** A null point is a week with no data (see runs). */
 export type Series = { name: string; color: string; data: (number | null)[]; area?: boolean; dashed?: boolean };
 
 export function LineChart({ id, label, labels, series, max, step, width = 560, height = 210 }: { id: string; label: string; labels: string[]; series: Series[]; max: number; step: number; width?: number; height?: number }) {
@@ -33,14 +47,18 @@ export function LineChart({ id, label, labels, series, max, step, width = 560, h
         {grid}
         {labels.map((l, i) => <text key={l} x={X(i)} y={height - 8} textAnchor="middle" className="ax">{l}</text>)}
         {series.map((se, k) => {
-          const pts = se.data.flatMap((v, i) => (v === null ? [] : [[X(i), Y(v)] as [number, number]]));
-          if (!pts.length) return null;
-          const last = pts[pts.length - 1];
+          const segs = runs(se.data).map((run) => run.map(([i, v]) => [X(i), Y(v)] as [number, number]));
+          if (!segs.length) return null;
+          const last = segs[segs.length - 1].at(-1)!;
           return (
             <g key={se.name}>
-              {se.area && <><defs><linearGradient id={`${id}g${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={se.color} stopOpacity=".25" /><stop offset="1" stopColor={se.color} stopOpacity="0" /></linearGradient></defs>
-                <path d={`${curve(pts)} L${last[0]} ${Y(0)} L${pts[0][0]} ${Y(0)} Z`} fill={`url(#${id}g${k})`} /></>}
-              <path d={curve(pts)} fill="none" stroke={se.color} strokeWidth={se.dashed ? 2.2 : 3} strokeDasharray={se.dashed ? "6 6" : "none"} strokeLinecap="round" />
+              {se.area && <defs><linearGradient id={`${id}g${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={se.color} stopOpacity=".25" /><stop offset="1" stopColor={se.color} stopOpacity="0" /></linearGradient></defs>}
+              {segs.map((pts, j) => pts.length === 1 ? <circle key={j} cx={pts[0][0]} cy={pts[0][1]} r={3} fill={se.color} /> : (
+                <g key={j}>
+                  {se.area && <path d={`${curve(pts)} L${pts[pts.length - 1][0]} ${Y(0)} L${pts[0][0]} ${Y(0)} Z`} fill={`url(#${id}g${k})`} />}
+                  <path d={curve(pts)} fill="none" stroke={se.color} strokeWidth={se.dashed ? 2.2 : 3} strokeDasharray={se.dashed ? "6 6" : "none"} strokeLinecap="round" />
+                </g>
+              ))}
               <circle cx={last[0]} cy={last[1]} r={5} fill="#fff" stroke={se.color} strokeWidth={2.5} />
             </g>
           );

@@ -33,6 +33,8 @@ export default async function setupE2eDatabase() {
   await upsertPasswordUser(db, lumen.tenant.id, { email: "ops@lumenlabs.test", name: "Ops Admin", roles: ["Admin"], password: "e2e-ops-password" });
   // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
   await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
+  // 041: fixtures.md's "today" (Fri Oct 16, 2026) for this tenant's date windows, so dates match the mock.
+  await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into delivery.clock_pin (tenant_id, today) values (${lumen.tenant.id}, '2026-10-16') on conflict do nothing`));
   await client.end();
 }
 

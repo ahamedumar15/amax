@@ -45,19 +45,21 @@ function fillers(): P[] {
   add("FLT", 20, [["proposed", 1], ["planned", 2], ["building", 8], ["verified", 5]], { owner: "Nimal Silva" });
   add("HRI", 1, [["proposed", 2], ["planned", 1], ["building", 8], ["verified", 2]], { owner: "Ayesha Rahman" });
   for (let i = 0; i < 4; i++) out.push({ key: `HRI-1${String(i).padStart(2, "0")}`, title: TITLES[(t++) % TITLES.length], phase: "released", done: 3, total: 3, hours: 6, owner: "Ayesha Rahman", release: "HRI v0.9.2", releasedAt: "2026-10-01T09:00:00Z" });
-  out.push({ key: "HRI-104", title: "Login hotfix", phase: "released", done: 1, total: 1, hours: 1.5, owner: "Ayesha Rahman", releasedAt: "2026-10-06T15:00:00Z" });
+  // Every released proposal has a release with a deployed Prod behind it (review round 2).
   const next: Record<string, number> = { FLT: 5, HRI: 90 };
   for (const r of SHIPPED) for (let i = 0; i < r.n; i++)
-    out.push({ key: `${r.project}-${String(next[r.project]++).padStart(3, "0")}`, title: TITLES[(t++) % TITLES.length], phase: "released", done: 3, total: 3, hours: 6,
+    out.push({ key: `${r.project}-${String(next[r.project]++).padStart(3, "0")}`, title: r.title ?? TITLES[(t++) % TITLES.length], phase: "released", done: r.title ? 1 : 3, total: r.title ? 1 : 3, hours: r.title ? 1.5 : 6,
       owner: r.project === "FLT" ? "Nimal Silva" : "Ayesha Rahman", release: `${r.project} ${r.version}`, releasedAt: `${r.day}T14:00:00Z` });
   return out;
 }
 
-// Shipped to Prod per week, W35 to W39 (the mock's 2, 3, 1, 4, 3): one older release a week.
-const SHIPPED = [
+// Shipped to Prod per week, W35 to W39 (the mock's 2, 3, 1, 4, 3): one older release a week; then
+// FLT's Oct 6 hotfix, the fifth "released this month" (W40 and W41 come out 5 and 1, W42 0: the
+// mock's own 4 and 6 contradict its "5 released this month"; see the module README).
+const SHIPPED: { project: string; version: string; day: string; n: number; title?: string }[] = [
   { project: "FLT", version: "v1.7.0", day: "2026-08-26", n: 2 }, { project: "HRI", version: "v0.9.0", day: "2026-09-02", n: 3 },
   { project: "FLT", version: "v1.7.1", day: "2026-09-09", n: 1 }, { project: "HRI", version: "v0.9.1", day: "2026-09-16", n: 4 },
-  { project: "FLT", version: "v1.7.2", day: "2026-09-23", n: 3 },
+  { project: "FLT", version: "v1.7.2", day: "2026-09-23", n: 3 }, { project: "FLT", version: "v1.7.3", day: "2026-10-06", n: 1, title: "Login hotfix" },
 ];
 
 const RELEASES: { project: string; version: string; deployments: [string, string, string, string?, string?][] }[] = [
