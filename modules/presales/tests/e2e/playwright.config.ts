@@ -9,7 +9,7 @@ const web = join(import.meta.dirname, "../../../../apps/web");
 
 export default defineConfig({
   testDir: ".",
-  testMatch: /presales\.spec\.ts/,
+  testMatch: /(presales|chat-first)\.spec\.ts/,
   workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",

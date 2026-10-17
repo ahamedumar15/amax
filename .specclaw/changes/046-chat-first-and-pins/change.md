@@ -45,4 +45,26 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
 
 ## Verify
 
-Quality: not_run (specclaw-quality-scan aborts: `jq: Argument list too long` on this repo)
+**Verdict:** PASS
+- AC-1: pass — `modules/presales/tests/chat-first.test.ts` (no `<form>`/`<dialog>`/server action/service import in presales UI, `actions.ts` gone); e2e `chat-first.spec.ts` asserts `main form, main dialog` count 0 on board and opportunity page
+- AC-2: pass — e2e: Move/Add-find chips open chat with the deal/find pinned and the prompt pre-filled (`Chat.tsx` now fills the prompt when no intent); opportunity page shows the five Ask amax chips
+- AC-3: pass — `close_opportunity_risk`, `remove_opportunity`, `resolve_suggestion` in `mcp.ts`; `chat-first.test.ts` runs each through chatTurn → pending card → nothing written → confirmAction → written, audit source `chat`
+- AC-4: pass — e2e `unpinned()` is empty on board and opportunity page (cards, tiles, tickets, rows, stage steps, finds, feed items); row pins resolve via new read tool `get_opportunity_item`
+- AC-5: pass — `apps/web/tests/e2e/pins.spec.ts`: every `.card`, `.tcard`, `tbody tr` on /time/w/2026-W42, /time/my/2026-W42, /allocations, /hr/p/LL-0417, /delivery/p/HRI and a release page has `.pin[data-pin]` (screen-reader chart tables and colspan empty rows excluded)
+- AC-6: pass — `BACKLOG.md` lists the remaining inline forms and their write tools
+- AC-7: pass — typecheck, unit tests and all e2e green; `chat-first.spec.ts` "AC7 pin the opportunity, ask to add a task, confirm" passes
+
+Commands (exit codes):
+- `pnpm lint` → 0 (tsc in every package + graph check ok)
+- `DATABASE_MIGRATE_URL=… pnpm test` → 0 (16/16 turbo tasks)
+- `pnpm --filter @amax/web build` → 0
+- `modules/presales: pnpm e2e` → 0 (6 passed)
+- `modules/time: pnpm e2e` → 0 (2 passed)
+- `apps/web: pnpm e2e:auth` → 0 (34 passed, incl. pins.spec)
+- `specclaw-preset-check .` → 1: 644 repo-wide violations, all pre-existing (code comments and file length in files written before the preset); none introduced by this change
+- `specclaw-quality-scan . --gate` → not run: the tool aborts with `jq: Argument list too long` on this repo
+
+Screenshots: `shots/opp.png` (app, opportunity page) vs `shots/mock.png` (mock 046); also `shots/board.png`, `shots/win-*.png`, `shots/chart-*.png`.
+Differences from the mock: no "Change details" chip (no `update_opportunity` write tool yet, backlogged).
+
+Review: specclaw-review skipped by operator preference (one review at module end).
