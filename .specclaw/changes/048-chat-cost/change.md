@@ -41,4 +41,25 @@ What changes on screen, and where to see it: [`048-chat-cost`](../../mock/index.
 
 ## Verify
 
-Quality: not_run (specclaw-quality-scan failed: "jq: Argument list too long" on this repo)
+**Verdict:** PASS
+
+- AC-1: pass — `packages/ai/tests/usage-migration.test.ts` migrates to 0018, inserts calls, applies 0019: `user:<known id>` is backfilled, an unknown id and a job stay null; a chat `converse` call records `user_id` and `conversation_id`. e2e footer count rises after a chat turn.
+- AC-2: pass — `apps/web/tests/e2e/ai-usage.spec.ts` "048 AC-2 AC-6": four tickets each with a pin, a pin per day on the chart, pinned person and conversation rows, the source filter changes the view. Month picker covered by the same `UsageFilters` control.
+- AC-3: pass — `usage.test.ts` AC-3 (self sees only own; tenant scope throws ForbiddenError for non-Admins, through the tool too; footer totals equal the self totals); e2e: Nimal's footer shows his own `$0.00 · 0 calls` and /settings/ai/usage is not found for him.
+- AC-4: pass — `usage.test.ts` AC-4: `get_ai_usage` totals and person, day and conversation rows equal `aiUsage()` (the screen's query); `key` narrows to one row; source filter.
+- AC-5: pass — `usage.test.ts` AC-5: unpriced calls give `costUsd: null` and `unknownCostCalls`, label "Unknown" or "$x + unknown", never $0; e2e footer reads "This month: Unknown" for the scripted (unpriced) model.
+- AC-6: pass — axe (wcag2a/2aa/21aa/22aa) clean in light and dark on the screen; typecheck, unit, lint and e2e green.
+
+Commands (exit codes):
+- `pnpm test` with DATABASE_MIGRATE_URL set — 0
+- `pnpm lint` (tsc per package + graph check) — 0
+- `pnpm build` (apps/web) — 0
+- `pnpm exec playwright test --config playwright.auth.config.ts` (E2E_DB=amax_e2e_048) — 0, 36 passed, three runs in a row
+- `pnpm exec playwright test` (guest config) — 0
+- `specclaw-preset-check .` — 1 on the repo (654 pre-existing comment and line-limit violations); no violations in files this change adds after fixes.
+- `specclaw-quality-scan . --gate` — 126, the tool does not run on this repo (`jq: Argument list too long`). Not run.
+- specclaw-review loop: skipped on operator instruction (review cadence: once per module end).
+
+Screenshots: `.specclaw/changes/048-chat-cost/shots/app.png` (light), `shots/app-dark.png`, `shots/app-chat-footer.png`, `shots/mock.png`. Layout, tickets, chart card and the two tables match the mock section; the chart line uses the brand violet.
+
+Note: in two early full e2e runs, `auth.spec.ts` "AC5 non-admins get no View as" failed once each (signed out, then /delivery still served). It passed in isolation and on main 3 of 3. After the footer moved to one totals query loaded in parallel with voice, the full suite passed 4 runs in a row.

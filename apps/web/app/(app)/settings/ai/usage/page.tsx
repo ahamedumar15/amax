@@ -54,7 +54,7 @@ export default async function AiUsagePage({ searchParams }: { searchParams: Prom
           <p className="lede">
             {monthName(month)}{month === months[0] ? " so far" : ""}: {plural(t.calls, "call")} across {plural(t.people, "person", "people")}, {t.costUsd === null ? (t.calls ? "at unknown cost" : "costing nothing") : `costing ${usd(t.costUsd)}`}.
             {top ? ` ${top.name}'s AI use cost the most.` : ""}
-            {t.unknownCostCalls ? ` ${plural(t.unknownCostCalls, "call")} used a model without a known price, so ${t.costUsd === null ? "the cost is unknown" : "the total is a lower bound"}.` : ""}
+            {t.unknownCostCalls && t.costUsd !== null ? ` ${plural(t.unknownCostCalls, "call")} used a model without a known price, so the total is a lower bound.` : ""}
           </p>
         </div>
         <UsageFilters month={month} source={source ?? ""} months={months.map((m) => ({ value: m, label: monthName(m) }))} />
