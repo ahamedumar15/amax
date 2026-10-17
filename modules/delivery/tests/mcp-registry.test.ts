@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { configureRuntime } from "@amax/core/server";
-import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer } from "@amax/auth";
+import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer, setViewerScopeResolvers } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
@@ -29,7 +29,7 @@ describe.skipIf(!hasDb)("AC-2/AC-3 registry with delivery (Postgres)", () => {
   const as = async (email: string) => {
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${email}`));
     const v = (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
-    return { ...v, managedProjects: await withTenant(app, T, (tx) => managedProjectIds(tx, v.userId)) };
+    return v;
   };
 
   beforeAll(async () => {
@@ -37,6 +37,8 @@ describe.skipIf(!hasDb)("AC-2/AC-3 registry with delivery (Postgres)", () => {
     app = t.app();
     configureRuntime({ db: app, auditKey: "k".repeat(32) });
     setGrants([delivery]);
+    // Managed projects come from the real resolver, as in the app (not planted on the viewer).
+    setViewerScopeResolvers([delivery.viewerScopes!]);
     installAuthorizer();
     await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, delivery], lumen);
     maya = applyViewAs(await as("maya@lumenlabs.test"), "PM");
@@ -60,8 +62,23 @@ describe.skipIf(!hasDb)("AC-2/AC-3 registry with delivery (Postgres)", () => {
 
   it("whoami and search", async () => {
     expect(await registry.call(maya, "whoami", {}, { source: "mcp" })).toMatchObject({ name: "Maya Fernando", roles: ["PM"], viewAs: "PM" });
-    const hits = (await registry.call(maya, "search", { query: "contoso" }, { source: "mcp" })) as { id: string }[];
+    const { hits, notSearched } = (await registry.call(maya, "search", { query: "contoso" }, { source: "mcp" })) as { hits: { id: string }[]; notSearched: string[] };
     expect(hits.map((h) => h.id)).toContain("CON");
+    expect(notSearched).toEqual([]);
+  });
+
+  it("search: a forbidden module is silently empty, a failing one is reported, a working one answers (review round 2)", async () => {
+    const { createRegistry } = await import("@amax/mcp");
+    const { ForbiddenError } = await import("@amax/core/server");
+    const { ScopeError } = await import("@amax/auth");
+    const hit = { type: "x", id: "OK-1", title: "ok" };
+    const r = createRegistry([
+      { id: "works", search: async () => [hit] },
+      { id: "forbidden", search: async () => { throw new ForbiddenError("x:read", "x"); } },
+      { id: "out-of-scope", search: async () => { throw new ScopeError("x:read"); } },
+      { id: "broken", search: async () => { throw new Error("connection reset"); } },
+    ] as never);
+    expect(await r.call(maya, "search", { query: "ok" }, { source: "mcp" })).toEqual({ hits: [hit], notSearched: ["broken"] });
   });
 
   it("AC-2 the same service through a page action and through MCP: same result and audit, apart from source", async () => {

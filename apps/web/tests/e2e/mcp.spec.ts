@@ -63,13 +63,16 @@ test("AC1/AC3 OAuth with PKCE and consent; the tool list follows roles and scope
 });
 
 test("refresh rotates, revoke ends access", async ({ page, baseURL }) => {
-  const { token } = await connectClient(page, baseURL!, "read write");
+  const { token, reg } = await connectClient(page, baseURL!, "read write");
   const write = await mcp(baseURL!, token.access_token);
   expect((await write.listTools()).tools.map((t) => t.name)).toContain("move_proposal");
   await write.close();
-  const rotated = await (await fetch(`${baseURL}/oauth/token`, { method: "POST", body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: token.refresh_token }) })).json();
+  // Review round 1: a refresh must name the client it was issued to.
+  const anon = await fetch(`${baseURL}/oauth/token`, { method: "POST", body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: token.refresh_token }) });
+  expect(anon.status).toBe(400);
+  const rotated = await (await fetch(`${baseURL}/oauth/token`, { method: "POST", body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: token.refresh_token, client_id: reg.client_id }) })).json();
   expect(rotated.access_token).toBeTruthy();
-  const reuse = await fetch(`${baseURL}/oauth/token`, { method: "POST", body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: token.refresh_token }) });
+  const reuse = await fetch(`${baseURL}/oauth/token`, { method: "POST", body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: token.refresh_token, client_id: reg.client_id }) });
   expect(reuse.status).toBe(400);
   const old = await fetch(`${baseURL}/api/mcp`, { method: "POST", headers: { authorization: `Bearer ${token.access_token}`, "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) });
   expect(old.status).toBe(401);

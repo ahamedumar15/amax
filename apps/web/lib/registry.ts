@@ -20,7 +20,9 @@ export function matchRoute(pattern: string, path: string[]): Record<string, stri
   if (parts.length !== path.length) return null;
   const params: Record<string, string> = {};
   for (const [i, part] of parts.entries()) {
-    if (part.startsWith(":")) params[part.slice(1)] = decodeURIComponent(path[i]);
+    // Next has already decoded each segment (route-matcher decodes catch-all entries); decoding
+    // again would turn a literal "%41" into "A" (final review).
+    if (part.startsWith(":")) params[part.slice(1)] = path[i];
     else if (part !== path[i]) return null;
   }
   return params;

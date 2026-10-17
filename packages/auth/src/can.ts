@@ -58,6 +58,7 @@ export function canEver(v: Viewer, action: string): boolean {
 }
 
 export class ScopeError extends Error {
+  readonly retryable = false;
   constructor(action: string) {
     super(`forbidden: ${action} is outside your data scope`);
     this.name = "ScopeError";
@@ -70,14 +71,16 @@ export function assertCan(v: Viewer, action: string, resource?: ResourceAttrs) {
 
 export const viewerOf = (ctx: ServiceContext) => ctx.viewer as Viewer | undefined;
 
-// Services check the permission up front (no record yet); they call assertCan() again once they
-// have loaded the record, so data scopes apply. System jobs are trusted code.
+// Services check the permission up front (no record yet). A service marked `scoped` calls
+// assertCan() once it has loaded the record, so only it may pass on a qualified grant here.
+// System jobs are trusted code.
 export function installAuthorizer() {
-  setAuthorizer((ctx, action) => {
+  setAuthorizer((ctx, action, _resource, _input, opts) => {
     if (ctx.actor.kind === "system") return true;
     // principalContext() has already checked scopes, expiry and acts-for (and audited refusals).
     if (ctx.actor.kind === "service") return Boolean((ctx as { principal?: unknown }).principal);
     const v = viewerOf(ctx);
-    return !!v && canEver(v, action);
+    // Strict by default; only services that check the record themselves (scoped) accept qualified grants.
+    return !!v && (opts?.scoped ? canEver(v, action) : can(v, action));
   });
 }

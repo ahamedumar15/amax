@@ -58,6 +58,6 @@ export async function deployAction(data: FormData) {
 
 export async function voidAction(data: FormData) {
   const viewer = await currentViewer();
-  await voidDeployment(ctxFor(viewer), { projectKey: str(data, "projectKey"), version: str(data, "version"), environment: str(data, "environment"), reason: str(data, "reason") });
+  await voidDeployment(ctxFor(viewer), { projectKey: str(data, "projectKey"), version: str(data, "version"), environment: str(data, "environment"), deploymentId: str(data, "deploymentId") || undefined, reason: str(data, "reason") });
   revalidatePath("/delivery", "layout");
 }

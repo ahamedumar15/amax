@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
+import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true } & ChatTurn) | { ok: false; error: string };
@@ -19,24 +21,31 @@ export async function sendChat(input: { conversationId?: string; text: string; p
     const turn = await chatTurn(getDb()!, toolRegistry(), viewer, { conversationId: input.conversationId, text: input.text.slice(0, 4000), pins: input.pins?.slice(0, 8), intent });
     return { ok: true, ...turn };
   } catch (e) {
-    console.error("amax chat:", e);
-    return { ok: false, error: friendly(e) };
+    const id = logError("chat", e);
+    return { ok: false, error: `${friendly(e)} (ref ${id.slice(0, 8)})` };
   }
 }
 
-export async function confirmChat(conversationId: string, actionId: string): Promise<{ ok: true; summary: string } | { ok: false; error: string }> {
+export type { CardOutcome };
+
+export async function confirmChat(conversationId: string, actionId: string): Promise<CardOutcome> {
   try {
     const viewer = await currentViewer();
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
     revalidatePath("/", "layout");
     const key = (result as { key?: string } | null)?.key;
-    return { ok: true, summary: key ? `Done: ${key} added.` : `Done: ${action.title}.` };
+    return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.` };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    return outcomeOf(e);
   }
 }
 
-export async function cancelChat(conversationId: string, actionId: string) {
-  const viewer = await currentViewer();
-  await cancelAction(getDb()!, viewer, conversationId, actionId);
+export async function cancelChat(conversationId: string, actionId: string): Promise<CardOutcome> {
+  try {
+    const viewer = await currentViewer();
+    await cancelAction(getDb()!, viewer, conversationId, actionId);
+    return { state: "cancelled", note: "Cancelled. Nothing was changed." };
+  } catch (e) {
+    return outcomeOf(e);
+  }
 }

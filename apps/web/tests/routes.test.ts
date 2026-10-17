@@ -9,4 +9,7 @@ describe("module routes", () => {
     expect(matchRoute("p/:key", ["p"])).toBeNull();
     expect(matchRoute("proposals", ["releases"])).toBeNull();
   });
+  it.each([["v1+2"], ["50%"], ["a%41"], ["a b"]])("passes the already-decoded segment %s through unchanged (final review)", (v) => {
+    expect(matchRoute("releases/:key/:version", ["releases", "CON", v])).toEqual({ key: "CON", version: v });
+  });
 });

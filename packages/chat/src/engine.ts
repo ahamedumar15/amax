@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { withTenant, type Db } from "@amax/db";
-import { converse, type DataItem, type Message, type Tool } from "@amax/ai";
+import { withTenant, type Db, type Tx } from "@amax/db";
+import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
+import { CancelledByKeyError, claimKey, KEY_DAYS, logError, lookupKey, retryable, withIdempotency } from "@amax/core/server";
 import type { Registry, RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type Pin = { label: string; tool: string; args: Record<string, unknown> };
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[] };
+/** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string };
 export type Highlight = { text: string; field: string; index: number };
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
 
@@ -31,9 +33,11 @@ async function load(db: Db, viewer: Viewer, id?: string) {
   });
 }
 
-const save = (db: Db, viewer: Viewer, c: { id: string; messages: Message[]; pending: PendingAction[] }) =>
-  withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set messages = ${JSON.stringify(c.messages)}::jsonb,
-    pending = ${JSON.stringify(c.pending)}::jsonb, updated_at = now() where id = ${c.id} and user_id = ${viewer.userId}`));
+// Append-only: a turn runs for seconds, and a confirm or cancel may claim a card or add a note
+// meanwhile. Rewriting the lists from the turn's stale copy would undo that (review round 2).
+const append = (db: Db, viewer: Viewer, id: string, add: { messages: Message[]; pending: PendingAction[] }) =>
+  withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set messages = messages || ${JSON.stringify(add.messages)}::jsonb,
+    pending = pending || ${JSON.stringify(add.pending)}::jsonb, updated_at = now() where id = ${id} and user_id = ${viewer.userId}`));
 
 // Each extracted value that appears in the user's words gets its field's colour (AC-3).
 export function highlightsFor(text: string, pending: PendingAction[]): Highlight[] {
@@ -57,9 +61,10 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     name: t.name,
     description: t.description,
     input: t.input,
+    sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
-      const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input) };
+      const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString() };
       pending.push(action);
       return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
     },
@@ -68,10 +73,14 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   // Pinned records are fetched with the user's own permissions and sent as quoted data (AC-4).
   const data: DataItem[] = [];
   for (const pin of opts.pins ?? []) {
+    // A pin that can't be read is still sent, as a fixed marker: the model must not answer as if it
+    // had the record, and an error message never reaches it (it can echo values; final review).
     const tool = registry.toolsFor(viewer, ["read"]).find((t) => t.name === pin.tool);
-    if (!tool) continue;
-    const record = await registry.call(viewer, pin.tool, pin.args, { scopes: ["read"], source: "chat" }).catch((e: Error) => ({ error: e.message }));
-    data.push({ label: pin.label, text: JSON.stringify(record) });
+    if (!tool) { data.push({ label: pin.label, record: { unavailable: "not available to this user" } }); continue; }
+    const record = await registry.call(viewer, pin.tool, pin.args, { scopes: ["read"], source: "chat" })
+      .catch((e: unknown) => ({ unavailable: toolFailure(pin.tool, e, logError(`chat.pin ${pin.tool}`, e)) }));
+    // A record, not text, so the gateway redacts its classified fields like any other record.
+    data.push({ label: pin.label, record, sensitive: tool.sensitive });
   }
 
   const intentNote = opts.intent
@@ -84,29 +93,153 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     tools,
     data,
   });
-  const next = { id: convo.id, messages: result.messages, pending: [...convo.pending, ...pending] };
-  await save(db, viewer, next);
+  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending });
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
-/** "Add it": run the pending write as the user, source chat (AC-3). */
-export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
-  const convo = await load(db, viewer, conversationId);
-  const action = convo.pending.find((p) => p.id === actionId);
-  if (!action) throw new Error("that action is no longer pending");
-  const result = await registry.call(viewer, action.tool, action.input, { source: "chat" });
-  convo.pending = convo.pending.filter((p) => p.id !== actionId);
-  convo.messages.push({ role: "user", content: [{ type: "text", text: `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})` }] });
-  // Keep the transcript well-formed: the next model turn follows a user message.
-  await save(db, viewer, convo);
-  return { action, result };
+/** What happened to a card: confirmed (the write ran), cancelled, failed for good, or unknown. */
+export type Decision = "confirmed" | "cancelled" | "failed" | "unknown" | "expired";
+
+/**
+ * The card isn't pending: `decision` says what happened to it earlier (perhaps by a request whose
+ * reply was lost), or is null when this conversation never had that action.
+ */
+export class NotPendingError extends Error {
+  constructor(public decision: Decision | null) {
+    super(decision ? `that action was already ${decision}` : "that action isn't in this conversation");
+    this.name = "NotPendingError";
+  }
 }
 
-/** "Cancel": nothing is written. */
+/**
+ * The write didn't complete. `retry`: nothing was written and the card is still there. `failed`: it
+ * can't succeed, the card is closed. `unknown`: whether it was done can't be told, the card is closed
+ * and the user is asked to check before trying again (never a blind retry).
+ */
+export class ActionFailedError extends Error {
+  constructor(message: string, public kind: "retry" | "failed" | "unknown") {
+    super(message);
+    this.name = "ActionFailedError";
+  }
+}
+
+// Each card's write runs under its own idempotency key (core/idempotency.ts has the contract). The
+// stored outcome is checked first; the tool must make exactly one service write; an error is
+// resolved by reading the key back, so a write that committed is reported as done, never retried;
+// cancel claims the same key, so cancel and confirm can't both win (review rounds 7 and 8).
+const keyOf = (actionId: string) => `chat:${actionId}`;
+
+async function card(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
+  const [row] = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select pending, decided from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId}`));
+  if (!row) throw new Error("conversation not found");
+  const action = (row.pending as PendingAction[]).find((p) => p.id === actionId);
+  if (!action) throw new NotPendingError((row.decided as Record<string, Decision>)[actionId] ?? null);
+  return action;
+}
+
+// Records the decision once: takes the card out of pending (if it's still there) and adds a note.
+async function settle(tx: Tx, viewer: Viewer, conversationId: string, action: PendingAction, decision: Decision, text: string) {
+  const [row] = await tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
+  const pending = (row?.pending ?? []) as PendingAction[];
+  if (!pending.some((p) => p.id === action.id)) return;
+  await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== action.id))}::jsonb,
+    decided = decided || ${JSON.stringify({ [action.id]: decision })}::jsonb,
+    messages = messages || ${JSON.stringify([{ role: "user", content: [{ type: "text", text }] }])}::jsonb, updated_at = now() where id = ${conversationId}`);
+}
+
+const settleNow = (db: Db, viewer: Viewer, conversationId: string, action: PendingAction, decision: Decision, text: string) =>
+  withTenant(db, viewer.tenantId, (tx) => settle(tx, viewer, conversationId, action, decision, text));
+
+const UNKNOWN = "I can't tell whether this was done. Check the record before trying again.";
+
+// A card can be confirmed for CARD_DAYS. Its idempotency record lives KEY_DAYS from the attempt, so
+// while a card can still be confirmed, the record of any earlier attempt still exists: a pruned
+// record can never be mistaken for "never written" (review round 9).
+// Fail closed: a card without a readable createdAt counts as expired (migration 0015 backfilled the
+// cards stored before it). Once expired, a missing record can mean "never confirmed" or "confirmed,
+// record pruned", so an expired card never claims nothing happened (review rounds 9 and 10).
+export const CARD_DAYS = KEY_DAYS - 1;
+export const isExpired = (a: PendingAction, now = Date.now()) => {
+  const at = Date.parse(a.createdAt ?? "");
+  return Number.isNaN(at) || now - at > CARD_DAYS * 86_400_000;
+};
+const expire = async (db: Db, viewer: Viewer, conversationId: string, action: PendingAction) => {
+  await settleNow(db, viewer, conversationId, action, "expired", `(The request "${action.title}" expired. If it was confirmed earlier, check the record before asking again.)`);
+  return new NotPendingError("expired");
+};
+
+// What the conversation records about a write: the record's key, never the result itself, which
+// may hold classified fields and is read back by the model (review round 9).
+const doneNote = (title: string, result: unknown) => {
+  const key = (result as { key?: unknown } | null)?.key;
+  return `(I confirmed "${title}".${typeof key === "string" ? ` Record: ${key}.` : ""})`;
+};
+
+/** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
+export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
+  const action = await card(db, viewer, conversationId, actionId);
+  const key = keyOf(actionId);
+  const done = async (result: unknown) => {
+    await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, result));
+    return { action, result };
+  };
+  const cancelled = async () => {
+    await settleNow(db, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
+    return new NotPendingError("cancelled");
+  };
+  // 1. An earlier attempt's outcome comes first (its reply may have been lost).
+  const known = await lookupKey(db, viewer.tenantId, key);
+  if (known && "cancelled" in known) throw await cancelled();
+  if (known) return done(known.done);
+  if (isExpired(action)) throw await expire(db, viewer, conversationId, action);
+  // 2. Run the tool; it must make exactly one service write.
+  const run = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
+  if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
+  if (run.writes > 1) {
+    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but it made more than one change; check before trying again.)`);
+    throw new ActionFailedError(UNKNOWN, "unknown");
+  }
+  if (run.ok) {
+    if (run.writes === 1) return done(run.value);
+    // No service write: it went around the pipeline (or did nothing), so it can't be made safe.
+    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but couldn't confirm what it changed.)`);
+    throw new ActionFailedError(UNKNOWN, "unknown");
+  }
+  // 3. It threw. Read the key back: a write that committed before the error is done, not retried.
+  const after = await lookupKey(db, viewer.tenantId, key);
+  if (after && "done" in after) return done(after.done);
+  const message = run.error instanceof Error ? run.error.message : String(run.error);
+  if (retryable(run.error)) throw new ActionFailedError(message, "retry");
+  // The note is read back by the model: the failure kind and a reference, never the message (final review).
+  await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but ${toolFailure(action.tool, run.error, logError(`chat.confirm ${action.tool}`, run.error))})`);
+  throw new ActionFailedError(message, "failed");
+}
+
+/** "Cancel": nothing is written. Cancelling twice is fine; a card that was already decided otherwise throws NotPendingError. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
-  const convo = await load(db, viewer, conversationId);
-  const action = convo.pending.find((p) => p.id === actionId);
-  convo.pending = convo.pending.filter((p) => p.id !== actionId);
-  if (action) convo.messages.push({ role: "user", content: [{ type: "text", text: `(I cancelled "${action.title}".)` }] });
-  await save(db, viewer, convo);
+  const action = await card(db, viewer, conversationId, actionId).catch((e) => {
+    if (e instanceof NotPendingError && e.decision === "cancelled") return null;
+    throw e;
+  });
+  if (!action) return;
+  // The same expiry rule as confirm: past it, the key may have been pruned, so claiming it as
+  // cancelled could hide a write that happened (review round 10).
+  if (isExpired(action)) {
+    const known = await lookupKey(db, viewer.tenantId, keyOf(actionId));
+    if (known && "done" in known) {
+      await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, known.done));
+      throw new NotPendingError("confirmed");
+    }
+    throw await expire(db, viewer, conversationId, action);
+  }
+  const prior = await withTenant(db, viewer.tenantId, async (tx) => {
+    const prior = await claimKey(tx, viewer.tenantId, keyOf(actionId), { cancelled: true });
+    if (!prior || "cancelled" in prior) await settle(tx, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
+    return prior;
+  });
+  if (prior && "done" in prior) {
+    // The write had already run (its reply may have been lost): record it as done.
+    await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, prior.done));
+    throw new NotPendingError("confirmed");
+  }
 }

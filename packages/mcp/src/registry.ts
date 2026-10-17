@@ -1,12 +1,14 @@
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
-import { canEver, rolesOf, type Viewer } from "@amax/auth";
+import { ForbiddenError } from "@amax/core/server";
+import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
 
 export type Scope = McpToolDef["scope"];
 export const ALL_SCOPES: Scope[] = ["read", "write", "sensitive"];
 export type RegisteredTool = McpToolDef & { module: string };
 
 export class ToolError extends Error {
+  readonly retryable = false;
   constructor(message: string, public code: "not_found" | "forbidden" | "invalid_input") {
     super(message);
     this.name = "ToolError";
@@ -26,8 +28,14 @@ function builtins(modules: Registrable[]): RegisteredTool[] {
       module: "core", name: "search", description: "Search projects, proposals and other records by text.", input: z.object({ query: z.string().min(1), limit: z.number().int().min(1).max(50).optional() }).strict(),
       permission: "", scope: "read", readOnly: true,
       run: async (viewer: Viewer, input: { query: string; limit?: number }) => {
-        const results = await Promise.all(modules.filter((m) => m.search).map((m) => m.search!(viewer as never, input.query).catch(() => [] as SearchHit[])));
-        return results.flat().slice(0, input.limit ?? 20);
+        // A module the viewer may not read contributes nothing; any other failure is reported, not
+        // dressed up as "no matches" (review round 1). One shape every time (review round 2).
+        const notSearched: string[] = [];
+        const results = await Promise.all(modules.filter((m) => m.search).map((m) => m.search!(viewer as never, input.query).catch((e: unknown) => {
+          if (!(e instanceof ForbiddenError || e instanceof ScopeError)) notSearched.push(m.id);
+          return [] as SearchHit[];
+        })));
+        return { hits: results.flat().slice(0, input.limit ?? 20), notSearched };
       },
     } as unknown as RegisteredTool,
   ];

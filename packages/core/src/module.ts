@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { z } from "zod";
 import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
+import type { Sensitivity } from "./audit";
 
 /** What a screen receives: route params (":key" segments) and the signed-in viewer (null in the guest preview). */
 export type ScreenProps = { params: Record<string, string>; searchParams: Record<string, string>; viewer: unknown };
@@ -50,7 +51,26 @@ export type McpToolDef = {
   scope: "read" | "write" | "sensitive";
   readOnly?: boolean;
   destructive?: boolean;
+  /** Classified fields in the result (002 classes), so the AI gateway can redact them per tenant policy. */
+  sensitive?: Partial<Record<string, Sensitivity>>;
   run: (viewer: never, input: never, source: "mcp" | "chat") => Promise<unknown>;
+};
+
+/**
+ * One retention rule (032 AC-1): the data class (002 classes, or "personal" for identifying data
+ * such as names), the period as an ISO 8601 duration ("P7Y"), what starts the clock, and what
+ * happens when it runs out. The clock starts at the earliest set timestamp among the row's own
+ * `start.at` columns, or once the row has gone `start.idle` without a change to its `updated_at`,
+ * whichever comes first. Columns of the retained row, so there's no event-to-row mapping to get
+ * wrong; a test checks they exist (review rounds 3 and 4).
+ */
+export type RetentionEntry = {
+  table: string;
+  fields: string[];
+  class: Sensitivity | "personal";
+  period: `P${string}`;
+  start: { at: string[]; idle?: `P${string}` };
+  action: "delete" | "anonymise";
 };
 
 /** A search hit for the built-in `search` tool and the chat. */
@@ -76,6 +96,13 @@ export type ModuleManifest = {
   grants?: Partial<Record<"Admin" | "Leadership" | "PM" | "Engineer" | "Finance" | "Sales" | "HR" | "Payroll" | "Employee", string[]>>;
   routes: ModuleRoute[];
   mcpTools?: McpToolDef[];
+  /**
+   * Contributes to the signed-in viewer's data scopes at load time (002 AC-3): e.g. delivery returns
+   * the projects a user manages, so "@managed" grants work for real users, not just in tests.
+   */
+  viewerScopes?: (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
+  /** Retention for tables holding personal data, in the 032 AC-1 shape so it can be enforced. */
+  retention?: RetentionEntry[];
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];
@@ -87,5 +114,8 @@ export type ModuleManifest = {
 export function defineModule(manifest: ModuleManifest): ModuleManifest {
   if (!/^[a-z][a-z0-9-]*$/.test(manifest.id)) throw new Error(`module id "${manifest.id}" must be kebab-case`);
   if (!manifest.routes.some((r) => r.path === "")) throw new Error(`module "${manifest.id}" needs a root route ("")`);
+  for (const r of manifest.retention ?? []) {
+    if (!r.start.at.length && !r.start.idle) throw new Error(`module "${manifest.id}": retention for ${r.table} never starts`);
+  }
   return manifest;
 }

@@ -1,13 +1,12 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Db, type Tx } from "@amax/db";
+import { textArray, withTenant, type Db, type Tx } from "@amax/db";
 import { appendAudit } from "@amax/core/server";
 import { isRole, type Role } from "./roles";
 import { applyViewAs, type Assignment, type Viewer } from "./viewer";
 
 export const SESSION_HOURS = 12;
 
-// Drizzle expands JS arrays into tuples, so pass text[] as a Postgres array literal.
-const textArray = (xs: string[]) => `{${xs.map((x) => `"${x.replace(/[\\"]/g, "\\$&")}"`).join(",")}}`;
+
 
 export class SignInDenied extends Error {
   constructor(public reason: "unknown-directory" | "wrong-tenant" | "no-role" | "deactivated" | "unknown-user" | "bad-credentials" | "locked") {
@@ -42,7 +41,7 @@ export async function resolveTenant(db: Db, issuer: string, directoryId: string,
 export async function signInFromDirectory(db: Db, claims: DirectoryClaims, expectedTenantId?: string) {
   const tenantId = await resolveTenant(db, claims.issuer, claims.directoryId, expectedTenantId);
   return withTenant(db, tenantId, async (tx) => {
-    const mapped = await tx.execute(sql`select distinct role from auth.role_mapping where group_id = any(${textArray(claims.groups)}::text[])`);
+    const mapped = await tx.execute(sql`select distinct role from auth.role_mapping where group_id = any(${textArray(claims.groups)})`);
     const roles = mapped.map((r) => r.role as string).filter(isRole);
     if (!roles.length) throw new SignInDenied("no-role");
     const [user] = await tx.execute(sql`insert into auth.user (tenant_id, external_id, email, name)
@@ -50,7 +49,7 @@ export async function signInFromDirectory(db: Db, claims: DirectoryClaims, expec
       on conflict (tenant_id, external_id) do update set email = excluded.email, name = excluded.name, updated_at = now()
       returning id, status`);
     if (user.status !== "active") throw new SignInDenied("deactivated");
-    await tx.execute(sql`delete from auth.role_assignment where user_id = ${user.id} and source = 'group' and not (role = any(${textArray(roles)}::text[]))`);
+    await tx.execute(sql`delete from auth.role_assignment where user_id = ${user.id} and source = 'group' and not (role = any(${textArray(roles)}))`);
     for (const role of roles) {
       await tx.execute(sql`insert into auth.role_assignment (tenant_id, user_id, role, source) values (${tenantId}, ${user.id}, ${role}, 'group') on conflict do nothing`);
     }
@@ -89,12 +88,26 @@ export async function loadViewer(db: Db, tenantId: string, sessionId: string): P
   });
 }
 
+type ScopeResolver = (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
+let scopeResolvers: ScopeResolver[] = [];
+/** Modules that own scopes (delivery: managed projects; hr: reports) register here at boot. */
+export const setViewerScopeResolvers = (fns: ScopeResolver[]) => {
+  scopeResolvers = fns;
+};
+
 // An active user's roles and scopes, for a session or a personal API/MCP token.
 export async function viewerForUser(tx: Tx, tenantId: string, userId: string): Promise<Viewer | null> {
   const [u] = await tx.execute(sql`select name, email from auth.user where id = ${userId} and status = 'active'`);
   if (!u) return null;
   const assignments = (await tx.execute(sql`select role, legal_entity_ids, departments from auth.role_assignment where user_id = ${userId}`))
     .map((a) => ({ role: a.role as Role, legalEntityIds: (a.legal_entity_ids as string[] | null) ?? null, departments: (a.departments as string[] | null) ?? null }) satisfies Assignment);
+  const scopes = { managedProjects: [] as string[], assignedProjects: [] as string[], reports: [] as string[] };
+  for (const resolve of scopeResolvers) {
+    const r = await resolve(tx, { tenantId, userId });
+    scopes.managedProjects.push(...(r.managedProjects ?? []));
+    scopes.assignedProjects.push(...(r.assignedProjects ?? []));
+    scopes.reports.push(...(r.reports ?? []));
+  }
   return {
     tenantId,
     userId,
@@ -102,9 +115,7 @@ export async function viewerForUser(tx: Tx, tenantId: string, userId: string): P
     email: u.email as string,
     assignments,
     actualRoles: [...new Set(assignments.map((a) => a.role))],
-    managedProjects: [],
-    assignedProjects: [],
-    reports: [],
+    ...scopes,
   };
 }
 

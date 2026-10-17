@@ -5,9 +5,9 @@ import type { Tx } from "@amax/db";
 // Delivery data from fixtures.md: 3 projects; 37 proposals in flight (6 proposed, 4 planned,
 // 18 building, 9 verified) and 5 released this month; the Contoso board; three releases.
 const PROJECTS = [
-  { key: "CON", color: "violet", sprint: "Sprint 18", start: "2026-10-12", end: "2026-10-23", done: 9, total: 16, health: "on-track", risk: null, margin: 38.2, next: "v2.5.0, Nov 28", manager: "maya" },
-  { key: "FLT", color: "amber", sprint: "Sprint 11", start: "2026-10-12", end: "2026-10-23", done: 5, total: 16, health: "at-risk", risk: 71, margin: 29.6, next: "v1.8.0, retry UAT", manager: "nimal" },
-  { key: "HRI", color: "pink", sprint: "Kanban", start: null, end: null, done: 14, total: 17, health: "on-track", risk: null, margin: 41.0, next: "v0.9.3, Nov 6", manager: "ayesha" },
+  { key: "CON", color: "violet", sprint: "Sprint 18", start: "2026-10-12", end: "2026-10-23", done: 9, total: 16, health: "on-track", risk: null, margin: 38.2, next: "v2.5.0, Nov 28" },
+  { key: "FLT", color: "amber", sprint: "Sprint 11", start: "2026-10-12", end: "2026-10-23", done: 5, total: 16, health: "at-risk", risk: 71, margin: 29.6, next: "v1.8.0, retry UAT" },
+  { key: "HRI", color: "pink", sprint: "Kanban", start: null, end: null, done: 14, total: 17, health: "on-track", risk: null, margin: 41.0, next: "v0.9.3, Nov 6" },
 ];
 
 type P = { key: string; title: string; phase: string; done?: number; total?: number; hours?: number; est?: number; owner?: string; agent?: string; release?: string; releaseLabel?: string; releasedAt?: string };
@@ -66,10 +66,12 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
   const ids: Record<string, string> = {};
   for (const [i, p] of PROJECTS.entries()) {
     const s = shared.projects.find((x) => x.key === p.key)!;
-    const managerName = shared.people.find((x) => x.key === p.manager)!.name;
+    // The manager comes from the shared fixtures (one source for every module).
+    const managerKey = s.manager;
+    const managerName = shared.people.find((x) => x.key === managerKey)!.name;
     const [row] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, manager_name, manager_user_id, color, sprint, sprint_done, sprint_total,
         health, risk_pct, margin_pct, contract_value, invoiced, currency, next_release, created_at, sprint_start, sprint_end)
-      values (${tenantId}, ${p.key}, ${s.name}, ${s.client}, ${s.billing}, ${managerName}, ${await userId(tx, p.manager)}, ${p.color}, ${p.sprint}, ${p.done}, ${p.total},
+      values (${tenantId}, ${p.key}, ${s.name}, ${s.client}, ${s.billing}, ${managerName}, ${await userId(tx, managerKey)}, ${p.color}, ${p.sprint}, ${p.done}, ${p.total},
         ${p.health}, ${p.risk}, ${p.margin}, ${s.contractValue}, ${s.invoiced}, ${s.currency}, ${p.next}, ${new Date(Date.UTC(2026, 0, 1 + i)).toISOString()}, ${p.start}, ${p.end})
       on conflict (tenant_id, key) do update set name = excluded.name returning id`);
     ids[p.key] = row.id as string;
@@ -88,8 +90,8 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
     for (const [env, status, at, note, run] of r.deployments) {
       const exists = await tx.execute(sql`select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${row.id} and e.name = ${env} and e.project_id = ${ids[r.project]}`);
       if (exists.length) continue;
-      await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, at, note, pipeline_run, recorded_by)
-        select ${tenantId}, ${row.id}, id, ${status}, ${at}, ${note ?? null}, ${run ?? null}, 'fixtures' from delivery.environment where name = ${env} and project_id = ${ids[r.project]}`);
+      await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, at, note, pipeline_run, recorded_by, released)
+        select ${tenantId}, ${row.id}, id, ${status}, ${at}, ${note ?? null}, ${run ?? null}, 'fixtures', is_prod and ${status} = 'deployed' from delivery.environment where name = ${env} and project_id = ${ids[r.project]}`);
     }
   }
   for (const [i, p] of [...NAMED, ...fillers()].entries()) {

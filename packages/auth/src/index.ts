@@ -3,7 +3,7 @@ export { applyViewAs, currentViewer, rolesOf, setViewerResolver, type Assignment
 export { assertCan, can, canEver, installAuthorizer, ScopeError, setGrants, viewerOf, type ResourceAttrs } from "./can";
 export { canSee, isMasked, mask, SENSITIVITY_POLICY, type Masked, type MaskedRecord, type Subject } from "./sensitivity";
 export { defineQuery, type QuerySpec } from "./query";
-export { loadViewer, viewerForUser, resolveTenant, setViewAs, signInDemo, signInFromDirectory, SignInDenied, signOutSession, type DirectoryClaims } from "./session";
+export { loadViewer, setViewerScopeResolvers, viewerForUser, resolveTenant, setViewAs, signInDemo, signInFromDirectory, SignInDenied, signOutSession, type DirectoryClaims } from "./session";
 export { gate, isPublicPath } from "./gate";
 export { hashPassword, MIN_PASSWORD, signInPassword, upsertPasswordUser, verifyPassword } from "./password";
 export { authenticateToken, createApiToken, createPrincipal, principalContext, type Identity, type Principal } from "./principals";

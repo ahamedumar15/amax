@@ -1,9 +1,11 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase, tablesMissingRls } from "@amax/db/testdb";
 import { configureRuntime } from "@amax/core/server";
-import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer } from "@amax/auth";
+import { applyViewAs, installAuthorizer, setGrants, setViewerScopeResolvers, viewerForUser, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import manifest from "../module";
@@ -19,7 +21,7 @@ const T = lumen.tenant.id;
 describe("AC-5 contract shape", () => {
   it("exports phases and event names", () => {
     expect(PHASES).toEqual(["proposed", "planned", "building", "verified", "released"]);
-    expect(EVENTS).toEqual({ releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed" });
+    expect(EVENTS).toEqual({ releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed" });
     expect(manifest.events?.emits).toEqual(Object.values(EVENTS));
   });
   it("AC-4 declares the five MCP tools and three chat intents", () => {
@@ -35,7 +37,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
   const as = async (email: string) => {
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${email}`));
     const v = (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
-    return { ...v, managedProjects: await withTenant(app, T, (tx) => managedProjectIds(tx, v.userId)) };
+    return v;
   };
 
   beforeAll(async () => {
@@ -43,6 +45,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     app = t.app();
     configureRuntime({ db: app, auditKey: "k".repeat(32) });
     setGrants([manifest]);
+    setViewerScopeResolvers([manifest.viewerScopes!]);
     installAuthorizer();
     await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, manifest], lumen);
     [maya, nimal, liam, sahan] = await Promise.all(["maya", "nimal", "liam", "sahan"].map((k) => as(`${k}@lumenlabs.test`)));
@@ -53,6 +56,31 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
 
   it("AC-1 the delivery schema is tenant-isolated", async () => {
     expect(await tablesMissingRls(t.owner)).toEqual([]);
+  });
+
+  it("every retention entry names real columns of its table, and an idle clock has updated_at (review round 4)", async () => {
+    const missing: string[] = [];
+    for (const r of manifest.retention ?? []) {
+      const [schema, table] = r.table.split(".");
+      const cols = new Set((await t.owner`select column_name from information_schema.columns where table_schema = ${schema} and table_name = ${table}`).map((c) => c.column_name as string));
+      for (const c of [...r.fields, ...r.start.at, ...(r.start.idle ? ["updated_at"] : [])]) if (!cols.has(c)) missing.push(`${r.table}.${c}`);
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("closing a project records when; reopening clears it (review round 4)", async () => {
+    await t.owner`update delivery.project set status = 'closed' where key = 'CON'`;
+    expect((await t.owner`select closed_at from delivery.project where key = 'CON'`)[0].closed_at).not.toBeNull();
+    await t.owner`update delivery.project set status = 'active' where key = 'CON'`;
+    expect((await t.owner`select closed_at from delivery.project where key = 'CON'`)[0].closed_at).toBeNull();
+    // Created closed (fixtures, imports): recorded too (review round 5).
+    await t.owner`insert into delivery.project (tenant_id, key, name, client, billing, color, status) values (${T}, 'OLDC', 'old', 'x', 'internal', 'mint', 'closed')`;
+    expect((await t.owner`select closed_at from delivery.project where key = 'OLDC'`)[0].closed_at).not.toBeNull();
+    // Already closed before the migration (closed_at null): its backfill statement fills it.
+    await t.owner`update delivery.project set closed_at = null where key = 'OLDC'`;
+    const migration = readFileSync(join(__dirname, "../db/migrations/0007_project_closed_at_insert.sql"), "utf8");
+    await t.owner.unsafe(migration.match(/^update delivery\.project set closed_at.*$/m)![0]);
+    expect((await t.owner`select closed_at from delivery.project where key = 'OLDC'`)[0].closed_at).not.toBeNull();
   });
 
   it("AC-1 fixtures follow fixtures.md", async () => {

@@ -53,9 +53,12 @@ const PROPOSALS = sql`
     select e.name, d.status from delivery.deployment d join delivery.environment e on e.id = d.environment_id
     where d.release_id = p.release_id and d.voided_at is null order by e.position desc, d.at desc limit 1) last on true`;
 
+const ACTIVE = sql`coalesce(p.meta->>'withdrawn', 'false') <> 'true'`;
+
 export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: string } = {}) =>
   read(v, async (tx) => {
-    const where = [opts.phase ? sql`p.phase = ${opts.phase}` : undefined, opts.projectKey ? sql`pr.key = ${opts.projectKey}` : undefined].filter(Boolean);
+    // Withdrawn spec proposals (their folder is gone) are history, not work: never in lists or counts.
+    const where = [ACTIVE, opts.phase ? sql`p.phase = ${opts.phase}` : undefined, opts.projectKey ? sql`pr.key = ${opts.projectKey}` : undefined].filter(Boolean);
     const filter = where.length ? sql`where ${sql.join(where as ReturnType<typeof sql>[], sql` and `)}` : sql``;
     return (await tx.execute(sql`${PROPOSALS} ${filter} order by p.updated_at desc, p.key desc`)).map(proposal);
   });
@@ -64,7 +67,7 @@ export const getProject = (v: Viewer, key: string) =>
   read(v, async (tx) => {
     const [r] = await tx.execute(sql`select * from delivery.project where key = ${key}`);
     if (!r) return null;
-    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} order by p.updated_at desc, p.key desc`)).map(proposal);
+    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} and ${ACTIVE} order by p.updated_at desc, p.key desc`)).map(proposal);
     return { project: project(r), proposals };
   });
 
@@ -105,14 +108,14 @@ export const shippedPerWeek = (v: Viewer, now = today()) =>
 export const phaseCounts = (v: Viewer, now = today()) =>
   read(v, async (tx) => {
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal group by phase`);
+    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal p where ${ACTIVE} group by phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
     const counts = { proposed: Number(get("proposed")?.n ?? 0), planned: Number(get("planned")?.n ?? 0), building: Number(get("building")?.n ?? 0), verified: Number(get("verified")?.n ?? 0) };
     return { ...counts, inFlight: counts.proposed + counts.planned + counts.building + counts.verified, releasedThisMonth: Number(get("released")?.this_month ?? 0) };
   });
 
 export type ReleaseRow = {
-  id: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
+  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
   stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
@@ -124,7 +127,7 @@ export const listReleases = (v: Viewer) =>
       from delivery.release r join delivery.project pr on pr.id = r.project_id order by r.created_at desc`);
     const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
-      id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
+      id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
       projectColor: r.project_color as string, proposals: Number(r.proposals),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
@@ -134,6 +137,39 @@ export const listReleases = (v: Viewer) =>
     }));
   });
 
+/**
+ * Columns for every release view: the union of the projects' environment names, in an order that
+ * agrees with every project's own stage order (a topological merge; ties by position, then name).
+ * Only when projects contradict each other (A before B in one, B before A in another) does the
+ * rest fall back to position order (review round 2).
+ */
+export function stageColumns(releases: ReleaseRow[]): string[] {
+  const after = new Map<string, Set<string>>();
+  const minPos = new Map<string, number>();
+  const seen = new Set<string>();
+  for (const r of releases) {
+    const own = [...r.stages].sort((a, b) => a.position - b.position);
+    own.forEach((s, i) => {
+      minPos.set(s.environment, Math.min(minPos.get(s.environment) ?? Infinity, s.position));
+      if (!after.has(s.environment)) after.set(s.environment, new Set());
+      if (i > 0 && !seen.has(`${own[i - 1].environment}>${s.environment}`)) { seen.add(`${own[i - 1].environment}>${s.environment}`); after.get(own[i - 1].environment)!.add(s.environment); }
+    });
+  }
+  const incoming = new Map([...after.keys()].map((e) => [e, 0]));
+  for (const next of after.values()) for (const e of next) incoming.set(e, incoming.get(e)! + 1);
+  const byPos = (a: string, b: string) => minPos.get(a)! - minPos.get(b)! || a.localeCompare(b);
+  const out: string[] = [];
+  const left = new Set(after.keys());
+  while (left.size) {
+    const ready = [...left].filter((e) => incoming.get(e) === 0).sort(byPos);
+    const e = ready[0] ?? [...left].sort(byPos)[0];
+    left.delete(e);
+    out.push(e);
+    for (const n of after.get(e)!) incoming.set(n, incoming.get(n)! - 1);
+  }
+  return out;
+}
+
 export type EnvironmentRow = { name: string; position: number; isProd: boolean; deployments: number };
 
 export const listEnvironments = (v: Viewer, projectKey: string) =>
@@ -141,7 +177,7 @@ export const listEnvironments = (v: Viewer, projectKey: string) =>
     from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = ${projectKey} order by e.position`))
     .map((e): EnvironmentRow => ({ name: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), deployments: Number(e.deployments) })));
 
-export type DeploymentRow = { environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
+export type DeploymentRow = { id: string; environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
 
 /** One release with its proposals and full deployment history, voided ones included. */
 export const getRelease = (v: Viewer, projectKey: string, version: string) =>
@@ -149,7 +185,7 @@ export const getRelease = (v: Viewer, projectKey: string, version: string) =>
     const [r] = await tx.execute(sql`select r.*, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where p.key = ${projectKey} and r.version = ${version}`);
     if (!r) return null;
     const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
-      .map((d): DeploymentRow => ({ environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
+      .map((d): DeploymentRow => ({ id: d.id as string, environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
         recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
     const proposals = (await tx.execute(sql`select key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
       .map((p) => ({ key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
