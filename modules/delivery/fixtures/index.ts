@@ -86,8 +86,8 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
     for (const [env, status, at, note, run] of r.deployments) {
       const exists = await tx.execute(sql`select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${row.id} and e.name = ${env} and e.project_id = ${ids[r.project]}`);
       if (exists.length) continue;
-      await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, at, note, pipeline_run, recorded_by)
-        select ${tenantId}, ${row.id}, id, ${status}, ${at}, ${note ?? null}, ${run ?? null}, 'fixtures' from delivery.environment where name = ${env} and project_id = ${ids[r.project]}`);
+      await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, at, note, pipeline_run, recorded_by, released)
+        select ${tenantId}, ${row.id}, id, ${status}, ${at}, ${note ?? null}, ${run ?? null}, 'fixtures', is_prod and ${status} = 'deployed' from delivery.environment where name = ${env} and project_id = ${ids[r.project]}`);
     }
   }
   for (const [i, p] of [...NAMED, ...fillers()].entries()) {
