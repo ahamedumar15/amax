@@ -39,7 +39,7 @@ What changes on screen, and where to see it: [`054-chat-first-everywhere`](../..
 - [x] `T6` — Delete the three modules' `actions.ts`; a chat-first guard per module, plus confirm-only tests for the write tools the chips use and the new read tools (AC-1, AC-2, AC-3)
   Files: modules/time/actions.ts, modules/allocations/actions.ts, modules/delivery/actions.ts, modules/time/tests/chat-first.test.ts, modules/allocations/tests/chat-first.test.ts, modules/delivery/tests/chat-first.test.ts
   Depends: T1, T2, T3, T5
-- [ ] `T7` — Teach the scripted model the new prompts; e2e pin → ask → confirm for submit a week, copy a month and record a deployment; move the form-driven specs (time approve, board move, promote, environments, release) to the chat flow (AC-5)
+- [x] `T7` — Teach the scripted model the new prompts; e2e pin → ask → confirm for submit a week, copy a month and record a deployment; move the form-driven specs (time approve, board move, promote, environments, release) to the chat flow (AC-5)
   Files: packages/ai/src/scripted.ts, apps/web/tests/e2e/chat-first.spec.ts, apps/web/tests/e2e/releases.spec.ts, apps/web/tests/e2e/delivery.spec.ts, apps/web/playwright.auth.config.ts, modules/time/tests/e2e/time.spec.ts, modules/time/tests/e2e/playwright.config.ts
   Depends: T6
 - [ ] `T8` — Remove the BACKLOG section; typecheck, unit tests, lint and both e2e suites green (AC-6)

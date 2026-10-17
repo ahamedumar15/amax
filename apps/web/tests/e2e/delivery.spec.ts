@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { askAndConfirm } from "./ask";
 import { capture, diffRatio } from "./diff";
 
 const mock = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
@@ -48,15 +49,15 @@ test("AC2 the Contoso board matches the mock (released lane and card within 2%)"
   expect(await axe(page)).toEqual([]);
 });
 
-test("AC3 Move is an explicit action on the board", async ({ page }) => {
+test("AC3 / 054 AC5 Move on the board asks amax with the proposal pinned; confirming moves it", async ({ page }) => {
+  test.setTimeout(60_000);
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  await expect(page.locator("main form, main dialog")).toHaveCount(0);
   const card = page.locator(".tcard", { hasText: "CON-017" });
   await card.hover();
-  await card.getByLabel("Move CON-017", { exact: true }).click();
-  await page.getByLabel("Move CON-017 to").selectOption("building");
-  await page.locator("form", { has: page.getByLabel("Move CON-017 to") }).getByRole("button", { name: "Move" }).click();
+  await askAndConfirm(page, card.getByRole("button", { name: "Move CON-017", exact: true }), { pin: "CON-017 CSV import for clients", prompt: "Move CON-017 to ", type: "building" });
   await expect.poll(() => lanes(page)).toEqual(["1", "1", "3", "2", "1"]);
-  await expect(page.getByLabel("Move CON-009 to")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Move CON-009", exact: true })).toHaveCount(0);
 });
 
 test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
@@ -70,11 +71,12 @@ test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
   expect(await axe(page)).toEqual([]);
 });
 
-test("AC2 releases: the map and a promotion that reaches the next environment", async ({ page }) => {
+test("AC2 releases: the map, and a promotion asked of amax reaches the next environment", async ({ page }) => {
+  test.setTimeout(60_000);
   await signIn(page, "sahan@lumenlabs.test", "/delivery/releases");
   await expect(page.getByRole("button", { name: "Retry UAT" })).toBeVisible();
   const row = page.locator("tr", { hasText: "v2.4.0" });
-  await row.getByRole("button", { name: "Promote to UAT" }).click();
+  await askAndConfirm(page, row.getByRole("button", { name: "Promote to UAT" }), { pin: "Contoso Portal v2.4.0", prompt: "Record a deployment of CON v2.4.0 to UAT" });
   await expect(row.getByRole("button", { name: "Promote to Prod" })).toBeVisible();
   expect(await axe(page)).toEqual([]);
 });

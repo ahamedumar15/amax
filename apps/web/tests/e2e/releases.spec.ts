@@ -1,46 +1,41 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { askAndConfirm, signIn } from "./ask";
 
-async function signIn(page: Page, email: string, to: string) {
-  await page.goto(to);
-  await page.getByLabel("Demo user (fixtures only)").fill(email);
-  await page.getByRole("button", { name: "Sign in as demo user" }).click();
-  await expect(page).toHaveURL((u) => u.pathname === to);
-}
+const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
-test("042 AC-1 environments per project: add, rename and choose Prod from the project page", async ({ page }) => {
+test("042 AC-1 / 054 AC5 environments per project: add, rename and choose Prod by asking amax from the project page", async ({ page }) => {
+  test.setTimeout(90_000);
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/HRI");
   const card = page.locator(".card", { has: page.getByRole("heading", { name: "Environments" }) });
-  await card.getByLabel("New environment").fill("Staging");
-  await card.getByRole("button", { name: "Add environment" }).click();
+  await expect(card.locator("form")).toHaveCount(0);
+  await askAndConfirm(page, card.getByRole("button", { name: "Ask amax to add an environment" }), { pin: "HRI environments", prompt: "Add an environment to HRI: ", type: "Staging" });
   await expect(card.locator("tbody tr")).toHaveCount(5);
-  await card.getByLabel("Rename Staging").fill("Preview");
-  await card.locator("tr", { has: page.getByLabel("Rename Staging") }).getByRole("button", { name: "Rename" }).click();
-  await expect(card.getByLabel("Rename Preview")).toBeVisible();
-  await card.getByRole("button", { name: "Preview is not Prod" }).click();
+  await askAndConfirm(page, card.getByRole("button", { name: "Rename Staging" }), { pin: "HRI environments", prompt: "Rename the Staging environment of HRI to ", type: "Preview" });
+  await expect(card.locator("tbody tr", { hasText: "Preview" })).toHaveCount(1);
+  await askAndConfirm(page, card.getByRole("button", { name: "Make Prod: Preview" }), { pin: "HRI environments", prompt: "Make Preview the Prod environment of HRI" });
   await expect(card).toContainText("Released means it reached Preview");
-  await card.getByRole("button", { name: "Preview is Prod" }).click();
+  await askAndConfirm(page, card.getByRole("button", { name: "Unmark Prod: Preview" }), { pin: "HRI environments", prompt: "Unmark Preview as the Prod environment of HRI" });
   await expect(card).toContainText("No Prod");
-  const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
 });
 
-test("042 AC-2/AC-3 a release page: re-tag, deploy to any environment, void with a reason", async ({ page }) => {
+test("042 AC-2/AC-3 / 054 AC5 a release page: re-tag, record a deployment and void it, each through chat", async ({ page }) => {
+  test.setTimeout(90_000);
   await signIn(page, "sahan@lumenlabs.test", "/delivery/releases");
   await page.getByRole("link", { name: "v2.4.0" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Contoso Portal v2.4.0");
-  await page.getByLabel("Version tag").fill("v2.4.1");
-  await page.getByRole("button", { name: "Save release" }).click();
+  await expect(page.locator("main form, main dialog")).toHaveCount(0);
+  await askAndConfirm(page, page.getByRole("button", { name: "Ask amax to re-tag" }), { pin: "CON v2.4.0", prompt: "Tag CON v2.4.0 as ", type: "v2.4.1" });
+  await page.goto("/delivery/releases/CON/v2.4.1");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Contoso Portal v2.4.1");
-  await page.getByLabel("Environment").selectOption("Prod");
-  await page.getByRole("button", { name: "Record deployment" }).click();
+  await askAndConfirm(page, page.getByRole("button", { name: "Ask amax to record a deployment" }), { pin: "CON v2.4.1", prompt: "Record a deployment of CON v2.4.1 to ", type: "Prod" });
   const prodRow = page.locator("tbody tr", { hasText: "Prod" }).first();
   await expect(prodRow).toContainText("deployed");
-  await prodRow.getByLabel(/Reason to void/).fill("wrong pipeline");
-  await prodRow.getByRole("button", { name: "Void" }).click();
+  const id = await prodRow.getByRole("button", { name: /^Void the Prod deployment/ }).getAttribute("data-ask");
+  await askAndConfirm(page, prodRow.getByRole("button", { name: /^Void the Prod deployment/ }), { pin: "CON v2.4.1", prompt: id!, type: "wrong pipeline" });
   await expect(page.locator("tbody tr", { hasText: "Prod" }).first()).toContainText("Voided: wrong pipeline");
-  const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
 });
