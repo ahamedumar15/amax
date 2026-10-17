@@ -1,11 +1,12 @@
 {
   "change": "001-amax-foundation",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T01:30:27Z"},
     "tasks": {"status":"done","at":"2026-10-17T01:57:28Z"},
     "verify": {"status":"done","at":"2026-10-17T02:34:27Z"},
-    "pr": {"status":"raised","at":"2026-10-17T02:35:36Z","url":"https://github.com/chan4lk/amax/pull/1"}
+    "pr": {"status":"raised","at":"2026-10-17T02:35:36Z","url":"https://github.com/chan4lk/amax/pull/1"},
+    "archived": {"status":"done","at":"2026-10-17T03:12:41Z"}
   }
 }

@@ -1,12 +1,11 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 02:35 UTC
+**Last Updated:** 2026-10-17 03:13 UTC
 
 ## Active Changes
 
-
-- 🔍 **001-amax-foundation** — verify done | 8/8 tasks (100%) | 0 failed
+_No active changes._
 
 ## Pending Proposals
 
@@ -43,10 +42,11 @@
 
 ## Recently Completed
 
-_None._
+
+- ✅ **001-amax-foundation**
 
 ## Stats
 
 - **Total changes:** 1
-- **Active:** 1
-- **Completed:** 0
+- **Active:** 0
+- **Completed:** 1
