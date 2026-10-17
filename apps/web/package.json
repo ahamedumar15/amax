@@ -11,7 +11,8 @@
     "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests",
     "build:cloudflare": "node scripts/gen-registry.mjs && opennextjs-cloudflare build",
     "preview:cloudflare": "opennextjs-cloudflare preview",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:auth": "playwright test --config playwright.auth.config.ts"
   },
   "dependencies": {
     "next": "16.4.2",
@@ -26,6 +27,8 @@
     "@types/pngjs": "6",
     "pixelmatch": "8.0.0",
     "pngjs": "7.0.0",
-    "wrangler": "4.148.0"
+    "wrangler": "4.148.0",
+    "postgres": "3.4.9",
+    "tsx": "4.23.15"
   }
 }

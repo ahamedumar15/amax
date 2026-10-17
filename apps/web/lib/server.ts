@@ -4,8 +4,11 @@ import { auditExportJob, configureRuntime, registryFrom, storageFromEnv } from "
 import { installAuthorizer, setGrants } from "@amax/auth";
 import { installed } from "./registry";
 
-// One database client per server instance; null until DATABASE_URL is configured.
+// One database client per server process; null until DATABASE_URL is configured.
 const cache = globalThis as unknown as { amaxDb?: Db | null };
+// The proxy and the app are separate bundles with their own copies of core and auth, so each
+// bundle wires its own runtime and grants even though they share the client.
+let wired = false;
 
 export function getDb(): Db | null {
   if (cache.amaxDb === undefined) {
@@ -13,9 +16,12 @@ export function getDb(): Db | null {
     if (!env.DATABASE_URL) return (cache.amaxDb = null);
     if (!env.AUDIT_HASH_KEY) throw new Error("amax: AUDIT_HASH_KEY is required once DATABASE_URL is set");
     cache.amaxDb = createDb(env.DATABASE_URL).db;
-    configureRuntime({ db: cache.amaxDb, auditKey: env.AUDIT_HASH_KEY });
+  }
+  if (cache.amaxDb && !wired) {
+    configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     setGrants(installed);
     installAuthorizer();
+    wired = true;
   }
   return cache.amaxDb;
 }

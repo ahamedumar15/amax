@@ -38,6 +38,7 @@ jobs:
       - run: pnpm build
       - run: pnpm --filter @amax/web exec playwright install --with-deps chromium
       - run: pnpm --filter @amax/web e2e
+      - run: pnpm --filter @amax/web e2e:auth
 
   vercel:
     runs-on: ubuntu-latest

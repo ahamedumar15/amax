@@ -91,6 +91,12 @@ importers:
       pngjs:
         specifier: 7.0.0
         version: 7.0.0
+      postgres:
+        specifier: 3.4.9
+        version: 3.4.9
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
       wrangler:
         specifier: 4.148.0
         version: 4.148.0(@types/node@22.20.5)
