@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
-import { auditExportJob, configureRateLimits, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { auditExportJob, configureRateLimits, configureRuntime, limitsFromEnv, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { apiPlatform } from "@amax/api/module";
 import { rateLimitRecorder } from "@amax/api/limits";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
@@ -39,7 +39,7 @@ export function getDb(): Db | null {
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     // 035 AC-5: limited requests are counted for the API and webhooks screen.
-    configureRateLimits({ sink: rateLimitRecorder().sink });
+    configureRateLimits({ ...limitsFromEnv(loadEnv()), sink: rateLimitRecorder().sink });
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });

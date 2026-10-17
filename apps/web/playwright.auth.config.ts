@@ -38,6 +38,8 @@ export default defineConfig({
       NODE_ENV: "test",
       DATABASE_MIGRATE_URL: admin.toString(),
       AMAX_KMS: "local",
+      // The whole suite signs in as a handful of demo users; 035's own tests set low limits explicitly.
+      AMAX_RATE_PAGE_USER: "100000",
       AMAX_KMS_KEY_FILE: join(tmpdir(), `amax-e2e-kms-${process.env.E2E_DB ?? "amax_e2e"}.key`),
     },
   },
