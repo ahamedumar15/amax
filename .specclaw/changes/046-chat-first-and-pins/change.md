@@ -26,7 +26,7 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
 
 ## Tasks
 
-- [ ] `T1` — Opportunity page chat-first: hint line, "Ask amax" chips with the opportunity pinned, tasks/risks as pinned table rows, pins on every card and stage step (AC-1, AC-2, AC-4)
+- [x] `T1` — Opportunity page chat-first: hint line, "Ask amax" chips with the opportunity pinned, tasks/risks as pinned table rows, pins on every card and stage step (AC-1, AC-2, AC-4)
   Files: modules/presales/ui/OpportunityPage.tsx, modules/presales/ui/AskButton.tsx, modules/presales/ui/TasksRisks.tsx, modules/presales/ui/ActivitiesCard.tsx, modules/presales/ui/DetailsCard.tsx, modules/presales/ui/HistoryCard.tsx, modules/presales/ui/StageSteps.tsx, modules/presales/ui/PromoteCard.tsx, modules/presales/ui/LostDialog.tsx, modules/presales/ui/presales.css
 - [ ] `T2` — Board chat-first: deal tiles, suggestion strip, pipeline rows, stat cards, chart and feed get pins; move/remove/accept/dismiss become Ask chips (AC-1, AC-2, AC-4)
   Files: modules/presales/ui/BoardPage.tsx, modules/presales/ui/DealCard.tsx, modules/presales/ui/MoveControls.tsx, modules/presales/ui/FoundStrip.tsx, modules/presales/ui/PipelineList.tsx, modules/presales/ui/StageFeed.tsx

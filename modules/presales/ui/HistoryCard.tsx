@@ -1,3 +1,4 @@
+import { PinButton } from "@amax/ui";
 import type { StageChangeRow } from "../server/queries";
 import { daysBetween, day, first, STAGE_UI, Stk } from "./parts";
 
@@ -5,9 +6,10 @@ const what = (h: StageChangeRow) => (h.from === h.to ? `${STAGE_UI[h.to].label},
 const chance = (h: StageChangeRow) => (h.fromChance === null ? `Win chance ${h.toChance}%` : `Win chance ${h.fromChance}% → ${h.toChance}%`);
 
 // Every change is logged with who and when; each row shows how long it held until the next one.
-export function HistoryCard({ history, today }: { history: StageChangeRow[]; today: string }) {
+export function HistoryCard({ number, history, today }: { number: string; history: StageChangeRow[]; today: string }) {
   return (
-    <div className="card">
+    <div className="card pinnable">
+      <PinButton pin={{ label: `${number} stage history`, tool: "get_opportunity", args: { number } }} />
       <div className="card-head"><h2>Stage history</h2><span className="muted">Every change is logged</span></div>
       <ol className="timeline">
         {history.map((h, i) => {
