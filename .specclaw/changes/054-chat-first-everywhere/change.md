@@ -25,18 +25,18 @@ What changes on screen, and where to see it: [`054-chat-first-everywhere`](../..
 
 ## Tasks
 
-- [ ] `T1` — Time screens: My timesheet's log and submit forms and Team time's approve/remind forms become "Ask amax" chips with the week or row pinned (AC-1, AC-2)
+- [x] `T1` — Time screens: My timesheet's log and submit forms and Team time's approve/remind forms become "Ask amax" chips with the week or row pinned (AC-1, AC-2)
   Files: modules/time/ui/AskButton.tsx, modules/time/ui/MyPage.tsx, modules/time/ui/ThisWeek.tsx, modules/time/ui/Timesheets.tsx, modules/time/ui/time.css
-- [ ] `T2` — Allocations: Copy month becomes an "Ask amax" chip; each grid row pin resolves through `get_allocation` (AC-1, AC-2, AC-3)
+- [x] `T2` — Allocations: Copy month becomes an "Ask amax" chip; each grid row pin resolves through `get_allocation` (AC-1, AC-2, AC-3)
   Files: modules/allocations/ui/AskButton.tsx, modules/allocations/ui/CopyMonth.tsx, modules/allocations/ui/Grid.tsx, modules/allocations/ui/AllocationsPage.tsx
-- [ ] `T3` — Delivery: Release, Releases, the board's Move and EnvironmentsCard become "Ask amax" chips; ProjectPage structure from 051 stays (AC-1, AC-2)
+- [x] `T3` — Delivery: Release, Releases, the board's Move and EnvironmentsCard become "Ask amax" chips; ProjectPage structure from 051 stays (AC-1, AC-2)
   Files: modules/delivery/ui/AskButton.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/EnvironmentsCard.tsx, modules/delivery/ui/delivery.css
-- [ ] `T4` — Presales: the "Change details" chip comes back, backed by a new `update_opportunity` write tool (AC-4)
+- [x] `T4` — Presales: the "Change details" chip comes back, backed by a new `update_opportunity` write tool (AC-4)
   Files: modules/presales/ui/AskChips.tsx, modules/presales/server/opportunities.ts, modules/presales/mcp.ts, modules/presales/tests/chat-first.test.ts, modules/presales/tests/e2e/chat-first.spec.ts
-- [ ] `T5` — Read tools `get_timesheet` (one person-week, optionally one project row) and `get_allocation` (one grid row); time row pins use them (AC-3)
+- [x] `T5` — Read tools `get_timesheet` (one person-week, optionally one project row) and `get_allocation` (one grid row); time row pins use them (AC-3)
   Files: modules/time/server/sheet.ts, modules/time/mcp.ts, modules/allocations/server/row.ts, modules/allocations/mcp.ts, modules/time/ui/MyPage.tsx, modules/time/ui/Timesheets.tsx
   Depends: T1, T2
-- [ ] `T6` — Delete the three modules' `actions.ts`; a chat-first guard per module, plus confirm-only tests for the write tools the chips use and the new read tools (AC-1, AC-2, AC-3)
+- [x] `T6` — Delete the three modules' `actions.ts`; a chat-first guard per module, plus confirm-only tests for the write tools the chips use and the new read tools (AC-1, AC-2, AC-3)
   Files: modules/time/actions.ts, modules/allocations/actions.ts, modules/delivery/actions.ts, modules/time/tests/chat-first.test.ts, modules/allocations/tests/chat-first.test.ts, modules/delivery/tests/chat-first.test.ts
   Depends: T1, T2, T3, T5
 - [ ] `T7` — Teach the scripted model the new prompts; e2e pin → ask → confirm for submit a week, copy a month and record a deployment; move the form-driven specs (time approve, board move, promote, environments, release) to the chat flow (AC-5)
