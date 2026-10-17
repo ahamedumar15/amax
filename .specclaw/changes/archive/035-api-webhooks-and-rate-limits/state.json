@@ -1,11 +1,12 @@
 {
   "change": "035-api-webhooks-and-rate-limits",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T19:06:53Z"},
     "tasks": {"status":"done","at":"2026-10-17T19:12:03Z"},
     "verify": {"status":"done","at":"2026-10-17T19:36:30Z"},
-    "pr": {"status":"raised","at":"2026-10-17T19:40:40Z","url":"https://github.com/chan4lk/amax/pull/48"}
+    "pr": {"status":"raised","at":"2026-10-17T19:40:40Z","url":"https://github.com/chan4lk/amax/pull/48"},
+    "archived": {"status":"done","at":"2026-10-17T22:07:59Z"}
   }
 }

@@ -1,6 +1,6 @@
-# Status: 056-ci-flakes
+# Status: 058-settings-review-2
 
-**Change:** 056-ci-flakes
+**Change:** 058-settings-review-2
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -14,6 +14,7 @@
 | Tasks | - | - |
 | Build | - | - |
 | Verify | - | - |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
