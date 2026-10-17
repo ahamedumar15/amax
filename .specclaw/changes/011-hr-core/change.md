@@ -23,7 +23,7 @@ People: stats, departments, joiners vs leavers, directory; Person page with empl
 
 ## Tasks
 
-- [ ] `T1` — Publish `contracts.ts` (types, `getPerson`, `listPeople(scope)`, `getEmployment`, event names and payloads) with contract tests (AC-4, AC-5)
+- [x] `T1` — Publish `contracts.ts` (types, `getPerson`, `listPeople(scope)`, `getEmployment`, event names and payloads) with contract tests (AC-4, AC-5)
   Files: modules/hr/contracts.ts, modules/hr/package.json, modules/hr/tsconfig.json, modules/hr/tests/contracts.test.ts
 - [ ] `T2` — People screen (stats, departments, joiners vs leavers, directory) and Person page (employment with pay masked, documents, balances placeholder) matching the mock (AC-2)
   Files: modules/hr/ui/PeoplePage.tsx, modules/hr/ui/PersonPage.tsx, modules/hr/ui/parts.tsx, modules/hr/ui/Reveal.tsx, modules/hr/ui/hr.css, modules/hr/css.d.ts
