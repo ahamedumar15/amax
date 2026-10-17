@@ -12,9 +12,9 @@ import manifest from "../module";
 import { EVENTS, getProjectRef, listProjectRefs, managedProjectIds, PHASES } from "../contracts";
 import { mcpTools } from "../mcp";
 import { ctxFor } from "../server/context";
-import { getProject, listProjects, listProposals, listReleases, phaseCounts } from "../server/queries";
+import { getProject, listProjects, listProposals, listReleases, phaseCounts, shippedPerWeek, today, weeklyThroughput } from "../server/queries";
 import { moveProposal, recordDeployment } from "../server/services";
-import { nextStep } from "../ui/ReleasesPage";
+import { nextStep, onActiveMap } from "../ui/ReleasesPage";
 
 const T = lumen.tenant.id;
 
@@ -93,7 +93,64 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     const lane = (ph: string) => board.filter((p) => p.phase === ph).map((p) => p.key).sort();
     expect([lane("proposed"), lane("planned"), lane("building"), lane("verified"), lane("released")]).toEqual([["CON-016", "CON-017"], ["CON-013"], ["CON-011", "CON-014"], ["CON-010", "CON-012"], ["CON-009"]]);
     const rel = await listReleases(maya);
-    expect(rel.map((r) => `${r.projectKey} ${r.version} ${r.proposals}`)).toEqual(["CON v2.5.0 3", "CON v2.4.0 2", "FLT v1.8.0 5", "CON v2.3.0 1", "HRI v0.9.2 4"]);
+    expect(rel.map((r) => `${r.projectKey} ${r.version} ${r.proposals}`)).toEqual(["CON v2.5.0 3", "CON v2.4.0 2", "FLT v1.8.0 5", "HRI v0.9.2 4",
+      "CON v2.3.0 1", "FLT v1.7.0 2", "HRI v0.9.0 3", "FLT v1.7.1 1", "HRI v0.9.1 4", "FLT v1.7.2 3", "FLT v1.7.3 1"]);
+    // The Active map is the mock's three rows: CON and FLT in flight, HRI's live v0.9.2; older live releases drop off.
+    expect(onActiveMap(rel, new Date("2026-10-16T15:00:00Z")).map((r) => `${r.projectKey} ${r.version}`)).toEqual(["CON v2.4.0", "FLT v1.8.0", "HRI v0.9.2"]);
+    // Every released proposal, in every project, has a real release that reached Prod (review rounds 1 and 2).
+    const orphans = await withTenant(app, T, (tx) => tx.execute(sql`select p.key from delivery.proposal p where p.phase = 'released' and not exists (
+      select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = p.release_id and e.is_prod and d.status = 'deployed' and d.voided_at is null)`));
+    expect(orphans.map((o) => o.key)).toEqual([]);
+    expect((await listProposals(maya, { projectKey: "CON", phase: "released" })).map((p) => [p.key, p.release])).toEqual([["CON-009", "v2.3.0"]]);
+  });
+
+  it("weekly charts: shipped counts released_at like 'Released this month'; the portfolio row is not double counted; missing weeks are null (review round 1)", async () => {
+    const now = new Date("2026-10-16T15:00:00Z");
+    const shipped = await shippedPerWeek(maya, now);
+    expect(shipped.labels).toEqual(["W35", "W36", "W37", "W38", "W39", "W40", "W41", "W42"]);
+    expect(shipped.values).toEqual([2, 3, 1, 4, 3, 5, 1, 0]);
+    // Same source as the phase card: October's weeks sum to the month's count once September's days are out.
+    const [{ n }] = await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from delivery.proposal where phase = 'released' and released_at >= '2026-09-28' and released_at < '2026-10-01'`));
+    expect(shipped.values.slice(5).reduce((a, b) => a + b, 0) - Number(n)).toBe((await phaseCounts(maya, now)).releasedThisMonth);
+    const before = await weeklyThroughput(maya, now);
+    expect(before.done).toEqual([24, 29, 31, 27, 33, 35, 30, 38]);
+    // Per-project rows beside the portfolio row (ingestion writes both) don't change the portfolio.
+    const [con] = await withTenant(app, T, (tx) => tx.execute(sql`select id from delivery.project where key = 'CON'`));
+    await withTenant(app, T, (tx) => tx.execute(sql`insert into delivery.weekly_stat (tenant_id, project_id, week, planned, done) values (${T}, ${con.id}, '2026-10-12', 12, 11)`));
+    try {
+      expect((await weeklyThroughput(maya, now)).done).toEqual(before.done);
+    } finally {
+      await withTenant(app, T, (tx) => tx.execute(sql`delete from delivery.weekly_stat where project_id = ${con.id}`));
+    }
+    // A week with no roll-up is null, never 0; a window with none at all is all nulls.
+    const later = await weeklyThroughput(maya, new Date("2026-11-03T15:00:00Z"));
+    expect(later.labels.slice(-3)).toEqual(["W43", "W44", "W45"]);
+    expect(later.done.slice(-3)).toEqual([null, null, null]);
+    expect((await weeklyThroughput(maya, new Date("2027-06-01T15:00:00Z"))).planned.every((x) => x === null)).toBe(true);
+  });
+
+  it("today is the tenant's clock pin, else the real date; the windows follow it (review round 2)", async () => {
+    const before = Date.now();
+    expect((await today(maya)).getTime()).toBeGreaterThanOrEqual(before);
+    await withTenant(app, T, (tx) => tx.execute(sql`insert into delivery.clock_pin (tenant_id, today) values (${T}, '2026-10-16')`));
+    try {
+      expect((await today(maya)).toISOString()).toBe("2026-10-16T15:00:00.000Z");
+      expect((await shippedPerWeek(maya)).labels.at(-1)).toBe("W42");
+      expect((await weeklyThroughput(maya)).done.at(-1)).toBe(38);
+      expect((await phaseCounts(maya)).releasedThisMonth).toBe(5);
+      // Windows stop at the pinned day: a release recorded after it is not counted (final review).
+      await withTenant(app, T, (tx) => tx.execute(sql`update delivery.proposal set released_at = '2026-10-20T10:00:00Z' where key = 'HRI-100'`));
+      try {
+        expect((await phaseCounts(maya)).releasedThisMonth).toBe(4);
+        expect((await shippedPerWeek(maya)).values.slice(-3)).toEqual([4, 1, 0]);
+      } finally {
+        await withTenant(app, T, (tx) => tx.execute(sql`update delivery.proposal set released_at = '2026-10-01T09:00:00Z' where key = 'HRI-100'`));
+      }
+      // A pin is a date: anything else is refused by the column.
+      await expect(withTenant(app, T, (tx) => tx.execute(sql`update delivery.clock_pin set today = 'yesterday-ish'`))).rejects.toThrow();
+    } finally {
+      await withTenant(app, T, (tx) => tx.execute(sql`delete from delivery.clock_pin`));
+    }
   });
 
   it("AC-5 contract lookups", async () => {

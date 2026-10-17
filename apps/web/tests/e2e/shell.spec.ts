@@ -26,7 +26,7 @@ test("AC5 shell matches the mock, is keyboard-complete and respects reduced moti
     }
     const bar = async (p: Page) => (await p.locator(".rail").boundingBox())?.[width === 390 ? "y" : "x"];
     expect(await bar(page)).toBe(await bar(mockPage));
-    for (const path of ["/", "/hello"]) {
+    for (const path of ["/", "/delivery"]) {
       await page.goto(path);
       const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
       expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`), path).toEqual([]);
@@ -40,14 +40,14 @@ test("AC5 shell matches the mock, is keyboard-complete and respects reduced moti
   await page.keyboard.press("Enter");
   await expect(page.locator("main")).toBeFocused();
   await expect(page.getByRole("main")).toHaveCount(1);
-  const hello = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Hello" });
-  await hello.focus();
+  const projects = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Projects" });
+  await projects.focus();
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/hello$/);
+  await expect(page).toHaveURL(/\/delivery$/);
   const heading = page.locator("main h1");
   await expect(heading).toBeFocused();
   await expect(page.getByRole("status")).toHaveText(`${await heading.textContent()} screen`);
-  await expect(hello).toHaveAttribute("aria-current", "page");
-  const transition = await hello.evaluate((el) => getComputedStyle(el).transitionDuration);
+  await expect(projects).toHaveAttribute("aria-current", "page");
+  const transition = await projects.evaluate((el) => getComputedStyle(el).transitionDuration);
   expect(transition.split(",").every((d) => parseFloat(d) === 0)).toBe(true);
 });
