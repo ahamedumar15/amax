@@ -11,7 +11,7 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
+| Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | - | - |
 

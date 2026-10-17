@@ -24,4 +24,25 @@ New admin screen, API and webhooks: service credentials with owner, scopes, expi
 
 ## Tasks
 
+- [ ] `T1` — API and webhooks screen at /settings/api: credentials, webhooks and rate limits, read-only with pins and Ask amax chips; hub card on (AC-6, AC-2, AC-3, AC-4, AC-5)
+  Files: apps/web/app/(app)/settings/api/page.tsx, apps/web/app/(app)/settings/api/ApiTickets.tsx, apps/web/app/(app)/settings/api/Tables.tsx, apps/web/app/(app)/settings/api/Art.tsx, apps/web/app/(app)/settings/api/format.ts, apps/web/app/(app)/settings/api/api.css, apps/web/lib/admin/status.ts, apps/web/tests/admin/no-forms.test.ts
+- [ ] `T2` — Migration 0025 (api schema) and service-principal credentials: create, rotate and revoke as confirm-gated MCP tools, per-module read/write/sensitive scopes, expiry of at most a year, acts-for list, key stored hashed and revealed once on the confirm card only; OAuth client credentials grant (AC-2)
+  Files: packages/db/migrations/0025_api.sql, packages/auth/src/principals.ts, packages/auth/src/index.ts, packages/api/package.json, packages/api/src/credentials.ts, packages/api/src/client-credentials.ts, packages/api/src/stats.ts, apps/web/lib/admin/api.ts, apps/web/lib/admin/index.ts, apps/web/app/actions/chat.ts, apps/web/lib/chat-outcome.ts, apps/web/components/chat/Chat.tsx, apps/web/components/chat/RevealOnce.tsx, apps/web/app/oauth/token/route.ts, docs/architecture.md
+  Depends: T1
+- [ ] `T3` — REST API generated from the tool registry with an OpenAPI 3.1 document; same permissions, audit and trace as MCP; principals act for a listed person (AC-1)
+  Files: packages/api/src/rest.ts, packages/api/src/openapi.ts, packages/api/src/auth.ts, apps/web/app/api/v1/[...path]/route.ts, packages/auth/src/gate.ts
+  Depends: T2
+- [ ] `T4` — Incoming webhook verify helper: GitHub and Azure DevOps signatures, Microsoft Graph clientState, per-tenant secrets from 031, 5-minute replay window, event-ID dedupe, rejections counted (AC-3)
+  Files: packages/api/src/verify.ts, packages/core/src/secrets/connectors.ts
+  Depends: T2
+- [ ] `T5` — Outgoing webhooks: subscribe and unsubscribe tools, masked payloads, HMAC-SHA256 with timestamp, delivery as a 029 workflow with backoff, switched off after repeated failures (AC-4)
+  Files: packages/api/src/webhooks.ts, packages/api/src/deliver.ts, packages/api/src/module.ts, apps/web/lib/server.ts
+  Depends: T2
+- [ ] `T6` — Rate limits per token, user and tenant across pages, REST and MCP, 429 with Retry-After, limited requests recorded for the screen (AC-5)
+  Files: packages/core/src/rate-limit.ts, packages/core/src/server.ts, packages/mcp/src/registry.ts, packages/mcp/src/server.ts, apps/web/proxy.ts, apps/web/lib/rate-limit.ts
+  Depends: T3
+- [ ] `T7` — Tests: key never in model input, chat history, ai.call, trace, audit or logs; REST and OpenAPI; signature formats; outgoing signing, retry and switch-off; MCP flood leaves another tenant unaffected; e2e screen within 2% of the mock, Admin only, axe light and dark (AC-1 to AC-6)
+  Files: packages/api/tests/*.test.ts, packages/core/tests/rate-limit.test.ts, apps/web/tests/admin/api-reveal.test.ts, apps/web/tests/e2e/api.spec.ts, apps/web/tests/e2e/api-seed.ts, apps/web/tests/e2e/global-auth.ts, apps/web/playwright.auth.config.ts
+  Depends: T1, T2, T3, T4, T5, T6
+
 ## Verify
