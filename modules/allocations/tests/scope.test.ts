@@ -44,13 +44,16 @@ describe.skipIf(!hasDb)("allocations data scope (Postgres)", () => {
     { who: "system job", reader: () => sys(), rows: 2, hidden: 0 },
     { who: "Leadership", reader: () => db.as("maya", "Leadership"), rows: 2, hidden: 0 },
     { who: "HR limited to Australia, asking for Ayesha", reader: async () => auOnly, rows: 0, hidden: 1 },
-  ])("contract reads return only the people the reader may see, and count the rest: $who", async ({ reader, rows, hidden }) => {
+    { who: "HR limited to Australia, asking for Ayesha and someone with no rows", reader: async () => auOnly, rows: 0, hidden: 2, extra: "LL-0150" },
+    { who: "Leadership, asking for Ayesha and someone with no rows", reader: () => db.as("maya", "Leadership"), rows: 2, hidden: 0, extra: "LL-0150" },
+  ])("contract reads return only the people the reader may see, and count the rest: $who", async ({ reader, rows, hidden, extra }) => {
     const r = await reader();
     await db.tx(async (tx) => {
       const ayesha = (await getPerson(tx, sys(), "LL-0291"))!;
-      const list = await listAllocations(tx, r, { from: "2026-12-01", to: "2026-12-31", personIds: [ayesha.id] });
+      const ids = [ayesha.id, ...(extra ? [(await getPerson(tx, sys(), extra))!.id] : [])];
+      const list = await listAllocations(tx, r, { from: "2026-12-01", to: "2026-12-31", personIds: ids });
       expect([list.rows.length, list.hidden]).toEqual([rows, hidden]);
-      const totals = await personMonthTotals(tx, r, { from: "2026-12-01", to: "2026-12-01", personIds: [ayesha.id] });
+      const totals = await personMonthTotals(tx, r, { from: "2026-12-01", to: "2026-12-01", personIds: ids });
       expect([totals.rows.length, totals.hidden]).toEqual([rows ? 1 : 0, hidden]);
     });
   });
@@ -70,12 +73,11 @@ describe.skipIf(!hasDb)("allocations data scope (Postgres)", () => {
     { who: "a principal with no viewer", ctx: (): ServiceContext => ({ tenantId: T, actor: { id: "sp:x", kind: "service" }, source: "api", principal: {} } as never), copies: false },
     { who: "a hand-built system literal", ctx: (): ServiceContext => ({ tenantId: T, actor: { id: "job:x", kind: "system" }, source: "job" }), copies: false },
     { who: "a system job core issued", ctx: () => sys(), copies: true },
-  ])("Copy to next month copies nothing without a viewer unless core issued the context: $who", async ({ ctx, copies }) => {
+  ])("Copy to next month is refused without a viewer unless core issued the context: $who", async ({ ctx, copies }) => {
     // Fixtures plan December, and some of it isn't in January yet, so there is something to copy.
-    const r = await copyMonth(await ctx(), { from: "2026-12" }).catch((e: Error) => ({ error: e.message }));
-    if (copies) expect(r).toMatchObject({ skipped: 0, copied: expect.any(Number) });
-    else if ("copied" in r) expect(r.copied === 0 && r.skipped > 0).toBe(true);
-    else expect(r.error).toMatch(/forbidden/);
+    const run = copyMonth(await ctx(), { from: "2026-12" });
+    if (copies) await expect(run).resolves.toMatchObject({ skipped: 0 });
+    else await expect(run).rejects.toThrow(/forbidden/);
   });
 
   it.each([

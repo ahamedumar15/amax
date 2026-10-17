@@ -64,6 +64,8 @@ export const copyMonth = defineService({
   resource: "allocations.allocation",
   input: z.object({ team: z.string().default("Delivery team"), from: month }),
   async run(tx, input, ctx) {
+    // Without a viewer there's nothing to judge each row by: refuse rather than report every row as skipped.
+    if (!viewerOf(ctx) && !isSystemContext(ctx)) throw new ScopeError("allocations:copy");
     const to = nextMonth(input.from);
     const members = (await teamMembers(tx, input.team)).map((m) => m.personId);
     const rows = await tx.execute(sql`select * from allocations.allocation a where month = ${input.from}::date and person_id::text in (${sql.join([...members, "none"].map((i) => sql`${i}`), sql`, `)})

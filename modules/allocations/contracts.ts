@@ -32,8 +32,10 @@ const ids = (col: string, list?: string[]) => (list ? (list.length ? sql`and ${s
  */
 export type Scoped<T> = { rows: T[]; hidden: number };
 
-async function visible<T extends { personId: string }>(tx: Tx, reader: Reader, rows: T[]): Promise<Scoped<T>> {
-  const ids = [...new Set(rows.map((r) => r.personId))];
+// With `personIds`, every requested person outside the reader's scope counts as hidden whether or not
+// they have rows, so the count says nothing about a person the reader may not see.
+async function visible<T extends { personId: string }>(tx: Tx, reader: Reader, rows: T[], requested?: string[]): Promise<Scoped<T>> {
+  const ids = requested ? [...new Set(requested)] : [...new Set(rows.map((r) => r.personId))];
   if (!ids.length) return { rows, hidden: 0 };
   const seen = new Set((await listPeople(tx, reader, { ids })).map((p) => p.id));
   return { rows: rows.filter((r) => seen.has(r.personId)), hidden: ids.filter((id) => !seen.has(id)).length };
@@ -42,12 +44,12 @@ async function visible<T extends { personId: string }>(tx: Tx, reader: Reader, r
 /** Allocations between two months (inclusive), optionally for some people or projects, of the people the reader may see. */
 export async function listAllocations(tx: Tx, reader: Reader, opts: { from: string; to: string; personIds?: string[]; projectIds?: string[] }): Promise<Scoped<Allocation>> {
   return visible(tx, reader, (await tx.execute(sql`select * from allocations.allocation where month between ${monthOf(opts.from)}::date and ${monthOf(opts.to)}::date
-    ${ids("person_id", opts.personIds)} ${ids("project_id", opts.projectIds)} order by person_id, month, project_id nulls last, work`)).map(toAllocation));
+    ${ids("person_id", opts.personIds)} ${ids("project_id", opts.projectIds)} order by person_id, month, project_id nulls last, work`)).map(toAllocation), opts.personIds);
 }
 
 /** Each person's total percent per month (people the reader may see): what over-allocation (above their FTE) is judged on. */
 export async function personMonthTotals(tx: Tx, reader: Reader, opts: { from: string; to: string; personIds?: string[] }): Promise<Scoped<{ personId: string; month: string; percent: number }>> {
   return visible(tx, reader, (await tx.execute(sql`select person_id, month, sum(percent)::int as percent from allocations.allocation
     where month between ${monthOf(opts.from)}::date and ${monthOf(opts.to)}::date ${ids("person_id", opts.personIds)} group by person_id, month order by person_id, month`))
-    .map((r) => ({ personId: r.person_id as string, month: day(r.month), percent: Number(r.percent) })));
+    .map((r) => ({ personId: r.person_id as string, month: day(r.month), percent: Number(r.percent) })), opts.personIds);
 }
