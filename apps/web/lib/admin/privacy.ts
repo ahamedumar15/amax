@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { accessPackage, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, setRetentionPeriod } from "@amax/core/privacy";
+import { accessPackage, BY_NAME, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, setRetentionPeriod } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
 import { chatOnly, ctxFor, notFound, read, tool, write } from "./tool";
 
@@ -53,7 +53,8 @@ export const privacyTools = [
   tool({ ...write(PRIVACY_MANAGE), name: "open_privacy_request", description: "Open an access or erasure request for a person. amax lists their records in every module; a second Admin or HR person completes it.",
     input: z.object({ kind: z.enum(["access", "erasure"]), person }), run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), openPrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "complete_privacy_request", destructive: true, description: "Approve and complete an access or erasure request opened by someone else: export the data package, or erase and anonymise. Records the law still requires are kept.",
-    input: z.object({ id }), run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), completePrivacyRequest(ctxFor(v, s), a)) }),
+    input: z.object({ id, byName: z.enum(BY_NAME).optional().describe("Rows that name the person only by name (the request lists them): 'include' once checked they are this person's, 'exclude' if they are someone else's. Required when the request has any") }),
+    run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), completePrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "place_legal_hold", description: "Pause the purge and erasure for a person, or for a matter given the ids of its records.",
     input: z.discriminatedUnion("kind", [z.object({ kind: z.literal("person"), person, reason }), z.object({ kind: z.literal("matter"), matter: z.string().min(1).max(200), ids: z.array(z.string().min(1).max(200)).min(1).max(20), reason })]),
     run: (v, a, s) => placeLegalHold(ctxFor(v, s), a) }),

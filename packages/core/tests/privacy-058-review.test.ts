@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { appendAudit, contextFor, type ServiceContext } from "../src/server";
-import { completePrivacyRequest, effective, inventoryFor, loadPeriods, openPrivacyRequest, placeLegalHold, privacyOverview, purgeDue, releaseLegalHold, setRetentionPeriod, type PrivacySource } from "../src/privacy";
+import { completePrivacyRequest, effective, EXCLUDED_BY_APPROVER, inventoryFor, loadPeriods, openPrivacyRequest, placeLegalHold, previewPurge, privacyOverview, purgeDue, releaseLegalHold, setRetentionPeriod, type PrivacySource } from "../src/privacy";
 import { as, privacyDb, T, USERS, useTestSources } from "./privacy-fixture";
 
 type Entry = NonNullable<PrivacySource["retention"]>[number];
@@ -47,30 +47,42 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
     await db.t.owner`update privacy.request set status = 'cancelled' where id = ${opened.id}`;
   }, 60_000);
 
-  // B1 (round 2): a name doesn't identify a person. Rows found only by name are listed for review and
-  // never erased or exported automatically, in any spelling, so a namesake's rows are never touched.
-  it.each([["exact", "Rowan Test"], ["other case", "ROWAN TEST"], ["padded", "  rowan test "]])("a name-only row spelled %s is listed for review, not erased", async (_, spelled) => {
+  // B1 (rounds 2 and 3): a name doesn't identify a person. Rows found only by name are never acted on
+  // automatically: the approver checks them and decides, and the request records that decision.
+  const nameCase = async (spelled: string, kind: "erasure" | "access") => {
     await withExtra(TASK);
     await db.t.owner`delete from pt.task`;
     await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, ${spelled}), (${T}, 'Ivy Test')`;
-    await db.t.owner`delete from privacy.request`;
+    await db.t.owner`update privacy.request set status = 'cancelled' where status = 'open'`;
     await db.t.owner`update pt.person set name = 'Rowan Test' where user_id = ${USERS.rowan}`;
-    const opened = await openPrivacyRequest(hana(), { kind: "erasure", person: "rowan@example.test" });
+    const opened = await openPrivacyRequest(hana(), { kind, person: "rowan@example.test" });
     expect(opened.inventory.find((i) => i.label === `${TASK.label}, by name`)).toMatchObject({ n: 1, review: expect.stringMatching(/^needs review/) });
     expect(opened.review).toBe(1);
-    await completePrivacyRequest(sam(), { id: opened.id });
-    expect((await db.t.owner`select owner_name from pt.task order by owner_name`).map((r) => r.owner_name)).toEqual(["Ivy Test", spelled].sort());
+    await expect(completePrivacyRequest(sam(), { id: opened.id })).rejects.toThrow(/name the person only by name/);
+    expect((await db.t.owner`select status from privacy.request where id = ${opened.id}`)[0].status).toBe("open");
+    return opened;
+  };
+  const tasks = async () => (await db.t.owner`select owner_name from pt.task order by owner_name nulls first`).map((r) => r.owner_name);
+
+  it.each([["exact", "Rowan Test"], ["other case", "ROWAN TEST"], ["padded", "  rowan test "]])("erasure: a name-only row spelled %s waits for the approver; include erases it", async (_, spelled) => {
+    const opened = await nameCase(spelled, "erasure");
+    await completePrivacyRequest(sam(), { id: opened.id, byName: "include" });
+    expect(await tasks()).toEqual([null, "Ivy Test"]);
   }, 60_000);
 
-  it("an access package leaves out rows found only by name", async () => {
-    await withExtra(TASK);
-    await db.t.owner`delete from pt.task`;
-    await db.t.owner`insert into pt.task (tenant_id, owner_name) values (${T}, 'Ivy Test')`;
-    await db.t.owner`update privacy.request set status = 'cancelled' where status = 'open'`;
-    const opened = await openPrivacyRequest(sam(), { kind: "access", person: "ivy@example.test" });
-    await completePrivacyRequest(hana(), { id: opened.id });
+  it("erasure: exclude keeps the name-only rows as someone else's, and says so", async () => {
+    const opened = await nameCase("Rowan Test", "erasure");
+    const done = await completePrivacyRequest(sam(), { id: opened.id, byName: "exclude" });
+    expect(await tasks()).toEqual(["Ivy Test", "Rowan Test"]);
+    expect(done.kept.find((i) => i.label === `${TASK.label}, by name`)?.kept).toBe(EXCLUDED_BY_APPROVER);
+    expect(done).toMatchObject({ status: "completed", review: 0 });
+  }, 60_000);
+
+  it.each([["include", ["pt.task"]], ["exclude", []]] as const)("access: %s puts the name-only rows in the package or leaves them out", async (choice, tables) => {
+    const opened = await nameCase("Rowan Test", "access");
+    await completePrivacyRequest(sam(), { id: opened.id, byName: choice });
     const [pkg] = await db.t.owner`select package from privacy.request where id = ${opened.id}`;
-    expect(pkg.package.sections.map((x: { table: string }) => x.table)).not.toContain("pt.task");
+    expect(pkg.package.sections.map((x: { table: string }) => x.table).filter((t: string) => t === "pt.task")).toEqual(tables);
   }, 60_000);
 
   it("a person hold keeps their name-only rows out of the purge", async () => {
@@ -117,6 +129,11 @@ describe.skipIf(!hasDb)("058 review: privacy requests fail closed and reach ever
     const p = await db.tx((tx) => loadPeriods(tx));
     const rule = { id: "pt.note.created_at", class: "personal" as const, period: "P90D" as const, minimum: "P90D" as const };
     expect(effective(p, rule, null).period).toBe("P90D");
+    // And the purge itself: with the P1D override stored, a 60-day-old note isn't due, a 100-day-old one is.
+    await db.t.owner`insert into pt.note (tenant_id, body, created_at) values (${T}, 'floor test', now() - interval '100 days')`;
+    const out = await db.tx((tx) => previewPurge(tx));
+    expect(out.counts.find((c) => c.rule === "pt.note.created_at")?.n).toBe(1);
+    await db.t.owner`delete from pt.note where body = 'floor test'`;
     await db.t.owner`delete from privacy.retention_period`;
   }, 60_000);
 });

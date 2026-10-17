@@ -28,4 +28,15 @@ describe("058 outgoing webhook masking follows the event's declaration and fails
     const b = events.find((e) => e.name === "b.pay.run")!;
     expect([maskEvent({ amount: 5 }, a.fields), maskEvent({ amount: 5 }, b.fields)]).toEqual([{ amount: 5 }, { amount: { masked: true, class: "pay" } }]);
   });
+
+  it.each([
+    ["one says plain, one classifies: the class wins", { amount: "plain" }, { amount: "pay" }, { amount: 5 }, { amount: { masked: true, class: "pay" } }],
+    ["classified first, plain second: the class still wins", { amount: "pay" }, { amount: "plain" }, { amount: 5 }, { amount: { masked: true, class: "pay" } }],
+    ["a field only one declares is undeclared", { amount: "plain", note: "plain" }, { amount: "plain" }, { amount: 5, note: "x" }, { amount: 5, note: { masked: true, class: "undeclared" } }],
+    ["an emitter with no declaration masks everything", { amount: "plain" }, undefined, { amount: 5 }, { amount: { masked: true, class: "undeclared" } }],
+  ] as const)("two emitters of one event: %s", (_, first, second, payload, want) => {
+    const [e] = webhookEvents([{ events: { emits: ["x.y.z"], payloads: { "x.y.z": first } } }, { events: { emits: ["x.y.z"], payloads: second ? { "x.y.z": second } : {} } }]);
+    expect(maskEvent(payload, e.fields)).toEqual(want);
+  });
 });
+

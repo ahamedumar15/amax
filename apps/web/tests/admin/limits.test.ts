@@ -21,7 +21,7 @@ describe("058 the rate-limit table renders the configured limits", () => {
   });
 });
 
-// Review 058 round 2: the proxy wires its own limits and recorder (through getDb), so page 429s are
+// Review 058 rounds 2 and 3: the proxy wires its own limits and recorder (wireProxy), so page 429s are
 // recorded on every host, not only where it shares a process with the app.
 describe("058 every bundle that limits wires the env limits and the recorder", () => {
   afterAll(() => configureRateLimits({}));
@@ -34,10 +34,12 @@ describe("058 every bundle that limits wires the env limits and the recorder", (
     expect(seen).toEqual([channel]);
   });
 
-  it("the proxy wires its bundle (getDb) before it takes from the page limit", () => {
+  // tests/admin/proxy-wiring.test.ts drives wireProxy in separate bundles against Postgres; this pins
+  // that the proxy entry calls it before it limits.
+  it("the proxy entry calls wireProxy before it takes from the page limit", () => {
     const src = readFileSync(join(__dirname, "../../proxy.ts"), "utf8");
-    expect(src.indexOf("getDb();")).toBeGreaterThan(-1);
-    expect(src.indexOf("getDb();")).toBeLessThan(src.indexOf("takeRate("));
+    expect(src.indexOf("wireProxy();")).toBeGreaterThan(-1);
+    expect(src.indexOf("wireProxy();")).toBeLessThan(src.indexOf("takeRate("));
   });
 });
 

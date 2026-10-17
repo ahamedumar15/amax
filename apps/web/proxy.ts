@@ -2,7 +2,7 @@ import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server
 import { gate, isPublicPath } from "@amax/auth/gate";
 import { sessionStamp } from "@amax/auth/authjs";
 import { countsAsPage, takeRate } from "@amax/core/rate-limit";
-import { getDb } from "./lib/server";
+import { wireProxy } from "./lib/rate-wiring";
 import { auth } from "./auth";
 
 type Handler = (req: NextRequest, ev: NextFetchEvent) => Promise<Response>;
@@ -17,9 +17,9 @@ const guarded: Promise<Handler> | null = process.env.DATABASE_URL
       // skipping it would let any client dodge the limit by sending "rsc: 1"). Prefetches are the
       // router's speculation, not the person's; server actions are counted where their work runs,
       // per tool call in the registry.
-      // getDb() wires this bundle's runtime, the AMAX_RATE_* limits and the recorder of 429s, wherever the
-      // host runs the proxy (its own function on Vercel, its own worker on Cloudflare) (review 058).
-      getDb();
+      // Wires this bundle's runtime, the AMAX_RATE_* limits and the recorder of 429s, wherever the host
+      // runs the proxy (its own function on Vercel, its own worker on Cloudflare) (review 058).
+      wireProxy();
       const stamp = sessionStamp(req.auth);
       const r = stamp?.tenantId && countsAsPage(req.headers) ? takeRate({ tenantId: stamp.tenantId, userId: stamp.userId, channel: "page" }) : { ok: true as const };
       return r.ok ? NextResponse.next() : new NextResponse("Too many requests. Wait a moment and try again.", { status: 429, headers: { "retry-after": String(r.retryAfter) } });

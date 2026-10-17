@@ -21,8 +21,7 @@ Public API, signed webhooks and rate limits (035). Owned by the platform team.
   Every rejection is recorded in `api.inbound`; a provider with no secret set up is recorded as
   `not_configured`, a setup problem, not a rejection.
 - **Outgoing webhooks**: `subscribe_webhook` and friends (Admin, chat-confirmed). Each event an
-  installed module emits fans out to a `api.webhook-deliver` workflow (029): payload fields of a
-  each module declares every field of each event it emits (`declarePayload`); a plain field is sent,
+  installed module emits fans out to a `api.webhook-deliver` workflow (029). Each module declares every field of each event it emits (`declarePayload`); a plain field is sent,
   a classified one is masked with its class, and an undeclared one is masked (fail closed), with name
   patterns as a net inside plain fields. Receivers must be public: the URL is checked when subscribed
   and the resolved address again at delivery, where the connection is pinned to it (no private,
@@ -30,7 +29,7 @@ Public API, signed webhooks and rate limits (035). Owned by the platform team.
   "t.body">` with the tenant's `amax-webhook` secret, retried `RETRY.maxAttempts` times with backoff, and the webhook
   is switched off after `MAX_FAILURES` deliveries in a row fail.
 - **Rate limits** live in `@amax/core/rate-limit` (fixed one-minute windows per token, user and tenant, counted per server process
-  and shared by the proxy's and the app's bundles;
+  and wired by each bundle: the proxy wires its own limits and recorder on every host;
   a shared store can plug in later). The registry calls it once per tool call; MCP and REST answer 429 with `Retry-After`;
   the proxy limits pages. Limited requests are counted in `api.rate_limited`. The API's logs are
   kept by the 032 purge (`apiRetention`), not a job of their own.

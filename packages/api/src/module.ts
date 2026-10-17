@@ -35,12 +35,25 @@ function fanOut(event: string, engine: () => Promise<WorkflowEngine>, fields: Pa
 export type WebhookEvent = { name: string; fields?: PayloadFields };
 
 /** The webhook events of these manifests: what each emits, with the payload it declared for it. */
-export const webhookEvents = (modules: Pick<ModuleManifest, "events">[]): WebhookEvent[] =>
-  modules.flatMap((m) => (m.events?.emits ?? []).map((name) => ({ name, fields: m.events?.payloads?.[name] })));
+export function webhookEvents(modules: Pick<ModuleManifest, "events">[]): WebhookEvent[] {
+  const out = new Map<string, WebhookEvent>();
+  for (const m of modules) for (const name of m.events?.emits ?? []) out.set(name, { name, fields: stricter(out.get(name)?.fields, m.events?.payloads?.[name], out.has(name)) });
+  return [...out.values()];
+}
+
+// Two modules emitting one event: a field is plain only if every declaration says so, and an emitter
+// with no declaration makes the whole event undeclared (review 058 round 3).
+function stricter(a: PayloadFields | undefined, b: PayloadFields | undefined, seen: boolean): PayloadFields | undefined {
+  if (!seen) return b;
+  if (!a || !b) return undefined;
+  const merged: PayloadFields = {};
+  for (const k of Object.keys(a)) if (k in b) merged[k] = a[k] === "plain" ? b[k] : a[k];
+  return merged;
+}
 
 export const apiPlatform = (events: WebhookEvent[], engine: () => Promise<WorkflowEngine>) => ({
   id: "api",
   workflows: [deliverWebhook],
   retention: apiRetention,
-  events: { handles: [...new Map(events.map((e) => [e.name, e])).values()].map((e) => fanOut(e.name, engine, e.fields)) },
+  events: { handles: events.map((e) => fanOut(e.name, engine, e.fields)) },
 });
