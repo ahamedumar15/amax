@@ -26,8 +26,7 @@ test("029 Scheduler and runs: Admins see recurring work and switch a schedule of
 
 test("029 Scheduler and runs is Admin only", async ({ page }) => {
   await signIn(page, "nimal@lumenlabs.test", "/settings/workflows");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  const res = await page.goto("/settings/workflows");
-  expect(res?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Scheduler and runs" })).toHaveCount(0);
+  await expect(page.getByRole("switch")).toHaveCount(0);
 });

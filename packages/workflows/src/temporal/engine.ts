@@ -76,7 +76,7 @@ export function createTemporalEngine(o: TemporalEngineOptions): WorkflowEngine {
       const [r] = await tx.execute(sql`select status, engine_action from workflows.run where id = ${runId} for update`);
       if (!r?.engine_action) return;
       const h = await handle(runId);
-      const settle = (e: unknown) => { if (!(e instanceof WorkflowNotFoundError) && !/already completed|not found/i.test(errorText(e))) throw e; };
+      const settle = (e: unknown) => { if (!(e instanceof WorkflowNotFoundError)) throw e; };
       if (r.status === "cancelled") await h.cancel().catch(settle);
       else await h.signal("amax.pause", r.status === "paused").catch(settle);
       await tx.execute(sql`update workflows.run set engine_action = null where id = ${runId}`);
