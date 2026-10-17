@@ -48,4 +48,27 @@ What changes on screen, and where to see it: [`054-chat-first-everywhere`](../..
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass — no `<form>`, dialog or server action on My timesheet, Team time, Allocations, Release, Releases, the board or EnvironmentsCard; `actions.ts` deleted in time, allocations and delivery; guards `modules/{time,allocations,delivery}/tests/chat-first.test.ts` (AC1) pass; e2e assert `main form, main dialog` count 0.
+- AC-2: pass — each form is now a pinned "Ask amax" chip with the prompt filled in, using the existing tools; confirm-only tests (AC2) for submit_week, approve_week, copy_allocations_to_next_month, move_proposal, record_deployment pass (pending card, no write before confirm, audit source chat). No new write tools were needed for these screens.
+- AC-3: pass — `get_timesheet` and `get_allocation` added; Team time and My timesheet rows and allocation rows pin through them; AC3 tests in time and allocations resolve exactly one record.
+- AC-4: pass — "Change details" chip back on the opportunity page; `update_opportunity` (defineService, `presales:opportunity:edit`) added to presales' AC3 confirm cases; presales e2e expects the chip.
+- AC-5: pass — e2e pin → ask → confirm → screen updated: submit a week and copy a month (`apps/web/tests/e2e/chat-first.spec.ts`), record a deployment (`releases.spec.ts`, also re-tag and void); board move, promote, environments and time approve specs moved to the chat flow.
+- AC-6: pass — BACKLOG section removed; lint, typecheck and unit tests green; both e2e suites green.
+
+Commands (exit codes):
+- `pnpm lint` → 0 (includes tsc and check:graph)
+- `DATABASE_MIGRATE_URL=… pnpm test` → 0 (16/16 turbo tasks)
+- `pnpm build` → 0
+- `E2E_DB=amax_e2e_054 E2E_AUTH_PORT=3554 pnpm e2e:auth` (apps/web) → 0, 49 passed
+- `E2E_PORT=3557 pnpm e2e` (apps/web) → 0, 1 passed
+- `E2E_TIME_PORT=3555 E2E_TIME_DB=amax_e2e_054_time pnpm e2e` (modules/time) → 0, 2 passed
+- `PRESALES_E2E_PORT=3556 PRESALES_E2E_DB=amax_e2e_054_presales pnpm e2e` (modules/presales) → 0, 6 passed
+- `specclaw-preset-check .` → 1 from pre-existing repo-wide violations; the files this change adds have none.
+- `specclaw-quality-scan . --gate` → not run (known jq "Argument list too long" failure).
+- specclaw-review: not run (operator: review once per module, at the end).
+
 Quality: not_run (specclaw-quality-scan fails: jq "Argument list too long", a known tool issue).
+
+Screenshots: `shots/app-my-timesheet.png`, `shots/app-team-time.png`, `shots/app-allocations.png`, `shots/app-release.png`, `shots/app-project-hri.png`, `shots/mock.png` (mock section `#054-chat-first-everywhere`). Compared: Ask amax chips with the spark, as in the mock; the Release card says changes happen in chat.
