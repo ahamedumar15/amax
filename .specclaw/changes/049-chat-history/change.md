@@ -25,4 +25,18 @@ What changes on screen, and where to see it: [`049-chat-history`](../../mock/ind
 
 ## Tasks
 
+- [ ] `T1` — History view in the chat panel: History button, search, rows with title, date, message count, pins and a PinButton; reopen restores messages, pins and cards, expired cards show "Expired" (AC-2, AC-3)
+  Files: apps/web/components/chat/Chat.tsx, apps/web/components/chat/History.tsx, apps/web/app/globals.css
+- [ ] `T2` — Migration 0020: `title`, `archived_at` and `pins` on `chat.conversation`, backfilled for existing rows; the engine sets the title from the first message and stores the turn's pins (AC-1, AC-3)
+  Files: packages/db/migrations/0020_chat_history.sql, packages/chat/src/engine.ts
+- [ ] `T3` — History reads and the archive service: `listConversations`, `getConversation` scoped to the signed-in person; `archiveConversation` through defineService; MCP tools `list_conversations`, `get_conversation`, `archive_conversation` (AC-4, AC-5)
+  Files: packages/chat/src/history.ts, packages/chat/src/index.ts
+  Depends: T2
+- [ ] `T4` — Wire it in: chat tools into the tool registry and grants, page actions `listChats` and `openChat` (AC-2, AC-3, AC-4, AC-5)
+  Files: apps/web/lib/server.ts, apps/web/app/actions/chat.ts
+  Depends: T3
+- [ ] `T5` — Tests: unit/DB tests for title, search, scoping (page action and MCP), expired confirm refused, archive audited; e2e reopen-and-continue with axe (AC-1..AC-6)
+  Files: packages/chat/tests/history.test.ts, apps/web/tests/chat-history-action.test.ts, apps/web/tests/e2e/chat.spec.ts
+  Depends: T4
+
 ## Verify

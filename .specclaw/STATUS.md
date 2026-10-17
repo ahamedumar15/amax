@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 16:02 UTC
+**Last Updated:** 2026-10-17 16:05 UTC
 
 ## Active Changes
 
@@ -14,6 +14,7 @@
 - 🔀 **031-secrets-and-keys** — pr raised | 5/5 tasks (100%) | 0 failed | PR #31 merged
 - 🔀 **041-delivery-mock-parity** — pr done | 6/6 tasks (100%) | 0 failed | PR #30 merged
 - 🔀 **045-delivery-create-project-contract** — pr raised | 3/3 tasks (100%) | 0 failed | PR #34 merged
+- 📝 **049-chat-history** — tasks done | 0/5 tasks (0%) | 0 failed
 
 ## Pending Proposals
 
@@ -45,7 +46,6 @@
 - 📋 **038-navigation-scale** — proposal ready, awaiting planning
 - 📋 **043-chat-write-tool-contract** — proposal ready, awaiting planning
 - 📋 **044-release-and-region-hardening** — proposal ready, awaiting planning
-- 📋 **049-chat-history** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -63,6 +63,6 @@
 
 ## Stats
 
-- **Total changes:** 18
-- **Active:** 8
+- **Total changes:** 19
+- **Active:** 9
 - **Completed:** 10
