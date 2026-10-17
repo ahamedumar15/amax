@@ -23,20 +23,20 @@ Team time: hours per day, the timesheets table, Approve/Remind, and the My times
 
 ## Tasks
 
-- [ ] `T1` — Time screen matching the mock: Team view (hours per day, This week card, timesheets table with Approve/Remind/Export) and the My timesheet switch, with week navigation (AC-3)
+- [x] `T1` — Time screen matching the mock: Team view (hours per day, This week card, timesheets table with Approve/Remind/Export) and the My timesheet switch, with week navigation (AC-3)
   Files: modules/time/ui/TeamPage.tsx, modules/time/ui/MyPage.tsx, modules/time/ui/parts.tsx, modules/time/ui/time.css, modules/time/actions.ts
-- [ ] `T2` — Publish `contracts.ts` first: ISO week helpers, entry/week types, read functions (week hours, project hours, approved hours) and event names and payloads (AC-1, AC-5)
+- [x] `T2` — Publish `contracts.ts` first: ISO week helpers, entry/week types, read functions (week hours, project hours, approved hours) and event names and payloads (AC-1, AC-5)
   Files: modules/time/contracts.ts
-- [ ] `T3` — `time` schema: entry (billable, source person/agent), week (ISO year/week, status, lock) and approval, all RLS on tenant_id; fixtures for week 42 of 2026 matching fixtures.md (141.5 h, 64% agents, 87.5 h submitted, project split) (AC-1, AC-3)
+- [x] `T3` — `time` schema: entry (billable, source person/agent), week (ISO year/week, status, lock) and approval, all RLS on tenant_id; fixtures for week 42 of 2026 matching fixtures.md (141.5 h, 64% agents, 87.5 h submitted, project split) (AC-1, AC-3)
   Files: modules/time/db/migrations/0001_time.sql, modules/time/fixtures/index.ts
   Depends: T2
-- [ ] `T4` — Services and queries: log time, submit, approve and reject (comment required) through the manager or project chain, remind, Admin-only audited change and reopen of a locked week (AC-2)
+- [x] `T4` — Services and queries: log time, submit, approve and reject (comment required) through the manager or project chain, remind, Admin-only audited change and reopen of a locked week (AC-2)
   Files: modules/time/server/services.ts, modules/time/server/queries.ts, modules/time/server/context.ts
   Depends: T3
-- [ ] `T5` — Manifest, MCP tools (`log_time`, `submit_week`, `approve_week`, plus reject/remind/reopen and reads), chat intent "log time", README, package, CODEOWNERS line (AC-4, AC-5)
+- [x] `T5` — Manifest, MCP tools (`log_time`, `submit_week`, `approve_week`, plus reject/remind/reopen and reads), chat intent "log time", README, package, CODEOWNERS line (AC-4, AC-5)
   Files: modules/time/module.ts, modules/time/mcp.ts, modules/time/chat.ts, modules/time/README.md, modules/time/package.json, modules/time/tsconfig.json, modules/time/css.d.ts, .github/CODEOWNERS
   Depends: T4
-- [ ] `T6` — Tests: contract, service, permission and approval-chain tests with and without HR reporting lines, switch-off, fixtures totals; module-local e2e for the screen against the mock (AC-1 to AC-5)
+- [x] `T6` — Tests: contract, service, permission and approval-chain tests with and without HR reporting lines, switch-off, fixtures totals; module-local e2e for the screen against the mock (AC-1 to AC-5)
   Files: modules/time/tests/contracts.test.ts, modules/time/tests/time.test.ts, modules/time/tests/helpers.ts, modules/time/tests/e2e/time.spec.ts, modules/time/tests/e2e/playwright.config.ts, modules/time/tests/e2e/setup.ts, modules/time/tests/e2e/diff.ts
   Depends: T5
 
