@@ -6,7 +6,9 @@ import type { RunStatus } from "./types";
 
 const ACTIVE: RunStatus[] = ["running", "sleeping", "waiting"];
 const FROM: Record<RunAction, RunStatus[]> = { pause: ACTIVE, resume: ["paused"], cancel: [...ACTIVE, "paused"], retry: ["failed"] };
-const pending = (action: RunAction) => sql`engine_action = case when engine = 'temporal' then ${action} end`;
+// Only a launched Temporal execution has anything to pause or cancel; an unlaunched run is settled
+// here (launch() only starts runs whose status is 'running').
+const pending = (action: RunAction) => sql`engine_action = case when engine = 'temporal' and launched_at is not null then ${action} end`;
 const SET: Record<RunAction, ReturnType<typeof sql>> = {
   pause: sql`status = 'paused', ${pending("pause")}`,
   resume: sql`status = 'running', wake_at = now(), ${pending("resume")}`,

@@ -71,19 +71,31 @@ export async function startAttempt(tx: Tx, run: ClaimedRun, name: string, seq: n
   return true;
 }
 
-// Keeps the lease alive while a step runs; aborts the step once another worker holds the run.
-export function heartbeat(db: Db, run: ClaimedRun, leaseSeconds: number, stop: AbortController) {
-  let lastRenewed = Date.now();
+// Keeps the lease alive while a step runs, and aborts the step once another worker holds the run
+// or no renewal has been confirmed for 2/3 of the lease (a renewal that hangs counts as unconfirmed).
+export function heartbeat(db: Pick<Db, "transaction">, run: ClaimedRun, leaseSeconds: number, stop: AbortController) {
+  const leaseMs = leaseSeconds * 1000;
+  let confirmedAt = Date.now();
+  let inFlight = false;
   const beat = async () => {
+    if (Date.now() - confirmedAt > (leaseMs * 2) / 3) return stop.abort("couldn't renew the lease in time");
+    if (inFlight) return;
+    inFlight = true;
+    const issuedAt = Date.now();
     try {
-      const alive = await withTenant(db, run.tenantId, (tx) => fenced(tx, run, sql`locked_until = now() + make_interval(secs => ${leaseSeconds})`));
-      if (!alive) return stop.abort("lease lost to another worker");
-      lastRenewed = Date.now();
+      const alive = await withTenant(db as Db, run.tenantId, async (tx) => {
+        await tx.execute(sql`select set_config('statement_timeout', ${String(Math.round(leaseMs / 3))}, true)`);
+        return fenced(tx, run, sql`locked_until = now() + make_interval(secs => ${leaseSeconds})`);
+      });
+      if (!alive) stop.abort("lease lost to another worker");
+      else confirmedAt = issuedAt;
     } catch {
-      if (Date.now() - lastRenewed > (leaseSeconds * 1000 * 2) / 3) stop.abort("couldn't renew the lease");
+      return;
+    } finally {
+      inFlight = false;
     }
   };
-  const timer = setInterval(() => void beat(), Math.max(1000, (leaseSeconds * 1000) / 3));
+  const timer = setInterval(() => void beat(), Math.max(250, leaseMs / 6));
   return () => clearInterval(timer);
 }
 

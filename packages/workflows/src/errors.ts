@@ -22,5 +22,7 @@ export class NondeterminismError extends Error {
   }
 }
 
-export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 2000);
+// Drizzle wraps database errors as "Failed query: <sql>"; the cause says what actually went wrong.
+const messageOf = (e: unknown) => (e instanceof Error ? (e.message.startsWith("Failed query") && e.cause instanceof Error ? e.cause.message : e.message) : String(e));
+export const errorText = (e: unknown) => messageOf(e).slice(0, 2000);
 export const isRetryable = (e: unknown) => !(typeof e === "object" && e !== null && (e as { retryable?: unknown }).retryable === false);

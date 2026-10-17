@@ -67,6 +67,22 @@ describe.each(engines)("AC-3 the same suite on the %s engine", (_name, make, ena
     expect((await h.t.owner`select count(*)::int as n from workflows.run where input->>'id' = ${`rb-${h.name}`}`)[0].n).toBe(0);
   }, 60_000);
 
+  it.skipIf(!enabled)("AC-5 a run paused or cancelled before it was ever driven or launched doesn't run until resumed", async () => {
+    const inTx = (id: string) => h.db.transaction(async (tx) => {
+      await setTenant(tx, TENANT);
+      return h.engine.start(TENANT, "test.early", { id }, { startedBy: "test", tx });
+    });
+    const paused = await inTx(`p0-${h.name}`);
+    const cancelled = await inTx(`c0-${h.name}`);
+    await h.engine.control(admin, paused, "pause");
+    await h.engine.control(admin, cancelled, "cancel");
+    for (let i = 0; i < 5; i++) await h.engine.tick();
+    expect([count(`prep:p0-${h.name}`), count(`prep:c0-${h.name}`)]).toEqual([0, 0]);
+    await h.engine.control(admin, paused, "resume");
+    await settle(h, paused, ["waiting"]);
+    expect([count(`prep:p0-${h.name}`), (await settle(h, cancelled, ["cancelled"])).steps]).toEqual([1, []]);
+  }, 60_000);
+
   it.skipIf(!enabled)("AC-5 pauses, resumes and cancels runs; starting twice with a key returns the first run", async () => {
     const id = await h.engine.start(TENANT, "test.approval", { id: `c-${h.name}` }, { startedBy: "test", key: `k-${h.name}` });
     expect(await h.engine.start(TENANT, "test.approval", { id: `c-${h.name}` }, { startedBy: "test", key: `k-${h.name}` })).toBe(id);

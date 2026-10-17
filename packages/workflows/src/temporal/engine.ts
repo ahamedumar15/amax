@@ -2,7 +2,7 @@ import { Client, Connection, WorkflowExecutionAlreadyStartedError, WorkflowNotFo
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { controlRun, type ControlHook } from "../control";
-import type { RunAction, WorkflowEngine } from "../engine";
+import type { WorkflowEngine } from "../engine";
 import { errorText } from "../errors";
 import { inTx, insertRun, scheduleTick, validInput } from "../pg/engine";
 import { lockEvent } from "../pg/signal";
@@ -48,8 +48,8 @@ export function createTemporalEngine(o: TemporalEngineOptions): WorkflowEngine {
   // or see launched_at and be sent live; the workflow drops the duplicate id if both happen.
   async function launch(tenantId: string, runId: string) {
     await withTenant(db, tenantId, async (tx) => {
-      const [r] = await tx.execute(sql`select workflow, version, input, acts_for, legal_entity_id, launched_at, created_at from workflows.run where id = ${runId} for update`);
-      if (!r || r.launched_at) return;
+      const [r] = await tx.execute(sql`select workflow, version, input, acts_for, legal_entity_id, launched_at, created_at, status from workflows.run where id = ${runId} for update`);
+      if (!r || r.launched_at || r.status !== "running") return;
       const events = [...(registry.workflows.get(r.workflow as string)?.waitsFor ?? [])].sort();
       for (const e of events) await lockEvent(tx, tenantId, e);
       const buffered = await tx.execute(sql`select coalesce(source_id, id::text) as id, event, payload from workflows.signal
@@ -68,14 +68,19 @@ export function createTemporalEngine(o: TemporalEngineOptions): WorkflowEngine {
     });
   }
 
-  // Applies a committed pause, resume or cancel on Temporal, then clears it as pending.
-  async function apply(tenantId: string, runId: string, action: RunAction) {
-    const h = await handle(runId);
-    if (action === "pause" || action === "resume") await h.signal("amax.pause", action === "pause");
-    if (action === "cancel") await h.cancel().catch((e) => { if (!(e instanceof WorkflowNotFoundError)) throw e; });
+  // Brings the execution to the row's current state (paused, running or cancelled) under the row
+  // lock, so a hook and a tick can't send pause and resume out of order. An execution that has
+  // already closed has nothing left to change.
+  async function apply(tenantId: string, runId: string) {
     await withTenant(db, tenantId, async (tx) => {
-      await tx.execute(sql`update workflows.run set engine_action = null where id = ${runId} and engine_action = ${action}`);
-      if (action === "resume") {
+      const [r] = await tx.execute(sql`select status, engine_action from workflows.run where id = ${runId} for update`);
+      if (!r?.engine_action) return;
+      const h = await handle(runId);
+      const settle = (e: unknown) => { if (!(e instanceof WorkflowNotFoundError) && !/already completed|not found/i.test(errorText(e))) throw e; };
+      if (r.status === "cancelled") await h.cancel().catch(settle);
+      else await h.signal("amax.pause", r.status === "paused").catch(settle);
+      await tx.execute(sql`update workflows.run set engine_action = null where id = ${runId}`);
+      if (r.engine_action === "resume") {
         await tx.execute(sql`update workflows.run set status = coalesce((select case when bool_or(status = 'waiting') then 'waiting' when bool_or(status = 'sleeping') then 'sleeping' end
           from workflows.step where run_id = ${runId} and status in ('waiting', 'sleeping')), 'running') where id = ${runId} and status = 'running'`);
       }
@@ -85,7 +90,7 @@ export function createTemporalEngine(o: TemporalEngineOptions): WorkflowEngine {
   const later = (what: string) => (e: unknown) => o.log?.(`workflows: ${what} failed, the tick retries: ${errorText(e)}`);
   const hook: ControlHook = async (run, action) => {
     if (action === "retry") await launch(run.tenantId, run.id).catch(later(`relaunching ${run.id}`));
-    else await apply(run.tenantId, run.id, action).catch(later(`${action} of ${run.id}`));
+    else await apply(run.tenantId, run.id).catch(later(`${action} of ${run.id}`));
   };
 
   const engine: WorkflowEngine = {
@@ -120,7 +125,7 @@ export function createTemporalEngine(o: TemporalEngineOptions): WorkflowEngine {
         try {
           const [r] = await withTenant(db, tenantId, (tx) => tx.execute(sql`select launched_at, engine_action from workflows.run where id = ${runId}`));
           if (!r.launched_at) await launch(tenantId, runId);
-          else if (r.engine_action) await apply(tenantId, runId, r.engine_action as RunAction);
+          else if (r.engine_action) await apply(tenantId, runId);
           runs++;
         } catch (e) {
           runsFailed++;

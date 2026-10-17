@@ -214,7 +214,7 @@ language sql security definer set search_path = workflows, pg_temp as $$
    where r.id in (
      select x.id from workflows.run x
       where x.engine = 'temporal'
-        and ((x.launched_at is null and x.status = 'running') or x.engine_action is not null)
+        and ((x.launched_at is null and x.status = 'running') or (x.launched_at is not null and x.engine_action is not null))
         and (x.locked_until is null or x.locked_until < now())
       order by x.created_at
       for update skip locked
