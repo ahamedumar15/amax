@@ -8,6 +8,7 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { createProject, getProjectRef, PROJECT_CREATE_PERMISSION, ProjectConflictError } from "../contracts";
+import { createRegistry } from "@amax/mcp";
 import { createProjectService } from "../server/project-create";
 import { ctxFor } from "../server/context";
 import { listEnvironments } from "../server/queries";
@@ -59,21 +60,31 @@ describe.skipIf(!hasDb)("045 createProject contract (Postgres)", () => {
     expect(await bySource("presales.opportunity:OPP0043")).toHaveLength(1);
   });
 
+  const registry = createRegistry([delivery]);
+  const mcpCreate = (source: "mcp" | "chat") => () => registry.call(admin, "create_project", { key: "CON", name: "C", client: "x", billing: "fixed" }, { source });
   it.each([
-    ["a taken key", () => make("CON"), "CON"],
-    ["a taken key with a new sourceRef", () => make("CON", "presales.opportunity:OPP0050"), "CON"],
-    ["a sourceRef that made another key", () => make("SRZ", "presales.opportunity:OPP0042"), "SRA"],
-  ])("AC-3 %s is a ProjectConflictError a retry won't fix", async (_name, run, existingKey) => {
-    const e = await run().catch((x: unknown) => x);
+    ["contract: a taken key", () => make("CON"), "CON"],
+    ["contract: a taken key with a new sourceRef", () => make("CON", "presales.opportunity:OPP0050"), "CON"],
+    ["contract: a sourceRef that made another key", () => make("SRZ", "presales.opportunity:OPP0042"), "SRA"],
+    ["service (UI): a taken key", () => createProjectService(ctxFor(admin), { key: "CON", name: "C", client: "x", billing: "fixed" }), "CON"],
+    ["MCP create_project: a taken key", mcpCreate("mcp"), "CON"],
+    ["chat create_project: a taken key", mcpCreate("chat"), "CON"],
+  ])("AC-3 %s is a ProjectConflictError that names the clash", async (_name, run, existingKey) => {
+    const e = await (run as () => Promise<unknown>)().catch((x: unknown) => x);
     expect(e).toBeInstanceOf(ProjectConflictError);
-    expect(e).toMatchObject({ existingKey });
+    expect(e).toMatchObject({ existingKey, message: expect.stringMatching(/is taken; choose another|already made project/) });
     expect(retryable(e)).toBe(false);
   });
+
+  it.each([["it-access.request:REQ-7", "VAA", true], ["payroll-lk.run:2026_10", "VAB", true], ["OPP0001", "VAC", false], ["Presales.opportunity:1", "VAD", false], ["presales.opportunity:", "VAE", false]] as const)(
+    "AC-3 sourceRef %s (project %s) is accepted: %s", async (sourceRef, key, ok) => {
+      const run = make(key, sourceRef);
+      await (ok ? expect(run).resolves.toMatchObject({ key }) : expect(run).rejects.toThrow(/module.record:id/));
+    });
 
   it("AC-3 racing creates for one key: one project, the other a conflict; sourceRef is the contract's, in module.record:id form", async () => {
     expect((await settle([make("RKY", "presales.opportunity:OPP0060"), make("RKY", "presales.opportunity:OPP0061")])).sort()).toEqual(["ProjectConflictError", "made"]);
     expect(await ref("SRZ")).toBeNull();
-    await expect(make("BAD", "OPP0001")).rejects.toThrow(/module.record:id/);
     await createProjectService(ctxFor(admin), { key: "MCP", name: "M", client: "x", billing: "fixed", sourceRef: "presales.opportunity:OPP0070" });
     expect(await bySource("presales.opportunity:OPP0070")).toHaveLength(0);
   });

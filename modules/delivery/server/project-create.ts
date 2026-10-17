@@ -23,8 +23,9 @@ const projectInput = z.object({
   billing: z.enum(["fixed", "t&m", "retainer", "internal"]),
   managerName: z.string().optional(),
 });
-// Only the contract takes a sourceRef: "<module>.<record>:<id>", e.g. presales.opportunity:OPP0042.
-const sourcedInput = projectInput.extend({ sourceRef: z.string().regex(/^[a-z]+\.[a-z_]+:[A-Za-z0-9_-]{1,100}$/, "module.record:id").optional() });
+// Only the contract takes a sourceRef: "<module id>.<record>:<id>", e.g. presales.opportunity:OPP0042
+// or it-access.request:REQ-7 (module ids are lowercase with hyphens).
+const sourcedInput = projectInput.extend({ sourceRef: z.string().regex(/^[a-z][a-z0-9-]*\.[a-z][a-z0-9_]*:[A-Za-z0-9_-]{1,100}$/, "module.record:id").optional() });
 export type ProjectInput = z.infer<typeof sourcedInput>;
 export type CreatedProject = { id: string; key: string; existing?: true };
 
@@ -45,8 +46,8 @@ async function conflictOf(tx: Tx, input: ProjectInput) {
   const made = input.sourceRef ? await one(tx, sql`source_ref = ${input.sourceRef}`) : undefined;
   if (made && made.key === input.key) return { id: made.id as string, key: made.key as string, existing: true as const };
   if (made) throw new ProjectConflictError(`${input.sourceRef} already made project ${made.key as string}`, made.key as string);
-  const taken = await one(tx, sql`key = ${input.key}`);
-  throw new ProjectConflictError(`project key ${input.key} is taken; choose another`, (taken?.key as string | undefined) ?? input.key);
+  if (await one(tx, sql`key = ${input.key}`)) throw new ProjectConflictError(`project key ${input.key} is taken; choose another`, input.key);
+  throw new ProjectConflictError(`project ${input.key} conflicts with an existing project`, null);
 }
 
 export async function insertProject(tx: Tx, input: ProjectInput, ctx: ServiceContext) {
