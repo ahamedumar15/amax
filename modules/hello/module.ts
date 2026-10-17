@@ -10,6 +10,7 @@ export default defineModule({
   dependsOn: [],
   integratesWith: [],
   permissions: ["hello:read"],
+  grants: Object.fromEntries(["Leadership", "PM", "Engineer", "Finance", "Sales", "HR", "Payroll", "Employee"].map((r) => [r, ["hello:read"]])),
   routes: [{ path: "", title: "Hello", component: HelloPage }],
   mcpTools: [],
   chatIntents: [],

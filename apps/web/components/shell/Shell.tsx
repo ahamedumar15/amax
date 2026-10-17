@@ -3,10 +3,19 @@
 import Link from "next/link";
 import { useRef, type ReactNode } from "react";
 import { LiveRegion, MoreSheet, Rail, TopBar, type LinkLike, type NavItem } from "@amax/ui";
-import { ProfileMenu } from "./ProfileMenu";
+import { ProfileMenu, type Profile } from "./ProfileMenu";
 import { useRouteFocus } from "./useRouteFocus";
 
-export function Shell({ items, children }: { items: NavItem[]; children: ReactNode }) {
+type ShellProps = {
+  items: NavItem[];
+  children: ReactNode;
+  profile?: Profile | null;
+  banner?: string | null;
+  onViewAs?: (role: string | null) => Promise<void>;
+  onSignOut?: () => Promise<void>;
+};
+
+export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut }: ShellProps) {
   const current = useRouteFocus();
   const sheet = useRef<HTMLDialogElement>(null);
   const link = Link as unknown as LinkLike;
@@ -16,8 +25,11 @@ export function Shell({ items, children }: { items: NavItem[]; children: ReactNo
       <div className="app">
         <Rail items={items} current={current} link={link} onMore={() => sheet.current?.showModal()} />
         <div className="content">
-          <TopBar profile={<ProfileMenu />} />
-          <main id="main" tabIndex={-1}>{children}</main>
+          <TopBar profile={<ProfileMenu profile={profile} onViewAs={onViewAs} onSignOut={onSignOut} />} />
+          <main id="main" tabIndex={-1}>
+            {banner && <div className="viewbanner" role="note">{banner}</div>}
+            {children}
+          </main>
         </div>
       </div>
       <MoreSheet ref={sheet} items={items} current={current} link={link} onClose={() => sheet.current?.close()} />

@@ -5,13 +5,17 @@
   "exports": {
     ".": "./src/index.ts",
     "./registry": "./src/registry.ts",
-    "./*": "./src/*"
+    "./*": "./src/*",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",
     "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests"
   },
   "dependencies": {
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "drizzle-orm": "0.45.4",
+    "cron-parser": "5.10.2",
+    "aws4fetch": "1.0.20"
   }
 }

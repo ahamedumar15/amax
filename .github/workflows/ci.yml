@@ -15,15 +15,30 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: amax
+          POSTGRES_PASSWORD: amax
+          POSTGRES_DB: amax
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_MIGRATE_URL: postgres://amax:amax@localhost:5432/amax
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      - name: App role for row-level security tests
+        run: psql "$DATABASE_MIGRATE_URL" -c "create role amax_app login password 'amax_app'"
+      - run: pnpm db:migrate
       - run: pnpm lint
       - run: pnpm test
       - run: node scripts/check-module-standard.mjs
       - run: pnpm build
       - run: pnpm --filter @amax/web exec playwright install --with-deps chromium
       - run: pnpm --filter @amax/web e2e
+      - run: pnpm --filter @amax/web e2e:auth
 
   vercel:
     runs-on: ubuntu-latest
@@ -54,6 +69,8 @@ jobs:
           for i in $(seq 1 30); do curl -sf localhost:3000/healthz && exit 0; sleep 1; done
           docker logs amax; exit 1
       - run: helm lint deploy/helm/amax
+      - name: Chart renders the worker Deployment
+        run: helm template t deploy/helm/amax --set worker.enabled=true --set envFromSecret=amax | grep -q 'node", "apps/web/worker.mjs'
       - run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.9.0 bash
       - run: k3d cluster create smoke --no-lb --wait
       - run: k3d image import amax:ci -c smoke

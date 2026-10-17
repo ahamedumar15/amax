@@ -1,0 +1,15 @@
+# Local Postgres for development and tests: `podman compose -f deploy/dev/compose.yaml up -d`
+# (or `docker compose`). Then:
+#   export DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax   # schema owner
+#   export DATABASE_URL=postgres://amax_app:amax_app@127.0.0.1:5440/amax   # app role, RLS applies
+#   pnpm db:migrate
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: amax
+      POSTGRES_PASSWORD: amax
+      POSTGRES_DB: amax
+    ports: ["127.0.0.1:5440:5432"]
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro

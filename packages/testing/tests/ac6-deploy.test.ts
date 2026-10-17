@@ -10,7 +10,9 @@ const helm = spawnSync("helm", ["template", "smoke", join(repo, "deploy/helm/ama
 describe("AC6 deploy anywhere", () => {
   it("AC6 each target is wired to the same app and the chart probes /healthz", () => {
     const wrangler = JSON.parse(read("apps/web/wrangler.jsonc"));
-    expect(wrangler.main).toBe(".open-next/worker.js");
+    // 003: worker.ts wraps OpenNext's worker to add the Cron Trigger for /api/jobs/tick.
+    expect(wrangler.main).toBe("worker.ts");
+    expect(read("apps/web/worker.ts")).toContain('from "./.open-next/worker.js"');
     expect(wrangler.compatibility_flags).toContain("nodejs_compat");
     expect(JSON.parse(read("apps/web/vercel.json")).framework).toBe("nextjs");
     expect(read("Dockerfile")).toMatch(/HEALTHCHECK[\s\S]*\/healthz[\s\S]*apps\/web\/server\.js/);
