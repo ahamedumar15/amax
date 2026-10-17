@@ -1,0 +1,10 @@
+{
+  "change": "005-amax-chat",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "build": {"status":"done","at":"2026-10-17T07:54:29Z"},
+    "verify": {"status":"done","at":"2026-10-17T07:54:29Z"},
+    "archived": {"status":"done","at":"2026-10-17T11:44:32Z"}
+  }
+}

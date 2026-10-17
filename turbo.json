@@ -23,6 +23,24 @@
         "DATABASE_MIGRATE_URL",
         "CI"
       ]
+    },
+    "@amax/web#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "out/**",
+        ".open-next/**"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/modules/**",
+        "$TURBO_ROOT$/packages/**",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/tests/**"
+      ]
     }
   }
 }

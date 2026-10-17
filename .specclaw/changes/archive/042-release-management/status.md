@@ -1,6 +1,6 @@
-# Status: 005-amax-chat
+# Status: 042-release-management
 
-**Change:** 005-amax-chat
+**Change:** 042-release-management
 **Started:** -
 **Last Updated:** 2026-10-17
 
@@ -15,7 +15,7 @@
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
 | PR | - | - |
-| Archived | - | - |
+| Archived | ✅ Done |  |
 
 ## Issues
 
