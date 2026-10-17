@@ -1,8 +1,9 @@
 {
   "change": "053-trace-and-settings-hardening",
-  "phase": "proposal",
+  "phase": "tasks",
   "branch": "",
   "phases": {
-    "proposal": {"status":"approved","at":"2026-10-17T19:06:05Z"}
+    "proposal": {"status":"approved","at":"2026-10-17T19:06:05Z"},
+    "tasks": {"status":"done","at":"2026-10-17T19:10:31Z"}
   }
 }
