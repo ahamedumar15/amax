@@ -33,6 +33,15 @@ export async function getProjectRef(tx: Tx, keyOrId: string): Promise<ProjectRef
   return r ? toRef(r) : null;
 }
 
+/**
+ * Project creation for other modules (presales' "Promote to delivery"). `sourceRef` names the record
+ * the project comes from, e.g. "presales.opportunity:OPP0042": a second create with it and the same
+ * key returns the project already made (`existing: true`) instead of a new one. Callers gate their UI
+ * on PROJECT_CREATE_PERMISSION.
+ */
+export { createProject, PROJECT_CREATE_PERMISSION, type CreateProjectInput, type CreateProjectResult } from "./server/project-contract";
+export { ProjectConflictError, type CreatedProject } from "./server/project-create";
+
 /** Projects a user manages: feeds the viewer's @managed scope. */
 export async function managedProjectIds(tx: Tx, userId: string): Promise<string[]> {
   return (await tx.execute(sql`select id from delivery.project where manager_user_id = ${userId}`)).map((r) => r.id as string);
