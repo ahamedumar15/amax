@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { Db } from "@amax/db";
-import { traceStep, withTrace } from "@amax/core/server";
-import { bearer } from "@amax/auth/tokens";
+import { RateLimitedError, traceStep, withTrace } from "@amax/core/server";
+import { bearer, tokenHash } from "@amax/auth/tokens";
 import { authenticateMcp, mcpResource } from "./oauth";
 import type { Registry } from "./registry";
 
@@ -26,6 +26,9 @@ export async function handleMcp(req: Request, deps: { db: Db; registry: Registry
   const auth = await authenticateMcp(deps.db, token, mcpResource(deps.base));
   if (!auth) return unauthorized();
 
+  // 035 AC-5: the registry enforces the per-token, user and tenant limits; a limited call answers 429.
+  const tokenKey = tokenHash(token).slice(0, 16);
+  const limited: { e: RateLimitedError | null } = { e: null };
   const server = new McpServer({ name: "amax", version: "0.1.0" });
   for (const tool of deps.registry.toolsFor(auth.viewer, auth.scopes)) {
     server.registerTool(tool.name, {
@@ -36,15 +39,20 @@ export async function handleMcp(req: Request, deps: { db: Db; registry: Registry
       try {
         const result = await withTrace(traceOf(auth), async () => {
           await traceStep({ kind: "mcp_call", tool: tool.name, args: args ?? {}, detail: { client: auth.clientId } });
-          return deps.registry.call(auth.viewer, tool.name, args, { scopes: auth.scopes, source: "mcp" });
+          return deps.registry.call(auth.viewer, tool.name, args, { scopes: auth.scopes, source: "mcp", token: tokenKey });
         });
         return { content: [{ type: "text", text: JSON.stringify(result) }] };
       } catch (e) {
+        if (e instanceof RateLimitedError) limited.e = e;
         return { isError: true, content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }] };
       }
     }) as never);
   }
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
-  return transport.handleRequest(req);
+  const res = await transport.handleRequest(req);
+  return limited.e ? tooMany(limited.e) : res;
 }
+
+export const tooMany = (e: RateLimitedError) =>
+  new Response(JSON.stringify({ error: "rate_limited", message: e.message }), { status: 429, headers: { "content-type": "application/json", "retry-after": String(e.retryAfter) } });

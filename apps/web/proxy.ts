@@ -1,5 +1,7 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { gate, isPublicPath } from "@amax/auth/gate";
+import { sessionStamp } from "@amax/auth/authjs";
+import { takeRate } from "@amax/core/rate-limit";
 import { auth } from "./auth";
 
 type Handler = (req: NextRequest, ev: NextFetchEvent) => Promise<Response>;
@@ -8,7 +10,11 @@ type Handler = (req: NextRequest, ev: NextFetchEvent) => Promise<Response>;
 const guarded: Promise<Handler> | null = process.env.DATABASE_URL
   ? (auth((req) => {
       const to = gate(req.nextUrl, Boolean(req.auth));
-      return to ? NextResponse.redirect(to) : NextResponse.next();
+      if (to) return NextResponse.redirect(to);
+      // 035 AC-5: pages are limited per user and tenant, like REST and MCP calls.
+      const stamp = sessionStamp(req.auth);
+      const r = stamp?.tenantId ? takeRate({ tenantId: stamp.tenantId, userId: stamp.userId, channel: "page" }) : { ok: true as const };
+      return r.ok ? NextResponse.next() : new NextResponse("Too many requests. Wait a moment and try again.", { status: 429, headers: { "retry-after": String(r.retryAfter) } });
     }) as unknown as Promise<Handler>)
   : null;
 
