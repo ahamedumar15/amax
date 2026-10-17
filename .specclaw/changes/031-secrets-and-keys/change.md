@@ -53,6 +53,6 @@ The 038 settings hub does not exist yet, so the breadcrumb's "Settings" is plain
 Commands: `pnpm lint` (0, includes check:graph), `pnpm test` with DATABASE_MIGRATE_URL (0; core 53 tests), `pnpm --filter @amax/web build` (0), `E2E_DB=amax_e2e_031 E2E_AUTH_PORT=3531 pnpm exec playwright test --config playwright.auth.config.ts --grep "031|033"` (0).
 Preset check / quality gate: exit 1 on the repo as a whole (243 violations and 2 high functions on main, none in this change's new files; this change removed its own comments in shared files).
 Screenshots: `.specclaw/changes/031-secrets-and-keys/shots/app.png`, `app-390.png` (no horizontal scroll), `mock.png`.
-Local review: run after the PR (operator asked for a capped 5-round loop).
+Local review: 5 rounds (opus), capped by the operator. Rounds 1 to 5 fixed 2 blockers and 15 majors; rounds 3 to 5 escalated on the leak checker (redesigned twice). Round 5's majors were fixed without a sixth review; one test-coverage major stays open, see follow-ups.md. No final pass was run.
 
 Quality: 37 → 37 duplicated lines (none in this change; the viewer-to-context helper shared by the screen and its actions was extracted by hand)
