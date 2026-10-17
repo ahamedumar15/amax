@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { type Db, textArray, withTenant } from "@amax/db";
 import { z } from "zod";
 import { defineService, SENSITIVITY_CLASSES } from "@amax/core/server";
-import { loadPolicy, normalizeRegion, type AiPolicy } from "./policy";
+import { loadPolicy, normalizeRegion, parseRegion, REGIONS, type AiPolicy } from "./policy";
 
 export type AiStats = { calls: number; costUsd: number; unpriced: number; redactions: Record<string, number>; injections: number; failures: number };
 
@@ -20,7 +20,10 @@ export async function aiStats(db: Db, tenantId: string, now = new Date()): Promi
   });
 }
 
-const region = z.string().nullable().optional();
+// A closed list (REGIONS, by code or name), checked when the model proposes the change, so an
+// unknown region is refused on the card instead of stored and shown as valid (052 review).
+const region = z.string().nullable().optional()
+  .refine((v) => v == null || parseRegion(v) !== undefined, { message: `use one of ${Object.keys(REGIONS).join(", ")}` });
 
 /** What may change; anything left out keeps its current value. */
 export const policyPatch = z.object({
@@ -38,7 +41,7 @@ export type PolicyPatch = z.infer<typeof policyPatch>;
 
 const merged = (p: AiPolicy, x: PolicyPatch) => ({
   allowedClasses: x.allowedClasses ?? p.allowedClasses, zdrConfirmed: x.zdrConfirmed ?? p.zdrConfirmed, voiceEnabled: x.voiceEnabled ?? p.voiceEnabled, enabled: x.enabled ?? p.enabled,
-  dataRegion: normalizeRegion(x.dataRegion === undefined ? p.dataRegion : x.dataRegion), providerRegion: (x.providerRegion === undefined ? p.providerRegion : x.providerRegion)?.trim() || null,
+  dataRegion: normalizeRegion(x.dataRegion === undefined ? p.dataRegion : x.dataRegion), providerRegion: x.providerRegion === undefined ? p.providerRegion : normalizeRegion(x.providerRegion),
   aiRegion: normalizeRegion(x.aiRegion === undefined ? p.regions.ai : x.aiRegion), dbRegion: normalizeRegion(x.dbRegion === undefined ? p.regions.database : x.dbRegion),
   storageRegion: normalizeRegion(x.storageRegion === undefined ? p.regions.storage : x.storageRegion),
 });

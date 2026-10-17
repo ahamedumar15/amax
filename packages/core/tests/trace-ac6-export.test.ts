@@ -39,4 +39,46 @@ describe.skipIf(!hasDb)("050 AC-6 the write-once export covers the trace and AI 
     expect(status.lastExport).toMatchObject({ day: new Date().toISOString().slice(0, 10) });
     expect(status.audit).toMatchObject({ ok: true, length: 1 });
   });
+
+  // 052 review: a put that fails part-way must not leave the day half-exported for good. The retry
+  // keeps the objects already locked and writes the rest; the export row lands only when all three exist.
+  it.each([["audit", 3], ["trace", 4], ["ai-call", 5]] as const)("a failed %s put is finished by the job's retry", async (failing, daysAgo) => {
+    const storage = memoryStorage();
+    const put = storage.put.bind(storage);
+    let fail = true;
+    storage.put = async (key, body, opts) => {
+      if (fail && key.startsWith(`${failing}/`)) { fail = false; throw new Error("storage: put failed (503)"); }
+      return put(key, body, opts);
+    };
+    const day = new Date(Date.now() - daysAgo * 86_400_000);
+    const exports = () => withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'core.audit.export' and resource_id = ${day.toISOString().slice(0, 10)}`));
+    await expect(withTenant(app, T, (tx) => exportAuditDay(tx, T, day, storage, 30))).rejects.toThrow("503");
+    expect(await exports()).toEqual([{ n: 0 }]);
+    const written = new Map([...storage.objects].map(([k, v]) => [k, v.body]));
+    const out = await withTenant(app, T, (tx) => exportAuditDay(tx, T, day, storage, 30));
+    expect(out.objects.map((o) => [o.key.split("/")[0], !!o.existing])).toEqual(["audit", "trace", "ai-call"].map((p) => [p, written.has(out.objects.find((o) => o.key.startsWith(`${p}/`))!.key)]));
+    for (const [k, body] of written) expect(storage.objects.get(k)!.body).toEqual(body);
+    expect(storage.objects.size).toBe(3);
+    expect(await exports()).toEqual([{ n: 1 }]);
+  });
+
+  // 052 review round 4: two runs of the same day at once (a retry overlapping a slow run) serialise
+  // on the (tenant, day) lock: each object is put once, one export row, and neither run fails.
+  it.each([2, 3])("%i overlapping exports of one day record it once", async (n) => {
+    const storage = memoryStorage();
+    const puts: string[] = [];
+    const put = storage.put.bind(storage);
+    storage.put = async (key, body, opts) => {
+      puts.push(key);
+      await new Promise((r) => setTimeout(r, 20));
+      return put(key, body, opts);
+    };
+    const day = new Date(Date.now() - (10 + n) * 86_400_000);
+    const runs = await Promise.allSettled(Array.from({ length: n }, () => withTenant(app, T, (tx) => exportAuditDay(tx, T, day, storage, 30))));
+    expect(runs.map((r) => r.status)).toEqual(Array(n).fill("fulfilled"));
+    expect(puts.sort()).toEqual([...storage.objects.keys()].sort());
+    expect(storage.objects.size).toBe(3);
+    const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'core.audit.export' and resource_id = ${day.toISOString().slice(0, 10)}`));
+    expect(row.n).toBe(1);
+  });
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
-import { ForbiddenError, traceStep } from "@amax/core/server";
+import { ForbiddenError, logError, traceStep } from "@amax/core/server";
 import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
 import { auditTools } from "./audit-tools";
 
@@ -61,21 +61,28 @@ export function createRegistry(modules: Registrable[]) {
       const tool = tools.find((t) => t.name === name);
       if (!tool) throw new ToolError(`no tool named ${name}`, "not_found");
       // 050: inside a trace (chat turn, confirm, MCP call) every tool call is a step, refusals included.
-      const step = (outcome: string) => traceStep({ kind: "tool_call", tool: name, args: args ?? {}, detail: { scope: tool.scope, outcome } });
+      // Recording the step never changes what the caller is told: a write that ran is reported as
+      // done, a refusal or failure as itself, never as the trace store's error (052 review). The
+      // audited write still carries the trace id, so a missing step shows in the timeline.
+      const step = (outcome: string) =>
+        traceStep({ kind: "tool_call", tool: name, args: args ?? {}, detail: { scope: tool.scope, outcome } }).catch((x) => void logError(`mcp.trace ${name}`, x));
       if (!allowed(viewer, tool, opts.scopes ?? ALL_SCOPES)) {
         await step("denied");
         throw new ToolError(`forbidden: ${name}`, "forbidden");
       }
       const parsed = tool.input.safeParse(args ?? {});
+      if (!parsed.success) await step("invalid_input");
       if (!parsed.success) throw new ToolError(`invalid input for ${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`, "invalid_input");
+      let result: unknown;
       try {
-        const result = await tool.run(viewer as never, parsed.data as never, opts.source, tool.secretInput ? opts.secret : undefined);
-        await step("ok");
-        return result;
+        result = await tool.run(viewer as never, parsed.data as never, opts.source, tool.secretInput ? opts.secret : undefined);
       } catch (e) {
         await step(e instanceof ForbiddenError || e instanceof ScopeError ? "denied" : "error");
         throw e;
       }
+      // Outside the try, so the tool's own errors are the only ones the catch sees.
+      await step("ok");
+      return result;
     },
   };
 }
