@@ -20,9 +20,9 @@ None. This changes a contract only and nothing on screen. Presales' Promote butt
 
 ## Tasks
 
-- [ ] `T1` — Project source reference: migration and in-service replay by sourceRef (AC-2)
+- [x] `T1` — Project source reference: migration and in-service replay by sourceRef (AC-2)
   Files: modules/delivery/db/migrations/0011_project_source_ref.sql, modules/delivery/server/project-create.ts, modules/delivery/server/services.ts
-- [ ] `T2` — Publish createProject, createProjectInTx and PROJECT_CREATE_PERMISSION on the contract (AC-1, AC-3, AC-4)
+- [x] `T2` — Publish createProject, createProjectInTx and PROJECT_CREATE_PERMISSION on the contract (AC-1, AC-3, AC-4)
   Files: modules/delivery/contracts.ts, modules/delivery/server/project-create.ts, modules/delivery/README.md
   Depends: T1
 - [ ] `T3` — Contract tests: shape, idempotency key, permission, validation, sourceRef replay and race, in-transaction rollback and tenant guard (AC-1–AC-4)
