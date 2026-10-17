@@ -66,3 +66,5 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
   Depends: T3, T7
 
 ## Verify
+
+Quality: 0 → 0 duplicated lines
