@@ -18,19 +18,35 @@ const PARTS: Part[] = [
   { prefix: "ai-call", rows: (f, t) => sql`select * from ai.call where at >= ${f} and at < ${t} order by at, id` },
 ];
 
+function trailerOf(key: string, body: Uint8Array) {
+  const last = new TextDecoder().decode(body).trimEnd().split("\n").at(-1) ?? "";
+  try {
+    const t = (JSON.parse(last) as { $export?: { rows?: number; chain?: ChainResult } }).$export;
+    if (t) return { key, rows: Number(t.rows ?? 0), chainOk: t.chain?.ok ?? true };
+  } catch { /* fall through */ }
+  return { key, rows: 0, chainOk: false };
+}
+
 // Writes one tenant's rows for one UTC day as NDJSON, plus a trailer line with the chain head and
 // its verification, as write-once objects; then records the export itself in the audit.
 export async function exportAuditDay(tx: Tx, tenantId: string, day: Date, storage: Storage, retentionDays: number) {
   const from = new Date(`${isoDay(day)}T00:00:00Z`);
   const to = new Date(from.getTime() + DAY);
   const retainUntil = new Date(to.getTime() + retentionDays * DAY);
-  const out: { key: string; rows: number; chainOk: boolean }[] = [];
+  const out: { key: string; rows: number; chainOk: boolean; existing?: true }[] = [];
   for (const part of PARTS) {
+    const key = `${part.prefix}/${tenantId}/${isoDay(from).replaceAll("-", "/")}.ndjson`;
+    // Write-once: a retry after a later object failed finds the earlier ones already locked. Those
+    // stand as written (their trailer says what they hold); only the missing ones are put (052 review).
+    const prior = await storage.get(key);
+    if (prior) {
+      out.push({ ...trailerOf(key, prior), existing: true });
+      continue;
+    }
     const rows = await tx.execute(sql`select * from (${part.rows(from.toISOString(), to.toISOString())}) r where r.tenant_id = ${tenantId}`);
     const chain = part.chain ? await part.chain(tx, tenantId) : null;
     const trailer = { $export: { tenantId, day: isoDay(from), rows: rows.length, ...(chain ? { chain } : {}) } };
     const body = [...rows.map((r) => canonical(r)), canonical(trailer)].join("\n") + "\n";
-    const key = `${part.prefix}/${tenantId}/${isoDay(from).replaceAll("-", "/")}.ndjson`;
     await storage.put(key, body, { contentType: "application/x-ndjson", retainUntil });
     out.push({ key, rows: rows.length, chainOk: chain?.ok ?? true });
   }

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { can } from "@amax/auth";
 import { AUDIT_READ, auditView } from "@amax/mcp/audit-tools";
+import { PinButton } from "@amax/ui";
 import { getDb } from "../../../../lib/server";
 import { getViewer } from "../../../../lib/viewer";
 import { AuditTickets } from "./AuditTickets";
@@ -31,6 +32,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const filter = { query: q.q || undefined, chain: q.chain, sinceDays: days === "all" ? undefined : Number(days), limit: 100 };
   const { status, events, trace, names } = await auditView(viewer, { verify: q.verify !== undefined, filter, traceId: q.trace });
   const keep = new URLSearchParams(Object.entries({ q: q.q, chain: q.chain, days: q.days }).filter((e): e is [string, string] => !!e[1]));
+  // The Events card pins the same search it shows, so the pin resolves to these rows (052 review).
+  const eventsPin = { label: "Audit events", tool: "search_audit", args: Object.fromEntries(Object.entries({ query: filter.query, chain: filter.chain, sinceDays: filter.sinceDays, limit: filter.limit }).filter((e) => e[1] !== undefined)) };
   const traceHref = (id: string) => `?${new URLSearchParams([...keep, ["trace", id]])}#trace-h`;
   return (
     <>
@@ -44,9 +47,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       </div>
       {(!status.audit.ok || !status.trace.ok) && <div className="viewbanner" role="alert">A chain no longer verifies. Rows were changed or removed outside amax; compare with the write-once export.</div>}
       <AuditTickets s={status} />
-      <section className="card flush" aria-labelledby="events-h" style={{ marginTop: 28 }}>
+      <section className="card flush pinnable" aria-labelledby="events-h" style={{ marginTop: 28 }}>
         <div className="card-head">
-          <h2 id="events-h">Events</h2>
+          <h2 id="events-h">Events</h2><PinButton inline pin={eventsPin} />
           <form method="get" className="audit-filter" role="search" aria-label="Filter events">
             <input className="select" type="search" name="q" defaultValue={q.q ?? ""} placeholder="Person, agent, tool or record" aria-label="Person, agent, tool or record" />
             <select className="select" name="chain" defaultValue={q.chain ?? ""} aria-label="Kind"><option value="">Writes and steps</option><option value="audit">Audited writes</option><option value="trace">Trace steps</option></select>

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { canSee, type Viewer } from "@amax/auth";
+import { ToolError } from "@amax/mcp";
 import { getRun, listRuns, listSchedules, setEntityZone, setScheduleEnabled, WORKFLOWS_ADMIN, type ScheduleView } from "@amax/workflows/server";
 import { ctxFor, notFound, read, tool, write, type AdminDeps } from "./tool";
 
@@ -13,9 +14,14 @@ const schedule = z.string().min(1).describe("The schedule's id, or its title as 
 async function findSchedule(d: AdminDeps, v: Viewer, ref: string) {
   const all = await listSchedules(d.db(), d.workflows(), v.tenantId);
   const want = ref.trim().toLowerCase();
-  const hit = all.find((s) => s.id === ref) ?? all.find((s) => label(s).toLowerCase() === want) ?? all.filter((s) => s.title.toLowerCase() === want).at(0);
-  if (!hit) throw notFound(`schedule "${ref}"`);
-  return hit;
+  const exact = all.find((s) => s.id === ref) ?? all.find((s) => label(s).toLowerCase() === want);
+  if (exact) return exact;
+  // A bare title is enough only when it names one schedule; per-entity ones share a title, and
+  // picking the first would write to an entity nobody named (052 review).
+  const byTitle = all.filter((s) => s.title.toLowerCase() === want);
+  if (byTitle.length > 1) throw new ToolError(`"${ref}" names ${byTitle.length} schedules; say which: ${byTitle.map((s) => `'${label(s)}'`).join(", ")}`, "invalid_input");
+  if (!byTitle.length) throw notFound(`schedule "${ref}"`);
+  return byTitle[0];
 }
 
 async function entityId(d: AdminDeps, v: Viewer, ref: string) {

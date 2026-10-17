@@ -41,9 +41,13 @@ describe.skipIf(!hasDb)("AC-7 daily export to write-once storage", () => {
     expect(obj.opts.contentType).toBe("application/x-ndjson");
   });
 
-  it("can't overwrite an exported day", async () => {
+  it("can't overwrite an exported day: a second run leaves the locked objects as they were", async () => {
     const storage = memoryStorage();
-    await withTenant(app, U, (tx) => exportAuditDay(tx, U, new Date(), storage, 30));
-    await expect(withTenant(app, U, (tx) => exportAuditDay(tx, U, new Date(), storage, 30))).rejects.toBeInstanceOf(ObjectLockedError);
+    const first = await withTenant(app, U, (tx) => exportAuditDay(tx, U, new Date(), storage, 30));
+    const bodies = first.objects.map((o) => storage.objects.get(o.key)!.body);
+    const again = await withTenant(app, U, (tx) => exportAuditDay(tx, U, new Date(), storage, 30));
+    expect(again.objects.every((o) => o.existing)).toBe(true);
+    expect(first.objects.map((o) => storage.objects.get(o.key)!.body)).toEqual(bodies);
+    await expect(storage.put(first.key, "tampered")).rejects.toBeInstanceOf(ObjectLockedError);
   });
 });

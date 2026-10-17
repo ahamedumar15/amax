@@ -43,7 +43,7 @@ export default async function IntegrationsPage() {
       </div>
       {modules.map((m) => (
         <div className="card flush pinnable" key={m} style={{ marginBottom: 28 }}>
-          <div className="card-head"><h2>{m === "core" ? "Built in" : m}</h2><PinButton inline pin={{ label: `${m} tools`, tool: "settings_overview", args: { area: "integrations" } }} /><span className="muted" style={{ fontSize: 13 }}>{tools.filter((t) => t.module === m).length} tools</span></div>
+          <div className="card-head"><h2>{m === "core" ? "Built in" : m}</h2><PinButton inline pin={{ label: `${m === "core" ? "Built-in" : m} tools`, tool: "list_mcp_tools", args: { module: m } }} /><span className="muted" style={{ fontSize: 13 }}>{tools.filter((t) => t.module === m).length} tools</span></div>
           <div className="scroll-x"><table className="tbl">
             <caption className="sr">{m} tools</caption>
             <thead><tr><th>Tool</th><th>Scope</th><th>Who can use it</th></tr></thead>

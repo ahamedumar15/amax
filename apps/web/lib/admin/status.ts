@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { withTenant } from "@amax/db";
 import { aiConfigured, blockedReason, REGIONS } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
+import { auditStatus, type AuditStatus } from "@amax/core/server";
 import { CONNECTORS, EXPIRY_WINDOW_DAYS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
 import { listRuns, listSchedules } from "@amax/workflows/server";
@@ -57,9 +58,21 @@ async function integrations(d: AdminDeps, v: Viewer): Promise<Area> {
   return { id: "integrations", title: "Integrations", href: "/settings/integrations", blurb: "Every amax capability as an MCP tool, and the clients people have connected.", stat: `${d.tools().all.length} tools`, chip: { tone: "good", text: plural(clients.length, "client") } };
 }
 
+/** The Audit card: a chain that no longer verifies comes first on the hub (052 review). */
+export function auditArea(today: number, s: Pick<AuditStatus, "audit" | "trace">): Area {
+  const base = { id: "audit", title: "Audit and trace", href: "/settings/audit", blurb: "Who did what, and which agent acted for them, in a tamper-evident log.", stat: "Read-only" };
+  const broken = [s.audit.ok ? null : "audit", s.trace.ok ? null : "trace"].filter((c): c is string => !!c);
+  if (broken.length) return { ...base, chip: { tone: "bad", text: "Chain broken" }, attention: `the ${broken.join(" and ")} chain${broken.length > 1 ? "s" : ""} no longer verif${broken.length > 1 ? "y" : "ies"}` };
+  return { ...base, chip: { tone: "info", text: `${today} today` } };
+}
+
 async function audit(d: AdminDeps, v: Viewer): Promise<Area> {
-  const [r] = await withTenant(d.db(), v.tenantId, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where occurred_at >= date_trunc('day', now())`));
-  return { id: "audit", title: "Audit and trace", href: "/settings/audit", blurb: "Who did what, and which agent acted for them, in a tamper-evident log.", stat: "Read-only", chip: { tone: "info", text: `${Number(r?.n ?? 0)} today` } };
+  // The cached chain walk (the screen's "Verify now" refreshes it), so the hub stays cheap.
+  const [today, status] = await withTenant(d.db(), v.tenantId, async (tx) => {
+    const [r] = await tx.execute(sql`select count(*)::int as n from core.audit_event where occurred_at >= date_trunc('day', now())`);
+    return [Number(r?.n ?? 0), await auditStatus(tx, v.tenantId)] as const;
+  });
+  return auditArea(today, status);
 }
 
 const SOON: Area[] = [

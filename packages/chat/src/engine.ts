@@ -34,6 +34,8 @@ async function load(db: Db, viewer: Viewer, id?: string) {
   });
 }
 
+// The transcript is chat's own working state and the documented exemption from defineService
+// (docs/architecture.md, "Every write"): owner-scoped, and each turn, card and decision is traced.
 // Append-only: a turn runs for seconds, and a confirm or cancel may claim a card or add a note
 // meanwhile. Rewriting the lists from the turn's stale copy would undo that (review round 2).
 export const titleFrom = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 80);
@@ -200,17 +202,19 @@ const doneNote = (title: string, result: unknown) => {
   return `(I confirmed "${title}".${typeof key === "string" ? ` Record: ${key}.` : ""})`;
 };
 
-// A confirm is recorded as the person decides, before the write runs; a cancel once it has taken effect.
-const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled") => traceStep({ kind: "decided", tool: action.tool, detail: { actionId: action.id, decision } });
+// The decided step says what the person chose and what came of it: `run` just before the write runs
+// (so the timeline reads decided, then the tool call), otherwise why it didn't run. The trace is
+// immutable, so a confirm that never took effect must never read as a plain confirm (052 review).
+// A cancel is recorded once it has taken effect.
+export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret";
+const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled", outcome?: ConfirmOutcome) =>
+  traceStep({ kind: "decided", tool: action.tool, detail: { actionId: action.id, decision, ...(outcome ? { outcome } : {}) } });
 const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>) => withTrace(traceFor(viewer, action.traceId), fn);
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string } = {}) {
   const action = await card(db, viewer, conversationId, actionId);
-  return inTrace(viewer, action, async () => {
-    await decidedStep(action, "confirmed");
-    return confirmCard(db, registry, viewer, conversationId, action, opts);
-  });
+  return inTrace(viewer, action, () => confirmCard(db, registry, viewer, conversationId, action, opts));
 }
 
 async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string }) {
@@ -226,11 +230,25 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
   };
   // 1. An earlier attempt's outcome comes first (its reply may have been lost).
   const known = await lookupKey(db, viewer.tenantId, key);
-  if (known && "cancelled" in known) throw await cancelled();
-  if (known) return done(known.done);
-  if (isExpired(action)) throw await expire(db, viewer, conversationId, action);
+  const decide = (outcome: ConfirmOutcome) => decidedStep(action, "confirmed", outcome);
+  if (known && "cancelled" in known) {
+    await decide("already_cancelled");
+    throw await cancelled();
+  }
+  if (known) {
+    await decide("already_done");
+    return done(known.done);
+  }
+  if (isExpired(action)) {
+    await decide("expired");
+    throw await expire(db, viewer, conversationId, action);
+  }
   // 2. Run the tool; it must make exactly one service write.
-  if (action.secret && !opts.secret) throw new ActionFailedError(`type the ${action.secret.label.toLowerCase()} first`, "retry");
+  if (action.secret && !opts.secret) {
+    await decide("needs_secret");
+    throw new ActionFailedError(`type the ${action.secret.label.toLowerCase()} first`, "retry");
+  }
+  await decide("run");
   const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }));
   const run = raw.ok ? raw : { ...raw, error: scrub(raw.error, opts.secret) };
   if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();

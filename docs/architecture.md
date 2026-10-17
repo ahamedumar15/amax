@@ -83,6 +83,7 @@ modules/hr/
   - Cross-module reactions go through events. Example: `hr.person.left` makes `it-access` revoke access as a suggestion that someone must approve.
 - **Dependencies:** manifest slots that are plain data (chat intents, notification rules, retention rules) need no dependency on the change that consumes them. Calling `@amax/agents` (suggestions) or `@amax/workflows` (jobs, schedules) is a hard dependency on 006 or 029.
 - **Every write** goes through the service pipeline, so every path (UI, MCP, chat, agent, pipeline) gets the same permission check and the same audit record.
+  - **The one exemption is chat's own transcript** (052): the messages, pending cards, decisions, title and pins in `chat.conversation`. It is the person's working state, not a business record. Each row is reachable only by its owner (`user_id` plus tenant RLS), and every turn, proposed card and decision is a step in the immutable trace (`core.trace_event`). What a person decides through chat still goes through a service and is audited: archiving a conversation and every confirmed write tool. A new exemption needs its own entry here.
 - **Ownership:** `CODEOWNERS` maps each `modules/<name>/` folder to its team (HR team → `hr`, `leave`, `onboarding`; IT department → `it-access`, `helpdesk`; and so on). The platform team owns `packages/` and `apps/web`.
 
 ## Parallel development, for teams and agent runs

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
-import { ForbiddenError, traceStep } from "@amax/core/server";
+import { ForbiddenError, logError, traceStep } from "@amax/core/server";
 import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
 import { auditTools } from "./audit-tools";
 
@@ -68,14 +68,18 @@ export function createRegistry(modules: Registrable[]) {
       }
       const parsed = tool.input.safeParse(args ?? {});
       if (!parsed.success) throw new ToolError(`invalid input for ${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`, "invalid_input");
+      let result: unknown;
       try {
-        const result = await tool.run(viewer as never, parsed.data as never, opts.source, tool.secretInput ? opts.secret : undefined);
-        await step("ok");
-        return result;
+        result = await tool.run(viewer as never, parsed.data as never, opts.source, tool.secretInput ? opts.secret : undefined);
       } catch (e) {
         await step(e instanceof ForbiddenError || e instanceof ScopeError ? "denied" : "error");
         throw e;
       }
+      // Outside the try: the tool has run (a write may have committed), so a failure to record the
+      // step must never turn it into a reported error or a second "error" step (052 review). The
+      // audited write still carries the trace id, so the gap is visible in the timeline.
+      await step("ok").catch((e) => logError(`mcp.trace ${name}`, e));
+      return result;
     },
   };
 }

@@ -14,6 +14,12 @@ const UNTITLED = "Untitled chat";
 const iso = (v: unknown) => new Date(v as string).toISOString();
 const likePattern = (query: string) => `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
+// Only undecided cards are restored as open or expired. A card that was confirmed or cancelled is
+// in `decided`; a turn that raced the decision can leave it in `pending` too, and it must never come
+// back with "Add it" or count as expired (052 review). The decision's note is in the messages.
+export const openCards = (pending: PendingAction[], decided: Record<string, unknown> | null) =>
+  pending.filter((p) => !decided || !(p.id in decided));
+
 const textOf = (m: Message) => m.content.flatMap((b) => (b.type === "text" && b.text.trim() ? [b.text] : [])).join("\n");
 
 export const shownMessages = (messages: Message[]): ShownMessage[] =>
@@ -30,7 +36,7 @@ const matches = (query: string) => {
 
 export async function listConversations(db: Db, viewer: Viewer, opts: { query?: string; limit?: number } = {}): Promise<ConversationSummary[]> {
   const query = opts.query?.trim();
-  const rows = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select id, title, updated_at, jsonb_array_length(pins) as pin_count, pending,
+  const rows = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select id, title, updated_at, jsonb_array_length(pins) as pin_count, pending, decided,
     (select count(*) from jsonb_array_elements(messages) m where exists (select 1 from jsonb_array_elements(m->'content') c
       where c->>'type' = 'text' and btrim(c->>'text') <> ''))::int as message_count
     from chat.conversation where user_id = ${viewer.userId} and archived_at is null and jsonb_array_length(messages) > 0
@@ -41,13 +47,13 @@ export async function listConversations(db: Db, viewer: Viewer, opts: { query?: 
     updatedAt: iso(r.updated_at),
     messageCount: Number(r.message_count),
     pinCount: Number(r.pin_count),
-    expiredCount: (r.pending as PendingAction[]).filter((p) => isExpired(p)).length,
+    expiredCount: openCards(r.pending as PendingAction[], r.decided as Record<string, unknown>).filter((p) => isExpired(p)).length,
   }));
 }
 
 export async function getConversation(db: Db, viewer: Viewer, id: string): Promise<Conversation | null> {
   if (!UUID.test(id)) return null;
-  const [row] = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select id, title, updated_at, archived_at, messages, pins, pending
+  const [row] = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select id, title, updated_at, archived_at, messages, pins, pending, decided
     from chat.conversation where id = ${id} and user_id = ${viewer.userId}`));
   if (!row) return null;
   return {
@@ -57,6 +63,6 @@ export async function getConversation(db: Db, viewer: Viewer, id: string): Promi
     archived: row.archived_at !== null,
     messages: shownMessages(row.messages as Message[]),
     pins: row.pins as Pin[],
-    pending: (row.pending as PendingAction[]).map((p) => ({ ...p, expired: isExpired(p) })),
+    pending: openCards(row.pending as PendingAction[], row.decided as Record<string, unknown>).map((p) => ({ ...p, expired: isExpired(p) })),
   };
 }
