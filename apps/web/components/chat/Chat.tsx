@@ -7,6 +7,7 @@ import type { Conversation, ConversationSummary, Highlight, PendingAction } from
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
 import { repinAll } from "@amax/chat/pins";
 import { followMove } from "../../lib/chat-move";
+import { keepFocusFor } from "../shell/route-focus";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
 import { SecretConfirm } from "./SecretConfirm";
@@ -187,7 +188,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       // added or removed since the last message (057). The server did the same to the saved copies.
       if (o.repin) setPins((ps) => repinAll(ps, o.repin));
       const to = followMove(window.location.pathname, o.moved);
-      if (to) router.replace(to);
+      if (to) { keepFocusFor(to); router.replace(to); }
     } catch {
       // The request itself failed (network, server): bring the buttons back so the user can retry.
       apply({ state: "open", note: "That didn't go through. Try again." });
