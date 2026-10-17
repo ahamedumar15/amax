@@ -1,8 +1,9 @@
 {
   "change": "001-amax-foundation",
-  "phase": "proposal",
+  "phase": "tasks",
   "branch": "",
   "phases": {
-    "proposal": {"status":"approved","at":"2026-10-17T01:30:27Z"}
+    "proposal": {"status":"approved","at":"2026-10-17T01:30:27Z"},
+    "tasks": {"status":"done","at":"2026-10-17T01:57:28Z"}
   }
 }

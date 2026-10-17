@@ -1,16 +1,16 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 01:32 UTC
+**Last Updated:** 2026-10-17 01:58 UTC
 
 ## Active Changes
 
-_No active changes._
+
+- 📝 **001-amax-foundation** — tasks done | 0/8 tasks (0%) | 0 failed
 
 ## Pending Proposals
 
 
-- 📋 **001-amax-foundation** — proposal ready, awaiting planning
 - 📋 **002-identity-and-access** — proposal ready, awaiting planning
 - 📋 **003-data-core** — proposal ready, awaiting planning
 - 📋 **004-mcp-gateway** — proposal ready, awaiting planning
@@ -47,6 +47,6 @@ _None._
 
 ## Stats
 
-- **Total changes:** 0
-- **Active:** 0
+- **Total changes:** 1
+- **Active:** 1
 - **Completed:** 0
