@@ -2,6 +2,7 @@ import { ApplicationFailure, Context } from "@temporalio/activity";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
 import { workflowOf, type WorkflowRegistry } from "../registry";
+import { writeStep, nextSeqOf } from "../pg/store";
 import { advance, type Advance, type History } from "../replay";
 import type { Json } from "../types";
 
@@ -29,12 +30,7 @@ export function createActivities(db: Db, registry: WorkflowRegistry) {
       const status = o.ok ? "done" : last ? "failed" : "retrying";
       await withTenant(db, args.tenantId, async (tx) => {
         await tx.execute(sql`update workflows.run set cost_usd = cost_usd + ${o.costUsd}, updated_at = now() where id = ${args.runId}`);
-        await tx.execute(sql`insert into workflows.step (run_id, tenant_id, name, seq, kind, status, attempts, result, error, tool_calls, cost_usd, sensitive, finished_at)
-          values (${args.runId}, ${args.tenantId}, ${name}, (select coalesce(max(seq), 0) + 1 from workflows.step where run_id = ${args.runId}), 'step', ${status}, ${attempt},
-                  ${o.ok ? json(o.result) : null}::jsonb, ${o.ok ? null : o.error}, ${json(o.toolCalls)}::jsonb, ${o.costUsd}, ${json(r.options.sensitive)}::jsonb, ${status === "retrying" ? null : sql`now()`})
-          on conflict (run_id, name) do update set status = excluded.status, attempts = excluded.attempts, result = excluded.result, error = excluded.error,
-            tool_calls = workflows.step.tool_calls || excluded.tool_calls, cost_usd = workflows.step.cost_usd + excluded.cost_usd, finished_at = excluded.finished_at
-          where workflows.step.status in ('retrying', 'failed')`);
+        await writeStep(tx, { runId: args.runId, tenantId: args.tenantId, name, seq: nextSeqOf(args.runId), attempt, status, outcome: o, options: r.options });
       });
       if (o.ok) return o.result;
       throw last ? ApplicationFailure.nonRetryable(o.error, "AmaxStepFailed") : ApplicationFailure.retryable(o.error, "AmaxStepRetry");
@@ -50,7 +46,7 @@ export function createActivities(db: Db, registry: WorkflowRegistry) {
         const s = m.step;
         const fireAt = s.fireInMs === undefined || s.fireInMs === null ? null : sql`now() + make_interval(secs => ${s.fireInMs / 1000})`;
         await tx.execute(sql`insert into workflows.step (run_id, tenant_id, name, seq, kind, status, fire_at, wait_event, wait_match, result, finished_at)
-          values (${args.runId}, ${args.tenantId}, ${s.name}, (select coalesce(max(seq), 0) + 1 from workflows.step where run_id = ${args.runId}), ${s.kind}, ${s.status}, ${fireAt},
+          values (${args.runId}, ${args.tenantId}, ${s.name}, ${nextSeqOf(args.runId)}, ${s.kind}, ${s.status}, ${fireAt},
                   ${s.waitEvent ?? null}, ${json(s.waitMatch)}::jsonb, ${json(s.result)}::jsonb, ${s.status === "done" ? sql`now()` : null})
           on conflict (run_id, name) do update set status = excluded.status, result = excluded.result, finished_at = excluded.finished_at
           where workflows.step.status <> 'done'`);

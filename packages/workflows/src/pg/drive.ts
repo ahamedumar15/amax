@@ -4,7 +4,7 @@ import { retryDelayMs } from "../duration";
 import { errorText } from "../errors";
 import { workflowOf, type WorkflowRegistry } from "../registry";
 import { advance, type Advance, type Command } from "../replay";
-import { fenced, loadRun, release, type ClaimedRun, type LoadedRun } from "./store";
+import { fenced, loadRun, release, writeStep, type ClaimedRun, type LoadedRun } from "./store";
 
 export type DriveOptions = { leaseSeconds: number; deadline: number; maxCommands: number };
 type Next = "continue" | "stop";
@@ -55,12 +55,7 @@ async function recordStep(tx: Tx, run: ClaimedRun, loaded: LoadedRun, r: Extract
     : sql`cost_usd = cost_usd + ${o.costUsd}`;
   if (!(await fenced(tx, run, runSet))) return "stop";
   const status = o.ok ? "done" : retry ? "retrying" : "failed";
-  await tx.execute(sql`insert into workflows.step (run_id, tenant_id, name, seq, kind, status, attempts, result, error, tool_calls, cost_usd, sensitive, finished_at)
-    values (${run.id}, ${run.tenantId}, ${r.name}, ${loaded.nextSeq}, 'step', ${status}, ${attempt}, ${o.ok ? JSON.stringify(o.result) : null}::jsonb,
-            ${o.ok ? null : o.error}, ${JSON.stringify(o.toolCalls)}::jsonb, ${o.costUsd}, ${JSON.stringify(r.options.sensitive)}::jsonb, ${retry ? null : sql`now()`})
-    on conflict (run_id, name) do update set status = excluded.status, attempts = excluded.attempts, result = excluded.result, error = excluded.error,
-      tool_calls = workflows.step.tool_calls || excluded.tool_calls, cost_usd = workflows.step.cost_usd + excluded.cost_usd, finished_at = excluded.finished_at
-    where workflows.step.status = 'retrying'`);
+  await writeStep(tx, { runId: run.id, tenantId: run.tenantId, name: r.name, seq: loaded.nextSeq, attempt, status, outcome: o, options: r.options });
   return retry ? "stop" : "continue";
 }
 

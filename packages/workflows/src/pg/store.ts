@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
+import type { StepOutcome } from "../execute";
 import { emptyHistory, type History } from "../replay";
-import type { Json } from "../types";
+import type { Json, ResolvedStepOptions } from "../types";
 
 export type ClaimedRun = { id: string; tenantId: string; lease: string };
 export type LoadedRun = {
@@ -53,3 +54,19 @@ export async function fenced(tx: Tx, run: ClaimedRun, set: ReturnType<typeof sql
 }
 
 export const release = sql`locked_until = null, lease = null`;
+
+export type StepWrite = { runId: string; tenantId: string; name: string; seq: ReturnType<typeof sql> | number; attempt: number; status: "done" | "retrying" | "failed"; outcome: StepOutcome; options: ResolvedStepOptions };
+
+// Records one step attempt. A row that is already done is never overwritten, so a late duplicate
+// delivery can't replace the checkpointed result.
+export async function writeStep(tx: Tx, w: StepWrite) {
+  const o = w.outcome;
+  await tx.execute(sql`insert into workflows.step (run_id, tenant_id, name, seq, kind, status, attempts, result, error, tool_calls, cost_usd, sensitive, finished_at)
+    values (${w.runId}, ${w.tenantId}, ${w.name}, ${w.seq}, 'step', ${w.status}, ${w.attempt}, ${o.ok ? JSON.stringify(o.result) : null}::jsonb,
+            ${o.ok ? null : o.error}, ${JSON.stringify(o.toolCalls)}::jsonb, ${o.costUsd}, ${JSON.stringify(w.options.sensitive)}::jsonb, ${w.status === "retrying" ? null : sql`now()`})
+    on conflict (run_id, name) do update set status = excluded.status, attempts = excluded.attempts, result = excluded.result, error = excluded.error,
+      tool_calls = workflows.step.tool_calls || excluded.tool_calls, cost_usd = workflows.step.cost_usd + excluded.cost_usd, finished_at = excluded.finished_at
+    where workflows.step.status in ('retrying', 'failed')`);
+}
+
+export const nextSeqOf = (runId: string) => sql`(select coalesce(max(seq), 0) + 1 from workflows.step where run_id = ${runId})`;
