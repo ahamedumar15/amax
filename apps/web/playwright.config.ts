@@ -5,7 +5,7 @@ const port = 3500;
 export default defineConfig({
   testDir: "tests/e2e",
   // Signed-in flows need Postgres: playwright.auth.config.ts (pnpm e2e:auth).
-  testIgnore: /(auth|delivery|ai|chat)\.spec\.ts/,
+  testIgnore: /(auth|delivery|ai|mcp|chat)\.spec\.ts/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",

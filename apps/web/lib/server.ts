@@ -56,3 +56,12 @@ export async function voiceEnabled(tenantId: string) {
   const { loadPolicy } = await import("@amax/ai");
   return (await withTenant(db, tenantId, (tx) => loadPolicy(tx))).voiceEnabled;
 }
+// 004: the public base URL (for OAuth metadata and the MCP audience).
+export const baseUrl = (req: Request | Headers) => {
+  const env = loadEnv();
+  if (env.AMAX_BASE_URL) return env.AMAX_BASE_URL.replace(/\/$/, "");
+  const h = req instanceof Request ? req.headers : req;
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? (req instanceof Request ? new URL(req.url).host : "localhost:3000");
+  const proto = h.get("x-forwarded-proto") ?? (req instanceof Request ? new URL(req.url).protocol.replace(":", "") : "http");
+  return `${proto}://${host}`;
+};
