@@ -52,7 +52,7 @@ test("AC3 Move is an explicit action on the board", async ({ page }) => {
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
   const card = page.locator(".tcard", { hasText: "CON-017" });
   await card.hover();
-  await card.getByLabel("Move CON-017").click();
+  await card.getByLabel("Move CON-017", { exact: true }).click();
   await page.getByLabel("Move CON-017 to").selectOption("building");
   await page.locator("form", { has: page.getByLabel("Move CON-017 to") }).getByRole("button", { name: "Move" }).click();
   await expect.poll(() => lanes(page)).toEqual(["1", "1", "3", "2", "1"]);
