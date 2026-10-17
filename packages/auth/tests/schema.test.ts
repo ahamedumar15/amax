@@ -1,8 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
-import { hasDb, migratedDatabase } from "@amax/db/testdb";
-import { tablesMissingRls } from "@amax/testing/rls";
+import { hasDb, migratedDatabase, tablesMissingRls } from "@amax/db/testdb";
 import { entraIssuer, seedFirstTenant } from "../src/seed";
 
 const env = {

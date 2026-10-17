@@ -14,6 +14,11 @@ const schema = z.object({
   // Keys the HMAC that replaces classified values in the audit. Moves to 031 secrets later.
   AUDIT_HASH_KEY: z.string().min(32, "at least 32 characters").optional(),
   CRON_SECRET: z.string().min(16, "at least 16 characters").optional(),
+  // Auth.js session encryption; required once DATABASE_URL is set (sign-in is enforced then).
+  AUTH_SECRET: z.string().min(32, "at least 32 characters").optional(),
+  // Fixtures-only "sign in as" for local and CI e2e. Ignored when NODE_ENV=production.
+  AMAX_AUTH_DEMO: z.enum(["0", "1"]).optional(),
+  AMAX_AUTH_DEMO_TENANT: z.uuid().optional(),
   // S3-compatible object storage (S3, R2, MinIO). The audit export bucket needs object lock.
   S3_ENDPOINT: z.url().optional(),
   S3_BUCKET: z.string().optional(),
