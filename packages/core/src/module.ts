@@ -21,6 +21,21 @@ export type EventHandlerDef = {
   handle: (ctx: EventContext) => Promise<void>;
 };
 
+export type SharedFixtures = {
+  tenant: { id: string; name: string };
+  today: string;
+  entities: { id: string; key: string; name: string; country: string; baseCurrency: string; headcount: number }[];
+  departments: Record<string, number>;
+  people: {
+    key: string; name: string; initials: string; title: string; entity: string; roles: string[];
+    manager?: string; status: "active" | "left" | "joining"; joined?: string; left?: string; probationEnds?: string;
+  }[];
+  projects: { key: string; name: string; client: string; manager: string; billing: "fixed" | "t&m" | "retainer"; contractValue: string; invoiced: string; currency: string }[];
+};
+
+/** A module's fixtures: seeds its own tables for the shared tenant, inside a tenant-scoped transaction. */
+export type FixtureSeed = (ctx: { tx: Tx; tenantId: string; shared: SharedFixtures }) => Promise<void>;
+
 export type ModuleManifest = {
   id: string;
   title: string;
@@ -36,7 +51,7 @@ export type ModuleManifest = {
   chatIntents?: unknown[];
   jobs?: JobDef[];
   events?: { emits?: string[]; handles?: EventHandlerDef[] };
-  fixtures?: unknown[];
+  fixtures?: FixtureSeed[];
 };
 
 export function defineModule(manifest: ModuleManifest): ModuleManifest {

@@ -1,9 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": [".next/**", "!.next/cache/**", "out/**", ".open-next/**"] },
-    "dev": { "cache": false, "persistent": true },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "out/**",
+        ".open-next/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
     "lint": {},
-    "test": { "outputs": [] }
+    "test": {
+      "outputs": [],
+      "env": [
+        "DATABASE_MIGRATE_URL",
+        "CI"
+      ]
+    }
   }
 }

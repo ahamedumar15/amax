@@ -23,6 +23,19 @@ npm run dev        # http://localhost:3000, mock at /mock/
 npm run build      # static export to out/
 ```
 
+### Database (from change 003)
+
+```bash
+podman compose -f deploy/dev/compose.yaml up -d        # or docker compose
+export DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax      # schema owner
+export DATABASE_URL=postgres://amax_app:amax_app@127.0.0.1:5440/amax      # app role, RLS applies
+export AUDIT_HASH_KEY=$(openssl rand -hex 32) CRON_SECRET=$(openssl rand -hex 16)
+pnpm db:migrate
+pnpm test          # DB tests run when DATABASE_MIGRATE_URL is set (required in CI)
+```
+
+The app still boots without a database; `/api/jobs/tick` answers 503 until one is configured.
+
 GitHub Pages deploys from `main` through `.github/workflows/pages.yml`, with `BASE_PATH=/amax`.
 
 All demo data is fictional (Lumen Labs, Maya Fernando and others). Client names are Microsoft sample companies.
