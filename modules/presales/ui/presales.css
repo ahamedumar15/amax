@@ -4,9 +4,7 @@
 .presales .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .presales .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
 .presales .row.head .lede{margin:0}
-/* delivery.css lets its narrow-screen header rule leak to every width (fixed in PR #30); keep the mock's desktop header here */
-.presales .row.head>.actions{flex-shrink:0;flex-wrap:wrap;width:auto}
-.presales .row.head>.actions .seg{flex:none}
+.presales .row.head>.actions{flex-shrink:0}
 .presales .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .presales .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
 .presales .cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}

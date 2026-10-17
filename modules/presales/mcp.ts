@@ -3,7 +3,7 @@ import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { STAGES } from "./contracts";
 import { ctxFor } from "./server/context";
-import { recordsOf } from "./server/detail";
+import { openSuggestions, recordsOf } from "./server/detail";
 import { promoteInput, promoteToDelivery } from "./server/promote";
 import { getOpportunity, historyOf, listOpportunities } from "./server/queries";
 import { addRisk, addTask, logActivity } from "./server/records";
@@ -23,6 +23,8 @@ export const mcpTools: McpToolDef[] = [
     run: async (v, a) => (await listOpportunities(v, today())).filter((o) => !a.open || (o.stage !== "won" && o.stage !== "lost")) }),
   tool({ ...read, name: "get_opportunity", description: "One opportunity with its stage history, activities, tasks and risks.", input: z.object({ number }),
     run: async (v, a) => { const o = await getOpportunity(v, a.number, today()); return o && { ...o, history: await historyOf(v, o.id), ...(await recordsOf(v, o.id)) }; } }),
+  tool({ ...read, name: "get_suggestion", description: "One opportunity the inbox agent found (client, summary, value, source); its text came from email or Teams.", input: z.object({ id: z.string().uuid() }),
+    run: async (v, a) => (await openSuggestions(v)).find((s) => s.id === a.id) ?? null }),
   tool({ ...read, name: "pipeline_summary", description: "Open pipeline in USD, weighted by win chance, 12-month win rate and average days to close.", input: z.object({}), run: (v) => pipelineStats(v, today()) }),
   tool({ ...write("presales:opportunity:create"), name: "create_opportunity", description: "Add an opportunity. Value is in its own currency (USD by default); the pipeline converts it to USD.", input: newOpportunity,
     run: (v, a, s = "mcp") => createOpportunity(ctxFor(v, s), a) }),

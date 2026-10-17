@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { defineService } from "@amax/core/server";
-import { lockOpenOpportunity, NUMBER } from "./common";
+import { lockOpenOpportunity, lockOpportunity, NUMBER } from "./common";
 
 // Activities, tasks and risks hang off an opportunity. Risks feed its calculated health.
 const number = z.string().regex(NUMBER);
@@ -54,14 +54,14 @@ export const addRisk = defineService({
   },
 });
 
-// Closing a risk is what turns health back to green; the change is audited with before and after.
+// Closing a risk is what turns health back to green (allowed on closed deals too, to tidy up); the change is audited with before and after.
 export const setRiskStatus = defineService({
   name: "presales.risk.status",
   action: "presales:opportunity:edit",
   resource: "presales.risk",
   input: z.object({ number, riskId: z.string().uuid(), status: z.enum(RISK_STATUSES) }),
   async run(tx, input) {
-    const o = await lockOpenOpportunity(tx, input.number);
+    const o = await lockOpportunity(tx, input.number);
     const [r] = await tx.execute(sql`select status from presales.risk where id = ${input.riskId} and opportunity_id = ${o.id}`);
     if (!r) throw new Error(`no such risk on ${input.number}`);
     await tx.execute(sql`update presales.risk set status = ${input.status} where id = ${input.riskId}`);
@@ -75,7 +75,7 @@ export const setTaskStatus = defineService({
   resource: "presales.task",
   input: z.object({ number, taskId: z.string().uuid(), status: z.enum(TASK_STATUSES) }),
   async run(tx, input) {
-    const o = await lockOpenOpportunity(tx, input.number);
+    const o = await lockOpportunity(tx, input.number);
     const [t] = await tx.execute(sql`select status from presales.task where id = ${input.taskId} and opportunity_id = ${o.id}`);
     if (!t) throw new Error(`no such task on ${input.number}`);
     await tx.execute(sql`update presales.task set status = ${input.status} where id = ${input.taskId}`);

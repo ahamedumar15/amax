@@ -55,6 +55,7 @@ create table presales.opportunity (
   claim_key text,
   claim_token uuid,
   claimed_at timestamptz,
+  claim_project_id uuid,
   removed_at timestamptz,
   removed_by text,
   created_at timestamptz not null default now(),
@@ -145,7 +146,7 @@ create table presales.pipeline_snapshot (
   month date not null check (extract(day from month) = 1),
   total_usd numeric(19,4) not null,
   weighted_usd numeric(19,4) not null,
-  -- When the figure was read: a late run (after the 1st) is visible, not passed off as the month-end.
+  -- When the figure was read, so a run that happened after the 1st can be told apart in the data.
   taken_at timestamptz not null default now(),
   primary key (tenant_id, month)
 );

@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { defineService, ForbiddenError, getRuntime, type Source } from "@amax/core/server";
+import { defineService, ForbiddenError, getRuntime, logError, type Source } from "@amax/core/server";
 import * as delivery from "@amax/delivery/contracts";
 import { EVENTS, getOpportunityRef, numberOf, type OpportunityPromoted } from "../contracts";
 import { actorOf, lockOpportunity, NUMBER } from "./common";
@@ -33,8 +33,8 @@ export const CLAIM_SECONDS = 120;
 /**
  * Claims a won opportunity for promotion under its row lock, before delivery is asked for anything:
  * a second promote while one is in flight is refused, so two attempts never both create a project.
- * A stale claim with the same key is resumed (its project may already exist); with another key it is
- * replaced only when delivery never created the claimed project.
+ * A stale claim with the same key is resumed, keeping the project it made (if any); with another key
+ * it is replaced only when delivery never created the claimed project.
  */
 export const claimPromotion = defineService({
   name: "presales.opportunity.promote.claim",
@@ -48,13 +48,32 @@ export const claimPromotion = defineService({
     if (o.claim_key) {
       const [{ fresh }] = await tx.execute(sql`select ${o.claimed_at}::timestamptz > now() - make_interval(secs => ${CLAIM_SECONDS}) as fresh`);
       if (fresh) throw new Error(`${input.number} is being promoted as ${o.claim_key} right now; try again in a couple of minutes`);
-      if (o.claim_key !== input.key && (await delivery.getProjectRef(tx, o.claim_key as string))) throw new Error(`${input.number} was promoted as ${o.claim_key}; promote it with that key to finish`);
+      if (o.claim_key !== input.key && (o.claim_project_id || (await delivery.getProjectRef(tx, o.claim_key as string)))) throw new Error(`${input.number} was promoted as ${o.claim_key}; promote it with that key to finish`);
     }
-    const resumed = o.claim_key === input.key;
-    const [c] = await tx.execute(sql`update presales.opportunity set claim_key = ${input.key}, claim_token = gen_random_uuid(), claimed_at = now() where id = ${o.id} returning claim_token`);
-    return { result: { token: c.claim_token as string, resumed }, resourceId: o.id as string, before: { claim: o.claim_key }, after: { claim: input.key } };
+    const projectId = o.claim_key === input.key ? ((o.claim_project_id as string | null) ?? null) : null;
+    const [c] = await tx.execute(sql`update presales.opportunity set claim_key = ${input.key}, claim_token = gen_random_uuid(), claimed_at = now(), claim_project_id = ${projectId}
+      where id = ${o.id} returning claim_token`);
+    return { result: { token: c.claim_token as string, projectId }, resourceId: o.id as string, before: { claim: o.claim_key }, after: { claim: input.key } };
   },
 });
+
+/** Notes the project delivery made under this claim, so only that project is ever resumed and linked. */
+export const noteClaimProject = defineService({
+  name: "presales.opportunity.promote.created",
+  action: "presales:promote",
+  resource: "presales.opportunity",
+  input: z.object({ number: z.string().regex(NUMBER), token: z.string().uuid(), projectId: z.string().uuid(), projectKey: z.string() }),
+  async run(tx, input) {
+    const o = await lockOpportunity(tx, input.number);
+    if (o.claim_token !== input.token) throw new Error(`delivery made project ${input.projectKey}, but ${input.number} was claimed by another promotion meanwhile, so it isn't linked`);
+    await tx.execute(sql`update presales.opportunity set claim_project_id = ${input.projectId} where id = ${o.id}`);
+    return { result: { projectId: input.projectId }, resourceId: o.id as string, after: { claimProjectId: input.projectId, projectKey: input.projectKey } };
+  },
+});
+
+/** True while this attempt still holds the claim; checked right before delivery is asked to create. */
+const stillClaimed = (tenantId: string, number: string, token: string) =>
+  withTenant(getRuntime().db, tenantId, async (tx) => (await tx.execute(sql`select 1 from presales.opportunity where number = ${Number(number.slice(3))} and claim_token = ${token}`)).length > 0);
 
 /** Gives up a claim this attempt still holds, after delivery refused to create the project. */
 export const releasePromotion = defineService({
@@ -77,7 +96,7 @@ export const recordPromotion = defineService({
   input: z.object({ number: z.string().regex(NUMBER), token: z.string().uuid(), projectId: z.string().uuid(), projectKey: z.string() }),
   async run(tx, input, ctx) {
     const o = await lockOpportunity(tx, input.number);
-    if (o.claim_token !== input.token || o.claim_key !== input.projectKey) throw new Error(`${input.number} is no longer claimed for ${input.projectKey}; promote it again`);
+    if (o.claim_token !== input.token || o.claim_key !== input.projectKey || o.claim_project_id !== input.projectId) throw new Error(`${input.number} is no longer claimed for ${input.projectKey}; promote it again`);
     // The unique index on project_id refuses a project another opportunity already holds.
     await tx.execute(sql`update presales.opportunity set project_id = ${input.projectId}, project_key = ${input.projectKey}, claim_key = null, claim_token = null, claimed_at = null, updated_at = now() where id = ${o.id}`);
     const [c] = await tx.execute(sql`select name from presales.client where id = ${o.client_id}`);
@@ -92,8 +111,9 @@ export const recordPromotion = defineService({
 
 /**
  * Promote to delivery: claim the opportunity, have delivery create the project through its contract
- * (its own service, audit and permission check), then link it. A resumed claim whose project already
- * exists (the link failed last time) links that project instead of creating another.
+ * (its own service, audit and permission check), note the project on the claim, then link it. A
+ * resumed claim whose project was made last time links that project instead of creating another; any
+ * other project already holding the key is refused.
  */
 export async function promoteToDelivery(viewer: Viewer, raw: unknown, opts: { source?: Source; create?: CreateProject | null } = {}) {
   const create = opts.create === undefined ? deliveryCreateProject() : opts.create;
@@ -105,13 +125,18 @@ export async function promoteToDelivery(viewer: Viewer, raw: unknown, opts: { so
   let project: { id: string; key: string } | null = null;
   try {
     const { opp, existing } = await withTenant(getRuntime().db, viewer.tenantId, async (tx) => ({ opp: (await getOpportunityRef(tx, input.number))!, existing: await delivery.getProjectRef(tx, input.key) }));
-    if (existing && !claim.resumed) throw new Error(`delivery already has a project ${input.key}; choose another key`);
-    project = existing ?? (await create(ctx, { key: input.key, name: opp.title, client: opp.client, billing: input.billing }));
+    if (existing && existing.id !== claim.projectId) throw new Error(`delivery already has a project ${input.key}; choose another key`);
+    if (existing) project = existing;
+    else {
+      if (!(await stillClaimed(viewer.tenantId, input.number, claim.token))) throw new Error(`${input.number} was claimed by another promotion; try again`);
+      project = await create(ctx, { key: input.key, name: opp.title, client: opp.client, billing: input.billing });
+      await noteClaimProject(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key });
+    }
     return await recordPromotion(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key });
   } catch (e) {
-    // No project yet: give the claim back. A project made under this claim keeps it, so a later
-    // promote with the same key resumes and links that project.
-    if (!project) await releasePromotion(ctx, { number: input.number, token: claim.token }).catch(() => undefined);
+    // No project yet: give the claim back. A project made under this claim stays noted on it, so a
+    // later promote with the same key resumes and links exactly that project.
+    if (!project) await releasePromotion(ctx, { number: input.number, token: claim.token }).catch((r: unknown) => logError("presales.promote.release", r));
     throw e;
   }
 }
