@@ -1,6 +1,8 @@
 // Paths that work signed out: sign-in itself, Auth.js callbacks, health, and machine endpoints that
 // carry their own bearer auth (cron tick, SCIM).
-const PUBLIC = [/^\/signin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/healthz$/, /^\/api\/jobs\/tick$/, /^\/api\/scim(\/|$)/];
+const PUBLIC = [/^\/signin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/healthz$/, /^\/api\/jobs\/tick$/, /^\/api\/scim(\/|$)/,
+  // 004: MCP and its OAuth endpoints authenticate with bearer tokens / PKCE, not the web session.
+  /^\/api\/mcp$/, /^\/\.well-known\//, /^\/oauth\/(token|register|revoke)$/];
 
 export const isPublicPath = (pathname: string) => PUBLIC.some((re) => re.test(pathname));
 
