@@ -1,9 +1,10 @@
 import { fakeProvider } from "./fake";
+import { scriptedWrite } from "./scripted-writes";
 
 // A deterministic stand-in model for e2e tests and local demos without an API key
 // (AMAX_AI_PROVIDER=scripted, refused in production). It recognises "add <title> to <KEY>", "add a task to PS-0000: <title>",
-// "rotate the <connector> token", "create a service credential named <name> with <scopes> for <n> days" (035) and "pause|resume the <title> schedule" and "revoke <client> for <person>" with the grant pinned (047), and
-// otherwise lists projects, so the full chat path runs end to end.
+// "rotate the <connector> token", "create a service credential named <name> with <scopes> for <n> days" (035) and "pause|resume the <title> schedule" and "revoke <client> for <person>" with the grant pinned (047),
+// the Ask amax prompts of time, allocations, delivery and presales (054, scripted-writes.ts), and otherwise lists projects, so the full chat path runs end to end.
 export function scriptedProvider() {
   return fakeProvider((req) => {
     const last = req.messages.at(-1)!;
@@ -16,6 +17,9 @@ export function scriptedProvider() {
       return { text: `I found ${n} result${n === 1 ? "" : "s"}.` };
     }
     const text = last.content.map((b) => (b.type === "text" ? b.text : "")).join(" ");
+    const own = last.content.at(-1);
+    const writes = own?.type === "text" ? scriptedWrite(own.text) : null;
+    if (writes?.length) return { toolCalls: writes };
     const task = text.match(/add a task to (PS-\d{4}):\s*(.+?)\s*$/i);
     if (task) return { toolCalls: [{ type: "tool_use", id: `t${Date.now()}`, name: "add_opportunity_task", input: { number: task[1], title: task[2] } }] };
     const rotate = text.match(/rotate the (.+?) (?:token|secret|key)\b/i);

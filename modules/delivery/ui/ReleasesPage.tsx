@@ -1,7 +1,7 @@
 import { can, type Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
-import { promoteAction } from "../actions";
+import { AskButton } from "./AskButton";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
 import { day, needViewer, SignInFirst } from "./parts";
 
@@ -214,12 +214,8 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: 
                     {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
                     <td data-label="" className="num">
                       {act.kind === "text" ? <span className="muted">{act.text}</span> : act.kind === "link" ? <span className="muted"><a className="rowlink" href={act.href} title={act.title}>{act.text}</a></span> : (
-                        <form action={promoteAction}>
-                          <input type="hidden" name="projectKey" value={r.projectKey} />
-                          <input type="hidden" name="version" value={r.version} />
-                          <input type="hidden" name="environment" value={act.environment} />
-                          <button className={`btn sm${act.primary ? " primary" : ""}`} type="submit">{act.label}</button>
-                        </form>
+                        <AskButton className={`btn sm${act.primary ? " primary" : ""}`} label={act.label} prompt={`Record a deployment of ${r.projectKey} ${r.version} to ${act.environment}`}
+                          pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
                       )}
                       <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
                     </td>

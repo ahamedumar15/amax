@@ -37,6 +37,8 @@ describe.skipIf(!hasDb)("AC-3 the new write tools wait for chat's confirm (Postg
     ["remove_opportunity", async () => ({ number: "PS-0137" }), sql`select (removed_at is not null)::text as v from presales.opportunity where number = 137`, "false", "true", "presales.opportunity.remove"],
     ["resolve_suggestion", async () => ({ id: await id(sql`select id from presales.suggestion where client_name = 'Adatum'`), decision: "dismiss" }),
       sql`select status as v from presales.suggestion where client_name = 'Adatum'`, "open", "dismissed", "presales.suggestion.dismiss"],
+    ["update_opportunity", async () => ({ number: "PS-0142", competing: "Globex (fictional)" }),
+      sql`select competing as v from presales.opportunity where number = 142`, "2 regional consultancies", "Globex (fictional)", "presales.opportunity.update"],
   ] as const;
 
   it.each(cases)("AC3 %s becomes a confirm card and writes only once confirmed, audited as chat", async (name, input, probe, before, after, action) => {

@@ -18,9 +18,10 @@ function Total({ total, capacity }: { total: number; capacity: number }) {
   return <td className="h">{capacity === 0 ? <span className="muted">–</span> : <b>{total}%</b>}</td>;
 }
 
-function PersonRows({ p, months, everyone }: { p: GridPerson; months: GridData["months"]; everyone: boolean }) {
+function PersonRows({ p, months }: { p: GridPerson; months: GridData["months"] }) {
   const first = p.name.split(" ")[0];
-  const pin = (label: string): PinRef => ({ label, tool: "list_allocations", args: { everyone } });
+  const pin = (label: string, line?: GridPerson["lines"][number]): PinRef => ({ label, tool: "get_allocation",
+    args: { person: p.employeeNo, ...(line ? (line.projectId ? { projectId: line.projectId } : { work: line.label }) : {}) } });
   return (
     <>
       {p.lines.map((l, k) => (
@@ -28,7 +29,7 @@ function PersonRows({ p, months, everyone }: { p: GridPerson; months: GridData["
           {k === 0 ? <td><div className="who"><span className={`av sm ${av(p.name)}`} aria-hidden="true">{p.initials}</span>{p.name}</div></td> : <td className="muted indent">{p.name}</td>}
           <td>{l.label}{l.manages && <small> Manages it</small>}</td>
           {months.map((m, i) => <Cell key={m.month} pct={l.percents[i]} forecast={m.forecast} bench={k === 0 && p.totals[i] === 0 && p.capacity[i] > 0} />)}
-          <td className="h"><PinButton pin={pin(`${p.name}, ${l.label}`)} /></td>
+          <td className="h"><PinButton pin={pin(`${p.name}, ${l.label}`, l)} /></td>
         </tr>
       ))}
       <tr className="total pinnable"><td>{first}, total</td><td />{months.map((m, i) => <Total key={m.month} total={p.totals[i]} capacity={p.capacity[i]} />)}<td className="h"><PinButton pin={pin(`${p.name}, total`)} /></td></tr>
@@ -36,13 +37,13 @@ function PersonRows({ p, months, everyone }: { p: GridPerson; months: GridData["
   );
 }
 
-export function Grid({ grid, everyone }: { grid: GridData; everyone: boolean }) {
+export function Grid({ grid }: { grid: GridData }) {
   return (
     <div className="scroll-x">
       <table className="tbl heat">
         <caption className="sr">People by month: each person's allocation per project, and their total</caption>
         <thead><tr><th>Person</th><th>Project</th>{grid.months.map((m) => <th key={m.month}>{monthLabel(m.month)}{m.forecast ? ", forecast" : ""}</th>)}<th><span className="sr">Pin</span></th></tr></thead>
-        <tbody>{grid.people.map((p) => <PersonRows key={p.personId} p={p} months={grid.months} everyone={everyone} />)}</tbody>
+        <tbody>{grid.people.map((p) => <PersonRows key={p.personId} p={p} months={grid.months} />)}</tbody>
       </table>
     </div>
   );

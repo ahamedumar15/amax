@@ -149,9 +149,6 @@
 .chart{width:100%;height:auto;display:block;overflow:visible}
 .chart .ax{fill:var(--ink-3);font-size:12px;font-family:var(--font)}
 .cardmenu{position:relative;margin-top:10px}
-.cardmenu summary{list-style:none;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-3);display:inline-flex;align-items:center;gap:4px}
-.cardmenu summary::-webkit-details-marker{display:none}
-.cardmenu[open] form{margin-top:8px}
 .map .pill{font:600 12.5px var(--font)}
 .seg{display:flex;padding:5px;border-radius:16px;background:var(--sunken);gap:4px;max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}
 .seg button[aria-pressed="true"],.tabs [aria-pressed="true"],.tabs [aria-current="true"],.tabs [aria-current="page"]{background:var(--card);color:var(--violet);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
@@ -163,9 +160,7 @@
 .donut-legend b{margin-left:auto;font-weight:500;color:var(--ink-3);font-size:12px}
 .tcard{position:relative}
 .tcard .cardmenu{position:absolute;top:10px;right:46px;margin:0;z-index:5;opacity:0;transition:opacity .15s}
-.tcard:hover .cardmenu,.tcard:focus-within .cardmenu,.tcard .cardmenu[open]{opacity:1}
-.tcard .cardmenu summary{width:30px;height:30px;border-radius:10px;background:var(--card);box-shadow:0 4px 14px -4px rgba(40,30,110,.4);justify-content:center;color:var(--violet);font-size:16px}
-.tcard .cardmenu[open] form{position:absolute;right:0;top:36px;background:var(--card);border-radius:14px;padding:10px;box-shadow:0 16px 40px -12px rgba(40,30,110,.45);display:flex;gap:6px;z-index:6}
+.tcard:hover .cardmenu,.tcard:focus-within .cardmenu{opacity:1}
 @media (hover:none){.tcard .cardmenu{opacity:1}}
 /* the mock's phone rules (041: these had lost their media queries and applied at every width) */
 @media (max-width:860px){
