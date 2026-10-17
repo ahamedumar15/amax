@@ -27,10 +27,17 @@ function checkModuleImport(ctx, owner, file, name, sub) {
   if (declared && !declared.has(name)) ctx.problems.push(`R4 ${rel}: imports module "${name}" but modules/${owner.name}/module.ts doesn't list it in dependsOn or integratesWith`);
 }
 
+// R7 (033): every LLM call goes through @amax/ai; nothing else imports a model provider SDK.
+const PROVIDER_SDK = /^(@anthropic-ai\/|openai$|openai\/|@google\/genai|@google\/generative-ai|@mistralai\/|cohere-ai|@aws-sdk\/client-bedrock)/;
+
 export function checkFile(ctx, file) {
   const owner = ownerOf(ctx.root, file);
   if (!owner) return;
   for (const spec of importsOf(file)) {
+    // packages/testing/boundaries holds deliberately broken fixture repos; they are checked with --root.
+    if (PROVIDER_SDK.test(spec) && !(owner.kind === "package" && owner.name === "ai") && !relative(ctx.root, file).startsWith("packages/testing/boundaries/")) {
+      ctx.problems.push(`R7 ${relative(ctx.root, file)}: imports model provider SDK "${spec}"; call @amax/ai instead`);
+    }
     if (spec.startsWith(".")) { checkRelative(ctx, owner, file, spec); continue; }
     const m = spec.match(/^@amax\/([\w-]+)(\/.*)?$/);
     if (!m) continue;

@@ -1,0 +1,77 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/tests/releases.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "807070e9e1f8",
+   "in_delta": true,
+   "line": 267,
+   "message": "This is an instance fix of the round-16 finding. The finding asked for the assignProposals path to be raced against a Prod recordDeployment, in both orders. The diff adds no race for it. Instead it adds a source-text guard that relies on an untested claim about createRelease, and the guard cannot reliably find callers. (1) It reads only server/services.ts. A call to assignProposals from sync/import.ts, chat.ts, mcp.ts or actions.ts is never seen. (2) It splits the file into segments that each start at `export const X = defineService(` and run to the next `\\nexport const `. Any code in between belongs to the segment before it, such as an `export async function`, an `export default` or a non-exported helper. So a new caller defined after createRelease is counted as createRelease, and the sorted list stays the same. (3) It never checks that createRelease's release really is invisible. If two createRelease calls race for the same project and version, or createRelease races a recordDeployment that creates or looks up that version, nothing tests the result. Fix: add createRelease to the it.each race table with the holdAfterReleaseLock gate, in both orders. If you keep a guard, base it on imports and call sites across every module file, not on how services.ts happens to be laid out.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Add `export async function addToRelease(ctx, input) { return assignProposals(...) }` below createRelease in services.ts, or call assignProposals from sync/import.ts. The guard still finds [\"createRelease\", \"setReleaseProposals\"], so it passes. The new caller never gets a race test, and if its release lock is missing, nothing fails.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "af61d283b3eb",
+   "in_delta": true,
+   "line": 307,
+   "message": "If the `secondDone` assertion inside the try fails, the finally opens the gate and the error propagates. The `first` and `second` promises are then never awaited. They keep writing after the test ends, under the runtime that was just restored, and they can reject with no handler. Their outcome is lost, or it shows up as an unrelated failure in a later test. Fix: in the finally, after h.release(), await Promise.allSettled([first, second]) before the error propagates.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "The second call fails to wait on the release lock, so `secondDone` becomes true. The expect throws, `first` and `second` keep running past the end of the test, and a rejection from `second` is reported as an unhandled error in some other test.",
+   "severity": "minor"
+  }
+ ],
+ "head": "eb033233b02803ee4d77f22cf114867aae55c8ac",
+ "impact": [
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/playwright.auth.config.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "modules/delivery/db/migrations/0001_delivery.sql",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/mcp-registry.test.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/ui/ProposalsPage.tsx",
+  "packages/auth/src/authjs.ts",
+  "packages/auth/src/query.ts",
+  "packages/auth/src/scim.ts",
+  "packages/auth/tests/ac4-masking.test.ts",
+  "packages/auth/tests/ac7-tenant.test.ts",
+  "packages/auth/tests/ac9-principals.test.ts",
+  "packages/auth/tests/password.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 33947,
+ "round": 17,
+ "since": "0869a6b",
+ "status": "open",
+ "system_chars": 20899,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792234950,
+ "ts_start": 1792234874
+}

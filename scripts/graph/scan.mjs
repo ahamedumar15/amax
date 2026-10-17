@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
-export const PLATFORM = ["core", "db", "auth", "ui", "mcp", "chat", "agents", "workflows", "testing"];
+export const PLATFORM = ["core", "db", "auth", "ui", "mcp", "chat", "agents", "workflows", "testing", "ai"];
 
 export const dirs = (p) => (existsSync(p) ? readdirSync(p).filter((d) => statSync(join(p, d)).isDirectory()) : []);
 

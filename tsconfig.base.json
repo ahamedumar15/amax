@@ -65,6 +65,12 @@
       "@amax/testing/*": [
         "./packages/testing/src/*"
       ],
+      "@amax/ai": [
+        "./packages/ai/src/index.ts"
+      ],
+      "@amax/ai/*": [
+        "./packages/ai/src/*"
+      ],
       "@amax/*": [
         "./modules/*"
       ]

@@ -1,0 +1,79 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 0
+ },
+ "escalated": [
+  "de9b8bb2c0a0",
+  "5b91f9943bbe"
+ ],
+ "files": [
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/releases.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/server/services.ts",
+   "fp": "de9b8bb2c0a0",
+   "line": 189,
+   "message": "In recordDeployment the new row lock comes after the `moved` read. The lock makes the deploy wait for a concurrent move, but the event list was already taken from the rows as they were before that move committed. Once the lock is granted, the update re-checks `release_id = v1` and skips the moved proposal. `moved` still includes it, so a ProposalPhaseChanged \u2192 released event is emitted for a proposal that was never released. The reverse also happens: a proposal assigned to v1 while the deploy waits is released by the update but gets no event. voidDeployment avoids this by taking its events from `update \u2026 returning *`. Fix: take the lock before the read and build the events from the update's `returning *`. Extend the move-first race rows to assert the outbox events, not just the row state.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "In the move-first race (setReleaseProposals or createRelease(v2, [p]) holds p's row lock, then recordDeployment(v1, Prod) runs): the deploy reads moved = [p], waits, and its update changes 0 rows. The outbox still gets delivery.proposal.phase-changed p \u2192 released. The row ends proposed under v2, so the event contradicts it.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "5b91f9943bbe",
+   "line": 412,
+   "message": "The new deadlock test fires three writers with Promise.allSettled and hopes they interleave. A deadlock needs one writer to hold proposal a while another holds b, and nothing forces that. The other race tests in this file force their interleavings with holdAfterReleaseLock; this one does not. It is likely to stay green if lockProposals is reverted to the per-key `for update` loop, so it does not prove the round-19 fix. It also never checks the end state of a and b. Fix: make the race deterministic. Hold one writer after it has locked the first shared row (or after its ordered lock statement), start the opposite-order writer, release the hold, then assert both settle with no 40P01 and assert where a and b end up.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "Revert assignProposals to lock one key at a time in the caller's order. With setReleaseProposals passing [b, a] and createRelease passing [a, b], the three calls usually run their few row-lock statements one after another and never cross. All 6 iterations pass, and the reverted code ships.",
+   "severity": "major"
+  }
+ ],
+ "head": "58c2e85f8c41d173817373437c31684da8a90d86",
+ "impact": [
+  ".claude/settings.json",
+  "apps/mock/public/mock/index.html",
+  "apps/web/lib/chat-outcome.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/tests/e2e/global-auth.ts",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "modules/delivery/actions.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/db/migrations/0006_project_closed_at.sql",
+  "modules/delivery/db/migrations/0007_project_closed_at_insert.sql",
+  "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/delivery.test.ts",
+  "modules/delivery/tests/mcp-registry.test.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/ui/delivery.css",
+  "packages/ai/src/admin.ts",
+  "packages/ai/src/gateway.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 40391,
+ "round": 20,
+ "since": "68a96ca",
+ "status": "escalate",
+ "system_chars": 20859,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792235627,
+ "ts_start": 1792235554
+}

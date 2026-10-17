@@ -1,0 +1,39 @@
+/* Settings screens: rules lifted from .specclaw/mock/index.html. */
+.lede{color:var(--ink-2);margin:0 0 24px;max-width:70ch;text-wrap:pretty}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+.stack{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.muted{color:var(--ink-3)}
+.scroll-x{overflow-x:auto}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.stack>.tabs{margin-bottom:-6px}
+.payslip .row{padding:8px 0;border-top:1px dashed var(--line-2)}
+.payslip .row:first-of-type{border-top:0}
+.row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.row.head .lede{margin:0}
+.row.head>.actions{flex-shrink:0}
+.card-head{min-height:38px}
+.crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-3);margin-bottom:10px}
+.crumb a{color:var(--ink-2);text-decoration:none;font-weight:500}
+.crumb a:hover{color:var(--violet)}
+.row.line{font-size:14px;padding:11px 0;border-top:1px solid var(--line)}
+.row.line:first-of-type{border-top:0}
+.tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.tickets.four svg.art{width:clamp(70px,5.6vw,100px)}
+.tickets .p{z-index:1}
+.cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.found-item .actions{margin-top:auto}
+.pinnable:hover>.pin,.pin:focus-visible,.pinnable:focus-within>.pin,.pinnable:focus-within>.card-head>.pin,tr.pinnable:hover .pin,tr.pinnable:focus-within .pin{opacity:1;transform:none}
+.pinnable:hover>.card-head>.pin{opacity:1;transform:none}
+.card-head h2{margin-right:0}
+.row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
+.row.head>.actions .seg{flex:1 1 100%}
+.card.flush .card-head{padding:22px 22px 0}
+.tickets,.tickets.four{gap:12px}
+.ticket .v,.tickets.four .v{font-size:20px;margin-top:4px}
+.ticket svg.art,.tickets.four svg.art{width:58px;right:6px;top:8px}
+.card.flush .scroll-x{overflow-x:visible}
+.tbl td .row{gap:10px}
+@media (max-width:860px){.tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.cols{grid-template-columns:minmax(0,1fr)}}

@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { loadViewer, type Viewer } from "@amax/auth";
+import { loadViewer, setViewerResolver, type Viewer } from "@amax/auth";
 import { sessionStamp } from "@amax/auth/authjs";
 import { auth } from "../auth";
 import { authEnabled, getDb } from "./server";
@@ -12,3 +12,5 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   if (!stamp?.tenantId || !stamp.sessionId) return null;
   return loadViewer(getDb()!, stamp.tenantId, stamp.sessionId);
 });
+
+setViewerResolver(getViewer);

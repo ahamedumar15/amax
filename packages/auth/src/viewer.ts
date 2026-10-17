@@ -27,3 +27,15 @@ export function applyViewAs(v: Viewer, role: Role | undefined): Viewer {
   if (!role || !v.actualRoles.includes("Admin")) return { ...v, viewAs: undefined };
   return { ...v, viewAs: role, assignments: [{ role, legalEntityIds: null, departments: null }] };
 }
+
+// Server actions in modules need the signed-in viewer without importing the app; the app registers
+// how to resolve it (from the Auth.js session) once at startup.
+let resolver: (() => Promise<Viewer | null>) | undefined;
+export const setViewerResolver = (fn: () => Promise<Viewer | null>) => {
+  resolver = fn;
+};
+export async function currentViewer(): Promise<Viewer> {
+  const v = resolver ? await resolver() : null;
+  if (!v) throw new Error("not signed in");
+  return v;
+}

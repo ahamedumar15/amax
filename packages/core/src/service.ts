@@ -3,8 +3,9 @@ import type { z } from "zod";
 import { setTenant, type Db, type Tx } from "@amax/db";
 import { appendAudit, redact, type Sensitivity } from "./audit";
 import { authorize, ForbiddenError, type ServiceContext } from "./authorize";
+import { CancelledByKeyError, claimKey, lookupKey, replayOf, settleKey, takeIdempotencyKey, type Replay } from "./idempotency";
 
-export type Emitted = { name: string; payload: Record<string, unknown> };
+export type Emitted = { name: string; payload: object };
 
 export type ServiceOutcome<R> = {
   result: R;
@@ -20,6 +21,8 @@ export type ServiceSpec<I, R> = {
   action: string;
   resource: string;
   input: z.ZodType<I>;
+  /** The service calls assertCan with the loaded record, so qualified grants pass the up-front check. */
+  scoped?: boolean;
   /** Classified fields: audited as name + keyed hash, never the value. */
   sensitive?: Record<string, Sensitivity>;
   run: (tx: Tx, input: I, ctx: ServiceContext) => Promise<ServiceOutcome<R>>;
@@ -38,22 +41,37 @@ export function getRuntime(): Runtime {
 }
 
 export class ValidationError extends Error {
+  readonly retryable = false;
   constructor(public issues: z.core.$ZodIssue[]) {
     super(`invalid input: ${issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`);
     this.name = "ValidationError";
   }
 }
 
-// authorize → validate → write in a transaction → audit → emit. The write, its audit row and its
-// outbox events commit together or not at all.
+// authorize → validate → write in a transaction → audit → emit. The write, its audit row, its
+// outbox events and (under an idempotency key) its recorded result commit together or not at all.
 export function defineService<I, R>(spec: ServiceSpec<I, R>) {
+  // Only a call under an idempotency key can return a Replay instead of R; withIdempotency callers
+  // check `replayed` (the chat engine is the one today). Unkeyed callers always get R.
   const call = async (ctx: ServiceContext, raw: unknown): Promise<R> => {
     const { db, auditKey } = getRuntime();
-    if (!(await authorize(ctx, spec.action, spec.resource, raw))) throw new ForbiddenError(spec.action, spec.resource);
+    // Under an idempotency key, an earlier attempt's outcome comes first: before authorize and
+    // validation, which could otherwise refuse a retry of a write that already happened (round 8).
+    const key = takeIdempotencyKey();
+    const known = key ? await lookupKey(db, ctx.tenantId, key) : null;
+    if (known && "cancelled" in known) throw new CancelledByKeyError(key!);
+    if (known) return known.done as Replay as unknown as R;
+    if (!(await authorize(ctx, spec.action, spec.resource, raw, { scoped: spec.scoped }))) throw new ForbiddenError(spec.action, spec.resource);
     const parsed = spec.input.safeParse(raw);
     if (!parsed.success) throw new ValidationError(parsed.error.issues);
     return db.transaction(async (tx) => {
       await setTenant(tx, ctx.tenantId);
+      // Claimed in the write's own transaction; a concurrent attempt waits here, then reads the record.
+      if (key) {
+        const prior = await claimKey(tx, ctx.tenantId, key, null);
+        if (prior && "cancelled" in prior) throw new CancelledByKeyError(key);
+        if (prior) return prior.done as Replay as unknown as R;
+      }
       const out = await spec.run(tx, parsed.data, ctx);
       const sensitive = spec.sensitive ?? {};
       await appendAudit(tx, ctx, {
@@ -66,6 +84,7 @@ export function defineService<I, R>(spec: ServiceSpec<I, R>) {
       for (const e of out.events ?? []) {
         await tx.execute(sql`insert into core.event (tenant_id, name, payload) values (${ctx.tenantId}, ${e.name}, ${JSON.stringify(e.payload)}::jsonb)`);
       }
+      if (key) await settleKey(tx, ctx.tenantId, key, { done: replayOf(out.resourceId, out.result) });
       return out.result;
     });
   };

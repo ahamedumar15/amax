@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Db } from "@amax/db";
+import { type Db, textArray, uuidArray, withTenant } from "@amax/db";
 import { appendAudit, ForbiddenError, type ServiceContext } from "@amax/core/server";
 import { can } from "./can";
 import { viewerForUser } from "./session";
@@ -21,7 +21,7 @@ export async function createPrincipal(db: Db, owner: Viewer, p: { name: string; 
   const token = newToken("amx_sp");
   const id = await withTenant(db, owner.tenantId, async (tx) => {
     const [row] = await tx.execute(sql`insert into auth.service_principal (tenant_id, name, owner_user_id, scopes, acts_for, token_hash, expires_at)
-      values (${owner.tenantId}, ${p.name}, ${owner.userId}, ${`{${p.scopes.join(",")}}`}::text[], ${`{${p.actsFor.join(",")}}`}::uuid[], ${tokenHash(token)},
+      values (${owner.tenantId}, ${p.name}, ${owner.userId}, ${textArray(p.scopes)}, ${uuidArray(p.actsFor)}, ${tokenHash(token)},
               now() + make_interval(days => ${p.days})) returning id`);
     await appendAudit(tx, { tenantId: owner.tenantId, actor: { id: `user:${owner.userId}`, kind: "user" }, source: "ui" },
       { action: "auth.principal.create", resource: "auth.service_principal", resourceId: row.id as string, after: { name: p.name, scopes: p.scopes, actsFor: p.actsFor, days: p.days } });

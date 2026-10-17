@@ -1,0 +1,90 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/tests/releases.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "99d42b53ce9b",
+   "in_delta": true,
+   "line": 296,
+   "message": "The fixes for the three round-15 findings cover the whole class. The restored test checks the exact refusal text and checks that re-saving the release's own proposals still works. The race now runs in both orders, with one service held inside its transaction after it locks the release. Each outcome is checked against the settled result and the proposal row. One gap remains: cleanup of the hold is not in a `finally`. `h.release()`, which also restores `configureRuntime({ db: app })`, runs only on the success path. Two cases leave things in a bad state. First, if `expect(secondDone).toBe(false)` fails, or `await h.inside` times out because the lock query text no longer matches the regex, the first service's transaction stays parked on the gate and keeps its row lock. Second, if the hold never fired, `armed` stays true. In both cases the runtime is left as the proxied db for every later test in the file. Then the next test that runs `releaseOf ... for update` either hangs on the gate or blocks on the held row. One real failure shows up as a run of unrelated timeouts. Fix: wrap the body after `holdAfterReleaseLock()` in `try { \u2026 } finally { h.release(); }`, and make `release()` safe to call twice.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "releaseOf is changed to the query builder's `.for('update')`, so `tx.execute` never sees the text \u2192 `await h.inside` times out \u2192 the runtime stays proxied with armed=true \u2192 the next test in the describe that locks a release (for example the MERGE tests or a later recordDeployment) hangs instead of reporting the real cause.",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "829c2e45a4b4",
+   "in_delta": true,
+   "line": 284,
+   "message": "This only fixes one instance of the race. The round-14 finding named two ways to add a proposal to a release that can race a Prod deployment: setReleaseProposals and assignProposals. The new deterministic race table only covers setReleaseProposals against recordDeployment. assignProposals (adding from the proposal side) is never held against a Prod recordDeployment, in either order. So if its `for update` on the release is removed or missing, no test fails. Fix: add the assignProposals path to the it.each table, in both orders (assign-first: ends released; deploy-first: refused with /already live in Prod/). Use the same holdAfterReleaseLock gate.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Remove `for update` from the release read in the assignProposals path. Session A runs recordDeployment(Prod) and holds the release; session B runs assignProposals([p]), reads the release as not yet live, then commits after A. Result: p sits in a live release with phase 'proposed', and every test stays green.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "fd1a6cf494eb",
+   "in_delta": true,
+   "line": 263,
+   "message": "The restored test re-saves the release's own proposals but asserts nothing about the result. It only shows the call doesn't throw. Fix: after the re-save, check that LIV-001 is still assigned with phase 'released' and LIV-002 is still unassigned.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "A regression makes the re-save of the same set clear release_id or reset the phase. The call still resolves and the test passes.",
+   "severity": "minor"
+  }
+ ],
+ "head": "0869a6b27008c4345017983be175741ea4c0b5f9",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/scripts/worker.mjs",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "apps/web/tests/tick.test.ts",
+  "apps/web/worker.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "packages/ai/src/admin.ts",
+  "packages/ai/src/fake.ts",
+  "packages/ai/src/policy.ts",
+  "packages/ai/src/prompt.ts",
+  "packages/ai/tests/gateway.test.ts",
+  "packages/auth/src/can.ts",
+  "packages/auth/src/query.ts",
+  "packages/auth/tests/ac3-can.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/service.ts",
+  "packages/core/tests/ac5-adapters.test.ts",
+  "packages/core/tests/log.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 36647,
+ "round": 16,
+ "since": "e489bba",
+ "status": "open",
+ "system_chars": 20902,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792234837,
+ "ts_start": 1792234750
+}

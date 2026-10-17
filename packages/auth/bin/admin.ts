@@ -11,6 +11,8 @@ import { createDb, withTenant } from "@amax/db";
 import { upsertPasswordUser } from "../src/password";
 import { revokeUser } from "../src/revoke";
 import { createScimToken } from "../src/scim";
+import { createPrincipal } from "../src/principals";
+import { viewerForUser } from "../src/session";
 import { isRole } from "../src/roles";
 
 const url = process.env.DATABASE_MIGRATE_URL;
@@ -43,10 +45,18 @@ try {
     if (!u) throw new Error("no such user");
     await revokeUser(db, tenantId, u.id as string, { deactivate: true, reason: "admin-cli" });
     console.log(`deactivated ${u.id}`);
+  } else if (cmd === "principal-add") {
+    // e.g. principal-add --tenant <id> --email <owner admin> --name specclaw-sync --roles delivery:proposal:sync
+    const tenantId = need("tenant");
+    const [u] = await withTenant(db, tenantId, (tx) => tx.execute(sql`select id from auth.user where email = ${need("email").toLowerCase()}`));
+    if (!u) throw new Error("no such owner");
+    const owner = await withTenant(db, tenantId, (tx) => viewerForUser(tx, tenantId, u.id as string));
+    const { id, token } = await createPrincipal(db, owner!, { name: need("name"), scopes: need("roles").split(","), actsFor: [], days: 365 });
+    console.log(`principal ${id}  token (shown once): ${token}`);
   } else if (cmd === "scim-token") {
     console.log(`SCIM token (shown once): ${await createScimToken(db, need("tenant"))}`);
   } else {
-    console.error("commands: tenant-add <name> | user-add --tenant --email --name --roles [--password] | user-deactivate --tenant --email | scim-token --tenant");
+    console.error("commands: tenant-add <name> | user-add --tenant --email --name --roles [--password] | user-deactivate --tenant --email | scim-token --tenant | principal-add --tenant --email <owner> --name --roles <scopes>");
     process.exitCode = 1;
   }
 } finally {

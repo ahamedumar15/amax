@@ -12,6 +12,7 @@ export function profileOf(v: Viewer): Profile {
     chip: v.viewAs ?? primary,
     subtitle: v.actualRoles.join(" · "),
     canViewAs: v.actualRoles.includes("Admin"),
+    isAdmin: rolesOf(v).includes("Admin"),
     viewAs: v.viewAs,
   };
 }

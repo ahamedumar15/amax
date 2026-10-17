@@ -1,0 +1,65 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/releases.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "943338a8e4d7",
+   "in_delta": true,
+   "line": 428,
+   "message": "The deadlock test now forces the first writer's interleaving, which is the round-19/20 fix. But it still waits a fixed 300 ms and never checks that the second writer has reached the proposal-row lock and is blocked there. The test only proves the fix if the second writer has locked b and is waiting on a before the hold is released. If the second writer is slow to start, or blocks earlier on another lock (the project row, or the duplicate-version check), the per-key `for update` loop would also stay green. Fix: replace the sleep with a poll of pg_stat_activity/pg_locks until the second session shows wait_event_type = 'Lock' on a delivery.proposal tuple (or expose a second hold point inside lockProposals). Then release the first writer.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "Revert lockProposals to the per-key loop and run under load. createRelease(x, [b, a]) has not yet locked b when the 300 ms pass. The first writer resumes and locks b, and the second then waits in order, so there is no 40P01 and the test passes against the reverted code.",
+   "severity": "minor"
+  }
+ ],
+ "head": "9c273beb26b8c1676694f023f5854ff6e83b0da2",
+ "impact": [
+  ".github/workflows/ci.yml",
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/actions/chat.ts",
+  "apps/web/components/chat/Chat.tsx",
+  "apps/web/lib/chat-outcome.ts",
+  "apps/web/tests/chat-outcome.test.ts",
+  "apps/web/tests/tick.test.ts",
+  "modules/delivery/actions.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/sync/specclaw.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/delivery.test.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/tests/sync-parse.test.ts",
+  "modules/delivery/ui/ProjectPage.tsx",
+  "packages/ai/tests/gateway.test.ts",
+  "packages/chat/src/engine.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 36668,
+ "round": 21,
+ "since": "58c2e85",
+ "status": "clean",
+ "system_chars": 20863,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792235866,
+ "ts_start": 1792235788
+}

@@ -1,17 +1,17 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { Icon } from "./Icon";
 import { Mascot } from "./Mascot";
 
-type TopBarProps = { onSearch?: () => void; onAsk?: () => void; profile: ReactNode };
+type TopBarProps = { onSearch?: () => void; onAsk?: () => void; askOpen?: boolean; askRef?: Ref<HTMLButtonElement>; profile: ReactNode };
 
-export function TopBar({ onSearch, onAsk, profile }: TopBarProps) {
+export function TopBar({ onSearch, onAsk, askOpen, askRef, profile }: TopBarProps) {
   return (
     <div className="top">
       <button className="search" type="button" onClick={onSearch} aria-haspopup="dialog">
         <Icon name="search" />
         Search projects, people, anything<kbd>⌘K</kbd>
       </button>
-      <button className="launcher" type="button" onClick={onAsk} aria-label="Ask amax" title="Ask amax (⌘K)">
+      <button ref={askRef} className="launcher" type="button" onClick={onAsk} aria-label="Ask amax" title="Ask amax (⌘K)" aria-expanded={askOpen ?? false} aria-controls="chat">
         <span className="lface"><Mascot /></span>
         <span className="ltxt">Ask amax</span>
       </button>

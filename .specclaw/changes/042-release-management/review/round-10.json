@@ -1,0 +1,122 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 3,
+  "minor": 0
+ },
+ "escalated": [
+  "a89b196f6783"
+ ],
+ "files": [
+  "apps/web/lib/chat-outcome.ts",
+  "apps/web/tests/chat-outcome.test.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/chat/src/index.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "e961e82cddf8",
+   "in_delta": true,
+   "line": 156,
+   "message": "`expired()` only expires a card when it has a usable `createdAt`. `Boolean(a.createdAt) && \u2026` means a card with no `createdAt` never expires. This covers every card stored before this change, since `createdAt` is optional on `PendingAction`. A malformed value also never expires: `Date.parse` returns NaN, and `NaN > x` is false. Those cards are exactly the ones whose replay records `pruneKeysJob` can delete by age, so the round-9 prune finding is fixed only for new cards. Fix: fail closed. Treat a missing or unparsable `createdAt` as expired (or as unknown). Alternatively, backfill `createdAt` for existing pending cards in a migration and make the field required.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "A card created before this deploy (no `createdAt`) is confirmed. The write commits but the process dies before `settleNow`, so the card stays pending. After KEY_DAYS the record is pruned. The user clicks Confirm: `lookupKey` returns null, `expired()` returns false, and the write runs a second time.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "a89b196f6783",
+   "in_delta": true,
+   "line": 181,
+   "message": "After the record is pruned, an expired card is settled as 'expired' with the note `The request \u2026 expired before it was confirmed`. The UI (chat-outcome.ts) tells the user 'Ask again if you still want it.' Once the record is gone, the engine can't tell 'never confirmed' from 'confirmed, committed, settle lost'. Those are the two cases the round-9 finding was about. This reports 'could not know' as 'nothing happened' and asks the user to repeat the write. Fix: when a card is expired and has no record, settle it as 'unknown' (or as an expired decision whose note says to check the record before asking again). Don't claim it expired before it was confirmed.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "Day 0: card created and confirmed. The write commits and the process dies before settle. Day KEY_DAYS+1: the record is pruned. The user clicks Confirm and sees 'This request expired. Ask again if you still want it.' They ask again, and a second identical row is written.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "33a5df1e31fc",
+   "in_delta": false,
+   "line": 205,
+   "message": "The expiry guard was added only to `confirmAction`. `cancelAction` still claims the key as cancelled for an old card whose record has been pruned. It then settles the card 'cancelled' ('Nothing was changed') even though the write may have committed. The new comment says a pruned record can never be mistaken for 'never written', but the cancel path does exactly that. Fix: run the same expiry check in `cancelAction` before `claimKey`, and settle as expired/unknown. Better still, put the check in `card()` so every path that reads a card shares it.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "A card's write commits and settle is lost. The record is pruned after KEY_DAYS. The user clicks Cancel: `claimKey` finds no record and claims 'cancelled', and the card shows 'Cancelled. Nothing was changed.' while the row exists.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/chat.test.ts",
+   "fp": "b4825559fa30",
+   "in_delta": true,
+   "line": 283,
+   "message": "The test for the prune fix uses one fresh card with no previous attempt. It never runs the scenario named in the finding: committed write, settle skipped, record aged past KEY_DAYS and pruned through the real `pruneKeysJob`, then confirm must not write. It also has no variant table. These variants are missing: a card without `createdAt`, a card with a malformed `createdAt`, and cancel after prune. Fix: make it an `it.each` over these variants, drive the prune through `pruneKeysJob`, and assert that no second row is written and the decision is not 'never done'.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Delete the `expired()` check and age the card's record past KEY_DAYS. The named scenario then writes twice, but no test covers it; this test only checks that a fresh card with no prior write is rejected.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "edbc5e0f0261",
+   "in_delta": false,
+   "line": 160,
+   "message": "`doneNote` stops new notes from storing the raw result. But conversations written before this change still hold `(I confirmed \u2026. Result: {\u2026})` messages with unredacted service results in chat.conversation, and those messages are still read back to the model. Scrub or redact the existing messages in a migration, or note why none exist yet.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "A conversation confirmed before this deploy still contains the full JSON result in `messages`, and it is sent to the model on the next turn.",
+   "severity": "minor"
+  }
+ ],
+ "head": "d06e425b7f0811d1e75ff0c547b9001d30591042",
+ "impact": [
+  ".github/actions/setup/action.yml",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dependency-review.yml",
+  ".github/workflows/pages.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/app/(app)/settings/integrations/page.tsx",
+  "apps/web/app/actions/chat.ts",
+  "apps/web/app/oauth/authorize/page.tsx",
+  "apps/web/app/signin/page.tsx",
+  "apps/web/components/chat/Chat.tsx",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "modules/delivery/actions.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/delivery.test.ts",
+  "modules/delivery/tests/mcp-registry.test.ts",
+  "modules/delivery/tests/permissions.test.ts",
+  "modules/delivery/tests/releases.test.ts",
+  "modules/delivery/tests/sync-import.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 40541,
+ "round": 10,
+ "since": "26fcb9f",
+ "status": "escalate",
+ "system_chars": 20077,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792232191,
+ "ts_start": 1792232104
+}

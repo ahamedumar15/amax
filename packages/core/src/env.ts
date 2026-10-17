@@ -27,6 +27,10 @@ const schema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_REGION: z.string().optional(),
+  // 033 AI gateway: Haiku first, Sonnet when Haiku fails (product owner, 2026-10-17). The key itself
+  // (ANTHROPIC_API_KEY) is read by the provider SDK and never parsed or logged here.
+  AMAX_AI_MODEL: z.string().default("claude-haiku-5-5"),
+  AMAX_AI_FALLBACK_MODEL: z.string().default("claude-sonnet-5-5"),
   AUDIT_RETENTION_DAYS: z.coerce.number().int().positive().default(2555),
 });
 
