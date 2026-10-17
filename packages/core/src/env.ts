@@ -28,10 +28,34 @@ const schema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_REGION: z.string().optional(),
   // 033 AI gateway: Haiku first, Sonnet when Haiku fails (product owner, 2026-10-17). The key itself
-  // (ANTHROPIC_API_KEY) is read by the provider SDK and never parsed or logged here.
+  // (ANTHROPIC_API_KEY) is read by the provider SDK; loadEnv checks it but keeps only that it is set.
   AMAX_AI_MODEL: z.string().default("claude-haiku-5-5"),
   AMAX_AI_FALLBACK_MODEL: z.string().default("claude-sonnet-5-5"),
   AUDIT_RETENTION_DAYS: z.coerce.number().int().positive().default(2555),
+  ANTHROPIC_API_KEY: z.string().min(20, "at least 20 characters").optional().transform((v) => (v ? ("set" as const) : undefined)),
+  // 031 key service that wraps each tenant's data key. Tenant credentials themselves never come from here.
+  AMAX_KMS: z.enum(["local", "aws", "azure"]).optional(),
+  AMAX_KMS_KEY_FILE: z.string().min(1).optional(),
+  AMAX_KMS_REGION: z.string().optional(),
+  AMAX_KMS_AWS_KEY_ID: z.string().min(1).optional(),
+  AWS_REGION: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_SESSION_TOKEN: z.string().optional(),
+  AMAX_KMS_AZURE_VAULT_URL: z.url().optional(),
+  AMAX_KMS_AZURE_KEY: z.string().min(1).optional(),
+  AZURE_TENANT_ID: z.string().optional(),
+  AZURE_CLIENT_ID: z.string().optional(),
+  AZURE_CLIENT_SECRET: z.string().optional(),
+}).superRefine((env, ctx) => {
+  const needs: Record<string, (keyof typeof env)[]> = {
+    local: ["AMAX_KMS_KEY_FILE"],
+    aws: ["AMAX_KMS_AWS_KEY_ID", "AWS_REGION", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
+    azure: ["AMAX_KMS_AZURE_VAULT_URL", "AMAX_KMS_AZURE_KEY", "AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"],
+  };
+  for (const name of env.AMAX_KMS ? needs[env.AMAX_KMS] : []) {
+    if (!env[name]) ctx.addIssue({ code: "custom", path: [name], message: `required when AMAX_KMS=${env.AMAX_KMS}` });
+  }
 });
 
 export type Env = z.infer<typeof schema>;

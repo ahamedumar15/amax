@@ -11,6 +11,7 @@ import { configureRuntime } from "@amax/core/server";
 import { authenticateToken, createPrincipal, installAuthorizer, principalContext, setGrants, viewerForUser } from "@amax/auth";
 import { withTenant } from "@amax/db";
 import { sql } from "drizzle-orm";
+import { seedSecrets } from "./secrets-seed";
 
 // Fresh amax_e2e database: migrate, then seed Lumen Labs, its demo users and every installed module's fixtures as the app role.
 // E2E_DB lets parallel worktrees each use their own database.
@@ -36,6 +37,7 @@ export default async function setupE2eDatabase() {
   await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
   // 041: fixtures.md's "today" (Fri Oct 16, 2026) for this tenant's date windows, so dates match the mock.
   await withTenant(db, lumen.tenant.id, (tx) => pinToday(tx, lumen.tenant.id, "2026-10-16"));
+  if (process.env.AMAX_KMS_KEY_FILE) await seedSecrets(db, lumen.tenant.id, process.env.AMAX_KMS_KEY_FILE);
   await client.end();
 }
 

@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { configureAi } from "@amax/ai";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
@@ -26,6 +28,7 @@ export function getDb(): Db | null {
   }
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
+    configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
     setGrants(installed);
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
@@ -38,7 +41,7 @@ export function getDb(): Db | null {
 }
 
 // Core's own jobs ride alongside the modules'.
-const core = { id: "core", jobs: [auditExportJob(() => storageFromEnv(), loadEnv().AUDIT_RETENTION_DAYS), pruneKeysJob] };
+const core = { id: "core", jobs: [auditExportJob(() => storageFromEnv(), loadEnv().AUDIT_RETENTION_DAYS), pruneKeysJob, secretsSweepJob] };
 // Sign-in is enforced once a database is configured; before that the app is a guest preview.
 export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 

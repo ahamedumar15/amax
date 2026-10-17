@@ -1,0 +1,123 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 4,
+  "minor": 1
+ },
+ "escalated": [
+  "01de2dd13326",
+  "12e602d8f518"
+ ],
+ "files": [
+  "packages/core/src/secrets/forms.ts",
+  "packages/core/src/secrets/secret.ts",
+  "packages/core/src/secrets/use.ts",
+  "packages/core/tests/secrets-ac1-datakey.test.ts",
+  "packages/core/tests/secrets-ac2-variants.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/core/tests/secrets-ac1-datakey.test.ts",
+   "fp": "01de2dd13326",
+   "in_delta": true,
+   "line": 60,
+   "message": "This only partly fixes last round's finding. The OUTER rows still drop the `tx` they are given. The test was renamed to say putSecret commits on its own connection, so the 'savepoint that rolls back' case is still never driven through the real path. The finding also asked to show that a data_key row that was never committed is not cached. The new T4 assertion does not show that. It calls dataKeyFor inside a savepoint for a tenant with no data_key row at all, so SecretsUnavailableError comes from the plain missing-key path whatever the code does with uncommitted rows. It would stay green if dataKeyFor cached a row it read inside a subtransaction (the round-2 xmin defect). Fix: inside a savepoint, insert a data_key row for T4 through the real creation path (or the owner connection on that savepoint) and call dataKeyFor(sp, T4) so it is read. Then roll the savepoint back, reset or keep the runtime, and assert that a fresh dataKeyFor/putSecret+useSecret for T4 does not return the rolled-back key. Run this as table rows (savepoint, top-level tx, outer service run).",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Change dataKeyFor so it caches any row it sees inside a savepoint before commit \u2192 the T4 assertion still throws SecretsUnavailableError (no row exists) \u2192 the test stays green.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/src/secrets/forms.ts",
+   "fp": "12e602d8f518",
+   "in_delta": true,
+   "line": 28,
+   "message": "numbersHold covers only the named case: one flat run of unquoted numbers in document order. It pulls every bare number out of the JSON text and decodes them as one sequence, so the byte form of the value gets through when (1) other numbers are interleaved between the bytes, such as an array of per-byte objects or index/byte pairs; (2) the codes are quoted strings (`[\"97\",\"98\",\u2026]`), because the lookbehind needs `:`/`[`/`,` right before the digits and a quote is there; (3) the codes sit inside a string (`\"97 98 99 \u2026\"` or `\"97,98,\u2026\"` with no closing bracket after each one). Fix: decode each array or object of numbers on its own, and include numeric strings. Or walk the parsed copy and check every number array/typed-array form against the value. Add table rows for each of these cases.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "useSecret(job, req, async s => [...Buffer.from(s.reveal())].map((c, i) => ({ i, c }))) \u2192 JSON text has codes 0,v0,1,v1,\u2026 \u2192 no decoding contains the value \u2192 the caller gets every byte of the credential.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/src/secrets/forms.ts",
+   "fp": "265a7d80cca7",
+   "in_delta": true,
+   "line": 35,
+   "message": "There are now two definitions of 'this text reveals the value'. Results are checked with `reveals` (hide plus numbersHold), but scrubError still checks error text with `hide` alone. So the byte-list decoding added in this diff never runs on the error path, and the two checks disagree: a byte list in a result is refused, while the same list in a thrown error's message or body goes out as is. Fix: have scrubError (and every other caller of hide used as a detector) use the same detector as checkedCopy, and redact number-encoded runs as well.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "fn throws new Error(`upstream said ${JSON.stringify([...Buffer.from(s.reveal())])}`) \u2192 scrubError's hide finds no raw, base64 or percent form \u2192 the error reaches the caller with the credential's bytes in its message. The same array returned as a result is refused.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/src/secrets/secret.ts",
+   "fp": "2ebc5a68d703",
+   "in_delta": true,
+   "line": 47,
+   "message": "checkedCopy now quietly changes any result that is not plain JSON and returns it as `T` through a cast. Before this diff those results were refused. Map and Set become `{}`, a Date becomes a string, `undefined` fields and functions are dropped, NaN and Infinity become null, a typed array becomes an object with index keys, and class instances lose their prototype. The caller gets data that does not match its declared type and is not told. Results JSON.stringify can't handle (BigInt, cycles) are now reported as a SecretLeakError whose new message says the credential 'was about to leave', which is wrong for those results. Fix: fail closed. Refuse a result whose JSON round-trip is not structurally equal to what was given (or check with a replacer that every value is a primitive, array or plain object), keep returning the parsed copy, and use a distinct error or message for 'result not checkable'.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "useSecret(job, req, async s => new Map([[\"tenantId\", \"abc\"]])) \u2192 resolves to {} with no error, so the caller reads .get on a plain object or loses the data. useSecret(..., async () => ({ n: 10n })) \u2192 SecretLeakError saying the credential was leaving.",
+   "severity": "major"
+  },
+  {
+   "file": "packages/core/tests/secrets-ac2-variants.test.ts",
+   "fp": "d9e4892c886a",
+   "in_delta": true,
+   "line": 48,
+   "message": "The result-side assertion used to be 'must throw SecretLeakError'. Now, when nothing is thrown, it only checks that the output lacks five fixed forms of VALUE. Several rows leak a different encoding (base64 or percent-encoded base64 of `id:VALUE`, misaligned runs, UTF-16), and none of the five forms matches those. The `arrayContaining` byte check tests set membership, not order. For these rows, result-side protection now rests entirely on the error-path half of the test. Fix: for each row, assert either a SecretLeakError or an output that does not hold that row's own encoding (have the row return its expected leaked form), or keep `rejects.toThrow(SecretLeakError)` for rows where refusal is the contract.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "If checkedCopy stopped refusing the 'base64 behind a parameter name' string while hide still worked, the result half would pass, because base64(`id:VALUE`) is not one of the five checked forms.",
+   "severity": "minor"
+  }
+ ],
+ "head": "b494162948891df79db9cb91de73f5a47deb5682",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/keys/KeyForm.tsx",
+  "apps/web/app/(app)/settings/keys/actions.ts",
+  "apps/web/app/(app)/settings/keys/keys.css",
+  "apps/web/app/(app)/settings/keys/page.tsx",
+  "apps/web/lib/registry.ts",
+  "apps/web/tests/baseurl.test.ts",
+  "apps/web/tests/e2e/diff.ts",
+  "apps/web/tests/e2e/secrets.spec.ts",
+  "apps/web/tests/routes.test.ts",
+  "modules/time/tests/e2e/diff.ts",
+  "packages/ai/src/policy.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/adapters/kms.ts",
+  "packages/core/src/adapters/storage.ts",
+  "packages/core/src/idempotency.ts",
+  "packages/core/src/secrets.ts",
+  "packages/core/tests/secrets-ac2-leaks.test.ts",
+  "packages/db/migrations/0011_region_codes.sql",
+  "packages/ui/src/styles/responsive.css"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 41936,
+ "round": 5,
+ "since": "339967a5f5",
+ "status": "escalate",
+ "system_chars": 20873,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792245890,
+ "ts_start": 1792245707
+}
