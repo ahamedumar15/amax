@@ -43,7 +43,7 @@ test("AC1 AC4 the opportunity page has no forms, only Ask amax chips, and everyt
   await expect(page.locator("main form, main dialog")).toHaveCount(0);
   expect(await unpinned(page)).toEqual([]);
   await expect(page.getByText("Changes happen in chat. Pin anything, then ask.")).toBeVisible();
-  await expect(page.getByRole("group", { name: "Ask amax to" }).getByRole("button")).toHaveText(["Move to Negotiation", "Mark as lost", "Log activity", "Add task", "Add risk"]);
+  await expect(page.getByRole("group", { name: "Ask amax to" }).getByRole("button")).toHaveText(["Move to Negotiation", "Mark as lost", "Log activity", "Add task", "Add risk", "Change details"]);
 });
 
 test("AC7 pin the opportunity, ask to add a task, confirm: the task appears", async ({ page }) => {

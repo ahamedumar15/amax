@@ -39,7 +39,4 @@
 .time .btn.ghost{border-color:transparent;color:var(--ink-2)}
 .time .chip.draft{background:var(--sunken);color:var(--ink-2)}
 .time .chip.bad{background:#FFE1DC;color:#A8321F}
-.time .logform{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-.time .logform label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-2)}
-.time .logform input,.time .logform select{height:38px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card);padding:0 10px;font:inherit;color:inherit}
 @media (max-width:860px){.time .row.head>.actions{flex-shrink:1;width:100%}.time .row.head>.actions .seg{flex:1 1 100%}.time .cols{grid-template-columns:minmax(0,1fr)}.time .big{font-size:21px}}

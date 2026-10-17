@@ -1,10 +1,10 @@
 import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
 
-const port = 3502;
+const port = Number(process.env.E2E_TIME_PORT ?? 3502);
 const tenant = "11111111-1111-4111-8111-111111111111";
 const admin = new URL(process.env.DATABASE_MIGRATE_URL ?? "postgres://amax:amax@127.0.0.1:5440/amax");
-const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "amax_app", pathname: "/amax_e2e_time" }).toString();
+const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "amax_app", pathname: `/${process.env.E2E_TIME_DB ?? "amax_e2e_time"}` }).toString();
 const web = join(import.meta.dirname, "../../../../apps/web");
 
 export default defineConfig({

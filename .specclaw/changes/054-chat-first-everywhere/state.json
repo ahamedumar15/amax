@@ -1,0 +1,11 @@
+{
+  "change": "054-chat-first-everywhere",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-17T19:06:22Z"},
+    "tasks": {"status":"done","at":"2026-10-17T19:10:26Z"},
+    "verify": {"status":"done","at":"2026-10-17T19:26:35Z"},
+    "pr": {"status":"raised","at":"2026-10-17T19:27:14Z","url":"https://github.com/chan4lk/amax/pull/47"}
+  }
+}

@@ -11,6 +11,7 @@ export function AskChips({ o, next }: { o: OpportunityRow; next: Stage }) {
     ["Log activity", `Log an activity on ${o.number}: `],
     ["Add task", `Add a task to ${o.number}: `],
     ["Add risk", `Add a risk to ${o.number}: `],
+    ["Change details", `Change details on ${o.number}: `],
   ];
   return (
     <div className="asks" role="group" aria-label="Ask amax to">
