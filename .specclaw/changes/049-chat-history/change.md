@@ -35,7 +35,7 @@ What changes on screen, and where to see it: [`049-chat-history`](../../mock/ind
 - [x] `T4` — Wire it in: chat tools into the tool registry and grants, page actions `listChats` and `openChat` (AC-2, AC-3, AC-4, AC-5)
   Files: apps/web/lib/server.ts, apps/web/app/actions/chat.ts
   Depends: T3
-- [ ] `T5` — Tests: unit/DB tests for title, search, scoping (page action and MCP), expired confirm refused, archive audited; e2e reopen-and-continue with axe (AC-1..AC-6)
+- [x] `T5` — Tests: unit/DB tests for title, search, scoping (page action and MCP), expired confirm refused, archive audited; e2e reopen-and-continue with axe (AC-1..AC-6)
   Files: packages/chat/tests/history.test.ts, apps/web/tests/chat-history-action.test.ts, apps/web/tests/e2e/chat.spec.ts
   Depends: T4
 

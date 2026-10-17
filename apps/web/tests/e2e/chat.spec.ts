@@ -71,3 +71,38 @@ test("AC5 the same refusal the page would give", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.locator(".m .b").last()).toContainText(/couldn't do that/);
 });
+
+test("049 AC6 History: start a new chat, reopen the first from History by keyboard and carry on in it", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery");
+  await page.getByRole("button", { name: "Ask amax" }).click();
+  const log = page.getByRole("log", { name: "Conversation" });
+  const say = async (text: string) => {
+    await page.getByLabel("Message amax").fill(text);
+    await page.keyboard.press("Enter");
+    await expect(log.locator(".m:not(.me)").last()).toContainText(/I found/);
+  };
+  await say("history check: how many projects?");
+  await page.getByRole("button", { name: "New conversation" }).click();
+  await say("a second chat about projects");
+  await page.getByRole("button", { name: "Chat history" }).click();
+  const chats = page.getByRole("list", { name: "Your chats" });
+  await expect(chats.getByRole("listitem").first()).toContainText("a second chat about projects");
+  await expect(page.getByLabel("Search your chats")).toBeFocused();
+  const { violations } = await new AxeBuilder({ page }).include("#chat").withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+  expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+  await page.keyboard.type("history check");
+  await expect(chats.getByRole("listitem")).toHaveCount(1);
+  await expect(chats.getByRole("listitem")).toContainText("2 messages");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: /^history check: how many projects\?/ })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(log).toContainText("history check: how many projects?");
+  await expect(log).not.toContainText("a second chat about projects");
+  await expect(page.getByLabel("Message amax")).toBeFocused();
+  await say("and the releases?");
+  await page.getByRole("button", { name: "Chat history" }).click();
+  await expect(chats.getByRole("listitem").first()).toContainText(/history check: how many projects\?.*4 messages/);
+  await page.keyboard.press("Escape");
+  await expect(chats).toHaveCount(0);
+  await expect(log).toContainText("and the releases?");
+});
