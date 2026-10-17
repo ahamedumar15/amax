@@ -4,6 +4,7 @@ import { textArray, uuidArray, type Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
 import { EVENTS, PHASES, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
+import { ensureEnvironments } from "./project-create";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -17,15 +18,6 @@ async function projectByKey(tx: Tx, key: string) {
   const [p] = await tx.execute(sql`select * from delivery.project where key = ${key}`);
   if (!p) throw new Error(`no project ${key}`);
   return p;
-}
-
-export const DEFAULT_ENVIRONMENTS = ["Dev", "QA", "UAT", "Prod"];
-
-async function ensureEnvironments(tx: Tx, tenantId: string, projectId: string) {
-  for (const [i, name] of DEFAULT_ENVIRONMENTS.entries()) {
-    await tx.execute(sql`insert into delivery.environment (tenant_id, project_id, name, position, is_prod)
-      values (${tenantId}, ${projectId}, ${name}, ${i + 1}, ${name === "Prod"}) on conflict do nothing`);
-  }
 }
 
 // One rule for putting proposals in a release (createRelease and setReleaseProposals): every key
@@ -64,25 +56,7 @@ const phaseEvent = (p: Record<string, unknown>, to: Phase, ctx: ServiceContext):
   payload: { proposalId: p.id as string, key: p.key as string, projectId: p.project_id as string, from: p.phase as Phase, to, by: by(ctx) } satisfies ProposalPhaseChanged,
 });
 
-export const createProject = defineService({
-  name: "delivery.project.create",
-  action: "delivery:project:create",
-  resource: "delivery.project",
-  input: z.object({
-    key: z.string().regex(/^[A-Z][A-Z0-9]{1,9}$/, "2–10 capitals or digits, e.g. CON"),
-    name: z.string().min(1),
-    client: z.string().min(1),
-    billing: z.enum(["fixed", "t&m", "retainer", "internal"]),
-    managerName: z.string().optional(),
-  }),
-  async run(tx, input, ctx) {
-    const [p] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, manager_name, manager_user_id)
-      values (${ctx.tenantId}, ${input.key}, ${input.name}, ${input.client}, ${input.billing}, ${input.managerName ?? null},
-              ${viewerOf(ctx)?.userId ?? null}) returning id, key`);
-    await ensureEnvironments(tx, ctx.tenantId, p.id as string);
-    return { result: { id: p.id as string, key: p.key as string }, resourceId: p.id as string, after: input };
-  },
-});
+export { createProjectService as createProject } from "./project-create";
 
 /**
  * The next key for a proposal made by hand. In a project synced from specclaw the numeric keys belong
