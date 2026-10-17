@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
-import { KeyTakenError, syncProposal } from "../server/services";
+import { syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
@@ -43,15 +43,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
       result.unchanged++;
       continue;
     }
-    try {
-      await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
-    } catch (e) {
-      // A proposal made by hand holds this key (before the project was first synced): it's left alone
-      // and reported, never overwritten (review rounds 1 to 4).
-      if (!(e instanceof KeyTakenError)) throw e;
-      result.skipped.push(`${d.key}: key belongs to a proposal not created by the sync`);
-      continue;
-    }
+    await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
     if (cur) result.updated++;
     else result.created++;
   }

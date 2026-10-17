@@ -92,7 +92,8 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
-export type Decision = "confirmed" | "cancelled";
+/** What happened to a card: "confirming" while its write runs, then "confirmed"; or "cancelled". */
+export type Decision = "confirming" | "confirmed" | "cancelled";
 
 // Takes the action out of the pending list under a row lock, so two confirms of the same card can't
 // both run it (review round 1, B7), and records the decision (review round 4). Throws
@@ -122,31 +123,40 @@ async function note(db: Db, viewer: Viewer, conversationId: string, text: string
  */
 export class NotPendingError extends Error {
   constructor(public decision: Decision | null) {
-    super(decision ? `that action was already ${decision}` : "that action isn't in this conversation");
+    super(decision === "confirming" ? "that action is being done right now" : decision ? `that action was already ${decision}` : "that action isn't in this conversation");
     this.name = "NotPendingError";
+  }
+}
+
+/** The write failed and the card is back, so the user can retry or cancel. */
+export class ActionFailedError extends Error {
+  constructor(public cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
+    this.name = "ActionFailedError";
   }
 }
 
 /** "Add it": claim the pending write, then run it as the user, source chat (AC-3). */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
-  const action = await claim(db, viewer, conversationId, actionId, "confirmed");
+  // "confirming" until the write is done, so a second click meanwhile isn't told it's done (review round 5).
+  const action = await claim(db, viewer, conversationId, actionId, "confirming");
   let result: unknown;
   try {
     result = await registry.call(viewer, action.tool, action.input, { source: "chat" });
   } catch (e) {
-    // The write didn't happen: put the card back so the user can retry or cancel.
     await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([action])}::jsonb,
       decided = decided - ${actionId}::text where id = ${conversationId}`));
-    throw e;
+    throw new ActionFailedError(e);
   }
+  await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set decided = decided || ${JSON.stringify({ [actionId]: "confirmed" })}::jsonb where id = ${conversationId}`));
   await note(db, viewer, conversationId, `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
   return { action, result };
 }
 
-/** "Cancel": nothing is written. */
+/** "Cancel": nothing is written. Cancelling twice is fine; cancelling a confirmed or unknown card throws NotPendingError. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await claim(db, viewer, conversationId, actionId, "cancelled").catch((e) => {
-    if (e instanceof NotPendingError) return null;
+    if (e instanceof NotPendingError && e.decision === "cancelled") return null;
     throw e;
   });
   if (action) await note(db, viewer, conversationId, `(I cancelled "${action.title}".)`);

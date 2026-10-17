@@ -106,28 +106,33 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
   });
   afterAll(() => t?.drop());
 
-  it("in a synced project, hand-made proposals number from 1001, so every spec change still syncs (review round 4)", async () => {
+  it("in a synced project, hand-made proposals get their own series, so every spec change still syncs (review rounds 4 and 5)", async () => {
     const repo = fakeRepo({ "001-a": { status: "✅ Approved" } });
     await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo), sha: "1" });
     const { createProposal } = await import("../server/services");
     const { ctxFor } = await import("../server/context");
-    expect((await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Made by hand" })).key).toBe("RB-1001");
-    expect((await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Also by hand" })).key).toBe("RB-1002");
+    expect((await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Made by hand" })).key).toBe("RB-H001");
+    expect((await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Also by hand" })).key).toBe("RB-H002");
     const repo2 = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
     const r = await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo2), sha: "2" });
     expect(r).toMatchObject({ created: 1, skipped: [] });
   });
 
-  it("a proposal made by hand before the first sync keeps its key; that spec change is reported, the rest sync (review rounds 1 to 4)", async () => {
+  it("a proposal made by hand before the first sync moves to the hand series; both it and the spec change end up present (review round 5)", async () => {
     await t.owner`insert into delivery.project (tenant_id, key, name, client, billing, color) values (${T}, 'LG', 'legacy', 'x', 'internal', 'mint')`;
     const { createProposal } = await import("../server/services");
     const { ctxFor } = await import("../server/context");
-    expect((await createProposal(ctxFor(ops!), { projectKey: "LG", title: "Made by hand" })).key).toBe("LG-001");
+    const made = await createProposal(ctxFor(ops!), { projectKey: "LG", title: "Made by hand" });
+    expect(made.key).toBe("LG-001");
     const repo = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
     const r = await syncSpecclaw(app, ctx, { projectKey: "LG", projectName: "lg", client: "x", records: readSpecclaw(repo), sha: "1" });
-    expect(r).toMatchObject({ created: 1, skipped: ["LG-001: key belongs to a proposal not created by the sync"] });
-    const [p] = await withTenant(app, T, (tx) => tx.execute(sql`select title, source from delivery.proposal where key = 'LG-001'`));
-    expect(p).toEqual({ title: "Made by hand", source: null });
+    expect(r).toMatchObject({ skipped: [] });
+    const rows = await withTenant(app, T, (tx) => tx.execute(sql`select id, key, title, source from delivery.proposal p where key like 'LG-%' order by key`));
+    expect(rows.find((x) => x.id === made.id)).toMatchObject({ key: "LG-H001", title: "Made by hand", source: null });
+    expect(rows.filter((x) => x.source === "specclaw").map((x) => x.key).sort()).toEqual(readSpecclaw(repo).map((x) => `LG-${x.number}`).sort());
+    const [audit] = await withTenant(app, T, (tx) => tx.execute(sql`select after->'rekeyed' as rekeyed from core.audit_event where action = 'delivery.proposal.sync' and after ? 'rekeyed' order by seq desc limit 1`));
+    expect(audit.rekeyed).toEqual({ from: "LG-001", to: "LG-H001" });
+    expect((await createProposal(ctxFor(ops!), { projectKey: "LG", title: "Next by hand" })).key).toBe("LG-H002");
     const again = await syncSpecclaw(app, ctx, { projectKey: "LG", projectName: "lg", client: "x", records: readSpecclaw(repo), sha: "2" });
     expect(again).toMatchObject({ created: 0, updated: 0 });
   });

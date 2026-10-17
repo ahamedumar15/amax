@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
@@ -71,6 +73,14 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     expect((await t.owner`select closed_at from delivery.project where key = 'CON'`)[0].closed_at).not.toBeNull();
     await t.owner`update delivery.project set status = 'active' where key = 'CON'`;
     expect((await t.owner`select closed_at from delivery.project where key = 'CON'`)[0].closed_at).toBeNull();
+    // Created closed (fixtures, imports): recorded too (review round 5).
+    await t.owner`insert into delivery.project (tenant_id, key, name, client, billing, color, status) values (${T}, 'OLDC', 'old', 'x', 'internal', 'mint', 'closed')`;
+    expect((await t.owner`select closed_at from delivery.project where key = 'OLDC'`)[0].closed_at).not.toBeNull();
+    // Already closed before the migration (closed_at null): its backfill statement fills it.
+    await t.owner`update delivery.project set closed_at = null where key = 'OLDC'`;
+    const migration = readFileSync(join(__dirname, "../db/migrations/0006_project_closed_at.sql"), "utf8");
+    await t.owner.unsafe(migration.match(/^update delivery\.project set closed_at.*$/m)![0]);
+    expect((await t.owner`select closed_at from delivery.project where key = 'OLDC'`)[0].closed_at).not.toBeNull();
   });
 
   it("AC-1 fixtures follow fixtures.md", async () => {

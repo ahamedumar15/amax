@@ -130,7 +130,9 @@ const FAILURES: Record<string, string> = {
 export function toolFailure(tool: string, e: unknown, ref: string) {
   const name = e instanceof Error ? e.name : "";
   const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code: unknown }).code) : "";
-  return `${tool} ${FAILURES[name] ?? FAILURES[code] ?? "failed"} (reference ${ref}).`;
+  // Own keys only: a name or code like "constructor" must not pick up Object.prototype (review round 5).
+  const phrase = Object.hasOwn(FAILURES, name) ? FAILURES[name] : Object.hasOwn(FAILURES, code) ? FAILURES[code] : "failed";
+  return `${tool} ${phrase} (reference ${ref}).`;
 }
 
 export async function converse(caller: AiCaller, opts: { instructions: string; messages: Message[]; tools: Tool[]; data?: DataItem[]; maxSteps?: number }) {

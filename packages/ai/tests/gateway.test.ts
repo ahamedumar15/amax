@@ -220,6 +220,8 @@ describe("tool failures by kind (review round 3)", async () => {
     [named("ScopeError"), "outside this user's data scope"],
     [named("ToolError", { code: "not_found" }), "found no such record"],
     [named("Error"), "failed"],
+    [named("constructor"), "failed"],
+    [named("Error", { code: "toString" }), "failed"],
   ])("%s", (e, expected) => {
     const out = toolFailure("t", e, "ref");
     expect(out).toContain(expected);

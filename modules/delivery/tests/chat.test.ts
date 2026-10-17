@@ -8,7 +8,7 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { createRegistry } from "@amax/mcp";
-import { cancelAction, chatTurn, confirmAction, NotPendingError, type Intent } from "@amax/chat";
+import { ActionFailedError, cancelAction, chatTurn, confirmAction, NotPendingError, type Intent } from "@amax/chat";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { chatIntents } from "../chat";
@@ -152,6 +152,35 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
     expect(rows).toHaveLength(1);
     const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages from chat.conversation where id = ${first.conversationId}`));
     expect(JSON.stringify(c.messages)).toContain('I confirmed \\"');
+  });
+
+  it("decisions: in flight, failed, cancel after confirm, unknown ids (review round 5)", async () => {
+    const card = async (title: string) => {
+      configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c", name: "create_proposal", input: { projectKey: "CON", title } }] }), () => ({ text: "ok" })]), db: app, model: "claude-haiku-5-5" });
+      const turn = await chatTurn(app, registry, maya, { text: `add ${title} to CON` });
+      return { convo: turn.conversationId, id: turn.pending[0].id };
+    };
+    // While the write runs, a second click is told it's in progress, not done.
+    const a = await card("In flight");
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const slow = { ...registry, call: async (...args: Parameters<typeof registry.call>) => { await gate; return registry.call(...args); } } as typeof registry;
+    const first = confirmAction(app, slow, maya, a.convo, a.id);
+    await new Promise((r) => setTimeout(r, 100));
+    await expect(confirmAction(app, registry, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "confirming" });
+    release();
+    await first;
+    // Cancelling a confirmed card says it was done; an unknown id is an error; cancelling twice is fine.
+    await expect(cancelAction(app, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "confirmed" });
+    await expect(cancelAction(app, maya, a.convo, "not-an-action")).rejects.toMatchObject({ decision: null });
+    const b = await card("Cancel twice");
+    await cancelAction(app, maya, b.convo, b.id);
+    await expect(cancelAction(app, maya, b.convo, b.id)).resolves.toBeUndefined();
+    // A failed write puts the card back, undecided, so it can be retried.
+    const c = await card("Fails once");
+    const broken = { ...registry, call: async () => { throw new Error("db down"); } } as unknown as typeof registry;
+    await expect(confirmAction(app, broken, maya, c.convo, c.id)).rejects.toBeInstanceOf(ActionFailedError);
+    await expect(confirmAction(app, registry, maya, c.convo, c.id)).resolves.toMatchObject({ result: { key: expect.stringMatching(/^CON-/) } });
   });
 
   it("concurrent creates in one project get distinct keys", async () => {

@@ -70,6 +70,18 @@ export const createProject = defineService({
   },
 });
 
+/**
+ * The next key for a proposal made by hand. In a project synced from specclaw the numeric keys belong
+ * to spec changes (AMX-042 is change 042, at any number), so hand-made ones get their own series,
+ * AMX-H001, and the two can never collide (review rounds 4 and 5). Call with the project row locked.
+ */
+async function nextHandKey(tx: Tx, projectId: string, projectKey: string, syncing = false) {
+  const [{ synced, num, hand }] = await tx.execute(sql`select bool_or(source = 'specclaw') as synced,
+      coalesce(max(substring(key from '-(\\d+)$')::int), 0) as num, coalesce(max(substring(key from '-H(\\d+)$')::int), 0) as hand
+    from delivery.proposal where project_id = ${projectId}`);
+  return synced || syncing ? `${projectKey}-H${String(Number(hand) + 1).padStart(3, "0")}` : `${projectKey}-${String(Number(num) + 1).padStart(3, "0")}`;
+}
+
 export const createProposal = defineService({
   scoped: true,
   name: "delivery.proposal.create",
@@ -82,11 +94,7 @@ export const createProposal = defineService({
     // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
     // creates, so two of them can't compute the same key (review round 1, B7).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
-    // In a project synced from specclaw, numbers below 1000 belong to spec changes (AMX-042 is change
-    // 042), so hand-made ones start at 1001 and the two can never take each other's key (review round 4).
-    const [{ n }] = await tx.execute(sql`select greatest(coalesce(max(substring(key from '-(\\d+)$')::int), 0),
-        case when bool_or(source = 'specclaw') then 1000 else 0 end) + 1 as n from delivery.proposal where project_id = ${project.id}`);
-    const key = `${project.key}-${String(n).padStart(3, "0")}`;
+    const key = await nextHandKey(tx, project.id as string, project.key as string);
     const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, estimate_hours, owner_name)
       values (${ctx.tenantId}, ${project.id}, ${key}, ${input.title}, ${input.estimateHours ?? null}, ${input.ownerName ?? null}) returning id`);
     return { result: { id: p.id as string, key }, resourceId: p.id as string, after: { key, ...input } };
@@ -171,14 +179,6 @@ export const recordDeployment = defineService({
 
 // 039 self-sync (and later 008 ingestion): upsert one proposal from an external source. Called only
 // when something changed, so an unchanged re-sync writes and audits nothing.
-/** The key is held by a proposal from another source (usually one made by hand); it's never overwritten. */
-export class KeyTakenError extends Error {
-  constructor(key: string, source: string) {
-    super(`${key} belongs to a proposal that wasn't created by ${source}`);
-    this.name = "KeyTakenError";
-  }
-}
-
 export const syncProposal = defineService({
   name: "delivery.proposal.sync",
   action: "delivery:proposal:sync",
@@ -203,11 +203,19 @@ export const syncProposal = defineService({
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
-    // No explicit lock: the insert's foreign-key check waits on createProposal's project row lock,
-    // so a sync insert and a hand-made key computation never interleave (pinned by "a sync waits for
-    // the project lock"). Hand-made keys in synced projects start at 1001 (createProposal), so only a
-    // proposal made by hand before the first sync can hold a spec key; that one is refused below.
-    const [before] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
+    // The project row lock serialises this with createProposal's key computation (review round 2).
+    await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
+    const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
+    // A proposal made by hand before the project was first synced can sit on a spec change's key.
+    // It moves to the hand-made series (audited below as `rekeyed`) so the spec change still syncs;
+    // releases and history follow it by id (review round 5).
+    let rekeyed: { from: string; to: string } | null = null;
+    if (found && found.source !== input.source) {
+      const to = await nextHandKey(tx, project.id as string, project.key as string, true);
+      await tx.execute(sql`update delivery.proposal set key = ${to}, updated_at = now() where id = ${found.id}`);
+      rekeyed = { from: input.key, to };
+    }
+    const before = rekeyed ? undefined : found;
     const meta = JSON.stringify(input.meta);
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
@@ -216,14 +224,13 @@ export const syncProposal = defineService({
         source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
         where delivery.proposal.source = excluded.source
       returning *`);
-    // A key already used by a proposal from another source is never overwritten.
-    if (!row) throw new KeyTakenError(input.key, input.source);
+    if (!row) throw new Error(`${input.key} could not be synced`);
     const events: Emitted[] = before && before.phase !== input.phase ? [phaseEvent(before, input.phase, ctx)] : [];
     return {
       result: { key: input.key, created: !before, phaseChanged: events.length > 0 },
       resourceId: row.id as string,
       before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title } : null,
-      after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha },
+      after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
   },
