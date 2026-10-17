@@ -8,12 +8,14 @@ const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
   return withTenant(getRuntime().db, viewer.tenantId, fn);
 };
+const isoDate = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : v ? String(v).slice(0, 10) : null);
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
 export type ProjectRow = {
   id: string; key: string; name: string; client: string; billing: string; managerName: string | null; color: string;
   sprint: string | null; sprintDone: number; sprintTotal: number; health: string; riskPct: number | null;
   marginPct: number | null; contractValue: number | null; invoiced: number | null; nextRelease: string | null;
+  sprintStart: string | null; sprintEnd: string | null;
 };
 
 const project = (r: Record<string, unknown>): ProjectRow => ({
@@ -21,6 +23,7 @@ const project = (r: Record<string, unknown>): ProjectRow => ({
   managerName: (r.manager_name as string | null) ?? null, color: r.color as string, sprint: (r.sprint as string | null) ?? null,
   sprintDone: Number(r.sprint_done), sprintTotal: Number(r.sprint_total), health: r.health as string, riskPct: num(r.risk_pct),
   marginPct: num(r.margin_pct), contractValue: num(r.contract_value), invoiced: num(r.invoiced), nextRelease: (r.next_release as string | null) ?? null,
+  sprintStart: isoDate(r.sprint_start), sprintEnd: isoDate(r.sprint_end),
 });
 
 export const listProjects = (v: Viewer, status: "active" | "closed" = "active") =>
@@ -36,7 +39,7 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
   id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total),
   hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: (r.owner_name as string | null) ?? null, agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
-  release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
+  release: (r.version as string | null) ?? ((r.meta as { releaseLabel?: string } | null)?.releaseLabel ?? null), shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
   source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {},
 });
 
@@ -61,12 +64,45 @@ export const getProject = (v: Viewer, key: string) =>
   read(v, async (tx) => {
     const [r] = await tx.execute(sql`select * from delivery.project where key = ${key}`);
     if (!r) return null;
-    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} order by p.key desc`)).map(proposal);
+    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} order by p.updated_at desc, p.key desc`)).map(proposal);
     return { project: project(r), proposals };
   });
 
+// "Today" for date windows. AMAX_TODAY pins it for the demo tenant and visual tests (fixtures.md's
+// Fri Oct 16, 2026), so the screens match the mock.
+export const today = () => (process.env.AMAX_TODAY ? new Date(`${process.env.AMAX_TODAY}T15:00:00Z`) : new Date());
+
+const isoWeek = (d: Date) => {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  return Math.ceil(((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86_400_000 + 1) / 7);
+};
+const monday = (d: Date) => { const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t; };
+
+/** Last 8 ISO weeks ending this week: labels W35…W42 and their Mondays. */
+export function lastWeeks(now = today(), n = 8) {
+  const m = monday(now);
+  return Array.from({ length: n }, (_, i) => { const d = new Date(m.getTime() - (n - 1 - i) * 7 * 86_400_000); return { label: `W${isoWeek(d)}`, monday: d.toISOString().slice(0, 10) }; });
+}
+
+export const weeklyThroughput = (v: Viewer, now = today()) =>
+  read(v, async (tx) => {
+    const weeks = lastWeeks(now);
+    const rows = await tx.execute(sql`select week::text as week, sum(planned)::int as planned, sum(done)::int as done from delivery.weekly_stat where week >= ${weeks[0].monday} group by week`);
+    const at = (w: string) => rows.find((r) => r.week === w);
+    return { labels: weeks.map((w) => w.label), planned: weeks.map((w) => Number(at(w.monday)?.planned ?? 0)), done: weeks.map((w) => Number(at(w.monday)?.done ?? 0)) };
+  });
+
+/** Proposals that reached Prod per ISO week (from released_at). */
+export const shippedPerWeek = (v: Viewer, now = today()) =>
+  read(v, async (tx) => {
+    const weeks = lastWeeks(now);
+    const rows = await tx.execute(sql`select date_trunc('week', released_at)::date::text as week, count(*)::int as n from delivery.proposal where released_at >= ${weeks[0].monday} group by 1`);
+    return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
+  });
+
 // In flight = not released; released this month = reached Prod since the 1st (UTC).
-export const phaseCounts = (v: Viewer, now = new Date()) =>
+export const phaseCounts = (v: Viewer, now = today()) =>
   read(v, async (tx) => {
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
     const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal group by phase`);

@@ -23,6 +23,6 @@ export function viewBanner(v: Viewer): string | null {
 }
 
 // Overview stays; each module's nav entry needs "<id>:read" for one of the effective roles.
-export const visibleNav = (items: NavItem[], v: Viewer) => items.filter((i) => i.href === "/" || can(v, `${i.href.slice(1)}:read`));
+export const visibleNav = (items: NavItem[], v: Viewer) => items.filter((i) => i.href === "/" || can(v, `${i.href.split("/")[1]}:read`));
 
 export const hasAnyRole = (v: Viewer) => rolesOf(v).length > 0;

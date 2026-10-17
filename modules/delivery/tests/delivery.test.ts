@@ -65,7 +65,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     const lane = (ph: string) => board.filter((p) => p.phase === ph).map((p) => p.key).sort();
     expect([lane("proposed"), lane("planned"), lane("building"), lane("verified"), lane("released")]).toEqual([["CON-016", "CON-017"], ["CON-013"], ["CON-011", "CON-014"], ["CON-010", "CON-012"], ["CON-009"]]);
     const rel = await listReleases(maya);
-    expect(rel.map((r) => `${r.projectKey} ${r.version} ${r.proposals}`)).toEqual(["CON v2.5.0 3", "CON v2.4.0 2", "FLT v1.8.0 5", "CON v2.3.0 1", "HRI v0.9.2 4"]);
+    expect(rel.map((r) => `${r.projectKey} ${r.version} ${r.proposals}`)).toEqual(["CON v2.5.0 3", "CON v2.4.0 2", "FLT v1.8.0 5", "HRI v0.9.2 4"]);
   });
 
   it("AC-5 contract lookups", async () => {

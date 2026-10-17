@@ -4,7 +4,7 @@ import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
 
 /** What a screen receives: route params (":key" segments) and the signed-in viewer (null in the guest preview). */
-export type ScreenProps = { params: Record<string, string>; viewer: unknown };
+export type ScreenProps = { params: Record<string, string>; searchParams: Record<string, string>; viewer: unknown };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ModuleRoute = { path: string; title: string; component: ComponentType<ScreenProps> | ComponentType<any> };
 
@@ -63,6 +63,8 @@ export type ModuleManifest = {
   group: "Work" | "People" | "Business" | "Operations";
   order?: number;
   primary?: boolean;
+  /** Extra rail entries beyond the module's root (041): e.g. Proposals and Releases under delivery. */
+  nav?: { path: string; title: string; icon: IconName }[];
   dependsOn?: string[];
   integratesWith?: string[];
   permissions?: string[];

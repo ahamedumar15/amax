@@ -5,7 +5,16 @@ import { moveAction } from "../actions";
 import { PHASES, type Phase } from "../contracts";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
 import { EnvironmentsCard } from "./EnvironmentsCard";
-import { initials, needViewer, PHASE_UI, SignInFirst, Stk, Tabs } from "./parts";
+import { initials, needViewer, PHASE_UI, SignInFirst, Stk } from "./parts";
+
+const D = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
+// "Sprint 18 runs Mon Oct 12 to Fri Oct 23. 9 of 16 tasks done, on track for v2.5.0. "
+function sprintLine(p: { sprint: string | null; sprintStart: string | null; sprintEnd: string | null; health: string; nextRelease: string | null }, done: number, total: number) {
+  if (!p.sprint) return "";
+  const when = p.sprintStart && p.sprintEnd ? ` runs ${D(p.sprintStart, { weekday: "short", month: "short", day: "numeric" }).replace(",", "")} to ${D(p.sprintEnd, { weekday: "short", month: "short", day: "numeric" }).replace(",", "")}` : "";
+  const v = p.nextRelease?.match(/v\d+(\.\d+)+/)?.[0];
+  return `${p.sprint}${when}. ${done} of ${total} tasks done${v ? `, ${p.health === "on-track" ? "on track" : "at risk"} for ${v}` : ""}. `;
+}
 
 const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released to Prod" };
 const MOVABLE = PHASES.filter((p) => p !== "released");
@@ -45,14 +54,17 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
       </div>
       {p.source === "specclaw" && <SpecFacts p={p} />}
       {canMove && p.phase !== "released" && p.source !== "specclaw" && (
-        <form action={moveAction}>
-          <input type="hidden" name="key" value={p.key} />
-          <label className="sr" htmlFor={`mv-${p.key}`}>Move {p.key} to</label>
-          <select className="select" id={`mv-${p.key}`} name="to" defaultValue={p.phase}>
-            {MOVABLE.map((ph) => <option key={ph} value={ph}>{PHASE_UI[ph].label}</option>)}
-          </select>
-          <button className="btn sm" type="submit">Move</button>
-        </form>
+        <details className="cardmenu">
+          <summary aria-label={`Move ${p.key}`}>⋯</summary>
+          <form action={moveAction}>
+            <input type="hidden" name="key" value={p.key} />
+            <label className="sr" htmlFor={`mv-${p.key}`}>Move {p.key} to</label>
+            <select className="select" id={`mv-${p.key}`} name="to" defaultValue={p.phase}>
+              {MOVABLE.map((ph) => <option key={ph} value={ph}>{PHASE_UI[ph].label}</option>)}
+            </select>
+            <button className="btn sm" type="submit">Move</button>
+          </form>
+        </details>
       )}
     </div>
   );
@@ -66,6 +78,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   const { project, proposals } = data;
   const canMove = can(viewer, "delivery:proposal:move", { projectId: project.id });
   const envs = await listEnvironments(viewer, project.key);
+
   // Synced projects have no sprint counters; their progress is the proposals' tasks.
   const done = project.sprintTotal ? project.sprintDone : proposals.reduce((n, p) => n + p.tasksDone, 0);
   const total = project.sprintTotal || proposals.reduce((n, p) => n + p.tasksTotal, 0);
@@ -75,12 +88,22 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
       <div className="row head">
         <div>
           <h1>{project.name}</h1>
-          <p className="lede">{project.sprint ? `${project.sprint}. ${done} of ${total} tasks done. ` : ""}Released means it reached Prod.</p>
+          <p className="lede">{sprintLine(project, done, total)}Released means it reached {envs.find((e) => e.isProd)?.name ?? "Prod"}.</p>
         </div>
-        <div className="actions"><IntentButton intent="delivery.new-proposal" label="New proposal" /></div>
+        <div className="actions">
+          {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
+          <IntentButton intent="delivery.new-proposal" label="New proposal" />
+        </div>
       </div>
-      <Tabs current="board" projectKey={project.key} />
-      <div className="board" style={{ marginTop: 24 }}>
+      <div className="tabs" role="group" aria-label="Sections">
+        <button type="button" className="btn sm" aria-pressed="true">Board</button>
+        <a className="btn sm" href={`/delivery/proposals?project=${project.key}`}>Proposals</a>
+        <a className="btn sm" href="/delivery/releases">Releases</a>
+        <button type="button" className="btn sm" aria-pressed="false" disabled title="Arrives with RAID logs">Risks and decisions</button>
+        <button type="button" className="btn sm" aria-pressed="false" disabled title="Arrives with allocations (010)">Team</button>
+        <button type="button" className="btn sm" aria-pressed="false" disabled title="Arrives with finance (017)">Contract</button>
+      </div>
+      <div className="board">
         {PHASES.map((phase) => {
           const cards = proposals.filter((p) => p.phase === phase);
           return (

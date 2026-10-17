@@ -8,7 +8,10 @@ export const installed: ModuleManifest[] = [...modules].sort((a, b) => GROUPS.in
 
 export const navItems: NavItem[] = [
   { href: "/", label: "Overview", icon: "home", primary: true },
-  ...installed.map((m) => ({ href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary })),
+  ...installed.flatMap((m) => [
+    { href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary },
+    ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group, primary: m.primary })),
+  ]),
 ];
 
 // Routes match segment by segment; ":name" segments become params.
