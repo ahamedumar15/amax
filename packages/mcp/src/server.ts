@@ -1,9 +1,18 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { Db } from "@amax/db";
+import { traceStep, withTrace } from "@amax/core/server";
 import { bearer } from "@amax/auth/tokens";
 import { authenticateMcp, mcpResource } from "./oauth";
 import type { Registry } from "./registry";
+
+// 050: each MCP tool call is one trace; a client acts for the token's user.
+const traceOf = (auth: { viewer: { tenantId: string; userId: string }; clientId: string | null }) => ({
+  tenantId: auth.viewer.tenantId,
+  actor: auth.clientId ? `client:${auth.clientId}` : `user:${auth.viewer.userId}`,
+  onBehalfOf: auth.clientId ? `user:${auth.viewer.userId}` : null,
+  source: "mcp" as const,
+});
 
 // POST/GET/DELETE /api/mcp: Streamable HTTP, stateless per request. The tool list is built for the
 // caller's roles and token scopes; every call runs through the registry (and so module services).
@@ -25,7 +34,10 @@ export async function handleMcp(req: Request, deps: { db: Db; registry: Registry
       annotations: { readOnlyHint: tool.scope !== "write", destructiveHint: tool.destructive ?? false },
     }, (async (args: unknown) => {
       try {
-        const result = await deps.registry.call(auth.viewer, tool.name, args, { scopes: auth.scopes, source: "mcp" });
+        const result = await withTrace(traceOf(auth), async () => {
+          await traceStep({ kind: "mcp_call", tool: tool.name, args: args ?? {}, detail: { client: auth.clientId } });
+          return deps.registry.call(auth.viewer, tool.name, args, { scopes: auth.scopes, source: "mcp" });
+        });
         return { content: [{ type: "text", text: JSON.stringify(result) }] };
       } catch (e) {
         return { isError: true, content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }] };
