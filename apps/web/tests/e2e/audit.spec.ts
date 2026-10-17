@@ -54,5 +54,5 @@ test("050 AC-5 a row edited as superuser shows Chain broken at event N after Ver
   await signIn(page, "maya@lumenlabs.test", "/settings/audit");
   await page.getByRole("link", { name: "Verify now" }).click();
   await expect(page.locator(".ticket", { hasText: "Trace chain" })).toContainText("Chain broken at event 1");
-  await expect(page.getByRole("alert")).toContainText("no longer verifies");
+  await expect(page.locator(".viewbanner[role=alert]")).toContainText("no longer verifies");
 });

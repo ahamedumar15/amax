@@ -1,9 +1,10 @@
 {
   "change": "032-data-retention-and-erasure",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T19:06:38Z"},
-    "tasks": {"status":"done","at":"2026-10-17T19:12:55Z"}
+    "tasks": {"status":"done","at":"2026-10-17T19:12:55Z"},
+    "verify": {"status":"done","at":"2026-10-17T19:42:49Z"}
   }
 }
