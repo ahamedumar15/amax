@@ -1,7 +1,25 @@
 import type { ComponentType } from "react";
+import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
 
 export type ModuleRoute = { path: string; title: string; component: ComponentType };
+
+export type JobContext = { tx: Tx; tenantId: string; payload: Record<string, unknown>; jobId: string };
+export type JobDef = {
+  /** Unique across modules: "<module>.<job>". */
+  name: string;
+  /** Five-field cron, UTC. Omit for jobs only scheduled on demand with scheduleJob(). */
+  cron?: string;
+  run: (ctx: JobContext) => Promise<void>;
+};
+
+export type EventContext = { tx: Tx; tenantId: string; event: { id: string; name: string; payload: Record<string, unknown> } };
+export type EventHandlerDef = {
+  /** Stable id; together with the event id it makes delivery idempotent. */
+  id: string;
+  event: string;
+  handle: (ctx: EventContext) => Promise<void>;
+};
 
 export type ModuleManifest = {
   id: string;
@@ -16,7 +34,8 @@ export type ModuleManifest = {
   routes: ModuleRoute[];
   mcpTools?: unknown[];
   chatIntents?: unknown[];
-  jobs?: unknown[];
+  jobs?: JobDef[];
+  events?: { emits?: string[]; handles?: EventHandlerDef[] };
   fixtures?: unknown[];
 };
 

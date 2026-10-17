@@ -4,3 +4,4 @@ export { authorize, contextFor, ForbiddenError, setAuthorizer, type Actor, type 
 export { canonical, redact, verifyAuditChain, type ChainResult, type Sensitivity } from "./audit";
 export { configureRuntime, defineService, ValidationError, type Emitted, type Runtime, type ServiceOutcome, type ServiceSpec } from "./service";
 export * as coreSchema from "./schema";
+export { nextRun, onceForEvent, registryFrom, runDueJobs, scheduleJob, type JobRegistry, type TickResult } from "./jobs";

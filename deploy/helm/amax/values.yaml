@@ -23,3 +23,15 @@ resources:
     memory: 192Mi
   limits:
     memory: 512Mi
+
+# Runs background jobs and event delivery by calling the web app's /api/jobs/tick every minute.
+# Needs CRON_SECRET in envFromSecret (the web pods read the same secret).
+worker:
+  enabled: false
+  intervalSeconds: 60
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 64Mi
