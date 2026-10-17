@@ -67,4 +67,17 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 
 ## Verify
 
-Quality: 0 → 0 duplicated lines
+**Verdict:** PASS
+- AC-1: pass — pnpm workspaces + Turborepo with apps/web (Next 16.4.2, standalone), 8 platform packages and modules/*; `pnpm build`, `pnpm lint`, `pnpm test` all exit 0 at the root.
+- AC-2: pass — `packages/core/tests` + `modules/hello/tests/ac2-discovery.test.ts`: hello appears in the rail and at /hello from its folder alone; deleting it (or `AMAX_MODULES_DISABLED=hello`) removes it cleanly.
+- AC-3: pass — `packages/testing/tests/ac3-boundaries.test.ts`: fixtures r1–r6 each fail `check-graph.mjs`, clean passes; the check runs in `pnpm lint`, CI and the Claude Code hooks (edit, commit, push).
+- AC-4: pass — `packages/ui/tests/ac4-tokens.test.ts`: AA contrast for every token pair in light and dark; no hex colours in components; all listed components exported.
+- AC-5: pass — `apps/web/tests/e2e/shell.spec.ts`: search, Ask amax, rail logo and first nav item 0.00% diff vs mock at 1440 and 390 px (limit 2%), no horizontal scroll, axe clean on / and /hello (also clean in dark, checked ad hoc), skip link → main, heading focus + announcement, reduced motion.
+- AC-6: pass — `packages/testing/tests/ac6-deploy.test.ts` plus local runs: `vercel build` ok, OpenNext worker served /healthz on wrangler dev, Docker image serves /healthz, Helm chart installed on k3d and /healthz answered; `.github/workflows/ci.yml` runs all three builds and the k3d smoke on every PR.
+- AC-7: pass — `packages/testing/tests/ac7-config.test.ts`: bad env fails boot with "amax: invalid environment configuration"; CODEOWNERS maps packages/ and apps/web with module template lines; `scripts/check-module-standard.mjs` passes and runs in CI.
+
+Commands (all exit 0): `pnpm turbo run test --force`, `pnpm lint`, `pnpm build`, `pnpm --filter @amax/web e2e`, `node scripts/check-module-standard.mjs`, `specclaw-preset-check .`, `specclaw-quality-scan . --gate`
+
+Quality: 0 → 0 duplicated lines; 0 high-complexity functions
+
+Screenshots: `.specclaw/changes/001-amax-foundation/shots/app.png`, `.specclaw/changes/001-amax-foundation/shots/mock.png` — shell matches; the body is the empty state naming change 007, as the Mock Delta specifies.
