@@ -25,9 +25,11 @@ export type Advance =
   | { kind: "blocked"; command: Command }
   | { kind: "executed"; name: string; options: ResolvedStepOptions; outcome: StepOutcome };
 
-export type RunInfo = { tenantId: string; runId: string; actsFor: string | null; input: Json };
-/** Set to run the first step that has no result yet, as attempt `attempt`. Omit to only plan. */
-export type Execute = { attempt: (step: string) => number };
+export type RunInfo = { tenantId: string; runId: string; actsFor: string | null; legalEntityId: string | null; version: number; input: Json };
+type Exec = (stop?: AbortSignal) => Promise<StepOutcome>;
+/** Set to run the first step that has no result yet, as attempt `attempt`. Omit to only plan.
+ * `around` lets the engine record the attempt first, heartbeat while it runs, or skip it. */
+export type Execute = { attempt: (step: string) => number; around?: (step: string, options: ResolvedStepOptions, attempt: number, exec: Exec) => Promise<StepOutcome> };
 
 const SUSPEND = Symbol("amax.workflows.suspend");
 
@@ -35,6 +37,7 @@ const SUSPEND = Symbol("amax.workflows.suspend");
 // their recorded values; the first thing without one stops the body and comes back as a command
 // (or, with `execute`, a step is run once and its outcome returned for the engine to record).
 export async function advance(def: AnyWorkflow, run: RunInfo, history: History, execute?: Execute): Promise<Advance> {
+  if ((def.version ?? 1) !== run.version) return { kind: "failed", error: `workflow ${def.name} is now version ${def.version ?? 1}; this run started on version ${run.version}` };
   const seen = new Set<string>();
   let stop: Advance | null = null;
   let blocked = false;
@@ -47,6 +50,7 @@ export async function advance(def: AnyWorkflow, run: RunInfo, history: History, 
     tenantId: run.tenantId,
     runId: run.runId,
     actsFor: run.actsFor,
+    legalEntityId: run.legalEntityId,
     async step(name, fn, opts) {
       claim(name);
       const rec = history.steps[name];
@@ -57,7 +61,8 @@ export async function advance(def: AnyWorkflow, run: RunInfo, history: History, 
       if (!execute) stop = { kind: "blocked", command: { kind: "step", name, options } };
       else {
         const attempt = execute.attempt(name);
-        stop = { kind: "executed", name, options, outcome: await executeStep(fn, options, { tenantId: run.tenantId, runId: run.runId, step: name, attempt, actsFor: run.actsFor }) };
+        const exec: Exec = (signal) => executeStep(fn, options, { tenantId: run.tenantId, runId: run.runId, step: name, attempt, actsFor: run.actsFor }, signal);
+        stop = { kind: "executed", name, options, outcome: await (execute.around ? execute.around(name, options, attempt, exec) : exec()) };
       }
       throw SUSPEND;
     },
@@ -69,6 +74,7 @@ export async function advance(def: AnyWorkflow, run: RunInfo, history: History, 
       throw SUSPEND;
     },
     async waitForEvent(name, o) {
+      if (!def.waitsFor?.includes(o.event)) throw new Error(`workflow ${def.name} waits for "${o.event}" but doesn't list it in waitsFor`);
       claim(name);
       if (name in history.events) return history.events[name].payload as never;
       blocked = true;

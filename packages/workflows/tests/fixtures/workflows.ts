@@ -60,4 +60,22 @@ export const killable = defineWorkflow({
   },
 });
 
-export const testWorkflows = [pipeline, approval, killable];
+export const early = defineWorkflow({
+  name: "test.early",
+  waitsFor: ["test.go"],
+  async run(_ctx, input: { id: string }) {
+    await step("prep", async () => void bump(`prep:${input.id}`));
+    return waitForEvent("go", { event: "test.go", match: { id: input.id } });
+  },
+});
+
+export const counter = defineWorkflow({
+  name: "test.counter",
+  async run(ctx) {
+    await step("a", async () => void bump(`a:${ctx.runId}`));
+    await step("b", async () => void bump(`b:${ctx.runId}`));
+    return { summary: "counted" };
+  },
+});
+
+export const testWorkflows = [pipeline, approval, killable, early, counter];

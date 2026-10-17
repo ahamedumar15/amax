@@ -4,7 +4,7 @@ import { cronLabel, whenLabel } from "../../lib/cron-label";
 
 type Props = { schedules: ScheduleView[]; toggle: (data: FormData) => Promise<void> };
 
-const lastResult = (s: ScheduleView) => s.lastSummary ?? (s.lastStatus ? s.lastStatus[0].toUpperCase() + s.lastStatus.slice(1) : "No runs yet");
+const lastResult = (s: ScheduleView) => (s.lastError ? `Couldn't start: ${s.lastError}` : null) ?? s.lastSummary ?? (s.lastStatus ? s.lastStatus[0].toUpperCase() + s.lastStatus.slice(1) : "No runs yet");
 
 export function SchedulesCard({ schedules, toggle }: Props) {
   return (
@@ -23,9 +23,9 @@ export function SchedulesCard({ schedules, toggle }: Props) {
                 return (
                   <tr key={s.id}>
                     <td data-label="Job"><b>{s.title}</b><small>{[s.description, s.entity].filter(Boolean).join(" · ")}</small></td>
-                    <td data-label="Runs">{cronLabel(s.cron)}<small>{s.timezone}</small></td>
-                    <td data-label="Last result">{lastResult(s)}<small>{whenLabel(s.lastRunAt, s.timezone)}</small></td>
-                    <td data-label="Next run">{s.enabled ? whenLabel(s.nextRunAt, s.timezone) : "Off"}</td>
+                    <td data-label="Runs">{cronLabel(s.cron)}<small>{s.timezone ?? "No time zone for this entity"}</small></td>
+                    <td data-label="Last result">{lastResult(s)}<small>{whenLabel(s.lastRunAt, s.timezone ?? "UTC")}</small></td>
+                    <td data-label="Next run">{!s.enabled ? "Off" : s.timezone ? whenLabel(s.nextRunAt, s.timezone) : "Not scheduled: set the entity's time zone"}</td>
                     <td data-label="On" className="num">
                       <form action={toggle}>
                         <input type="hidden" name="id" value={s.id} />

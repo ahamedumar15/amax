@@ -3,8 +3,11 @@ import { withTenant, type Db, type Tx } from "@amax/db";
 import { retryDelayMs } from "../duration";
 import { errorText } from "../errors";
 import { workflowOf, type WorkflowRegistry } from "../registry";
-import { advance, type Advance, type Command } from "../replay";
-import { fenced, loadRun, release, writeStep, type ClaimedRun, type LoadedRun } from "./store";
+import type { StepOutcome } from "../execute";
+import { advance, type Advance, type Command, type Execute } from "../replay";
+import type { ResolvedStepOptions } from "../types";
+import { lockEvent } from "./signal";
+import { fenced, heartbeat, loadRun, release, startAttempt, writeStep, type ClaimedRun, type LoadedRun } from "./store";
 
 export type DriveOptions = { leaseSeconds: number; deadline: number; maxCommands: number };
 type Next = "continue" | "stop";
@@ -18,8 +21,10 @@ export async function driveRun(db: Db, registry: WorkflowRegistry, run: ClaimedR
     let r: Advance;
     try {
       const def = workflowOf(registry, loaded.workflow);
-      r = await advance(def, { tenantId: run.tenantId, runId: run.id, actsFor: loaded.actsFor, input: loaded.input }, loaded.history, { attempt: (n) => (loaded.attempts[n] ?? 0) + 1 });
+      const info = { tenantId: run.tenantId, runId: run.id, actsFor: loaded.actsFor, legalEntityId: loaded.legalEntityId, version: loaded.version, input: loaded.input };
+      r = await advance(def, info, loaded.history, executor(db, run, loaded, o.leaseSeconds));
     } catch (e) {
+      if (e instanceof LostLease) return;
       r = { kind: "failed", error: errorText(e) };
     }
     const next = await withTenant(db, run.tenantId, (tx) => record(tx, run, loaded, r));
@@ -29,6 +34,29 @@ export async function driveRun(db: Db, registry: WorkflowRegistry, run: ClaimedR
       return;
     }
   }
+}
+
+class LostLease extends Error {}
+
+// Gives up once every attempt has been used (including ones a crash cut short), records the
+// attempt before running it, and heartbeats the lease while it runs.
+function executor(db: Db, run: ClaimedRun, loaded: LoadedRun, leaseSeconds: number): Execute {
+  return {
+    attempt: (n) => (loaded.attempts[n] ?? 0) + 1,
+    async around(name: string, options: ResolvedStepOptions, attempt: number, exec): Promise<StepOutcome> {
+      if (attempt > options.maxAttempts) {
+        return { ok: false, retryable: false, toolCalls: [], costUsd: 0, error: `gave up after ${options.maxAttempts} attempts; the last one never finished (the worker stopped)` };
+      }
+      if (!(await withTenant(db, run.tenantId, (tx) => startAttempt(tx, run, name, loaded.nextSeq, attempt, options)))) throw new LostLease();
+      const stop = new AbortController();
+      const end = heartbeat(db, run, leaseSeconds, stop);
+      try {
+        return await exec(stop.signal);
+      } finally {
+        end();
+      }
+    },
+  };
 }
 
 async function record(tx: Tx, run: ClaimedRun, loaded: LoadedRun, r: Advance): Promise<Next> {
@@ -61,6 +89,7 @@ async function recordStep(tx: Tx, run: ClaimedRun, loaded: LoadedRun, r: Extract
 
 async function block(tx: Tx, run: ClaimedRun, loaded: LoadedRun, c: Command): Promise<Next> {
   if (c.kind === "step") return "continue";
+  if (c.kind === "wait") await lockEvent(tx, run.tenantId, c.event);
   const fireAt = c.kind === "sleep" ? sql`now() + make_interval(secs => ${c.ms / 1000})` : c.timeoutMs === null ? null : sql`now() + make_interval(secs => ${c.timeoutMs / 1000})`;
   await tx.execute(sql`insert into workflows.step (run_id, tenant_id, name, seq, kind, status, fire_at, wait_event, wait_match)
     values (${run.id}, ${run.tenantId}, ${c.name}, ${loaded.nextSeq}, ${c.kind}, ${c.kind === "sleep" ? "sleeping" : "waiting"}, ${fireAt},

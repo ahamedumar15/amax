@@ -30,6 +30,8 @@ export type WorkflowContext = {
   tenantId: string;
   runId: string;
   actsFor: string | null;
+  /** Set for runs a per-entity schedule started: the legal entity this run is for. */
+  legalEntityId: string | null;
   step: <T>(name: string, fn: (ctx: StepContext) => Promise<T>, options?: StepOptions) => Promise<T>;
   sleep: (name: string, duration: Duration) => Promise<void>;
   waitForEvent: <T = Json>(name: string, options: WaitOptions) => Promise<T | null>;
@@ -39,9 +41,11 @@ export type WorkflowDef<I = Json, O = unknown> = {
   /** Unique across modules: "<module>.<workflow>". */
   name: string;
   title?: string;
+  /** Bump when steps are renamed, reordered or inserted: runs started on another version are refused on resume. Default 1. */
+  version?: number;
   input?: z.ZodType<I>;
   sensitive?: { input?: Classes; output?: Classes };
-  /** Outbox events (core.event names) this workflow waits for; they are forwarded as signals. */
+  /** Every event this workflow waits for. Only these are delivered (and buffered from the run's start) on both engines. */
   waitsFor?: string[];
   run: (ctx: WorkflowContext, input: I) => Promise<O>;
 };

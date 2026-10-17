@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { Tx } from "@amax/db";
+import { withTenant, type Db, type Tx } from "@amax/db";
 import type { StepOutcome } from "../execute";
 import { emptyHistory, type History } from "../replay";
 import type { Json, ResolvedStepOptions } from "../types";
@@ -7,8 +7,10 @@ import type { Json, ResolvedStepOptions } from "../types";
 export type ClaimedRun = { id: string; tenantId: string; lease: string };
 export type LoadedRun = {
   workflow: string;
+  version: number;
   input: Json;
   actsFor: string | null;
+  legalEntityId: string | null;
   createdAt: string;
   history: History;
   attempts: Record<string, number>;
@@ -20,7 +22,7 @@ export type LoadedRun = {
 export async function loadRun(tx: Tx, run: ClaimedRun, leaseSeconds: number): Promise<LoadedRun | null> {
   const [row] = await tx.execute(sql`update workflows.run set locked_until = now() + make_interval(secs => ${leaseSeconds}), updated_at = now()
     where id = ${run.id} and lease = ${run.lease} and status in ('running', 'sleeping', 'waiting')
-    returning workflow, input, acts_for, created_at`);
+    returning workflow, version, input, acts_for, legal_entity_id, created_at`);
   if (!row) return null;
   // Timers and event timeouts that have come due resolve now (an event timeout resolves to null).
   await tx.execute(sql`update workflows.step set status = 'done', result = 'null'::jsonb, finished_at = now()
@@ -38,8 +40,10 @@ export async function loadRun(tx: Tx, run: ClaimedRun, leaseSeconds: number): Pr
   }
   return {
     workflow: row.workflow as string,
+    version: Number(row.version),
     input: row.input as Json,
     actsFor: (row.acts_for as string | null) ?? null,
+    legalEntityId: (row.legal_entity_id as string | null) ?? null,
     createdAt: new Date(row.created_at as string).toISOString(),
     history,
     attempts,
@@ -57,6 +61,26 @@ export const release = sql`locked_until = null, lease = null`;
 
 export type StepWrite = { runId: string; tenantId: string; name: string; seq: ReturnType<typeof sql> | number; attempt: number; status: "done" | "retrying" | "failed"; outcome: StepOutcome; options: ResolvedStepOptions };
 
+// Commits "attempt n started" before the attempt runs, so an attempt cut short by a crash or a host
+// timeout still counts towards maxAttempts.
+export async function startAttempt(tx: Tx, run: ClaimedRun, name: string, seq: number, attempt: number, options: ResolvedStepOptions) {
+  if (!(await fenced(tx, run, sql`locked_until = locked_until`))) return false;
+  await tx.execute(sql`insert into workflows.step (run_id, tenant_id, name, seq, kind, status, attempts, sensitive)
+    values (${run.id}, ${run.tenantId}, ${name}, ${seq}, 'step', 'started', ${attempt}, ${JSON.stringify(options.sensitive)}::jsonb)
+    on conflict (run_id, name) do update set status = 'started', attempts = excluded.attempts where workflows.step.status in ('retrying', 'started')`);
+  return true;
+}
+
+// Keeps the lease alive while a step runs; aborts the step once another worker holds the run.
+export function heartbeat(db: Db, run: ClaimedRun, leaseSeconds: number, stop: AbortController) {
+  const beat = async () => {
+    const alive = await withTenant(db, run.tenantId, (tx) => fenced(tx, run, sql`locked_until = now() + make_interval(secs => ${leaseSeconds})`)).catch(() => true);
+    if (!alive) stop.abort("lease lost to another worker");
+  };
+  const timer = setInterval(() => void beat(), Math.max(1000, (leaseSeconds * 1000) / 3));
+  return () => clearInterval(timer);
+}
+
 // Records one step attempt. A row that is already done is never overwritten, so a late duplicate
 // delivery can't replace the checkpointed result.
 export async function writeStep(tx: Tx, w: StepWrite) {
@@ -66,7 +90,7 @@ export async function writeStep(tx: Tx, w: StepWrite) {
             ${o.ok ? null : o.error}, ${JSON.stringify(o.toolCalls)}::jsonb, ${o.costUsd}, ${JSON.stringify(w.options.sensitive)}::jsonb, ${w.status === "retrying" ? null : sql`now()`})
     on conflict (run_id, name) do update set status = excluded.status, attempts = excluded.attempts, result = excluded.result, error = excluded.error,
       tool_calls = workflows.step.tool_calls || excluded.tool_calls, cost_usd = workflows.step.cost_usd + excluded.cost_usd, finished_at = excluded.finished_at
-    where workflows.step.status in ('retrying', 'failed')`);
+    where workflows.step.status in ('retrying', 'failed', 'started')`);
 }
 
 export const nextSeqOf = (runId: string) => sql`(select coalesce(max(seq), 0) + 1 from workflows.step where run_id = ${runId})`;

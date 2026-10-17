@@ -1,7 +1,7 @@
 export { signalHandlers } from "./bridge";
-export { controlRun, setScheduleEnabled } from "./control";
-export type { Admin, RunAction, StartOptions, WorkflowEngine, WorkflowTickResult } from "./engine";
-export { engineFromEnv, type EngineConfig } from "./config";
+export { controlRun, setScheduleEnabled, WORKFLOWS_ADMIN } from "./control";
+export type { RunAction, SignalOptions, StartOptions, WorkflowEngine, WorkflowTickResult } from "./engine";
+export { engineConfig, engineFromEnv, type EngineConfig } from "./config";
 export { createPostgresEngine } from "./pg/engine";
 export { workflowRegistry, type WorkflowRegistry } from "./registry";
 export { pruneRunsJob, workflowsRetention } from "./retention";

@@ -12,7 +12,8 @@ function stepLine(s: StepView) {
   if (s.kind === "sleep") return s.status === "done" ? "slept" : `sleeping until ${s.fireAt ? new Date(s.fireAt).toISOString().slice(0, 16).replace("T", " ") : "?"} UTC`;
   if (s.kind === "wait") return s.status === "done" ? "event received" : `waiting for ${s.waitEvent}`;
   const tries = s.attempts > 1 ? `, ${s.attempts} tries` : "";
-  return `${s.status}${tries}${s.error && s.status !== "done" ? `: ${s.error}` : ""}`;
+  const error = isMasked(s.error) ? ": ••••" : s.error && s.status !== "done" ? `: ${s.error}` : "";
+  return `${s.status}${tries}${error}`;
 }
 
 function Value({ v }: { v: unknown }) {
@@ -38,7 +39,7 @@ export function RunsCard({ runs, control }: Props) {
               {runs.map((r) => (
                 <tr key={r.id}>
                   <td data-label="Run"><b>{r.title}</b>{r.input !== null && <small>Input: <Value v={r.input} /></small>}{r.output !== null && <small>Output: <Value v={r.output} /></small>}</td>
-                  <td data-label="Status"><span className={`chip ${TONE[r.status] ?? ""}`}>{r.status}</span>{r.error && <small>{r.error}</small>}</td>
+                  <td data-label="Status"><span className={`chip ${TONE[r.status] ?? ""}`}>{r.status}</span>{r.error && <small>{isMasked(r.error) ? <Masked masked /> : r.error}</small>}</td>
                   <td data-label="Steps"><ol style={{ margin: 0, paddingLeft: 18 }}>{r.steps.map((s) => <li key={s.name}><b>{s.name}</b> {stepLine(s)}{Array.isArray(s.toolCalls) && s.toolCalls.length > 0 && <small>Tools: {s.toolCalls.map((t) => t.tool).join(", ")}</small>}</li>)}</ol></td>
                   <td data-label="Acts for">{r.actsFor ?? <span className="muted">{r.startedBy}</span>}</td>
                   <td data-label="Cost" className="num">{usd(r.costUsd)}</td>

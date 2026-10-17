@@ -1,7 +1,7 @@
 import { TestWorkflowEnvironment } from "@temporalio/testing";
 import { DefaultLogger, Runtime } from "@temporalio/worker";
 import { createTemporalEngine, createTemporalWorker } from "../src/temporal";
-import { database, testRegistry, type Harness } from "./harness";
+import { database, testRegistry, useRuntime, type Harness } from "./harness";
 
 export const temporalEnabled = process.env.AMAX_TEMPORAL_TESTS === "1" || Boolean(process.env.TEMPORAL_ADDRESS);
 
@@ -11,6 +11,7 @@ export async function temporalHarness(): Promise<Harness> {
   const t = await database();
   const db = t.app();
   const registry = testRegistry();
+  useRuntime(db);
   const env = process.env.TEMPORAL_ADDRESS ? null : await TestWorkflowEnvironment.createLocal();
   const taskQueue = `amax-test-${t.name}`;
   const address = process.env.TEMPORAL_ADDRESS ?? env!.address;

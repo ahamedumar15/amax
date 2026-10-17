@@ -6,11 +6,11 @@ import { writeStep, nextSeqOf } from "../pg/store";
 import { advance, type Advance, type History } from "../replay";
 import type { Json } from "../types";
 
-export type RunArgs = { runId: string; tenantId: string; workflow: string; input: Json; actsFor: string | null; history?: History };
+export type RunArgs = { runId: string; tenantId: string; workflow: string; version: number; input: Json; actsFor: string | null; legalEntityId: string | null; history?: History };
 export type StepMark = { name: string; kind: "sleep" | "wait"; status: "sleeping" | "waiting" | "done"; fireInMs?: number | null; waitEvent?: string; waitMatch?: Json; result?: Json };
 export type Mark = { status: "running" | "sleeping" | "waiting" | "completed" | "failed"; output?: Json; error?: string; step?: StepMark };
 
-const info = (a: RunArgs) => ({ tenantId: a.tenantId, runId: a.runId, actsFor: a.actsFor, input: a.input });
+const info = (a: RunArgs) => ({ tenantId: a.tenantId, runId: a.runId, actsFor: a.actsFor, legalEntityId: a.legalEntityId, version: a.version, input: a.input });
 const json = (v: unknown) => (v === undefined ? null : JSON.stringify(v));
 
 // Activities the generic workflow calls. They replay the definition (plan, runStep) and mirror the
@@ -39,6 +39,8 @@ export function createActivities(db: Db, registry: WorkflowRegistry) {
     async mark(args: RunArgs, m: Mark): Promise<void> {
       const finished = m.status === "completed" || m.status === "failed";
       await withTenant(db, args.tenantId, async (tx) => {
+        const [exists] = await tx.execute(sql`select 1 from workflows.run where id = ${args.runId}`);
+        if (!exists) throw new Error(`run ${args.runId} has no row yet`);
         await tx.execute(sql`update workflows.run set status = ${m.status}, output = coalesce(${json(m.output)}::jsonb, output), error = coalesce(${m.error ?? null}, error),
             finished_at = ${finished ? sql`now()` : null}, updated_at = now()
           where id = ${args.runId} and status not in ('paused', 'cancelled', 'completed', 'failed')`);

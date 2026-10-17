@@ -13,14 +13,17 @@ export const STEP_DEFAULTS = { timeout: "60s", maxAttempts: 5, initialInterval: 
 
 export function resolveStep(o: StepOptions = {}): ResolvedStepOptions {
   const r = o.retry ?? {};
+  const initialMs = Math.max(1, toMs(r.initialInterval ?? STEP_DEFAULTS.initialInterval));
   return {
     timeoutMs: toMs(o.timeout ?? STEP_DEFAULTS.timeout),
     maxAttempts: Math.max(1, r.maxAttempts ?? STEP_DEFAULTS.maxAttempts),
-    initialMs: toMs(r.initialInterval ?? STEP_DEFAULTS.initialInterval),
-    maxMs: toMs(r.maxInterval ?? STEP_DEFAULTS.maxInterval),
-    backoff: r.backoff ?? STEP_DEFAULTS.backoff,
+    initialMs,
+    maxMs: Math.max(initialMs, toMs(r.maxInterval ?? STEP_DEFAULTS.maxInterval)),
+    backoff: Math.max(1, r.backoff ?? STEP_DEFAULTS.backoff),
     sensitive: o.sensitive ?? {},
   };
 }
 
+// One retry schedule for both engines: Temporal is given initialMs, maxMs and backoff, which it
+// applies with the same formula.
 export const retryDelayMs = (o: ResolvedStepOptions, attempt: number) => Math.min(o.maxMs, o.initialMs * o.backoff ** Math.max(0, attempt - 1));

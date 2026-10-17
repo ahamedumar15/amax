@@ -1,11 +1,14 @@
 import type { Db } from "@amax/db";
+import { configureRuntime, setAuthorizer, type ServiceContext } from "@amax/core/server";
 import { migratedDatabase } from "@amax/db/testdb";
 import { createPostgresEngine, getRun, workflowRegistry, type RunView, type WorkflowEngine, type WorkflowRegistry } from "../src/server";
 import type { RunStatus } from "../src/types";
 import { testWorkflows } from "./fixtures/workflows";
 
 export const TENANT = "00000000-0000-4000-8000-0000000002a9";
-export const admin = { tenantId: TENANT, userId: "u-admin", roles: ["Admin"] };
+export const admin: ServiceContext = { tenantId: TENANT, actor: { id: "user:u-admin", kind: "user", roles: ["Admin"] }, source: "ui" };
+export const pm: ServiceContext = { ...admin, actor: { id: "user:u-pm", kind: "user", roles: ["PM"] } };
+setAuthorizer((ctx, action) => action === "workflows:admin" && Boolean(ctx.actor.roles?.includes("Admin")));
 export const seeAll = () => true;
 export const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -17,12 +20,16 @@ export async function database() {
   return t;
 }
 
+// Admin controls are services: they run on the configured runtime database.
+export const useRuntime = (db: Db) => configureRuntime({ db, auditKey: "workflows-test-audit-key" });
+
 export const testRegistry = (extra: { schedules?: unknown[] } = {}) => workflowRegistry([{ id: "test", workflows: testWorkflows, ...extra }]);
 
 export async function pgHarness(): Promise<Harness> {
   const t = await database();
   const db = t.app();
   const registry = testRegistry();
+  useRuntime(db);
   return { name: "postgres", engine: createPostgresEngine({ db, registry }), db, registry, t, close: () => t.drop() };
 }
 

@@ -1,19 +1,14 @@
 import { ApplicationFailure, condition, defineSignal, proxyActivities, setHandler, sleep } from "@temporalio/workflow";
 import type { Command, History } from "../replay";
 import type { Json } from "../types";
+import { contains } from "../match";
 import type { Activities, RunArgs } from "./activities";
 
-export const eventSignal = defineSignal<[{ event: string; payload: Json }]>("amax.event");
+export type EventMessage = { event: string; payload: Json; id?: string };
+export const eventSignal = defineSignal<[EventMessage]>("amax.event");
 export const pauseSignal = defineSignal<[boolean]>("amax.pause");
 
 const control = proxyActivities<Activities>({ startToCloseTimeout: "1 minute", retry: { maximumAttempts: 20 } });
-
-function contains(value: Json, match: Json): boolean {
-  if (match === null || typeof match !== "object") return value === match;
-  if (value === null || typeof value !== "object") return false;
-  if (Array.isArray(match)) return Array.isArray(value) && match.every((m) => value.some((v) => contains(v, m)));
-  return Object.entries(match).every(([k, m]) => k in value && contains((value as Record<string, Json>)[k], m));
-}
 
 const failureText = (e: unknown) => {
   const err = e as { cause?: { message?: string }; message?: string };
@@ -25,9 +20,14 @@ const failureText = (e: unknown) => {
 // sandbox; Temporal keeps the history, timers and signals durable.
 export async function amaxRun(args: RunArgs): Promise<Json> {
   const history: History = args.history ?? { steps: {}, timers: {}, events: {} };
-  const inbox: { event: string; payload: Json }[] = [];
+  const inbox: EventMessage[] = [];
+  const seen = new Set<string>();
   let paused = false;
-  setHandler(eventSignal, (s) => void inbox.push(s));
+  setHandler(eventSignal, (s) => {
+    if (s.id && seen.has(s.id)) return;
+    if (s.id) seen.add(s.id);
+    inbox.push(s);
+  });
   setHandler(pauseSignal, (p) => void (paused = p));
   for (;;) {
     await condition(() => !paused);
@@ -44,7 +44,7 @@ export async function amaxRun(args: RunArgs): Promise<Json> {
   }
 }
 
-async function perform(args: RunArgs, history: History, c: Command, inbox: { event: string; payload: Json }[]) {
+async function perform(args: RunArgs, history: History, c: Command, inbox: EventMessage[]) {
   if (c.kind === "step") {
     const o = c.options;
     const step = proxyActivities<Activities>({

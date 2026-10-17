@@ -3,11 +3,12 @@ import { cron, defineWorkflow, NonRetryableError, sleep, step, waitForEvent } fr
 import { advance, emptyHistory, type History } from "../src/replay";
 import { workflowRegistry } from "../src/registry";
 
-const run = { tenantId: "t", runId: "r1", actsFor: "user:maya", input: { n: 2 } };
+const run = { tenantId: "t", runId: "r1", actsFor: "user:maya", legalEntityId: null, version: 1, input: { n: 2 } };
 const once = { attempt: () => 1 };
 
 const approval = defineWorkflow<{ n: number }>({
   name: "test.approval",
+  waitsFor: ["agents.suggestion.decided"],
   async run(_ctx, input) {
     const doubled = await step("double", async () => input.n * 2);
     await sleep("cool-off", "1d");
@@ -36,6 +37,14 @@ describe("AC-1 workflow API", () => {
     const s = cron({ name: "test.s", title: "S", workflow: "test.missing", cron: "0 6 * * *", timezone: "entity" });
     expect(() => workflowRegistry([{ id: "test", workflows: [approval], schedules: [s] }])).toThrow(/unknown workflow/);
     expect(() => step("x", async () => 1)).toThrow(/inside a workflow/);
+  });
+
+  it("refuses to resume a run on another definition version, and a wait the workflow doesn't declare", async () => {
+    expect(await advance({ ...approval, version: 2 }, run, emptyHistory())).toEqual({ kind: "failed", error: "workflow test.approval is now version 2; this run started on version 1" });
+    const h = emptyHistory();
+    h.steps.double = { status: "done", result: 4 };
+    h.timers["cool-off"] = true;
+    expect(await advance({ ...approval, waitsFor: [] }, run, h)).toMatchObject({ kind: "failed", error: expect.stringMatching(/doesn't list it in waitsFor/) });
   });
 });
 

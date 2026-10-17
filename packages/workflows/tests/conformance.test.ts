@@ -43,6 +43,13 @@ describe.each(engines)("AC-3 the same suite on the %s engine", (_name, make, ena
     expect((await settle(h, late, ["completed"])).output).toEqual({ accepted: null });
   }, 60_000);
 
+  it.skipIf(!enabled)("AC-3 buffers an event that arrives before the run reaches its wait, and ignores a repeated event id", async () => {
+    const id = await h.engine.start(TENANT, "test.early", { id: `e-${h.name}` }, { startedBy: "test" });
+    await h.engine.signal(TENANT, "test.go", { id: `e-${h.name}`, n: 1 }, { id: `evt-${h.name}` });
+    await h.engine.signal(TENANT, "test.go", { id: `e-${h.name}`, n: 2 }, { id: `evt-${h.name}` });
+    expect((await settle(h, id, ["completed"])).output).toEqual({ id: `e-${h.name}`, n: 1 });
+  }, 60_000);
+
   it.skipIf(!enabled)("AC-5 pauses, resumes and cancels runs; starting twice with a key returns the first run", async () => {
     const id = await h.engine.start(TENANT, "test.approval", { id: `c-${h.name}` }, { startedBy: "test", key: `k-${h.name}` });
     expect(await h.engine.start(TENANT, "test.approval", { id: `c-${h.name}` }, { startedBy: "test", key: `k-${h.name}` })).toBe(id);

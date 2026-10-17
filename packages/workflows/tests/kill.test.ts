@@ -28,6 +28,6 @@ describe.skipIf(!hasDb)("AC-2 a worker killed mid-run", () => {
     await new Promise((r) => child.once("exit", r));
     const done = await settle(h, id, ["completed"], 30_000);
     expect(lines(log)).toEqual(["one", "two:start", "two:start", "two:done", "three"]);
-    expect(done.steps.map((s) => [s.name, s.attempts])).toEqual([["one", 1], ["two", 1], ["three", 1]]);
+    expect(done.steps.map((s) => [s.name, s.attempts])).toEqual([["one", 1], ["two", 2], ["three", 1]]);
   }, 90_000);
 });

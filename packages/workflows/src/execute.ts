@@ -13,7 +13,7 @@ export const idempotencyKeyOf = (runId: string, step: string) => `wf:${runId}:${
 
 // Runs one attempt of a step under its timeout. The abort signal tells the step to stop; a step that
 // ignores it is still abandoned here, which is why steps must be idempotent.
-export async function executeStep(fn: (ctx: StepContext) => Promise<unknown>, options: ResolvedStepOptions, id: StepIdentity): Promise<StepOutcome> {
+export async function executeStep(fn: (ctx: StepContext) => Promise<unknown>, options: ResolvedStepOptions, id: StepIdentity, stop?: AbortSignal): Promise<StepOutcome> {
   const toolCalls: ToolCall[] = [];
   let costUsd = 0;
   const abort = new AbortController();
@@ -30,6 +30,10 @@ export async function executeStep(fn: (ctx: StepContext) => Promise<unknown>, op
       abort.abort();
       reject(new Error(`step "${id.step}" timed out after ${options.timeoutMs} ms`));
     }, options.timeoutMs);
+    stop?.addEventListener("abort", () => {
+      abort.abort();
+      reject(new Error(`step "${id.step}" stopped: ${String(stop.reason ?? "aborted")}`));
+    }, { once: true });
   });
   try {
     const result = toJson(await Promise.race([fn(ctx), timeout]));

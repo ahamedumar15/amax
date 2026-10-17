@@ -7,6 +7,8 @@ create table workflows.run (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references core.tenant(id),
   workflow text not null,
+  -- The definition version the run started on; a resume on a different version is refused.
+  version int not null default 1,
   engine text not null default 'postgres' check (engine in ('postgres', 'temporal')),
   key text,
   status text not null default 'running' check (status in ('running', 'sleeping', 'waiting', 'paused', 'completed', 'failed', 'cancelled')),
@@ -16,6 +18,10 @@ create table workflows.run (
   acts_for text,
   started_by text not null,
   schedule_id uuid,
+  legal_entity_id uuid references core.legal_entity(id) on delete set null,
+  -- Temporal only: when the execution was started. Null runs are launched by the tick, so a run
+  -- started inside a caller's transaction is launched only after that transaction commits.
+  launched_at timestamptz,
   -- When a worker should next look at the run. Null while it waits for an event with no timeout,
   -- so a waiting run costs nothing: no worker claims it until a signal sets this.
   wake_at timestamptz,
@@ -38,7 +44,10 @@ create table workflows.signal (
   tenant_id uuid not null references core.tenant(id),
   event text not null,
   payload jsonb not null,
-  created_at timestamptz not null default now()
+  -- The outbox event (or caller-supplied id) it came from: delivering it twice is a no-op.
+  source_id text,
+  created_at timestamptz not null default now(),
+  unique (tenant_id, source_id)
 );
 create index signal_event on workflows.signal (tenant_id, event, created_at);
 
@@ -48,7 +57,8 @@ create table workflows.step (
   name text not null,
   seq int not null,
   kind text not null check (kind in ('step', 'sleep', 'wait')),
-  status text not null check (status in ('done', 'failed', 'retrying', 'sleeping', 'waiting')),
+  -- 'started' is committed before an attempt runs, so an attempt cut short by a crash still counts.
+  status text not null check (status in ('started', 'done', 'failed', 'retrying', 'sleeping', 'waiting')),
   attempts int not null default 0,
   result jsonb,
   error text,
@@ -61,8 +71,18 @@ create table workflows.step (
   signal_id uuid references workflows.signal(id) on delete set null,
   started_at timestamptz not null default now(),
   finished_at timestamptz,
+  -- Copied from the run when it finishes, so retention never deletes a live run's checkpoints.
+  run_finished_at timestamptz,
   primary key (run_id, name)
 );
+
+create function workflows.copy_run_finished() returns trigger language plpgsql as $$
+begin
+  update workflows.step set run_finished_at = new.finished_at where run_id = new.id;
+  return new;
+end $$;
+create trigger run_finished after update of finished_at on workflows.run
+  for each row when (old.finished_at is distinct from new.finished_at) execute function workflows.copy_run_finished();
 create index step_waiting on workflows.step (tenant_id, wait_event) where status = 'waiting';
 
 create table workflows.schedule (
@@ -71,28 +91,39 @@ create table workflows.schedule (
   name text not null,
   workflow text not null,
   cron text not null,
-  timezone text not null,
+  -- Null when an entity's zone is unknown: the schedule is then never fired (fail closed).
+  timezone text,
   legal_entity_id uuid references core.legal_entity(id) on delete cascade,
   enabled boolean not null,
   next_run_at timestamptz,
   last_run_at timestamptz,
   last_run_id uuid references workflows.run(id) on delete set null,
+  last_error text,
   locked_until timestamptz,
   updated_at timestamptz not null default now(),
   unique nulls not distinct (tenant_id, name, legal_entity_id)
 );
 
+-- A legal entity's zone, when its country's default (see ENTITY_ZONES) is wrong or missing.
+create table workflows.entity_zone (
+  legal_entity_id uuid primary key references core.legal_entity(id) on delete cascade,
+  tenant_id uuid not null references core.tenant(id),
+  timezone text not null
+);
+
 select core.enable_tenant_rls('workflows.run');
+select core.enable_tenant_rls('workflows.entity_zone');
 select core.enable_tenant_rls('workflows.signal');
 select core.enable_tenant_rls('workflows.step');
 select core.enable_tenant_rls('workflows.schedule');
-grant select, insert, update, delete on workflows.run, workflows.signal, workflows.step, workflows.schedule to amax_app;
+grant select, insert, update, delete on workflows.run, workflows.signal, workflows.step, workflows.schedule, workflows.entity_zone to amax_app;
 
 -- Cross-tenant reads only inside SECURITY DEFINER functions owned by amax_claimer (see 0003).
 grant usage on schema workflows to amax_claimer;
 grant select, update on workflows.run to amax_claimer;
 grant select, insert, update on workflows.schedule to amax_claimer;
-grant select on core.legal_entity to amax_claimer;
+grant select on core.legal_entity, workflows.entity_zone to amax_claimer;
+create policy claimer_read on workflows.entity_zone for select to amax_claimer using (true);
 create policy claimer_all on workflows.run to amax_claimer using (true) with check (true);
 create policy claimer_all on workflows.schedule to amax_claimer using (true) with check (true);
 create policy claimer_read on core.legal_entity for select to amax_claimer using (true);
@@ -114,7 +145,8 @@ language sql security definer set search_path = workflows, pg_temp as $$
 $$;
 
 -- One row per declared schedule per tenant, or per legal entity when the schedule runs in each
--- entity's zone. `defs` is [{name, workflow, cron, timezone, enabled}], `zones` maps country → zone.
+-- entity's zone. `defs` is [{name, workflow, cron, timezone, enabled}], `zones` maps country → zone;
+-- an entity_zone row wins. An entity with neither gets a null zone and is never fired.
 -- A changed cron or zone clears next_run_at so the next tick recomputes it; enabled is only a default.
 create function workflows.ensure_schedules(defs jsonb, zones jsonb) returns int
 language sql security definer set search_path = workflows, pg_temp as $$
@@ -125,8 +157,8 @@ language sql security definer set search_path = workflows, pg_temp as $$
     select t.id as tenant_id, d.name, d.workflow, d.cron, d.timezone as tz, null::uuid as entity, d.enabled
       from d cross join core.tenant t where d.timezone <> 'entity'
     union all
-    select e.tenant_id, d.name, d.workflow, d.cron, coalesce(zones ->> e.country::text, 'UTC'), e.id, d.enabled
-      from d join core.legal_entity e on d.timezone = 'entity'
+    select e.tenant_id, d.name, d.workflow, d.cron, coalesce(z.timezone, zones ->> e.country::text), e.id, d.enabled
+      from d join core.legal_entity e on d.timezone = 'entity' left join workflows.entity_zone z on z.legal_entity_id = e.id
   ), ins as (
     insert into workflows.schedule (tenant_id, name, workflow, cron, timezone, legal_entity_id, enabled)
     select tenant_id, name, workflow, cron, tz, entity, enabled from target
@@ -145,7 +177,7 @@ language sql security definer set search_path = workflows, pg_temp as $$
      set locked_until = now() + make_interval(secs => lease_seconds)
    where s.id in (
      select x.id from workflows.schedule x
-      where x.enabled and x.name in (select jsonb_array_elements_text(names))
+      where x.enabled and x.timezone is not null and x.name in (select jsonb_array_elements_text(names))
         and (x.next_run_at is null or x.next_run_at <= now())
         and (x.locked_until is null or x.locked_until < now())
       order by x.next_run_at nulls first
@@ -154,8 +186,24 @@ language sql security definer set search_path = workflows, pg_temp as $$
   returning s.*;
 $$;
 
+-- Temporal runs not yet started on Temporal (see run.launched_at).
+create function workflows.claim_launches(lease_seconds int, max_rows int) returns table (id uuid, tenant_id uuid, lease uuid)
+language sql security definer set search_path = workflows, pg_temp as $$
+  update workflows.run r
+     set locked_until = now() + make_interval(secs => lease_seconds), lease = gen_random_uuid()
+   where r.id in (
+     select x.id from workflows.run x
+      where x.engine = 'temporal' and x.launched_at is null and x.status = 'running'
+        and (x.locked_until is null or x.locked_until < now())
+      order by x.created_at
+      for update skip locked
+      limit max_rows)
+  returning r.id, r.tenant_id, r.lease;
+$$;
+
 alter function workflows.claim_runs(int, int) owner to amax_claimer;
+alter function workflows.claim_launches(int, int) owner to amax_claimer;
 alter function workflows.ensure_schedules(jsonb, jsonb) owner to amax_claimer;
 alter function workflows.claim_schedules(int, int, jsonb) owner to amax_claimer;
-revoke all on function workflows.claim_runs(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) from public;
-grant execute on function workflows.claim_runs(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) to amax_app;
+revoke all on function workflows.claim_runs(int, int), workflows.claim_launches(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) from public;
+grant execute on function workflows.claim_runs(int, int), workflows.claim_launches(int, int), workflows.ensure_schedules(jsonb, jsonb), workflows.claim_schedules(int, int, jsonb) to amax_app;
