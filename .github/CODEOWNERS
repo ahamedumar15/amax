@@ -1,0 +1,14 @@
+* @chan4lk
+
+/packages/ @chan4lk
+/apps/web/ @chan4lk
+/scripts/ @chan4lk
+/.claude/ @chan4lk
+
+/modules/hello/ @chan4lk
+# /modules/hr/ @org/people-team
+# /modules/leave/ @org/people-team
+# /modules/payroll/ @org/payroll-team
+# /modules/finance/ @org/finance-team
+# /modules/it-access/ @org/it-department
+# /modules/helpdesk/ @org/it-department

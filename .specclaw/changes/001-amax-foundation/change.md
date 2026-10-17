@@ -55,7 +55,7 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 - [x] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
   Files: scripts/check-graph.mjs, packages/testing/boundaries/**, packages/testing/tests/boundaries.test.ts, package.json
   Depends: T4
-- [ ] `T6` — Config and ownership: zod-validated environment at boot with a clear error and `/healthz`; CODEOWNERS; `scripts/check-module-standard.mjs` run in CI (AC-7)
+- [x] `T6` — Config and ownership: zod-validated environment at boot with a clear error and `/healthz`; CODEOWNERS; `scripts/check-module-standard.mjs` run in CI (AC-7)
   Files: packages/core/src/env.ts, apps/web/app/healthz/route.ts, .github/CODEOWNERS, scripts/check-module-standard.mjs
   Depends: T4
 - [ ] `T7` — Deploy anywhere: Vercel config, OpenNext Cloudflare build (`wrangler.jsonc`), Dockerfile (standalone, serves `/healthz`), Helm chart `deploy/helm/amax`, and a CI workflow building all three plus lint, test, boundaries, module standard and a k3d smoke install (AC-6, AC-1)
