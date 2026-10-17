@@ -1,9 +1,10 @@
 {
   "change": "049-chat-history",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T16:02:26Z"},
-    "tasks": {"status":"done","at":"2026-10-17T16:05:12Z"}
+    "tasks": {"status":"done","at":"2026-10-17T16:05:12Z"},
+    "verify": {"status":"done","at":"2026-10-17T16:16:26Z"}
   }
 }

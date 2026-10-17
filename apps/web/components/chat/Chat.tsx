@@ -12,7 +12,6 @@ type Entry =
   | { kind: "amax"; text: string; tools: string[]; error?: boolean }
   | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string };
 
-// 049: a reopened chat as the log shows it. A card past its expiry can't be confirmed (the server refuses it too).
 const restoredLog = (c: Conversation): Entry[] => [
   ...c.messages.map((m): Entry => (m.role === "me" ? { kind: "me", text: m.text, highlights: [] } : { kind: "amax", text: m.text, tools: [] })),
   ...c.pending.map((p): Entry => ({ kind: "confirm", action: p, state: p.expired ? "expired" : "open" })),
