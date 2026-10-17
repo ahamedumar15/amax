@@ -35,7 +35,8 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
         <span>
           {p.phase === "proposed" && (p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`)}
           {(p.phase === "planned" || p.phase === "building") && `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}`}
-          {p.phase === "verified" && <span className="chip">{p.release ?? "No release"}{p.shippedTo ? `, in ${p.shippedTo}` : ""}</span>}
+          {p.phase === "verified" && p.source !== "specclaw" && <span className="chip">{p.release ?? "No release"}{p.shippedTo ? `, in ${p.shippedTo}` : ""}</span>}
+          {p.phase === "verified" && p.source === "specclaw" && `${p.tasksDone} of ${p.tasksTotal} tasks`}
           {p.phase === "released" && <span className="chip good">In Prod</span>}
         </span>
       </div>
@@ -61,13 +62,16 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   if (!data) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
   const { project, proposals } = data;
   const canMove = can(viewer, "delivery:proposal:move", { projectId: project.id });
+  // Synced projects have no sprint counters; their progress is the proposals' tasks.
+  const done = project.sprintTotal ? project.sprintDone : proposals.reduce((n, p) => n + p.tasksDone, 0);
+  const total = project.sprintTotal || proposals.reduce((n, p) => n + p.tasksTotal, 0);
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery">Projects</a><span>/</span>{project.name}</nav>
       <div className="row head">
         <div>
           <h1>{project.name}</h1>
-          <p className="lede">{project.sprint ? `${project.sprint}. ${project.sprintDone} of ${project.sprintTotal} tasks done. ` : ""}Released means it reached Prod.</p>
+          <p className="lede">{project.sprint ? `${project.sprint}. ${done} of ${total} tasks done. ` : ""}Released means it reached Prod.</p>
         </div>
       </div>
       <Tabs current="board" projectKey={project.key} />
