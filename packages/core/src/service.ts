@@ -28,7 +28,8 @@ export type ServiceSpec<I, R> = {
   run: (tx: Tx, input: I, ctx: ServiceContext) => Promise<ServiceOutcome<R>>;
 };
 
-export type Runtime = { db: Db; auditKey: string };
+/** `now` is the clock for date windows (env AMAX_TODAY through clockFromEnv); the real time when unset. */
+export type Runtime = { db: Db; auditKey: string; now?: () => Date };
 let runtime: Runtime | undefined;
 
 export const configureRuntime = (r: Runtime) => {
@@ -39,6 +40,9 @@ export function getRuntime(): Runtime {
   if (!runtime) throw new Error("amax: configureRuntime({ db, auditKey }) before calling services");
   return runtime;
 }
+
+/** "Today" for date windows: the runtime's clock, or the real time before the runtime is configured. */
+export const now = (): Date => runtime?.now?.() ?? new Date();
 
 export class ValidationError extends Error {
   readonly retryable = false;

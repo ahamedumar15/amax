@@ -8,15 +8,24 @@ import { day, needViewer, SignInFirst } from "./parts";
 const HEX: Record<string, string> = { violet: "#7B61FF", amber: "#F2A93B", pink: "#F48B9B", mint: "#2FCB8C" };
 
 /**
- * Where a release stands and what the next action is. Null means Live: only a deployed Prod record
- * says that. Stages are taken in order (gaps in positions after a removal don't end the chain); Prod
- * still testing is finished in place; a project with no Prod stage says so (final review).
+ * Where a release stands, worked out once for the table's action, the map's line and its pill
+ * (review round 1): its stages in the project's own order, the last one reached, and the deployed
+ * Prod record that makes it Live (only that says Live, wherever the last reached stage sits).
+ */
+export function standing(r: ReleaseRow) {
+  const own = [...r.stages].sort((a, b) => a.position - b.position);
+  const lastI = own.reduce((at, s, i) => (s.status ? i : at), -1);
+  return { own, lastI, last: lastI >= 0 ? own[lastI] : null, live: own.find((s) => s.isProd && s.status === "deployed") ?? null };
+}
+
+/**
+ * What the next action is. Null means Live. Stages are taken in order (gaps in positions after a
+ * removal don't end the chain); Prod still testing is finished in place; a project with no Prod
+ * stage says so (final review).
  */
 export function nextStep(r: ReleaseRow): { label: string; environment: string | null; primary: boolean } | null {
-  const own = [...r.stages].sort((a, b) => a.position - b.position);
-  if (own.some((s) => s.isProd && s.status === "deployed")) return null;
-  const lastI = own.reduce((at, s, i) => (s.status ? i : at), -1);
-  const last = lastI >= 0 ? own[lastI] : undefined;
+  const { own, lastI, last, live } = standing(r);
+  if (live) return null;
   if (last?.status === "rolled-back") return { label: `Retry ${last.environment}`, environment: last.environment, primary: false };
   // A stage still testing can be promoted past (as in the mock), except Prod: that one is finished in place.
   if (last?.status === "testing" && last.isProd) return { label: `Finish ${last.environment}`, environment: last.environment, primary: true };
@@ -29,6 +38,42 @@ export function nextStep(r: ReleaseRow): { label: string; environment: string | 
     return { label: `${verb} ${prod.environment}`, environment: prod.environment, primary: prod.status !== "rolled-back" };
   }
   return { label: "No Prod stage", environment: null, primary: false };
+}
+
+export const releaseHref = (r: Pick<ReleaseRow, "projectKey" | "version">) => `/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`;
+
+export type Action =
+  | { kind: "text"; text: string }
+  | { kind: "link"; text: string; href: string; title: string }
+  | { kind: "button"; label: string; environment: string; primary: boolean };
+
+/**
+ * The table's action cell. A release nothing has reached yet reads "Building" as in the mock; for a
+ * viewer who may record deployments it links to the release page, where the first deployment is
+ * recorded (review round 1: the row must not lose that path).
+ */
+export function actionFor(r: ReleaseRow, allowed: boolean): Action {
+  const step = nextStep(r);
+  if (!step) return { kind: "text", text: "Live" };
+  if (!standing(r).last) return allowed ? { kind: "link", text: "Building", href: releaseHref(r), title: "Record the first deployment" } : { kind: "text", text: "Building" };
+  if (!step.environment) return { kind: "text", text: step.label };
+  if (!allowed) return { kind: "text", text: step.label.replace(/^(Promote|Deploy|Retry|Finish) /, "Next: ") };
+  return { kind: "button", label: step.label, environment: step.environment, primary: step.primary };
+}
+
+/**
+ * The map's Active range: every release that has reached a stage, except a Live one that is stale
+ * (Prod more than 45 days ago) or superseded by a newer release of its project that is moving.
+ */
+export function onActiveMap(releases: ReleaseRow[], now: Date): ReleaseRow[] {
+  return releases.filter((r) => {
+    const { last, live } = standing(r);
+    if (!last) return false;
+    if (!live) return true;
+    const stale = live.at !== null && now.getTime() - Date.parse(live.at) > 45 * 86_400_000;
+    const superseded = releases.some((o) => o.projectId === r.projectId && o.createdAt > r.createdAt && standing(o).last);
+    return !stale && !superseded;
+  });
 }
 
 function cell(s: ReleaseRow["stages"][number]) {
@@ -44,11 +89,10 @@ function cell(s: ReleaseRow["stages"][number]) {
  * other) the row is laid out by its own order and labels its stations (review rounds 1 to 3).
  */
 export function mapRow(r: ReleaseRow, columns: string[]) {
-  const own = [...r.stages].sort((a, b) => a.position - b.position);
+  const { own, lastI: lastReached } = standing(r);
   const cols = own.map((s) => columns.indexOf(s.environment));
   const agrees = cols.every((c, i) => c >= 0 && (i === 0 || c > cols[i - 1]));
   const slot = (i: number) => (agrees ? cols[i] : i);
-  const lastReached = own.reduce((last, s, i) => (s.status ? i : last), -1);
   return {
     agrees,
     stations: own.map((s, i) => ({ environment: s.environment, slot: slot(i), reached: Boolean(s.status), last: i === lastReached })),
@@ -62,10 +106,10 @@ const dayName = (iso: string) => new Date(iso).toLocaleDateString("en-US", { wee
 
 /** The pill beside a row's last station, worded as in the mock ("Testing since Oct 15", "Rolled back Wed Oct 14", "Live since Oct 1"). */
 export function mapPill(r: ReleaseRow) {
-  const last = [...r.stages].sort((a, b) => a.position - b.position).filter((s) => s.status).at(-1);
+  const { last, live } = standing(r);
   if (!last) return null;
+  if (live) return { kind: "live" as const, text: `Live since ${day(live.at)}` };
   if (last.status === "rolled-back") return { kind: "back" as const, text: `Rolled back ${last.at ? dayName(last.at) : ""}`.trim() };
-  if (last.isProd && last.status === "deployed") return { kind: "live" as const, text: `Live since ${day(last.at)}` };
   if (last.status === "testing") return { kind: "testing" as const, text: `Testing since ${day(last.at)}` };
   return { kind: "in" as const, text: `In ${last.environment} since ${day(last.at)}` };
 }
@@ -75,7 +119,7 @@ const PILL = { back: { fill: "#FDE7E4", ink: "#C2412F", w: 128 }, live: { fill: 
 
 // The mock's release map: one line per active release, stations per environment, and a status pill.
 function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: string[] }) {
-  const active = releases.filter((r) => r.stages.some((s) => s.status));
+  const active = releases.filter((r) => standing(r).last);
   const x = (i: number) => 300 + i * 180;
   const h = 70 * active.length + 60;
   return (
@@ -130,7 +174,7 @@ export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenPro
         <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: {} }} />
           <nav className="seg" aria-label="Range"><a href="/delivery/releases" aria-current={searchParams.map !== "all" ? "true" : undefined}>Active</a><a href="/delivery/releases?map=all" aria-current={searchParams.map === "all" ? "true" : undefined}>All</a></nav>
         </div>
-        <ReleaseMap releases={searchParams.map === "all" ? releases : releases.filter((r) => !r.stages.some((s) => s.isProd && s.status === "deployed" && s.at && today().getTime() - Date.parse(s.at) > 45 * 86_400_000))} columns={envs} />
+        <ReleaseMap releases={searchParams.map === "all" ? releases : onActiveMap(releases, today())} columns={envs} />
       </div>
       <div className="card flush pinnable">
         <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: {} }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
@@ -140,22 +184,21 @@ export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenPro
             <thead><tr><th>Release</th><th>Project</th><th className="num">Proposals</th>{envs.map((e) => <th key={e}>{e}</th>)}<th className="num">Action</th></tr></thead>
             <tbody>
               {releases.map((r) => {
-                const step = nextStep(r);
                 // Per project: a PM elsewhere, Finance or Leadership see the stage, not a button.
-                const allowed = can(viewer, "delivery:deployment:record", { projectId: r.projectId });
+                const act = actionFor(r, can(viewer, "delivery:deployment:record", { projectId: r.projectId }));
                 return (
                   <tr key={r.id} className="pinnable">
-                    <td data-label="Release"><a className="rowlink" href={`/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`}><b>{r.version}</b></a></td>
+                    <td data-label="Release"><a className="rowlink" href={releaseHref(r)}><b>{r.version}</b></a></td>
                     <td data-label="Project"><span className="dot" style={{ background: `var(--${r.projectColor})` }} />{r.projectName}</td>
                     <td data-label="Proposals" className="num">{r.proposals}</td>
                     {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
                     <td data-label="" className="num">
-                      {!step ? <span className="muted">Live</span> : !r.stages.some((s) => s.status) ? <span className="muted">Building</span> : !step.environment ? <span className="muted">{step.label}</span> : !allowed ? <span className="muted">{step.label.replace(/^(Promote|Deploy|Retry|Finish) /, "Next: ")}</span> : (
+                      {act.kind === "text" ? <span className="muted">{act.text}</span> : act.kind === "link" ? <span className="muted"><a className="rowlink" href={act.href} title={act.title}>{act.text}</a></span> : (
                         <form action={promoteAction}>
                           <input type="hidden" name="projectKey" value={r.projectKey} />
                           <input type="hidden" name="version" value={r.version} />
-                          <input type="hidden" name="environment" value={step.environment ?? ""} />
-                          <button className={`btn sm${step.primary ? " primary" : ""}`} type="submit">{step.label}</button>
+                          <input type="hidden" name="environment" value={act.environment} />
+                          <button className={`btn sm${act.primary ? " primary" : ""}`} type="submit">{act.label}</button>
                         </form>
                       )}
                       <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />

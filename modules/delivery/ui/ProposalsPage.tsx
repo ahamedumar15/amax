@@ -3,13 +3,13 @@ import { PinButton } from "@amax/ui";
 import { PHASES, type Phase } from "../contracts";
 import { listProjects, listProposals, phaseCounts, shippedPerWeek } from "../server/queries";
 import { BarChart } from "./charts";
+import { csvHref } from "./csv";
 import { FilterMenu } from "./FilterMenu";
 import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk } from "./parts";
 
 const FILTERS: (Phase | "all")[] = ["all", "proposed", "building", "verified", "released"];
 const PAGE = 5;
 
-const csv = (rows: string[][]) => `data:text/csv;charset=utf-8,${encodeURIComponent(rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n"))}`;
 
 export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: ScreenProps) {
   const viewer = needViewer(raw);
@@ -36,7 +36,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
           <ul className="phase-legend">{bar.map(([p, n, l]) => <li key={p}><Stk phase={p} />{l}<b>{n}</b></li>)}</ul>
         </div>
         <div className="card pinnable">
-          <div className="card-head"><h2>Shipped to Prod per week</h2><PinButton inline pin={{ label: "Shipped to Prod per week", tool: "list_proposals", args: {} }} />{trend !== null && <span className={trend >= 0 ? "up" : "muted"}>{trend >= 0 ? "↑" : "↓"} {Math.abs(trend).toFixed(1)}%</span>}</div>
+          <div className="card-head"><h2>Shipped to Prod per week</h2><PinButton inline pin={{ label: "Shipped to Prod per week", tool: "list_proposals", args: {} }} />{trend !== null && <span className={trend >= 0 ? "up" : "down"}>{trend >= 0 ? "↑" : "↓"} {Math.abs(trend).toFixed(1)}%</span>}</div>
           <BarChart label="Proposals shipped to Prod per week" labels={shipped.labels} values={shipped.values} max={Math.max(8, Math.ceil(Math.max(...shipped.values) / 2) * 2)} />
         </div>
       </div>
@@ -49,7 +49,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
           </nav>
           <div className="actions">
             <FilterMenu label="Filter by project" options={[{ key: "", name: "All projects" }, ...projects].map((p) => ({ text: p.name, current: (searchParams.project ?? "") === p.key, href: `${base}${p.key ? `?project=${p.key}` : ""}` }))} />
-            <a className="btn" href={csv([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", p.phase === "released" ? "Prod" : p.shippedTo ?? "", p.ownerName ?? ""])])} download="proposals.csv">
+            <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", p.phase === "released" ? "Prod" : p.shippedTo ?? "", p.ownerName ?? ""])])} download="proposals.csv">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export
             </a>
           </div>

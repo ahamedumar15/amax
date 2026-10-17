@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { ForbiddenError, getRuntime } from "@amax/core/server";
+import { ForbiddenError, getRuntime, now as clock } from "@amax/core/server";
 import type { Phase } from "../contracts";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
@@ -39,7 +39,7 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
   id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total),
   hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: (r.owner_name as string | null) ?? null, agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
-  release: (r.version as string | null) ?? ((r.meta as { releaseLabel?: string } | null)?.releaseLabel ?? null), shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
+  release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
   source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {},
 });
 
@@ -71,9 +71,8 @@ export const getProject = (v: Viewer, key: string) =>
     return { project: project(r), proposals };
   });
 
-// "Today" for date windows. AMAX_TODAY pins it for the demo tenant and visual tests (fixtures.md's
-// Fri Oct 16, 2026), so the screens match the mock.
-export const today = () => (process.env.AMAX_TODAY ? new Date(`${process.env.AMAX_TODAY}T15:00:00Z`) : new Date());
+// "Today" for date windows: core's clock (env AMAX_TODAY, validated at boot, pins it for visual tests).
+export const today = () => clock();
 
 const isoWeek = (d: Date) => {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -88,19 +87,29 @@ export function lastWeeks(now = today(), n = 8) {
   return Array.from({ length: n }, (_, i) => { const d = new Date(m.getTime() - (n - 1 - i) * 7 * 86_400_000); return { label: `W${isoWeek(d)}`, monday: d.toISOString().slice(0, 10) }; });
 }
 
+/**
+ * Portfolio tasks planned and done per week, from the portfolio roll-up (the project_id-null row;
+ * per-project rows are not summed into it, review round 1). A week with no roll-up is null, not 0:
+ * until ingestion (008) writes them there is no data, and the chart says so.
+ */
 export const weeklyThroughput = (v: Viewer, now = today()) =>
   read(v, async (tx) => {
     const weeks = lastWeeks(now);
-    const rows = await tx.execute(sql`select week::text as week, sum(planned)::int as planned, sum(done)::int as done from delivery.weekly_stat where week >= ${weeks[0].monday} group by week`);
+    const rows = await tx.execute(sql`select week::text as week, planned, done from delivery.weekly_stat where project_id is null and week >= ${weeks[0].monday}`);
     const at = (w: string) => rows.find((r) => r.week === w);
-    return { labels: weeks.map((w) => w.label), planned: weeks.map((w) => Number(at(w.monday)?.planned ?? 0)), done: weeks.map((w) => Number(at(w.monday)?.done ?? 0)) };
+    const col = (k: "planned" | "done") => weeks.map((w) => { const r = at(w.monday); return r ? Number(r[k]) : null; });
+    return { labels: weeks.map((w) => w.label), planned: col("planned"), done: col("done") };
   });
 
-/** Proposals shipped to Prod per ISO week, from the weekly roll-up (fixtures.md's W35 to W42). */
+/**
+ * Proposals that reached Prod per ISO week, from proposal.released_at: the same source as
+ * phaseCounts' "Released this month", so the two never disagree (review round 1).
+ */
 export const shippedPerWeek = (v: Viewer, now = today()) =>
   read(v, async (tx) => {
     const weeks = lastWeeks(now);
-    const rows = await tx.execute(sql`select week::text as week, sum(shipped)::int as n from delivery.weekly_stat where week >= ${weeks[0].monday} group by week`);
+    const rows = await tx.execute(sql`select date_trunc('week', released_at at time zone 'UTC')::date::text as week, count(*)::int as n
+      from delivery.proposal p where p.phase = 'released' and released_at >= ${`${weeks[0].monday}T00:00:00Z`} and ${ACTIVE} group by 1`);
     return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
   });
 
@@ -115,7 +124,7 @@ export const phaseCounts = (v: Viewer, now = today()) =>
   });
 
 export type ReleaseRow = {
-  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
+  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt: string;
   stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
@@ -128,7 +137,7 @@ export const listReleases = (v: Viewer) =>
     const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
       id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
-      projectColor: r.project_color as string, proposals: Number(r.proposals),
+      projectColor: r.project_color as string, proposals: Number(r.proposals), createdAt: new Date(r.created_at as string).toISOString(),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
         return { environment: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,

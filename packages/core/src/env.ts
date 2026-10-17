@@ -32,6 +32,9 @@ const schema = z.object({
   AMAX_AI_MODEL: z.string().default("claude-haiku-5-5"),
   AMAX_AI_FALLBACK_MODEL: z.string().default("claude-sonnet-5-5"),
   AUDIT_RETENTION_DAYS: z.coerce.number().int().positive().default(2555),
+  // Pins "today" for date windows (charts, release map) so visual tests see fixtures.md's Oct 16,
+  // 2026. Process-wide (every tenant), validated here at boot; leave unset in real deployments.
+  AMAX_TODAY: z.iso.date().optional(),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -41,4 +44,11 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   if (parsed.success) return parsed.data;
   const lines = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`);
   throw new Error(`amax: invalid environment configuration\n${lines.join("\n")}\nFix these variables and restart.`);
+}
+
+/** The clock for date windows: the AMAX_TODAY pin (mid-afternoon UTC) when set, else the real time. */
+export function clockFromEnv(env: Pick<Env, "AMAX_TODAY">): () => Date {
+  if (!env.AMAX_TODAY) return () => new Date();
+  const pinned = new Date(`${env.AMAX_TODAY}T15:00:00Z`).getTime();
+  return () => new Date(pinned);
 }

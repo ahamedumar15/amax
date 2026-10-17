@@ -18,7 +18,8 @@ function SrTable({ caption, head, rows }: { caption: string; head: string[]; row
   );
 }
 
-export type Series = { name: string; color: string; data: number[]; area?: boolean; dashed?: boolean };
+/** A null point is a week with no data: the line skips it rather than drawing a zero. */
+export type Series = { name: string; color: string; data: (number | null)[]; area?: boolean; dashed?: boolean };
 
 export function LineChart({ id, label, labels, series, max, step, width = 560, height = 210 }: { id: string; label: string; labels: string[]; series: Series[]; max: number; step: number; width?: number; height?: number }) {
   const L = 40, R = 10, T = 10, B = 30, n = labels.length;
@@ -32,19 +33,20 @@ export function LineChart({ id, label, labels, series, max, step, width = 560, h
         {grid}
         {labels.map((l, i) => <text key={l} x={X(i)} y={height - 8} textAnchor="middle" className="ax">{l}</text>)}
         {series.map((se, k) => {
-          const pts = se.data.map((v, i) => [X(i), Y(v)] as [number, number]);
+          const pts = se.data.flatMap((v, i) => (v === null ? [] : [[X(i), Y(v)] as [number, number]]));
+          if (!pts.length) return null;
           const last = pts[pts.length - 1];
           return (
             <g key={se.name}>
               {se.area && <><defs><linearGradient id={`${id}g${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={se.color} stopOpacity=".25" /><stop offset="1" stopColor={se.color} stopOpacity="0" /></linearGradient></defs>
-                <path d={`${curve(pts)} L${X(n - 1)} ${Y(0)} L${X(0)} ${Y(0)} Z`} fill={`url(#${id}g${k})`} /></>}
+                <path d={`${curve(pts)} L${last[0]} ${Y(0)} L${pts[0][0]} ${Y(0)} Z`} fill={`url(#${id}g${k})`} /></>}
               <path d={curve(pts)} fill="none" stroke={se.color} strokeWidth={se.dashed ? 2.2 : 3} strokeDasharray={se.dashed ? "6 6" : "none"} strokeLinecap="round" />
               <circle cx={last[0]} cy={last[1]} r={5} fill="#fff" stroke={se.color} strokeWidth={2.5} />
             </g>
           );
         })}
       </svg>
-      <SrTable caption={label} head={["", ...series.map((s) => s.name)]} rows={labels.map((l, i) => [l, ...series.map((s) => s.data[i])])} />
+      <SrTable caption={label} head={["", ...series.map((s) => s.name)]} rows={labels.map((l, i) => [l, ...series.map((s) => s.data[i] ?? "No data")])} />
     </>
   );
 }

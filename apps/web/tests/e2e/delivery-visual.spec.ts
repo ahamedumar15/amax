@@ -19,6 +19,7 @@ const SECTIONS: { id: string; path: string; regions: string[] }[] = [
 const ALLOW: Record<string, [number, string]> = {
   "* /delivery/proposals .card.flush tbody tr": [0.03, "the mock's table says \"Invoice export\"; fixtures.md and the mock's own board say \"Invoice export to PDF\", which widens the column"],
   "* /delivery .tickets .ticket": [0.04, "the mock's \"1 more in presales handover\" needs presales data (020); the app says \"For 3 clients\""],
+  "* /delivery/proposals .cols.even > .card": [0.04, "the mock's shipped bars (W41 4, W42 6) disagree with its own \"5 released this month\"; the chart counts proposal.released_at, the phase card's source too (041 review round 1), so W41 and W42 and the trend differ"],
   "390 /delivery/p/CON .crumb": [0.03, "same text and box; Chromium antialiases it in greyscale in the app and subpixel in the mock at phone width"],
   "390 /delivery/p/CON .tabs": [0.03, "same as the breadcrumb"],
 };
