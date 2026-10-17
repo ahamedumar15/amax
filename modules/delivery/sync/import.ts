@@ -4,7 +4,7 @@ import { canonical, type ServiceContext } from "@amax/core/server";
 import { syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
 
-export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number };
+export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
 const desired = (projectKey: string, r: SpecRecord, sha: string) => ({
   key: `${projectKey}-${r.number}`,
@@ -13,7 +13,7 @@ const desired = (projectKey: string, r: SpecRecord, sha: string) => ({
   tasksDone: r.tasksDone,
   tasksTotal: r.tasksTotal,
   releasedAt: r.releasedAt,
-  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha },
+  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source },
 });
 
 // The meta fields that matter for "changed?" (the commit sha alone doesn't count as a change).
@@ -29,13 +29,18 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                    where pr.key = ${opts.projectKey} and p.source = 'specclaw'`));
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
-  const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0 };
+  // Keys taken by proposals someone created by hand are left alone and reported (review round 1).
+  const manual = new Set((await withTenant(db, ctx.tenantId, (tx) => tx.execute(sql`select p.key from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+                   where pr.key = ${opts.projectKey} and p.source is distinct from 'specclaw'`))).map((r) => r.key as string));
+  const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
   const project = { name: opts.projectName, client: opts.client };
 
   for (const r of opts.records) {
     const d = desired(opts.projectKey, r, opts.sha);
     const cur = byKey.get(d.key);
     byKey.delete(d.key);
+    if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
+    if (manual.has(d.key)) { result.skipped.push(`${d.key}: key belongs to a proposal not created by the sync`); continue; }
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase as string, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
       continue;

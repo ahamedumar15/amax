@@ -50,9 +50,12 @@ const PROPOSALS = sql`
     select e.name, d.status from delivery.deployment d join delivery.environment e on e.id = d.environment_id
     where d.release_id = p.release_id and d.voided_at is null order by e.position desc, d.at desc limit 1) last on true`;
 
+const ACTIVE = sql`coalesce(p.meta->>'withdrawn', 'false') <> 'true'`;
+
 export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: string } = {}) =>
   read(v, async (tx) => {
-    const where = [opts.phase ? sql`p.phase = ${opts.phase}` : undefined, opts.projectKey ? sql`pr.key = ${opts.projectKey}` : undefined].filter(Boolean);
+    // Withdrawn spec proposals (their folder is gone) are history, not work: never in lists or counts.
+    const where = [ACTIVE, opts.phase ? sql`p.phase = ${opts.phase}` : undefined, opts.projectKey ? sql`pr.key = ${opts.projectKey}` : undefined].filter(Boolean);
     const filter = where.length ? sql`where ${sql.join(where as ReturnType<typeof sql>[], sql` and `)}` : sql``;
     return (await tx.execute(sql`${PROPOSALS} ${filter} order by p.updated_at desc, p.key desc`)).map(proposal);
   });
@@ -61,7 +64,7 @@ export const getProject = (v: Viewer, key: string) =>
   read(v, async (tx) => {
     const [r] = await tx.execute(sql`select * from delivery.project where key = ${key}`);
     if (!r) return null;
-    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} order by p.key desc`)).map(proposal);
+    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} and ${ACTIVE} order by p.key desc`)).map(proposal);
     return { project: project(r), proposals };
   });
 
@@ -69,14 +72,14 @@ export const getProject = (v: Viewer, key: string) =>
 export const phaseCounts = (v: Viewer, now = new Date()) =>
   read(v, async (tx) => {
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal group by phase`);
+    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal p where ${ACTIVE} group by phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
     const counts = { proposed: Number(get("proposed")?.n ?? 0), planned: Number(get("planned")?.n ?? 0), building: Number(get("building")?.n ?? 0), verified: Number(get("verified")?.n ?? 0) };
     return { ...counts, inFlight: counts.proposed + counts.planned + counts.building + counts.verified, releasedThisMonth: Number(get("released")?.this_month ?? 0) };
   });
 
 export type ReleaseRow = {
-  id: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
+  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
   stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
@@ -88,7 +91,7 @@ export const listReleases = (v: Viewer) =>
       from delivery.release r join delivery.project pr on pr.id = r.project_id order by r.created_at desc`);
     const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
-      id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
+      id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
       projectColor: r.project_color as string, proposals: Number(r.proposals),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
@@ -97,6 +100,10 @@ export const listReleases = (v: Viewer) =>
       }),
     }));
   });
+
+/** Columns for every release view: the union of the projects' environment names, in stage order. */
+export const stageColumns = (releases: ReleaseRow[]) =>
+  [...new Map(releases.flatMap((r) => r.stages).sort((a, b) => a.position - b.position).map((s) => [s.environment, s.environment])).keys()];
 
 export type EnvironmentRow = { name: string; position: number; isProd: boolean; deployments: number };
 

@@ -199,7 +199,10 @@ export const syncProposal = defineService({
               ${input.releasedAt}, ${meta}::jsonb, now())
       on conflict (tenant_id, key) do update set title = excluded.title, phase = excluded.phase, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
         source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
+        where delivery.proposal.source = excluded.source
       returning *`);
+    // A key already used by a proposal from another source is never overwritten.
+    if (!row) throw new Error(`${input.key} belongs to a proposal that wasn't created by ${input.source}`);
     const events: Emitted[] = before && before.phase !== input.phase ? [phaseEvent(before, input.phase, ctx)] : [];
     return {
       result: { key: input.key, created: !before, phaseChanged: events.length > 0 },

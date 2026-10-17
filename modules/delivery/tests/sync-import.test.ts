@@ -83,3 +83,65 @@ describe.skipIf(!hasDb)("AC-2/AC-3 self-sync import", () => {
     expect(w.w).toBe("true");
   });
 });
+
+describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
+  let t: Awaited<ReturnType<typeof migratedDatabase>>;
+  let app: Db;
+  let ctx: ServiceContext;
+  let ops: Awaited<ReturnType<typeof viewerForUser>>;
+
+  beforeAll(async () => {
+    t = await migratedDatabase();
+    app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
+    setGrants([manifest]);
+    installAuthorizer();
+    await t.owner`insert into core.tenant (id, name) values (${T}, 'amax')`;
+    const adminId = await upsertPasswordUser(app, T, { email: "ops@amax.test", name: "Ops", roles: ["Admin"], password: "ops-password-123" });
+    ops = (await withTenant(app, T, (tx) => viewerForUser(tx, T, adminId)))!;
+    const { token } = await createPrincipal(app, ops, { name: "specclaw-sync", scopes: ["delivery:proposal:sync"], actsFor: [], days: 30 });
+    const id = await authenticateToken(app, token);
+    if (id?.kind !== "principal") throw new Error("no principal");
+    ctx = await principalContext(app, id.principal, "delivery:proposal:sync");
+  });
+  afterAll(() => t?.drop());
+
+  it("a hand-made proposal with a colliding key is skipped, never overwritten, and a re-run stays quiet", async () => {
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved" } });
+    await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo), sha: "1" });
+    const { createProposal } = await import("../server/services");
+    const { ctxFor } = await import("../server/context");
+    const made = await createProposal(ctxFor(ops!), { projectKey: "RB", title: "Made by hand" });
+    expect(made.key).toBe("RB-002");
+    const repo2 = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
+    const r = await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo2), sha: "2" });
+    expect(r.skipped).toEqual(["RB-002: key belongs to a proposal not created by the sync"]);
+    const [p] = await withTenant(app, T, (tx) => tx.execute(sql`select title, source from delivery.proposal where key = 'RB-002'`));
+    expect(p).toEqual({ title: "Made by hand", source: null });
+    const again = await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo2), sha: "3" });
+    expect(again).toMatchObject({ created: 0, updated: 0 });
+  });
+
+  it("a corrupt state.json is reported and skipped, not read as an earlier phase", async () => {
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved" } });
+    writeFileSync(join(repo, ".specclaw/changes/001-a/state.json"), "{ not json");
+    const records = readSpecclaw({ dir: repo, ref: "main@abc12345" });
+    expect(records[0]).toMatchObject({ unreadable: true, source: "main@abc12345" });
+    const r = await syncSpecclaw(app, ctx, { projectKey: "CJ", projectName: "cj", client: "x", records, sha: "abc12345" });
+    expect(r.created).toBe(0);
+    expect(r.skipped[0]).toMatch(/state.json unreadable at main@abc12345/);
+  });
+
+  it("each record carries the branch and commit it was read from; withdrawn ones leave lists and counts", async () => {
+    const main = fakeRepo({ "001-a": { status: "✅ Approved" }, "002-b": {} });
+    const branch = fakeRepo({ "001-a": { status: "✅ Approved", claim: true } });
+    await syncSpecclaw(app, ctx, { projectKey: "SR", projectName: "sr", client: "x", records: readSpecclaw({ dir: main, ref: "main@11111111" }, [{ dir: branch, ref: "specclaw/001-a@22222222" }]), sha: "11111111" });
+    const metas = await withTenant(app, T, (tx) => tx.execute(sql`select key, meta->>'source' as source from delivery.proposal where key like 'SR-%' order by key`));
+    expect(metas).toEqual([{ key: "SR-001", source: "specclaw/001-a@22222222" }, { key: "SR-002", source: "main@11111111" }]);
+    rmSync(join(main, ".specclaw/changes/002-b"), { recursive: true });
+    await syncSpecclaw(app, ctx, { projectKey: "SR", projectName: "sr", client: "x", records: readSpecclaw({ dir: main, ref: "main@3" }), sha: "3" });
+    const { listProposals, getProject } = await import("../server/queries");
+    expect((await listProposals(ops!, { projectKey: "SR" })).map((p) => p.key)).toEqual(["SR-001"]);
+    expect((await getProject(ops!, "SR"))!.proposals.map((p) => p.key)).toEqual(["SR-001"]);
+  });
+});

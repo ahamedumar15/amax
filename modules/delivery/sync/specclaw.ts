@@ -26,15 +26,25 @@ export type SpecRecord = {
   waiting: string[];
   updatedAt: string | null;
   releasedAt: string | null;
+  /** Where this record was read: "main@<sha>" or "specclaw/<change>@<sha>" (review round 1). */
+  source: string;
+  /** state.json existed but couldn't be parsed: the record is reported, never synced. */
+  unreadable: boolean;
 };
 
 const RANK: Record<Phase, number> = { proposed: 0, planned: 1, building: 2, verified: 3, released: 4 };
 const read = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : "");
-const json = (p: string) => { try { return JSON.parse(read(p) || "{}"); } catch { return {}; } };
+// A missing state.json is "no phases yet"; a corrupt one is a problem to report, not an empty state.
+const json = (p: string): { ok: true; value: Record<string, unknown> } | { ok: false } => {
+  const text = read(p);
+  if (!text) return { ok: true, value: {} };
+  try { return { ok: true, value: JSON.parse(text) }; } catch { return { ok: false }; }
+};
 
 type Raw = Omit<SpecRecord, "done" | "status" | "waiting">;
+export type Source = { dir: string; ref: string };
 
-function parse(root: string, dir: string, archived: boolean): Raw | null {
+function parse(root: string, dir: string, archived: boolean, ref: string): Raw | null {
   const base = join(root, ".specclaw/changes", archived ? "archive" : "", dir);
   const change = read(join(base, "change.md"));
   if (!change) return null;
@@ -42,7 +52,8 @@ function parse(root: string, dir: string, archived: boolean): Raw | null {
   const [hardPart, optPart = ""] = head.split("**Integrates with");
   const ids = (s: string) => (s.match(/\[(\d{3})\]/g) ?? []).map((x) => x.slice(1, 4));
   const status = read(join(base, "status.md"));
-  const state = json(join(base, "state.json"));
+  const parsedState = json(join(base, "state.json"));
+  const state = parsedState.ok ? parsedState.value : {};
   const phases = (state.phases ?? {}) as Record<string, { status?: string; at?: string; url?: string }>;
   const tasks = [...change.matchAll(/^- \[( |x)\] `T\d+`/gm)];
   const claim = read(join(base, "claim.md")).match(/machine: (\S+)/)?.[1] ?? null;
@@ -69,6 +80,8 @@ function parse(root: string, dir: string, archived: boolean): Raw | null {
     verdict: change.match(/\*\*Verdict:\*\* (\w+)/)?.[1] ?? null,
     updatedAt: stamps.at(-1) ?? null,
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
+    source: ref,
+    unreadable: !parsedState.ok,
   };
 }
 
@@ -81,15 +94,18 @@ const folders = (root: string, archived: boolean) => {
  * Records for every change in `root` (usually main), each replaced by the same change's state in an
  * overlay (its specclaw/<change> branch) when that one is further along.
  */
-export function readSpecclaw(root: string, overlays: string[] = []): SpecRecord[] {
+export function readSpecclaw(root: string | Source, overlays: (string | Source)[] = []): SpecRecord[] {
+  const src = (x: string | Source): Source => (typeof x === "string" ? { dir: x, ref: x } : x);
+  const main = src(root);
   const byNumber = new Map<string, Raw>();
   const take = (r: Raw | null) => {
     if (!r) return;
     const cur = byNumber.get(r.number);
-    if (!cur || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
+    if (r.unreadable && cur && !cur.unreadable) return;
+    if (!cur || (cur.unreadable && !r.unreadable) || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
   };
-  for (const archived of [true, false]) for (const d of folders(root, archived)) take(parse(root, d, archived));
-  for (const o of overlays) for (const archived of [true, false]) for (const d of folders(o, archived)) if (byNumber.has(d.slice(0, 3)) || archived) take(parse(o, d, archived));
+  for (const archived of [true, false]) for (const d of folders(main.dir, archived)) take(parse(main.dir, d, archived, main.ref));
+  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(d.slice(0, 3)) || archived) take(parse(o.dir, d, archived, o.ref));
   const done = new Set([...byNumber.values()].filter((r) => r.phase === "released").map((r) => r.number));
   return [...byNumber.values()].sort((a, b) => a.number.localeCompare(b.number)).map((r) => {
     const waiting = r.hard.filter((h) => !done.has(h));

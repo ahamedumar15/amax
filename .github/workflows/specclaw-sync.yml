@@ -11,6 +11,11 @@ on:
 permissions:
   contents: read
 
+# One sync at a time: overlapping runs would duplicate audit rows and phase_changed events.
+concurrency:
+  group: specclaw-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -33,6 +38,9 @@ jobs:
         run: |
           overlays=()
           for b in $(git branch -r --format='%(refname:short)' | grep '^origin/specclaw/'); do
-            d=$(mktemp -d); git archive "$b" .specclaw | tar -x -C "$d"; overlays+=(--overlay "$d")
+            # A branch without .specclaw is skipped, not fatal.
+            git cat-file -e "$b:.specclaw" 2>/dev/null || continue
+            d=$(mktemp -d); git archive "$b" .specclaw | tar -x -C "$d"
+            overlays+=(--overlay "$d=${b#origin/}@$(git rev-parse --short=8 "$b")")
           done
           pnpm --filter @amax/delivery sync:specclaw --repo "$GITHUB_WORKSPACE" "${overlays[@]}" --sha "${GITHUB_SHA::8}"

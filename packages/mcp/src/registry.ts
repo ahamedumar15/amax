@@ -26,8 +26,16 @@ function builtins(modules: Registrable[]): RegisteredTool[] {
       module: "core", name: "search", description: "Search projects, proposals and other records by text.", input: z.object({ query: z.string().min(1), limit: z.number().int().min(1).max(50).optional() }).strict(),
       permission: "", scope: "read", readOnly: true,
       run: async (viewer: Viewer, input: { query: string; limit?: number }) => {
-        const results = await Promise.all(modules.filter((m) => m.search).map((m) => m.search!(viewer as never, input.query).catch(() => [] as SearchHit[])));
-        return results.flat().slice(0, input.limit ?? 20);
+        // A module the viewer may not read contributes nothing; any other failure is reported, not
+        // dressed up as "no matches" (review round 1).
+        const notSearched: string[] = [];
+        const results = await Promise.all(modules.filter((m) => m.search).map((m) => m.search!(viewer as never, input.query).catch((e: Error) => {
+          if (e?.name === "ForbiddenError" || e?.name === "ScopeError") return [] as SearchHit[];
+          notSearched.push(m.id);
+          return [] as SearchHit[];
+        })));
+        const hits = results.flat().slice(0, input.limit ?? 20);
+        return notSearched.length ? { hits, notSearched, note: `Couldn't search ${notSearched.join(", ")} just now; results may be incomplete.` } : hits;
       },
     } as unknown as RegisteredTool,
   ];
