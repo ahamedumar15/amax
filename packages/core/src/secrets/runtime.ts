@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Tx } from "@amax/db";
+import type { Tx } from "@amax/db";
 import type { Kms } from "../adapters/kms";
-import { getRuntime } from "../service";
-import { newDataKey } from "./crypto";
 
 const CACHE_MS = 5 * 60_000;
 let kms: Kms | null = null;
@@ -23,19 +21,9 @@ export function configureSecrets(opts: { kms: Kms | null }) {
 
 export const kmsLabel = () => kms?.label ?? null;
 
-function requireKms(): Kms {
+export function requireKms(): Kms {
   if (!kms) throw new SecretsUnavailableError();
   return kms;
-}
-
-export async function ensureDataKey(tenantId: string) {
-  const k = requireKms();
-  await withTenant(getRuntime().db, tenantId, async (tx) => {
-    const [row] = await tx.execute(sql`select 1 from secrets.data_key where tenant_id = ${tenantId}`);
-    if (row) return;
-    const w = await k.wrap(tenantId, newDataKey());
-    await tx.execute(sql`insert into secrets.data_key (tenant_id, kms, key_ref, wrapped) values (${tenantId}, ${k.id}, ${w.keyRef}, ${w.wrapped}) on conflict do nothing`);
-  });
 }
 
 export async function dataKeyFor(tx: Tx, tenantId: string): Promise<Uint8Array> {

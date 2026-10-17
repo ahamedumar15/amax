@@ -1,5 +1,5 @@
 const HIDDEN = "[secret]";
-const ENCODED_RUN = /[A-Za-z0-9+/_-]{12,}={0,2}/g;
+const ENCODED_RUN = /(?:[A-Za-z0-9+/_=-]|%[0-9A-Fa-f]{2}){12,}/g;
 
 const escaped = (s: string) => JSON.stringify(s).slice(1, -1);
 
@@ -17,7 +17,9 @@ export function formsOf(value: string): string[] {
   ])].filter((f) => f.length > 0);
 }
 
-const decodings = (run: string) =>
+const unpercent = (run: string) => run.replace(/%([0-9A-Fa-f]{2})/g, (_m, h: string) => String.fromCharCode(parseInt(h, 16)));
+
+const decodings = (encoded: string, run = unpercent(encoded)) =>
   [0, 1, 2, 3].flatMap((offset) => [Buffer.from(run.slice(offset), "base64"), Buffer.from(run.slice(offset), "base64url")].map((b) => b.toString("latin1")));
 
 const replaceForms = (text: string, forms: string[]) => forms.reduce((t, f) => t.split(f).join(HIDDEN), text);

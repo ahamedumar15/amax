@@ -1,11 +1,12 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
-import { authorize, ForbiddenError, type ServiceContext } from "../authorize";
+import type { ServiceContext } from "../authorize";
 import { defineService } from "../service";
 import { CONNECTOR_IDS, REVOKE_REASONS } from "./connectors";
 import { seal } from "./crypto";
-import { dataKeyFor, ensureDataKey } from "./runtime";
+import { ensureDataKey } from "./datakey";
+import { dataKeyFor } from "./runtime";
 
 const RESOURCE = "secrets.credential";
 const MANAGE = "secrets:credential:manage";
@@ -44,8 +45,7 @@ const storeVersion = defineService({
 });
 
 export async function putSecret(ctx: ServiceContext, raw: unknown) {
-  if (!(await authorize(ctx, MANAGE, RESOURCE, raw))) throw new ForbiddenError(MANAGE, RESOURCE);
-  await ensureDataKey(ctx.tenantId);
+  await ensureDataKey(ctx);
   return storeVersion(ctx, raw);
 }
 

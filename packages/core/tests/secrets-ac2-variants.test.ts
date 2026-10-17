@@ -29,6 +29,11 @@ const VARIANTS: [string, (s: Secret) => unknown][] = [
   ["an Error's cause", () => ({ err: new Error("x", { cause: VALUE }) })],
   ["a non-enumerable property", () => Object.defineProperty({}, "hidden", { value: VALUE, enumerable: false })],
   ["base64 of a JSON body", () => Buffer.from(JSON.stringify({ secret: VALUE })).toString("base64")],
+  ["a symbol", () => ({ tag: Symbol(VALUE) })],
+  ["an AggregateError", () => ({ err: new AggregateError([new Error(VALUE)], "many") })],
+  ["an Error subclass with a getter", () => ({ err: new (class HttpError extends Error { get body() { return VALUE; } })("401") })],
+  ["UTF-16 bytes", () => Buffer.from(VALUE, "utf16le")],
+  ["percent-encoded base64", () => `grant=client&auth=${encodeURIComponent(Buffer.from(`id:${VALUE}`).toString("base64"))}`],
   ["a misaligned base64 run", () => `/v1/${Buffer.from(`id:${VALUE}`).toString("base64")}`.replace("/v1/", "/v1/a")],
 ];
 
@@ -40,7 +45,7 @@ describe.skipIf(!hasDb)("031 AC-2 every encoding of a value stays inside useSecr
     await expect(useSecret(job, { connector: "xero", purpose: "variant" }, async (s) => leak(s))).rejects.toThrow(SecretLeakError);
     const e = (await useSecret(job, { connector: "xero", purpose: "variant" }, async (s) => {
       const shown = leak(s);
-      const text = typeof shown === "string" ? shown : JSON.stringify(shown instanceof Map ? [...shown] : shown instanceof Set ? [...shown] : shown);
+      const text = typeof shown === "string" ? shown : String(JSON.stringify(shown instanceof Map ? [...shown] : shown instanceof Set ? [...shown] : shown, (_k, v) => (typeof v === "symbol" ? v.description : v)));
       throw Object.assign(new Error(`failed: ${text}`), { name: `E ${text}` });
     }).catch((x: Error) => x)) as Error;
     const thrown = `${e.name} ${e.message} ${e.stack}`;

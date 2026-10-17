@@ -25,7 +25,7 @@ export class Secret {
 export class SecretLeakError extends Error {
   readonly retryable = false;
   constructor(connector: string) {
-    super(`secrets: the ${connector} credential value was about to leave useSecret, or the result was not plain data that could be checked; it was withheld`);
+    super(`secrets: the ${connector} credential value was about to leave useSecret, or the result was not plain JSON data (strings, numbers, booleans, null, arrays, plain objects) that could be checked; it was withheld`);
     this.name = "SecretLeakError";
   }
 }
@@ -44,24 +44,23 @@ export function scrubError(e: unknown, values: string[]): Error {
   return clean;
 }
 
-const PLAIN = new Set<unknown>([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype, Date.prototype]);
-const bytesText = (b: ArrayBuffer | ArrayBufferView) => (ArrayBuffer.isView(b) ? Buffer.from(b.buffer, b.byteOffset, b.byteLength) : Buffer.from(b)).toString("latin1");
-
-function partsOf(value: object): unknown[] | null {
-  if (value instanceof Error) return [value.name, value.message, value.stack, value.cause, ...Object.values(value)];
-  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) return [bytesText(value)];
-  if (!PLAIN.has(Object.getPrototypeOf(value))) return null;
-  if (value instanceof Map) return [...value.keys(), ...value.values()];
-  if (value instanceof Set) return [...value];
-  return Reflect.ownKeys(value).flatMap((k) => [typeof k === "string" ? k : k.description, (value as Record<PropertyKey, unknown>)[k]]);
+function plainEntries(value: object): unknown[] | null {
+  const proto = Object.getPrototypeOf(value);
+  if (Array.isArray(value) ? proto !== Array.prototype : proto !== Object.prototype && proto !== null) return null;
+  const keys = Reflect.ownKeys(value).filter((k) => !(Array.isArray(value) && k === "length"));
+  const props = keys.map((k) => Object.getOwnPropertyDescriptor(value, k)!);
+  if (keys.some((k) => typeof k !== "string") || props.some((d) => !d.enumerable || !("value" in d))) return null;
+  return [...keys, ...props.map((d) => d.value)];
 }
 
 function leaks(value: unknown, values: string[], seen: Set<object>): boolean {
+  if (value === null || value === undefined || typeof value === "boolean") return false;
   if (typeof value === "string") return hide(value, values) !== value;
-  if (typeof value === "function" || value instanceof Secret) return true;
-  if (value === null || typeof value !== "object" || seen.has(value)) return false;
+  if (typeof value === "number") return !Number.isFinite(value) || hide(String(value), values) !== String(value);
+  if (typeof value !== "object") return true;
+  if (seen.has(value)) return false;
   seen.add(value);
-  const parts = partsOf(value);
+  const parts = plainEntries(value);
   return parts === null || parts.some((p) => leaks(p, values, seen));
 }
 
