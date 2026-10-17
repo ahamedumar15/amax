@@ -16,7 +16,7 @@ Helpdesk: queues, tickets per week, categories, queue table with SLA, and the Fa
 ## Acceptance Criteria
 
 1. **AC-1** Tickets from Teams, email and chat. Queues per team, with separate response and resolution SLAs.
-2. **AC-2** The support agent resolves only through approved actions (for example, access requests approved by the owner). HR tickets are visible only to HR.
+2. **AC-2** The support agent resolves only through approved actions (for example, access requests approved by the owner). It never resets passwords or MFA or changes credentials; those go to IT with identity verification. Email tickets are untrusted: an access request is acted on only when the requester is signed in through Teams or amax. HR tickets are visible only to HR.
 3. **AC-3** Chat intent "new ticket".
 4. **AC-4** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 

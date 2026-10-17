@@ -15,7 +15,7 @@ People: stats, departments, joiners vs leavers, directory; Person page with empl
 
 ## Acceptance Criteria
 
-1. **AC-1** `hr` schema: person (linked to auth user), employment (entity, department, grade, manager, contract), document and probation. Pay fields are `sensitive: 'pay'`.
+1. **AC-1** `hr` schema: person (linked to auth user), employment (entity, department, grade, manager, contract), document and probation. Pay fields are `sensitive: 'pay'`, bank details `'bank'`, and documents carry their own class (medical certificates `'health'`).
 2. **AC-2** Directory and person page match the mock. A PM sees masked pay; HR and Payroll see it per the 002 rules.
 3. **AC-3** Chat intent "add person". Events `hr.person.joined`, `hr.person.left` and `hr.person.changed`.
 4. **AC-4** `contracts.ts`: `getPerson`, `listPeople(scope)`, `getEmployment`.

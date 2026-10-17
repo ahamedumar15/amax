@@ -15,7 +15,7 @@ Payroll: steps, totals, where the money goes, cost line, changes with Accept/Que
 
 ## Acceptance Criteria
 
-1. **AC-1** `payroll` schema: pay component, pay group, run, payslip line. Runs move Draft → Agent check → HR approval → Finance approval → Bank file → Payslips sent, and each step is audited.
+1. **AC-1** `payroll` schema: pay component, pay group, run, payslip line. Runs move Draft → Agent check → HR approval → Finance approval → Bank file → Payslips sent, and each step is audited. Finance approves totals by entity and cost centre, without seeing individual pay. The bank file is an irreversible 006 kind.
 2. **AC-2** The payroll agent explains every change from last period as a suggestion. "Approve run" stays disabled until every queried line is resolved.
 3. **AC-3** Pay values are visible only to Payroll and Admin (002), and to employees for their own payslip.
 4. **AC-4** A country-pack interface (`calculate`, `statutory`, `filings`) lets 015 and 016 plug in without changing the engine.

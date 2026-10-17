@@ -1,7 +1,7 @@
 # Expenses and reimbursements
 
 **Change:** 018-expenses · **Created:** 2026-10-17
-**Lane:** Finance · **Module:** `modules/expenses` · **Depends on:** [011](../011-hr-core/change.md), [003](../003-data-core/change.md)
+**Lane:** Finance · **Module:** `modules/expenses` · **Depends on:** [011](../011-hr-core/change.md), [003](../003-data-core/change.md), [006](../006-agent-governance/change.md)
 
 ## Problem
 

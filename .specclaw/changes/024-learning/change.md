@@ -1,7 +1,7 @@
 # Learning and development
 
 **Change:** 024-learning · **Created:** 2026-10-17
-**Lane:** Talent · **Module:** `modules/learning` · **Depends on:** [011](../011-hr-core/change.md)
+**Lane:** Talent · **Module:** `modules/learning` · **Depends on:** [011](../011-hr-core/change.md), [029](../029-workflows-scheduler/change.md)
 
 ## Problem
 

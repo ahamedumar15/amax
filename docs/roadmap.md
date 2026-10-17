@@ -19,6 +19,12 @@ The category it competes in is **PSA + HCM + services finance**, against Kantata
 | Country packs | Holidays, leave rules, tax, statutory funds and filing formats, plugged in per country |
 | Notifications: email, Teams, Slack; Teams/Slack app; mobile web | People act where they already are |
 | Documents and e-signature (provider integration) | Contracts, offers, letters, policies |
+| Tenant isolation: row-level security, tenant from the sign-in token (002, 003) | One customer's data can never reach another's |
+| Secrets and keys per tenant, envelope-encrypted (031) | Connector credentials never sit in env vars or logs |
+| Retention, erasure and access requests (032) | Sri Lanka PDPA and the Australian Privacy Act |
+| AI gateway: one path for every model call, redaction, prompt-injection guard, data region (033) | Pay and health data never leave unless allowed |
+| Backup, restore drills, tenant export and deletion (034) | Payroll and HR records can't be lost |
+| REST API, signed webhooks, rate limits (035) | Machine callers are verified and can't starve a tenant |
 
 ## Modules
 
@@ -67,7 +73,7 @@ Policy library with read-and-acknowledge tracking, ISMS registers (risks, incide
 One place per person for everything they can use: Entra groups and roles, Microsoft 365 and other SaaS seats, Azure DevOps and GitHub access, cloud roles, and Intune devices. Includes licence spend, unused-seat detection, access reviews, and revocation on the person's last day.
 
 ### 12. Helpdesk
-IT, HR and facilities queues with SLAs, tickets from Teams and email, and a support agent that resolves access requests, password resets and HR letters on its own.
+IT, HR and facilities queues with SLAs, tickets from Teams and email, and a support agent that drafts answers and prepares access requests and HR letters for a person to approve. Password and MFA resets always go to IT with identity verification.
 
 ### 13. Insights (agent intelligence)
 Recurring agent jobs that write a weekly briefing:
@@ -93,9 +99,9 @@ Proposals in the same wave have no dependency on each other, so separate teams o
 |---|---|
 | 0 | 001 amax-foundation (Platform) |
 | 1 | 002 identity-and-access (Platform), 003 data-core (Platform) |
-| 2 | 004 mcp-gateway (Platform), 007 delivery-projects (Delivery), 011 hr-core (People), 029 workflows-scheduler (Platform) |
-| 3 | 005 amax-chat (Platform), 006 agent-governance (Platform), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 013 onboarding-offboarding (People), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 020 presales (Sales), 023 recruitment (Talent), 024 learning (Talent), 028 keyflow-sync (Integrations), 030 notifications (Platform) |
-| 4 | 008 delivery-ingestion (Delivery), 014 payroll-engine (Payroll), 021 it-access-licences (IT), 022 helpdesk (IT), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
+| 2 | 004 mcp-gateway (Platform), 007 delivery-projects (Delivery), 011 hr-core (People), 029 workflows-scheduler (Platform), 031 secrets-and-keys (Platform), 033 ai-gateway-and-residency (Platform) |
+| 3 | 005 amax-chat (Platform), 006 agent-governance (Platform), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 020 presales (Sales), 024 learning (Talent), 028 keyflow-sync (Integrations), 030 notifications (Platform), 032 data-retention-and-erasure (Platform), 034 backup-restore-and-export (Platform), 035 api-webhooks-and-rate-limits (Platform), 036 compliance-registers (IT) |
+| 4 | 008 delivery-ingestion (Delivery), 013 onboarding-offboarding (People), 014 payroll-engine (Payroll), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 021 it-access-licences (IT), 022 helpdesk (IT), 023 recruitment (Talent), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
 | 5 | 015 payroll-sri-lanka (Payroll), 016 payroll-australia (Payroll), 019 accounting-journals (Finance) |
 
 ```mermaid
@@ -130,6 +136,12 @@ graph LR
   P028["028 keyflow-sync"]
   P029["029 workflows-scheduler"]
   P030["030 notifications"]
+  P031["031 secrets-and-keys"]
+  P032["032 data-retention-and-erasure"]
+  P033["033 ai-gateway-and-residency"]
+  P034["034 backup-restore-and-export"]
+  P035["035 api-webhooks-and-rate-limits"]
+  P036["036 compliance-registers"]
   P001 --> P002
   P001 --> P003
   P002 --> P004
@@ -137,14 +149,18 @@ graph LR
   P002 --> P005
   P003 --> P005
   P004 --> P005
+  P033 --> P005
   P002 --> P006
   P003 --> P006
   P029 --> P006
+  P033 --> P006
   P002 --> P007
   P003 --> P007
   P007 --> P008
   P006 --> P008
   P029 --> P008
+  P009 --> P008
+  P035 --> P008
   P007 --> P009
   P002 --> P009
   P007 --> P010
@@ -153,6 +169,7 @@ graph LR
   P003 --> P011
   P011 --> P012
   P011 --> P013
+  P006 --> P013
   P011 --> P014
   P012 --> P014
   P006 --> P014
@@ -160,22 +177,29 @@ graph LR
   P014 --> P016
   P007 --> P017
   P003 --> P017
+  P009 --> P017
+  P006 --> P017
   P011 --> P018
   P003 --> P018
+  P006 --> P018
   P014 --> P019
   P017 --> P019
   P007 --> P020
   P003 --> P020
   P011 --> P021
   P006 --> P021
+  P031 --> P021
   P002 --> P022
   P003 --> P022
   P006 --> P022
   P011 --> P023
+  P006 --> P023
   P011 --> P024
+  P029 --> P024
   P006 --> P025
   P005 --> P025
   P029 --> P025
+  P031 --> P025
   P006 --> P026
   P007 --> P026
   P009 --> P026
@@ -184,11 +208,28 @@ graph LR
   P029 --> P026
   P009 --> P027
   P010 --> P027
+  P012 --> P027
   P011 --> P028
+  P029 --> P028
+  P031 --> P028
   P003 --> P029
   P002 --> P030
   P003 --> P030
   P029 --> P030
+  P003 --> P031
+  P002 --> P032
+  P003 --> P032
+  P029 --> P032
+  P002 --> P033
+  P003 --> P033
+  P003 --> P034
+  P031 --> P034
+  P002 --> P035
+  P003 --> P035
+  P031 --> P035
+  P002 --> P036
+  P003 --> P036
+  P011 --> P036
 ```
 
 ## Lanes and owners
@@ -197,13 +238,13 @@ Each lane can be given to one team; the platform team owns the platform lane and
 
 | Lane | Proposals | Module folders (CODEOWNERS) |
 |---|---|---|
-| Platform | 001, 002, 003, 004, 005, 006, 029, 030 | `apps/web`, `modules/notifications`, `packages/agents`, `packages/auth`, `packages/chat`, `packages/core`, `packages/mcp`, `packages/workflows` |
+| Platform | 001, 002, 003, 004, 005, 006, 029, 030, 031, 032, 033, 034, 035 | `apps/web`, `deploy/`, `modules/notifications`, `packages/agents`, `packages/ai`, `packages/api`, `packages/auth`, `packages/chat`, `packages/core`, `packages/db`, `packages/mcp`, `packages/privacy`, `packages/workflows` |
 | Delivery | 007, 008, 009, 010, 027 | `modules/allocations`, `modules/delivery`, `modules/reports`, `modules/time` |
 | People | 011, 012, 013 | `modules/hr`, `modules/leave`, `modules/onboarding` |
 | Payroll | 014, 015, 016 | `modules/payroll-au`, `modules/payroll-lk`, `modules/payroll` |
 | Finance | 017, 018, 019 | `modules/accounting`, `modules/expenses`, `modules/finance` |
 | Sales | 020 | `modules/presales` |
-| IT | 021, 022 | `modules/helpdesk`, `modules/it-access` |
+| IT | 021, 022, 036 | `modules/compliance`, `modules/helpdesk`, `modules/it-access` |
 | Talent | 023, 024 | `modules/learning`, `modules/recruitment` |
 | Intelligence | 025, 026 | `modules/inbox-agent`, `modules/insights` |
 | Integrations | 028 | `modules/keyflow` |

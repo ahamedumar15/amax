@@ -1800,6 +1800,210 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     </div>
   </div>
 </section>
+<!-- ================= 031 Connections and keys ================= -->
+<section data-change="031-secrets-and-keys" id="031-secrets-and-keys" data-roles="admin" data-title="Connections and keys" data-icon="key" data-group="ops">
+  <div class="row head">
+    <div><h1>Connections and keys</h1><p class="lede">Six connector credentials, all encrypted with Lumen Labs' own key. The Azure DevOps token expires in 12 days; rotate it before then.</p></div>
+    <div class="actions"><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add credential</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Credentials</div><div class="v">6</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><div class="p">5 active, 1 revoked</div></div>
+    <div class="ticket t-yellow"><div class="k">Expiring in 30 days</div><div class="v">1</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">Azure DevOps, Oct 29</div></div>
+    <div class="ticket t-mint"><div class="k">Rotated in 90 days</div><div class="v">4 of 5</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">80% of 5 active<div class="bar" aria-hidden="true"><i style="width:80%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Values shown to anyone</div><div class="v">0</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">Write-only, never displayed</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Credentials</h2><span class="muted" style="font-size:13px">Key: Azure Key Vault, australiaeast</span></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Connector</th><th>Used for</th><th>Status</th><th>Last rotated</th><th>Expires</th><th>Last used</th><th class="num"><span class="sr">Actions</span></th></tr></thead>
+      <tbody>
+      <tr><td><div class="who"><span class="logo-sq" style="background:#2F6FEB">E</span>Microsoft Graph, read</div></td><td>People, licences, devices sync</td><td><span class="chip good">Active</span></td><td>Sep 2</td><td>Mar 2, 2027</td><td>06:00 today, sync job</td><td class="num"><button class="btn sm">Rotate</button></td></tr>
+      <tr><td><div class="who"><span class="logo-sq" style="background:#2F6FEB">E</span>Microsoft Graph, write</div></td><td>Approved access changes only</td><td><span class="chip good">Active</span></td><td>Sep 2</td><td>Mar 2, 2027</td><td>Oct 15, Sahan Kumara approved</td><td class="num"><button class="btn sm">Rotate</button></td></tr>
+      <tr><td><div class="who"><span class="logo-sq" style="background:#0078D4">D</span>Azure DevOps</div></td><td>Commits, pipelines, webhooks</td><td><span class="chip warn">Expires in 12 days</span></td><td>Apr 29</td><td>Oct 29, 2026</td><td>09:42 today, webhook</td><td class="num"><button class="btn sm primary">Rotate</button></td></tr>
+      <tr><td><div class="who"><span class="logo-sq" style="background:#13B5EA">X</span>Xero</div></td><td>Payroll journals, invoices</td><td><span class="chip good">Active</span></td><td>Aug 14</td><td>Feb 14, 2027</td><td>Oct 1, pay run journal</td><td class="num"><button class="btn sm">Rotate</button></td></tr>
+      <tr><td><div class="who"><span class="logo-sq" style="background:linear-gradient(135deg,#7B61FF,#2FCB8C)">K</span>Keyflow</div></td><td>Two-way people and goals sync</td><td><span class="chip good">Active</span></td><td>Oct 1</td><td>Apr 1, 2027</td><td>07:00 today, sync job</td><td class="num"><button class="btn sm">Rotate</button></td></tr>
+      <tr><td><div class="who"><span class="logo-sq" style="background:#E42527">Z</span>Zoho Sign</div></td><td>Offers and contracts</td><td><span class="chip draft">Revoked</span></td><td>Jun 10</td><td>None</td><td>Sep 30, replaced</td><td class="num"></td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= 032 Data retention ================= -->
+<section data-change="032-data-retention-and-erasure" id="032-data-retention-and-erasure" data-roles="admin hr" data-title="Data retention" data-icon="calendar" data-group="ops">
+  <div class="row head">
+    <div><h1>Data retention</h1><p class="lede">Tonight's purge removes 41 candidate records from 2025 and anonymises 3 leavers. One erasure request is waiting for a second approver.</p></div>
+    <div class="actions"><button class="btn">Add legal hold</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New request</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Data classes covered</div><div class="v">14 of 14</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">100% of 14<div class="bar" aria-hidden="true"><i style="width:100%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Due tonight</div><div class="v">44</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">41 delete, 3 anonymise</div></div>
+    <div class="ticket t-yellow"><div class="k">Open requests</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">1 access, 1 erasure</div></div>
+    <div class="ticket t-pink"><div class="k">Legal holds</div><div class="v">1</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">Purge paused for 1 person</div></div>
+  </div>
+  <div class="cols">
+    <div class="card flush">
+      <div class="card-head"><h2>Retention by data class</h2><select class="select" aria-label="Legal entity"><option>Lumen Labs Lanka (Pvt) Ltd, Sri Lanka</option><option>Lumen Labs Pty Ltd, Australia</option></select></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Data</th><th>Class</th><th>Kept for</th><th>Starts</th><th>Then</th></tr></thead>
+        <tbody>
+        <tr><td>Payslips and pay runs</td><td><span class="chip pink">Pay</span></td><td>7 years <small>statutory minimum</small></td><td>End of pay year</td><td>Delete</td></tr>
+        <tr><td>Medical leave notes</td><td><span class="chip pink">Health</span></td><td>2 years</td><td>Leave ends</td><td>Delete</td></tr>
+        <tr><td>Candidates not hired</td><td><span class="chip info">Candidate</span></td><td>12 months</td><td>Decision</td><td>Delete</td></tr>
+        <tr><td>Inbox agent excerpts</td><td><span class="chip agent">Message</span></td><td>30 days</td><td>Suggestion closed</td><td>Delete</td></tr>
+        <tr><td>Agent run logs</td><td><span class="chip agent">Run</span></td><td>180 days</td><td>Run ends</td><td>Delete</td></tr>
+        <tr><td>Leavers' HR record</td><td><span class="chip info">Person</span></td><td>7 years</td><td>Last day</td><td>Anonymise</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <div class="card-head"><h2>Requests</h2><span class="chip warn">1 needs approval</span></div>
+        <ul class="list">
+          <li><div class="l"><span class="av sm a4">RF</span><div>Erasure, Rizwan Farook<small>Left Sep 30. Payslips kept 7 years by law; 212 other records to erase</small></div></div><button class="btn sm primary">Approve</button></li>
+          <li><div class="l"><span class="av sm a3">CP</span><div>Access, candidate Chamari Peiris<small>Package ready: 14 records from Recruitment</small></div></div><button class="btn sm">Send</button></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Purged last 30 days</h2><span class="muted" style="font-size:13px">By class, never by value</span></div>
+        <div class="row line"><span>Candidates</span><b>63</b></div>
+        <div class="row line"><span>Inbox excerpts</span><b>1,284</b></div>
+        <div class="row line"><span>Agent run logs</span><b>9,410</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 033 AI and data ================= -->
+<section data-change="033-ai-gateway-and-residency" id="033-ai-gateway-and-residency" data-roles="admin" data-title="AI and data" data-icon="spark" data-group="ops">
+  <div class="row head">
+    <div><h1>AI and data</h1><p class="lede">Your data stays in Australia. Agents use Claude through Amazon Bedrock in Sydney with no data retained by the provider, and pay and health values are never sent.</p></div>
+    <div class="actions"><button class="btn primary">Change policy</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Data region</div><div class="v">Australia</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Database, files and AI in region</div></div>
+    <div class="ticket t-mint"><div class="k">Calls this month</div><div class="v">18,402</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">$612 in model cost</div></div>
+    <div class="ticket t-mint"><div class="k">Fields redacted</div><div class="v">2,931</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">Pay 2,410, health 521</div></div>
+    <div class="ticket t-yellow"><div class="k">Injection attempts blocked</div><div class="v">3</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">All from inbound email</div></div>
+  </div>
+  <div class="cols">
+    <div class="card flush">
+      <div class="card-head"><h2>What may be sent to the AI provider</h2><span class="chip agent">Policy v3</span></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Data class</th><th>Sent</th><th>Used by</th></tr></thead>
+        <tbody>
+        <tr><td>Projects, tasks, time</td><td><span class="chip good">Allowed</span></td><td>Chat, insights, ingestion</td></tr>
+        <tr><td>Names and work email</td><td><span class="chip good">Allowed</span></td><td>Chat, inbox agent</td></tr>
+        <tr><td>Pay</td><td><span class="chip bad">Redacted</span></td><td>Payroll agent sees differences only</td></tr>
+        <tr><td>Health</td><td><span class="chip bad">Redacted</span></td><td>Never sent</td></tr>
+        <tr><td>Bank details</td><td><span class="chip bad">Redacted</span></td><td>Never sent</td></tr>
+        <tr><td>Candidate CVs</td><td><span class="chip warn">HR only</span></td><td>Match scores, for HR users</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <div class="card-head"><h2>Provider</h2><span class="muted" style="font-size:13px">Set per tenant</span></div>
+        <div class="row line"><span>Model</span><b>Claude, via Amazon Bedrock</b></div>
+        <div class="row line"><span>Region</span><b>ap-southeast-2, Sydney</b></div>
+        <div class="row line"><span>Provider keeps data</span><b>No</b></div>
+        <div class="row line"><span>Prompt logging</span><b>Off</b></div>
+        <div class="row line"><span>Voice input</span><b>On, processed by the browser</b></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Subprocessors</h2><span class="muted" style="font-size:13px">Shared with Compliance</span></div>
+        <div class="row line"><span>Amazon Web Services</span><b>AI, Sydney</b></div>
+        <div class="row line"><span>Microsoft</span><b>Sign-in, mail, Teams</b></div>
+        <div class="row line"><span>Neon</span><b>Postgres, Sydney</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 034 Backups and export ================= -->
+<section data-change="034-backup-restore-and-export" id="034-backup-restore-and-export" data-roles="admin" data-title="Backups and export" data-icon="grid" data-group="ops">
+  <div class="row head">
+    <div><h1>Backups and export</h1><p class="lede">You can restore to any minute in the last 14 days. Sunday's restore drill passed in 38 minutes, and the audit chain checked out.</p></div>
+    <div class="actions"><button class="btn">Run drill now</button><button class="btn primary">Export all data</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-mint"><div class="k">Recovery point</div><div class="v">5 min</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">Target 15 min<div class="bar" aria-hidden="true"><i style="width:33%"></i></div></div></div>
+    <div class="ticket t-mint"><div class="k">Last drill restore time</div><div class="v">38 min</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><div class="p">Target 4 h<div class="bar" aria-hidden="true"><i style="width:16%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Restore window</div><div class="v">14 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">Plus 12 monthly snapshots</div></div>
+    <div class="ticket t-yellow"><div class="k">Export awaiting approval</div><div class="v">1</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><div class="p">Needs a second Admin</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Restore drills</h2><span class="muted" style="font-size:13px">Every Sunday, into a scratch database</span></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Date</th><th>Backup from</th><th class="num">Duration</th><th class="num">Rows checked</th><th>Audit chain</th><th>Result</th></tr></thead>
+      <tbody>
+      <tr><td>Oct 11</td><td>Oct 11, 02:00</td><td class="num">38 min</td><td class="num">4.2 M</td><td><span class="chip good">Verified</span></td><td><span class="chip good">Passed</span></td></tr>
+      <tr><td>Oct 4</td><td>Oct 4, 02:00</td><td class="num">41 min</td><td class="num">4.1 M</td><td><span class="chip good">Verified</span></td><td><span class="chip good">Passed</span></td></tr>
+      <tr><td>Sep 27</td><td>Sep 27, 02:00</td><td class="num">1 h 12 min</td><td class="num">4.1 M</td><td><span class="chip good">Verified</span></td><td><span class="chip warn">Slow, index rebuild</span></td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= 035 API and webhooks ================= -->
+<section data-change="035-api-webhooks-and-rate-limits" id="035-api-webhooks-and-rate-limits" data-roles="admin" data-title="API and webhooks" data-icon="plug" data-group="ops">
+  <div class="row head">
+    <div><h1>API and webhooks</h1><p class="lede">Four service credentials and three webhooks. 12 unsigned webhook calls were rejected this week, all claiming to be from GitHub.</p></div>
+    <div class="actions"><button class="btn">Add webhook</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New credential</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Service credentials</div><div class="v">4</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><div class="p">All with an owner and expiry</div></div>
+    <div class="ticket t-pink"><div class="k">Rejected webhook calls</div><div class="v">12</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">Bad or missing signature</div></div>
+    <div class="ticket t-mint"><div class="k">Outgoing deliveries</div><div class="v">99.6%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><div class="p">99.6% of 2,140 delivered<div class="bar" aria-hidden="true"><i style="width:99%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Requests rate-limited</div><div class="v">86</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">One MCP client, Tuesday</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Service credentials</h2><span class="muted" style="font-size:13px">Keys are shown once, then stored hashed</span></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Name</th><th>Owner</th><th>Scopes</th><th>Acts for</th><th>Expires</th><th>Last used</th></tr></thead>
+      <tbody>
+      <tr><td><b>specclaw CI</b></td><td>Maya Fernando</td><td><span class="chip info">delivery: write</span> <span class="chip info">time: write</span></td><td>Delivery engineers, 14 people</td><td>Apr 2027</td><td>09:42 today</td></tr>
+      <tr><td><b>Azure Pipelines deploys</b></td><td>Sahan Kumara</td><td><span class="chip info">delivery: write</span></td><td>No one, records deployments only</td><td>Jan 2027</td><td>Yesterday</td></tr>
+      <tr><td><b>Power BI export</b></td><td>Maya Fernando</td><td><span class="chip">reports: read</span></td><td>No one</td><td>Mar 2027</td><td>06:00 today</td></tr>
+      <tr><td><b>Old Jenkins token</b></td><td>Sahan Kumara</td><td><span class="chip">delivery: read</span></td><td>No one</td><td><span class="chip warn">Nov 2, 2026</span></td><td>Aug 14</td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= 036 Compliance ================= -->
+<section data-change="036-compliance-registers" id="036-compliance-registers" data-roles="admin leadership hr" data-title="Compliance" data-icon="doc" data-group="ops">
+  <div class="row head">
+    <div><h1>Compliance</h1><p class="lede">The ISO 27001 audit is on Nov 24. 17 people still need to acknowledge the updated Acceptable Use policy, and one possible data breach needs a decision by Oct 20.</p></div>
+    <div class="actions"><button class="btn">Export evidence</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Report incident</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-yellow"><div class="k">Policy acknowledged</div><div class="v">91%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">167 of 184 people<div class="bar" aria-hidden="true"><i style="width:91%"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Incident decisions due</div><div class="v">1</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">Decide by Oct 20</div></div>
+    <div class="ticket t-violet"><div class="k">Open risks</div><div class="v">9</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-target"/></svg><div class="p">2 high, 7 medium</div></div>
+    <div class="ticket t-mint"><div class="k">Audit chain verified</div><div class="v">06:00</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">1.9 M events, no gaps</div></div>
+  </div>
+  <div class="cols">
+    <div class="card flush">
+      <div class="card-head"><h2>Incidents</h2><span class="chip warn">1 possible breach</span></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Incident</th><th>Owner</th><th>Personal data</th><th>Decision due</th><th>Status</th></tr></thead>
+        <tbody>
+        <tr><td><b>Payslip emailed to the wrong person</b><small>Oct 16, Australia</small></td><td>Sarah Chen</td><td><span class="chip pink">Pay</span></td><td><b>Oct 20</b></td><td><span class="chip warn">Assessing</span></td></tr>
+        <tr><td><b>Laptop lost in transit</b><small>Oct 2, Sri Lanka</small></td><td>Sahan Kumara</td><td><span class="chip good">None, encrypted</span></td><td>Closed</td><td><span class="chip good">Resolved</span></td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <div class="card-head"><h2>Policies</h2></div>
+        <div class="row line"><span>Acceptable Use v4</span><b class="warn-t">17 pending</b></div>
+        <div class="row line"><span>Information Security v7</span><b>All acknowledged</b></div>
+        <div class="row line"><span>Privacy Notice for staff v2</span><b>All acknowledged</b></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Evidence ready</h2><span class="muted" style="font-size:13px">ISO 27001 Annex A</span></div>
+        <div class="row line"><span>A.5.18 Access rights reviews</span><b>Q3 complete</b></div>
+        <div class="row line"><span>A.6.3 Security training</span><b>184 of 184</b></div>
+        <div class="row line"><span>A.8.15 Logging integrity</span><b>Verified daily</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
     </main>
   </div>
 </div>
