@@ -3,7 +3,8 @@ import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
 import { moveAction } from "../actions";
 import { PHASES, type Phase } from "../contracts";
-import { getProject, type ProposalRow } from "../server/queries";
+import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
+import { EnvironmentsCard } from "./EnvironmentsCard";
 import { initials, needViewer, PHASE_UI, SignInFirst, Stk, Tabs } from "./parts";
 
 const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released to Prod" };
@@ -64,6 +65,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   if (!data) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
   const { project, proposals } = data;
   const canMove = can(viewer, "delivery:proposal:move", { projectId: project.id });
+  const envs = await listEnvironments(viewer, project.key);
   // Synced projects have no sprint counters; their progress is the proposals' tasks.
   const done = project.sprintTotal ? project.sprintDone : proposals.reduce((n, p) => n + p.tasksDone, 0);
   const total = project.sprintTotal || proposals.reduce((n, p) => n + p.tasksTotal, 0);
@@ -89,6 +91,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           );
         })}
       </div>
+      <EnvironmentsCard projectKey={project.key} envs={envs} canEdit={can(viewer, "delivery:release:create", { projectId: project.id })} />
     </>
   );
 }

@@ -27,16 +27,26 @@ Assumptions (Rule 1):
 - The data migration copies the tenant-wide Dev/QA/UAT/Prod to every project and repoints deployments by name. It lifts FORCE RLS on the two tables for its own transaction so it also runs where the schema owner isn't a superuser.
 - Voiding keeps the row (with who, when and why) and every read ignores voided rows, so the map recomputes and history stays.
 
-- [ ] `T1` — Migration (per-project environments, at most one Prod, void columns); services: `upsertEnvironment`, `removeEnvironment`, `tagRelease`, `setReleaseProposals`, `recordDeployment` to any environment of the project, `voidDeployment` (un-releases when the only Prod deployment goes); new projects get default environments; queries per project (AC-1, AC-2, AC-3, AC-5)
+- [x] `T1` — Migration (per-project environments, at most one Prod, void columns); services: `upsertEnvironment`, `removeEnvironment`, `tagRelease`, `setReleaseProposals`, `recordDeployment` to any environment of the project, `voidDeployment` (un-releases when the only Prod deployment goes); new projects get default environments; queries per project (AC-1, AC-2, AC-3, AC-5)
   Kind: impl
   Files: modules/delivery/db/migrations/0002_release_management.sql, modules/delivery/server/{services,queries}.ts, modules/delivery/fixtures/index.ts, modules/delivery/tests/releases.test.ts
-- [ ] `T2` — MCP tools and chat intents: `list_environments`, `upsert_environment`, `tag_release`, `set_release_proposals`, `void_deployment` (+ existing `create_release`, `record_deployment`); "deploy … to UAT", "tag … into v2.5.0" (AC-4)
+- [x] `T2` — MCP tools and chat intents: `list_environments`, `upsert_environment`, `tag_release`, `set_release_proposals`, `void_deployment` (+ existing `create_release`, `record_deployment`); "deploy … to UAT", "tag … into v2.5.0" (AC-4)
   Kind: impl
   Files: modules/delivery/{mcp,chat}.ts
   Depends: T1
-- [ ] `T3` — UI: Environments card on the project page; release page (rename tag, choose proposals, deploy to any environment with status and note, deployment history with Void and a reason); releases table links and per-project columns; e2e (AC-1, AC-2, AC-3)
+- [x] `T3` — UI: Environments card on the project page; release page (rename tag, choose proposals, deploy to any environment with status and note, deployment history with Void and a reason); releases table links and per-project columns; e2e (AC-1, AC-2, AC-3)
   Kind: impl
   Files: modules/delivery/ui/{ProjectPage,ReleasesPage,ReleasePage,EnvironmentsCard}.tsx, modules/delivery/actions.ts, modules/delivery/module.ts, apps/web/tests/e2e/releases.spec.ts
   Depends: T2
 
 ## Verify
+
+**Verdict:** PASS
+- AC-1: pass — `releases.test.ts` + e2e: environments per project (migration copies Dev/QA/UAT/Prod to each and repoints deployments); add, rename, reorder, mark exactly one Prod or none, remove only when unused; new projects get the defaults; the Environments card on the project page.
+- AC-2: pass — releases re-tagged and their proposals set (UI release page, MCP `tag_release` / `set_release_proposals`); deploy to any environment by name, including straight to Prod; a project without Prod never releases.
+- AC-3: pass — voiding keeps the row with reason and who (history shows "Voided: …"), reads ignore it so the map recomputes, and voiding the only Prod deployment returns its proposals to Verified with `phase_changed` events; audited.
+- AC-4: pass — MCP tools `list_environments`, `get_release_history`, `upsert_environment`, `remove_environment`, `tag_release`, `set_release_proposals`, `void_deployment`, `create_release`, `record_deployment`, same permissions as the screens (PM on the project, or Admin); chat intents "Record a deployment" and "Change a release" (write tools go through the 005 confirm card).
+- AC-5: pass — pipelines report by environment name through `record_deployment` (case-insensitive).
+
+Not done: the mock wasn't redrawn first; the new controls use existing mock styles and are queued for 041's parity pass.
+Commands: `pnpm test`, `pnpm lint`, `pnpm build`, `e2e`, `e2e:auth` (25 flows).

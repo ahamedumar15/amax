@@ -6,6 +6,7 @@ import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
 import { ReleasesPage } from "./ui/ReleasesPage";
+import { ReleasePage } from "./ui/ReleasePage";
 
 const READ = ["delivery:read"];
 
@@ -31,6 +32,7 @@ export default defineModule({
     { path: "proposals", title: "Proposals", component: ProposalsPage },
     { path: "proposals/:phase", title: "Proposals", component: ProposalsPage },
     { path: "releases", title: "Releases", component: ReleasesPage },
+    { path: "releases/:projectKey/:version", title: "Release", component: ReleasePage },
   ],
   mcpTools,
   search: search as never,

@@ -58,7 +58,8 @@ export async function ReleasesPage({ viewer: raw }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Releases</h1><SignInFirst /></>;
   const releases = await listReleases(viewer);
-  const envs = releases[0]?.stages.map((s) => s.environment) ?? ["Dev", "QA", "UAT", "Prod"];
+  // 042: projects have their own environments; columns are the union in stage order.
+  const envs = [...new Map(releases.flatMap((r) => r.stages).sort((a, b) => a.position - b.position).map((s) => [s.environment, s.environment])).keys()];
   return (
     <>
       <h1>Releases</h1>
@@ -80,10 +81,10 @@ export async function ReleasesPage({ viewer: raw }: ScreenProps) {
                 const allowed = can(viewer, "delivery:deployment:record", {});
                 return (
                   <tr key={r.id}>
-                    <td data-label="Release"><b>{r.version}</b></td>
+                    <td data-label="Release"><a className="rowlink" href={`/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`}><b>{r.version}</b></a></td>
                     <td data-label="Project"><span className="dot" style={{ background: `var(--${r.projectColor})` }} />{r.projectName}</td>
                     <td data-label="Proposals" className="num">{r.proposals}</td>
-                    {r.stages.map((s) => <td key={s.environment} data-label={s.environment}>{cell(s)}</td>)}
+                    {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
                     <td data-label="" className="num">
                       {!step ? <span className="muted">Live</span> : !r.stages.some((s) => s.status) && r.proposals > 0 && !allowed ? <span className="muted">Building</span> : (
                         <form action={promoteAction}>

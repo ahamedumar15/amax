@@ -11,7 +11,7 @@ export default defineConfig({
   // Chat writes proposals, so it runs after the specs that count fixture rows.
   projects: [
     { name: "screens", testMatch: /(auth|delivery|ai|mcp)\.spec\.ts/ },
-    { name: "chat", testMatch: /chat\.spec\.ts/, dependencies: ["screens"] },
+    { name: "writes", testMatch: /(chat|releases)\.spec\.ts/, dependencies: ["screens"] },
   ],
   workers: 1,
   forbidOnly: !!process.env.CI,
