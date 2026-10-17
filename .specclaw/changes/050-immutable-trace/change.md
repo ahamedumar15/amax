@@ -46,4 +46,24 @@ What changes on screen, and where to see it: [`050-immutable-trace`](../../mock/
 
 ## Verify
 
-Quality: not_run (specclaw-quality-scan failed: `jq: Argument list too long` on this repo)
+**Verdict:** PASS
+
+- AC-1: pass — `packages/chat/tests/trace-ac1.test.ts`: a chat turn and its confirm share one trace id across `core.trace_event` (turn, tool_call, pending, model_call, decided, tool_call), `ai.call` and `core.audit_event`; an MCP `tools/call` through `handleMcp` and a `runDueJobs` job each get their own trace id carried into the audit row.
+- AC-2: pass — migration `0021_immutable_trace.sql` adds `core.trace_event` (RLS, insert-only grant, per-tenant hash chain over keyed hashes, metadata only); `trace-ac3-append-only.test.ts` shows update, delete and truncate fail for every role, owner included.
+- AC-3: pass — `trace-ac3-append-only.test.ts` runs as `amax_app` (asserts `current_user = 'amax_app'` and that each table has a visible row): UPDATE and DELETE fail with `permission denied` on `ai.call`, `core.trace_event`, `core.audit_event`; with a test-only grant added they still fail with `append-only` from the triggers and the row count is unchanged. The owner can still alter and backfill `ai.call`.
+- AC-4: pass — `/settings/audit` (Admin only, `core.audit.read`): chain tickets, last export, filterable event list, trace timeline; pins on every ticket, row, timeline step and the trace card; no write controls (filters and Verify now are GET). `apps/web/tests/e2e/audit.spec.ts` incl. axe WCAG 2.2 AA in light and dark; non-Admin gets 404.
+- AC-5: pass — `packages/mcp/tests/audit-tools.test.ts` (superuser edit, `audit_status {verify:true}` reports `brokenAt: 2`) and e2e "a row edited as superuser shows Chain broken at event N after Verify now".
+- AC-6: pass — `trace-ac6-export.test.ts`: export writes `audit/`, `trace/` and `ai-call/` locked objects and records itself in the audit; `audit-tools.test.ts`: `search_audit`, `get_trace`, `audit_status` refused for Engineer, available to Admin, same permission and read layer as the screen.
+- AC-7: pass — `trace-ac7-erasure.test.ts`: `core.erase_subject()` nulls a person's raw values in both chains and both still verify; the erasure path can't change anything else, and `amax_app` can't call it. Typecheck, unit tests, lint, e2e green.
+
+Commands (exit codes): `pnpm lint` 0 · `DATABASE_MIGRATE_URL=… pnpm test` 0 (16/16 packages) · `pnpm --filter @amax/web build` 0 · `npx playwright test --config playwright.auth.config.ts` 0 (36 passed) · `npx playwright test` 0 (1 passed).
+`specclaw-preset-check .`: exit 1, 650 repo-wide violations (comments, file length) that all predate this change; the new files under `apps/web/app/(app)/settings/audit/` have none (`packages/` is outside the checker's scope).
+Quality: not_run (specclaw-quality-scan fails here with `jq: Argument list too long`).
+Review: specclaw-review loop skipped on purpose (review cadence: once per module end, not per change).
+Screenshots: `.specclaw/changes/050-immutable-trace/shots/app.png`, `shots/app-dark.png`, mock `shots/mock.png`. The layout matches the mock section; pins appear on hover and focus, as elsewhere in the app.
+
+Notes:
+- `ai.call` blocks UPDATE and DELETE for `amax_app` (and any role that doesn't own the table) through grants and a trigger; the table owner (migration role) is allowed, so 048's 0019 backfill and later migrations still run.
+- Trace steps are written with `appendTrace`, not `defineService`: like the audit row itself, a trace step is the record of a write path and can't be audited by another audit row.
+- `core.erase_subject()` is not granted to `amax_app`; 032 decides who calls it. Audit rows from before 0021 are chain v1 (raw values hashed) and can't be erased without breaking the chain.
+- Deferred: 029 workflow runs (`@amax/workflows`) don't get a trace id yet, since that package doesn't depend on core; core `runDueJobs` jobs do. The "Verified … ago" status is cached per process for an hour; Verify now refreshes it.

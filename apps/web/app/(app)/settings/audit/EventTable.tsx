@@ -19,7 +19,7 @@ export function EventTable({ rows, names, traceHref }: { rows: AuditEntry[]; nam
               <td data-label="Who">{who(e.actor, names)}{by && <small>{by}</small>}</td>
               <td data-label="What"><code>{label(e)}</code><small>{e.chain === "audit" ? "Audited write" : "Trace step"} #{e.seq}</small></td>
               <td data-label="Record">{e.record ?? "–"}</td>
-              <td data-label="Trace">{e.traceId ? <a href={traceHref(e.traceId)} aria-label={`Open trace ${e.traceId}`}>{shortTrace(e.traceId)}</a> : "–"}</td>
+              <td data-label="Trace">{e.traceId ? <a className="audit-trace" href={traceHref(e.traceId)} aria-label={`Open trace ${e.traceId}`}>{shortTrace(e.traceId)}</a> : "–"}</td>
               <td className="num"><PinButton pin={{ label: `${e.chain === "audit" ? "Audit" : "Trace"} event ${e.seq}`, tool: "search_audit", args: { chain: e.chain, seq: e.seq } }} /></td>
             </tr>
           );
