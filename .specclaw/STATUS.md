@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 16:12 UTC
+**Last Updated:** 2026-10-17 16:33 UTC
 
 ## Active Changes
 
@@ -15,7 +15,7 @@
 - 🔀 **041-delivery-mock-parity** — pr done | 6/6 tasks (100%) | 0 failed | PR #30 merged
 - 🔀 **045-delivery-create-project-contract** — pr raised | 3/3 tasks (100%) | 0 failed | PR #34 merged
 - 🔀 **046-chat-first-and-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #36 open
-- 📝 **047-admin-end-to-end** — tasks done | 0/7 tasks (0%) | 0 failed
+- 📝 **047-admin-end-to-end** — tasks done | 7/7 tasks (100%) | 0 failed
 
 ## Pending Proposals
 

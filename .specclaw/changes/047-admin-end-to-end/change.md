@@ -27,24 +27,26 @@ What changes on screen, and where to see it: [`047-admin-end-to-end`](../../mock
 
 ## Tasks
 
-- [ ] `T1` — Settings hub at `/settings` with live status chips, "Coming soon" cards, Audit and trace (050) and AI usage (048) links, pins; nav entry and profile-menu link (AC-1, AC-5)
+- [x] `T1` — Settings hub at `/settings` with live status chips, "Coming soon" cards, Audit and trace (050) and AI usage (048) links, pins; nav entry and profile-menu link (AC-1, AC-5)
   Files: apps/web/app/(app)/settings/page.tsx, apps/web/app/(app)/settings/settings.css, apps/web/lib/settings-status.ts, apps/web/lib/registry.ts, apps/web/components/shell/ProfileMenu.tsx
-- [ ] `T2` — Keys, Integrations, AI and data and Scheduler go chat-first: forms and server actions removed, every write is an "Ask amax" chip with the record pinned, every ticket, card and row pinned; time-zone message asks for `set_entity_zone`; Scheduler GET stops syncing schedules (AC-2, AC-5, AC-6)
+- [x] `T2` — Keys, Integrations, AI and data and Scheduler go chat-first: forms and server actions removed, every write is an "Ask amax" chip with the record pinned, every ticket, card and row pinned; time-zone message asks for `set_entity_zone`; Scheduler GET stops syncing schedules (AC-2, AC-5, AC-6)
   Files: apps/web/components/settings/AskButton.tsx, apps/web/app/(app)/settings/keys/*, apps/web/app/(app)/settings/ai/*, apps/web/app/(app)/settings/integrations/page.tsx, apps/web/app/(app)/settings/workflows/*, apps/web/components/workflows/RunsCard.tsx, apps/web/components/workflows/SchedulesCard.tsx
   Depends: T1
-- [ ] `T3` — AI policy, MCP client revoke and entity time zone write through `defineService()` (authorized, audited with actor, event) (AC-3, AC-6)
+- [x] `T3` — AI policy, MCP client revoke and entity time zone write through `defineService()` (authorized, audited with actor, event) (AC-3, AC-6)
   Files: packages/ai/src/admin.ts, packages/mcp/src/admin.ts, packages/workflows/src/control.ts, packages/workflows/src/server.ts
-- [ ] `T4` — Admin MCP tools: writes `put_secret`, `rotate_secret`, `revoke_secret`, `revoke_mcp_client`, `set_ai_policy`, `control_workflow_run`, `set_schedule_enabled`, `set_entity_zone`; reads `get_secret_meta`, `get_mcp_client`, `get_ai_policy`, `get_workflow_run`, `get_schedule` (+ list reads for tickets and the hub). Secret-input contract: a tool may declare a field the model never fills (AC-2, AC-4, AC-5)
+- [x] `T4` — Admin MCP tools: writes `put_secret`, `rotate_secret`, `revoke_secret`, `revoke_mcp_client`, `set_ai_policy`, `control_workflow_run`, `set_schedule_enabled`, `set_entity_zone`; reads `get_secret_meta`, `get_mcp_client`, `get_ai_policy`, `get_workflow_run`, `get_schedule` (+ list reads for tickets and the hub). Secret-input contract: a tool may declare a field the model never fills (AC-2, AC-4, AC-5)
   Files: apps/web/lib/admin-tools.ts, apps/web/lib/server.ts, packages/core/src/module.ts, packages/mcp/src/registry.ts, packages/chat/src/engine.ts
   Depends: T3
-- [ ] `T5` — Masked secret field in chat's confirm card, posting straight to a server action bound to that pending action (AC-4)
+- [x] `T5` — Masked secret field in chat's confirm card, posting straight to a server action bound to that pending action (AC-4)
   Files: apps/web/components/chat/SecretConfirm.tsx, apps/web/components/chat/Chat.tsx, apps/web/app/actions/chat.ts
   Depends: T4
-- [ ] `T6` — Unit tests: each tool Admin-only and confirm-gated; services audited and emitting events; no write form on the four screens; secret absent from model input, chat.conversation, ai.call, audit, logs (AC-2, AC-3, AC-4, AC-6)
+- [x] `T6` — Unit tests: each tool Admin-only and confirm-gated; services audited and emitting events; no write form on the four screens; secret absent from model input, chat.conversation, ai.call, audit, logs (AC-2, AC-3, AC-4, AC-6)
   Files: apps/web/tests/admin-tools.test.ts, apps/web/tests/admin-no-forms.test.ts
   Depends: T2, T4, T5
-- [ ] `T7` — Scripted model learns rotate and pause; e2e: pin, ask, confirm a rotation with the masked field ("Rotated today", value absent from HTML); pin, ask, confirm a schedule pause; Admin-only 404s and chat refusals; existing 029/031/033/004 specs moved to the chat flow (AC-6, AC-7)
+- [x] `T7` — Scripted model learns rotate and pause; e2e: pin, ask, confirm a rotation with the masked field ("Rotated today", value absent from HTML); pin, ask, confirm a schedule pause; Admin-only 404s and chat refusals; existing 029/031/033/004 specs moved to the chat flow (AC-6, AC-7)
   Files: packages/ai/src/scripted.ts, apps/web/tests/e2e/admin.spec.ts, apps/web/tests/e2e/secrets.spec.ts, apps/web/tests/e2e/workflows.spec.ts, apps/web/tests/e2e/ai.spec.ts, apps/web/tests/e2e/mcp.spec.ts, apps/web/playwright.auth.config.ts
   Depends: T6
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan aborts: `jq: Argument list too long` on this repo)
