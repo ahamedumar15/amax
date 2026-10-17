@@ -47,6 +47,12 @@ const schema = z.object({
   AZURE_TENANT_ID: z.string().optional(),
   AZURE_CLIENT_ID: z.string().optional(),
   AZURE_CLIENT_SECRET: z.string().optional(),
+  // 035 rate limits per one-minute window. Unset keeps the defaults in rate-limit.ts.
+  AMAX_RATE_PAGE_USER: z.coerce.number().int().positive().optional(),
+  AMAX_RATE_PAGE_TENANT: z.coerce.number().int().positive().optional(),
+  AMAX_RATE_CALL_TOKEN: z.coerce.number().int().positive().optional(),
+  AMAX_RATE_CALL_USER: z.coerce.number().int().positive().optional(),
+  AMAX_RATE_CALL_TENANT: z.coerce.number().int().positive().optional(),
 }).superRefine((env, ctx) => {
   const needs: Record<string, (keyof typeof env)[]> = {
     local: ["AMAX_KMS_KEY_FILE"],

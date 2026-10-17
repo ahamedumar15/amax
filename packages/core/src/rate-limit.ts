@@ -53,6 +53,18 @@ export function takeRate(k: RateKey): { ok: true } | { ok: false; retryAfter: nu
   return { ok: true };
 }
 
+type RateEnv = Partial<Record<"AMAX_RATE_PAGE_USER" | "AMAX_RATE_PAGE_TENANT" | "AMAX_RATE_CALL_TOKEN" | "AMAX_RATE_CALL_USER" | "AMAX_RATE_CALL_TENANT", number>>;
+
+export const limitsFromEnv = (e: RateEnv) => ({
+  page: { ...(e.AMAX_RATE_PAGE_USER && { user: e.AMAX_RATE_PAGE_USER, token: e.AMAX_RATE_PAGE_USER }), ...(e.AMAX_RATE_PAGE_TENANT && { tenant: e.AMAX_RATE_PAGE_TENANT }) },
+  call: { ...(e.AMAX_RATE_CALL_TOKEN && { token: e.AMAX_RATE_CALL_TOKEN }), ...(e.AMAX_RATE_CALL_USER && { user: e.AMAX_RATE_CALL_USER }), ...(e.AMAX_RATE_CALL_TENANT && { tenant: e.AMAX_RATE_CALL_TENANT }) },
+});
+
+export function countsAsPage(h: Headers) {
+  if (h.get("next-router-prefetch") || h.get("purpose") === "prefetch" || h.get("sec-purpose")?.includes("prefetch")) return false;
+  return !h.get("next-action");
+}
+
 export function enforceRate(k: RateKey) {
   const r = takeRate(k);
   if (!r.ok) throw new RateLimitedError(r.retryAfter, r.bucket);
