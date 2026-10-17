@@ -10,7 +10,7 @@ export type Intent = { id: string; label: string; tool: string; required: string
 export type Pin = { label: string; tool: string; args: Record<string, unknown> };
 /** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
 /** `traceId` (050): the turn that proposed it, so its confirm or cancel joins the same trace. */
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; traceId?: string };
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string };
 export type Highlight = { text: string; field: string; index: number };
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
 
@@ -36,9 +36,11 @@ async function load(db: Db, viewer: Viewer, id?: string) {
 
 // Append-only: a turn runs for seconds, and a confirm or cancel may claim a card or add a note
 // meanwhile. Rewriting the lists from the turn's stale copy would undo that (review round 2).
-const append = (db: Db, viewer: Viewer, id: string, add: { messages: Message[]; pending: PendingAction[] }) =>
+export const titleFrom = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 80);
+const append = (db: Db, viewer: Viewer, id: string, add: { messages: Message[]; pending: PendingAction[]; title: string; pins: Pin[] }) =>
   withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`update chat.conversation set messages = messages || ${JSON.stringify(add.messages)}::jsonb,
-    pending = pending || ${JSON.stringify(add.pending)}::jsonb, updated_at = now() where id = ${id} and user_id = ${viewer.userId}`));
+    pending = pending || ${JSON.stringify(add.pending)}::jsonb, title = coalesce(title, ${add.title}), pins = ${JSON.stringify(add.pins)}::jsonb,
+    updated_at = now() where id = ${id} and user_id = ${viewer.userId}`));
 
 // Each extracted value that appears in the user's words gets its field's colour (AC-3).
 export function highlightsFor(text: string, pending: PendingAction[]): Highlight[] {
@@ -57,6 +59,20 @@ export function highlightsFor(text: string, pending: PendingAction[]): Highlight
 // 050: a turn, and later its cards' decisions, run under one trace acting as the user.
 const traceFor = (viewer: Viewer, traceId?: string) => ({ traceId, tenantId: viewer.tenantId, actor: `user:${viewer.userId}`, source: "chat" as const });
 
+// The gateway hands write tools the input it validated, so a field the tool doesn't declare (a
+// "value" the model made up, say) never reaches the card. A tool that takes a typed secret marks the
+// card, which then asks the person for it in a masked field (047 AC-4).
+function pendingFor(t: RegisteredTool, input: Record<string, unknown>): PendingAction {
+  return { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), traceId: currentTrace()?.traceId, ...(t.secretInput ? { secret: t.secretInput } : {}) };
+}
+
+// An error from a write that was given a secret never carries it on, even if some layer echoed it.
+function scrub(e: unknown, secret: string | undefined): unknown {
+  if (!secret || !(e instanceof Error) || !`${e.message}${e.stack ?? ""}`.includes(secret)) return e;
+  const clean = new Error(e.message.split(secret).join("••••"));
+  return Object.assign(clean, { name: e.name, retryable: (e as { retryable?: unknown }).retryable, code: (e as { code?: unknown }).code });
+}
+
 /** One user message: answer with read tools, turn write calls into confirm cards. */
 export const chatTurn = (db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> =>
   withTrace(traceFor(viewer), () => runTurn(db, registry, viewer, opts));
@@ -72,7 +88,7 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
-      const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), traceId: currentTrace()?.traceId };
+      const action = pendingFor(t, input);
       pending.push(action);
       await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id } });
       return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
@@ -96,13 +112,13 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     ? `\n\nThe user started "${opts.intent.label}". Fill the ${opts.intent.tool} tool; required: ${opts.intent.required.join(", ")}. Questions to use when something is missing: ${opts.intent.fields.map((f) => `${f.name}: ${f.ask}`).join(" | ")}.`
     : "";
   const messages: Message[] = [...convo.messages, { role: "user", content: [{ type: "text", text: opts.text }] }];
-  const result = await converse({ tenantId: viewer.tenantId, caller: `user:${viewer.userId}`, source: "chat", purpose: opts.intent ? `chat:${opts.intent.id}` : "chat" }, {
+  const result = await converse({ tenantId: viewer.tenantId, caller: `user:${viewer.userId}`, userId: viewer.userId, conversationId: convo.id, source: "chat", purpose: opts.intent ? `chat:${opts.intent.id}` : "chat" }, {
     instructions: INSTRUCTIONS + intentNote,
     messages,
     tools,
     data,
   });
-  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending });
+  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending, title: titleFrom(opts.text), pins: opts.pins ?? [] });
   return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
 }
 
@@ -189,15 +205,15 @@ const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled")
 const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>) => withTrace(traceFor(viewer, action.traceId), fn);
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
-export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
+export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string } = {}) {
   const action = await card(db, viewer, conversationId, actionId);
   return inTrace(viewer, action, async () => {
     await decidedStep(action, "confirmed");
-    return confirmCard(db, registry, viewer, conversationId, action);
+    return confirmCard(db, registry, viewer, conversationId, action, opts);
   });
 }
 
-async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction) {
+async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string }) {
   const actionId = action.id;
   const key = keyOf(actionId);
   const done = async (result: unknown) => {
@@ -214,7 +230,9 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
   if (known) return done(known.done);
   if (isExpired(action)) throw await expire(db, viewer, conversationId, action);
   // 2. Run the tool; it must make exactly one service write.
-  const run = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
+  if (action.secret && !opts.secret) throw new ActionFailedError(`type the ${action.secret.label.toLowerCase()} first`, "retry");
+  const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }));
+  const run = raw.ok ? raw : { ...raw, error: scrub(raw.error, opts.secret) };
   if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
   if (run.writes > 1) {
     await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but it made more than one change; check before trying again.)`);

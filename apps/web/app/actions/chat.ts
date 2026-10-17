@@ -1,14 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { myChatUsage } from "../../lib/chat-usage";
 import { outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
-export type ChatResult = ({ ok: true } & ChatTurn) | { ok: false; error: string };
+export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
 
 const friendly = (e: unknown) =>
   e instanceof AiDisabledError ? e.message : e instanceof Error && /forbidden|scope/.test(e.message) ? e.message : "Sorry, something went wrong. Try again.";
@@ -19,7 +21,7 @@ export async function sendChat(input: { conversationId?: string; text: string; p
     if (!aiConfigured()) return { ok: false, error: "AI is off: no API key is configured on the server." };
     const intent = input.intentId ? chatIntents().find((i) => i.id === input.intentId) : undefined;
     const turn = await chatTurn(getDb()!, toolRegistry(), viewer, { conversationId: input.conversationId, text: input.text.slice(0, 4000), pins: input.pins?.slice(0, 8), intent });
-    return { ok: true, ...turn };
+    return { ok: true, ...turn, usage: await myChatUsage(viewer) };
   } catch (e) {
     const id = logError("chat", e);
     return { ok: false, error: `${friendly(e)} (ref ${id.slice(0, 8)})` };
@@ -45,6 +47,26 @@ export async function cancelChat(conversationId: string, actionId: string): Prom
     const viewer = await currentViewer();
     await cancelAction(getDb()!, viewer, conversationId, actionId);
     return { state: "cancelled", note: "Cancelled. Nothing was changed." };
+  } catch (e) {
+    return outcomeOf(e);
+  }
+}
+
+const secretForm = z.object({ secret: z.string().min(1).max(16_384) });
+
+/**
+ * Confirm a card whose tool takes a typed secret (047 AC-4). The value arrives only here, from the
+ * card's masked field, and is handed to the tool for this one call: it is never stored, logged,
+ * echoed back or sent to the model.
+ */
+export async function confirmSecretChat(conversationId: string, actionId: string, data: FormData): Promise<CardOutcome> {
+  try {
+    const parsed = secretForm.safeParse({ secret: data.get("secret") });
+    if (!parsed.success) return { state: "open", note: "Type the value first." };
+    const viewer = await currentViewer();
+    await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId, { secret: parsed.data.secret });
+    revalidatePath("/", "layout");
+    return { state: "done", note: "Done: saved to the vault. The value can't be shown again." };
   } catch (e) {
     return outcomeOf(e);
   }

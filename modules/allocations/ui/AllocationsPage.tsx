@@ -1,6 +1,6 @@
 import type { ScreenProps } from "@amax/core";
 import { canEver, type Viewer } from "@amax/auth";
-import { Card, EmptyState, IntentButton } from "@amax/ui";
+import { Card, EmptyState, IntentButton, PinButton } from "@amax/ui";
 import { forecastFor } from "../server/forecast";
 import { gridFor, headlines } from "../server/grid";
 import { monthLabel } from "../server/months";
@@ -35,29 +35,29 @@ export async function AllocationsPage({ params, viewer: raw }: ScreenProps) {
         {canEver(viewer, "allocations:allocate") && <div className="actions"><IntentButton intent="allocations.allocate" label="Allocate" primary={false} /></div>}
       </div>
       <div className="cols even" style={{ marginBottom: 28 }}>
-        <div className="card">
-          <div className="card-head"><h2>Capacity and demand</h2><span className="muted" style={{ fontSize: 13 }}>{f.team}, {span}</span></div>
+        <div className="card pinnable">
+          <div className="card-head"><h2>Capacity and demand</h2><PinButton inline pin={{ label: "Capacity and demand", tool: "get_capacity_forecast", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>{f.team}, {span}</span></div>
           <LineChart id="capdem" label="Capacity against demand" labels={f.months.map((m) => monthLabel(m.month))} min={130} max={150} step={5}
             series={[{ name: "Capacity", color: "#2FCB8C", dashed: true, data: f.months.map((m) => m.capacity) }, { name: "Demand", color: "#7B61FF", area: true, data: f.months.map((m) => m.demand) }]} />
           <div className="legend"><span><i style={{ background: "var(--violet)" }} />Demand</span><span><i className="dash" />Capacity</span></div>
           {!f.leaveAdjusted && <p className="muted note">Booked leave isn&apos;t subtracted until the Leave module is installed.</p>}
         </div>
-        <div className="card">
-          <div className="card-head"><h2>Bench by skill, {monthLabel(benchMonth.month, "long")}</h2><span className="muted" style={{ fontSize: 13 }}>{benchMonth.bench.length} {benchMonth.bench.length === 1 ? "person" : "people"}</span></div>
+        <div className="card pinnable">
+          <div className="card-head"><h2>Bench by skill, {monthLabel(benchMonth.month, "long")}</h2><PinButton inline pin={{ label: `Bench by skill, ${monthLabel(benchMonth.month, "long")}`, tool: "get_capacity_forecast", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>{benchMonth.bench.length} {benchMonth.bench.length === 1 ? "person" : "people"}</span></div>
           <Donut label={`Bench by skill, ${monthLabel(benchMonth.month, "long")}`} center={String(benchMonth.bench.length)} sub="on bench"
             parts={bySkill.map(([name, value]) => ({ name, value, color: SKILL_COLOR[name] ?? "#C3B5FF" }))} />
         </div>
       </div>
-      <div className="card flush">
+      <div className="card flush pinnable">
         <div className="card-head">
-          <h2>People by month</h2>
+          <h2>People by month</h2><PinButton inline pin={{ label: "People by month", tool: "list_allocations", args: { everyone } }} />
           <div className="actions">
             <span className="chip">{f.team}</span>
             <a className="btn" href={everyone ? "/allocations" : "/allocations/everyone"}>{everyone ? "My projects" : "Everyone"}</a>
             {canEver(viewer, "allocations:copy") && <CopyMonth months={grid.months.slice(0, -1).map((m) => m.month)} team={f.team} />}
           </div>
         </div>
-        {grid.people.length ? <Grid grid={grid} />
+        {grid.people.length ? <Grid grid={grid} everyone={everyone} />
           : grid.hidden ? <EmptyState icon="people" title="No one you can see here" hint={`${grid.hidden} ${grid.hidden === 1 ? "person is" : "people are"} outside your HR access.`} />
           : <EmptyState icon="people" title="No allocations yet" hint="Use Allocate to plan people onto projects by month." />}
         {grid.people.length > 0 && grid.hidden > 0 && <p className="muted" style={{ fontSize: 13 }}>{grid.hidden} more {grid.hidden === 1 ? "person is" : "people are"} outside your HR access and not shown.</p>}

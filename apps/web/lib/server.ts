@@ -4,14 +4,16 @@ import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { configureAi } from "@amax/ai";
+import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
 import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/auth";
 import { createRegistry } from "@amax/mcp";
-import type { Intent } from "@amax/chat";
+import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
 import { engineFromEnv, pruneRunsJob, signalHandlers, workflowRegistry, workflowsRetention, type WorkflowEngine } from "@amax/workflows/server";
 import { platformWorkflows } from "./platform-workflows";
+import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
 
 // One database client per server process; null until DATABASE_URL is configured.
@@ -31,7 +33,7 @@ export function getDb(): Db | null {
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
-    setGrants(installed);
+    setGrants([...installed, chatPlatform]);
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     const env = loadEnv();
@@ -65,9 +67,11 @@ const workflowsJobs = () => ({ id: "workflows", jobs: [pruneRunsJob], retention:
 
 export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), ...installed]);
 
-// 004/005: one tool registry and the chat intents, from the installed manifests.
+// 004/005: one tool registry and the chat intents, from the installed manifests. The AI gateway's
+// own read tool (048 get_ai_usage) sits beside them.
 let registry: ReturnType<typeof createRegistry> | undefined;
-export const toolRegistry = () => (registry ??= createRegistry(installed));
+export const adminDeps: AdminDeps = { db: () => getDb()!, workflows: () => workflowsRegistry(), engine: () => workflowEngine(), tools: () => toolRegistry() };
+export const toolRegistry = () => (registry ??= createRegistry([aiTools, ...installed, chatPlatform, adminModule(adminDeps)]));
 export const chatIntents = () => installed.flatMap((m) => (m.chatIntents ?? []) as Intent[]);
 
 // Voice input is a per-tenant AI policy switch (033 AC-5).

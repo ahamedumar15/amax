@@ -1,14 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { announce, Mascot, type PinRef } from "@amax/ui";
-import type { Highlight, PendingAction } from "@amax/chat";
+import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
+import type { Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
+import { listChats, openChat } from "../../app/actions/chat-history";
+import { History } from "./History";
+import { SecretConfirm } from "./SecretConfirm";
 
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
   | { kind: "amax"; text: string; tools: string[]; error?: boolean }
-  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working"; note?: string };
+  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string };
+
+const restoredLog = (c: Conversation): Entry[] => [
+  ...c.messages.map((m): Entry => (m.role === "me" ? { kind: "me", text: m.text, highlights: [] } : { kind: "amax", text: m.text, tools: [] })),
+  ...c.pending.map((p): Entry => ({ kind: "confirm", action: p, state: p.expired ? "expired" : "open" })),
+];
 
 const FIELD_CLASSES = ["f-client", "f-value", "f-dates", "f-person", "f-stage", "f-name"];
 const fieldClass = (fields: string[], field: string) => FIELD_CLASSES[Math.max(0, fields.indexOf(field)) % FIELD_CLASSES.length];
@@ -49,7 +57,7 @@ export function Markdown({ text }: { text: string }) {
 
 type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; start: () => void; stop: () => void };
 
-export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean }) {
+export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean; usage?: string | null }) {
   const [log, setLog] = useState<Entry[]>([]);
   const [pins, setPins] = useState<PinRef[]>([]);
   const [busy, setBusy] = useState(false);
@@ -57,6 +65,8 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
   const [intent, setIntent] = useState<string | undefined>();
   const [picking, setPicking] = useState(false);
   const [talking, setTalking] = useState(false);
+  const [turnUsage, setTurnUsage] = useState<string | null>(null);
+  const [history, setHistory] = useState<{ items: ConversationSummary[]; error?: string } | null>(null);
   const convo = useRef<string | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -71,6 +81,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
       if (d.pin) { setPins((p) => (p.some((x) => x.label === d.pin!.label) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
+      else if (d.prompt) { setText(d.prompt); requestAnimationFrame(() => input.current?.focus()); }
     };
     window.addEventListener("amax:chat", onEvent);
     return () => window.removeEventListener("amax:chat", onEvent);
@@ -96,20 +107,54 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
   const close = useCallback(() => { setPicking(false); onClose(); returnFocus.current?.focus(); }, [onClose, returnFocus]);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); close(); } };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      if (history) { setHistory(null); input.current?.focus(); } else close();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
+  }, [open, close, history]);
+
+  async function showHistory() {
+    if (history) { setHistory(null); return; }
+    const r = await listChats("");
+    setHistory(r.ok ? { items: r.items } : { items: [], error: r.error });
+  }
+
+  function newChat() {
+    convo.current = undefined;
+    setLog([]);
+    setPins([]);
+    setIntent(undefined);
+    setHistory(null);
+    input.current?.focus();
+  }
+
+  async function reopen(id: string) {
+    const r = await openChat(id);
+    if (!r.ok) { setHistory((h) => ({ items: h?.items ?? [], error: r.error })); return; }
+    convo.current = r.conversation.id;
+    fields.current = r.conversation.pending.flatMap((p) => p.fields);
+    setLog(restoredLog(r.conversation));
+    setPins(r.conversation.pins);
+    setIntent(undefined);
+    setHistory(null);
+    input.current?.focus();
+    announce(`Reopened ${r.conversation.title}`);
+  }
 
   async function send(message: string) {
     if (!message.trim() || busy) return;
     setText("");
+    setHistory(null);
     setBusy(true);
     setLog((l) => [...l, { kind: "me", text: message, highlights: [] }]);
     const r = await sendChat({ conversationId: convo.current, text: message, pins, intentId: intent });
     setBusy(false);
     if (!r.ok) { setLog((l) => [...l, { kind: "amax", text: r.error, tools: [], error: true }]); return; }
     convo.current = r.conversationId;
+    if (r.usage) setTurnUsage(r.usage);
     setIntent(undefined);
     fields.current = r.pending.flatMap((p) => p.fields);
     setLog((l) => {
@@ -155,9 +200,11 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
       <header className="c-head">
         <span className="c-face"><Mascot /></span>
         <div><b>amax</b><small>{intent ? "Filling in a new record" : "Ask, add or drop anything here"}</small></div>
+        {signedIn && <button className="iconbtn h-toggle" type="button" aria-label="Chat history" aria-pressed={history !== null} title="History" onClick={showHistory}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2" /></svg></button>}
         <button className="iconbtn" type="button" aria-label="Close chat" onClick={close}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
       </header>
-      <div className="c-log" role="log" aria-live="polite" aria-label="Conversation" ref={logRef}>
+      {history && <History key={history.error ?? "list"} initial={history.items} error={history.error} onOpen={reopen} onNew={newChat} />}
+      <div className="c-log" hidden={history !== null} role="log" aria-live="polite" aria-label="Conversation" ref={logRef}>
         {!signedIn && <div className="m"><div className="b">Sign in to use amax chat.</div></div>}
         {log.map((e, i) => {
           if (e.kind === "me") return <div key={i} className="m me"><div className="b"><Marked text={e.text} highlights={e.highlights} fields={fields.current} /></div></div>;
@@ -173,12 +220,19 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
               <dl className="rec">{Object.entries(e.action.input).map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt className={fieldClass(e.action.fields, k)}><span className="fd" />{k}</dt><dd>{String(v)}</dd></div>)}</dl>
               {e.state === "open" ? (<>
                 {e.note && <p className="err">{e.note}</p>}
-                <div className="acts">
+                {e.action.secret && convo.current ? (
+                  <SecretConfirm conversationId={convo.current} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
+                    onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} />
+                ) : (
+                  <div className="acts">
                   <button className="btn sm primary" type="button" onClick={() => decide(e.action, true)}>Add it</button>
                   <button className="btn sm" type="button" onClick={() => { setText("Change "); input.current?.focus(); }}>Change something</button>
                   <button className="btn sm" type="button" onClick={() => decide(e.action, false)}>Cancel</button>
-                </div>
-              </>) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
+                  </div>
+                )}
+              </>) : e.state === "expired" ? (
+                <p className="muted" style={{ marginTop: 10 }}><span className="chip">Expired</span> Ask again to make a fresh request.</p>
+              ) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
             </div></div>
           );
         })}
@@ -198,6 +252,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
         <button className="c-talk" type="button" aria-pressed={talking} aria-label={voice ? "Talk to amax" : "Voice input is off; type instead"} onClick={talk}><Mascot /></button>
         <button className="c-round" type="button" title="New conversation" aria-label="New conversation" onClick={() => { convo.current = undefined; setLog([]); setPins([]); setIntent(undefined); }}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4" /></svg></button>
       </div>
+      {signedIn && (turnUsage ?? usage) && <p className="c-usage pinnable" data-testid="chat-usage"><span>{turnUsage ?? usage}</span><PinButton inline pin={{ label: "My AI usage this month", tool: "get_ai_usage", args: { scope: "self" } }} /></p>}
     </aside>
   );
 }

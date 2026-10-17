@@ -171,3 +171,8 @@
   :root:not([data-theme="light"]) .presales .chip.info{background:#16303C;color:#7FD3F2}
   :root:not([data-theme="light"]) .presales .stk{border-color:#1E1C33}
 }
+.presales .hint{margin:6px 0 0}
+.presales .asks{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 24px}
+.presales .steps li .pin{top:-6px;right:6px;width:26px;height:26px}
+.presales .ticket{position:relative}
+.presales .ticket:hover>.pin,.presales .ticket:focus-within>.pin{opacity:1;transform:none}

@@ -5,7 +5,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { diffRatio, type Region } from "./diff";
 
 const mock = `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#031-secrets-and-keys`;
-const REGIONS = [".row.head", ".tickets .ticket:nth-child(1)", ".tickets .ticket:nth-child(3)", ".tickets .ticket:nth-child(4)"];
+// 047 changed the header to an Ask amax chip (its own mock section); the tickets still match 031.
+const REGIONS = [".tickets .ticket:nth-child(1)", ".tickets .ticket:nth-child(3)", ".tickets .ticket:nth-child(4)"];
 
 async function capture(locator: Locator): Promise<Region> {
   const b = await locator.boundingBox();
@@ -42,33 +43,6 @@ test("031 AC4 Connections and keys matches the mock within 2%", async ({ page, c
     expect(diffRatio(want, got), sel).toBeLessThanOrEqual(0.02);
   }
   expect(await axe(page)).toEqual([]);
-});
-
-test("031 AC4 values are write-only: add, rotate and revoke never show them", async ({ page }) => {
-  const [first, second] = [`test-gh-${Date.now()}-a`, `test-gh-${Date.now()}-b`];
-  await signIn(page, "maya@lumenlabs.test");
-  await page.getByRole("button", { name: "Add credential" }).click();
-  await page.getByLabel("Connector").selectOption({ label: "GitHub" });
-  await page.getByLabel("Value", { exact: true }).fill(first);
-  await expect(page.getByLabel("Value", { exact: true })).toHaveAttribute("type", "password");
-  await page.getByRole("button", { name: "Save credential" }).click();
-  const row = page.locator("tr", { hasText: "GitHub" });
-  await expect(row).toContainText("Active");
-  await page.getByRole("button", { name: "Rotate GitHub" }).click();
-  await page.getByLabel("New value").fill(second);
-  await page.getByLabel("Keep the old value working for").selectOption("0");
-  await page.getByRole("button", { name: "Rotate", exact: true }).click();
-  await expect(page).toHaveURL(/saved=1/);
-  await expect(row).toContainText("Active");
-  expect(await axe(page)).toEqual([]);
-  await page.getByRole("button", { name: "Rotate GitHub" }).click();
-  await expect(page.getByRole("button", { name: "Revoke now" })).toBeVisible();
-  expect(await axe(page)).toEqual([]);
-  await page.getByRole("button", { name: "Revoke now" }).click();
-  await expect(row).toContainText("Revoked");
-  const html = await page.content();
-  expect(html).not.toContain(first);
-  expect(html).not.toContain(second);
 });
 
 test("031 AC4 Connections and keys is Admin only", async ({ page }) => {

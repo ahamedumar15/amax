@@ -24,13 +24,5 @@
 .keys .chip.draft{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 2l3 3-8 8H3v-3z' stroke='black' stroke-width='1.6' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .keys .chip.draft::before{content:"";width:13px;height:13px;flex:none;background:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
 .keys .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
-.keys .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
-.keys .btn:disabled{opacity:.5;cursor:not-allowed}
-.keys .select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236A6681' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer}
-.keys .keyform{margin-bottom:28px}
-.keys .keyform .fields{display:grid;gap:14px;max-width:520px}
-.keys .keyform label{display:grid;gap:6px;font-size:13.5px;font-weight:600}
-.keys .keyform input.select{background-image:none;padding-right:14px}
-.keys .keyform .revoke{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 @media (max-width:860px){.keys .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.keys .row.head>.actions{flex-shrink:1;width:100%}.keys .tickets,.keys .tickets.four{gap:12px}.keys .tickets.four .v{font-size:20px;margin-top:4px}.keys .card.flush .scroll-x{overflow-x:visible}.keys .ticket svg.art{width:58px;right:6px;top:8px}.keys .card.flush .card-head{padding:22px 22px 0}}

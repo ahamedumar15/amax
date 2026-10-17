@@ -1,3 +1,4 @@
+import { PinButton, type PinRef } from "@amax/ui";
 import type { Grid as GridData, GridPerson } from "../server/grid";
 import { monthLabel } from "../server/months";
 
@@ -17,29 +18,31 @@ function Total({ total, capacity }: { total: number; capacity: number }) {
   return <td className="h">{capacity === 0 ? <span className="muted">–</span> : <b>{total}%</b>}</td>;
 }
 
-function PersonRows({ p, months }: { p: GridPerson; months: GridData["months"] }) {
+function PersonRows({ p, months, everyone }: { p: GridPerson; months: GridData["months"]; everyone: boolean }) {
   const first = p.name.split(" ")[0];
+  const pin = (label: string): PinRef => ({ label, tool: "list_allocations", args: { everyone } });
   return (
     <>
       {p.lines.map((l, k) => (
-        <tr key={`${p.personId}-${l.label}`}>
+        <tr key={`${p.personId}-${l.label}`} className="pinnable">
           {k === 0 ? <td><div className="who"><span className={`av sm ${av(p.name)}`} aria-hidden="true">{p.initials}</span>{p.name}</div></td> : <td className="muted indent">{p.name}</td>}
           <td>{l.label}{l.manages && <small> Manages it</small>}</td>
           {months.map((m, i) => <Cell key={m.month} pct={l.percents[i]} forecast={m.forecast} bench={k === 0 && p.totals[i] === 0 && p.capacity[i] > 0} />)}
+          <td className="h"><PinButton pin={pin(`${p.name}, ${l.label}`)} /></td>
         </tr>
       ))}
-      <tr className="total"><td>{first}, total</td><td />{months.map((m, i) => <Total key={m.month} total={p.totals[i]} capacity={p.capacity[i]} />)}</tr>
+      <tr className="total pinnable"><td>{first}, total</td><td />{months.map((m, i) => <Total key={m.month} total={p.totals[i]} capacity={p.capacity[i]} />)}<td className="h"><PinButton pin={pin(`${p.name}, total`)} /></td></tr>
     </>
   );
 }
 
-export function Grid({ grid }: { grid: GridData }) {
+export function Grid({ grid, everyone }: { grid: GridData; everyone: boolean }) {
   return (
     <div className="scroll-x">
       <table className="tbl heat">
         <caption className="sr">People by month: each person's allocation per project, and their total</caption>
-        <thead><tr><th>Person</th><th>Project</th>{grid.months.map((m) => <th key={m.month}>{monthLabel(m.month)}{m.forecast ? ", forecast" : ""}</th>)}</tr></thead>
-        <tbody>{grid.people.map((p) => <PersonRows key={p.personId} p={p} months={grid.months} />)}</tbody>
+        <thead><tr><th>Person</th><th>Project</th>{grid.months.map((m) => <th key={m.month}>{monthLabel(m.month)}{m.forecast ? ", forecast" : ""}</th>)}<th><span className="sr">Pin</span></th></tr></thead>
+        <tbody>{grid.people.map((p) => <PersonRows key={p.personId} p={p} months={grid.months} everyone={everyone} />)}</tbody>
       </table>
     </div>
   );

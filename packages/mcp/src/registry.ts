@@ -57,7 +57,7 @@ export function createRegistry(modules: Registrable[]) {
     /** Only tools this viewer's roles and this token's scopes allow (AC-3). */
     toolsFor: (viewer: Viewer, scopes: Scope[] = ALL_SCOPES) => tools.filter((t) => allowed(viewer, t, scopes)),
     /** Re-checks access, validates input and runs the tool; module services do the record-level checks and audit. */
-    async call(viewer: Viewer, name: string, args: unknown, opts: { scopes?: Scope[]; source: "mcp" | "chat" }) {
+    async call(viewer: Viewer, name: string, args: unknown, opts: { scopes?: Scope[]; source: "mcp" | "chat"; secret?: string }) {
       const tool = tools.find((t) => t.name === name);
       if (!tool) throw new ToolError(`no tool named ${name}`, "not_found");
       // 050: inside a trace (chat turn, confirm, MCP call) every tool call is a step, refusals included.
@@ -69,7 +69,7 @@ export function createRegistry(modules: Registrable[]) {
       const parsed = tool.input.safeParse(args ?? {});
       if (!parsed.success) throw new ToolError(`invalid input for ${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`, "invalid_input");
       try {
-        const result = await tool.run(viewer as never, parsed.data as never, opts.source);
+        const result = await tool.run(viewer as never, parsed.data as never, opts.source, tool.secretInput ? opts.secret : undefined);
         await step("ok");
         return result;
       } catch (e) {

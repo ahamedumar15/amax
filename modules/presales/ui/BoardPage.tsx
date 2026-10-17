@@ -1,6 +1,6 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
-import { Ticket } from "@amax/ui";
+import { PinButton, Ticket } from "@amax/ui";
 import { OPEN_STAGES, type Stage } from "../contracts";
 import { openSuggestions } from "../server/detail";
 import { listOpportunities, recentChanges, type OpportunityRow } from "../server/queries";
@@ -16,6 +16,7 @@ import { ViewControls } from "./ViewControls";
 
 const MONTH = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 const SIX_MONTHS = 183 * 86400000;
+const statPin = (label: string) => <PinButton pin={{ label, tool: "pipeline_summary", args: {} }} />;
 const chartMax = (series: { total: number }[]) => Math.max(600, Math.ceil(Math.max(...series.map((p) => p.total)) / 200000) * 200);
 
 function lede(open: OpportunityRow[], total: number, found: number) {
@@ -48,10 +49,10 @@ export async function BoardPage({ viewer: raw }: ScreenProps) {
         <div className="actions"><ViewControls owners={owners} />{canCreate && <FillButton label="Fill with amax" />}</div>
       </div>
       <div className="tickets four">
-        <Ticket tone="info" label="Open pipeline" value={usd(total)} note={`${open.length} opportunities${found.length ? `, ${found.length} suggested` : ""}`} />
-        <Ticket tone="info" label="Weighted by win chance" value={usd(weighted)} progress={{ percent: share, label: `${share}% of $${Math.round(total / 1000)}k open value` }} />
-        <Ticket tone="good" label="Win rate, 12 months" value={stats.winRate === null ? "–" : `${stats.winRate}%`} note={winRateNote(stats.winRate, stats.winRateBefore)} />
-        <Ticket tone="info" label="Days to close" value={stats.daysToClose === null ? "–" : `${stats.daysToClose} days`} note="Average for won deals" />
+        <Ticket tone="info" label="Open pipeline" art={statPin("Open pipeline")} value={usd(total)} note={`${open.length} opportunities${found.length ? `, ${found.length} suggested` : ""}`} />
+        <Ticket tone="info" label="Weighted by win chance" art={statPin("Weighted pipeline")} value={usd(weighted)} progress={{ percent: share, label: `${share}% of $${Math.round(total / 1000)}k open value` }} />
+        <Ticket tone="good" label="Win rate, 12 months" art={statPin("Win rate, 12 months")} value={stats.winRate === null ? "–" : `${stats.winRate}%`} note={winRateNote(stats.winRate, stats.winRateBefore)} />
+        <Ticket tone="info" label="Days to close" art={statPin("Days to close")} value={stats.daysToClose === null ? "–" : `${stats.daysToClose} days`} note="Average for won deals" />
       </div>
       <FoundStrip items={found} canAccept={canCreate} />
       <div className="board sales">
@@ -60,7 +61,8 @@ export async function BoardPage({ viewer: raw }: ScreenProps) {
       </div>
       <PipelineList rows={rows} />
       <div className="cols even">
-        <div className="card chart-card">
+        <div className="card chart-card pinnable">
+          {statPin("Pipeline value per month")}
           <div className="card-head"><h2>Pipeline value</h2><span className="muted">$k, weighted vs total</span></div>
           <LineChart id="pipelineChart" label="Pipeline value per month" labels={stats.series.map((p) => MONTH(p.month))} max={chartMax(stats.series)} step={200} prefix="$" unit="k" width={560} height={210}
             series={[{ name: "Total", color: "#C3B5FF", dashed: true, data: stats.series.map((p) => Math.round(p.total / 1000)) }, { name: "Weighted", color: "#7B61FF", area: true, data: stats.series.map((p) => Math.round(p.weighted / 1000)) }]} />

@@ -31,8 +31,8 @@ export class AiOutputError extends Error {
   }
 }
 
-/** Who is asking, for the call log and permissions. */
-export type AiCaller = { tenantId: string; caller: string; source: Source; purpose: string };
+/** Who is asking, for the call log and permissions. `userId` and `conversationId` attribute the cost (048); jobs leave them out. */
+export type AiCaller = { tenantId: string; caller: string; source: Source; purpose: string; userId?: string; conversationId?: string };
 
 /** Material for the model. Records are redacted by class at every depth; text is quoted as untrusted data. */
 export type DataItem = { label: string; text: string } | { label: string; record: unknown; sensitive?: Partial<Record<string, Sensitivity>> };
@@ -66,8 +66,8 @@ async function log(caller: AiCaller, entry: LogEntry) {
   const trace = currentTrace();
   const traced = trace?.tenantId === caller.tenantId ? trace : undefined;
   await withTenant(db, caller.tenantId, async (tx) => {
-    const [row] = await tx.execute(sql`insert into ai.call (tenant_id, trace_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
-    values (${caller.tenantId}, ${traced?.traceId ?? null}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
+    const [row] = await tx.execute(sql`insert into ai.call (tenant_id, trace_id, user_id, conversation_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
+    values (${caller.tenantId}, ${traced?.traceId ?? null}, ${caller.userId ?? null}, ${caller.conversationId ?? null}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
             ${costOf(priced, entry.usage)}, ${JSON.stringify(entry.redactions)}::jsonb, ${entry.injection}, ${textArray(entry.toolsRun ?? [])}, ${entry.ok}, ${error}) returning id`);
     if (traced) await appendTrace(tx, traced, { kind: "model_call", recordId: row.id as string, detail: { model: entry.providerModel ?? entry.model, ok: entry.ok } });
   });
