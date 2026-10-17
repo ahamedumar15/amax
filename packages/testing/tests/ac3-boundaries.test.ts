@@ -13,6 +13,7 @@ const forbidden: [string, string][] = [
   ["r5-cycle", "R5"],
   ["r6-proposal-cycle", "R6"],
   ["r7-provider-sdk", "R7"],
+  ["r8-trace-or-fail", "R8"],
 ];
 
 describe("AC3 import boundaries", () => {
@@ -23,5 +24,12 @@ describe("AC3 import boundaries", () => {
       expect(run.status, fixture).toBe(2);
       expect(run.stderr, fixture).toContain(rule);
     }
+  });
+
+  it("AC-2 (053) only packages/chat/src/engine.ts may use the fail-closed trace step, in packages and apps alike", () => {
+    const run = check("r8-trace-or-fail");
+    expect(run.stderr).toContain("R8 packages/mcp/src/registry.ts");
+    expect(run.stderr).toContain("R8 apps/web/lib/job.ts");
+    expect(run.stderr).not.toContain("R8 packages/chat/src/engine.ts");
   });
 });
