@@ -1,0 +1,10 @@
+{
+  "change": "042-release-management",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "build": {"status":"done","at":"2026-10-17T08:13:35Z"},
+    "verify": {"status":"done","at":"2026-10-17T08:13:35Z"},
+    "archived": {"status":"done","at":"2026-10-17T11:44:32Z"}
+  }
+}
