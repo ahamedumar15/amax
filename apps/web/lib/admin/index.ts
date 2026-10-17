@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { aiTools } from "./ai";
+import { apiTools } from "./api";
 import { mcpTools } from "./mcp";
 import { secretTools } from "./secrets";
 import { settingsStatus } from "./status";
@@ -19,5 +20,6 @@ export const adminModule = (d: AdminDeps) => ({
     ...mcpTools(d),
     ...aiTools(d),
     ...workflowTools(d),
+    ...apiTools(d),
   ],
 });

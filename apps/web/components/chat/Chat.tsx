@@ -7,11 +7,12 @@ import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/a
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
 import { SecretConfirm } from "./SecretConfirm";
+import { RevealOnce } from "./RevealOnce";
 
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
   | { kind: "amax"; text: string; tools: string[]; error?: boolean }
-  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string };
+  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string; reveal?: CardOutcome["reveal"] };
 
 const restoredLog = (c: Conversation): Entry[] => [
   ...c.messages.map((m): Entry => (m.role === "me" ? { kind: "me", text: m.text, highlights: [] } : { kind: "amax", text: m.text, tools: [] })),
@@ -233,6 +234,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
               </>) : e.state === "expired" ? (
                 <p className="muted" style={{ marginTop: 10 }}><span className="chip">Expired</span> Ask again to make a fresh request.</p>
               ) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
+              {e.reveal && <RevealOnce reveal={e.reveal} onDone={() => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, reveal: undefined } : x)))} />}
             </div></div>
           );
         })}

@@ -14,6 +14,10 @@ export type Identity = { kind: "user"; viewer: Viewer; tokenKind: "api" | "mcp" 
 const MAX_DAYS = 365;
 const scopeAllows = (scopes: string[], action: string) => scopes.some((s) => s === action || (s.endsWith(":*") && action.startsWith(s.slice(0, -1))));
 
+// 035: per-module tool scopes ("delivery:write"). Write includes read; sensitive is its own grant.
+export const principalAllowsTool = (p: Pick<Principal, "scopes">, module: string, scope: "read" | "write" | "sensitive") =>
+  p.scopes.includes(`${module}:${scope}`) || (scope === "read" && p.scopes.includes(`${module}:write`));
+
 export async function createPrincipal(db: Db, owner: Viewer, p: { name: string; scopes: string[]; actsFor: string[]; days: number }) {
   if (!owner.actualRoles.includes("Admin")) throw new ForbiddenError("auth:principal:create", "auth.service_principal");
   if (p.days < 1 || p.days > MAX_DAYS) throw new Error(`expiry must be 1–${MAX_DAYS} days`);

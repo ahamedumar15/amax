@@ -9,7 +9,7 @@ async function signIn(page: Page, email: string, to: string) {
   await expect(page).toHaveURL((u) => u.pathname === to);
 }
 
-const SCREENS = ["/settings", "/settings/keys", "/settings/integrations", "/settings/ai", "/settings/workflows"];
+const SCREENS = ["/settings", "/settings/keys", "/settings/integrations", "/settings/ai", "/settings/workflows", "/settings/api"];
 const chat = (page: Page) => page.getByRole("complementary", { name: "amax chat" });
 const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
 const unpinned = (page: Page) => page.locator("main").evaluate((root) =>
@@ -27,7 +27,7 @@ test("047 AC1 the Settings hub lists every admin screen with a live status; the 
   expect((await cards.allTextContents()).sort()).toEqual(["AI and data", "AI usage", "API and webhooks", "Audit and trace", "Backups and export", "Connections and keys", "Data retention", "Integrations", "Scheduler"]);
   await expect(cards.first()).toHaveText("Connections and keys");
   await expect(page.locator(".app-card", { hasText: "Connections and keys" }).locator(".chip")).toHaveText("1 expiring");
-  await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon", "Coming soon", "Coming soon"]);
+  await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon", "Coming soon"]);
   await expect(page.getByRole("link", { name: "Audit and trace" })).toHaveAttribute("href", "/settings/audit");
   await expect(page.getByRole("link", { name: "AI usage" })).toHaveAttribute("href", "/settings/ai/usage");
   await expect(page.locator(".lede")).toContainText("One thing needs you: the Azure DevOps credential expires in 12 days");

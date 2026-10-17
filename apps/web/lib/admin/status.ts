@@ -97,7 +97,7 @@ async function audit(d: AdminDeps, v: Viewer): Promise<Area> {
 const SOON: Area[] = [
   { id: "retention", title: "Data retention", href: null, blurb: "How long each kind of data is kept, legal holds, and access and erasure requests.", stat: "032", chip: { tone: "info", text: "Coming soon" } },
   { id: "backups", title: "Backups and export", href: null, blurb: "Point-in-time recovery, weekly restore drills, and exporting all your data.", stat: "034", chip: { tone: "info", text: "Coming soon" } },
-  { id: "api", title: "API and webhooks", href: null, blurb: "Service credentials for CI and tools, signed webhooks, and rate limits.", stat: "035", chip: { tone: "info", text: "Coming soon" } },
+  { id: "api", title: "API and webhooks", href: "/settings/api", blurb: "Service credentials for CI and tools, signed webhooks, and rate limits.", stat: "REST, MCP and webhooks", chip: { tone: "info", text: "Keys shown once" } },
 ];
 
 /** The Settings hub, attention first: each admin screen with a live status (047 AC-1). */

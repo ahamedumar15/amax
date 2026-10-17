@@ -1,13 +1,14 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:34 UTC
+**Last Updated:** 2026-10-17 19:41 UTC
 
 ## Active Changes
 
 
+- 🔀 **035-api-webhooks-and-rate-limits** — pr raised | 7/7 tasks (100%) | 0 failed | PR #48 open
 - 🔀 **053-trace-and-settings-hardening** — pr raised | 6/6 tasks (100%) | 0 failed | PR #46 merged
-- 🔀 **054-chat-first-everywhere** — pr raised | 8/8 tasks (100%) | 0 failed | PR #47 open
+- 🔀 **054-chat-first-everywhere** — pr raised | 8/8 tasks (100%) | 0 failed | PR #47 merged
 - ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged
 
 ## Pending Proposals
@@ -34,7 +35,6 @@
 - 📋 **030-notifications** — proposal ready, awaiting planning
 - 📋 **032-data-retention-and-erasure** — proposal ready, awaiting planning
 - 📋 **034-backup-restore-and-export** — proposal ready, awaiting planning
-- 📋 **035-api-webhooks-and-rate-limits** — proposal ready, awaiting planning
 - 📋 **036-compliance-registers** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
 - 📋 **038-navigation-scale** — proposal ready, awaiting planning
@@ -72,6 +72,6 @@
 
 ## Stats
 
-- **Total changes:** 28
-- **Active:** 3
+- **Total changes:** 29
+- **Active:** 4
 - **Completed:** 25
