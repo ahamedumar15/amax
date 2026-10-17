@@ -1,6 +1,8 @@
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, registryFrom, storageFromEnv } from "@amax/core/server";
+import { configureAi } from "@amax/ai";
+import { anthropicProvider } from "@amax/ai/anthropic";
 import { installAuthorizer, setGrants } from "@amax/auth";
 import { authEventHandlers } from "@amax/auth/events";
 import { installed } from "./registry";
@@ -22,6 +24,8 @@ export function getDb(): Db | null {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     setGrants(installed);
     installAuthorizer();
+    const env = loadEnv();
+    if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
     wired = true;
   }
   return cache.amaxDb;

@@ -25,4 +25,23 @@ New admin screen, AI and data: the tenant's data region, AI provider and region,
 
 ## Tasks
 
+Assumptions (Rule 1):
+- Provider: Anthropic's Claude API via `@anthropic-ai/sdk` (the only package allowed to import it). Default model `claude-haiku-5-5`, fallback `claude-sonnet-5-5` (product owner, 2026-10-17), both from env (`AMAX_AI_MODEL`, `AMAX_AI_FALLBACK_MODEL`); the fallback runs when the primary errors, refuses or returns out-of-schema output. Bedrock is a later provider behind the same interface.
+- Zero data retention is an organisation setting at the provider; amax records the tenant's requirement, shows it, and keeps AI off when the requirement isn't confirmed by an Admin.
+- The gateway also offers a bounded tool loop (`converse`) because chat (005) needs tool calls; tools are zod-typed and run through module services, so the provider SDK stays inside `packages/ai`.
+- Untrusted text is wrapped in `<data>` blocks with any closing tags neutralised, and the system prompt says data is never instructions; with no tools offered, an injected instruction has nothing to call, and every output is validated against the caller's zod schema.
+- The AI and data screen is an app route (`/settings/ai`) until 038 adds the Settings hub; Admin only.
+
+- [ ] `T1` — `packages/ai`: provider interface, Anthropic provider (structured outputs via `messages.parse` + zod, tool loop), fake provider for tests; `complete`, `extract`, `converse`; model fallback; check-graph rule R7 (no provider SDK outside `packages/ai`) (AC-1, AC-3)
+  Kind: impl
+  Files: packages/ai/{package.json,tsconfig.json,src/*.ts,tests/*.ts}, scripts/graph/rules.mjs, packages/testing/boundaries/r7-provider-sdk/**, packages/testing/tests/ac3-boundaries.test.ts
+- [ ] `T2` — Tenant policy and logging: `ai.settings` (provider, region, ZDR, allowed sensitivity classes, voice, data/db/storage/AI regions) and `ai.call` (tenant, caller, source, model, tokens, cost, redactions — never content); redaction before every call; region gate turns AI off (AC-2, AC-4, AC-5, AC-6)
+  Kind: impl
+  Files: packages/db/migrations/0006_ai.sql, packages/ai/src/{policy,redact,log}.ts, packages/ai/tests/*.test.ts
+  Depends: T1
+- [ ] `T3` — AI and data screen (Admin): tickets (region, calls and cost this month, fields redacted, injection attempts), the class policy table, provider and subprocessors cards, matching the mock; e2e + visual check (AC-7)
+  Kind: impl
+  Files: apps/web/app/(app)/settings/ai/page.tsx, apps/web/tests/e2e/ai.spec.ts
+  Depends: T2
+
 ## Verify

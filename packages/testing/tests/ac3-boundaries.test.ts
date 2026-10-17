@@ -12,6 +12,7 @@ const forbidden: [string, string][] = [
   ["r4-undeclared", "R4"],
   ["r5-cycle", "R5"],
   ["r6-proposal-cycle", "R6"],
+  ["r7-provider-sdk", "R7"],
 ];
 
 describe("AC3 import boundaries", () => {
