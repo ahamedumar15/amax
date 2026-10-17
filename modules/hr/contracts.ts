@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { can, mask, ScopeError, type Masked, type Viewer } from "@amax/auth";
 import { appendAudit, isSystemContext, type ServiceContext } from "@amax/core/server";
-import { employmentAt, inForceOrder, today } from "./server/inforce";
+import { employmentAt, inForceOrder, subjectOf, today } from "./server/inforce";
 
 /** Who reads: a signed-in viewer, or a ServiceContext (a system job, or a call acting for a viewer). */
 export type Reader = Viewer | ServiceContext;
@@ -24,11 +24,6 @@ export function readerOf(r: Reader): Resolved {
 /** System code sees everyone; a viewer sees the entities and departments their hr:read reaches, and always themself. */
 const sees = (r: Resolved, row: Record<string, unknown>) =>
   r.kind === "system" || (!!row.user_id && row.user_id === r.viewer.userId) || can(r.viewer, "hr:read", subjectOf(row));
-
-/** The scope attributes of a person or employment row: every dimension an assignment can narrow by. */
-const subjectOf = (row: Record<string, unknown>) => ({
-  ownerUserId: (row.user_id as string | null) ?? null, legalEntityId: row.legal_entity_id as string, department: (row.department as string | null) ?? null,
-});
 
 export const PERSON_STATUSES = ["joining", "active", "left"] as const;
 export type PersonStatus = (typeof PERSON_STATUSES)[number];

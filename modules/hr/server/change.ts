@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Tx } from "@amax/db";
 import type { ServiceContext } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonChanged } from "../contracts";
-import { date, inScope, personByNo, today } from "./records";
+import { date, inScope, personByNo, subjectOf, today } from "./records";
 
 export const changeInput = z.object({
   employeeNo: z.string(), effectiveOn: date.optional(),
@@ -50,7 +50,7 @@ async function newPeriod(tx: Tx, personId: string, on: string, set: Record<strin
 
 export async function changePersonRun(tx: Tx, input: ChangeInput, ctx: ServiceContext) {
   const p = await personByNo(tx, input.employeeNo);
-  inScope(ctx, "hr:person:update", p.legal_entity_id as string);
+  inScope(ctx, "hr:person:update", subjectOf(p));
   const on = input.effectiveOn ?? today();
   const personSet = Object.entries(PERSON_FIELDS).filter(([k]) => input[k as keyof ChangeInput] !== undefined);
   // Title, location and work email aren't effective-dated: they change now, so the event and audit

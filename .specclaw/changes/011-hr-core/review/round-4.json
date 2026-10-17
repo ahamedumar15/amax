@@ -1,0 +1,111 @@
+{
+ "counts": {
+  "blocker": 1,
+  "major": 0,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "modules/hr/README.md",
+  "modules/hr/contracts.ts",
+  "modules/hr/server/records.ts",
+  "modules/hr/server/services.ts",
+  "modules/hr/tests/contracts.test.ts",
+  "modules/hr/tests/records.test.ts",
+  "packages/core/src/authorize.ts",
+  "packages/core/src/server.ts",
+  "packages/core/tests/system-context.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/core/src/authorize.ts",
+   "fp": "56a210d7f226",
+   "in_delta": true,
+   "line": 39,
+   "message": "Instance fix. The WeakSet stops hand-built literals, but the factory that mints trust is still public. `contextFor` is exported from `@amax/core/server`, and every module, chat intent and MCP tool may import that package; `modules/hr/server/jobs.ts` already calls `contextFor.job` from module code. Any caller can therefore run `contextFor.job(anyTenantId, \"anything\")` and get a context that `isSystemContext` accepts. That context reads unmasked salary, EPF and bank data through getEmployment and passes inScope and applyStatusDates. The audit row records a job name the caller made up. The issued object is also not frozen. Only `actor.kind` is checked again, so `ctx.actor.id`, `tenantId` and `onBehalfOf` can be changed after issue and the context still passes. Fix: only the job runner (runDueJobs or the workflow engine) should be able to mint system contexts, through an unexported capability or a factory that is not on the module import surface. The runner then hands the context to the job handler. Freeze the issued context and its actor. Add a test showing that module-level code can't get an accepted system context.",
+   "original_severity": "blocker",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B8",
+   "scenario": "An MCP tool handler in any module calls `getEmployment(tx, personId, contextFor.job(tenantId, \"payroll.sync\"))` \u2192 it gets the unmasked base_salary, epf_number and bank_account for any entity, and the audit says job:payroll.sync.",
+   "severity": "blocker"
+  },
+  {
+   "file": "modules/hr/server/change.ts",
+   "fp": "f39bf12c74ee",
+   "in_delta": false,
+   "line": 40,
+   "message": "This round didn't touch the earlier carry-forward finding. Later periods are still compared with the value in force at `effectiveOn` instead of with the period just before each one. A planned return to the old value is therefore overwritten. Fix: walk the later periods in starts_on order and stop carrying a column at the first period whose value differs from its predecessor. Add a table test with a step down and then a step back up.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "FTE 1.0 from Jan, 0.6 from Mar, 1.0 from Jun. Then changePerson sets fte 0.8 from Feb \u2192 the June period is rewritten to 0.8 and the planned return to full time is lost.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/hr/server/services.ts",
+   "fp": "228fa4de3c9e",
+   "in_delta": false,
+   "line": 77,
+   "message": "This round didn't touch the earlier leaver-audit finding, and the README in this diff still says later periods 'are removed \u2026 (pay values left out)'. recordLeaver still hard-deletes later periods. Its audit leaves out base_salary, currency, epf_number, bank_name, bank_account and the row ids, and it doesn't record the old `ends_on` of the period in force. A mistaken leaver can't be undone. Fix: end and void the later periods instead of deleting them, or keep the full rows somewhere they can be restored from. Record the before-value of `ends_on` for every period the update changes.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "module-standard",
+   "scenario": "A person has a planned raise from 2027-01-01. HR records them as leaving on 2026-11-30 by mistake \u2192 the raise row is deleted, and neither the table nor the audit keeps its salary or the old end date of the current period.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/hr/server/records.ts",
+   "fp": "be60fdc399ea",
+   "in_delta": false,
+   "line": 16,
+   "message": "The department-scope finding is still open, and the class includes a second copy. inScope (the write path) still calls `assertCan(v, action, { legalEntityId })` without the row's department. The README in this diff claims viewers are limited to 'the legal entities and departments their hr:read reaches', but this diff doesn't change `sees` in contracts.ts either. Fix: build one scope subject (legalEntityId, department and any other scope dimension) shared by `sees`, masking and inScope. Add department-scoped cases to both the read and the write scoping tests.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "An HR assignment scoped to entity LK, departments ['Engineering'], calls changePerson on an LK Finance employee \u2192 it isn't refused, because the department is never passed to assertCan.",
+   "severity": "major"
+  }
+ ],
+ "head": "82e9a80a3185a0d488919709fc5b7d2c78a18086",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/diff.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/ui/delivery.css",
+  "modules/hr/db/migrations/0001_hr.sql",
+  "modules/hr/fixtures/fillers.ts",
+  "modules/hr/fixtures/index.ts",
+  "modules/hr/mcp.ts",
+  "modules/hr/server/change.ts",
+  "modules/hr/server/inforce.ts",
+  "modules/hr/server/jobs.ts",
+  "modules/hr/server/queries.ts",
+  "modules/hr/server/stats.ts",
+  "packages/auth/src/can.ts",
+  "packages/core/src/adapters/storage.ts",
+  "packages/core/tests/ac5-adapters.test.ts",
+  "packages/db/bin/migrate.ts",
+  "packages/testing/src/fixtures/totals.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 45119,
+ "round": 4,
+ "since": "85842d2",
+ "status": "open",
+ "system_chars": 20777,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792243352,
+ "ts_start": 1792243271
+}

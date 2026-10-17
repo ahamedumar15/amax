@@ -154,9 +154,25 @@ describe.skipIf(!hasDb)("hr records (Postgres)", () => {
   ] as const)("HR writes fail closed without a viewer: $kind (viewer: $viewer)", ({ kind, viewer, ok }) => {
     // "system" is a hand-built literal claiming to be system code; "issued" is one core made with contextFor.job.
     const ctx = kind === "issued" ? sys() : ({ tenantId: db.maya.tenantId, actor: { id: `${kind}:x`, kind }, source: "api", viewer: viewer ? db.mayaAs("HR") : undefined } as ServiceContext);
-    const lk = "11111111-1111-4111-8111-1111111111a1";
+    const lk = { legalEntityId: "11111111-1111-4111-8111-1111111111a1", department: "Engineering" };
     if (ok) expect(() => inScope(ctx, "hr:person:update", lk)).not.toThrow();
     else expect(() => inScope(ctx, "hr:person:update", lk)).toThrow(/forbidden/);
+  });
+
+  it.each([
+    { who: "HR for Engineering", departments: ["Engineering"], target: "Engineering", ok: true },
+    { who: "HR for Finance", departments: ["Finance"], target: "Engineering", ok: false },
+    { who: "HR for Finance adding to Finance", departments: ["Finance"], target: "Finance", ok: true },
+  ])("HR writes check the department as well as the entity: $who", async ({ departments, target, ok }) => {
+    const v = { ...db.maya, viewAs: undefined, assignments: [{ role: "HR" as const, legalEntityIds: null, departments }] };
+    const scoped = ctxFor(v);
+    const add = addPerson(scoped, { name: `Dept ${departments[0]} ${target}`, title: "x", department: target, entity: "Sri Lanka", joinedOn: "2026-01-05" });
+    if (ok) await expect(add).resolves.toMatchObject({ status: "active" });
+    else await expect(add).rejects.toThrow(/forbidden/);
+    const { employeeNo } = await hire(`Dept target ${departments[0]} ${target}`, "2026-01-05", { department: target });
+    const change = changePerson(scoped, { employeeNo, grade: "E3" });
+    if (ok) await expect(change).resolves.toBeTruthy();
+    else await expect(change).rejects.toThrow(/forbidden/);
   });
 
   it("a fixed-term period boundary is not a contract end: only the last period's end counts", async () => {
