@@ -489,6 +489,7 @@ review:
   max_turns: 12
   max_diff_lines: 8000
   governance:
-    - "CLAUDE.md"
+    - "AGENTS.md"
+    - "PRODUCT.md"
     - "docs/module-standard.md"
     - "docs/architecture.md"

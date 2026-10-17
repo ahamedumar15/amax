@@ -1,0 +1,26 @@
+# R3 — Chat does the writes; everything on screen is pinnable
+
+Decided by the product owner on 2026-10-17. This applies to every change that touches UI under
+`modules/*/ui/` or `apps/web/`.
+
+Report these as findings:
+
+- **No CRUD forms in pages.** A page or component that renders a `<form>`, a write dialog, an inline
+  edit field or a button bound to a server action that creates, updates or deletes a record.
+  Writes go through chat: an MCP write tool in `modules/<m>/mcp.ts` that runs only after chat's
+  pending-action confirm (`packages/chat/src/engine.ts` `confirmAction`). In place of the form, the
+  page offers an `IntentButton` / "Ask amax" control that opens chat with the record pinned and a
+  prompt filled in.
+- **Missing chat tool.** A write the UI offers (or a removed form used to offer) that has no MCP
+  write tool, so chat can't do it.
+- **Missing pin.** A card, tile (`.tcard`, `.ticket`), stat, stage step, list item or table row that
+  shows a record or a metric and has no `PinButton` (`packages/ui/src/components/PinButton.tsx`).
+  Its `PinRef` must resolve through a read tool to that exact record. A pin with no matching read
+  tool counts as missing.
+
+Not findings:
+
+- Read-only controls: filters, tabs, sorting, search, pagination, navigation, view toggles.
+- Auth screens (sign-in, sign-out) and the chat drawer's own composer and confirm/cancel buttons.
+- Inline forms that predate 2026-10-17 in modules that a change doesn't touch. These are listed as
+  a follow-up in `BACKLOG.md`. A change that *edits* such a component must move its writes to chat.
