@@ -21,6 +21,7 @@ export function getDb(): Db | null {
     const env = loadEnv();
     if (!env.DATABASE_URL) return (cache.amaxDb = null);
     if (!env.AUDIT_HASH_KEY) throw new Error("amax: AUDIT_HASH_KEY is required once DATABASE_URL is set");
+    if (env.NODE_ENV === "production" && !env.AMAX_BASE_URL) throw new Error("amax: AMAX_BASE_URL is required once DATABASE_URL is set in production");
     cache.amaxDb = createDb(env.DATABASE_URL).db;
   }
   if (cache.amaxDb && !wired) {
@@ -58,11 +59,14 @@ export async function voiceEnabled(tenantId: string) {
   return (await withTenant(db, tenantId, (tx) => loadPolicy(tx))).voiceEnabled;
 }
 // 004: the public base URL (for OAuth metadata and the MCP audience).
+// The public origin is configuration, never request headers: it becomes the OAuth issuer and the
+// MCP token audience (review round 1, B6). Outside production a loopback host may stand in.
 export const baseUrl = (req: Request | Headers) => {
   const env = loadEnv();
   if (env.AMAX_BASE_URL) return env.AMAX_BASE_URL.replace(/\/$/, "");
+  if (env.NODE_ENV === "production") throw new Error("amax: AMAX_BASE_URL must be set in production");
   const h = req instanceof Request ? req.headers : req;
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? (req instanceof Request ? new URL(req.url).host : "localhost:3000");
-  const proto = h.get("x-forwarded-proto") ?? (req instanceof Request ? new URL(req.url).protocol.replace(":", "") : "http");
-  return `${proto}://${host}`;
+  const host = h.get("host") ?? "";
+  if (!/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host)) throw new Error("amax: set AMAX_BASE_URL (only loopback hosts work without it)");
+  return `http://${host}`;
 };

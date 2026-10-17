@@ -3,12 +3,18 @@ import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
 import { tokenHash } from "@amax/auth/tokens";
 import { viewerForUser, type Viewer } from "@amax/auth";
+import { appendAudit } from "@amax/core/server";
 import { ALL_SCOPES, type Scope } from "./registry";
 
 // amax is the OAuth 2.1 authorization server for its own MCP resource (004 AC-1): dynamic client
 // registration, authorization code + PKCE (S256), short-lived audience-bound access tokens and
 // rotating refresh tokens. Tokens are opaque and stored hashed.
 export const ACCESS_SECONDS = 3600;
+
+// Every grant, rotation and revocation is audited (review round 1, B10).
+type AuditTx = Parameters<Parameters<typeof withTenant>[2]>[0];
+const auditOAuth = (tx: AuditTx, tenantId: string, actor: string, action: string, after: Record<string, unknown>) =>
+  appendAudit(tx, { tenantId, actor: { id: actor, kind: actor.startsWith("user:") ? "user" : "system" }, source: "api" }, { action, resource: "auth.api_token", after });
 export const REFRESH_DAYS = 30;
 const CODE_SECONDS = 600;
 
@@ -100,6 +106,7 @@ export async function issueCode(db: Db, viewer: Viewer, req: AuthorizeRequest) {
   await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`insert into auth.oauth_code (code_hash, tenant_id, user_id, client_id, redirect_uri, scopes, resource, code_challenge, expires_at)
     values (${tokenHash(code)}, ${viewer.tenantId}, ${viewer.userId}, ${req.clientId}, ${req.redirectUri}, ${`{${req.scopes.join(",")}}`}::text[], ${req.resource}, ${req.codeChallenge},
             now() + make_interval(secs => ${CODE_SECONDS}))`));
+  await withTenant(db, viewer.tenantId, (tx) => auditOAuth(tx, viewer.tenantId, `user:${viewer.userId}`, "auth.oauth.consent", { clientId: req.clientId, scopes: req.scopes }));
   const u = new URL(req.redirectUri);
   u.searchParams.set("code", code);
   if (req.state) u.searchParams.set("state", req.state);
@@ -108,12 +115,13 @@ export async function issueCode(db: Db, viewer: Viewer, req: AuthorizeRequest) {
 
 const s256 = (verifier: string) => createHash("sha256").update(verifier).digest("base64url");
 
-async function mint(tx: Parameters<Parameters<typeof withTenant>[2]>[0], row: { tenantId: string; userId: string; clientId: string; scopes: string[]; audience: string }) {
+async function mint(tx: AuditTx, row: { tenantId: string; userId: string; clientId: string; scopes: string[]; audience: string }, action: "auth.oauth.token_issued" | "auth.oauth.token_rotated") {
   const access = `amx_mcp_${randomBytes(24).toString("base64url")}`;
   const refresh = `amx_rt_${randomBytes(32).toString("base64url")}`;
   await tx.execute(sql`insert into auth.api_token (tenant_id, user_id, kind, name, token_hash, expires_at, scopes, client_id, audience, refresh_hash, refresh_expires_at)
     values (${row.tenantId}, ${row.userId}, 'mcp', ${`OAuth: ${row.clientId}`}, ${tokenHash(access)}, now() + make_interval(secs => ${ACCESS_SECONDS}),
             ${`{${row.scopes.join(",")}}`}::text[], ${row.clientId}, ${row.audience}, ${tokenHash(refresh)}, now() + make_interval(days => ${REFRESH_DAYS}))`);
+  await auditOAuth(tx, row.tenantId, `user:${row.userId}`, action, { clientId: row.clientId, scopes: row.scopes });
   return { access_token: access, token_type: "Bearer", expires_in: ACCESS_SECONDS, refresh_token: refresh, scope: row.scopes.join(" ") };
 }
 
@@ -129,7 +137,7 @@ export async function exchangeToken(db: Db, form: URLSearchParams) {
       if (!c) throw new OAuthError("invalid_grant", "code already used or expired");
       if (c.client_id !== form.get("client_id") || c.redirect_uri !== form.get("redirect_uri")) throw new OAuthError("invalid_grant", "client or redirect_uri doesn't match the code");
       if (s256(form.get("code_verifier") ?? "") !== c.code_challenge) throw new OAuthError("invalid_grant", "PKCE verification failed");
-      return mint(tx, { tenantId: c.tenant_id as string, userId: c.user_id as string, clientId: c.client_id as string, scopes: c.scopes as string[], audience: c.resource as string });
+      return mint(tx, { tenantId: c.tenant_id as string, userId: c.user_id as string, clientId: c.client_id as string, scopes: c.scopes as string[], audience: c.resource as string }, "auth.oauth.token_issued");
     });
   }
   if (grant === "refresh_token") {
@@ -142,7 +150,7 @@ export async function exchangeToken(db: Db, form: URLSearchParams) {
       if (!old) throw new OAuthError("invalid_grant", "refresh token revoked or expired");
       const [u] = await tx.execute(sql`select status from auth.user where id = ${old.user_id}`);
       if (u?.status !== "active") throw new OAuthError("invalid_grant", "user is deactivated");
-      return mint(tx, { tenantId: old.tenant_id as string, userId: old.user_id as string, clientId: old.client_id as string, scopes: old.scopes as string[], audience: old.audience as string });
+      return mint(tx, { tenantId: old.tenant_id as string, userId: old.user_id as string, clientId: old.client_id as string, scopes: old.scopes as string[], audience: old.audience as string }, "auth.oauth.token_rotated");
     });
   }
   throw new OAuthError("unsupported_grant_type", "use authorization_code or refresh_token");
@@ -151,7 +159,10 @@ export async function exchangeToken(db: Db, form: URLSearchParams) {
 export async function revokeToken(db: Db, token: string) {
   for (const fn of [sql`select tenant_id, id from auth.lookup_token(${tokenHash(token)}) where kind = 'mcp'`, sql`select * from auth.lookup_refresh(${tokenHash(token)})`]) {
     const [hit] = await db.execute(fn);
-    if (hit) await withTenant(db, hit.tenant_id as string, (tx) => tx.execute(sql`update auth.api_token set revoked_at = now(), refresh_hash = null where id = ${hit.id}`));
+    if (hit) await withTenant(db, hit.tenant_id as string, async (tx) => {
+      const [t] = await tx.execute(sql`update auth.api_token set revoked_at = now(), refresh_hash = null where id = ${hit.id} and revoked_at is null returning user_id, client_id`);
+      if (t) await auditOAuth(tx, hit.tenant_id as string, `user:${t.user_id}`, "auth.oauth.revoked", { clientId: t.client_id, by: "client" });
+    });
   }
 }
 

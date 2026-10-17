@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
 import { appendAudit } from "@amax/core/server";
-import { loadPolicy, type AiPolicy } from "./policy";
+import { loadPolicy, normalizeRegion, type AiPolicy } from "./policy";
 
 export type AiStats = { calls: number; costUsd: number; redactions: Record<string, number>; injections: number; failures: number };
 
@@ -21,8 +21,11 @@ export async function aiStats(db: Db, tenantId: string, now = new Date()): Promi
 
 export type PolicyPatch = { allowedClasses: string[]; zdrConfirmed: boolean; voiceEnabled: boolean; enabled: boolean; dataRegion: string | null; providerRegion: string | null; aiRegion: string | null; dbRegion: string | null; storageRegion: string | null };
 
-// Admin only (the caller checks). Each change bumps the policy version and is audited.
-export async function savePolicy(db: Db, tenantId: string, actorId: string, patch: PolicyPatch) {
+// Admin only, checked here so no caller can forget. Each change bumps the policy version and is audited.
+export async function savePolicy(db: Db, admin: { tenantId: string; userId: string; roles: string[] }, patch: PolicyPatch) {
+  if (!admin.roles.includes("Admin")) throw new Error("forbidden: only an Admin may change the AI policy");
+  const tenantId = admin.tenantId, actorId = `user:${admin.userId}`;
+  patch = { ...patch, dataRegion: normalizeRegion(patch.dataRegion), providerRegion: patch.providerRegion?.trim() || null, aiRegion: normalizeRegion(patch.aiRegion), dbRegion: normalizeRegion(patch.dbRegion), storageRegion: normalizeRegion(patch.storageRegion) };
   await withTenant(db, tenantId, async (tx) => {
     const before = await loadPolicy(tx);
     await tx.execute(sql`insert into ai.settings (tenant_id, policy_version, enabled, allowed_classes, zdr_confirmed, voice_enabled, data_region, provider_region, ai_region, db_region, storage_region)

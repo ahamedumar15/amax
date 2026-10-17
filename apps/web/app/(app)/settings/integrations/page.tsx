@@ -13,7 +13,7 @@ async function revoke(data: FormData) {
   "use server";
   const v = await currentViewer();
   if (!rolesOf(v).includes("Admin")) throw new Error("forbidden: Admin only");
-  await revokeClient(getDb()!, v.tenantId, String(data.get("clientId")));
+  await revokeClient(getDb()!, v, String(data.get("clientId")), String(data.get("userId")));
   revalidatePath("/settings/integrations");
 }
 
@@ -35,9 +35,9 @@ export default async function IntegrationsPage() {
           <tbody>
             {clients.length === 0 && <tr><td colSpan={5} className="muted">No MCP clients connected yet.</td></tr>}
             {clients.map((c) => (
-              <tr key={`${c.clientId}-${c.userName}`}><td data-label="Client"><b>{c.clientName}</b></td><td data-label="Person">{c.userName}</td><td data-label="Scopes">{c.scopes.join(", ")}</td>
+              <tr key={`${c.clientId}-${c.userId}`}><td data-label="Client"><b>{c.clientName}</b></td><td data-label="Person">{c.userName}</td><td data-label="Scopes">{c.scopes.join(", ")}</td>
                 <td data-label="Last sign-in">{new Date(c.lastAuth).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })}</td>
-                <td className="num"><form action={revoke}><input type="hidden" name="clientId" value={c.clientId} /><button className="btn sm" type="submit">Revoke</button></form></td></tr>
+                <td className="num"><form action={revoke}><input type="hidden" name="clientId" value={c.clientId} /><input type="hidden" name="userId" value={c.userId} /><button className="btn sm" type="submit">Revoke</button></form></td></tr>
             ))}
           </tbody>
         </table></div>

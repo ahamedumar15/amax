@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { aiConfigured, blockedReason } from "@amax/ai";
+import { aiConfigured, blockedReason, REGIONS } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
 import { rolesOf } from "@amax/auth";
 import { loadEnv } from "@amax/core/env";
@@ -91,8 +91,9 @@ export default async function AiSettingsPage() {
           <label><input type="checkbox" name="enabled" defaultChecked={p.enabled} /> AI features on</label>
           <label><input type="checkbox" name="zdrConfirmed" defaultChecked={p.zdrConfirmed} /> Zero data retention confirmed with the provider</label>
           <label><input type="checkbox" name="voiceEnabled" defaultChecked={p.voiceEnabled} /> Voice input (processed by the browser)</label>
-          {([["dataRegion", "Data region", p.dataRegion], ["providerRegion", "AI provider region", p.providerRegion], ["aiRegion", "AI runs in", p.regions.ai], ["dbRegion", "Database in", p.regions.database], ["storageRegion", "Files in", p.regions.storage]] as const).map(([name, label, value]) => (
-            <label key={name}>{label} <input className="select" name={name} defaultValue={value ?? ""} placeholder="e.g. Australia" /></label>
+          <label>AI provider region <input className="select" name="providerRegion" defaultValue={p.providerRegion ?? ""} placeholder="e.g. ap-southeast-2" /></label>
+          {([["dataRegion", "Data region", p.dataRegion], ["aiRegion", "AI runs in", p.regions.ai], ["dbRegion", "Database in", p.regions.database], ["storageRegion", "Files in", p.regions.storage]] as const).map(([name, label, value]) => (
+            <label key={name}>{label} <select className="select" name={name} defaultValue={value ?? ""}><option value="">Not set</option>{Object.entries(REGIONS).map(([code, n]) => <option key={code} value={code}>{n}</option>)}</select></label>
           ))}
         </fieldset>
         <button className="btn primary" type="submit" style={{ marginTop: 14 }}>Save policy</button>

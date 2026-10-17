@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import type { TickResult } from "@amax/core/server";
+import { logError, type TickResult } from "@amax/core/server";
 
 export type TickDeps = { secret: string | undefined; run: (() => Promise<TickResult>) | null };
 
@@ -14,7 +14,7 @@ export async function handleTick(req: Request, deps: TickDeps): Promise<Response
   try {
     return Response.json({ ok: true, ...(await deps.run()) });
   } catch (e) {
-    console.error("amax: tick failed", e);
+    logError("tick", e);
     return Response.json({ error: "tick failed" }, { status: 500 });
   }
 }

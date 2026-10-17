@@ -32,13 +32,34 @@ export async function loadPolicy(tx: Tx): Promise<AiPolicy> {
   };
 }
 
-/** Why AI is off for this tenant, or null when it may run (AC-4: data outside the region blocks it). */
+/** Data regions are a closed list of codes, so "Australia", "au" and "AU" can't disagree. */
+export const REGIONS = { AU: "Australia", LK: "Sri Lanka", US: "United States", EU: "European Union", UK: "United Kingdom", SG: "Singapore", IN: "India", CA: "Canada" } as const;
+export type RegionCode = keyof typeof REGIONS;
+
+export function normalizeRegion(input: string | null | undefined): RegionCode | null {
+  const v = (input ?? "").trim();
+  if (!v) return null;
+  const code = v.toUpperCase();
+  if (code in REGIONS) return code as RegionCode;
+  const byName = (Object.entries(REGIONS) as [RegionCode, string][]).find(([, name]) => name.toLowerCase() === v.toLowerCase());
+  if (byName) return byName[0];
+  throw new Error(`unknown region "${v}"; use one of ${Object.keys(REGIONS).join(", ")}`);
+}
+
+/**
+ * Why AI is off for this tenant, or null when it may run (AC-4). With a data region set, every
+ * place data goes must be known and inside it: an unknown region blocks, it doesn't pass.
+ */
 export function blockedReason(p: AiPolicy): string | null {
   if (!p.enabled) return "AI is switched off for this organisation";
   if (p.zdrRequired && !p.zdrConfirmed) return "zero data retention is required but an Admin hasn't confirmed it with the provider";
   if (p.dataRegion) {
-    const outside = Object.entries(p.regions).filter(([, r]) => r && r !== p.dataRegion).map(([k]) => k);
-    if (outside.length) return `${outside.join(", ")} ${outside.length > 1 ? "are" : "is"} outside the data region (${p.dataRegion})`;
+    const data = normalizeRegion(p.dataRegion);
+    const entries = Object.entries(p.regions) as [string, string | null][];
+    const unknown = entries.filter(([, r]) => !r).map(([k]) => k);
+    if (unknown.length) return `the data region is ${data}, but where ${unknown.join(", ")} ${unknown.length > 1 ? "run isn't" : "runs isn't"} set`;
+    const outside = entries.filter(([, r]) => normalizeRegion(r) !== data).map(([k]) => k);
+    if (outside.length) return `${outside.join(", ")} ${outside.length > 1 ? "are" : "is"} outside the data region (${data})`;
   }
   return null;
 }

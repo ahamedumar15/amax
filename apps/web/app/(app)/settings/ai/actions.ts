@@ -10,8 +10,7 @@ const region = (v: FormDataEntryValue | null) => (String(v ?? "").trim() || null
 
 export async function savePolicyAction(data: FormData) {
   const viewer = await currentViewer();
-  if (!rolesOf(viewer).includes("Admin")) throw new Error("forbidden: Admin only");
-  await savePolicy(getDb()!, viewer.tenantId, `user:${viewer.userId}`, {
+  await savePolicy(getDb()!, { tenantId: viewer.tenantId, userId: viewer.userId, roles: rolesOf(viewer) }, {
     allowedClasses: CLASSES.filter((c) => data.get(`class-${c}`) === "on"),
     zdrConfirmed: data.get("zdrConfirmed") === "on",
     voiceEnabled: data.get("voiceEnabled") === "on",

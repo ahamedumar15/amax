@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
+import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
@@ -19,8 +20,8 @@ export async function sendChat(input: { conversationId?: string; text: string; p
     const turn = await chatTurn(getDb()!, toolRegistry(), viewer, { conversationId: input.conversationId, text: input.text.slice(0, 4000), pins: input.pins?.slice(0, 8), intent });
     return { ok: true, ...turn };
   } catch (e) {
-    console.error("amax chat:", e);
-    return { ok: false, error: friendly(e) };
+    const id = logError("chat", e);
+    return { ok: false, error: `${friendly(e)} (ref ${id.slice(0, 8)})` };
   }
 }
 

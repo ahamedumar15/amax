@@ -87,9 +87,9 @@ describe.skipIf(!hasDb)("@amax/ai gateway (Postgres, fake provider)", () => {
 
   it("AC-4 a resource outside the data region, or unconfirmed ZDR, turns AI off", async () => {
     configureAi({ provider: fakeProvider(() => ({ parsed: {} })), db: app, model: "claude-haiku-5-5" });
-    await setPolicy("data_region = 'au', db_region = 'au', ai_region = 'us'");
-    await expect(extract(caller, { instructions: "x", data: [], schema: Contact })).rejects.toThrow(/ai is outside the data region \(au\)/);
-    await setPolicy("ai_region = 'au', zdr_confirmed = false");
+    await setPolicy("data_region = 'AU', db_region = 'AU', storage_region = 'AU', ai_region = 'US'");
+    await expect(extract(caller, { instructions: "x", data: [], schema: Contact })).rejects.toThrow(/ai is outside the data region \(AU\)/);
+    await setPolicy("ai_region = 'AU', zdr_confirmed = false");
     await expect(extract(caller, { instructions: "x", data: [], schema: Contact })).rejects.toBeInstanceOf(AiDisabledError);
   });
 
@@ -109,4 +109,21 @@ describe.skipIf(!hasDb)("@amax/ai gateway (Postgres, fake provider)", () => {
     const results = r.messages[2].content as { isError?: boolean }[];
     expect(results.map((x) => Boolean(x.isError))).toEqual([false, true]);
   });
+});
+
+describe("AC-4 region rules (review round 1)", async () => {
+  const { blockedReason, DEFAULT_POLICY, normalizeRegion } = await import("../src/policy");
+  const p = (patch: Partial<typeof DEFAULT_POLICY["regions"]> & { dataRegion?: string | null }) =>
+    ({ ...DEFAULT_POLICY, zdrRequired: false, dataRegion: patch.dataRegion ?? null, regions: { database: null, storage: null, ai: null, ...patch } });
+  it.each([
+    ["an unknown AI region", p({ dataRegion: "AU", database: "AU", storage: "AU" }), /where ai runs/],
+    ["every region unknown", p({ dataRegion: "AU" }), /database, storage, ai run/],
+    ["AI elsewhere", p({ dataRegion: "AU", database: "AU", storage: "AU", ai: "US" }), /ai is outside/],
+    ["case and name variants agree", p({ dataRegion: "australia", database: "AU", storage: "au", ai: "Australia" }), null],
+    ["no data region set", p({}), null],
+  ])("%s", (_n, policy, expected) => {
+    const r = blockedReason(policy as never);
+    if (expected) expect(r).toMatch(expected); else expect(r).toBeNull();
+  });
+  it("refuses free-text regions it doesn't know", () => expect(() => normalizeRegion("Mars")).toThrow(/unknown region/));
 });
