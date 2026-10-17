@@ -27,4 +27,21 @@ What changes on screen, and where to see it: [`050-immutable-trace`](../../mock/
 
 ## Tasks
 
+- [ ] `T1` — Audit and trace screen at `/settings/audit`: chain tickets, last export, filterable event list and trace timeline, read only, a pin on every ticket and row (AC-4, AC-5)
+  Files: apps/web/app/(app)/settings/audit/page.tsx, apps/web/app/(app)/settings/audit/audit.css, apps/web/components/shell/ProfileMenu.tsx, apps/web/tests/e2e/audit.spec.ts
+- [ ] `T2` — Migration 0021: `core.trace_event` (RLS, insert-only, chained), `trace_id` on `ai.call` and `core.audit_event`, keyed-hash columns for audit chain v2, append-only triggers (ai.call blocks non-owner roles so later owner migrations still run), `core.erase_subject()` (AC-1, AC-2, AC-3, AC-7)
+  Files: packages/db/migrations/0021_immutable_trace.sql, packages/core/src/schema.ts
+- [ ] `T3` — Trace context and chains in core: `withTrace`/`currentTrace`, `appendTrace`/`traceStep`, `verifyTraceChain`; audit chain v2 over keyed hashes with `trace_id`; job runs get a trace (AC-1, AC-2, AC-7)
+  Files: packages/core/src/trace.ts, packages/core/src/audit.ts, packages/core/src/service.ts, packages/core/src/jobs.ts, packages/core/src/server.ts
+  Depends: T2
+- [ ] `T4` — Propagate the trace: chat turns, pending cards, confirm/cancel decisions, MCP calls, tool calls (including denied) and model calls in `ai.call` (AC-1, AC-2)
+  Files: packages/chat/src/engine.ts, packages/mcp/src/registry.ts, packages/mcp/src/server.ts, packages/ai/src/gateway.ts
+  Depends: T3
+- [ ] `T5` — Read side: `auditStatus`, `searchAudit`, `getTrace` in core; Admin-only read tools `search_audit`, `get_trace`, `audit_status` (permission `core.audit.read`); export covers `core.trace_event` and `ai.call` and records itself in the audit (AC-4, AC-5, AC-6)
+  Files: packages/core/src/audit-read.ts, packages/core/src/audit-export.ts, packages/mcp/src/registry.ts
+  Depends: T3
+- [ ] `T6` — Tests: tamper tests as `amax_app` (UPDATE/DELETE fail on all three tables, trigger proven with a temporary grant), superuser tamper shows "Chain broken at event N" via the read tool, erasure keeps both chains verifiable, trace propagation through chat and MCP, export coverage (AC-1..AC-7)
+  Files: packages/core/tests/trace-ac2-ac3-append-only.test.ts, packages/core/tests/trace-ac5-tamper.test.ts, packages/core/tests/trace-ac7-erasure.test.ts, packages/core/tests/trace-ac6-export.test.ts, packages/core/tests/ac7-chain.test.ts, packages/core/tests/ac7-export.test.ts, modules/delivery/tests/trace-ac1.test.ts
+  Depends: T4, T5
+
 ## Verify
