@@ -13,7 +13,9 @@ import { withTenant } from "@amax/db";
 import { sql } from "drizzle-orm";
 
 // Fresh amax_e2e database: migrate, then seed Lumen Labs and its demo users as the app role.
-export const E2E_DB = "amax_e2e";
+// E2E_DB lets parallel worktrees each use their own database.
+export const E2E_DB = process.env.E2E_DB ?? "amax_e2e";
+if (!/^[a-z_][a-z0-9_]*$/.test(E2E_DB)) throw new Error(`E2E_DB must be a plain database name, got "${E2E_DB}"`);
 
 export default async function setupE2eDatabase() {
   const admin = process.env.DATABASE_MIGRATE_URL;
