@@ -32,7 +32,7 @@ What changes on screen, and where to see it: [`049-chat-history`](../../mock/ind
 - [x] `T3` — History reads and the archive service: `listConversations`, `getConversation` scoped to the signed-in person; `archiveConversation` through defineService; MCP tools `list_conversations`, `get_conversation`, `archive_conversation` (AC-4, AC-5)
   Files: packages/chat/src/history.ts, packages/chat/src/index.ts
   Depends: T2
-- [ ] `T4` — Wire it in: chat tools into the tool registry and grants, page actions `listChats` and `openChat` (AC-2, AC-3, AC-4, AC-5)
+- [x] `T4` — Wire it in: chat tools into the tool registry and grants, page actions `listChats` and `openChat` (AC-2, AC-3, AC-4, AC-5)
   Files: apps/web/lib/server.ts, apps/web/app/actions/chat.ts
   Depends: T3
 - [ ] `T5` — Tests: unit/DB tests for title, search, scoping (page action and MCP), expired confirm refused, archive audited; e2e reopen-and-continue with axe (AC-1..AC-6)
