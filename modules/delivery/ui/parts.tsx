@@ -42,15 +42,3 @@ export function needViewer(viewer: unknown): Viewer | null {
 export const SignInFirst = () => (
   <Card><EmptyState icon="grid" title="Sign in to see delivery" hint="Projects, proposals and releases come from the database once you're signed in." /></Card>
 );
-
-export function Tabs({ current, projectKey }: { current: "board" | "proposals" | "releases"; projectKey?: string }) {
-  const tab = (id: typeof current, href: string, label: string) =>
-    <a className="btn sm" href={href} aria-current={current === id ? "true" : undefined}>{label}</a>;
-  return (
-    <nav className="tabs" aria-label="Delivery sections">
-      {projectKey ? tab("board", `/delivery/p/${projectKey}`, "Board") : tab("board", "/delivery", "Portfolio")}
-      {tab("proposals", "/delivery/proposals", "Proposals")}
-      {tab("releases", "/delivery/releases", "Releases")}
-    </nav>
-  );
-}

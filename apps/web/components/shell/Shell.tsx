@@ -19,7 +19,9 @@ type ShellProps = {
 };
 
 export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false }: ShellProps) {
-  const current = useRouteFocus();
+  const pathname = useRouteFocus();
+  // The rail marks the deepest entry the page sits under (/delivery/p/CON → Projects).
+  const current = items.map((i) => i.href).filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`))).sort((a, b) => b.length - a.length)[0] ?? pathname;
   const sheet = useRef<HTMLDialogElement>(null);
   const link = Link as unknown as LinkLike;
   const [chatOpen, setChatOpen] = useState(false);
