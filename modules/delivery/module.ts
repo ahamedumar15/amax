@@ -37,6 +37,11 @@ export default defineModule({
   ],
   mcpTools,
   search: search as never,
+  retention: [
+    { table: "delivery.project", fields: ["manager_name", "manager_user_id"], keep: "while the project is active, then 7 years with its contract" },
+    { table: "delivery.proposal", fields: ["owner_name"], keep: "7 years after release (delivery evidence)" },
+    { table: "delivery.deployment", fields: ["recorded_by", "voided_by"], keep: "7 years (release audit trail)" },
+  ],
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
   jobs: [],

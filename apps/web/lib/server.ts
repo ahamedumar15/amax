@@ -55,8 +55,8 @@ export async function voiceEnabled(tenantId: string) {
   const db = getDb();
   if (!db) return false;
   const { withTenant } = await import("@amax/db");
-  const { loadPolicy } = await import("@amax/ai");
-  return (await withTenant(db, tenantId, (tx) => loadPolicy(tx))).voiceEnabled;
+  const { loadPolicy, voiceAllowed } = await import("@amax/ai");
+  return voiceAllowed(await withTenant(db, tenantId, (tx) => loadPolicy(tx))).ok;
 }
 // 004: the public base URL (for OAuth metadata and the MCP audience).
 // The public origin is configuration, never request headers: it becomes the OAuth issuer and the

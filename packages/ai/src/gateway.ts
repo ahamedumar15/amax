@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { z } from "zod";
-import { withTenant, type Db } from "@amax/db";
+import { type Db, textArray, withTenant } from "@amax/db";
 import type { Sensitivity, Source } from "@amax/core/server";
 import { blockedReason, loadPolicy, type AiPolicy } from "./policy";
 import { DATA_RULES, looksLikeInjection, quoteData } from "./prompt";
@@ -64,7 +64,7 @@ async function log(caller: AiCaller, entry: LogEntry) {
   const error = entry.error ? entry.error.split("\n")[0].slice(0, 200) : null;
   await withTenant(db, caller.tenantId, (tx) => tx.execute(sql`insert into ai.call (tenant_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
     values (${caller.tenantId}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
-            ${costOf(priced, entry.usage)}, ${JSON.stringify(entry.redactions)}::jsonb, ${entry.injection}, ${`{${(entry.toolsRun ?? []).join(",")}}`}::text[], ${entry.ok}, ${error})`));
+            ${costOf(priced, entry.usage)}, ${JSON.stringify(entry.redactions)}::jsonb, ${entry.injection}, ${textArray(entry.toolsRun ?? [])}, ${entry.ok}, ${error})`));
 }
 
 // Primary model first; the fallback runs when the primary errors, refuses or breaks the schema.

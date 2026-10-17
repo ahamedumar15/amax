@@ -81,6 +81,11 @@ export type ModuleManifest = {
    * the projects a user manages, so "@managed" grants work for real users, not just in tests.
    */
   viewerScopes?: (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
+  /**
+   * Retention entries for tables holding personal data (module standard, enforced by 032): which
+   * fields name a person and how long they are kept.
+   */
+  retention?: { table: string; fields: string[]; keep: string }[];
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];

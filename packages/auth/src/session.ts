@@ -1,13 +1,12 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Db, type Tx } from "@amax/db";
+import { textArray, withTenant, type Db, type Tx } from "@amax/db";
 import { appendAudit } from "@amax/core/server";
 import { isRole, type Role } from "./roles";
 import { applyViewAs, type Assignment, type Viewer } from "./viewer";
 
 export const SESSION_HOURS = 12;
 
-// Drizzle expands JS arrays into tuples, so pass text[] as a Postgres array literal.
-const textArray = (xs: string[]) => `{${xs.map((x) => `"${x.replace(/[\\"]/g, "\\$&")}"`).join(",")}}`;
+
 
 export class SignInDenied extends Error {
   constructor(public reason: "unknown-directory" | "wrong-tenant" | "no-role" | "deactivated" | "unknown-user" | "bad-credentials" | "locked") {
@@ -42,7 +41,7 @@ export async function resolveTenant(db: Db, issuer: string, directoryId: string,
 export async function signInFromDirectory(db: Db, claims: DirectoryClaims, expectedTenantId?: string) {
   const tenantId = await resolveTenant(db, claims.issuer, claims.directoryId, expectedTenantId);
   return withTenant(db, tenantId, async (tx) => {
-    const mapped = await tx.execute(sql`select distinct role from auth.role_mapping where group_id = any(${textArray(claims.groups)}::text[])`);
+    const mapped = await tx.execute(sql`select distinct role from auth.role_mapping where group_id = any(${textArray(claims.groups)})`);
     const roles = mapped.map((r) => r.role as string).filter(isRole);
     if (!roles.length) throw new SignInDenied("no-role");
     const [user] = await tx.execute(sql`insert into auth.user (tenant_id, external_id, email, name)
@@ -50,7 +49,7 @@ export async function signInFromDirectory(db: Db, claims: DirectoryClaims, expec
       on conflict (tenant_id, external_id) do update set email = excluded.email, name = excluded.name, updated_at = now()
       returning id, status`);
     if (user.status !== "active") throw new SignInDenied("deactivated");
-    await tx.execute(sql`delete from auth.role_assignment where user_id = ${user.id} and source = 'group' and not (role = any(${textArray(roles)}::text[]))`);
+    await tx.execute(sql`delete from auth.role_assignment where user_id = ${user.id} and source = 'group' and not (role = any(${textArray(roles)}))`);
     for (const role of roles) {
       await tx.execute(sql`insert into auth.role_assignment (tenant_id, user_id, role, source) values (${tenantId}, ${user.id}, ${role}, 'group') on conflict do nothing`);
     }

@@ -3,7 +3,9 @@ import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import type { ServiceContext } from "./authorize";
 
-export type Sensitivity = "pay" | "health" | "bank" | "performance" | "candidate";
+/** The 002 sensitivity classes: one list for types, policy screens and checks. */
+export const SENSITIVITY_CLASSES = ["pay", "health", "bank", "performance", "candidate"] as const;
+export type Sensitivity = (typeof SENSITIVITY_CLASSES)[number];
 
 export const GENESIS = "0".repeat(64);
 

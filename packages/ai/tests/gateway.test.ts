@@ -178,3 +178,14 @@ describe.skipIf(!hasDb)("tool results and nested data are redacted and quoted (r
     expect(row).toEqual({ injection_suspected: true, policy_version: 7, provider_model: "claude-haiku-5-5" });
   });
 });
+
+describe("voice follows the AI gate (review round 1)", async () => {
+  const { DEFAULT_POLICY, voiceAllowed } = await import("../src/policy");
+  const base = { ...DEFAULT_POLICY, zdrRequired: false, voiceEnabled: true };
+  it.each([
+    ["on, no data region", base, true],
+    ["switched off", { ...base, voiceEnabled: false }, false],
+    ["AI blocked", { ...base, enabled: false }, false],
+    ["data region set", { ...base, dataRegion: "AU", regions: { database: "AU", storage: "AU", ai: "AU" } }, false],
+  ])("%s", (_n, p, ok) => expect(voiceAllowed(p as never).ok).toBe(ok));
+});

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
+import { z } from "zod";
 import { sql } from "drizzle-orm";
-import { withTenant, type Db } from "@amax/db";
+import { textArray, withTenant, type Db } from "@amax/db";
 import { tokenHash } from "@amax/auth/tokens";
 import { viewerForUser, type Viewer } from "@amax/auth";
 import { appendAudit } from "@amax/core/server";
@@ -72,12 +73,17 @@ const okRedirect = (uri: string) => {
   }
 };
 
-export async function registerClient(db: Db, body: { client_name?: string; redirect_uris?: string[] }) {
-  const uris = body.redirect_uris ?? [];
+const RegistrationBody = z.object({ client_name: z.string().max(200).optional(), redirect_uris: z.array(z.string().max(2000)).min(1).max(10) }).passthrough();
+
+export async function registerClient(db: Db, raw: unknown) {
+  const parsed = RegistrationBody.safeParse(raw);
+  if (!parsed.success) throw new OAuthError("invalid_request", "client_name must be text and redirect_uris an array of 1 to 10 URIs");
+  const body = parsed.data;
+  const uris = body.redirect_uris;
   if (!uris.length || !uris.every(okRedirect)) throw new OAuthError("invalid_request", "redirect_uris must be https, a loopback http address or an app scheme");
   const id = `mcp_${randomBytes(12).toString("base64url")}`;
   const name = (body.client_name ?? "MCP client").slice(0, 100);
-  await db.execute(sql`insert into auth.oauth_client (id, name, redirect_uris) values (${id}, ${name}, ${`{${uris.map((u) => `"${u.replace(/"/g, "")}"`).join(",")}}`}::text[])`);
+  await db.execute(sql`insert into auth.oauth_client (id, name, redirect_uris) values (${id}, ${name}, ${textArray(uris)})`);
   return { client_id: id, client_name: name, redirect_uris: uris, token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"], response_types: ["code"] };
 }
 
@@ -104,7 +110,7 @@ export async function validateAuthorize(db: Db, base: string, p: URLSearchParams
 export async function issueCode(db: Db, viewer: Viewer, req: AuthorizeRequest) {
   const code = randomBytes(32).toString("base64url");
   await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`insert into auth.oauth_code (code_hash, tenant_id, user_id, client_id, redirect_uri, scopes, resource, code_challenge, expires_at)
-    values (${tokenHash(code)}, ${viewer.tenantId}, ${viewer.userId}, ${req.clientId}, ${req.redirectUri}, ${`{${req.scopes.join(",")}}`}::text[], ${req.resource}, ${req.codeChallenge},
+    values (${tokenHash(code)}, ${viewer.tenantId}, ${viewer.userId}, ${req.clientId}, ${req.redirectUri}, ${textArray(req.scopes)}, ${req.resource}, ${req.codeChallenge},
             now() + make_interval(secs => ${CODE_SECONDS}))`));
   await withTenant(db, viewer.tenantId, (tx) => auditOAuth(tx, viewer.tenantId, `user:${viewer.userId}`, "auth.oauth.consent", { clientId: req.clientId, scopes: req.scopes }));
   const u = new URL(req.redirectUri);
@@ -120,7 +126,7 @@ async function mint(tx: AuditTx, row: { tenantId: string; userId: string; client
   const refresh = `amx_rt_${randomBytes(32).toString("base64url")}`;
   await tx.execute(sql`insert into auth.api_token (tenant_id, user_id, kind, name, token_hash, expires_at, scopes, client_id, audience, refresh_hash, refresh_expires_at)
     values (${row.tenantId}, ${row.userId}, 'mcp', ${`OAuth: ${row.clientId}`}, ${tokenHash(access)}, now() + make_interval(secs => ${ACCESS_SECONDS}),
-            ${`{${row.scopes.join(",")}}`}::text[], ${row.clientId}, ${row.audience}, ${tokenHash(refresh)}, now() + make_interval(days => ${REFRESH_DAYS}))`);
+            ${textArray(row.scopes)}, ${row.clientId}, ${row.audience}, ${tokenHash(refresh)}, now() + make_interval(days => ${REFRESH_DAYS}))`);
   await auditOAuth(tx, row.tenantId, `user:${row.userId}`, action, { clientId: row.clientId, scopes: row.scopes });
   return { access_token: access, token_type: "Bearer", expires_in: ACCESS_SECONDS, refresh_token: refresh, scope: row.scopes.join(" ") };
 }
@@ -144,14 +150,24 @@ export async function exchangeToken(db: Db, form: URLSearchParams) {
     const refresh = form.get("refresh_token") ?? "";
     const [hit] = await db.execute(sql`select * from auth.lookup_refresh(${tokenHash(refresh)})`);
     if (!hit) throw new OAuthError("invalid_grant", "unknown refresh token");
-    return withTenant(db, hit.tenant_id as string, async (tx) => {
-      // Rotation: the old pair dies; reuse of a rotated refresh token fails.
-      const [old] = await tx.execute(sql`update auth.api_token set revoked_at = now(), refresh_hash = null where id = ${hit.id} and revoked_at is null and refresh_expires_at > now() returning *`);
+    const out = await withTenant(db, hit.tenant_id as string, async (tx) => {
+      const [cur] = await tx.execute(sql`select * from auth.api_token where id = ${hit.id}`);
+      if (cur.client_id !== form.get("client_id")) throw new OAuthError("invalid_grant", "this refresh token was issued to another client");
+      if (cur.refresh_used_at) {
+        // Reuse of a rotated token: someone else may hold it. End the whole grant (OAuth 2.1).
+        await tx.execute(sql`update auth.api_token set revoked_at = coalesce(revoked_at, now()) where user_id = ${cur.user_id} and client_id = ${cur.client_id}`);
+        await auditOAuth(tx, hit.tenant_id as string, `user:${cur.user_id}`, "auth.oauth.reuse_detected", { clientId: cur.client_id });
+        return null;
+      }
+      // Rotation: the old pair dies but is remembered, so a replay of it is detected above.
+      const [old] = await tx.execute(sql`update auth.api_token set revoked_at = now(), refresh_used_at = now() where id = ${hit.id} and revoked_at is null and refresh_expires_at > now() returning *`);
       if (!old) throw new OAuthError("invalid_grant", "refresh token revoked or expired");
       const [u] = await tx.execute(sql`select status from auth.user where id = ${old.user_id}`);
       if (u?.status !== "active") throw new OAuthError("invalid_grant", "user is deactivated");
       return mint(tx, { tenantId: old.tenant_id as string, userId: old.user_id as string, clientId: old.client_id as string, scopes: old.scopes as string[], audience: old.audience as string }, "auth.oauth.token_rotated");
     });
+    if (!out) throw new OAuthError("invalid_grant", "refresh token reuse detected; the grant was revoked");
+    return out;
   }
   throw new OAuthError("unsupported_grant_type", "use authorization_code or refresh_token");
 }
@@ -160,7 +176,7 @@ export async function revokeToken(db: Db, token: string) {
   for (const fn of [sql`select tenant_id, id from auth.lookup_token(${tokenHash(token)}) where kind = 'mcp'`, sql`select * from auth.lookup_refresh(${tokenHash(token)})`]) {
     const [hit] = await db.execute(fn);
     if (hit) await withTenant(db, hit.tenant_id as string, async (tx) => {
-      const [t] = await tx.execute(sql`update auth.api_token set revoked_at = now(), refresh_hash = null where id = ${hit.id} and revoked_at is null returning user_id, client_id`);
+      const [t] = await tx.execute(sql`update auth.api_token set revoked_at = now() where id = ${hit.id} and revoked_at is null returning user_id, client_id`);
       if (t) await auditOAuth(tx, hit.tenant_id as string, `user:${t.user_id}`, "auth.oauth.revoked", { clientId: t.client_id, by: "client" });
     });
   }

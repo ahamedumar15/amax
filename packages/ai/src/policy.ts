@@ -63,3 +63,16 @@ export function blockedReason(p: AiPolicy): string | null {
   }
   return null;
 }
+
+/**
+ * Voice uses the browser's speech recognition, which in Chrome sends audio to Google's cloud.
+ * So it follows the same gate as AI, and can't run under a data-region policy, because where
+ * that service processes audio isn't known (review round 1).
+ */
+export function voiceAllowed(p: AiPolicy): { ok: true } | { ok: false; reason: string } {
+  if (!p.voiceEnabled) return { ok: false, reason: "voice input is switched off" };
+  const blocked = blockedReason(p);
+  if (blocked) return { ok: false, reason: blocked };
+  if (p.dataRegion) return { ok: false, reason: "the browser's speech service can't be kept inside the data region" };
+  return { ok: true };
+}

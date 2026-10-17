@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { aiConfigured, blockedReason, REGIONS } from "@amax/ai";
+import { aiConfigured, blockedReason, REGIONS, voiceAllowed } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
 import { rolesOf } from "@amax/auth";
+import { SENSITIVITY_CLASSES } from "@amax/core/server";
 import { loadEnv } from "@amax/core/env";
 import { Ticket } from "@amax/ui";
 import { getDb } from "../../../../lib/server";
@@ -12,7 +13,8 @@ import "../settings.css";
 export const metadata = { title: "AI and data" };
 export const dynamic = "force-dynamic";
 
-const CLASS_ROWS: { label: string; cls?: string; usedBy: string }[] = [
+// Every 002 class appears here (checked against SENSITIVITY_CLASSES below), plus two unclassified rows.
+const CLASS_ROWS: { label: string; cls?: (typeof SENSITIVITY_CLASSES)[number]; usedBy: string }[] = [
   { label: "Projects, tasks, time", usedBy: "Chat, insights, ingestion" },
   { label: "Names and work email", usedBy: "Chat, inbox agent" },
   { label: "Pay", cls: "pay", usedBy: "Payroll agent sees differences only" },
@@ -21,6 +23,9 @@ const CLASS_ROWS: { label: string; cls?: string; usedBy: string }[] = [
   { label: "Performance", cls: "performance", usedBy: "Insights, for HR and managers" },
   { label: "Candidate CVs", cls: "candidate", usedBy: "Match scores, for HR users" },
 ];
+
+const missing = SENSITIVITY_CLASSES.filter((c) => !CLASS_ROWS.some((r) => r.cls === c));
+if (missing.length) throw new Error(`AI and data screen has no row for ${missing.join(", ")}`);
 
 export default async function AiSettingsPage() {
   const viewer = await getViewer();
@@ -72,12 +77,13 @@ export default async function AiSettingsPage() {
             <div className="row line"><span>Region</span><b>{p.providerRegion ?? "Provider default"}</b></div>
             <div className="row line"><span>Provider keeps data</span><b>{p.zdrRequired ? (p.zdrConfirmed ? "No (confirmed)" : "Must be confirmed") : "Provider default"}</b></div>
             <div className="row line"><span>Prompt logging</span><b>Off</b></div>
-            <div className="row line"><span>Voice input</span><b>{p.voiceEnabled ? `On, processed by the ${p.voiceService}` : "Off"}</b></div>
+            <div className="row line"><span>Voice input</span><b>{(() => { const v = voiceAllowed(p); return v.ok ? "On, sent to your browser's speech service" : p.voiceEnabled ? `Off: ${v.reason}` : "Off"; })()}</b></div>
           </div>
           <div className="card">
             <div className="card-head"><h2>Subprocessors</h2><span className="muted" style={{ fontSize: 13 }}>Shared with Compliance</span></div>
             <div className="row line"><span>Anthropic</span><b>AI{p.regions.ai ? `, ${p.regions.ai}` : ""}</b></div>
             <div className="row line"><span>Database host</span><b>Postgres{p.regions.database ? `, ${p.regions.database}` : ""}</b></div>
+            {voiceAllowed(p).ok && <div className="row line"><span>Browser speech service</span><b>Voice audio (Google, for Chrome)</b></div>}
           </div>
         </div>
       </div>
@@ -85,12 +91,12 @@ export default async function AiSettingsPage() {
         <div className="card-head"><h2 id="pol-h">Change policy</h2></div>
         <fieldset style={{ border: 0, padding: 0, display: "grid", gap: 10 }}>
           <legend className="muted">Classified fields that may be sent</legend>
-          {["pay", "health", "bank", "performance", "candidate"].map((c) => (
+          {SENSITIVITY_CLASSES.map((c) => (
             <label key={c}><input type="checkbox" name={`class-${c}`} defaultChecked={p.allowedClasses.includes(c)} /> {c}</label>
           ))}
           <label><input type="checkbox" name="enabled" defaultChecked={p.enabled} /> AI features on</label>
           <label><input type="checkbox" name="zdrConfirmed" defaultChecked={p.zdrConfirmed} /> Zero data retention confirmed with the provider</label>
-          <label><input type="checkbox" name="voiceEnabled" defaultChecked={p.voiceEnabled} /> Voice input (processed by the browser)</label>
+          <label><input type="checkbox" name="voiceEnabled" defaultChecked={p.voiceEnabled} /> Voice input (audio goes to the browser's speech service, e.g. Google for Chrome; not available with a data region)</label>
           <label>AI provider region <input className="select" name="providerRegion" defaultValue={p.providerRegion ?? ""} placeholder="e.g. ap-southeast-2" /></label>
           {([["dataRegion", "Data region", p.dataRegion], ["aiRegion", "AI runs in", p.regions.ai], ["dbRegion", "Database in", p.regions.database], ["storageRegion", "Files in", p.regions.storage]] as const).map(([name, label, value]) => (
             <label key={name}>{label} <select className="select" name={name} defaultValue={value ?? ""}><option value="">Not set</option>{Object.entries(REGIONS).map(([code, n]) => <option key={code} value={code}>{n}</option>)}</select></label>

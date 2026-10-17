@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Db } from "@amax/db";
+import { type Db, textArray, withTenant } from "@amax/db";
 import { appendAudit } from "@amax/core/server";
 import { loadPolicy, normalizeRegion, type AiPolicy } from "./policy";
 
@@ -29,7 +29,7 @@ export async function savePolicy(db: Db, admin: { tenantId: string; userId: stri
   await withTenant(db, tenantId, async (tx) => {
     const before = await loadPolicy(tx);
     await tx.execute(sql`insert into ai.settings (tenant_id, policy_version, enabled, allowed_classes, zdr_confirmed, voice_enabled, data_region, provider_region, ai_region, db_region, storage_region)
-      values (${tenantId}, ${before.version + 1}, ${patch.enabled}, ${`{${patch.allowedClasses.join(",")}}`}::text[], ${patch.zdrConfirmed}, ${patch.voiceEnabled}, ${patch.dataRegion}, ${patch.providerRegion}, ${patch.aiRegion}, ${patch.dbRegion}, ${patch.storageRegion})
+      values (${tenantId}, ${before.version + 1}, ${patch.enabled}, ${textArray(patch.allowedClasses)}, ${patch.zdrConfirmed}, ${patch.voiceEnabled}, ${patch.dataRegion}, ${patch.providerRegion}, ${patch.aiRegion}, ${patch.dbRegion}, ${patch.storageRegion})
       on conflict (tenant_id) do update set enabled = excluded.enabled, allowed_classes = excluded.allowed_classes, zdr_confirmed = excluded.zdr_confirmed,
         voice_enabled = excluded.voice_enabled, data_region = excluded.data_region, provider_region = excluded.provider_region, ai_region = excluded.ai_region,
         db_region = excluded.db_region, storage_region = excluded.storage_region, policy_version = ai.settings.policy_version + 1, updated_at = now()`);

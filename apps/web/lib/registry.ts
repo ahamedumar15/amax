@@ -17,7 +17,10 @@ export function matchRoute(pattern: string, path: string[]): Record<string, stri
   if (parts.length !== path.length) return null;
   const params: Record<string, string> = {};
   for (const [i, part] of parts.entries()) {
-    if (part.startsWith(":")) params[part.slice(1)] = decodeURIComponent(path[i]);
+    if (part.startsWith(":")) {
+      // Next hands us decoded segments; a stray "%" must be a not-found, not a 500.
+      try { params[part.slice(1)] = decodeURIComponent(path[i]); } catch { return null; }
+    }
     else if (part !== path[i]) return null;
   }
   return params;

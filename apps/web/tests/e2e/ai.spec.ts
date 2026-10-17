@@ -18,13 +18,13 @@ test("033 AI and data: Admins see the policy, region warning and can change what
   await page.getByRole("button", { name: "Save policy" }).click();
   await expect(pay).toContainText("Allowed");
   // AC-4: AI running outside the data region turns it off, with a blocking warning.
-  await page.getByLabel("Data region").selectOption("AU");
+  await page.getByRole("combobox", { name: /^Data region/ }).selectOption("AU");
   await page.getByLabel("Database in").selectOption("AU");
   await page.getByLabel("Files in").selectOption("AU");
   await page.getByLabel("AI runs in").selectOption("US");
   await page.getByRole("button", { name: "Save policy" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "AI features are off" })).toContainText("outside the data region");
-  await page.getByLabel("Data region").selectOption("");
+  await page.getByRole("combobox", { name: /^Data region/ }).selectOption("");
   await page.getByRole("button", { name: "Save policy" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "AI features are off" })).toHaveCount(0);
   await expect(page.getByText(/^Policy v\d+$/)).not.toHaveText("Policy v1");

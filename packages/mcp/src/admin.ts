@@ -26,7 +26,7 @@ export async function connectedClients(db: Db, tenantId: string) {
 // Revokes one person's grant to one client (a row on the Integrations screen), audited as the Admin.
 export async function revokeClient(db: Db, admin: { tenantId: string; userId: string }, clientId: string, userId: string) {
   await withTenant(db, admin.tenantId, async (tx) => {
-    const rows = await tx.execute(sql`update auth.api_token set revoked_at = now(), refresh_hash = null
+    const rows = await tx.execute(sql`update auth.api_token set revoked_at = now()
       where client_id = ${clientId} and user_id = ${userId} and revoked_at is null returning id`);
     await appendAudit(tx, { tenantId: admin.tenantId, actor: { id: `user:${admin.userId}`, kind: "user" }, source: "ui" },
       { action: "auth.oauth.client_revoked", resource: "auth.api_token", resourceId: clientId, after: { clientId, userId, tokens: rows.length } });
