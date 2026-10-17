@@ -6,6 +6,7 @@ import { approveWeek, rejectWeek, remindWeek } from "./server/decide";
 import { logTime } from "./server/log";
 import { myWeek } from "./server/my";
 import { reopenWeek } from "./server/reopen";
+import { getTimesheet } from "./server/sheet";
 import { submitWeek } from "./server/submit";
 import { teamWeek } from "./server/team";
 import { wantedWeek } from "./server/weeks";
@@ -21,6 +22,9 @@ export const mcpTools: McpToolDef[] = [
     run: (v, a) => teamWeek(v, wantedWeek(a.week)) }),
   tool({ ...read, name: "get_my_week", description: "Your own timesheet for a week, by project and day, with its status.", input: z.object({ week }),
     run: (v, a) => myWeek(v, wantedWeek(a.week)) }),
+  tool({ ...read, name: "get_timesheet", description: "One person-week: by weekId (a row on Team time), or your own week, optionally just one project's row.",
+    input: z.object({ weekId: z.string().uuid().optional(), week, project: z.string().optional().describe("Project name, for one row of your own week") }),
+    run: (v, a) => getTimesheet(v, a) }),
   tool({ name: "log_time", description: "Log hours against a project for a weekday (Monday to Friday, YYYY-MM-DD in the person's own calendar). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",
     input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional() }),
     run: (v, a, s = "mcp") => logTime(ctxFor(v, s), { ...a, source: s === "mcp" ? "agent" : "person" }) }),

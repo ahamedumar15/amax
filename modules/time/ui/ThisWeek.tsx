@@ -1,6 +1,6 @@
 import { PinButton } from "@amax/ui";
 import type { TeamRow } from "../server/team";
-import { approveAction } from "../actions";
+import { AskButton } from "./AskButton";
 import { COLORS, hrs } from "./parts";
 
 export function ThisWeek({ rows, projects, week }: { rows: TeamRow[]; projects: { name: string; hours: number }[]; week: string }) {
@@ -17,12 +17,10 @@ export function ThisWeek({ rows, projects, week }: { rows: TeamRow[]; projects: 
       {projects.map((p, i) => (
         <div className="row line" key={p.name}><span><span className="dot" style={{ background: COLORS[i % COLORS.length] }} />{p.name}</span><b>{p.hours.toFixed(1)} h</b></div>
       ))}
-      <form action={approveAction}>
-        {ready.map((r) => <input key={r.weekId} type="hidden" name="weekId" value={r.weekId} />)}
-        <button className="btn primary" type="submit" disabled={!ready.length} style={{ width: "100%", justifyContent: "center", height: 46, marginTop: 16 }}>
-          {ready.length ? `Approve ${ready.length} submitted (${hrs(readyHours)} h)` : "Nothing waiting for you"}
-        </button>
-      </form>
+      {ready.length ? (
+        <AskButton className="btn primary" spark={false} style={{ width: "100%", justifyContent: "center", height: 46, marginTop: 16 }} label={`Approve ${ready.length} submitted (${hrs(readyHours)} h)`}
+          prompt={`Approve the submitted timesheets for ${week}: ${ready.map((r) => r.personName).join(", ")}`} pin={{ label: `Submitted timesheets, ${week}`, tool: "get_team_week", args: { week } }} />
+      ) : <button className="btn primary" type="button" disabled style={{ width: "100%", justifyContent: "center", height: 46, marginTop: 16 }}>Nothing waiting for you</button>}
     </div>
   );
 }

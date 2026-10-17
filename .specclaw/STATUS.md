@@ -8,8 +8,9 @@
 
 - 🔍 **032-data-retention-and-erasure** — verify done | 5/5 tasks (100%) | 0 failed
 - 🔀 **035-api-webhooks-and-rate-limits** — PR #48 open
-- 🔀 **051-project-sections** — pr raised | 5/5 tasks (100%) | 0 failed | PR #42 merged
-- 🔀 **052-settings-review** — PR #43 merged
+- 🔀 **053-trace-and-settings-hardening** — pr raised | 6/6 tasks (100%) | 0 failed | PR #46 merged
+- 🔀 **054-chat-first-everywhere** — pr raised | 8/8 tasks (100%) | 0 failed | PR #47 merged
+- ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged
 
 ## Pending Proposals
 
@@ -66,9 +67,11 @@
 - ✅ **048-chat-cost**
 - ✅ **049-chat-history**
 - ✅ **050-immutable-trace**
+- ✅ **051-project-sections**
+- ✅ **052-settings-review**
 
 ## Stats
 
-- **Total changes:** 27
-- **Active:** 4
-- **Completed:** 23
+- **Total changes:** 30
+- **Active:** 5
+- **Completed:** 25

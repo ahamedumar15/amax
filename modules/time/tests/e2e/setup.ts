@@ -1,10 +1,11 @@
 import { join } from "node:path";
-import { createDb, migrate, migrationScopes } from "@amax/db";
+import { sql } from "drizzle-orm";
+import { createDb, migrate, migrationScopes, withTenant } from "@amax/db";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import { installedModules } from "../installed";
 
-export const E2E_DB = "amax_e2e_time";
+export const E2E_DB = process.env.E2E_TIME_DB ?? "amax_e2e_time";
 const root = join(import.meta.dirname, "../../../..");
 
 const admin = process.env.DATABASE_MIGRATE_URL;
@@ -19,4 +20,6 @@ await migrate(owner, migrationScopes(root));
 await owner.end();
 const { db, client } = createDb(ownerUrl, { max: 1, connection: { options: "-c role=amax_app" } as never });
 await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }, ...(await installedModules())], lumen);
+// 054: approvals go through chat, which needs the tenant's AI policy confirmed (the scripted model stands in).
+await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
 await client.end();

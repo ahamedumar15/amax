@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
-import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, logError, lookupKey, retryable, traceStep, withIdempotency, withTrace } from "@amax/core/server";
-import type { Registry, RegisteredTool } from "@amax/mcp";
+import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, logError, lookupKey, retryable, traceStep, traceStepOrFail, withIdempotency, withTrace } from "@amax/core/server";
+import { ToolError, type Registry, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
@@ -75,6 +75,20 @@ function scrub(e: unknown, secret: string | undefined): unknown {
   return Object.assign(clean, { name: e.name, retryable: (e as { retryable?: unknown }).retryable, code: (e as { code?: unknown }).code });
 }
 
+const NOT_PROPOSED = { status: "not_proposed", note: "No confirm card was made: amax couldn't record the request. Tell the user it didn't go through and to try again shortly." };
+
+// A write tool's own check at proposal time (053): its ToolError message goes to the model, and no
+// card is made, so the person never types a value for a write that is bound to be refused.
+async function proposeCheck(t: RegisteredTool, viewer: Viewer, input: Record<string, unknown>) {
+  try {
+    await t.propose?.(viewer as never, input as never);
+    return null;
+  } catch (e) {
+    if (e instanceof ToolError && e.code === "invalid_input") return { status: "not_proposed", note: `No confirm card was made: ${e.message}.` };
+    throw e;
+  }
+}
+
 /** One user message: answer with read tools, turn write calls into confirm cards. */
 export const chatTurn = (db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> =>
   withTrace(traceFor(viewer), () => runTurn(db, registry, viewer, opts));
@@ -90,9 +104,13 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
+      const refused = await proposeCheck(t, viewer, input);
+      if (refused) return refused;
+      // The step comes first (053): a card is shown only once its pending step is in the trace, so a
+      // step that can't be written means nothing was proposed, and the model is told exactly that.
       const action = pendingFor(t, input);
+      if (!(await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id } }))) return NOT_PROPOSED;
       pending.push(action);
-      await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id } });
       return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
     },
   }) as Tool);
@@ -205,10 +223,13 @@ const doneNote = (title: string, result: unknown) => {
 // The decided step says what the person chose and what came of it: `run` just before the write runs
 // (so the timeline reads decided, then the tool call), otherwise why it didn't run. The trace is
 // immutable, so a confirm that never took effect must never read as a plain confirm (052 review).
-// A cancel is recorded once it has taken effect.
+// A cancel is recorded once it has taken effect. Every decided step is best-effort except `run`
+// (traceStepOrFail): it is written before the write, so a write never runs untraced (053).
 export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret";
-const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled", outcome?: ConfirmOutcome) =>
-  traceStep({ kind: "decided", tool: action.tool, detail: { actionId: action.id, decision, ...(outcome ? { outcome } : {}) } });
+const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled", outcome?: ConfirmOutcome) => {
+  const step = { kind: "decided" as const, tool: action.tool, detail: { actionId: action.id, decision, ...(outcome ? { outcome } : {}) } };
+  return outcome === "run" ? traceStepOrFail(step) : traceStep(step);
+};
 const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>) => withTrace(traceFor(viewer, action.traceId), fn);
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
@@ -230,11 +251,7 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
   };
   // 1. An earlier attempt's outcome comes first (its reply may have been lost).
   const known = await lookupKey(db, viewer.tenantId, key);
-  // Only the `run` step is fail-closed: it is written before the write, so a write never runs
-  // untraced. The others report an outcome that is already settled; a trace-store failure there must
-  // not hide it from the person asking, so they are best-effort and logged (052 review round 2).
-  const decide = (outcome: ConfirmOutcome) =>
-    outcome === "run" ? decidedStep(action, "confirmed", outcome) : decidedStep(action, "confirmed", outcome).catch((e) => void logError(`chat.trace ${action.tool}`, e));
+  const decide = (outcome: ConfirmOutcome) => decidedStep(action, "confirmed", outcome);
   if (known && "cancelled" in known) {
     await decide("already_cancelled");
     throw await cancelled();
