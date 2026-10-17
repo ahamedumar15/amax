@@ -32,11 +32,16 @@ export function matchRoute(pattern: string, path: string[]): Record<string, stri
   return params;
 }
 
-export function findRoute(id: string, path: string[] = []) {
-  const mod = installed.find((m) => m.id === id);
-  for (const route of mod?.routes ?? []) {
+// Routes other modules mount under `id` (051) come first, so they replace the owner's fallback.
+export function routeIn(mods: ModuleManifest[], id: string, path: string[] = []) {
+  const mod = mods.find((m) => m.id === id);
+  if (!mod) return null;
+  const mounted = mods.flatMap((m) => m.routes.filter((r) => r.mount === id));
+  for (const route of [...mounted, ...mod.routes.filter((r) => !r.mount)]) {
     const params = matchRoute(route.path, path);
-    if (params) return { mod: mod!, route, params };
+    if (params) return { mod, route, params };
   }
   return null;
 }
+
+export const findRoute = (id: string, path: string[] = []) => routeIn(installed, id, path);

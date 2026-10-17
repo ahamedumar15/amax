@@ -36,8 +36,8 @@ What changes on screen, and where to see it: [`051-project-sections`](../../mock
 - [x] `T2` — Proposals and Releases sections reuse the global list components, scoped to the project in the query (AC-2)
   Files: modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/server/queries.ts, modules/delivery/mcp.ts
   Depends: T1
-- [ ] `T3` — Route mounts: a module may contribute a route under another module's URL space, and a contribution wins over the owner's fallback. Needed because delivery can't import allocations (allocations depends on delivery; R5 forbids the cycle) (AC-3)
-  Files: packages/core/src/module.ts, apps/web/lib/registry.ts, apps/web/tests/registry-mount.test.ts
+- [x] `T3` — Route mounts: a module may contribute a route under another module's URL space, and a contribution wins over the owner's fallback. Needed because delivery can't import allocations (allocations depends on delivery; R5 forbids the cycle) (AC-3)
+  Files: packages/core/src/module.ts, apps/web/lib/registry.ts, apps/web/tests/routes.test.ts
 - [ ] `T4` — Team section, owned by allocations and mounted at `/delivery/p/:key/team`: this month and the next two from `listAllocations({ projectIds })` with the viewer as reader, names and roles from hr, a pin per row; delivery keeps a fallback empty state for when allocations is off (AC-3)
   Files: modules/allocations/ui/ProjectTeamPage.tsx, modules/allocations/server/team.ts, modules/allocations/module.ts, modules/allocations/mcp.ts, modules/allocations/tests/team.test.ts
   Depends: T1, T3
