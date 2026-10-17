@@ -3,7 +3,7 @@ import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { PHASES } from "./contracts";
 import { ctxFor } from "./server/context";
-import { getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
+import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -24,7 +24,8 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...read, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => listReleases(v, a) }),
   tool({ ...read, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",
-    input: releaseRef, run: async (v, a) => (await listReleases(v)).find((r) => isRelease(r, a)) ?? null }),
+    // The ref is checked before the read, so a malformed call is refused whatever the viewer can see.
+    input: releaseRef, run: async (v, a) => { checkReleaseRef(a); return (await listReleases(v)).find((r) => isRelease(r, a)) ?? null; } }),
   tool({ name: "create_project", description: "Create a project. Key: 2-10 capitals, e.g. CON.", scope: "write", permission: "delivery:project:create",
     input: z.object({ key: z.string(), name: z.string(), client: z.string(), billing: z.enum(["fixed", "t&m", "retainer", "internal"]) }),
     run: (v, a, s = "mcp") => createProject(ctxFor(v, s), a) }),

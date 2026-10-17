@@ -5,9 +5,9 @@ import { z } from "zod";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
-import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { cancelAction, chatTurn, confirmAction, repinConversations, repinOf, type ChatTurn, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
-import { movedOf, outcomeOf, repinOf, type CardOutcome } from "../../lib/chat-outcome";
+import { movedOf, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
@@ -34,9 +34,12 @@ export async function confirmChat(conversationId: string, actionId: string): Pro
   try {
     const viewer = await currentViewer();
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
+    // A rename (re-tag, environment rename): saved pins that name the record the old way follow it (057).
+    const repin = repinOf(result);
+    const pins = repin ? await repinConversations(getDb()!, viewer, conversationId, repin) : undefined;
     revalidatePath("/", "layout");
     const key = (result as { key?: string } | null)?.key;
-    return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.`, moved: movedOf(result), repin: repinOf(result) };
+    return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.`, moved: movedOf(result), ...(pins ? { pins } : {}) };
   } catch (e) {
     return outcomeOf(e);
   }

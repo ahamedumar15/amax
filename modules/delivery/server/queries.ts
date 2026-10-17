@@ -199,20 +199,27 @@ export const listEnvironments = (v: Viewer, projectKey: string) =>
 
 export type DeploymentRow = { id: string; environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
 
-/** One release with its proposals and full deployment history, voided ones included. */
-/** Which release a read names: its id, or its project key and version. Anything less is refused, never "not found" (057). */
+/**
+ * Which record a read names (057), one rule for releases, environments and deployments: its id, or its
+ * natural key in full. Anything less is refused ("say which ..."), never read as "not found". With an
+ * id, any key part also given only narrows: a mismatch reads as not found.
+ */
 export type ReleaseRef = { releaseId?: string; projectKey?: string; version?: string };
-export function releaseWhere(ref: ReleaseRef) {
-  if (ref.releaseId) return sql`r.id = ${ref.releaseId}`;
-  if (ref.projectKey && ref.version) return sql`p.key = ${ref.projectKey} and r.version = ${ref.version}`;
-  throw new Error("say which release: a releaseId, or a projectKey and version");
+export function checkReleaseRef(ref: ReleaseRef) {
+  if (!ref.releaseId && !(ref.projectKey && ref.version)) throw new Error("say which release: a releaseId, or a projectKey and version");
 }
-/** True when a release row is the one the ref names (same rule as releaseWhere). */
+export function releaseWhere(ref: ReleaseRef) {
+  checkReleaseRef(ref);
+  const parts = [ref.releaseId ? sql`r.id = ${ref.releaseId}` : undefined, ref.projectKey ? sql`p.key = ${ref.projectKey}` : undefined, ref.version ? sql`r.version = ${ref.version}` : undefined];
+  return sql.join(parts.filter((x) => x !== undefined), sql` and `);
+}
+/** True when a release row is the one the ref names (the same rule as releaseWhere). */
 export function isRelease(r: { id: string; projectKey: string; version: string }, ref: ReleaseRef) {
-  releaseWhere(ref); // refuses an incomplete ref
-  return ref.releaseId ? r.id === ref.releaseId : r.projectKey === ref.projectKey && r.version === ref.version;
+  checkReleaseRef(ref);
+  return (!ref.releaseId || r.id === ref.releaseId) && (!ref.projectKey || r.projectKey === ref.projectKey) && (!ref.version || r.version === ref.version);
 }
 
+/** One release with its proposals and full deployment history, voided ones included. */
 export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
     // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
