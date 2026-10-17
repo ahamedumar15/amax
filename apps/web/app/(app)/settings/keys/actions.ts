@@ -6,13 +6,13 @@ import { currentViewer } from "@amax/auth";
 import { ForbiddenError, ValidationError, type ServiceContext } from "@amax/core/server";
 import { putSecret, revokeSecret, SecretsUnavailableError } from "@amax/core/secrets";
 import { getDb } from "../../../../lib/server";
+import { adminContext } from "./context";
 
 const PAGE = "/settings/keys";
 
 async function context(): Promise<ServiceContext> {
   getDb();
-  const viewer = await currentViewer();
-  return { tenantId: viewer.tenantId, actor: { id: `user:${viewer.userId}`, kind: "user", roles: viewer.actualRoles }, source: "ui", viewer };
+  return adminContext(await currentViewer());
 }
 
 function failure(e: unknown) {

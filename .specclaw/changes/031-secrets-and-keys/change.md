@@ -41,3 +41,5 @@ New admin screen, Connections and keys: one row per connector credential with st
 The 038 settings hub does not exist yet, so the breadcrumb's "Settings" is plain text (as on `/settings/ai`) and the screen is reached from the profile menu next to the other settings screens.
 
 ## Verify
+
+Quality: 37 → 37 duplicated lines (none in this change; the viewer-to-context helper shared by the screen and its actions was extracted by hand)

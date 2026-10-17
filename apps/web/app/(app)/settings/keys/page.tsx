@@ -4,6 +4,7 @@ import { CONNECTOR_IDS, listCredentials, type ConnectorId } from "@amax/core/sec
 import { getDb } from "../../../../lib/server";
 import { getViewer } from "../../../../lib/viewer";
 import { Sprite } from "./Art";
+import { adminContext } from "./context";
 import { lede } from "./format";
 import { KeyForm } from "./KeyForm";
 import { KeyTable } from "./KeyTable";
@@ -19,7 +20,7 @@ async function load() {
   const viewer = await getViewer();
   if (!viewer || !getDb()) notFound();
   try {
-    return await listCredentials({ tenantId: viewer.tenantId, actor: { id: `user:${viewer.userId}`, kind: "user", roles: viewer.actualRoles }, source: "ui", viewer });
+    return await listCredentials(adminContext(viewer));
   } catch (e) {
     if (e instanceof ForbiddenError) notFound();
     throw e;
