@@ -45,3 +45,5 @@ What changes on screen, and where to see it: [`050-immutable-trace`](../../mock/
   Depends: T4, T5
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan failed: `jq: Argument list too long` on this repo)
