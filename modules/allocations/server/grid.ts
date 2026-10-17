@@ -15,7 +15,7 @@ export type Grid = { months: { month: string; forecast: boolean }[]; people: Gri
 /** Whose rows to show: people on the projects the viewer manages, else on any delivery project, else everyone. */
 async function peopleIn(tx: Tx, v: Viewer, months: string[], everyone: boolean) {
   // Whose rows belong in the view is decided on every allocation; gridIn then shows only the people the viewer may see.
-  const all = await listAllocations(tx, contextFor.job(v.tenantId, "allocations.grid"), { from: months[0], to: months[months.length - 1] });
+  const { rows: all } = await listAllocations(tx, contextFor.job(v.tenantId, "allocations.grid"), { from: months[0], to: months[months.length - 1] });
   const managed = all.filter((a) => a.projectId && v.managedProjects.includes(a.projectId));
   const scope: Grid["scope"] = everyone ? "everyone" : managed.length ? "managed" : "projects";
   const pick = scope === "everyone" ? all : scope === "managed" ? managed : all.filter((a) => a.projectId);
@@ -25,9 +25,9 @@ async function peopleIn(tx: Tx, v: Viewer, months: string[], everyone: boolean) 
 
 export async function gridIn(tx: Tx, v: Viewer, months: string[], today: Date, everyone = false): Promise<Grid> {
   const { scope, ids, rows } = await peopleIn(tx, v, months, everyone);
-  const [people, periods, projects] = await Promise.all([listPeople(tx, v, { ids }), listEmploymentPeriods(tx, v, ids), listProjectRefs(tx)]);
+  const [people, inHr, periods, projects] = await Promise.all([listPeople(tx, v, { ids }), listPeople(tx, contextFor.job(v.tenantId, "allocations.grid"), { ids }), listEmploymentPeriods(tx, v, ids), listProjectRefs(tx)]);
   return {
-    scope, hidden: ids.length - people.length, months: months.map((month) => ({ month, forecast: isForecast(month, today) })),
+    scope, hidden: inHr.length - people.length, months: months.map((month) => ({ month, forecast: isForecast(month, today) })),
     people: people.map((p): GridPerson => {
       const mine = rows.filter((a) => a.personId === p.id);
       const keys = [...new Set(mine.map((a) => a.projectId ?? `work:${a.work}`))];

@@ -28,9 +28,9 @@ export async function forecastIn(tx: Tx, v: Viewer, team: string, months: string
   const ids = members.map((m) => m.personId);
   // Capacity, demand and bench are team aggregates (FTE and percent, no pay or names), so they count
   // every member whatever the viewer's hr scope; a narrow scope must not read as people not employed.
-  const team_ = contextFor.job(v.tenantId, "allocations.forecast");
-  const periods = byPerson(await listEmploymentPeriods(tx, team_, ids));
-  const totals = await personMonthTotals(tx, team_, { from: months[0], to: months[months.length - 1], personIds: ids });
+  const sys = contextFor.job(v.tenantId, "allocations.forecast");
+  const periods = byPerson(await listEmploymentPeriods(tx, sys, ids));
+  const { rows: totals } = await personMonthTotals(tx, sys, { from: months[0], to: months[months.length - 1], personIds: ids });
   const unstaffed = await tx.execute(sql`select month::text as month, sum(demand_fte)::float as fte from allocations.forecast where team = ${team} group by month`);
   const teams = (await tx.execute(sql`select distinct team from allocations.member order by team`)).map((r) => r.team as string);
   return {

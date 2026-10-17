@@ -9,7 +9,7 @@ import { listAllocations, personMonthTotals } from "../contracts";
 import { ctxFor } from "../server/context";
 import { forecastFor } from "../server/forecast";
 import { gridFor } from "../server/grid";
-import { allocate, MAX_MONTHS } from "../server/services";
+import { allocate, copyMonth, MAX_MONTHS } from "../server/services";
 import { allocationsDatabase, T, TODAY } from "./setup";
 
 // Review round 1 (010): hr data scope on the screens and contract reads, fail-closed allocation, ranges.
@@ -41,26 +41,41 @@ describe.skipIf(!hasDb)("allocations data scope (Postgres)", () => {
   });
 
   it.each([
-    { who: "system job", reader: () => sys(), rows: 2 },
-    { who: "Leadership", reader: () => db.as("maya", "Leadership"), rows: 2 },
-    { who: "HR limited to Australia", reader: async () => auOnly, rows: 0 },
-  ])("contract reads return only the people the reader may see: $who", async ({ reader, rows }) => {
+    { who: "system job", reader: () => sys(), rows: 2, hidden: 0 },
+    { who: "Leadership", reader: () => db.as("maya", "Leadership"), rows: 2, hidden: 0 },
+    { who: "HR limited to Australia, asking for Ayesha", reader: async () => auOnly, rows: 0, hidden: 1 },
+  ])("contract reads return only the people the reader may see, and count the rest: $who", async ({ reader, rows, hidden }) => {
     const r = await reader();
     await db.tx(async (tx) => {
       const ayesha = (await getPerson(tx, sys(), "LL-0291"))!;
-      expect(await listAllocations(tx, r, { from: "2026-12-01", to: "2026-12-31", personIds: [ayesha.id] })).toHaveLength(rows);
-      expect((await personMonthTotals(tx, r, { from: "2026-12-01", to: "2026-12-01", personIds: [ayesha.id] })).length).toBe(rows ? 1 : 0);
+      const list = await listAllocations(tx, r, { from: "2026-12-01", to: "2026-12-31", personIds: [ayesha.id] });
+      expect([list.rows.length, list.hidden]).toEqual([rows, hidden]);
+      const totals = await personMonthTotals(tx, r, { from: "2026-12-01", to: "2026-12-01", personIds: [ayesha.id] });
+      expect([totals.rows.length, totals.hidden]).toEqual([rows ? 1 : 0, hidden]);
     });
   });
 
   it.each([
     { who: "a principal with no viewer", ctx: (): ServiceContext => ({ tenantId: T, actor: { id: "sp:x", kind: "service" }, source: "api", principal: {} } as never), ok: false },
-    { who: "a system job", ctx: () => sys(), ok: true },
+    { who: "a hand-built system literal", ctx: (): ServiceContext => ({ tenantId: T, actor: { id: "job:x", kind: "system" }, source: "job" }), ok: false },
+    { who: "a system job core issued", ctx: () => sys(), ok: true },
     { who: "a PM on a project they manage", ctx: async () => ctxFor(await db.as("maya", "PM")), ok: true },
   ])("allocating without a viewer fails closed: $who", async ({ ctx, ok }) => {
     const run = allocate(await ctx(), { person: "LL-0417", projectKey: "CON", month: "2027-05", percent: 10 });
     if (ok) await expect(run).resolves.toMatchObject({ months: ["2027-05-01"] });
     else await expect(run).rejects.toThrow(/forbidden|data scope/);
+  });
+
+  it.each([
+    { who: "a principal with no viewer", ctx: (): ServiceContext => ({ tenantId: T, actor: { id: "sp:x", kind: "service" }, source: "api", principal: {} } as never), copies: false },
+    { who: "a hand-built system literal", ctx: (): ServiceContext => ({ tenantId: T, actor: { id: "job:x", kind: "system" }, source: "job" }), copies: false },
+    { who: "a system job core issued", ctx: () => sys(), copies: true },
+  ])("Copy to next month copies nothing without a viewer unless core issued the context: $who", async ({ ctx, copies }) => {
+    // Fixtures plan December, and some of it isn't in January yet, so there is something to copy.
+    const r = await copyMonth(await ctx(), { from: "2026-12" }).catch((e: Error) => ({ error: e.message }));
+    if (copies) expect(r).toMatchObject({ skipped: 0, copied: expect.any(Number) });
+    else if ("copied" in r) expect(r.copied === 0 && r.skipped > 0).toBe(true);
+    else expect(r.error).toMatch(/forbidden/);
   });
 
   it.each([

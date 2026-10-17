@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { can, ScopeError, viewerOf } from "@amax/auth";
-import { defineService, type ServiceContext } from "@amax/core/server";
+import { defineService, isSystemContext, type ServiceContext } from "@amax/core/server";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { getPerson, listPeople } from "@amax/hr/contracts";
 import { EVENTS, monthOf, type AllocationSet, type MonthCopied } from "../contracts";
@@ -14,10 +14,10 @@ const nextMonth = (m: string) => { const d = new Date(`${m}T00:00:00Z`); d.setUT
 const monthsBetween = (from: string, to: string) => { const out = [from]; while (out[out.length - 1] < to) out.push(nextMonth(out[out.length - 1])); return out; };
 
 /** Allocating on a project needs the grant for that project (PMs: the projects they manage); other work needs an unscoped grant. */
-/** Fails closed: without a viewer only trusted system code (a job) may allocate. */
+/** Fails closed: without a viewer only a context core issued for a job (contextFor.job) may allocate. */
 const mayAllocate = (ctx: ServiceContext, projectId: string | null) => {
   const v = viewerOf(ctx);
-  return v ? can(v, "allocations:allocate", projectId ? { projectId } : {}) : ctx.actor.kind === "system";
+  return v ? can(v, "allocations:allocate", projectId ? { projectId } : {}) : isSystemContext(ctx);
 };
 /** Longest range one allocate call may write. */
 export const MAX_MONTHS = 24;
