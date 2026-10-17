@@ -2,13 +2,14 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, type DataItem, type Message, type Tool } from "@amax/ai";
-import { CancelledByKeyError, claimKey, lookupKey, retryable, withIdempotency } from "@amax/core/server";
+import { CancelledByKeyError, claimKey, KEY_DAYS, lookupKey, retryable, withIdempotency } from "@amax/core/server";
 import type { Registry, RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type Pin = { label: string; tool: string; args: Record<string, unknown> };
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[] };
+/** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt?: string };
 export type Highlight = { text: string; field: string; index: number };
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
 
@@ -63,7 +64,7 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
-      const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input) };
+      const action = { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString() };
       pending.push(action);
       return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
     },
@@ -94,7 +95,7 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
 }
 
 /** What happened to a card: confirmed (the write ran), cancelled, failed for good, or unknown. */
-export type Decision = "confirmed" | "cancelled" | "failed" | "unknown";
+export type Decision = "confirmed" | "cancelled" | "failed" | "unknown" | "expired";
 
 /**
  * The card isn't pending: `decision` says what happened to it earlier (perhaps by a request whose
@@ -148,12 +149,25 @@ const settleNow = (db: Db, viewer: Viewer, conversationId: string, action: Pendi
 
 const UNKNOWN = "I can't tell whether this was done. Check the record before trying again.";
 
+// A card can be confirmed for CARD_DAYS. Its idempotency record lives KEY_DAYS from the attempt, so
+// while a card can still be confirmed, the record of any earlier attempt still exists: a pruned
+// record can never be mistaken for "never written" (review round 9).
+export const CARD_DAYS = KEY_DAYS - 1;
+const expired = (a: PendingAction, now = Date.now()) => Boolean(a.createdAt) && now - Date.parse(a.createdAt!) > CARD_DAYS * 86_400_000;
+
+// What the conversation records about a write: the record's key, never the result itself, which
+// may hold classified fields and is read back by the model (review round 9).
+const doneNote = (title: string, result: unknown) => {
+  const key = (result as { key?: unknown } | null)?.key;
+  return `(I confirmed "${title}".${typeof key === "string" ? ` Record: ${key}.` : ""})`;
+};
+
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await card(db, viewer, conversationId, actionId);
   const key = keyOf(actionId);
   const done = async (result: unknown) => {
-    await settleNow(db, viewer, conversationId, action, "confirmed", `(I confirmed "${action.title}". Result: ${JSON.stringify(result)})`);
+    await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, result));
     return { action, result };
   };
   const cancelled = async () => {
@@ -164,6 +178,10 @@ export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, 
   const known = await lookupKey(db, viewer.tenantId, key);
   if (known && "cancelled" in known) throw await cancelled();
   if (known) return done(known.done);
+  if (expired(action)) {
+    await settleNow(db, viewer, conversationId, action, "expired", `(The request "${action.title}" expired before it was confirmed.)`);
+    throw new NotPendingError("expired");
+  }
   // 2. Run the tool; it must make exactly one service write.
   const run = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat" }));
   if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
@@ -200,7 +218,7 @@ export async function cancelAction(db: Db, viewer: Viewer, conversationId: strin
   });
   if (prior && "done" in prior) {
     // The write had already run (its reply may have been lost): record it as done.
-    await settleNow(db, viewer, conversationId, action, "confirmed", `(I confirmed "${action.title}". Result: ${JSON.stringify(prior.done)})`);
+    await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, prior.done));
     throw new NotPendingError("confirmed");
   }
 }

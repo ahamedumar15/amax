@@ -280,6 +280,20 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       expect(await rows("Refused")).toEqual([]);
     });
 
+    it("a card expires before its record can be pruned, and notes keep only the record key (review round 9)", async () => {
+      const { CARD_DAYS } = await import("@amax/chat");
+      const a = await card("test_write", "Expires");
+      const old = new Date(Date.now() - (CARD_DAYS + 1) * 86_400_000).toISOString();
+      await withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending = (select jsonb_agg(p || jsonb_build_object('createdAt', ${old}::text)) from jsonb_array_elements(pending) p) where id = ${a.convo}`));
+      await expect(confirmAction(app, reg, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "expired" });
+      expect(await rows("Expires")).toEqual([]);
+      const b = await card("test_write", "Note shape");
+      const r = await confirmAction(app, reg, maya, b.convo, b.id);
+      const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages->-1 as last from chat.conversation where id = ${b.convo}`));
+      expect(JSON.stringify(c.last)).toContain(`Record: ${(r.result as { key: string }).key}.`);
+      expect(JSON.stringify(c.last)).not.toContain("Result:");
+    });
+
     it("the stored record is a replay record only, and old records are pruned", async () => {
       const a = await card("test_write", "Replay only");
       await confirmAction(app, reg, maya, a.convo, a.id);

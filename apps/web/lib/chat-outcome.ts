@@ -17,6 +17,7 @@ export function outcomeOf(e: unknown): CardOutcome {
     if (e.decision === "confirmed") return { state: "done", note: "This was already done." };
     if (e.decision === "cancelled") return { state: "cancelled", note: "This was already cancelled. Nothing was changed." };
     if (e.decision === "failed") return { state: "error", note: "This couldn't be done. Nothing was changed." };
+    if (e.decision === "expired") return { state: "error", note: "This request expired. Ask again if you still want it." };
     if (e.decision === "unknown") return { state: "error", note: "It wasn't clear whether this was done. Check the record before trying again." };
   }
   return { state: "error", note: e instanceof Error ? e.message : String(e) };

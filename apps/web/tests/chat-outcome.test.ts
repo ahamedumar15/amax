@@ -9,6 +9,7 @@ describe("chat card outcomes", () => {
     ["a failed write that can't", new ActionFailedError("forbidden", "failed"), "error"],
     ["an unknown outcome", new ActionFailedError("check first", "unknown"), "error"],
     ["already unknown", new NotPendingError("unknown"), "error"],
+    ["expired", new NotPendingError("expired"), "error"],
     ["already confirmed", new NotPendingError("confirmed"), "done"],
     ["already cancelled", new NotPendingError("cancelled"), "cancelled"],
     ["already failed", new NotPendingError("failed"), "error"],
