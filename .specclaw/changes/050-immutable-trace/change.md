@@ -37,7 +37,7 @@ What changes on screen, and where to see it: [`050-immutable-trace`](../../mock/
 - [x] `T4` — Propagate the trace: chat turns, pending cards, confirm/cancel decisions, MCP calls, tool calls (including denied) and model calls in `ai.call` (AC-1, AC-2)
   Files: packages/chat/src/engine.ts, packages/mcp/src/registry.ts, packages/mcp/src/server.ts, packages/ai/src/gateway.ts
   Depends: T3
-- [ ] `T5` — Read side: `auditStatus`, `searchAudit`, `getTrace` in core; Admin-only read tools `search_audit`, `get_trace`, `audit_status` (permission `core.audit.read`); export covers `core.trace_event` and `ai.call` and records itself in the audit (AC-4, AC-5, AC-6)
+- [x] `T5` — Read side: `auditStatus`, `searchAudit`, `getTrace` in core; Admin-only read tools `search_audit`, `get_trace`, `audit_status` (permission `core.audit.read`); export covers `core.trace_event` and `ai.call` and records itself in the audit (AC-4, AC-5, AC-6)
   Files: packages/core/src/audit-read.ts, packages/core/src/audit-export.ts, packages/mcp/src/registry.ts
   Depends: T3
 - [ ] `T6` — Tests: tamper tests as `amax_app` (UPDATE/DELETE fail on all three tables, trigger proven with a temporary grant), superuser tamper shows "Chain broken at event N" via the read tool, erasure keeps both chains verifiable, trace propagation through chat and MCP, export coverage (AC-1..AC-7)

@@ -11,5 +11,6 @@ export { nextRun, onceForEvent, registryFrom, runDueJobs, scheduleJob, type JobR
 export { memoryStorage, ObjectLockedError, s3Storage, storageFromEnv, type PutOptions, type S3Config, type Storage } from "./adapters/storage";
 export { memoryCache, type Cache } from "./adapters/cache";
 export { auditExportJob, exportAuditDay } from "./audit-export";
+export { auditStatus, getTrace, searchAudit, type AuditEntry, type AuditFilter, type AuditStatus, type ChainName, type TraceStepView } from "./audit-read";
 export { logError } from "./log";
 export { CancelledByKeyError, claimKey, KEY_DAYS, lookupKey, pruneKeysJob, retryable, settleKey, withIdempotency, type KeyOutcome, type Replay } from "./idempotency";

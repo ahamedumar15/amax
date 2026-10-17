@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpToolDef, ModuleManifest, SearchHit } from "@amax/core";
 import { ForbiddenError, traceStep } from "@amax/core/server";
 import { canEver, rolesOf, ScopeError, type Viewer } from "@amax/auth";
+import { auditTools } from "./audit-tools";
 
 export type Scope = McpToolDef["scope"];
 export const ALL_SCOPES: Scope[] = ["read", "write", "sensitive"];
@@ -38,6 +39,7 @@ function builtins(modules: Registrable[]): RegisteredTool[] {
         return { hits: results.flat().slice(0, input.limit ?? 20), notSearched };
       },
     } as unknown as RegisteredTool,
+    ...auditTools(),
   ];
 }
 

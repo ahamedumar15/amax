@@ -1,25 +1,45 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import type { Storage } from "./adapters/storage";
-import { canonical, verifyAuditChain } from "./audit";
+import { appendAudit, canonical, verifyAuditChain, type ChainResult } from "./audit";
+import { contextFor } from "./authorize";
 import type { JobDef } from "./module";
+import { verifyTraceChain } from "./trace";
 
 const DAY = 86_400_000;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
-// Writes one tenant's audit rows for one UTC day as NDJSON, plus a trailer line with the chain
-// head and its verification, as a write-once object.
+type Part = { prefix: string; rows: (from: string, to: string) => SQL; chain?: (tx: Tx, tenantId: string) => Promise<ChainResult> };
+
+// 050: the trace chain and the AI call log are exported beside the audit, each as its own object.
+const PARTS: Part[] = [
+  { prefix: "audit", rows: (f, t) => sql`select * from core.audit_event where occurred_at >= ${f} and occurred_at < ${t} order by seq`, chain: verifyAuditChain },
+  { prefix: "trace", rows: (f, t) => sql`select * from core.trace_event where occurred_at >= ${f} and occurred_at < ${t} order by seq`, chain: verifyTraceChain },
+  { prefix: "ai-call", rows: (f, t) => sql`select * from ai.call where at >= ${f} and at < ${t} order by at, id` },
+];
+
+// Writes one tenant's rows for one UTC day as NDJSON, plus a trailer line with the chain head and
+// its verification, as write-once objects; then records the export itself in the audit.
 export async function exportAuditDay(tx: Tx, tenantId: string, day: Date, storage: Storage, retentionDays: number) {
   const from = new Date(`${isoDay(day)}T00:00:00Z`);
   const to = new Date(from.getTime() + DAY);
-  const rows = await tx.execute(sql`select * from core.audit_event
-    where tenant_id = ${tenantId} and occurred_at >= ${from.toISOString()} and occurred_at < ${to.toISOString()} order by seq`);
-  const chain = await verifyAuditChain(tx, tenantId);
-  const trailer = { $export: { tenantId, day: isoDay(from), rows: rows.length, chain } };
-  const body = [...rows.map((r) => canonical(r)), canonical(trailer)].join("\n") + "\n";
-  const key = `audit/${tenantId}/${isoDay(from).replaceAll("-", "/")}.ndjson`;
-  await storage.put(key, body, { contentType: "application/x-ndjson", retainUntil: new Date(to.getTime() + retentionDays * DAY) });
-  return { key, rows: rows.length, chainOk: chain.ok };
+  const retainUntil = new Date(to.getTime() + retentionDays * DAY);
+  const out: { key: string; rows: number; chainOk: boolean }[] = [];
+  for (const part of PARTS) {
+    const rows = await tx.execute(sql`select * from (${part.rows(from.toISOString(), to.toISOString())}) r where r.tenant_id = ${tenantId}`);
+    const chain = part.chain ? await part.chain(tx, tenantId) : null;
+    const trailer = { $export: { tenantId, day: isoDay(from), rows: rows.length, ...(chain ? { chain } : {}) } };
+    const body = [...rows.map((r) => canonical(r)), canonical(trailer)].join("\n") + "\n";
+    const key = `${part.prefix}/${tenantId}/${isoDay(from).replaceAll("-", "/")}.ndjson`;
+    await storage.put(key, body, { contentType: "application/x-ndjson", retainUntil });
+    out.push({ key, rows: rows.length, chainOk: chain?.ok ?? true });
+  }
+  await appendAudit(tx, contextFor.job(tenantId, "core.audit.export"), {
+    action: "core.audit.export", resource: "core.audit_export", resourceId: isoDay(from),
+    after: { day: isoDay(from), retainUntil: retainUntil.toISOString(), objects: out },
+  });
+  const [audit] = out;
+  return { ...audit, chainOk: out.every((o) => o.chainOk), objects: out };
 }
 
 // Runs daily per tenant (00:15 UTC) and exports the previous day.
