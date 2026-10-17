@@ -33,7 +33,7 @@ What changes on screen, and where to see it: [`046-chat-first-and-pins`](../../m
   Depends: T1
 - [x] `T3` — MCP write tools close_opportunity_risk, remove_opportunity, resolve_suggestion; drop the presales form actions; unit tests incl. no-form/no-direct-write guard (AC-1, AC-3)
   Files: modules/presales/mcp.ts, modules/presales/actions.ts, modules/presales/tests/chat-first.test.ts
-- [ ] `T4` — Chat pre-fills the prompt when opened with a pin and no intent (AC-2)
+- [x] `T4` — Chat pre-fills the prompt when opened with a pin and no intent (AC-2)
   Files: apps/web/components/chat/Chat.tsx
 - [ ] `T5` — Pin coverage in time, allocations, HR and delivery cards and rows (AC-5)
   Files: modules/time/ui/*.tsx, modules/allocations/ui/*.tsx, modules/hr/ui/*.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/EnvironmentsCard.tsx
