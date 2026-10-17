@@ -16,59 +16,61 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": false,
-    "baseUrl": ".",
     "paths": {
       "@amax/core": [
-        "packages/core/src/index.ts"
+        "./packages/core/src/index.ts"
       ],
       "@amax/core/*": [
-        "packages/core/src/*"
+        "./packages/core/src/*"
       ],
       "@amax/db": [
-        "packages/db/src/index.ts"
+        "./packages/db/src/index.ts"
       ],
       "@amax/db/*": [
-        "packages/db/src/*"
+        "./packages/db/src/*"
       ],
       "@amax/auth": [
-        "packages/auth/src/index.ts"
+        "./packages/auth/src/index.ts"
       ],
       "@amax/auth/*": [
-        "packages/auth/src/*"
+        "./packages/auth/src/*"
       ],
       "@amax/ui": [
-        "packages/ui/src/index.ts"
+        "./packages/ui/src/index.ts"
       ],
       "@amax/ui/*": [
-        "packages/ui/src/*"
+        "./packages/ui/src/*"
       ],
       "@amax/mcp": [
-        "packages/mcp/src/index.ts"
+        "./packages/mcp/src/index.ts"
       ],
       "@amax/mcp/*": [
-        "packages/mcp/src/*"
+        "./packages/mcp/src/*"
       ],
       "@amax/chat": [
-        "packages/chat/src/index.ts"
+        "./packages/chat/src/index.ts"
       ],
       "@amax/chat/*": [
-        "packages/chat/src/*"
+        "./packages/chat/src/*"
       ],
       "@amax/agents": [
-        "packages/agents/src/index.ts"
+        "./packages/agents/src/index.ts"
       ],
       "@amax/agents/*": [
-        "packages/agents/src/*"
+        "./packages/agents/src/*"
       ],
       "@amax/testing": [
-        "packages/testing/src/index.ts"
+        "./packages/testing/src/index.ts"
       ],
       "@amax/testing/*": [
-        "packages/testing/src/*"
+        "./packages/testing/src/*"
       ],
       "@amax/*": [
-        "modules/*"
+        "./modules/*"
       ]
-    }
+    },
+    "types": [
+      "node"
+    ]
   }
 }
