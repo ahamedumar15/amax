@@ -20,3 +20,8 @@ None. Fixes only.
 ## Tasks
 
 ## Verify
+
+- Rounds: 1 exit 1 (6 majors), 2 exit 1 (2), 3 exit 1 (3), 4 exit 1 (2), 5 `--final` exit 4 (escalate, 6 majors). Cap reached.
+- Fixed with table-driven tests: Team time prompts by week id, get_allocation namesakes, update_opportunity owner link, row pins to one record (proposal, environment, deployment), re-tag URL follow, one release ref rule.
+- Open after the cap, with a proposed redesign: `follow-ups.md`, "Open after the 5-round cap".
+- Typecheck, lint and graph check, unit tests (all packages), `e2e`, `e2e:auth` (49) and the time e2e pass at d74edcf.
