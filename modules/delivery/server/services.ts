@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import type { Tx } from "@amax/db";
+import { textArray, type Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
 import { EVENTS, PHASES, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
@@ -32,13 +32,18 @@ async function ensureEnvironments(tx: Tx, tenantId: string, projectId: string) {
 // must exist in the project, a proposal already shipped in another release can't be moved, and a
 // release that is already live in Prod takes no new proposals, since they'd never become Released
 // (final review): ship them in a new release.
+// Every writer that changes proposal rows of a release locks them first, in one statement ordered by
+// id: a Prod deployment, a void and an assignment then serialise on the rows they share (round 18:
+// moving a proposal out of a release while it goes live), and never take them in crossing orders,
+// which would deadlock (round 19).
+const lockProposals = (tx: Tx, where: ReturnType<typeof sql>) => tx.execute(sql`select id from delivery.proposal where ${where} order by id for update`);
+
 async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, keys: string[]) {
   const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${releaseId} and released and voided_at is null`);
+  await lockProposals(tx, sql`project_id = ${projectId} and key = any(${textArray(keys)})`);
   for (const key of keys) {
-    // Row lock: a Prod deployment of the proposal's current release updates this row too, so the two
-    // serialise and the phase read here is the committed one (round 18: moving a proposal out of a
-    // release while that release goes live).
-    const [p] = await tx.execute(sql`select id, phase, release_id from delivery.proposal where key = ${key} and project_id = ${projectId} for update`);
+    // Locked above, so the phase read here is the committed one.
+    const [p] = await tx.execute(sql`select id, phase, release_id from delivery.proposal where key = ${key} and project_id = ${projectId}`);
     if (!p) throw new Error(`no proposal ${key} in this project`);
     if (p.phase === "released" && p.release_id !== releaseId) throw new Error(`${key} already shipped in another release`);
     if (Number(live) > 0 && p.release_id !== releaseId) throw new Error(`this release is already live in Prod; put ${key} in a new release`);
@@ -182,6 +187,7 @@ export const recordDeployment = defineService({
     }];
     if (released) {
       const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released'`);
+      await lockProposals(tx, sql`release_id = ${release.id}`);
       await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now() where release_id = ${release.id} and phase <> 'released'`);
       events.push(...moved.map((p) => phaseEvent(p, "released", ctx)));
     }
@@ -347,6 +353,7 @@ export const setReleaseProposals = defineService({
     scoped(ctx, "delivery:release:create", project.id as string);
     const r = await releaseOf(tx, project.id, input.version);
     const before = (await tx.execute(sql`select key from delivery.proposal where release_id = ${r.id} order by key`)).map((p) => p.key as string);
+    await lockProposals(tx, sql`release_id = ${r.id} or (project_id = ${project.id} and key = any(${textArray(input.proposalKeys)}))`);
     await tx.execute(sql`update delivery.proposal set release_id = null where release_id = ${r.id} and phase <> 'released'`);
     await assignProposals(tx, project.id, r.id, input.proposalKeys);
     return { result: { version: input.version, proposals: input.proposalKeys }, resourceId: r.id as string, before: { proposals: before }, after: { proposals: input.proposalKeys } };
@@ -380,6 +387,7 @@ export const voidDeployment = defineService({
     // stopped being Prod, leaves Released alone.
     const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${release.id} and released and voided_at is null`);
     if (d.released && Number(live) === 0) {
+      await lockProposals(tx, sql`release_id = ${release.id}`);
       const back = await tx.execute(sql`update delivery.proposal set phase = 'verified', released_at = null, updated_at = now() where release_id = ${release.id} and phase = 'released' returning *`);
       events.push(...back.map((p) => phaseEvent({ ...p, phase: "released" }, "verified", ctx)));
     }

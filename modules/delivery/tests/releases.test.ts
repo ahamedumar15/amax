@@ -373,17 +373,22 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
   });
 
   it.each([
-    ["moving it to a new release holds its row; v1's Prod deployment waits, then leaves it unreleased under v2", "move-first"],
-    ["v1's Prod deployment holds its row; moving it to a new release waits, then is refused", "deploy-first"],
-  ])("cross-release race, %s (round 18)", async (_n, order) => {
+    ["createRelease: moving it holds its row; v1's Prod deployment waits, then leaves it unreleased under v2", "move-first", "create"],
+    ["createRelease: v1's Prod deployment holds its row; the move waits, then is refused", "deploy-first", "create"],
+    ["setReleaseProposals: moving it holds its row; v1's Prod deployment waits, then leaves it unreleased under v2", "move-first", "set"],
+    ["setReleaseProposals: v1's Prod deployment holds its row; the move waits, then is refused", "deploy-first", "set"],
+  ])("cross-release race, %s (rounds 18 and 19)", async (_n, order, via) => {
     const { createProposal } = await import("../server/services");
-    const key = order === "move-first" ? "XRA" : "XRB";
+    const key = `X${order === "move-first" ? "A" : "B"}${via === "create" ? "C" : "S"}`;
     await createProject(ctx(), { key, name: key, client: "x", billing: "internal" });
     const p = await createProposal(ctx(), { projectKey: key, title: "p" });
     await createRelease(ctx(), { projectKey: key, version: "v1", proposalKeys: [p.key] });
-    const move = () => createRelease(ctx(), { projectKey: key, version: "v2", proposalKeys: [p.key] });
+    if (via === "set") await createRelease(ctx(), { projectKey: key, version: "v2", proposalKeys: [] });
+    const move = () => via === "create"
+      ? createRelease(ctx(), { projectKey: key, version: "v2", proposalKeys: [p.key] })
+      : setReleaseProposals(ctx(), { projectKey: key, version: "v2", proposalKeys: [p.key] });
     const deploy = () => recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Prod" });
-    const h = holdAfterReleaseLock(order === "move-first" ? /from delivery\.proposal where key = .* for update/s : /update delivery\.proposal set phase = 'released'/);
+    const h = holdAfterReleaseLock(order === "move-first" ? /select id from delivery\.proposal where .*order by id for update/s : /update delivery\.proposal set phase = 'released'/);
     let first: Promise<unknown> = Promise.resolve(), second: Promise<unknown> = Promise.resolve();
     let secondDone = false;
     try {
@@ -402,6 +407,24 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     const [row] = await t.owner`select p.phase, r.version from delivery.proposal p join delivery.release r on r.id = p.release_id where p.id = ${p.id}`;
     // Never released under v2: either unreleased in v2, or released in v1.
     expect(row).toEqual(order === "move-first" ? { phase: "proposed", version: "v2" } : { phase: "released", version: "v1" });
+  });
+
+  it("writers sharing several proposals in opposite key orders never deadlock (round 19)", async () => {
+    const { createProposal } = await import("../server/services");
+    await createProject(ctx(), { key: "DLK", name: "DLK", client: "x", billing: "internal" });
+    for (let i = 0; i < 6; i++) {
+      const a = await createProposal(ctx(), { projectKey: "DLK", title: `a${i}` });
+      const b = await createProposal(ctx(), { projectKey: "DLK", title: `b${i}` });
+      await createRelease(ctx(), { projectKey: "DLK", version: `v${i}`, proposalKeys: [a.key, b.key] });
+      await createRelease(ctx(), { projectKey: "DLK", version: `w${i}`, proposalKeys: [] });
+      const results = await Promise.allSettled([
+        setReleaseProposals(ctx(), { projectKey: "DLK", version: `w${i}`, proposalKeys: [b.key, a.key] }),
+        createRelease(ctx(), { projectKey: "DLK", version: `x${i}`, proposalKeys: [a.key, b.key] }),
+        recordDeployment(ctx(), { projectKey: "DLK", version: `v${i}`, environment: "Prod" }),
+      ]);
+      for (const r of results) if (r.status === "rejected") expect(String(r.reason)).toMatch(/already shipped in another release/);
+      expect(results.map((r) => (r.status === "rejected" ? String(r.reason) : "")).join(" ")).not.toMatch(/deadlock/);
+    }
   });
 
   const MERGE = [
