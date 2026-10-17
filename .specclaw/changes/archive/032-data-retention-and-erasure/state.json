@@ -1,11 +1,12 @@
 {
   "change": "032-data-retention-and-erasure",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T19:06:38Z"},
     "tasks": {"status":"done","at":"2026-10-17T19:12:55Z"},
     "verify": {"status":"done","at":"2026-10-17T19:42:49Z"},
-    "pr": {"status":"raised","at":"2026-10-17T19:47:20Z","url":"https://github.com/chan4lk/amax/pull/49"}
+    "pr": {"status":"raised","at":"2026-10-17T19:47:20Z","url":"https://github.com/chan4lk/amax/pull/49"},
+    "archived": {"status":"done","at":"2026-10-17T22:07:59Z"}
   }
 }
