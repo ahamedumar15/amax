@@ -33,7 +33,6 @@ export default defineConfig({
       AMAX_AI_PROVIDER: "scripted",
       NODE_ENV: "test",
       DATABASE_MIGRATE_URL: admin.toString(),
-      // 031: a throwaway local key, written fresh by global-auth on every run.
       AMAX_KMS: "local",
       AMAX_KMS_KEY_FILE: join(tmpdir(), `amax-e2e-kms-${process.env.E2E_DB ?? "amax_e2e"}.key`),
     },

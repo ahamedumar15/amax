@@ -42,4 +42,17 @@ The 038 settings hub does not exist yet, so the breadcrumb's "Settings" is plain
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass — `secrets-ac1-envelope.test.ts` dumps every table as the owner and finds no plaintext (raw, base64, hex); data key stored wrapped (`v1:`), RLS on all three tables. `secrets-kms.test.ts` round-trips local key file, AWS KMS (SigV4, encryption context) and Azure Key Vault (wrapkey/unwrapkey) and refuses keys they didn't wrap.
+- AC-2: pass — `secrets-ac2-leaks.test.ts`: all 9 connector fixtures logged, echoed, thrown in errors (raw, base64, URL-encoded) and failed in a job; console, errors, audit, events, job `last_error` and the whole database hold no value. Mutation check: dropping error scrubbing fails it.
+- AC-3: pass — `secrets-ac3-rotation.test.ts`: use audited with connector, purpose, actor, versions; rotation keeps v1 valid in grace (`useValidSecrets` returns both), sweep revokes and shreds it; revoke shreds all; one `secrets.credential.expiring` event per threshold.
+- AC-4: pass — `secrets.spec.ts` (e2e, amax_e2e_031 on :3531): `.row.head` and tickets 1, 3, 4 within 2% of the mock at 1440px, axe clean; write-only add/rotate/revoke never render the value; Engineer gets no screen.
+- AC-5: pass — `secrets-ac5-env.test.ts`: AMAX_KMS companions and ANTHROPIC_API_KEY validated by `loadEnv`; env vars named after every connector are never used; no `process.env` in `packages/core/src/secrets`.
+
+Commands: `pnpm lint` (0, includes check:graph), `pnpm test` with DATABASE_MIGRATE_URL (0; core 53 tests), `pnpm --filter @amax/web build` (0), `E2E_DB=amax_e2e_031 E2E_AUTH_PORT=3531 pnpm exec playwright test --config playwright.auth.config.ts --grep "031|033"` (0).
+Preset check / quality gate: exit 1 on the repo as a whole (243 violations and 2 high functions on main, none in this change's new files; this change removed its own comments in shared files).
+Screenshots: `.specclaw/changes/031-secrets-and-keys/shots/app.png`, `app-390.png` (no horizontal scroll), `mock.png`.
+Local review: run after the PR (operator asked for a capped 5-round loop).
+
 Quality: 37 → 37 duplicated lines (none in this change; the viewer-to-context helper shared by the screen and its actions was extracted by hand)
