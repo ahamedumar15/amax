@@ -1,5 +1,5 @@
 const HIDDEN = "[secret]";
-const ENCODED_RUN = /(?:[A-Za-z0-9+/_=-]|%[0-9A-Fa-f]{2}){12,}/g;
+const ENCODED_RUN = /(?:[A-Za-z0-9+/_-]|%(?!3[Dd])[0-9A-Fa-f]{2}){12,}(?:=|%3[Dd]){0,2}/g;
 
 const escaped = (s: string) => JSON.stringify(s).slice(1, -1);
 
@@ -23,6 +23,16 @@ const decodings = (encoded: string, run = unpercent(encoded)) =>
   [0, 1, 2, 3].flatMap((offset) => [Buffer.from(run.slice(offset), "base64"), Buffer.from(run.slice(offset), "base64url")].map((b) => b.toString("latin1")));
 
 const replaceForms = (text: string, forms: string[]) => forms.reduce((t, f) => t.split(f).join(HIDDEN), text);
+
+function numbersHold(text: string, values: string[]) {
+  const codes = (text.match(/(?<=[:[,]\s*)\d+(?=\s*[,\]}])/g) ?? []).map(Number);
+  if (codes.length < 4) return false;
+  const bytes = Buffer.from(codes.map((n) => n & 0xff));
+  const decoded = [bytes.toString("utf8"), bytes.toString("utf16le"), bytes.subarray(1).toString("utf16le"), String.fromCharCode(...codes.map((n) => n & 0xffff))];
+  return values.some((v) => decoded.some((d) => d.includes(v)));
+}
+
+export const reveals = (text: string, values: string[]) => hide(text, values) !== text || numbersHold(text, values);
 
 export function hide(text: string, values: string[]): string {
   const forms = values.flatMap(formsOf).sort((a, b) => b.length - a.length);

@@ -7,7 +7,7 @@ import { CONNECTOR_IDS, type ConnectorId } from "./connectors";
 import { open } from "./crypto";
 import { valueAad } from "./manage";
 import { dataKeyFor } from "./runtime";
-import { assertNoLeak, scrubError, Secret } from "./secret";
+import { checkedCopy, scrubError, Secret } from "./secret";
 
 export type SecretUse = { connector: ConnectorId; purpose: string };
 export const useAction = (connector: ConnectorId) => `secrets:use:${connector}`;
@@ -58,7 +58,7 @@ async function run<T>(ctx: ServiceContext, req: SecretUse, all: boolean, fn: (se
   } catch (e) {
     throw scrubError(e, values);
   }
-  return assertNoLeak(result, values, req.connector);
+  return checkedCopy(result, values, req.connector);
 }
 
 export const useSecret = <T>(ctx: ServiceContext, req: SecretUse, fn: (secret: Secret) => Promise<T>) => run(ctx, req, false, ([s]) => fn(s));

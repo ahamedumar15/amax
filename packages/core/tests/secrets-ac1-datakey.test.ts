@@ -1,7 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { configureSecrets, localKms, putSecret, useSecret } from "../src/secrets";
+import { setTenant } from "@amax/db";
+import { configureSecrets, localKms, putSecret, SecretsUnavailableError, useSecret } from "../src/secrets";
+import { dataKeyFor } from "../src/secrets/runtime";
 import { z } from "zod";
 import { contextFor, defineService, withIdempotency } from "../src/server";
 import { secretsDb, testValue } from "./secrets-fixture";
@@ -42,8 +44,9 @@ describe.skipIf(!hasDb)("031 AC-1 a tenant's data key is committed before any va
     ["another service's run", (put) => defineService({ name: "t.outer", action: "t:outer", resource: "t", input: z.object({}), run: async () => { await put(); throw new Error("service rollback"); } })(contextFor.job(T3, "t"), {})],
   ];
   const T3 = "00000000-0000-4000-8000-0000000031c3";
+  const T4 = "00000000-0000-4000-8000-0000000031d4";
 
-  it.each(OUTER)("AC1 a first write made inside %s that rolls back leaves its value readable", async (_name, wrap) => {
+  it.each(OUTER)("AC1 putSecret commits on its own connection, so a rollback of %s can't strand its value", async (_name, wrap) => {
     const kms = localKms(new Uint8Array(randomBytes(32)));
     configureSecrets({ kms });
     await db.t.owner`insert into core.tenant (id, name) values (${T3}, 'Outer tenant') on conflict do nothing`;
@@ -52,7 +55,9 @@ describe.skipIf(!hasDb)("031 AC-1 a tenant's data key is committed before any va
     await db.t.owner`delete from secrets.data_key where tenant_id = ${T3}`;
     const value = testValue("xero");
     await expect(wrap(() => putSecret(contextFor.ui(T3, { id: "user:maya", roles: ["Admin"] }), { connector: "xero", value, expiresAt: null }))).rejects.toThrow(/rollback/);
+    expect(await db.t.owner`select count(*)::int as n from secrets.data_key where tenant_id = ${T3}`).toEqual([{ n: 1 }]);
     configureSecrets({ kms });
+    await expect(db.app.transaction((tx) => tx.transaction(async (sp) => { await setTenant(sp, T4); return dataKeyFor(sp, T4); }))).rejects.toThrow(SecretsUnavailableError);
     expect(await useSecret(contextFor.job(T3, "sync"), { connector: "xero", purpose: "after rollback" }, async (s) => s.reveal() === value)).toBe(true);
   });
 });
