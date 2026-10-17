@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
-import { contextFor } from "@amax/core/server";
+import { configureRuntime, contextFor } from "@amax/core/server";
+import { installAuthorizer } from "@amax/auth";
 import { configureSecrets, localKms, parseKeyFile, putSecret, revokeSecret, type ConnectorId } from "@amax/core/secrets";
 
 const DAY = 86_400_000;
@@ -22,6 +23,8 @@ const at = (offset: number | string, now = new Date()) =>
 
 export async function seedSecrets(db: Db, tenantId: string, keyFile: string) {
   writeFileSync(keyFile, randomBytes(32).toString("hex"), { mode: 0o600 });
+  configureRuntime({ db, auditKey: "e2e-audit-key-e2e-audit-key-e2e-audit" });
+  installAuthorizer();
   configureSecrets({ kms: localKms(parseKeyFile(readFileSync(keyFile, "utf8"))) });
   const ctx = contextFor.job(tenantId, "e2e-seed");
   for (const s of SEEDS) {

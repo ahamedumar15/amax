@@ -17,6 +17,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...read, name: "get_project", description: "One project and its proposals, by project key such as CON or AMX.", input: z.object({ key: z.string() }), run: (v, a) => getProject(v, a.key) }),
   tool({ ...read, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),
     run: (v, a) => listProposals(v, a) }),
+  tool({ ...read, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment.", input: z.object({}), run: (v) => listReleases(v) }),
   tool({ ...read, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod.", input: z.object({ projectKey: z.string(), version: z.string() }),
     run: async (v, a) => (await listReleases(v)).find((r) => r.projectKey === a.projectKey && r.version === a.version) ?? null }),
   tool({ name: "create_project", description: "Create a project. Key: 2-10 capitals, e.g. CON.", scope: "write", permission: "delivery:project:create",

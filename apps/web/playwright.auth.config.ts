@@ -10,9 +10,12 @@ const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "
 
 export default defineConfig({
   testDir: "tests/e2e",
-  // Chat writes proposals, so it runs after the specs that count fixture rows.
+  // The visual test (041) sees fixtures.md's data only; AMX (039) is imported after it. Chat writes
+  // proposals, so it runs after the specs that count fixture rows.
   projects: [
-    { name: "screens", testMatch: /(auth|delivery|ai|mcp|secrets)\.spec\.ts/ },
+    { name: "visual", testMatch: /delivery-visual\.spec\.ts/ },
+    { name: "amx", testMatch: /amx\.setup\.ts/, dependencies: ["visual"] },
+    { name: "screens", testMatch: /(auth|delivery|ai|mcp|secrets)\.spec\.ts/, dependencies: ["amx"] },
     { name: "writes", testMatch: /(chat|releases)\.spec\.ts/, dependencies: ["screens"] },
   ],
   workers: 1,

@@ -16,10 +16,11 @@ export function PinButton({ pin, inline }: { pin: PinRef; inline?: boolean }) {
 }
 
 // A create button marked with a chat intent: opens the chat in that mode, no module form needed (AC-2).
+// The spark marks "add with amax", as in the mock (041).
 export function IntentButton({ intent, label, primary = true }: { intent: string; label: string; primary?: boolean }) {
   return (
-    <button type="button" className={primary ? "btn primary" : "btn"} data-intent={intent} onClick={() => openChat({ intent, prompt: label })}>
-      <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 16, height: 16, fill: "none", stroke: "currentColor", strokeWidth: 2 }}><path d="M12 5v14M5 12h14" /></svg>
+    <button type="button" className={primary ? "btn primary" : "btn"} data-intent={intent} title="Add with amax" onClick={() => openChat({ intent, prompt: label })}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 16, height: 16, fill: "currentColor", stroke: "none" }}><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z" /></svg>
       {label}
     </button>
   );
