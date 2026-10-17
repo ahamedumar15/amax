@@ -1,0 +1,72 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [
+  "fdf365960904"
+ ],
+ "files": [
+  "apps/web/tests/e2e/global-auth.ts",
+  "modules/delivery/README.md",
+  "modules/delivery/db/migrations/0010_clock_pin_shipped_source.sql",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/tests/ui-logic.test.ts",
+  "modules/delivery/ui/ReleasesPage.tsx",
+  "modules/delivery/ui/charts.tsx"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/ui/ReleasesPage.tsx",
+   "fp": "fdf365960904",
+   "in_delta": true,
+   "line": 72,
+   "message": "The round-3 redesign counts a release as 'in flight' when it has reached a stage and is not Live (`!x.s.live`). That test cannot tell a release that is moving from one that was abandoned or rolled back. Any such release is kept with no age limit (the 45-day window applies only to Live ones). It also suppresses the project's current Live release completely. A Dev deployment that stalled or failed long ago therefore keeps the real Live release off the map forever. Before this round, that release was still shown. The 'only failed' row encodes this: a failed-only v2 hides the Live v1. Fix: treat a release as in flight only when its latest reached stage is newer than the project's current Live Prod deployment, or apply the same 45-day window to it. Ignore voided, rolled-back or failed-only releases older than the current Live one. Add table rows for (a) an old abandoned Dev-only release next to a recent Live one, and (b) an older release whose Prod deploy was rolled back next to a newer Live one.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Project p1 has v0.5, deployed to Dev on 2025-03-01 and never promoted, and v1, deployed to Prod on 2026-10-01; now = 2026-10-16. onActiveMap returns [v0.5], so the Live v1 is missing and a 19-month-old Dev build is shown as the active release. Before round 3 the result included v1.",
+   "severity": "major"
+  }
+ ],
+ "head": "a41d425a46ca8aa76f65a28f1aa4c87f7fe65453",
+ "impact": [
+  "apps/web/app/(app)/settings/ai/actions.ts",
+  "apps/web/app/(app)/settings/integrations/page.tsx",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/server/context.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/delivery.test.ts",
+  "packages/ai/src/admin.ts",
+  "packages/auth/src/authjs.ts",
+  "packages/auth/src/can.ts",
+  "packages/auth/src/events.ts",
+  "packages/auth/src/principals.ts",
+  "packages/auth/src/revoke.ts",
+  "packages/auth/src/schema.ts",
+  "packages/auth/src/sensitivity.ts",
+  "packages/auth/src/session.ts",
+  "packages/auth/src/viewer.ts",
+  "packages/auth/tests/ac4-masking.test.ts",
+  "packages/auth/tests/ac7-tenant.test.ts",
+  "packages/auth/tests/ac8-scim.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 43835,
+ "round": 4,
+ "since": "7cad3c6da1",
+ "status": "escalate",
+ "system_chars": 20897,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792243190,
+ "ts_start": 1792243138
+}
