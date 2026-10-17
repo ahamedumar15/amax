@@ -1,6 +1,6 @@
 # Building on two machines
 
-Two Claude Code sessions build amax at the same time: **mac** (this machine) and **vps** (a VPS). They coordinate only through git on `github.com/chan4lk/amax`. There's no other service to run.
+Two Claude Code sessions build amax at the same time: **vps** (the primary, a VPS that also hosts https://amax.tecbizsolutions.com) and **mac** (the secondary). They coordinate only through git on `github.com/chan4lk/amax`. There's no other service to run.
 
 ## How it works
 
@@ -19,8 +19,10 @@ The lane split keeps the machines in different folders, so merges stay trivial.
 
 | Machine | Lanes | Changes | Starts |
 |---|---|---|---|
-| mac | Platform, Delivery, Finance, Intelligence | 001–010, 017–019, 025–027, 029–035, 038, 039 | now (001 is approved) |
-| vps | People, Payroll, IT, Talent, Sales, Integrations | 011–016, 020–024, 028, 036, 037 | once 002 and 003 are archived (011 HR core is its first) |
+| vps (primary) | Platform, Delivery, Finance, Intelligence | 002–010, 017–019, 025–027, 029–035, 038, 039 | now (002 and 003 are approved) |
+| mac (secondary) | People, Payroll, IT, Talent, Sales, Integrations | 011–016, 020–024, 028, 036, 037 | once 002 and 003 are archived (011 HR core is its first) |
+
+The primary owns the critical path (platform, then delivery) and the deployment; the secondary picks up module lanes and helps the primary when its lanes have nothing ready.
 
 When one machine runs out of ready work in its lanes, run `next` with no `--lanes` and it will take anything ready.
 
@@ -41,20 +43,20 @@ When one machine runs out of ready work in its lanes, run `next` with no `--lane
 - Each module change publishes its `contracts.ts` (with stubs) in its first task and pushes it early, so the other machine can build against it.
 - Never claim or build a change that isn't approved. Approvals stay with the product owner.
 
-## Setting up the VPS
+## Setting up the secondary (mac)
 
-1. Install Node 22+, pnpm, Docker (for local Postgres and MinIO), `git` and `gh` (`gh auth login` as an account with push access to `chan4lk/amax`).
+1. Install Node 22+, pnpm, Docker or Podman (for local Postgres and MinIO), `git` and `gh` (`gh auth login` as an account with push access to `chan4lk/amax`).
 2. Install Claude Code and the specclaw plugin: `/plugin` → `chan4lk/specclaw`.
 3. `git clone https://github.com/chan4lk/amax && cd amax`.
 4. Start Claude Code in the repo and give it the prompt below.
 
-### Prompt for the VPS agent
+### Prompt for the mac agent
 
-> You are the **vps** builder for amax. Read `docs/parallel-builds.md`, `docs/architecture.md` and `docs/module-standard.md` first. Work only on lanes People, Payroll, IT, Talent, Sales and Integrations.
+> You are the **mac** builder for amax, the secondary machine. Read `docs/parallel-builds.md`, `docs/architecture.md` and `docs/module-standard.md` first. Work only on lanes People, Payroll, IT, Talent, Sales and Integrations.
 >
 > Loop:
-> 1. Run `node scripts/queue.mjs next --machine vps --lanes People,Payroll,IT,Talent,Sales,Integrations`. If it prints "nothing ready", wait 30 minutes (`node scripts/queue.mjs status` shows what you're waiting on) and try again.
+> 1. Run `node scripts/queue.mjs next --machine mac --lanes People,Payroll,IT,Talent,Sales,Integrations`. If it prints "nothing ready", wait 30 minutes (`node scripts/queue.mjs status` shows what you're waiting on) and try again.
 > 2. For the claimed change, run `/specclaw:plan`, `/specclaw:build`, `/specclaw:verify` and `/specclaw:pr`.
 > 3. When CI is green, merge, then `/specclaw:archive` and push.
 >
-> Never edit `packages/*`, `apps/web`, the mock, or another module's folder. Never claim a change that isn't approved. If something in a platform package blocks you, release the claim (`node scripts/queue.mjs release <id> --machine vps`) and write the blocker in that change's `status.md` Issues section.
+> Never edit `packages/*`, `apps/web`, the mock, or another module's folder. Never claim a change that isn't approved. If something in a platform package blocks you, release the claim (`node scripts/queue.mjs release <id> --machine mac`) and write the blocker in that change's `status.md` Issues section.
