@@ -1,0 +1,97 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/app/(app)/settings/workflows/page.tsx",
+  "apps/web/lib/admin/workflows.ts",
+  "apps/web/tests/admin/review-052.test.ts",
+  "packages/chat/tests/decided-trace-fail.test.ts",
+  "packages/core/src/audit-export.ts",
+  "packages/mcp/src/registry.ts",
+  "packages/mcp/tests/registry-step.test.ts",
+  "packages/workflows/src/views.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/core/src/audit-export.ts",
+   "fp": "22d8384d7acd",
+   "in_delta": true,
+   "line": 37,
+   "message": "The new `pg_advisory_xact_lock` claims that overlapping exports of the same (tenant, day) can't both record it. This round adds no test that runs two real exports at once. Every test in the diff stays green if the lock line is deleted, so nothing proves the guarantee. Fix: add a race test that starts two `exportAuditDay` calls for the same tenant and day on separate connections with `Promise.all`. Assert that each key is put once, there is one recorded export, and neither call fails with ObjectLockedError. The test must fail when the lock is removed.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "The daily job and a manual retry export tenant T, day 2026-10-16, on two connections at once. Delete the advisory-lock line and the suite still passes, even though both runs can record the day and the second put can hit ObjectLockedError.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/lib/admin/workflows.ts",
+   "fp": "1c9eccf980eb",
+   "in_delta": false,
+   "line": 30,
+   "message": "The 'latest runs' window is now written in three places: `LATEST = 50` in workflows.ts, the literal `{ limit: 50 }` in apps/web/lib/admin/status.ts:46 (whose failed count is the same within-latest count), and the `limit ?? 50` default in `listRuns`. Today they agree. If someone changes only `LATEST`, the status area's failed count and the `withinLatest` pin read different windows. Fix: share one constant.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B4",
+   "scenario": "Set LATEST to 100: the settings status area counts failed runs among the latest 50, while the 'Failed runs' pin (withinLatest) resolves over the latest 100, so the two numbers can differ.",
+   "severity": "minor"
+  },
+  {
+   "file": "packages/workflows/src/views.ts",
+   "fp": "25039ded3443",
+   "in_delta": true,
+   "line": 38,
+   "message": "`listRuns` now takes `status: RunStatus[]`, but an empty array falls through to `sql\\`true\\``. \"Filter to none of these statuses\" then quietly becomes \"all runs\". The MCP tool blocks this with `.min(1)`, but other code that calls `listRuns` directly has no such guard. Reject an empty array, or return [] for it.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "listRuns(db, wf, T, see, { status: [] }) \u2192 the latest 50 runs of every status, not none.",
+   "severity": "minor"
+  }
+ ],
+ "head": "3baf3334f0853936607ca9453360d35c1be69e51",
+ "impact": [
+  ".github/actions/setup/action.yml",
+  ".github/dependabot.yml",
+  ".github/workflows/ci.yml",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dependency-review.yml",
+  ".github/workflows/pages.yml",
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/page.tsx",
+  "apps/web/app/api/jobs/tick/route.ts",
+  "apps/web/components/settings/AskButton.tsx",
+  "apps/web/components/shell/ProfileMenu.tsx",
+  "apps/web/components/workflows/RunsCard.tsx",
+  "apps/web/components/workflows/SchedulesCard.tsx",
+  "apps/web/lib/admin/status.ts",
+  "apps/web/playwright.auth.config.ts",
+  "apps/web/tests/admin/tools.test.ts",
+  "apps/web/tests/e2e/workflows.spec.ts",
+  "apps/web/tests/tick.test.ts",
+  "deploy/helm/amax/values.yaml"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 60795,
+ "round": 4,
+ "since": "c22dfdf",
+ "status": "open",
+ "system_chars": 31090,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792262306,
+ "ts_start": 1792262254
+}
