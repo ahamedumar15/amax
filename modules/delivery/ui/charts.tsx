@@ -32,6 +32,9 @@ export function runs(data: (number | null)[]): [number, number][][] {
   return out;
 }
 
+/** The axis top: at least `floor`, rounded up to a whole step so no value is drawn past it. */
+export const axisMax = (values: (number | null)[], floor: number, step: number) => Math.max(floor, Math.ceil(Math.max(0, ...values.map((x) => x ?? 0)) / step) * step);
+
 /** A null point is a week with no data (see runs). */
 export type Series = { name: string; color: string; data: (number | null)[]; area?: boolean; dashed?: boolean };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ReleaseRow } from "../server/queries";
-import { runs } from "../ui/charts";
+import { axisMax, runs } from "../ui/charts";
 import { csvCell, csvText } from "../ui/csv";
 import { count } from "../ui/ProjectsPage";
 import { actionFor, mapPill, mapRow, nextStep, onActiveMap, standing } from "../ui/ReleasesPage";
@@ -106,4 +106,13 @@ describe("line chart draws the latest marker only when the latest week has data"
     const html = renderToStaticMarkup(createElement(LineChart, { id: "t", label: "t", labels: ["W1", "W2", "W3"], max: 4, step: 2, series: [{ name: "Done", color: "#000", data: data as (number | null)[] }] }));
     expect(html.match(/r="5"/g)?.length ?? 0).toBe(markers);
   });
+});
+
+describe("the line chart's axis grows with the data (final review)", () => {
+  it.each([
+    ["the mock's data keeps 40", [24, 38, 36, null], 40],
+    ["a week above 40 rounds up to the next step", [24, 41], 50],
+    ["exactly on a step", [60], 60],
+    ["no data keeps the floor", [null, null], 40],
+  ])("%s", (_, values, want) => expect(axisMax(values as (number | null)[], 40, 10)).toBe(want));
 });

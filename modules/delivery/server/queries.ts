@@ -80,6 +80,8 @@ const clockOf = async (tx: Tx): Promise<Date> => {
   return r ? new Date(`${r.today as string}T15:00:00Z`) : new Date();
 };
 export const today = (v: Viewer) => read(v, clockOf);
+/** The end of "today" (UTC): windows stop there, so a pin earlier than real time never counts later rows (final review). */
+const endOfDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
 
 const isoWeek = (d: Date) => {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -114,9 +116,10 @@ export const weeklyThroughput = (v: Viewer, now?: Date) =>
  */
 export const shippedPerWeek = (v: Viewer, now?: Date) =>
   read(v, async (tx) => {
-    const weeks = lastWeeks(now ?? (await clockOf(tx)));
+    const at = now ?? (await clockOf(tx));
+    const weeks = lastWeeks(at);
     const rows = await tx.execute(sql`select date_trunc('week', released_at at time zone 'UTC')::date::text as week, count(*)::int as n
-      from delivery.proposal p where p.phase = 'released' and released_at >= ${`${weeks[0].monday}T00:00:00Z`} and ${ACTIVE} group by 1`);
+      from delivery.proposal p where p.phase = 'released' and released_at >= ${`${weeks[0].monday}T00:00:00Z`} and released_at < ${endOfDay(at)} and ${ACTIVE} group by 1`);
     return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
   });
 
@@ -125,7 +128,7 @@ export const phaseCounts = (v: Viewer, at?: Date) =>
   read(v, async (tx) => {
     const now = at ?? (await clockOf(tx));
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month})::int as this_month from delivery.proposal p where ${ACTIVE} group by phase`);
+    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month} and released_at < ${endOfDay(now)})::int as this_month from delivery.proposal p where ${ACTIVE} group by phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
     const counts = { proposed: Number(get("proposed")?.n ?? 0), planned: Number(get("planned")?.n ?? 0), building: Number(get("building")?.n ?? 0), verified: Number(get("verified")?.n ?? 0) };
     return { ...counts, inFlight: counts.proposed + counts.planned + counts.building + counts.verified, releasedThisMonth: Number(get("released")?.this_month ?? 0) };

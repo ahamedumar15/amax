@@ -95,7 +95,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     const rel = await listReleases(maya);
     expect(rel.map((r) => `${r.projectKey} ${r.version} ${r.proposals}`)).toEqual(["CON v2.5.0 3", "CON v2.4.0 2", "FLT v1.8.0 5", "HRI v0.9.2 4",
       "CON v2.3.0 1", "FLT v1.7.0 2", "HRI v0.9.0 3", "FLT v1.7.1 1", "HRI v0.9.1 4", "FLT v1.7.2 3", "FLT v1.7.3 1"]);
-    // The Active map is the mock's four: in flight, plus HRI's live v0.9.2; superseded live releases drop off.
+    // The Active map is the mock's three rows: CON and FLT in flight, HRI's live v0.9.2; older live releases drop off.
     expect(onActiveMap(rel, new Date("2026-10-16T15:00:00Z")).map((r) => `${r.projectKey} ${r.version}`)).toEqual(["CON v2.4.0", "FLT v1.8.0", "HRI v0.9.2"]);
     // Every released proposal, in every project, has a real release that reached Prod (review rounds 1 and 2).
     const orphans = await withTenant(app, T, (tx) => tx.execute(sql`select p.key from delivery.proposal p where p.phase = 'released' and not exists (
@@ -138,6 +138,14 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
       expect((await shippedPerWeek(maya)).labels.at(-1)).toBe("W42");
       expect((await weeklyThroughput(maya)).done.at(-1)).toBe(38);
       expect((await phaseCounts(maya)).releasedThisMonth).toBe(5);
+      // Windows stop at the pinned day: a release recorded after it is not counted (final review).
+      await withTenant(app, T, (tx) => tx.execute(sql`update delivery.proposal set released_at = '2026-10-20T10:00:00Z' where key = 'HRI-100'`));
+      try {
+        expect((await phaseCounts(maya)).releasedThisMonth).toBe(4);
+        expect((await shippedPerWeek(maya)).values.slice(-3)).toEqual([4, 1, 0]);
+      } finally {
+        await withTenant(app, T, (tx) => tx.execute(sql`update delivery.proposal set released_at = '2026-10-01T09:00:00Z' where key = 'HRI-100'`));
+      }
       // A pin is a date: anything else is refused by the column.
       await expect(withTenant(app, T, (tx) => tx.execute(sql`update delivery.clock_pin set today = 'yesterday-ish'`))).rejects.toThrow();
     } finally {

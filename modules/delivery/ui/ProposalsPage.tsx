@@ -15,11 +15,12 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Proposals</h1><SignInFirst /></>;
   const phase = (PHASES as readonly string[]).includes(params.phase ?? "") ? (params.phase as Phase) : undefined;
-  const page = Math.max(1, Number(searchParams.page ?? 1) || 1);
+  const asked = Math.max(1, Number(searchParams.page ?? 1) || 1);
   const [counts, rows, shipped, projects] = await Promise.all([phaseCounts(viewer), listProposals(viewer, { phase, projectKey: searchParams.project }), shippedPerWeek(viewer), listProjects(viewer, "active")]);
   const bar: [Phase, number, string][] = [["proposed", counts.proposed, "Proposed"], ["planned", counts.planned, "Planned"], ["building", counts.building, "Building"], ["verified", counts.verified, "Verified"], ["released", counts.releasedThisMonth, "Released this month"]];
   const recent = shipped.values.slice(-4).reduce((a, b) => a + b, 0), prior = shipped.values.slice(0, 4).reduce((a, b) => a + b, 0);
   const trend = prior ? ((recent - prior) / prior) * 100 : null;
+  const page = Math.min(asked, Math.max(1, Math.ceil(rows.length / PAGE)));
   const shown = rows.slice((page - 1) * PAGE, page * PAGE);
   const base = phase ? `/delivery/proposals/${phase}` : "/delivery/proposals";
   const href = (p: number) => `${base}?${new URLSearchParams({ ...(searchParams.project ? { project: searchParams.project } : {}), page: String(p) })}`;
@@ -44,7 +45,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
         <div className="card-head">
           <nav className="seg" aria-label="Phase">
             {FILTERS.map((f) => (
-              <a key={f} href={f === "all" ? "/delivery/proposals" : `/delivery/proposals/${f}`} aria-current={(f === "all" ? !phase : phase === f) ? "true" : undefined}>{f === "all" ? "All" : PHASE_UI[f].label}</a>
+              <a key={f} href={`${f === "all" ? "/delivery/proposals" : `/delivery/proposals/${f}`}${searchParams.project ? `?${new URLSearchParams({ project: searchParams.project })}` : ""}`} aria-current={(f === "all" ? !phase : phase === f) ? "true" : undefined}>{f === "all" ? "All" : PHASE_UI[f].label}</a>
             ))}
           </nav>
           <div className="actions">

@@ -2,7 +2,7 @@ import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton, Ticket } from "@amax/ui";
 import { listProjects, weeklyThroughput } from "../server/queries";
 import { ART_SPRITE } from "./art";
-import { Donut, LineChart } from "./charts";
+import { axisMax, Donut, LineChart } from "./charts";
 import { Avatar } from "./Avatar";
 import { ClientFilter } from "./ClientFilter";
 import { FilterMenu } from "./FilterMenu";
@@ -33,6 +33,8 @@ export async function ProjectsPage({ viewer: raw, searchParams = {} }: ScreenPro
   const pct = value ? Math.round((invoiced / value) * 100) : 0;
   const shownClients = new Set(projects.map((p) => p.client)).size;
   const noWeekly = weekly.done.every((d) => d === null) && weekly.planned.every((d) => d === null);
+  // The axis grows with the data (40 at least, as in the mock), so no week is drawn past the top.
+  const yMax = axisMax([...weekly.planned, ...weekly.done], 40, 10);
   const lede = [
     `${count(projects.length, `${status} project`)} for ${count(shownClients, "client")}.`,
     [atRisk.length ? `${atRisk.map((p) => p.name).join(" and ")} ${atRisk.length > 1 ? "are" : "is"} at risk` : "", onTrack ? `${onTrack.name} is on track for ${version(onTrack.nextRelease)}` : ""].filter(Boolean).join("; "),
@@ -54,7 +56,7 @@ export async function ProjectsPage({ viewer: raw, searchParams = {} }: ScreenPro
         <div className="card pinnable">
           <div className="card-head"><h2>Tasks done per week</h2><PinButton inline pin={{ label: "Tasks done per week", tool: "list_projects", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>All projects</span></div>
           {noWeekly ? <p className="muted empty">No weekly task data yet. It appears once task events are ingested.</p> : (
-            <LineChart id="tasksWeek" label="Tasks done per week against plan" labels={weekly.labels} max={40} step={10}
+            <LineChart id="tasksWeek" label="Tasks done per week against plan" labels={weekly.labels} max={yMax} step={10}
               series={[{ name: "Planned", color: "#C3B5FF", data: weekly.planned, dashed: true }, { name: "Done", color: "#7B61FF", data: weekly.done, area: true }]} />)}
           <div className="legend"><span><i style={{ background: "var(--violet)" }} />Done</span><span><i style={{ background: "repeating-linear-gradient(90deg,#C3B5FF 0 5px,transparent 5px 9px)" }} />Planned</span></div>
         </div>
