@@ -1,0 +1,7 @@
+.audit-tile{position:relative;display:grid;min-width:0}
+.audit-tile>.ticket{height:100%}
+.audit-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.audit-filter input[type=search]{min-width:min(260px,100%)}
+.trace-steps{margin:0;padding-left:22px;display:grid;gap:10px}
+.trace-steps li{position:relative;padding-right:44px;line-height:1.5}
+.trace-steps li .pin{top:50%;margin-top:-15px;right:0}

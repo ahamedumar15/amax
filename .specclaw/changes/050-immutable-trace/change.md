@@ -27,7 +27,7 @@ What changes on screen, and where to see it: [`050-immutable-trace`](../../mock/
 
 ## Tasks
 
-- [ ] `T1` — Audit and trace screen at `/settings/audit`: chain tickets, last export, filterable event list and trace timeline, read only, a pin on every ticket and row (AC-4, AC-5)
+- [x] `T1` — Audit and trace screen at `/settings/audit`: chain tickets, last export, filterable event list and trace timeline, read only, a pin on every ticket and row (AC-4, AC-5)
   Files: apps/web/app/(app)/settings/audit/page.tsx, apps/web/app/(app)/settings/audit/audit.css, apps/web/components/shell/ProfileMenu.tsx, apps/web/tests/e2e/audit.spec.ts
 - [x] `T2` — Migration 0021: `core.trace_event` (RLS, insert-only, chained), `trace_id` on `ai.call` and `core.audit_event`, keyed-hash columns for audit chain v2, append-only triggers (ai.call blocks non-owner roles so later owner migrations still run), `core.erase_subject()` (AC-1, AC-2, AC-3, AC-7)
   Files: packages/db/migrations/0021_immutable_trace.sql, packages/core/src/schema.ts

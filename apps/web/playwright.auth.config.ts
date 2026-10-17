@@ -17,6 +17,8 @@ export default defineConfig({
     { name: "amx", testMatch: /amx\.setup\.ts/, dependencies: ["visual"] },
     { name: "screens", testMatch: /(auth|delivery|ai|mcp|secrets|workflows)\.spec\.ts/, dependencies: ["amx"] },
     { name: "writes", testMatch: /(chat|releases)\.spec\.ts/, dependencies: ["screens"] },
+    // 050 reads the traces chat wrote, then tampers with the trace chain, so it runs last.
+    { name: "audit", testMatch: /audit\.spec\.ts/, dependencies: ["writes"] },
   ],
   workers: 1,
   forbidOnly: !!process.env.CI,

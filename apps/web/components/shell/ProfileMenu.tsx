@@ -76,6 +76,7 @@ export function ProfileMenu({ profile, onViewAs, onSignOut }: Props) {
               <a role="menuitem" href="/settings/integrations" style={{ display: "block", padding: "8px 12px", borderRadius: 10, fontSize: 14, color: "inherit", textDecoration: "none" }}>Integrations</a>
               <a role="menuitem" href="/settings/keys" style={{ display: "block", padding: "8px 12px", borderRadius: 10, fontSize: 14, color: "inherit", textDecoration: "none" }}>Connections and keys</a>
               <a role="menuitem" href="/settings/workflows" style={{ display: "block", padding: "8px 12px", borderRadius: 10, fontSize: 14, color: "inherit", textDecoration: "none" }}>Scheduler and runs</a>
+              <a role="menuitem" href="/settings/audit" style={{ display: "block", padding: "8px 12px", borderRadius: 10, fontSize: 14, color: "inherit", textDecoration: "none" }}>Audit and trace</a>
             </>
           )}
           {profile && onSignOut && (
