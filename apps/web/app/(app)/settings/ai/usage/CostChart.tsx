@@ -4,7 +4,6 @@ import type { AiUsage } from "@amax/ai/usage";
 
 const dayLabel = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
-/** One point per day of the month; each point is pinnable and reachable by keyboard. */
 export function CostChart({ usage, days }: { usage: AiUsage; days: string[] }) {
   const byDay = new Map(usage.byDay.map((d) => [d.day, d]));
   const max = Math.max(0.01, ...usage.byDay.map((d) => d.costUsd ?? 0));

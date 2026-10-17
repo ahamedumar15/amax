@@ -54,14 +54,26 @@ async function grouped(tx: Tx, where: SQL) {
   };
 }
 
-/** One query for the AI usage screen, the chat footer and get_ai_usage, so all three show the same numbers. */
-export async function aiUsage(db: Db, viewer: UsageViewer, q: UsageQuery): Promise<AiUsage> {
+function filter(viewer: UsageViewer, q: UsageQuery) {
   if (q.scope === "tenant" && !viewer.roles.includes("Admin")) throw new ForbiddenError("read", "ai.usage of the tenant");
   const month = q.month ?? monthOf();
   const [from, to] = range(month);
   const parts = [sql`c.at >= ${from} and c.at < ${to}`];
   if (q.scope === "self") parts.push(sql`c.user_id = ${viewer.userId}`);
   if (q.source) parts.push(sql`c.source in (${sql.join(USAGE_SOURCES[q.source].map((s) => sql`${s}`), sql`, `)})`);
-  const data = await withTenant(db, viewer.tenantId, (tx) => grouped(tx, sql.join(parts, sql` and `)));
+  return { month, where: sql.join(parts, sql` and `) };
+}
+
+/** One query for the AI usage screen and get_ai_usage, so both show the same numbers. */
+export async function aiUsage(db: Db, viewer: UsageViewer, q: UsageQuery): Promise<AiUsage> {
+  const { month, where } = filter(viewer, q);
+  const data = await withTenant(db, viewer.tenantId, (tx) => grouped(tx, where));
   return { scope: q.scope, month, source: q.source ?? null, ...data };
+}
+
+/** Totals only, the same filter and sums as aiUsage: one query, cheap enough for the chat footer on every page. */
+export async function aiUsageTotals(db: Db, viewer: UsageViewer, q: UsageQuery): Promise<UsageTotals> {
+  const { where } = filter(viewer, q);
+  const [row] = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select ${TOTALS} from ai.call c where ${where}`));
+  return totals(row);
 }

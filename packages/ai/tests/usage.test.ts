@@ -3,7 +3,7 @@ import type { Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { configureRuntime, ForbiddenError } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
-import { aiUsage } from "../src/usage";
+import { aiUsage, aiUsageTotals } from "../src/usage";
 import { costLabel } from "../src/usage-format";
 import { getAiUsageTool } from "../src/usage-tool";
 
@@ -36,6 +36,8 @@ describe.skipIf(!hasDb)("048 AI usage", () => {
     const mine = await aiUsage(app, { tenantId: T, userId: NIMAL, roles: ["Engineer"] }, { scope: "self", month: "2026-10" });
     expect(mine.totals).toMatchObject({ calls: 1, people: 1 });
     expect(mine.byPerson.map((p) => p.name)).toEqual(["Nimal Example"]);
+    const { people: _, ...footer } = mine.totals;
+    expect(await aiUsageTotals(app, { tenantId: T, userId: NIMAL, roles: ["Engineer"] }, { scope: "self", month: "2026-10" })).toEqual(footer);
     await expect(aiUsage(app, { tenantId: T, userId: NIMAL, roles: ["Engineer", "PM"] }, { scope: "tenant", month: "2026-10" })).rejects.toBeInstanceOf(ForbiddenError);
     await expect(getAiUsageTool.run(viewer(NIMAL, "Engineer"), { scope: "tenant" })).rejects.toBeInstanceOf(ForbiddenError);
   });

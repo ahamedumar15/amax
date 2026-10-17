@@ -13,8 +13,9 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const viewer = await getViewer();
   if (!viewer) return <Shell items={navItems}>{children}</Shell>;
+  const [voice, usage] = await Promise.all([voiceEnabled(viewer.tenantId), myChatUsage(viewer)]);
   return (
-    <Shell items={visibleNav(navItems, viewer)} profile={profileOf(viewer)} banner={viewBanner(viewer)} onViewAs={viewAsAction} onSignOut={signOutAction} voice={await voiceEnabled(viewer.tenantId)} usage={await myChatUsage(viewer)}>
+    <Shell items={visibleNav(navItems, viewer)} profile={profileOf(viewer)} banner={viewBanner(viewer)} onViewAs={viewAsAction} onSignOut={signOutAction} voice={voice} usage={usage}>
       {children}
     </Shell>
   );
