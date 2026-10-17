@@ -1,7 +1,7 @@
 # Insights: briefing, risk, opportunities, market
 
 **Change:** 026-insights · **Created:** 2026-10-17
-**Lane:** Intelligence · **Module:** `modules/insights` · **Depends on:** [006](../006-agent-governance/change.md), [007](../007-delivery-projects/change.md), [009](../009-time-and-approvals/change.md), [011](../011-hr-core/change.md), [020](../020-presales/change.md)
+**Lane:** Intelligence · **Module:** `modules/insights` · **Depends on:** [006](../006-agent-governance/change.md), [007](../007-delivery-projects/change.md), [009](../009-time-and-approvals/change.md), [011](../011-hr-core/change.md), [020](../020-presales/change.md), [029](../029-workflows-scheduler/change.md)
 
 ## Problem
 

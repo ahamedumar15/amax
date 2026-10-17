@@ -20,7 +20,8 @@ agents  ──► │        module registry (loads every module)              �
 | Database | Postgres through **Drizzle ORM** with the `postgres` driver | Works in Node and on Cloudflare Workers (via Hyperdrive); Neon, Supabase, RDS and an in-cluster Postgres all just work |
 | Auth | Auth.js (NextAuth v5) with OIDC; Microsoft Entra ID is the first provider | Google Workspace and Okta work later through the same code path |
 | Files | An S3 API | AWS S3, Cloudflare R2, or MinIO on k3s |
-| Background work | Jobs are plain functions in modules. `runDueJobs()` is triggered by Vercel Cron, a Cloudflare Cron Trigger, or a `worker` Deployment on k3s that calls it in a loop | No queue product to run; job state lives in Postgres (`core.job`) |
+| Background work | `@amax/workflows`: durable workflows (`step`, `sleep`, `waitForEvent`, `cron`) for agent runs and schedules. Default engine: Postgres, driven by the tick (Vercel Cron, Cloudflare Cron Trigger, or the k3s `worker` Deployment). Optional engine: **Temporal** (self-hosted on k3s or Temporal Cloud) for heavy, long agent runs | The same module code runs on either engine; nothing extra to operate unless you choose Temporal |
+| Notifications | `modules/notifications` turns domain events into in-app, email (Graph/SMTP) and Teams messages, with preferences, digests and quiet hours | Modules never send messages themselves |
 | Events between modules | Transactional outbox (`core.event`), processed by `runDueJobs()` | No message broker required |
 | Config | Environment variables only, validated at boot | The same config works on every host |
 | Deploy artifacts | `vercel.json`, `wrangler.jsonc` (OpenNext), `Dockerfile` and `deploy/helm/amax` | CI builds all three on every pull request |
@@ -40,11 +41,12 @@ packages/
   mcp/                 MCP server; modules register tools here
   chat/                amax chat engine; modules register intents here
   agents/              suggestions (evidence, confidence, approve, undo), the agent run model
+  workflows/           durable workflow API; Postgres engine (default) and Temporal adapter
   testing/             fixtures loader, contract tests, a11y and visual-diff helpers
 modules/
   delivery/  time/  allocations/  hr/  leave/  onboarding/  payroll/  payroll-lk/  payroll-au/
   finance/  expenses/  accounting/  presales/  it-access/  helpdesk/  recruitment/  learning/
-  insights/  reports/  inbox-agent/  keyflow/
+  insights/  reports/  inbox-agent/  keyflow/  notifications/
 deploy/
   helm/amax/           web Deployment, worker Deployment, Ingress, Postgres optional (bitnami subchart)
 ```

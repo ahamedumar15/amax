@@ -1,7 +1,7 @@
 # Delivery: specclaw and git ingestion
 
 **Change:** 008-delivery-ingestion · **Created:** 2026-10-17
-**Lane:** Delivery · **Module:** `modules/delivery (ingestion)` · **Depends on:** [007](../007-delivery-projects/change.md), [006](../006-agent-governance/change.md)
+**Lane:** Delivery · **Module:** `modules/delivery (ingestion)` · **Depends on:** [007](../007-delivery-projects/change.md), [006](../006-agent-governance/change.md), [029](../029-workflows-scheduler/change.md)
 
 ## Problem
 

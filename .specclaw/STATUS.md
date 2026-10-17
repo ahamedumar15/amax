@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 01:22 UTC
+**Last Updated:** 2026-10-17 01:32 UTC
 
 ## Active Changes
 
@@ -38,6 +38,8 @@ _No active changes._
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **027-reports** — proposal ready, awaiting planning
 - 📋 **028-keyflow-sync** — proposal ready, awaiting planning
+- 📋 **029-workflows-scheduler** — proposal ready, awaiting planning
+- 📋 **030-notifications** — proposal ready, awaiting planning
 
 ## Recently Completed
 

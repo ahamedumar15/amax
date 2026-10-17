@@ -1,7 +1,7 @@
 # Inbox agent: Teams and email to suggestions
 
 **Change:** 025-inbox-agent · **Created:** 2026-10-17
-**Lane:** Intelligence · **Module:** `modules/inbox-agent` · **Depends on:** [006](../006-agent-governance/change.md), [005](../005-amax-chat/change.md)
+**Lane:** Intelligence · **Module:** `modules/inbox-agent` · **Depends on:** [006](../006-agent-governance/change.md), [005](../005-amax-chat/change.md), [029](../029-workflows-scheduler/change.md)
 
 ## Problem
 

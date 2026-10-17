@@ -93,9 +93,9 @@ Proposals in the same wave have no dependency on each other, so separate teams o
 |---|---|
 | 0 | 001 amax-foundation (Platform) |
 | 1 | 002 identity-and-access (Platform), 003 data-core (Platform) |
-| 2 | 004 mcp-gateway (Platform), 006 agent-governance (Platform), 007 delivery-projects (Delivery), 011 hr-core (People) |
-| 3 | 005 amax-chat (Platform), 008 delivery-ingestion (Delivery), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 013 onboarding-offboarding (People), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 020 presales (Sales), 021 it-access-licences (IT), 022 helpdesk (IT), 023 recruitment (Talent), 024 learning (Talent), 028 keyflow-sync (Integrations) |
-| 4 | 014 payroll-engine (Payroll), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
+| 2 | 004 mcp-gateway (Platform), 007 delivery-projects (Delivery), 011 hr-core (People), 029 workflows-scheduler (Platform) |
+| 3 | 005 amax-chat (Platform), 006 agent-governance (Platform), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 013 onboarding-offboarding (People), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 020 presales (Sales), 023 recruitment (Talent), 024 learning (Talent), 028 keyflow-sync (Integrations), 030 notifications (Platform) |
+| 4 | 008 delivery-ingestion (Delivery), 014 payroll-engine (Payroll), 021 it-access-licences (IT), 022 helpdesk (IT), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
 | 5 | 015 payroll-sri-lanka (Payroll), 016 payroll-australia (Payroll), 019 accounting-journals (Finance) |
 
 ```mermaid
@@ -128,6 +128,8 @@ graph LR
   P026["026 insights"]
   P027["027 reports"]
   P028["028 keyflow-sync"]
+  P029["029 workflows-scheduler"]
+  P030["030 notifications"]
   P001 --> P002
   P001 --> P003
   P002 --> P004
@@ -137,10 +139,12 @@ graph LR
   P004 --> P005
   P002 --> P006
   P003 --> P006
+  P029 --> P006
   P002 --> P007
   P003 --> P007
   P007 --> P008
   P006 --> P008
+  P029 --> P008
   P007 --> P009
   P002 --> P009
   P007 --> P010
@@ -171,23 +175,29 @@ graph LR
   P011 --> P024
   P006 --> P025
   P005 --> P025
+  P029 --> P025
   P006 --> P026
   P007 --> P026
   P009 --> P026
   P011 --> P026
   P020 --> P026
+  P029 --> P026
   P009 --> P027
   P010 --> P027
   P011 --> P028
+  P003 --> P029
+  P002 --> P030
+  P003 --> P030
+  P029 --> P030
 ```
 
 ## Lanes and owners
 
-Each lane can be given to one team; the platform team owns waves 0–2 and reviews module contracts.
+Each lane can be given to one team; the platform team owns the platform lane and reviews module contracts.
 
 | Lane | Proposals | Module folders (CODEOWNERS) |
 |---|---|---|
-| Platform | 001, 002, 003, 004, 005, 006 | `apps/web`, `packages/agents`, `packages/auth`, `packages/chat`, `packages/core`, `packages/mcp` |
+| Platform | 001, 002, 003, 004, 005, 006, 029, 030 | `apps/web`, `modules/notifications`, `packages/agents`, `packages/auth`, `packages/chat`, `packages/core`, `packages/mcp`, `packages/workflows` |
 | Delivery | 007, 008, 009, 010, 027 | `modules/allocations`, `modules/delivery`, `modules/reports`, `modules/time` |
 | People | 011, 012, 013 | `modules/hr`, `modules/leave`, `modules/onboarding` |
 | Payroll | 014, 015, 016 | `modules/payroll-au`, `modules/payroll-lk`, `modules/payroll` |
