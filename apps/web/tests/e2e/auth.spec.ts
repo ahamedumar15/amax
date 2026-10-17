@@ -2,15 +2,15 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 async function signInAs(page: Page, email: string) {
-  await page.goto("/hello");
-  await expect(page).toHaveURL(/\/signin\?next=%2Fhello$/);
+  await page.goto("/delivery");
+  await expect(page).toHaveURL(/\/signin\?next=%2Fdelivery$/);
   await page.getByLabel("Demo user (fixtures only)").fill(email);
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
 }
 
 test("AC1 signed-out visitors are sent to sign-in, then land where they were going", async ({ page }) => {
   await signInAs(page, "maya@lumenlabs.test");
-  await expect(page).toHaveURL(/\/hello$/);
+  await expect(page).toHaveURL(/\/delivery$/);
   const me = page.getByRole("button", { name: /Maya Fernando, Admin, profile menu/ });
   await expect(me).toBeVisible();
   await expect(me).toContainText("Admin · Leadership · PM");
@@ -31,12 +31,12 @@ test("AC5 View as previews a role: chip, banner and nav change, and the real use
 
 test("AC5 non-admins get no View as, and nav shows only screens their roles allow", async ({ page }) => {
   await signInAs(page, "nimal@lumenlabs.test");
-  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Hello" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Projects" })).toBeVisible();
   await page.getByRole("button", { name: /Nimal Silva, Engineer, profile menu/ }).click();
   await expect(page.getByRole("menuitemradio", { name: "Payroll" })).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/signin/);
-  await page.goto("/hello");
+  await page.goto("/delivery");
   await expect(page).toHaveURL(/\/signin/);
 });
 

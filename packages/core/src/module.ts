@@ -4,8 +4,8 @@ import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
 import type { Sensitivity } from "./audit";
 
-/** What a screen receives: route params (":key" segments) and the signed-in viewer (null in the guest preview). */
-export type ScreenProps = { params: Record<string, string>; searchParams: Record<string, string>; viewer: unknown };
+/** What a screen receives: route params (":key" segments), query params (optional, 041) and the signed-in viewer (null in the guest preview). */
+export type ScreenProps = { params: Record<string, string>; searchParams?: Record<string, string>; viewer: unknown };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ModuleRoute = { path: string; title: string; component: ComponentType<ScreenProps> | ComponentType<any> };
 

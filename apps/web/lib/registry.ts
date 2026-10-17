@@ -6,11 +6,13 @@ const GROUPS = ["Work", "People", "Business", "Operations"];
 
 export const installed: ModuleManifest[] = [...modules].sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group) || (a.order ?? 50) - (b.order ?? 50));
 
+// A module's root entry, then its optional nav[] entries (041) right after it. Only the root can be
+// primary (the mobile bar), as in the mock.
 export const navItems: NavItem[] = [
   { href: "/", label: "Overview", icon: "home", primary: true },
   ...installed.flatMap((m) => [
     { href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary },
-    ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group, primary: m.primary })),
+    ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group })),
   ]),
 ];
 
