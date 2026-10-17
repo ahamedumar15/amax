@@ -1,10 +1,11 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
+import { authorize, ForbiddenError, type ServiceContext } from "../authorize";
 import { defineService } from "../service";
 import { CONNECTOR_IDS, REVOKE_REASONS } from "./connectors";
 import { seal } from "./crypto";
-import { dataKeyFor } from "./runtime";
+import { dataKeyFor, ensureDataKey } from "./runtime";
 
 const RESOURCE = "secrets.credential";
 const MANAGE = "secrets:credential:manage";
@@ -18,7 +19,7 @@ async function credentialFor(tx: Tx, tenantId: string, connector: string, expire
   return { id: row.id as string, created: Boolean(row.created) };
 }
 
-export const putSecret = defineService({
+const storeVersion = defineService({
   name: "secrets.credential.put",
   action: MANAGE,
   resource: RESOURCE,
@@ -41,6 +42,12 @@ export const putSecret = defineService({
     return { result: { id: cred.id, version }, resourceId: cred.id, after, events: [{ name, payload: after }] };
   },
 });
+
+export async function putSecret(ctx: ServiceContext, raw: unknown) {
+  if (!(await authorize(ctx, MANAGE, RESOURCE, raw))) throw new ForbiddenError(MANAGE, RESOURCE);
+  await ensureDataKey(ctx.tenantId);
+  return storeVersion(ctx, raw);
+}
 
 export const revokeSecret = defineService({
   name: "secrets.credential.revoke",

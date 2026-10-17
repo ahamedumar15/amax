@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
-import type { Tx } from "@amax/db";
+import { withTenant, type Tx } from "@amax/db";
 import type { Kms } from "../adapters/kms";
+import { getRuntime } from "../service";
 import { newDataKey } from "./crypto";
 
 const CACHE_MS = 5 * 60_000;
@@ -27,25 +28,24 @@ function requireKms(): Kms {
   return kms;
 }
 
-async function create(tx: Tx, k: Kms, tenantId: string) {
-  const w = await k.wrap(tenantId, newDataKey());
-  await tx.execute(sql`insert into secrets.data_key (tenant_id, kms, key_ref, wrapped) values (${tenantId}, ${k.id}, ${w.keyRef}, ${w.wrapped}) on conflict do nothing`);
+export async function ensureDataKey(tenantId: string) {
+  const k = requireKms();
+  await withTenant(getRuntime().db, tenantId, async (tx) => {
+    const [row] = await tx.execute(sql`select 1 from secrets.data_key where tenant_id = ${tenantId}`);
+    if (row) return;
+    const w = await k.wrap(tenantId, newDataKey());
+    await tx.execute(sql`insert into secrets.data_key (tenant_id, kms, key_ref, wrapped) values (${tenantId}, ${k.id}, ${w.keyRef}, ${w.wrapped}) on conflict do nothing`);
+  });
 }
-
-const storedRow = async (tx: Tx, tenantId: string) =>
-  (await tx.execute(sql`select kms, key_ref, wrapped, coalesce(xmin = pg_current_xact_id_if_assigned()::xid, false) as uncommitted from secrets.data_key where tenant_id = ${tenantId}`))[0];
 
 export async function dataKeyFor(tx: Tx, tenantId: string): Promise<Uint8Array> {
   const k = requireKms();
   const hit = cache.get(tenantId);
   if (hit && hit.until > Date.now()) return hit.key;
-  let row = await storedRow(tx, tenantId);
-  if (!row) {
-    await create(tx, k, tenantId);
-    row = await storedRow(tx, tenantId);
-  }
+  const [row] = await tx.execute(sql`select kms, key_ref, wrapped from secrets.data_key where tenant_id = ${tenantId}`);
+  if (!row) throw new SecretsUnavailableError("this tenant has no data key yet");
   if (row.kms !== k.id) throw new SecretsUnavailableError(`this tenant's data key is held by the ${row.kms} key service, but AMAX_KMS is ${k.id}`);
   const key = await k.unwrap(tenantId, { keyRef: row.key_ref as string, wrapped: row.wrapped as string });
-  if (!row.uncommitted) cache.set(tenantId, { key, until: Date.now() + CACHE_MS });
+  cache.set(tenantId, { key, until: Date.now() + CACHE_MS });
   return key;
 }

@@ -17,11 +17,12 @@ export function formsOf(value: string): string[] {
   ])].filter((f) => f.length > 0);
 }
 
-const decodedHolds = (run: string, values: string[]) =>
-  [Buffer.from(run, "base64").toString("latin1"), Buffer.from(run, "base64url").toString("latin1")].some((d) => values.some((v) => d.includes(v)));
+const decodings = (run: string) =>
+  [0, 1, 2, 3].flatMap((offset) => [Buffer.from(run.slice(offset), "base64"), Buffer.from(run.slice(offset), "base64url")].map((b) => b.toString("latin1")));
+
+const replaceForms = (text: string, forms: string[]) => forms.reduce((t, f) => t.split(f).join(HIDDEN), text);
 
 export function hide(text: string, values: string[]): string {
   const forms = values.flatMap(formsOf).sort((a, b) => b.length - a.length);
-  const direct = forms.reduce((t, f) => t.split(f).join(HIDDEN), text);
-  return direct.replace(ENCODED_RUN, (run) => (decodedHolds(run, values) ? HIDDEN : run));
+  return replaceForms(text, forms).replace(ENCODED_RUN, (run) => (decodings(run).some((d) => forms.some((f) => d.includes(f))) ? HIDDEN : run));
 }

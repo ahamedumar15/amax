@@ -23,6 +23,13 @@ const VARIANTS: [string, (s: Secret) => unknown][] = [
   ["Set", () => new Set([VALUE])],
   ["class instance", () => new Holder(VALUE)],
   ["bytes", () => new TextEncoder().encode(VALUE)],
+  ["ArrayBuffer", () => new TextEncoder().encode(VALUE).buffer],
+  ["a closure", (s) => () => s.reveal()],
+  ["a Promise", (s) => ({ later: Promise.resolve(s.reveal()) })],
+  ["an Error's cause", () => ({ err: new Error("x", { cause: VALUE }) })],
+  ["a non-enumerable property", () => Object.defineProperty({}, "hidden", { value: VALUE, enumerable: false })],
+  ["base64 of a JSON body", () => Buffer.from(JSON.stringify({ secret: VALUE })).toString("base64")],
+  ["a misaligned base64 run", () => `/v1/${Buffer.from(`id:${VALUE}`).toString("base64")}`.replace("/v1/", "/v1/a")],
 ];
 
 describe.skipIf(!hasDb)("031 AC-2 every encoding of a value stays inside useSecret", () => {

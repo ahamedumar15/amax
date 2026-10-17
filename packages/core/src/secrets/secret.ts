@@ -25,7 +25,7 @@ export class Secret {
 export class SecretLeakError extends Error {
   readonly retryable = false;
   constructor(connector: string) {
-    super(`secrets: the ${connector} credential value was about to leave useSecret; the result was withheld`);
+    super(`secrets: the ${connector} credential value was about to leave useSecret, or the result was not plain data that could be checked; it was withheld`);
     this.name = "SecretLeakError";
   }
 }
@@ -44,14 +44,25 @@ export function scrubError(e: unknown, values: string[]): Error {
   return clean;
 }
 
+const PLAIN = new Set<unknown>([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype, Date.prototype]);
+const bytesText = (b: ArrayBuffer | ArrayBufferView) => (ArrayBuffer.isView(b) ? Buffer.from(b.buffer, b.byteOffset, b.byteLength) : Buffer.from(b)).toString("latin1");
+
+function partsOf(value: object): unknown[] | null {
+  if (value instanceof Error) return [value.name, value.message, value.stack, value.cause, ...Object.values(value)];
+  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) return [bytesText(value)];
+  if (!PLAIN.has(Object.getPrototypeOf(value))) return null;
+  if (value instanceof Map) return [...value.keys(), ...value.values()];
+  if (value instanceof Set) return [...value];
+  return Reflect.ownKeys(value).flatMap((k) => [typeof k === "string" ? k : k.description, (value as Record<PropertyKey, unknown>)[k]]);
+}
+
 function leaks(value: unknown, values: string[], seen: Set<object>): boolean {
   if (typeof value === "string") return hide(value, values) !== value;
-  if (value instanceof Secret) return true;
+  if (typeof value === "function" || value instanceof Secret) return true;
   if (value === null || typeof value !== "object" || seen.has(value)) return false;
   seen.add(value);
-  const parts: unknown[] = value instanceof Map ? [...value.keys(), ...value.values()] : value instanceof Set ? [...value] : [...Object.keys(value), ...Object.values(value)];
-  if (ArrayBuffer.isView(value)) parts.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("latin1"));
-  return parts.some((p) => leaks(p, values, seen));
+  const parts = partsOf(value);
+  return parts === null || parts.some((p) => leaks(p, values, seen));
 }
 
 export function assertNoLeak<T>(result: T, values: string[], connector: string): T {
