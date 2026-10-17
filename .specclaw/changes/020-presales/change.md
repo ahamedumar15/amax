@@ -22,4 +22,22 @@ Presales board with Move, the opportunity page (stage history, win chance, activ
 
 ## Tasks
 
+- [ ] `T1` — Contract first: `contracts.ts` (opportunity refs, stages, events and payloads, pipeline read) with contract tests; manifest (Business group, grants, routes, retention); README; package; CODEOWNERS line (AC-4)
+  Files: modules/presales/{module.ts,contracts.ts,package.json,tsconfig.json,css.d.ts,README.md}, modules/presales/tests/contracts.test.ts, .github/CODEOWNERS, pnpm-lock.yaml
+- [ ] `T2` — Screens matching the mock: Presales board (tickets, found-by-agents strip, six stage lanes with Move and Remove, pipeline chart, recent stage changes) and the opportunity page (stage steps, details with computed health, stage history, activities, tasks, risks, win-chance chart, Mark as lost dialog, Promote to delivery) (AC-1, AC-2)
+  Files: modules/presales/ui/*, modules/presales/actions.ts
+  Depends: T1
+- [ ] `T3` — `presales` schema and fixtures: client, opportunity (stage, win chance, value + currency + USD, health from risks), activity, task, risk, stage history, suggestion, fx rate, pipeline snapshot; RLS on tenant_id; fixtures.md pipeline ($596,000 open, $280,800 weighted, Northwind history) (AC-1, AC-3)
+  Files: modules/presales/db/migrations/0001_presales.sql, modules/presales/fixtures/index.ts
+  Depends: T1
+- [ ] `T4` — Services and queries: explicit audited stage moves logging who and when, Lost needs a reason, remove, activities/tasks/risks, accept/dismiss suggestions, USD conversion keeping the original currency, Promote to delivery through the delivery contract (degrades when delivery doesn't publish project creation) (AC-1, AC-2, AC-3)
+  Files: modules/presales/server/*
+  Depends: T3
+- [ ] `T5` — MCP tools and the "new opportunity" chat intent; search contribution; monthly pipeline snapshot job (AC-3)
+  Files: modules/presales/{mcp.ts,chat.ts,jobs.ts}
+  Depends: T4
+- [ ] `T6` — Tests: service and audit, permissions, RLS leak, switch-off and without-finance, chat intent, and the module e2e (board and opportunity against the mock, axe) (AC-1–AC-4)
+  Files: modules/presales/tests/*
+  Depends: T5
+
 ## Verify
