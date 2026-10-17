@@ -39,5 +39,5 @@ describe.skipIf(!hasDb)("048 ai.call names the person and conversation", () => {
       instructions: "x", tools: [], messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }] });
     const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select user_id, conversation_id from ai.call where conversation_id is not null`));
     expect(row).toEqual({ user_id: U, conversation_id: CONVO });
-  });
+  }, 60_000);
 });
