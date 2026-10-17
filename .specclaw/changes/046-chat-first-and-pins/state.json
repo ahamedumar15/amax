@@ -1,10 +1,11 @@
 {
   "change": "046-chat-first-and-pins",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-17T15:35:43Z"},
     "tasks": {"status":"done","at":"2026-10-17T15:55:49Z"},
-    "verify": {"status":"done","at":"2026-10-17T16:10:00Z"}
+    "verify": {"status":"done","at":"2026-10-17T16:10:00Z"},
+    "pr": {"status":"raised","at":"2026-10-17T16:10:41Z","url":"https://github.com/chan4lk/amax/pull/36"}
   }
 }
