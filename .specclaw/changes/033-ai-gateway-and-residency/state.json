@@ -1,0 +1,9 @@
+{
+  "change": "033-ai-gateway-and-residency",
+  "phase": "verify",
+  "branch": "",
+  "phases": {
+    "build": {"status":"done","at":"2026-10-17T07:37:56Z"},
+    "verify": {"status":"done","at":"2026-10-17T07:37:56Z"}
+  }
+}

@@ -67,6 +67,12 @@ export function ProfileMenu({ profile, onViewAs, onSignOut }: Props) {
               <button key={t} type="button" role="menuitemradio" aria-checked={theme === t} onClick={() => choose(t)}>{t[0].toUpperCase() + t.slice(1)}</button>
             ))}
           </div>
+          {profile?.canViewAs && (
+            <>
+              <div className="menu-sep" role="separator" />
+              <a role="menuitem" href="/settings/ai" style={{ display: "block", padding: "8px 12px", borderRadius: 10, fontSize: 14, color: "inherit", textDecoration: "none" }}>AI and data settings</a>
+            </>
+          )}
           {profile && onSignOut && (
             <>
               <div className="menu-sep" role="separator" />
