@@ -1,9 +1,10 @@
 {
   "change": "031-secrets-and-keys",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-17T13:06:10Z"},
-    "verify": {"status":"done","at":"2026-10-17T13:22:59Z"}
+    "verify": {"status":"done","at":"2026-10-17T13:22:59Z"},
+    "pr": {"status":"raised","at":"2026-10-17T13:23:51Z","url":"https://github.com/chan4lk/amax/pull/31"}
   }
 }
