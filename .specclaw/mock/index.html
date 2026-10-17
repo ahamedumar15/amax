@@ -2078,6 +2078,39 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   </div>
 </section>
 
+<!-- ================= 050 Immutable trace ================= -->
+<section data-change="050-immutable-trace" id="050-immutable-trace" data-roles="admin" data-title="Audit and trace" data-nav="no" data-parent="038-settings" data-icon="doc">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Audit and trace</nav>
+  <div class="row head">
+    <div><h1>Audit and trace</h1><p class="lede">Every change, every AI call and every tool call, chained so that nothing can be edited or removed unnoticed. Read only, by design.</p></div>
+    <div class="actions"><button class="btn">Verify now</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-mint"><div class="k">Audit chain <span class="chip">📌</span></div><div class="v">Verified</div><div class="p">To event 48,211 · 2 min ago</div></div>
+    <div class="ticket t-mint"><div class="k">Trace chain <span class="chip">📌</span></div><div class="v">Verified</div><div class="p">To event 302,977 · 2 min ago</div></div>
+    <div class="ticket t-violet"><div class="k">Write-once export <span class="chip">📌</span></div><div class="v">Oct 17 02:00</div><div class="p">Locked for 7 years</div></div>
+    <div class="ticket t-yellow"><div class="k">Denied writes today <span class="chip">📌</span></div><div class="v">2</div><div class="p">Both permission checks</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Events</h2><span><input type="search" placeholder="Person, agent, tool or record" aria-label="Filter events"> <select aria-label="Date"><option>Today</option></select></span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>When</th><th>Who</th><th>What</th><th>Record</th><th>Trace</th><th></th></tr></thead><tbody>
+      <tr><td>14:02:31</td><td>Priya Fernando <small>via amax chat</small></td><td><code>add_opportunity_risk</code></td><td>Northwind renewal (fictional)</td><td><a href="#050-immutable-trace">t-9f3a…</a></td><td><button class="btn sm">📌</button></td></tr>
+      <tr><td>13:40:08</td><td>Payroll agent <small>for Ana Ruiz</small></td><td><code>suggest_pay_change</code></td><td>October run</td><td><a href="#050-immutable-trace">t-71bc…</a></td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="card" style="margin-top:28px">
+    <div class="card-head"><h2>Trace t-9f3a…</h2><span class="chip good">Chain intact</span></div>
+    <ol>
+      <li>14:02:12 · Prompt received from Priya Fernando, 1 pin (Northwind renewal)</li>
+      <li>14:02:13 · Model call, claude via Bedrock Sydney, 4,210 tokens, $0.021</li>
+      <li>14:02:14 · Read tool <code>get_opportunity</code></li>
+      <li>14:02:15 · Pending write <code>add_opportunity_risk</code> created</li>
+      <li>14:02:31 · Confirmed by Priya Fernando</li>
+      <li>14:02:31 · Service write presales.risk, audited, event <code>presales.risk.added</code></li>
+    </ol>
+  </div>
+</section>
+
     </main>
   </div>
 </div>
