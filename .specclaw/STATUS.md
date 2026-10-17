@@ -1,13 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:43 UTC
+**Last Updated:** 2026-10-17 19:50 UTC
 
 ## Active Changes
 
 
-- 🔍 **032-data-retention-and-erasure** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔀 **035-api-webhooks-and-rate-limits** — PR #48 open
+- 🔀 **032-data-retention-and-erasure** — pr raised | 5/5 tasks (100%) | 0 failed | PR #49 open
+- 🔀 **035-api-webhooks-and-rate-limits** — pr raised | 7/7 tasks (100%) | 0 failed | PR #48 open
 - 🔀 **053-trace-and-settings-hardening** — pr raised | 6/6 tasks (100%) | 0 failed | PR #46 merged
 - 🔀 **054-chat-first-everywhere** — pr raised | 8/8 tasks (100%) | 0 failed | PR #47 merged
 - ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
-import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { auditExportJob, configureRateLimits, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { apiPlatform } from "@amax/api/module";
+import { rateLimitRecorder } from "@amax/api/limits";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
 import { configureAi } from "@amax/ai";
@@ -38,6 +40,8 @@ export function getDb(): Db | null {
     setPrivacySources([...installed, chatPlatform, { id: "workflows", retention: workflowsRetention }]);
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
+    // 035 AC-5: limited requests are counted for the API and webhooks screen.
+    configureRateLimits({ sink: rateLimitRecorder().sink });
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
@@ -53,9 +57,11 @@ export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 
 const auth = { id: "auth", events: { handles: authEventHandlers } };
 
+// 035: outgoing webhooks for every event an installed module emits, delivered as 029 workflows.
+const api = () => apiPlatform(installed.flatMap((m) => m.events?.emits ?? []), workflowEngine);
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
-export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, ...installed]));
+export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), ...installed]));
 let engine: Promise<WorkflowEngine> | undefined;
 export function workflowEngine(): Promise<WorkflowEngine> {
   const db = getDb();
@@ -68,7 +74,7 @@ export function workflowEngine(): Promise<WorkflowEngine> {
 // 032: the daily privacy purge (a platform workflow) applies workflowsRetention with legal holds.
 const workflowsJobs = () => ({ id: "workflows", events: { handles: signalHandlers(workflowsRegistry(), workflowEngine) } });
 
-export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), ...installed]);
+export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), api(), ...installed]);
 
 // 004/005: one tool registry and the chat intents, from the installed manifests. The AI gateway's
 // own read tool (048 get_ai_usage) sits beside them.

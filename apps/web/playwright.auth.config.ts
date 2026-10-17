@@ -13,10 +13,10 @@ export default defineConfig({
   // The visual test (041) sees fixtures.md's data only; AMX (039) is imported after it. Chat writes
   // proposals, so it runs after the specs that count fixture rows.
   projects: [
-    { name: "visual", testMatch: /delivery-visual\.spec\.ts/ },
+    { name: "visual", testMatch: /(delivery|api)-visual\.spec\.ts/ },
     { name: "amx", testMatch: /amx\.setup\.ts/, dependencies: ["visual"] },
     { name: "screens", testMatch: /(auth|delivery|sections|ai|mcp|pins|secrets|workflows)\.spec\.ts/, dependencies: ["amx"] },
-    { name: "writes", testMatch: /(chat|chat-first|releases|admin|ai-usage)\.spec\.ts/, dependencies: ["screens"] },
+    { name: "writes", testMatch: /(chat|chat-first|releases|admin|ai-usage|api)\.spec\.ts/, dependencies: ["screens"] },
     { name: "audit", testMatch: /audit\.spec\.ts/, dependencies: ["writes"] },
     // 032: the privacy spec erases the demo erasure request's person, so it runs last.
     { name: "privacy", testMatch: /retention(-visual)?\.spec\.ts/, dependencies: ["audit"] },

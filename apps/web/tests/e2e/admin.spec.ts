@@ -9,7 +9,7 @@ async function signIn(page: Page, email: string, to: string) {
   await expect(page).toHaveURL((u) => u.pathname === to);
 }
 
-const SCREENS = ["/settings", "/settings/keys", "/settings/integrations", "/settings/ai", "/settings/workflows"];
+const SCREENS = ["/settings", "/settings/keys", "/settings/integrations", "/settings/ai", "/settings/workflows", "/settings/api"];
 const chat = (page: Page) => page.getByRole("complementary", { name: "amax chat" });
 const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
 const unpinned = (page: Page) => page.locator("main").evaluate((root) =>
