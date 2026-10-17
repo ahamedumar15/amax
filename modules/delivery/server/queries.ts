@@ -249,6 +249,8 @@ export const getEnvironment = async (v: Viewer, ref: { environmentId?: string; p
     : sql`select p.key from delivery.project p where p.key = ${ref.projectKey!}`));
   if (!hit || (ref.projectKey && ref.projectKey !== hit.key)) return null;
   const e = (await listEnvironments(v, hit.key as string)).find((x) => (ref.environmentId ? x.id === ref.environmentId : x.name === ref.name));
+  // An id and a name that point at different environments is a confused call: refuse it, don't pick one (057).
+  if (e && ref.environmentId && ref.name !== undefined && ref.name !== e.name) throw new Error(`say which environment: ${ref.environmentId} is ${e.name}, not ${ref.name}`);
   return e ? { projectKey: hit.key as string, ...e } : null;
 };
 

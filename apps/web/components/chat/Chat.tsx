@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
 import type { Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
+import { repinAll } from "@amax/chat/pins";
 import { followMove } from "../../lib/chat-move";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
@@ -182,8 +183,9 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       announce(o.note);
       // The record this page shows was renamed (a re-tag): follow it, or the page would read "not found".
       // A client-side replace keeps this conversation open on the new page.
-      // The server rewrote the saved pins that named the record the old way: show and send those (057).
-      if (o.pins) setPins(o.pins);
+      // A rename: rewrite only the panel's pins that name the record the old way, keeping any pin
+      // added or removed since the last message (057). The server did the same to the saved copies.
+      if (o.repin) setPins((ps) => repinAll(ps, o.repin));
       const to = followMove(window.location.pathname, o.moved);
       if (to) router.replace(to);
     } catch {

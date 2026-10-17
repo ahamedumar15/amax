@@ -78,6 +78,7 @@ describe.skipIf(!hasDb)("054 board and release writes wait for chat's confirm (P
       ["get_environment", { projectKey: "CON", name: "UAT" }, { projectKey: "CON", name: "UAT" }],
       ["get_environment", { environmentId: env.id }, { id: env.id, projectKey: "CON", name: "UAT" }],
       ["get_environment", { environmentId: env.id, projectKey: "HRI" }, null],
+      ["get_environment", { environmentId: env.id, name: "UAT" }, { id: env.id, name: "UAT" }],
       ["get_environment", { projectKey: "CON", name: "Nowhere" }, null],
       ["get_deployment", { deploymentId: dep.id }, { id: dep.id, projectKey: "CON", version: "v2.3.0" }],
       ["get_deployment", { projectKey: "CON", version: "v2.3.0", deploymentId: dep.id }, { id: dep.id, projectKey: "CON", version: "v2.3.0" }],
@@ -98,6 +99,12 @@ describe.skipIf(!hasDb)("054 board and release writes wait for chat's confirm (P
   ])("057 %s with too little to name one record (%j) is refused, not 'not found'", async (tool, args) => {
     await expect(registry.call(await as("sahan"), tool, args, { source: "chat" })).rejects.toThrow(/say which/);
   }, 60_000);
+
+  it.each([["another environment's name", "Prod"], ["a name no environment has", "Nowhere"], ["the same name in another case", "uat"]])(
+    "057 get_environment refuses an id and %s that disagree", async (_n, name) => {
+      const [env] = await q(sql`select e.id from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = 'CON' and e.name = 'UAT'`);
+      await expect(registry.call(await as("sahan"), "get_environment", { environmentId: env.id, name }, { source: "chat" })).rejects.toThrow(/say which environment: .* is UAT, not /);
+    }, 60_000);
 
   it("057 renaming an environment returns a repin, and its id-keyed pin still resolves", async () => {
     const sahan = await as("sahan");

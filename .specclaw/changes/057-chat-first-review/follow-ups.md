@@ -23,8 +23,9 @@ Deferred by the review loop: minors and pre-existing findings.
 ## Open after the 5-round cap
 
 Round 5 (the `--final` pass) exited 4, escalate: the "stale pin after a rename" class survived two fixes
-(round 3: id-keyed pins; round 4: repin of saved conversations). Per the cap, no further patches were made
-after round 5. Open majors from round 5:
+(round 3: id-keyed pins; round 4: repin of saved conversations). After round 5 only the three items marked
+**Fixed** below were patched, on the coordinator's request and with no further review round. The escalated
+class and the proposal-key pin stay open and become their own change. Majors from round 5:
 
 - [major B1, escalated] `apps/web/app/actions/chat.ts:38`, `packages/chat/src/repin.ts:51` Repin only runs
   when a rename is confirmed in chat, and only over the confirming person's conversations. A rename made over
@@ -35,12 +36,15 @@ after round 5. Open majors from round 5:
   `key`, which the specclaw sync can rekey (`ProposalRekeyed`). Nothing repins on a rekey.
 - [major B3, introduced in round 4] `apps/web/app/actions/chat.ts:39` `repinConversations` runs after the write
   committed but inside the same try: if it throws, the card shows an error for a write that happened, and the
-  page doesn't follow the re-tag. Must be fixed before merge (own try/catch, still `state: "done"` with `moved`).
+  page doesn't follow the re-tag. **Fixed** in the follow-up commit after round 5: `doneOutcome` runs the repin
+  best-effort, logged with `logError`; the card stays done with `moved` (`apps/web/tests/chat-outcome.test.ts`).
 - [major B1, introduced in round 4] `apps/web/components/chat/Chat.tsx:185` After a repinning confirm the
-  client replaces its pins with the saved copy, dropping pins added or removed since the last turn. Must be
-  fixed before merge (apply the repin to the client's current pins instead).
+  client replaces its pins with the saved copy, dropping pins added or removed since the last turn. **Fixed** in
+  the follow-up commit: the card carries the `repin` and the panel applies `repinAll` to its current pins
+  (`apps/web/tests/chat-move.test.ts`).
 - [major B4] `modules/delivery/server/queries.ts:245` `getEnvironment` with an `environmentId` ignores a given
-  `name`, unlike `releaseWhere`/`isRelease`. Derive all three readers from one helper.
+  `name`, unlike `releaseWhere`/`isRelease`. **Fixed** in the follow-up commit: an id and a name that disagree
+  are refused (`modules/delivery/tests/chat-first.test.ts`).
 
 ### Proposed redesign: pins never depend on a renamable key
 
