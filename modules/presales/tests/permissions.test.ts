@@ -20,7 +20,7 @@ describe("AC-4 module standard", () => {
 
 describe.skipIf(!hasDb)("AC-4 permissions (Postgres)", () => {
   let db: Awaited<ReturnType<typeof presalesDb>>;
-  beforeAll(async () => { db = await presalesDb(); });
+  beforeAll(async () => { db = await presalesDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("Sales sells, Leadership and PMs read, engineers see nothing", async () => {

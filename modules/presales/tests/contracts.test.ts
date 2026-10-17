@@ -19,7 +19,7 @@ describe("AC-4 contract shape", () => {
 
 describe.skipIf(!hasDb)("AC-4 contract reads and event payloads (Postgres)", () => {
   let db: Awaited<ReturnType<typeof presalesDb>>;
-  beforeAll(async () => { db = await presalesDb(); });
+  beforeAll(async () => { db = await presalesDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("reads opportunities and the open pipeline in USD, and a move emits the published payload", async () => {

@@ -21,7 +21,7 @@ describe("review round 1: the win-rate note names the empty window", () => {
 describe.skipIf(!hasDb)("review round 1 (Postgres)", () => {
   let db: Awaited<ReturnType<typeof presalesDb>>;
   let liam: Viewer, maya: Viewer;
-  beforeAll(async () => { db = await presalesDb(); [liam, maya] = [await db.as("liam"), await db.as("maya", "PM")]; });
+  beforeAll(async () => { db = await presalesDb(); [liam, maya] = [await db.as("liam"), await db.as("maya", "PM")]; }, 60_000);
   afterAll(() => db?.t.drop());
 
   it.each([["2026-10-16", 0, 8, 3], ["2026-10-16", 1, 25, 8], ["2028-02-29", 1, 2, 1], ["2028-03-01", 0, 0, 0], ["2024-02-29", 0, 0, 0]] as const)(
