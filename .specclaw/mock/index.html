@@ -382,6 +382,10 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 .app{overflow:clip;background:linear-gradient(90deg,var(--card) 0 95px,var(--line) 95px 96px,var(--frame) 96px)}
 .rail{position:sticky;top:0;align-self:start;height:calc(100dvh - 48px);overflow-y:auto;scrollbar-width:none;background:none;border-right:0}
 .rail::-webkit-scrollbar{display:none}
+.rail.fade-bottom{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 56px),transparent)}
+.rail.fade-top{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 56px);mask-image:linear-gradient(to bottom,transparent,#000 56px)}
+.rail.fade-top.fade-bottom{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 56px,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to bottom,transparent,#000 56px,#000 calc(100% - 56px),transparent)}
+@media (max-width:860px){.rail.fade-top,.rail.fade-bottom{-webkit-mask-image:none;mask-image:none}}
 .rail .spacer{min-height:16px}
 /* rail: icons collapsed, expands as an overlay on hover or keyboard focus (no reflow) */
 .rail{width:96px;z-index:20;align-items:stretch;transition:width .18s ease,box-shadow .18s ease}
@@ -1801,7 +1805,8 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   </div>
 </section>
 <!-- ================= 031 Connections and keys ================= -->
-<section data-change="031-secrets-and-keys" id="031-secrets-and-keys" data-roles="admin" data-title="Connections and keys" data-icon="key" data-group="ops">
+<section data-change="031-secrets-and-keys" id="031-secrets-and-keys" data-roles="admin" data-title="Connections and keys" data-nav="no" data-parent="038-settings" data-icon="key">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Connections and keys</nav>
   <div class="row head">
     <div><h1>Connections and keys</h1><p class="lede">Six connector credentials, all encrypted with Lumen Labs' own key. The Azure DevOps token expires in 12 days; rotate it before then.</p></div>
     <div class="actions"><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add credential</button></div>
@@ -1828,7 +1833,8 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 032 Data retention ================= -->
-<section data-change="032-data-retention-and-erasure" id="032-data-retention-and-erasure" data-roles="admin hr" data-title="Data retention" data-icon="calendar" data-group="ops">
+<section data-change="032-data-retention-and-erasure" id="032-data-retention-and-erasure" data-roles="admin hr" data-title="Data retention" data-nav="no" data-parent="038-settings" data-icon="calendar">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Data retention</nav>
   <div class="row head">
     <div><h1>Data retention</h1><p class="lede">Tonight's purge removes 41 candidate records from 2025 and anonymises 3 leavers. One erasure request is waiting for a second approver.</p></div>
     <div class="actions"><button class="btn">Add legal hold</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New request</button></div>
@@ -1872,7 +1878,8 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 033 AI and data ================= -->
-<section data-change="033-ai-gateway-and-residency" id="033-ai-gateway-and-residency" data-roles="admin" data-title="AI and data" data-icon="spark" data-group="ops">
+<section data-change="033-ai-gateway-and-residency" id="033-ai-gateway-and-residency" data-roles="admin" data-title="AI and data" data-nav="no" data-parent="038-settings" data-icon="spark">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>AI and data</nav>
   <div class="row head">
     <div><h1>AI and data</h1><p class="lede">Your data stays in Australia. Agents use Claude through Amazon Bedrock in Sydney with no data retained by the provider, and pay and health values are never sent.</p></div>
     <div class="actions"><button class="btn primary">Change policy</button></div>
@@ -1917,7 +1924,8 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 034 Backups and export ================= -->
-<section data-change="034-backup-restore-and-export" id="034-backup-restore-and-export" data-roles="admin" data-title="Backups and export" data-icon="grid" data-group="ops">
+<section data-change="034-backup-restore-and-export" id="034-backup-restore-and-export" data-roles="admin" data-title="Backups and export" data-nav="no" data-parent="038-settings" data-icon="grid">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Backups and export</nav>
   <div class="row head">
     <div><h1>Backups and export</h1><p class="lede">You can restore to any minute in the last 14 days. Sunday's restore drill passed in 38 minutes, and the audit chain checked out.</p></div>
     <div class="actions"><button class="btn">Run drill now</button><button class="btn primary">Export all data</button></div>
@@ -1941,7 +1949,8 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 035 API and webhooks ================= -->
-<section data-change="035-api-webhooks-and-rate-limits" id="035-api-webhooks-and-rate-limits" data-roles="admin" data-title="API and webhooks" data-icon="plug" data-group="ops">
+<section data-change="035-api-webhooks-and-rate-limits" id="035-api-webhooks-and-rate-limits" data-roles="admin" data-title="API and webhooks" data-nav="no" data-parent="038-settings" data-icon="plug">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>API and webhooks</nav>
   <div class="row head">
     <div><h1>API and webhooks</h1><p class="lede">Four service credentials and three webhooks. 12 unsigned webhook calls were rejected this week, all claiming to be from GitHub.</p></div>
     <div class="actions"><button class="btn">Add webhook</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New credential</button></div>
@@ -1966,7 +1975,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 036 Compliance ================= -->
-<section data-change="036-compliance-registers" id="036-compliance-registers" data-roles="admin leadership hr" data-title="Compliance" data-icon="doc" data-group="ops">
+<section data-change="036-compliance-registers" id="036-compliance-registers" data-roles="admin leadership hr" data-title="Compliance" data-icon="doc">
   <div class="row head">
     <div><h1>Compliance</h1><p class="lede">The ISO 27001 audit is on Nov 24. 17 people still need to acknowledge the updated Acceptable Use policy, and one possible data breach needs a decision by Oct 20.</p></div>
     <div class="actions"><button class="btn">Export evidence</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Report incident</button></div>
@@ -2001,6 +2010,71 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
         <div class="row line"><span>A.8.15 Logging integrity</span><b>Verified daily</b></div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ================= 037 Digital experience ================= -->
+<section data-change="037-digital-experience" id="037-digital-experience" data-roles="admin leadership" data-title="Digital experience" data-icon="chart">
+  <div class="row head">
+    <div><h1>Digital experience</h1><p class="lede">Experience dipped to 7.1 in Quality this fortnight. Teams has crashed on 14 laptops since Tuesday's update, and the experience agent suggests rolling it back.</p></div>
+    <div class="actions"><button class="btn">Send pulse survey</button><button class="btn primary">Review fixes</button></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Experience score</div><div class="v">7.9</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-chart"/></svg><div class="p">Out of 10, all 184 people<div class="bar" aria-hidden="true"><i style="width:79%"></i></div></div></div>
+    <div class="ticket t-yellow"><div class="k">Devices needing attention</div><div class="v">18</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">7.8% of 231 devices</div></div>
+    <div class="ticket t-mint"><div class="k">Pulse responses</div><div class="v">64%</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">118 of 184, anonymous<div class="bar" aria-hidden="true"><i style="width:64%"></i></div></div></div>
+    <div class="ticket t-pink"><div class="k">Fixes waiting</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-headset"/></svg><div class="p">Suggested by the experience agent</div></div>
+  </div>
+  <div class="cols">
+    <div class="card flush">
+      <div class="card-head"><h2>By department</h2><select class="select" aria-label="Group by"><option>Department</option><option>Site</option><option>Device model</option></select></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Department</th><th class="num">People</th><th>Score</th><th>Top issue</th><th>Last 4 weeks</th></tr></thead>
+        <tbody>
+        <tr><td>Engineering</td><td class="num">112</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:81%;background:var(--mint)"></i></div>8.1</div></td><td>Slow builds on 2021 laptops</td><td><span class="chip good">Steady</span></td></tr>
+        <tr><td>Quality</td><td class="num">24</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:71%;background:var(--yellow)"></i></div>7.1</div></td><td>Teams crashes after update</td><td><span class="chip warn">Down 1.2</span></td></tr>
+        <tr><td>Delivery</td><td class="num">14</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:79%;background:var(--mint)"></i></div>7.9</div></td><td>VPN drops on office Wi-Fi</td><td><span class="chip good">Steady</span></td></tr>
+        <tr><td>Sales</td><td class="num">9</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:74%;background:var(--violet)"></i></div>7.4</div></td><td>Battery health, 3 laptops</td><td><span class="chip info">Up 0.3</span></td></tr>
+        <tr><td>People and Culture</td><td class="num">8</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:83%;background:var(--mint)"></i></div>8.3</div></td><td>None</td><td><span class="chip good">Steady</span></td></tr>
+        <tr><td>Other <small>Finance, IT, Leadership</small></td><td class="num">17</td><td><div class="row"><div class="meter" style="flex:1"><i style="width:80%;background:var(--mint)"></i></div>8.0</div></td><td>None</td><td><span class="chip good">Steady</span></td></tr>
+        <tr class="total"><td>All</td><td class="num">184</td><td>7.9</td><td colspan="2" class="muted">Groups under 5 people are never shown</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <div class="card-head"><h2>Suggested fixes</h2><span class="chip agent">Experience agent</span></div>
+        <ul class="list">
+          <li><div class="l"><span class="logo-sq" style="background:#5059C9">T</span><div>Roll back Teams on 14 laptops<small>Crashes started after Tuesday's update. 88% confidence</small></div></div><button class="btn sm primary">Review</button></li>
+          <li><div class="l"><span class="logo-sq" style="background:#00A4EF">I</span><div>Replace 6 laptops from 2021 in Engineering<small>Boot over 4 min; builds 2.3× slower. Opens an IT ticket</small></div></div><button class="btn sm">Review</button></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Pulse, Oct 13</h2><span class="muted" style="font-size:13px">118 answers</span></div>
+        <p style="font-size:14px;margin-bottom:12px">How well do your laptop and apps work for you?</p>
+        <div class="row line"><span>Works well</span><b>71%</b></div>
+        <div class="row line"><span>Gets in the way sometimes</span><b>23%</b></div>
+        <div class="row line"><span>Gets in the way a lot</span><b class="warn-t">6%</b></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>What we collect</h2><span class="chip good">Notice sent Sep 1</span></div>
+        <div class="row line"><span>Device health, boot time, app crashes</span><b>Yes</b></div>
+        <div class="row line"><span>Keystrokes, screens, browsing, activity</span><b>Never</b></div>
+        <div class="row line"><span>Scores for one named person</span><b>Never</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 038 Settings hub ================= -->
+<section data-change="038-navigation-scale" id="038-settings" data-roles="admin hr" data-title="Settings" data-icon="gear">
+  <h1>Settings</h1>
+  <p class="lede">How Lumen Labs runs amax: credentials, data, AI, backups and machine access. One thing needs you: the Azure DevOps token expires in 12 days.</p>
+  <div class="apps hub">
+    <a class="app-card" href="#031-secrets-and-keys" data-roles="admin" style="text-decoration:none;color:inherit"><div class="top2"><span class="logo-sq" style="background:var(--violet)">K</span><h2>Connections and keys</h2></div><p>Connector credentials, encrypted with your own key, with rotation and expiry.</p><div class="foot"><span>6 credentials</span><span class="chip warn">1 expiring</span></div></a>
+    <a class="app-card" href="#032-data-retention-and-erasure" data-roles="admin hr" style="text-decoration:none;color:inherit"><div class="top2"><span class="logo-sq" style="background:#E0697F">R</span><h2>Data retention</h2></div><p>How long each kind of data is kept, legal holds, and access and erasure requests.</p><div class="foot"><span>44 due tonight</span><span class="chip warn">1 to approve</span></div></a>
+    <a class="app-card" href="#033-ai-gateway-and-residency" data-roles="admin" style="text-decoration:none;color:inherit"><div class="top2"><span class="logo-sq" style="background:linear-gradient(135deg,#7B61FF,#2FCB8C)">✦</span><h2>AI and data</h2></div><p>Where your data lives, which AI provider and region, and what may be sent to it.</p><div class="foot"><span>Australia</span><span class="chip good">In region</span></div></a>
+    <a class="app-card" href="#034-backup-restore-and-export" data-roles="admin" style="text-decoration:none;color:inherit"><div class="top2"><span class="logo-sq" style="background:#2FA37A">B</span><h2>Backups and export</h2></div><p>Point-in-time recovery, weekly restore drills, and exporting all your data.</p><div class="foot"><span>Drill passed Oct 11</span><span class="chip good">Healthy</span></div></a>
+    <a class="app-card" href="#035-api-webhooks-and-rate-limits" data-roles="admin" style="text-decoration:none;color:inherit"><div class="top2"><span class="logo-sq" style="background:#24292F">A</span><h2>API and webhooks</h2></div><p>Service credentials for CI and tools, signed webhooks, and rate limits.</p><div class="foot"><span>4 credentials</span><span class="chip bad">12 rejected calls</span></div></a>
   </div>
 </section>
 
@@ -2085,6 +2159,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 12h18"/>',
     book:'<path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h6"/>',
     key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M16 7l3 3M14 9l2 2"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>',
     help:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/>'
   };
   var nav=document.getElementById('nav');
@@ -2110,11 +2185,19 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     screens.forEach(function(s){s.classList.toggle('on',s===t)});
     var navId=t.dataset.parent||t.id;
     [].forEach.call(nav.querySelectorAll('a'),function(a){ if(a.getAttribute('href')==='#'+navId) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+    var rail=nav.closest('.rail'),cur=nav.querySelector('a[aria-current]'); if(rail&&cur&&rail.scrollHeight>rail.clientHeight){var y=cur.offsetTop-rail.clientHeight/2+cur.offsetHeight/2; rail.scrollTop=Math.max(0,y);} if(window.amaxRailFade) window.amaxRailFade();
     document.title=t.dataset.title+' · amax mock';
     window.scrollTo({top:0,left:0,behavior:'instant'});
     if(!firstShow){var h=t.querySelector('h1')||t; h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); announce(t.dataset.title+' screen');}
     firstShow=false;
   }
+  // rail: fade the top or bottom edge when more items are scrolled out of view (038)
+  (function(){var rail=nav.closest('.rail'); if(!rail) return;
+    function fade(){var top=rail.scrollTop>4, bottom=rail.scrollTop+rail.clientHeight<rail.scrollHeight-4;
+      rail.classList.toggle('fade-top',top); rail.classList.toggle('fade-bottom',bottom);}
+    rail.addEventListener('scroll',fade,{passive:true}); window.addEventListener('resize',fade);
+    rail.addEventListener('focusin',function(e){var a=e.target.closest('a'); if(a) a.scrollIntoView({block:'nearest'});});
+    window.amaxRailFade=fade;})();
   // skip link: focus the screen heading without touching the hash route
   // the browser jumps to the #section anchor on first load; undo that once
   window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,0)},0)});
@@ -2587,6 +2670,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     function setView(v){document.body.dataset.view=v;chip.textContent=NAMES[v];
       [].forEach.call(menu.querySelectorAll('[data-view]'),function(b){b.setAttribute('aria-checked',b.dataset.view===v?'true':'false')});
       [].forEach.call(document.querySelectorAll('#nav a'),function(a){a.hidden=!canSee(document.getElementById(a.getAttribute('href').slice(1)),v);});
+      [].forEach.call(document.querySelectorAll('.hub [data-roles]'),function(c){c.hidden=!canSee(c,v);});
       [].forEach.call(document.querySelectorAll('#nav .grp'),function(hr){var n=hr.nextElementSibling,any=false;while(n&&!n.classList.contains('grp')){if(n.tagName==='A'&&!n.hidden)any=true;n=n.nextElementSibling;}hr.hidden=!any;});
       banner.hidden=v==='admin';
       banner.textContent=v==='payroll'?'Viewing as Payroll: screens outside payroll are hidden.':'Viewing as '+NAMES[v]+': pay, payroll and admin screens are hidden.';
