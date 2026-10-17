@@ -32,7 +32,7 @@ export type CreatedProject = { id: string; key: string; existing?: true };
 /** The key is taken, or the sourceRef already made a project under another key. Retrying won't help. */
 export class ProjectConflictError extends Error {
   readonly retryable = false;
-  constructor(message: string, readonly existingKey: string | null) {
+  constructor(message: string, readonly existingKey: string) {
     super(message);
     this.name = "ProjectConflictError";
   }
@@ -47,7 +47,8 @@ async function conflictOf(tx: Tx, input: ProjectInput) {
   if (made && made.key === input.key) return { id: made.id as string, key: made.key as string, existing: true as const };
   if (made) throw new ProjectConflictError(`${input.sourceRef} already made project ${made.key as string}`, made.key as string);
   if (await one(tx, sql`key = ${input.key}`)) throw new ProjectConflictError(`project key ${input.key} is taken; choose another`, input.key);
-  throw new ProjectConflictError(`project ${input.key} conflicts with an existing project`, null);
+  // Neither row is visible: an unknown outcome, so a plain (retryable) error rather than a conflict.
+  throw new Error(`project ${input.key} wasn't created and the clash couldn't be identified; try again`);
 }
 
 export async function insertProject(tx: Tx, input: ProjectInput, ctx: ServiceContext) {

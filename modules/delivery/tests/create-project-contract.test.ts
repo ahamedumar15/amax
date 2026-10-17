@@ -66,7 +66,7 @@ describe.skipIf(!hasDb)("045 createProject contract (Postgres)", () => {
     ["contract: a taken key", () => make("CON"), "CON"],
     ["contract: a taken key with a new sourceRef", () => make("CON", "presales.opportunity:OPP0050"), "CON"],
     ["contract: a sourceRef that made another key", () => make("SRZ", "presales.opportunity:OPP0042"), "SRA"],
-    ["service (UI): a taken key", () => createProjectService(ctxFor(admin), { key: "CON", name: "C", client: "x", billing: "fixed" }), "CON"],
+    ["service (behind create_project): a taken key", () => createProjectService(ctxFor(admin), { key: "CON", name: "C", client: "x", billing: "fixed" }), "CON"],
     ["MCP create_project: a taken key", mcpCreate("mcp"), "CON"],
     ["chat create_project: a taken key", mcpCreate("chat"), "CON"],
   ])("AC-3 %s is a ProjectConflictError that names the clash", async (_name, run, existingKey) => {

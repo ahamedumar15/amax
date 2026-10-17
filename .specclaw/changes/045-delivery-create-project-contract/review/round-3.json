@@ -1,0 +1,91 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/server/project-create.ts",
+  "modules/delivery/tests/create-project-contract.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/create-project-contract.test.ts",
+   "fp": "52f17b0d0b08",
+   "in_delta": true,
+   "line": 64,
+   "message": "This only fixes the named case. The round-2 finding asked the test to assert the error the MCP and chat callers actually see: a tool error or validation message, not an internal error. The new rows stop at `registry.call(...)` and only check that it throws a raw ProjectConflictError. They never go through `handleMcp` (apps/web/app/api/mcp/route.ts) or `chatTurn` (packages/chat/src/engine.ts), so the error the user gets is still untested. Passing `{ source: \"chat\" }` to `registry.call` is not the chat path either: a chat create goes through intent confirm in `chatTurn`. The UI row calls `createProjectService` directly, not the server action in `actions.ts`, so the action's error mapping is also unchecked. Fix: send the taken-key case through `handleMcp` (assert a tool error result whose text includes 'is taken; choose another'), through a `chatTurn` confirm (assert the reply text), and through the server action (assert its validation or error message).",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "An MCP client calls create_project with key CON, which is already taken. If handleMcp maps non-validation throws to a generic internal error, the client gets 'Internal error' instead of 'project key CON is taken; choose another', and this test still passes.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/server/project-create.ts",
+   "fp": "96c3af5c1a2e",
+   "in_delta": true,
+   "line": 50,
+   "message": "The new fallback covers the case where a unique violation fired but neither the source_ref lookup nor the key lookup found the row. It still reports this as a definite, non-retryable ProjectConflictError, now with `existingKey: null` (before, it fell back to `input.key`). A lookup that cannot see the row is an unknown outcome, not a confirmed clash. Callers that read `existingKey` to link to the existing project (for example presales Promote) now get null. No test reaches this branch: the table's message regex only matches the other two messages. Fix: mark this outcome as unknown or retryable (or rethrow the original violation), and add a test row for it.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/server/project-create.ts",
+   "fp": "a8063ea18a9d",
+   "in_delta": true,
+   "line": 28,
+   "message": "The module-id format is written out again by hand (`[a-z][a-z0-9-]*`). It does not reuse the registry's module-id rule or check against the registered module ids, so the two can drift apart. It also accepts ids that no module could have, such as `presales-.x:1` or `a--b.x:1`. Fix: build the prefix from the shared module-id rule in @amax/core, or check it against `installed` ids.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "1ca785059d15a31b768882f77b3a768ddf3d247f",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/[module]/[[...path]]/page.tsx",
+  "apps/web/app/(app)/layout.tsx",
+  "apps/web/app/api/mcp/route.ts",
+  "apps/web/app/healthz/route.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/package.json",
+  "apps/web/scripts/gen-registry.mjs",
+  "apps/web/scripts/worker.mjs",
+  "apps/web/tests/nav.test.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/db/migrations/0011_project_source_ref.sql",
+  "modules/delivery/server/project-contract.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/ui/ReleasesPage.tsx",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/idempotency.ts",
+  "packages/core/tests/ac7-chain.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 33853,
+ "round": 3,
+ "since": "dfc38c65de",
+ "status": "open",
+ "system_chars": 20919,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792246964,
+ "ts_start": 1792246893
+}
