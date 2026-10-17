@@ -1,0 +1,74 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": false,
+    "baseUrl": ".",
+    "paths": {
+      "@amax/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@amax/core/*": [
+        "packages/core/src/*"
+      ],
+      "@amax/db": [
+        "packages/db/src/index.ts"
+      ],
+      "@amax/db/*": [
+        "packages/db/src/*"
+      ],
+      "@amax/auth": [
+        "packages/auth/src/index.ts"
+      ],
+      "@amax/auth/*": [
+        "packages/auth/src/*"
+      ],
+      "@amax/ui": [
+        "packages/ui/src/index.ts"
+      ],
+      "@amax/ui/*": [
+        "packages/ui/src/*"
+      ],
+      "@amax/mcp": [
+        "packages/mcp/src/index.ts"
+      ],
+      "@amax/mcp/*": [
+        "packages/mcp/src/*"
+      ],
+      "@amax/chat": [
+        "packages/chat/src/index.ts"
+      ],
+      "@amax/chat/*": [
+        "packages/chat/src/*"
+      ],
+      "@amax/agents": [
+        "packages/agents/src/index.ts"
+      ],
+      "@amax/agents/*": [
+        "packages/agents/src/*"
+      ],
+      "@amax/testing": [
+        "packages/testing/src/index.ts"
+      ],
+      "@amax/testing/*": [
+        "packages/testing/src/*"
+      ],
+      "@amax/*": [
+        "modules/*"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "amax.name" . }}
+  labels: {{- include "amax.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "amax.selector" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http

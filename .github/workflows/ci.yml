@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+      - run: pnpm test
+      - run: node scripts/check-module-standard.mjs
+      - run: pnpm build
+      - run: pnpm --filter @amax/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @amax/web e2e
+
+  vercel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: |
+          mkdir -p .vercel
+          echo '{"projectId":"ci","orgId":"ci","settings":{"framework":"nextjs","rootDirectory":"apps/web","nodeVersion":"22.x"}}' > .vercel/project.json
+      - run: pnpm dlx vercel@64.5.0 build --yes
+
+  cloudflare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm --filter @amax/web build:cloudflare
+      - run: test -f apps/web/.open-next/worker.js
+
+  docker-k3s:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t amax:ci .
+      - name: Image serves /healthz
+        run: |
+          docker run -d --name amax -p 3000:3000 amax:ci
+          for i in $(seq 1 30); do curl -sf localhost:3000/healthz && exit 0; sleep 1; done
+          docker logs amax; exit 1
+      - run: helm lint deploy/helm/amax
+      - run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.9.0 bash
+      - run: k3d cluster create smoke --no-lb --wait
+      - run: k3d image import amax:ci -c smoke
+      - run: >-
+          helm install smoke deploy/helm/amax --wait --timeout 180s
+          --set image.repository=amax --set image.tag=ci --set image.pullPolicy=Never
+      - name: Chart serves /healthz
+        run: |
+          kubectl port-forward svc/smoke 8080:80 &
+          for i in $(seq 1 30); do curl -sf localhost:8080/healthz && exit 0; sleep 1; done
+          kubectl describe pods; kubectl logs deploy/smoke; exit 1

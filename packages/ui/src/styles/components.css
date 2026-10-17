@@ -1,0 +1,55 @@
+.card{background:var(--card);border-radius:var(--r-card);box-shadow:var(--shadow);padding:28px;min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap;min-height:38px}
+.card.flush{padding:0}
+.card.flush .card-head{padding:26px 28px 0;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;color:inherit}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--yellow);border-color:var(--yellow);color:var(--yellow-ink)}
+.btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.seg{display:flex;padding:5px;border-radius:16px;background:var(--sunken);gap:4px;max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}
+.seg button{flex:1;white-space:nowrap;padding:0 12px;border:0;background:none;height:36px;border-radius:12px;font-size:13.5px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--violet);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;font-size:12.5px;font-weight:600;background:var(--sunken);color:var(--ink-2);white-space:nowrap}
+.chip.agent{background:var(--violet-soft);color:var(--chip-agent)}
+.chip.good{background:var(--chip-good-bg);color:var(--chip-good)}
+.chip.bad{background:var(--chip-bad-bg);color:var(--chip-bad)}
+.chip.warn{background:var(--chip-warn-bg);color:var(--chip-warn)}
+.chip.good::before,.chip.warn::before,.chip.bad::before,.chip.agent::before{content:"";width:13px;height:13px;flex:none;background:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
+.chip.good{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.8' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.chip.warn{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M8 4.2v4.6M8 11.4v.2' stroke='%23fff' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E")}
+.chip.bad{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8'/%3E%3Cpath d='M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E")}
+.chip.agent{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0l2 6 6 2-6 2-2 6-2-6-6-2 6-2z'/%3E%3C/svg%3E")}
+.tickets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-bottom:28px}
+.ticket{position:relative;height:168px;border-radius:var(--r-card);padding:24px 24px 22px;color:#1D1B2E;overflow:hidden;-webkit-mask:radial-gradient(circle 10px at 0 60%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% 60%,#0000 98%,#000) right/51% 100% no-repeat;mask:radial-gradient(circle 10px at 0 60%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% 60%,#0000 98%,#000) right/51% 100% no-repeat}
+.ticket.info{background:linear-gradient(135deg,#D9CFFF,#A792FF)}
+.ticket.good{background:linear-gradient(135deg,#A6F0CF,#53D6A1)}
+.ticket.attention{background:linear-gradient(135deg,#FBEA9C,#F5CF4E)}
+.ticket.problem{background:linear-gradient(135deg,#FFD6DE,#F48B9B)}
+.ticket .k{font-size:14px;font-weight:600}
+.ticket .v{position:relative;z-index:1;font-size:clamp(24px,2.1vw,32px);font-weight:600;letter-spacing:-.02em;line-height:1.2;margin-top:6px}
+.ticket .p{position:absolute;left:24px;bottom:22px;right:24px;font-size:12.5px;font-weight:600;z-index:1}
+.ticket .bar{position:relative;height:7px;border-radius:7px;background:rgba(29,27,46,.16);margin-top:8px}
+.ticket .bar i{display:block;height:100%;border-radius:7px;background:rgba(29,27,46,.72)}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-weight:600;font-size:13.5px;color:var(--ink);padding:0 14px 14px;border-bottom:1.5px solid var(--line-2);white-space:nowrap}
+.tbl td{padding:16px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl th:first-child,.tbl td:first-child{padding-left:28px}
+.tbl th:last-child,.tbl td:last-child{padding-right:28px}
+.tbl tbody tr:hover{background:var(--sunken)}
+.tbl .num{text-align:right}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:36px 24px 40px}
+.empty .ico{width:52px;height:52px;border-radius:18px;background:var(--violet-soft);color:var(--violet);display:grid;place-items:center;margin-bottom:10px}
+.empty .ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.empty b{font-size:15.5px;font-weight:600}
+.empty p{margin:0;color:var(--ink-2);font-size:13.5px;max-width:44ch}
+.toast{position:fixed;z-index:40;left:50%;bottom:28px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--ink);color:var(--frame);border-radius:14px;padding:12px 18px;font-size:14px;font-weight:500;box-shadow:0 16px 40px -12px rgba(0,0,0,.4)}
+.toast button{border:0;background:none;color:var(--yellow);font:700 14px var(--font);cursor:pointer;padding:0}
+:root[data-theme="dark"] .ticket{color:#fff}
+:root[data-theme="dark"] .ticket .bar{background:rgba(255,255,255,.24)}
+:root[data-theme="dark"] .ticket .bar i{background:#fff}
+:root[data-theme="dark"] .ticket.info{background:linear-gradient(135deg,#5B44D6,#3D2BA8)}
+:root[data-theme="dark"] .ticket.good{background:linear-gradient(135deg,#1E7A57,#145C41)}
+:root[data-theme="dark"] .ticket.attention{background:linear-gradient(135deg,#8A6A12,#6B500B)}
+:root[data-theme="dark"] .ticket.problem{background:linear-gradient(135deg,#A33A55,#7E2740)}

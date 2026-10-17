@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-// Static export for GitHub Pages. BASE_PATH is "/amax" in CI and empty locally.
 const basePath = process.env.BASE_PATH ?? "";
 
 const nextConfig: NextConfig = {

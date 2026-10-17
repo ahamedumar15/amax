@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.next
+**/.open-next
+**/.wrangler
+**/.vercel
+**/.turbo
+apps/mock/out
+apps/web/generated
+.specclaw
+docs
+Dockerfile

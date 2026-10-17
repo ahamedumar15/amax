@@ -13,7 +13,8 @@
 | Design | - | - |
 | Tasks | ✅ Done |  |
 | Build | - | - |
-| Verify | - | - |
+| Verify | ✅ Done |  |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/1 |
 
 ## Task Progress
 

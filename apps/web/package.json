@@ -1,0 +1,30 @@
+{
+  "name": "@amax/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "node scripts/gen-registry.mjs",
+    "dev": "node scripts/gen-registry.mjs && next dev",
+    "build": "node scripts/gen-registry.mjs && next build",
+    "start": "next start",
+    "lint": "node scripts/gen-registry.mjs && tsc --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests",
+    "build:cloudflare": "node scripts/gen-registry.mjs && opennextjs-cloudflare build",
+    "preview:cloudflare": "opennextjs-cloudflare preview",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@opennextjs/cloudflare": "1.20.12",
+    "@playwright/test": "1.63.0",
+    "@types/pngjs": "6",
+    "pixelmatch": "8.0.0",
+    "pngjs": "7.0.0",
+    "wrangler": "4.148.0"
+  }
+}

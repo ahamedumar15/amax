@@ -1,0 +1,25 @@
+image:
+  repository: ghcr.io/chan4lk/amax
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+env: {}
+envFromSecret: ""
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  host: amax.local
+  tlsSecret: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    memory: 512Mi

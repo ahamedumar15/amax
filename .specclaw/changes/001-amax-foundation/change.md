@@ -41,28 +41,43 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 
 ## Tasks
 
-- [ ] `T1` — Monorepo scaffold: pnpm workspaces + Turborepo, shared tsconfig, empty `packages/*` and `modules/`; move the GitHub Pages mock site to `apps/mock` and keep its deploy working (AC-1)
+- [x] `T1` — Monorepo scaffold: pnpm workspaces + Turborepo, shared tsconfig, empty `packages/*` and `modules/`; move the GitHub Pages mock site to `apps/mock` and keep its deploy working (AC-1)
   Files: package.json, pnpm-workspace.yaml, turbo.json, tsconfig.base.json, apps/mock/**, packages/{core,db,auth,ui,mcp,chat,agents,testing}/package.json, .github/workflows/pages.yml, .gitignore
-- [ ] `T2` — `@amax/ui`: design tokens (light/dark, AA contrast) and the shell components: rail, top bar, card, ticket stat card, table (stacked under 600 px), chip, segmented control, empty state, toast and live region (AC-4)
+- [x] `T2` — `@amax/ui`: design tokens (light/dark, AA contrast) and the shell components: rail, top bar, card, ticket stat card, table (stacked under 600 px), chip, segmented control, empty state, toast and live region (AC-4)
   Files: packages/ui/src/tokens.css, packages/ui/src/components/*.tsx, packages/ui/src/index.ts, packages/ui/tests/contrast.test.ts
   Depends: T1
-- [ ] `T3` — `apps/web` shell matching the mock: expanding labelled rail with groups, top bar (search, Ask amax placeholder, profile menu with theme), phone tab bar with More, skip link, `main`, heading focus and announcement on navigation, reduced motion (AC-5)
+- [x] `T3` — `apps/web` shell matching the mock: expanding labelled rail with groups, top bar (search, Ask amax placeholder, profile menu with theme), phone tab bar with More, skip link, `main`, heading focus and announcement on navigation, reduced motion (AC-5)
   Files: apps/web/app/layout.tsx, apps/web/app/(app)/layout.tsx, apps/web/app/(app)/page.tsx, apps/web/components/shell/*.tsx, apps/web/next.config.ts
   Depends: T2
-- [ ] `T4` — Module manifest type and build-time discovery: scan `modules/*/module.ts`, generate the git-ignored registry, mount through `app/(app)/[module]/[[...path]]`, nav from manifests; sample `modules/hello` (AC-2)
+- [x] `T4` — Module manifest type and build-time discovery: scan `modules/*/module.ts`, generate the git-ignored registry, mount through `app/(app)/[module]/[[...path]]`, nav from manifests; sample `modules/hello` (AC-2)
   Files: packages/core/src/module.ts, apps/web/scripts/gen-registry.mjs, apps/web/app/(app)/[module]/[[...path]]/page.tsx, modules/hello/**, apps/web/tests/registry.test.ts
   Depends: T3
-- [ ] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
+- [x] `T5` — Import boundaries: wire the existing zero-dependency `scripts/check-graph.mjs` (rules R1–R6: contracts-only cross-module imports, no escaping relative imports, packages never import modules, imports declared in the manifest, no module or proposal cycles) into `pnpm lint` and CI, and add fixture tests that must fail (AC-3)
   Files: scripts/check-graph.mjs, packages/testing/boundaries/**, packages/testing/tests/boundaries.test.ts, package.json
   Depends: T4
-- [ ] `T6` — Config and ownership: zod-validated environment at boot with a clear error and `/healthz`; CODEOWNERS; `scripts/check-module-standard.mjs` run in CI (AC-7)
+- [x] `T6` — Config and ownership: zod-validated environment at boot with a clear error and `/healthz`; CODEOWNERS; `scripts/check-module-standard.mjs` run in CI (AC-7)
   Files: packages/core/src/env.ts, apps/web/app/healthz/route.ts, .github/CODEOWNERS, scripts/check-module-standard.mjs
   Depends: T4
-- [ ] `T7` — Deploy anywhere: Vercel config, OpenNext Cloudflare build (`wrangler.jsonc`), Dockerfile (standalone, serves `/healthz`), Helm chart `deploy/helm/amax`, and a CI workflow building all three plus lint, test, boundaries, module standard and a k3d smoke install (AC-6, AC-1)
+- [x] `T7` — Deploy anywhere: Vercel config, OpenNext Cloudflare build (`wrangler.jsonc`), Dockerfile (standalone, serves `/healthz`), Helm chart `deploy/helm/amax`, and a CI workflow building all three plus lint, test, boundaries, module standard and a k3d smoke install (AC-6, AC-1)
   Files: apps/web/vercel.json, apps/web/wrangler.jsonc, apps/web/open-next.config.ts, Dockerfile, deploy/helm/amax/**, .github/workflows/ci.yml
   Depends: T5, T6
-- [ ] `T8` — Visual and accessibility checks: Playwright visual diff of the shell against the mock at 1440 and 390 px (≤2%), no horizontal scroll, keyboard and axe checks (AC-5)
+- [x] `T8` — Visual and accessibility checks: Playwright visual diff of the shell against the mock at 1440 and 390 px (≤2%), no horizontal scroll, keyboard and axe checks (AC-5)
   Files: apps/web/tests/e2e/shell.spec.ts, apps/web/playwright.config.ts, apps/web/tests/e2e/__screenshots__/**
   Depends: T3, T7
 
 ## Verify
+
+**Verdict:** PASS
+- AC-1: pass — pnpm workspaces + Turborepo with apps/web (Next 16.4.2, standalone), 8 platform packages and modules/*; `pnpm build`, `pnpm lint`, `pnpm test` all exit 0 at the root.
+- AC-2: pass — `packages/core/tests` + `modules/hello/tests/ac2-discovery.test.ts`: hello appears in the rail and at /hello from its folder alone; deleting it (or `AMAX_MODULES_DISABLED=hello`) removes it cleanly.
+- AC-3: pass — `packages/testing/tests/ac3-boundaries.test.ts`: fixtures r1–r6 each fail `check-graph.mjs`, clean passes; the check runs in `pnpm lint`, CI and the Claude Code hooks (edit, commit, push).
+- AC-4: pass — `packages/ui/tests/ac4-tokens.test.ts`: AA contrast for every token pair in light and dark; no hex colours in components; all listed components exported.
+- AC-5: pass — `apps/web/tests/e2e/shell.spec.ts`: search, Ask amax, rail logo and first nav item 0.00% diff vs mock at 1440 and 390 px (limit 2%), no horizontal scroll, axe clean on / and /hello (also clean in dark, checked ad hoc), skip link → main, heading focus + announcement, reduced motion.
+- AC-6: pass — `packages/testing/tests/ac6-deploy.test.ts` plus local runs: `vercel build` ok, OpenNext worker served /healthz on wrangler dev, Docker image serves /healthz, Helm chart installed on k3d and /healthz answered; `.github/workflows/ci.yml` runs all three builds and the k3d smoke on every PR.
+- AC-7: pass — `packages/testing/tests/ac7-config.test.ts`: bad env fails boot with "amax: invalid environment configuration"; CODEOWNERS maps packages/ and apps/web with module template lines; `scripts/check-module-standard.mjs` passes and runs in CI.
+
+Commands (all exit 0): `pnpm turbo run test --force`, `pnpm lint`, `pnpm build`, `pnpm --filter @amax/web e2e`, `node scripts/check-module-standard.mjs`, `specclaw-preset-check .`, `specclaw-quality-scan . --gate`
+
+Quality: 0 → 0 duplicated lines; 0 high-complexity functions
+
+Screenshots: `.specclaw/changes/001-amax-foundation/shots/app.png`, `.specclaw/changes/001-amax-foundation/shots/mock.png` — shell matches; the body is the empty state naming change 007, as the Mock Delta specifies.
