@@ -1,8 +1,10 @@
 {
   "change": "002-identity-and-access",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-17T05:57:10Z"}
+    "tasks": {"status":"done","at":"2026-10-17T05:57:10Z"},
+    "build": {"status":"done","at":"2026-10-17T06:24:10Z"},
+    "verify": {"status":"done","at":"2026-10-17T06:24:10Z"}
   }
 }
