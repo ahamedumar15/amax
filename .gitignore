@@ -19,10 +19,17 @@ node_modules/
 .specclaw/changes/**/.lock/
 
 # next
-/out/
-/public/mock/
 next-env.d.ts
 *.tsbuildinfo
 
 # internal, never published
 /docs/private/
+
+# monorepo
+.turbo/
+**/.next/
+****/.open-next/
+**/.wrangler/
+apps/mockapps/web/generated/
+**/test-results/
+**/playwright-report/

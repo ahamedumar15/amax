@@ -1,25 +1,18 @@
 {
   "name": "amax",
-  "version": "0.1.0",
   "private": true,
-  "description": "amax: agent-native ERP for software and professional-services companies (interactive mock)",
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "copy-mock": "node scripts/copy-mock.mjs",
-    "dev": "npm run copy-mock && next dev",
-    "build": "npm run copy-mock && next build",
-    "lint": "tsc --noEmit",
+    "build": "turbo run build",
+    "dev": "turbo run dev --filter=@amax/web",
+    "lint": "turbo run lint && node scripts/check-graph.mjs",
+    "test": "turbo run test",
     "check:graph": "node scripts/check-graph.mjs",
     "graph": "node scripts/check-graph.mjs --graph"
   },
-  "dependencies": {
-    "next": "16.4.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
-  },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "typescript": "^5.7.0"
+    "turbo": "2.11.9",
+    "typescript": "^5.7.0",
+    "vitest": "5.0.5"
   }
 }

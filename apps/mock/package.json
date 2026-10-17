@@ -1,0 +1,23 @@
+{
+  "name": "@amax/mock",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static GitHub Pages site for the amax interactive mock",
+  "scripts": {
+    "copy-mock": "node scripts/copy-mock.mjs",
+    "dev": "node scripts/copy-mock.mjs && next dev --port 3100",
+    "build": "node scripts/copy-mock.mjs && next build",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.7.0"
+  }
+}

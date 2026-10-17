@@ -41,7 +41,7 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 
 ## Tasks
 
-- [ ] `T1` — Monorepo scaffold: pnpm workspaces + Turborepo, shared tsconfig, empty `packages/*` and `modules/`; move the GitHub Pages mock site to `apps/mock` and keep its deploy working (AC-1)
+- [x] `T1` — Monorepo scaffold: pnpm workspaces + Turborepo, shared tsconfig, empty `packages/*` and `modules/`; move the GitHub Pages mock site to `apps/mock` and keep its deploy working (AC-1)
   Files: package.json, pnpm-workspace.yaml, turbo.json, tsconfig.base.json, apps/mock/**, packages/{core,db,auth,ui,mcp,chat,agents,testing}/package.json, .github/workflows/pages.yml, .gitignore
 - [ ] `T2` — `@amax/ui`: design tokens (light/dark, AA contrast) and the shell components: rail, top bar, card, ticket stat card, table (stacked under 600 px), chip, segmented control, empty state, toast and live region (AC-4)
   Files: packages/ui/src/tokens.css, packages/ui/src/components/*.tsx, packages/ui/src/index.ts, packages/ui/tests/contrast.test.ts
