@@ -1,0 +1,120 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 5
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/lib/chat-outcome.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/chat/src/index.ts",
+  "packages/db/migrations/0015_chat_cards_backfill.sql"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "a4601e6c7f8d",
+   "in_delta": true,
+   "line": 159,
+   "message": "`isExpired` now fails closed when `createdAt` is missing or unparsable. It still does not fail closed when `createdAt` parses to a future date. `now - at` is then negative, so the card never expires, and its replay record can still be pruned by `pruneKeysJob`. That reopens the round-9/10 hole for corrupted or clock-skewed values. Fix: also treat `at > now` (allowing a small skew) as expired.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "pending card with createdAt '2099-01-01T00:00:00Z'. The write commits, the settle is lost and the record ages past KEY_DAYS and is pruned. Confirm then passes the expiry check, finds no key and writes a second row.",
+   "severity": "minor"
+  },
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "e8a35e643642",
+   "in_delta": true,
+   "line": 223,
+   "message": "On an expired card, cancel only checks the record for `done`. A record that says `cancelled` falls through to `expire()`, which settles the card as 'expired' with the note 'If it was confirmed earlier, check the record'. The engine knows the card was cancelled, but the user is told it might have been done. Fix: if `known` has `cancelled`, settle as 'cancelled' (the same order confirm uses).",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "Cancel commits its key {cancelled:true} but the settle is lost. The card passes CARD_DAYS, and cancel is pressed again. The result is decision 'expired' / 'check the record' instead of 'already cancelled. Nothing was changed.'",
+   "severity": "minor"
+  },
+  {
+   "file": "packages/chat/src/engine.ts",
+   "fp": "f68f0434c0b1",
+   "in_delta": true,
+   "line": 221,
+   "message": "The expired branch of cancelAction only reads the key with `lookupKey`. It does not take `claimKey`, so it no longer blocks on a confirm whose write is still uncommitted. A confirm that passed its `isExpired` check just before the boundary can commit after this cancel has already settled the card as 'expired'. The hedged note keeps this from claiming 'nothing happened', so it is minor. Still, the card's final decision then disagrees with the committed write, and no test covers the boundary. Fix: take `claimKey` (or lock the key row) in the expired branch too, or record the settle only after the claim.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "A confirm starts at CARD_DAYS\u2212\u03b5, and its write runs for 2 s. A cancel at CARD_DAYS+\u03b5 sees no committed key and settles 'expired'. The confirm then commits the row, and the card stays 'expired' while the write exists.",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/tests/chat.test.ts",
+   "fp": "6a2a9e8f3133",
+   "in_delta": true,
+   "line": 342,
+   "message": "The migration test does not run 0015 through the real migration runner. It re-parses the SQL file with its own split/comment-strip and runs only the statements that start with `update`. It never runs the `no force` / `force row level security` pair. A change to the file's layout, or a statement the filter drops, would pass unnoticed. Fix: apply the migration through the `@amax/db` runner (or at least run every statement), and assert that RLS is forced again afterwards.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "If someone reorders the file so the comment sits after `update`, or the closing `alter ... force row level security` is removed, this test stays green.",
+   "severity": "minor"
+  },
+  {
+   "file": "packages/chat/src/index.ts",
+   "fp": "461b711e3e6c",
+   "in_delta": true,
+   "line": 1,
+   "message": "`isExpired` is added to the package's public exports, but nothing outside engine.ts uses it (no caller in the impact set). Exporting it widens the contract surface with no consumer. Keep it internal unless a caller needs it.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B10",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "9f3da2865f65369dda627c3925fc020ac8ff6e98",
+ "impact": [
+  "apps/mock/app/layout.tsx",
+  "apps/mock/app/page.tsx",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/[module]/[[...path]]/page.tsx",
+  "apps/web/app/(app)/page.tsx",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/app/(app)/settings/integrations/page.tsx",
+  "apps/web/app/actions/chat.ts",
+  "apps/web/app/layout.tsx",
+  "apps/web/app/oauth/authorize/page.tsx",
+  "apps/web/app/signin/page.tsx",
+  "apps/web/components/chat/Chat.tsx",
+  "apps/web/lib/registry.ts",
+  "apps/web/tests/chat-outcome.test.ts",
+  "modules/delivery/chat.ts",
+  "modules/delivery/db/migrations/0001_delivery.sql",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/server/queries.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 42930,
+ "round": 11,
+ "since": "d06e425",
+ "status": "clean",
+ "system_chars": 20085,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792232474,
+ "ts_start": 1792232371
+}

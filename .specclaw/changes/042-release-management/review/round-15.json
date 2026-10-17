@@ -1,0 +1,105 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 3,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+  "modules/delivery/tests/releases.test.ts",
+  "modules/delivery/ui/ReleasesPage.tsx"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "782d9c54559d",
+   "in_delta": true,
+   "line": 255,
+   "message": "Instance fix of the round-14 B7 finding. The new race test starts setReleaseProposals and recordDeployment together with Promise.allSettled and hopes they overlap. Nothing holds session A before it commits, which is what the finding asked for. Reversing the array only changes which call starts first, and both still run unsynchronised. Whether the two transactions ever overlap inside the window between reading the release and writing is left to timing. This means the test does not reliably fail when releaseOf's `for update` is removed from either side. The it.each lock test above only shows that each call waits on an outside key-share lock; it never runs the two services against each other. Fix: hold setReleaseProposals inside its transaction after releaseOf, for example with a test hook or a gate in a wrapped tx. Then start recordDeployment(Prod) in a second session and assert it is still pending. Release the gate and assert the proposal ends up released. Repeat with recordDeployment held, and assert that setReleaseProposals is refused with the live-release error.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "Remove `for update` from releaseOf in setReleaseProposals. Each of the 8 iterations usually runs the two calls one after the other, because one transaction finishes before the other reads. The proposal ends up either released or refused, and the test stays green.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "c9943bd9373f",
+   "in_delta": true,
+   "line": 261,
+   "message": "The race assertion treats every outcome where the proposal is not assigned as 'refused'. Promise.allSettled swallows every rejection, so a call that failed for an unrelated reason passes the same way: a forbidden error, a deadlock, a serialization error, a bad key, or a crash. Since 'could not run' reads as 'correctly refused', the assertion can't tell the guard working from the code being broken. Fix: inspect the settled results. When the proposal is unassigned, require that setReleaseProposals rejected with /already live in Prod/ and that recordDeployment fulfilled. When it is assigned, require that both calls fulfilled.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "Make setReleaseProposals throw on any input, for example by renaming a column it writes. Every iteration rejects, row.assigned is false, the result maps to 'refused', and the test passes.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "6479c01a782d",
+   "in_delta": true,
+   "line": 251,
+   "message": "This diff deletes the deterministic test 'a release already live in Prod takes no new proposals; keeping its own is fine'. That test checked the refusal message (`already live in Prod; put LIV-002 in a new release`) and checked that re-saving the release's own proposals is still allowed. The race test that replaces it does neither: it never checks the error text, and it never calls setReleaseProposals with the existing set after the release is live. The guard for the earlier major is now covered only by a timing-dependent test. Fix: restore the deleted test next to the new ones.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Change the guard so it rejects every setReleaseProposals call on a live release, including keeping its own proposals [a]. No remaining test fails, and users can no longer edit or save a live release's notes or proposal list.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "29c0a3fe2d5b",
+   "in_delta": true,
+   "line": 286,
+   "message": "If the migration throws partway, the `finally` block runs `create unique index if not exists` while case-duplicate rows are still in the table. That statement fails too, and its error replaces the migration's real error. The index also stays dropped for every later test in the file. Fix: delete the test project's rows in `finally` before recreating the index, or run the setup and migration inside a transaction that rolls back.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "The migration fails on case 2 because of a syntax regression. The run reports 'could not create unique index environment_name_ci' instead of the migration error, and later tests run without the case-insensitive index.",
+   "severity": "minor"
+  }
+ ],
+ "head": "e489bba6d90f1935d3f804dd206aa624bc3c1ac0",
+ "impact": [
+  ".github/workflows/ci.yml",
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/actions/chat.ts",
+  "apps/web/components/chat/Chat.tsx",
+  "apps/web/lib/chat-outcome.ts",
+  "apps/web/tests/chat-outcome.test.ts",
+  "apps/web/tests/tick.test.ts",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/sync/specclaw.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/tests/sync-parse.test.ts",
+  "modules/delivery/ui/ProjectPage.tsx",
+  "packages/ai/tests/gateway.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/idempotency.ts",
+  "packages/core/src/jobs.ts",
+  "packages/core/src/schema.ts",
+  "packages/core/src/service.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 41672,
+ "round": 15,
+ "since": "8217c76",
+ "status": "open",
+ "system_chars": 20906,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792234649,
+ "ts_start": 1792234560
+}

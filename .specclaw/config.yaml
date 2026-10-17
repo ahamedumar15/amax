@@ -182,8 +182,8 @@ prototype:
 # Workflow enforcement
 workflow:
   strict: true                     # Enforce phase prerequisites
-  code_review: true                # Spawn code-reviewer agent during verify
-  code_review_block: true          # Block PR if review requests changes
+  code_review: false               # Per-change review is off (product owner, 2026-10-17): see review: below
+  code_review_block: false         # Block PR if review requests changes
   
   # Staged-files audit — does the branch carry exactly what this change should?
   # PRs shipped the wrong file set in BOTH directions, silently: planning
@@ -477,6 +477,11 @@ jira:
 
 # specclaw-review (local review loop), turned on 2026-10-17 by the product owner.
 # Opus rounds: this repo's governance (module standard, architecture, CLAUDE.md) decides severity.
+# specclaw-review cadence (product owner, 2026-10-17, after the 042 cycle): NOT per change or PR.
+# Run the loop once at the end of each module (hr, delivery, finance, ...), when the module's last
+# change is built, over the module's whole diff since it started:
+#   specclaw-review run --change <module's last change> --since <commit before the module's first change>
+# then --final and verdict before that PR merges.
 review:
   models: { round: opus, final: opus }
   passes: [review, design]

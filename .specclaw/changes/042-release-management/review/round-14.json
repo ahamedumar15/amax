@@ -1,0 +1,119 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 3
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/releases.test.ts",
+  "modules/delivery/ui/ReleasesPage.tsx"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "f26e2790984e",
+   "in_delta": true,
+   "line": 248,
+   "message": "The fix for migration 0008 has one test, and it covers one variant: a single non-Prod duplicate with one deployment. The migration has three behaviours that the test never runs. First, it keeps is_prod when the duplicate that gets deleted was the Prod row. Second, it merges three or more rows that differ only by case. Third, it leaves projects with no duplicates untouched. If the `update ... set is_prod = true` line were deleted, this test would still pass. Fix: make it a table-driven test over at least these cases: a duplicate that is Prod while the kept row is not; three case variants, each with deployments; and a project with no duplicates. Each case should check the kept row, the is_prod flag and where the deployments ended up.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Delete the is_prod update from 0008 and run the test. It still passes, but on a real database where 'Prod' (position 3, is_prod) and 'prod' (position 1) both exist, the merge keeps 'prod' with is_prod = false. The project then has no Prod stage and no release can go Live.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/ui/ReleasesPage.tsx",
+   "fp": "4e3b33f1b3e5",
+   "in_delta": true,
+   "line": 25,
+   "message": "The new fallback offers 'Deploy to <Prod>' whatever state the Prod stage is in. Earlier branches give 'Finish' for a Prod stage that is testing and 'Retry' for one that was rolled back, but they only look at the last stage reached. Once a stage after Prod has been reached, a Prod stage that is testing or rolled back gets the generic 'Deploy' label. Fix: in this fallback, reuse the Finish and Retry labels based on prod.status, and add those two rows to the nextStep table test.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Stages are Dev (deployed), Prod (testing) and Demo at position 3 (deployed). nextStep returns 'Deploy to Prod' instead of 'Finish Prod'.",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+   "fp": "5b52004db5f7",
+   "in_delta": true,
+   "line": 6,
+   "message": "The migration turns off FORCE ROW LEVEL SECURITY on two tenant tables and turns it back on near the end of the file. The temporary table is also created ON COMMIT DROP. Both rely on the whole file running in one transaction. If the migration runner runs the statements one by one, two things go wrong. env_merge is dropped as soon as it is created, so the next statement fails. And a failure part-way leaves RLS unforced on environment and deployment. Fix: wrap the file in an explicit begin/commit, or confirm that the runner already runs each file in one transaction and say so in a comment.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "The runner runs the file outside a transaction. The update after the create statement fails with 'relation env_merge does not exist', and delivery.environment and delivery.deployment stay without forced RLS.",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "265b8eeaeedb",
+   "in_delta": true,
+   "line": 250,
+   "message": "The migration test drops environment_name_ci on the shared test database and only recreates it when the migration file runs to the end. It also adds environments and deployments to the VID project, which other tests use. If the migration fails, the tests after it run without the unique index and against changed VID data. Fix: use a project of its own for this test, and recreate the index in a finally block.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B10",
+   "scenario": "The migration throws part-way. Later tests in the file that rely on the case-insensitive unique index pass or fail for the wrong reason.",
+   "severity": "minor"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "c42cc26c6833",
+   "in_delta": true,
+   "line": 233,
+   "message": "The race test only covers the recordDeployment side of the fix. It holds a FOR KEY SHARE lock from a raw owner session and checks that recordDeployment waits. It never runs the race the finding named: setReleaseProposals/assignProposals in one session and a Prod recordDeployment in another. So the lock on the assign side is untested. If setReleaseProposals stops calling releaseOf, or reads the release with a plain select before releaseOf, this test stays green and the 'live release with an unreleased proposal' race comes back. Fix: open two real service calls. Start setReleaseProposals (adding a proposal) on a release in session A and hold it before commit. In session B run recordDeployment(Prod). Assert that the proposal is either released or the assignment is refused, never assigned and left unreleased. Run the same race in the other order too.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "setReleaseProposals reads the release without FOR UPDATE (lock removed on that path) \u2192 the race test still passes, but a concurrent Prod deploy commits between its live-Prod count and its release_id update \u2192 a proposal sits in a live release with phase \u2260 released.",
+   "severity": "major"
+  }
+ ],
+ "head": "8217c760e2f8ed7f05b03eeb28c8e9acca869b62",
+ "impact": [
+  ".github/workflows/ci.yml",
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/global-auth.ts",
+  "apps/web/tests/e2e/releases.spec.ts",
+  "modules/delivery/actions.ts",
+  "modules/delivery/chat.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/db/migrations/0001_delivery.sql",
+  "modules/delivery/db/migrations/0002_release_management.sql",
+  "modules/delivery/db/migrations/0003_default_environments.sql",
+  "modules/delivery/db/migrations/0006_project_closed_at.sql",
+  "modules/delivery/db/migrations/0007_project_closed_at_insert.sql",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/sync/bin.ts",
+  "modules/delivery/sync/import.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 45222,
+ "round": 14,
+ "since": "8f4212b",
+ "status": "open",
+ "system_chars": 20875,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792234352,
+ "ts_start": 1792234261
+}

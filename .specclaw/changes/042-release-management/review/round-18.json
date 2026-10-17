@@ -1,0 +1,80 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [
+  "1eec871da6d9"
+ ],
+ "files": [
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/releases.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "1eec871da6d9",
+   "in_delta": true,
+   "line": 329,
+   "message": "Instance fix of the round-17 finding. The finding asked for createRelease to be raced against a Prod recordDeployment in both orders. The diff adds one order only, and it races only against a deployment of the same new version. That deployment cannot find the release at all, so the 'no release v1' refusal holds with or without any locking. The race that can actually lose data crosses releases. createRelease(v2, [p]) holds a lock only on its own new v2 row, so nothing serialises it with a recordDeployment(Prod) of v1, which locks v1. The dangerous case is p already assigned to v1 while v1 goes to Prod. Neither order of that race is tested: createRelease held after the v2 insert while v1 deploys, and v1's deploy held after its release lock while createRelease(v2, [p]) runs. The same cross-release case is also missing for setReleaseProposals on a different release. Fix: add createRelease (and the cross-release setReleaseProposals case) to the it.each race table with holdAfterReleaseLock, in both orders. Assert that p ends up either released under v1 or unreleased under v2, never released with release_id = v2.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Project P has release v1 = [P-001]. Session A runs createRelease(P, v2, [P-001]) and passes assignProposals' 'already shipped' check while P-001 is still proposed. Session B runs recordDeployment(P, v1, Prod), which locks v1 (not v2) and marks P-001 released, then commits. A then sets P-001.release_id = v2 and commits. Result: a proposal that shipped in v1 now shows as belonging to v2, so shipped history is rewritten. No test fails.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "c08840a4cbeb",
+   "in_delta": true,
+   "line": 267,
+   "message": "The rewritten caller guard still matches text, not calls. (1) The call regex `\\bassignProposals\\(tx\\b` counts a call only when the first argument is literally named `tx`. `assignProposals(trx, \u2026)`, `assignProposals(db, \u2026)` or an alias (`const assign = assignProposals`) are not counted, so a new unraced call site passes. (2) The 'not exported' check only rejects `export (async )?function assignProposals`. `export { assignProposals }`, `export { assignProposals as x }` or `export const assignProposals =` all pass, and then callers outside the delivery folder are never scanned. Fix: match any `assignProposals` identifier that is not its declaration, with any arguments, and check every export form. Or move the function into its own module, so the import graph shows every caller.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Add `export { assignProposals }` to services.ts and call `assignProposals(trx, id, rid, keys)` from sync/import.ts. The guard test stays green, and the new call site has no race test.",
+   "severity": "minor"
+  }
+ ],
+ "head": "e112126b16688f7d085722b972c5266fa7014877",
+ "impact": [
+  ".github/workflows/ci.yml",
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/global-auth.ts",
+  "apps/web/tests/e2e/releases.spec.ts",
+  "modules/delivery/chat.ts",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/db/migrations/0001_delivery.sql",
+  "modules/delivery/db/migrations/0002_release_management.sql",
+  "modules/delivery/db/migrations/0003_default_environments.sql",
+  "modules/delivery/db/migrations/0006_project_closed_at.sql",
+  "modules/delivery/db/migrations/0007_project_closed_at_insert.sql",
+  "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/sync/bin.ts",
+  "modules/delivery/sync/import.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 38979,
+ "round": 18,
+ "since": "eb03323",
+ "status": "escalate",
+ "system_chars": 20859,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792235210,
+ "ts_start": 1792235127
+}

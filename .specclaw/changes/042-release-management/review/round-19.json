@@ -1,0 +1,81 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 0
+ },
+ "escalated": [
+  "0ca64b315754",
+  "9c41d341d79d"
+ ],
+ "files": [
+  "modules/delivery/server/services.ts",
+  "modules/delivery/tests/releases.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/releases.test.ts",
+   "fp": "0ca64b315754",
+   "in_delta": true,
+   "line": 375,
+   "message": "The round-17 fix is only partly a class fix. The `for update` lock is in the shared `assignProposals`, so the code covers both callers. The new cross-release race table only drives `createRelease(v2, [p])`, though. The previous finding also named the same cross-release race for `setReleaseProposals` on a different, already existing release, and that case still has no test in either order. `setReleaseProposals` locks its own release (v2) before calling `assignProposals`. Any read or check it makes before that call is not covered. If a later change moves its phase or release check ahead of the row lock, no test fails. Fix: add `setReleaseProposals(v2, [p])` rows to this `it.each` table, with v2 created empty beforehand. Cover move-first (hold on the `for update` select) and deploy-first (hold on the released update). Assert the same end states: proposed under v2, or released under v1 with 'already shipped in another release'.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "p in v1, empty release v2 exists. In session A, recordDeployment(v1, Prod) is held after `update delivery.proposal set phase = 'released'`. Session B then calls setReleaseProposals(v2, [p]). No test checks that B waits and is refused. A regression that reads p's phase before the lock would set release_id = v2 on a released row, and every test would still pass.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/server/services.ts",
+   "fp": "9c41d341d79d",
+   "in_delta": true,
+   "line": 41,
+   "message": "The new row lock is taken one row at a time, in the caller's key order. A Prod deployment's `update delivery.proposal set phase = 'released' where release_id = \u2026` locks the same rows in scan order, and two createRelease/setReleaseProposals calls lock them in whatever order their key lists give. With two or more shared proposals, the lock orders can cross. Postgres then aborts one transaction with a raw 40P01 'deadlock detected' error instead of a clear refusal or a serialised result. The new tests use a single proposal, so they cannot show this. Fix: lock every target row in one deterministic statement (`select \u2026 where key = any(${keys}) and project_id = \u2026 order by id for update`). Lock v1's proposal rows the same way (order by id) before the deploy's update. Then add a two-proposal race test.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "v1 holds [p, q]. createRelease(v2, [q, p]) runs at the same time as recordDeployment(v1, Prod). The move locks q and then waits on p, while the deploy's update has locked p and waits on q. One of them fails with 'deadlock detected'.",
+   "severity": "major"
+  }
+ ],
+ "head": "68a96ca50b26b407abc9f30c8aa5c5c8591423ad",
+ "impact": [
+  ".gitignore",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "apps/web/tests/tick.test.ts",
+  "apps/web/worker.ts",
+  "modules/delivery/db/migrations/0001_delivery.sql",
+  "modules/delivery/tests/chat.test.ts",
+  "packages/ai/src/admin.ts",
+  "packages/ai/src/fake.ts",
+  "packages/ai/tests/gateway.test.ts",
+  "packages/auth/src/can.ts",
+  "packages/auth/src/query.ts",
+  "packages/auth/tests/ac3-can.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/schema.ts",
+  "packages/core/tests/ac5-adapters.test.ts",
+  "packages/db/migrations/0011_region_codes.sql",
+  "packages/db/src/migrate.ts",
+  "packages/db/tests/migrate.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 34515,
+ "round": 19,
+ "since": "e112126",
+ "status": "escalate",
+ "system_chars": 20859,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792235411,
+ "ts_start": 1792235356
+}
