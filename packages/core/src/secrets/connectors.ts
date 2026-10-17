@@ -1,0 +1,18 @@
+export type Connector = { name: string; usedFor: string; noun: string; logo: string; color: string };
+
+export const CONNECTORS = {
+  "msgraph-read": { name: "Microsoft Graph, read", usedFor: "People, licences, devices sync", noun: "secret", logo: "E", color: "#2F6FEB" },
+  "msgraph-write": { name: "Microsoft Graph, write", usedFor: "Approved access changes only", noun: "secret", logo: "E", color: "#2F6FEB" },
+  "azure-devops": { name: "Azure DevOps", usedFor: "Commits, pipelines, webhooks", noun: "token", logo: "D", color: "#0078D4" },
+  github: { name: "GitHub", usedFor: "Commits, pull requests, webhooks", noun: "token", logo: "G", color: "#24292F" },
+  "stp-gateway": { name: "STP gateway", usedFor: "Single Touch Payroll lodgement", noun: "key", logo: "S", color: "#00843D" },
+  xero: { name: "Xero", usedFor: "Payroll journals, invoices", noun: "secret", logo: "X", color: "#13B5EA" },
+  keyflow: { name: "Keyflow", usedFor: "Two-way people and goals sync", noun: "key", logo: "K", color: "linear-gradient(135deg,#7B61FF,#2FCB8C)" },
+  "zoho-sign": { name: "Zoho Sign", usedFor: "Offers and contracts", noun: "token", logo: "Z", color: "#E42527" },
+  teams: { name: "Microsoft Teams", usedFor: "Notifications and approvals in Teams", noun: "secret", logo: "T", color: "#5059C9" },
+} as const satisfies Record<string, Connector>;
+
+export type ConnectorId = keyof typeof CONNECTORS;
+export const CONNECTOR_IDS = Object.keys(CONNECTORS) as [ConnectorId, ...ConnectorId[]];
+export const REVOKE_REASONS = ["replaced", "compromised", "unused"] as const;
+export type RevokeReason = (typeof REVOKE_REASONS)[number];
