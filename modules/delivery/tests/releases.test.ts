@@ -251,21 +251,60 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     await expect.poll(() => done, { timeout: 5000 }).toBe(true);
   });
 
-  it("racing a Prod deployment against adding a proposal never leaves it in a live release unreleased (round 14)", async () => {
+  it("a release already live in Prod takes no new proposals; keeping its own is fine", async () => {
+    await createProject(ctx(), { key: "LIV", name: "Live", client: "x", billing: "internal" });
     const { createProposal } = await import("../server/services");
-    await createProject(ctx(), { key: "RCE", name: "Race", client: "x", billing: "internal" });
-    for (let i = 0; i < 8; i++) {
-      const p = await createProposal(ctx(), { projectKey: "RCE", title: `late ${i}` });
-      await createRelease(ctx(), { projectKey: "RCE", version: `v${i}`, proposalKeys: [] });
-      const calls = [
-        () => setReleaseProposals(ctx(), { projectKey: "RCE", version: `v${i}`, proposalKeys: [p.key] }),
-        () => recordDeployment(ctx(), { projectKey: "RCE", version: `v${i}`, environment: "Prod" }),
-      ];
-      await Promise.allSettled(i % 2 ? calls.reverse().map((c) => c()) : calls.map((c) => c()));
-      const [row] = await t.owner`select p.phase, p.release_id is not null as assigned from delivery.proposal p where p.id = ${p.id}`;
-      // Either it went in first and shipped with the release, or the live release refused it.
-      expect(row.assigned ? row.phase : "refused").toMatch(/released|refused/);
-    }
+    const a = await createProposal(ctx(), { projectKey: "LIV", title: "In the release" });
+    const b = await createProposal(ctx(), { projectKey: "LIV", title: "Late" });
+    await createRelease(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
+    await recordDeployment(ctx(), { projectKey: "LIV", version: "v1", environment: "Prod" });
+    await expect(setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key, b.key] })).rejects.toThrow(/already live in Prod; put LIV-002 in a new release/);
+    await setReleaseProposals(ctx(), { projectKey: "LIV", version: "v1", proposalKeys: [a.key] });
+  });
+
+  // Holds the first service that locks a release inside its transaction, right after the lock, until
+  // released: the other service then runs against it for real (round 15). Test-only runtime wrapper.
+  const holdAfterReleaseLock = () => {
+    let entered!: () => void, release!: () => void;
+    const inside = new Promise<void>((r) => { entered = r; });
+    const gate = new Promise<void>((r) => { release = r; });
+    let armed = true;
+    const text = (q: { queryChunks?: { value?: unknown }[] }) => (q.queryChunks ?? []).map((c) => (Array.isArray(c?.value) ? c.value.join("") : "")).join("");
+    const wrapTx = (tx: Db) => new Proxy(tx, { get: (target, prop) => prop !== "execute" ? Reflect.get(target, prop) : async (q: never) => {
+      const out = await target.execute(q);
+      if (armed && /from delivery\.release .*for update/s.test(text(q))) { armed = false; entered(); await gate; }
+      return out;
+    } });
+    const db = new Proxy(app, { get: (target, prop) => prop !== "transaction" ? Reflect.get(target, prop)
+      : (fn: (tx: Db) => Promise<unknown>) => target.transaction((tx) => fn(wrapTx(tx as never))) });
+    configureRuntime({ db: db as Db, auditKey: "k".repeat(32) });
+    return { inside, release: () => { release(); configureRuntime({ db: app, auditKey: "k".repeat(32) }); } };
+  };
+
+  it.each([
+    ["adding a proposal holds the release; a Prod deployment waits, then ships it", "assign-first"],
+    ["a Prod deployment holds the release; adding a proposal waits, then is refused", "deploy-first"],
+  ])("race, %s (rounds 14 and 15)", async (_n, order) => {
+    const { createProposal } = await import("../server/services");
+    const key = order === "assign-first" ? "RCA" : "RCB";
+    await createProject(ctx(), { key, name: key, client: "x", billing: "internal" });
+    const p = await createProposal(ctx(), { projectKey: key, title: "late" });
+    await createRelease(ctx(), { projectKey: key, version: "v1", proposalKeys: [] });
+    const assign = () => setReleaseProposals(ctx(), { projectKey: key, version: "v1", proposalKeys: [p.key] });
+    const deploy = () => recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Prod" });
+    const h = holdAfterReleaseLock();
+    const first = order === "assign-first" ? assign() : deploy();
+    await h.inside;
+    let secondDone = false;
+    const second = (order === "assign-first" ? deploy() : assign()).finally(() => { secondDone = true; });
+    await new Promise((r) => setTimeout(r, 300));
+    expect(secondDone).toBe(false); // waiting on the held release row
+    h.release();
+    await first;
+    if (order === "assign-first") await expect(second).resolves.toMatchObject({ released: true });
+    else await expect(second).rejects.toThrow(/already live in Prod/);
+    const [row] = await t.owner`select phase, release_id is not null as assigned from delivery.proposal where id = ${p.id}`;
+    expect(row).toEqual(order === "assign-first" ? { phase: "released", assigned: true } : { phase: "proposed", assigned: false });
   });
 
   const MERGE = [
@@ -284,6 +323,11 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
         for (let i = 0; i < deployments; i++) await t.owner`insert into delivery.deployment (tenant_id, release_id, environment_id, status, recorded_by) values (${T}, ${rel.id}, ${e.id}, 'deployed', 'test')`;
       }
       await t.owner.unsafe(readFileSync(join(__dirname, "../db/migrations/0008_environment_name_ci.sql"), "utf8"));
+    } catch (e) {
+      // Leave the shared database as it was: drop this project's rows, then restore the index.
+      await t.owner`delete from delivery.deployment where release_id = ${rel.id}`;
+      await t.owner`delete from delivery.environment where project_id = ${p.id}`;
+      throw e;
     } finally {
       await t.owner`create unique index if not exists environment_name_ci on delivery.environment (project_id, lower(name))`;
     }
