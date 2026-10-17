@@ -1,14 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:18 UTC
+**Last Updated:** 2026-10-17 19:24 UTC
 
 ## Active Changes
 
 
-- 🔀 **051-project-sections** — pr raised | 5/5 tasks (100%) | 0 failed | PR #42 merged
-- 🔀 **052-settings-review** — PR #43 merged
-- ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed
+- ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged
 
 ## Pending Proposals
 
@@ -67,9 +65,11 @@
 - ✅ **048-chat-cost**
 - ✅ **049-chat-history**
 - ✅ **050-immutable-trace**
+- ✅ **051-project-sections**
+- ✅ **052-settings-review**
 
 ## Stats
 
 - **Total changes:** 26
-- **Active:** 3
-- **Completed:** 23
+- **Active:** 1
+- **Completed:** 25
