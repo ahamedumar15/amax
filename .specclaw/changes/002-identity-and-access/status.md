@@ -11,7 +11,7 @@
 | Proposal | ✅ Approved | Approved by product owner 2026-10-17: priority path to the spec-progress board (007) and amax tracking itself (039) |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
+| Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | - | - |
 | PR | - | - |
