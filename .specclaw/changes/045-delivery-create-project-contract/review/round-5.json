@@ -1,0 +1,78 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "modules/delivery/tests/create-project-contract.test.ts",
+  "modules/delivery/tests/create-project-surfaces.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/create-project-surfaces.test.ts",
+   "fp": "97aec8147cc2",
+   "in_delta": true,
+   "line": 55,
+   "message": "This fixes one instance of the round-4 finding. The new guard checks one file, `modules/delivery/actions.ts`, and only three spellings: `createProject`, `create_project` and the raw SQL `insert into delivery.project`. Earlier rounds put the duplicate-key fix in the shared `insertProject`. The regex does not match `insertProject` or a Drizzle `tx.insert(project)`/`insert(projects)` call. It also misses a `\"use server\"` action defined anywhere else in the module, such as `ui/*.tsx` or `server/*`. So a screen could create projects, and its ProjectConflictError mapping would go untested, while this test stays green. Fix: check that the server action registry/manifest has no create-project action, or scan every `\"use server\"` module under `modules/delivery/`. Also add `insertProject` and the Drizzle insert forms to the pattern. Prove the guard with a table of at least three variants that must each trip it: a `createProject` call, an `insertProject` call, and a Drizzle `insert(project)`.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Add `export async function newProjectAction(fd: FormData) { \"use server\"; return withTenant(..., tx => insertProject(tx, {...})) }` to actions.ts, or put a server action in ui/NewProjectForm.tsx that calls createProjectService \u2192 'AC-3 no screen creates projects' still passes, and a taken key on that screen shows an unmapped internal error that no test catches.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/tests/create-project-surfaces.test.ts",
+   "fp": "f1e7d779cdc1",
+   "in_delta": true,
+   "line": 54,
+   "message": "The static 'no screen creates projects' check does not need a database, but it sits inside `describe.skipIf(!hasDb)`. In any run without Postgres, the only evidence that the third entry point is closed is skipped. Move it into its own describe block that is not gated, so it always runs.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "Run CI or a local vitest without DATABASE_URL \u2192 the guard is skipped, and someone adds a create-project action to actions.ts without the check ever running.",
+   "severity": "minor"
+  }
+ ],
+ "head": "22b3aee20f130641e4bb1f3eff52ee8f86ca8ac2",
+ "impact": [
+  ".github/actions/setup/action.yml",
+  ".github/dependabot.yml",
+  ".github/workflows/ci.yml",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dependency-review.yml",
+  ".github/workflows/pages.yml",
+  ".github/workflows/specclaw-sync.yml",
+  "apps/mock/app/globals.css",
+  "apps/mock/app/page.tsx",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/layout.tsx",
+  "apps/web/app/(app)/settings/ai/page.tsx",
+  "apps/web/app/(app)/settings/settings.css",
+  "apps/web/components/chat/Chat.tsx",
+  "apps/web/tests/e2e/mcp.spec.ts",
+  "modules/delivery/ui/EnvironmentsCard.tsx",
+  "modules/delivery/ui/ProjectPage.tsx",
+  "modules/delivery/ui/ProjectsPage.tsx",
+  "modules/delivery/ui/ProposalsPage.tsx",
+  "packages/mcp/tests/oauth-reuse.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 29703,
+ "round": 5,
+ "since": "21f028d589",
+ "status": "open",
+ "system_chars": 20955,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792247205,
+ "ts_start": 1792247164
+}

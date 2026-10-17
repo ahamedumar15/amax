@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -20,6 +20,25 @@ const T = lumen.tenant.id;
 const BASE = "https://amax.test";
 const REDIRECT = "http://127.0.0.1:7777/cb";
 const TAKEN = { key: "CON", name: "Again", client: "x", billing: "fixed" };
+
+// 045 review rounds 4-5: no screen creates projects, so MCP and chat are the only user-facing paths.
+// Every "use server" file in the module is checked for any way of creating one.
+const CREATES = /createProject|createSourcedProject|insertProject|create_project|insert\s+into\s+delivery\.project|\.insert\(\s*projects?\b/i;
+const root = join(__dirname, "..");
+const serverActionFiles = () => (readdirSync(root, { recursive: true }) as string[])
+  .filter((f) => /\.tsx?$/.test(f) && !f.startsWith("tests") && !f.includes("node_modules"))
+  .filter((f) => /^\s*["']use server["']/m.test(readFileSync(join(root, f), "utf8")));
+
+describe("045 no screen creates projects", () => {
+  it.each([["createProject(ctx, a)"], ["insertProject(tx, a, ctx)"], ["tx.insert(project).values(a)"], ["insert into delivery.project (key)"]])("AC-3 the guard catches %s", (code) => {
+    expect(code).toMatch(CREATES);
+  });
+  it("AC-3 no server action in the module creates a project", () => {
+    const files = serverActionFiles();
+    expect(files).toContain("actions.ts");
+    expect(files.filter((f) => CREATES.test(readFileSync(join(root, f), "utf8")))).toEqual([]);
+  });
+});
 
 // 045 review round 3: what an MCP client and a chat user actually see when a project key is taken.
 describe.skipIf(!hasDb)("045 a taken project key, as each caller sees it (Postgres)", () => {
@@ -50,11 +69,6 @@ describe.skipIf(!hasDb)("045 a taken project key, as each caller sees it (Postgr
     const code = new URL(redirect).searchParams.get("code")!;
     return (await exchangeToken(app, new URLSearchParams({ grant_type: "authorization_code", code, code_verifier: verifier, redirect_uri: REDIRECT, client_id: client.client_id }))).access_token;
   };
-
-  it("AC-3 no screen creates projects: MCP and chat are the only user-facing paths", () => {
-    const actions = readFileSync(join(__dirname, "..", "actions.ts"), "utf8");
-    expect(actions).not.toMatch(/createProject|create_project|insert into delivery\.project/);
-  });
 
   it("AC-3 an MCP client gets a tool error that says the key is taken", async () => {
     const req = new Request(`${BASE}/api/mcp`, {
