@@ -1,8 +1,9 @@
 {
   "change": "010-allocations-forecast",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-17T12:33:26Z"}
+    "tasks": {"status":"done","at":"2026-10-17T12:33:26Z"},
+    "verify": {"status":"done","at":"2026-10-17T12:41:44Z"}
   }
 }

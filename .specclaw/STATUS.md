@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 12:33 UTC
+**Last Updated:** 2026-10-17 12:42 UTC
 
 ## Active Changes
 
@@ -10,7 +10,7 @@
 - 🔍 **005-amax-chat** — verify done | 3/3 tasks (100%) | 0 failed | PR #22 closed
 - 🔍 **007-delivery-projects** — verify done | 4/4 tasks (100%) | 0 failed | PR #17 closed
 - 🔀 **009-time-and-approvals** — PR #28 open
-- 📝 **010-allocations-forecast** — tasks done | 0/6 tasks (0%) | 0 failed
+- 🔍 **010-allocations-forecast** — verify done | 6/6 tasks (100%) | 0 failed
 - 🔀 **011-hr-core** — pr raised | 6/6 tasks (100%) | 0 failed | PR #27 open
 - 🔍 **033-ai-gateway-and-residency** — verify done | 3/3 tasks (100%) | 0 failed
 - 🔍 **039-specclaw-self-sync** — verify done | 3/3 tasks (100%) | 0 failed | PR #18 closed
