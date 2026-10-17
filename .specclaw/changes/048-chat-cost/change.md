@@ -26,17 +26,19 @@ What changes on screen, and where to see it: [`048-chat-cost`](../../mock/index.
 ## Tasks
 
 - [x] `T1` — AI usage screen and chat footer, matching the mock (AC-2, AC-3, AC-5, AC-6)
-  Files: apps/web/app/(app)/settings/ai/usage/page.tsx, apps/web/app/(app)/settings/ai/usage/UsageFilters.tsx, apps/web/app/(app)/settings/ai/page.tsx, apps/web/app/(app)/settings/settings.css, apps/web/components/chat/Chat.tsx, apps/web/app/actions/chat.ts, packages/ui/src/styles/chat.css
+  Files: apps/web/app/(app)/settings/ai/usage/page.tsx, apps/web/app/(app)/settings/ai/usage/UsageFilters.tsx, apps/web/app/(app)/settings/ai/usage/CostChart.tsx, apps/web/app/(app)/settings/ai/usage/UsageTables.tsx, apps/web/app/(app)/settings/ai/page.tsx, apps/web/app/(app)/settings/settings.css, apps/web/app/(app)/layout.tsx, apps/web/components/shell/Shell.tsx, apps/web/components/chat/Chat.tsx, apps/web/app/actions/chat.ts, apps/web/lib/chat-usage.ts, packages/ui/src/styles/chat.css
 - [x] `T2` — Migration 0019: `ai.call.user_id` and `conversation_id`, backfill `user_id` from `caller` (AC-1)
   Files: packages/db/migrations/0019_ai_call_owner.sql
 - [x] `T3` — Gateway logs the person and conversation; chat turns pass them (AC-1)
   Files: packages/ai/src/gateway.ts, packages/chat/src/engine.ts
   Depends: T2
 - [x] `T4` — `aiUsage()` query and the `get_ai_usage` read tool (self or tenant, month, group-by, source); unknown cost never counts as $0 (AC-3, AC-4, AC-5)
-  Files: packages/ai/src/usage.ts, packages/ai/src/index.ts, apps/web/lib/server.ts
+  Files: packages/ai/src/usage.ts, packages/ai/src/usage-format.ts, packages/ai/src/usage-tool.ts, apps/web/lib/server.ts
   Depends: T3
 - [x] `T5` — Tests: migration backfill, gateway attribution, usage totals and unknown cost, self vs tenant permission, tool equals screen; e2e for the screen (axe, light and dark) and the chat footer (AC-1 to AC-6)
-  Files: packages/ai/tests/usage.test.ts, apps/web/tests/e2e/ai-usage.spec.ts, apps/web/playwright.auth.config.ts
+  Files: packages/ai/tests/usage.test.ts, packages/ai/tests/usage-migration.test.ts, apps/web/tests/e2e/ai-usage.spec.ts, apps/web/playwright.auth.config.ts, apps/web/playwright.config.ts
   Depends: T1, T4
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan failed: "jq: Argument list too long" on this repo)
