@@ -1,9 +1,10 @@
-// Chat intents (plain data; 005 amax chat reads them from the manifest).
+// Chat intents (005): a create button marked with an intent opens the chat in that mode. `tool`
+// names the MCP write tool the chat fills in; it runs only after the user confirms.
 export const chatIntents = [
-  { id: "delivery.new-project", say: ["new project", "start a project"], service: "delivery.project.create",
+  { id: "delivery.new-project", label: "New project", tool: "create_project", required: ["key", "name", "client", "billing"],
     fields: [{ name: "name", ask: "What's the project called?" }, { name: "client", ask: "Which client?" }, { name: "key", ask: "Short key for proposal ids, e.g. CON" }, { name: "billing", ask: "Fixed price, time and materials, or retainer?", options: ["fixed", "t&m", "retainer"] }] },
-  { id: "delivery.new-proposal", say: ["new proposal", "propose a change"], service: "delivery.proposal.create",
-    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "title", ask: "What's the change?" }] },
-  { id: "delivery.new-release", say: ["new release", "cut a release"], service: "delivery.release.create",
+  { id: "delivery.new-proposal", label: "New proposal", tool: "create_proposal", required: ["projectKey", "title"],
+    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "title", ask: "What's the change?" }, { name: "estimateHours", ask: "Roughly how many hours?" }] },
+  { id: "delivery.new-release", label: "New release", tool: "create_release", required: ["projectKey", "version"],
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Version, e.g. v2.5.0" }] },
 ];
