@@ -4,7 +4,7 @@ import { createDb, migrate, migrationScopes } from "@amax/db";
 import { loadFixtures, lumen } from "@amax/testing";
 import { authFixtures } from "@amax/auth/fixtures";
 import { upsertPasswordUser } from "@amax/auth/password";
-import { deliveryFixtures } from "../../../../modules/delivery/fixtures/index";
+import { deliveryFixtures, pinToday } from "../../../../modules/delivery/fixtures/index";
 import { readSpecclaw } from "../../../../modules/delivery/sync/specclaw";
 import { syncSpecclaw } from "../../../../modules/delivery/sync/import";
 import { configureRuntime } from "@amax/core/server";
@@ -31,7 +31,20 @@ export default async function setupE2eDatabase() {
   const { db, client } = createDb(ownerUrl, { max: 1, connection: { options: "-c role=amax_app" } as never });
   await loadFixtures(db, [{ id: "auth", fixtures: [authFixtures] }, { id: "delivery", dependsOn: ["auth"], fixtures: [deliveryFixtures] }], lumen);
   await upsertPasswordUser(db, lumen.tenant.id, { email: "ops@lumenlabs.test", name: "Ops Admin", roles: ["Admin"], password: "e2e-ops-password" });
-  // 039: amax's own specs as project AMX, imported by a service principal like the real sync.
+  // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
+  await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
+  // 041: fixtures.md's "today" (Fri Oct 16, 2026) for this tenant's date windows, so dates match the mock.
+  await withTenant(db, lumen.tenant.id, (tx) => pinToday(tx, lumen.tenant.id, "2026-10-16"));
+  await client.end();
+}
+
+/**
+ * 039: amax's own specs as project AMX, imported by a service principal like the real sync. Run by
+ * amx.setup.ts after the visual test (041), so the screens it compares hold fixtures.md's data only.
+ */
+export async function importAmx(admin: string) {
+  const ownerUrl = Object.assign(new URL(admin), { pathname: `/${E2E_DB}` }).toString();
+  const { db, client } = createDb(ownerUrl, { max: 1, connection: { options: "-c role=amax_app" } as never });
   configureRuntime({ db, auditKey: "e2e-audit-key-e2e-audit-key-e2e-audit" });
   setGrants([{ grants: { PM: ["delivery:read"] } }]);
   installAuthorizer();
@@ -42,8 +55,6 @@ export default async function setupE2eDatabase() {
   if (id?.kind !== "principal") throw new Error("no principal");
   const ctx = await principalContext(db, id.principal, "delivery:proposal:sync");
   await syncSpecclaw(db, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(join(import.meta.dirname, "../../../..")), sha: "e2e" });
-  // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
-  await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
   await client.end();
 }
 

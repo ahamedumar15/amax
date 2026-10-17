@@ -132,8 +132,6 @@ importers:
         specifier: 4.23.15
         version: 4.23.15
 
-  modules/hello: {}
-
   modules/time:
     dependencies:
       drizzle-orm:

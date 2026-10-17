@@ -29,7 +29,8 @@
 .iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}
 .vr{width:1px;height:30px;background:var(--line-2)}
 .mewrap{position:relative}
-.me{display:flex;align-items:center;gap:10px;font-size:14px;border:0;background:none;cursor:pointer;text-align:left;padding:4px 8px 4px 4px;border-radius:14px}
+/* 041: the signed-in profile button stays within the 52px top bar, so screens sit where the mock puts them */
+.me{display:flex;align-items:center;gap:10px;font-size:14px;border:0;background:none;cursor:pointer;text-align:left;padding:2px 8px 2px 4px;border-radius:14px}
 .me:hover{background:var(--sunken)}
 .me small{display:block;color:var(--ink-3);font-size:12px}
 .av{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#7FD8F5,#7B61FF);flex:none}

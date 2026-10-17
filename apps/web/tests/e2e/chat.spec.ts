@@ -65,7 +65,7 @@ test("AC4 pins: Add to chat adds a chip; AC5 a role without access gets a refusa
 });
 
 test("AC5 the same refusal the page would give", async ({ page }) => {
-  await signIn(page, "liam@lumenlabs.test", "/hello");
+  await signIn(page, "liam@lumenlabs.test", "/");
   await page.getByRole("button", { name: "Ask amax" }).click();
   await page.getByLabel("Message amax").fill("list the projects");
   await page.keyboard.press("Enter");
