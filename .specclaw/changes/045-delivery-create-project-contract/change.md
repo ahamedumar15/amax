@@ -32,3 +32,15 @@ Not in scope (review round 1): creating the project inside the caller's transact
   Depends: T2
 
 ## Verify
+
+**Verdict:** PASS (gates). Local review OPEN: the operator's 5-round cap was reached, and round 5's one major is fixed but was not re-reviewed (see follow-ups.md).
+
+- AC-1: pass. `tests/create-project-contract.test.ts` "AC-1": presales' call shape `{ key, name, client, billing }` returns `{ id, key }` with Dev/QA/UAT/Prod, makes 1 counted write under `withIdempotency`, and the replay returns `{ id, key, replayed: true }`.
+- AC-2: pass. "AC-2": the same sourceRef and key return `existing: true`. Two racing creates make one project, and exactly one of them reports `existing`.
+- AC-3: pass. Conflict table (contract, service, registry mcp and chat), the sourceRef format table (including the hyphenated module ids it-access and payroll-lk), and the key race. `tests/create-project-surfaces.test.ts`: `handleMcp` returns a tool error with "project key CON is taken; choose another", a chat confirm fails with kind `failed`, and no `"use server"` file creates projects.
+- AC-4: pass. "AC-4": `PROJECT_CREATE_PERMISSION` is in the module's permissions, an Engineer is refused, and bad input gets "invalid input".
+- Commands (with `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`): `pnpm lint` exit 0 (includes the graph check), `pnpm test` exit 0 (delivery 185 tests), `node scripts/check-module-standard.mjs` ok.
+- Preset and quality: `specclaw-preset-check .` exit 1 and `specclaw-quality-scan . --gate` exit 1 are repo-wide, as recorded for 041 (comment rule; the high functions are in `sync/specclaw.ts` and `settings/ai/page.tsx`). In this change's files: only the comment rule, and two test files over 80 lines.
+- Quality: 49 → 49 duplicated lines (none in this change's files).
+- Screenshots: none. The change is contract-only with no screen or mock section.
+- Review: `specclaw-review verdict`: OPEN, 5 rounds, final pass missing (capped by the operator at 5 rounds).
