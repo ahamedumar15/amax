@@ -46,3 +46,19 @@ export { ProjectConflictError, type CreatedProject } from "./server/project-crea
 export async function managedProjectIds(tx: Tx, userId: string): Promise<string[]> {
   return (await tx.execute(sql`select id from delivery.project where manager_user_id = ${userId}`)).map((r) => r.id as string);
 }
+
+/**
+ * The project page's sections (051), in tab order. Allocations renders Team under the same header,
+ * so the tabs live here as data: `path` "" is the Board.
+ */
+export const PROJECT_SECTIONS = [
+  { path: "", label: "Board" },
+  { path: "proposals", label: "Proposals" },
+  { path: "releases", label: "Releases" },
+  { path: "risks", label: "Risks and decisions" },
+  { path: "team", label: "Team" },
+  { path: "contract", label: "Contract" },
+] as const;
+export type ProjectSection = (typeof PROJECT_SECTIONS)[number]["path"];
+
+export const projectHref = (key: string, section: ProjectSection = "") => `/delivery/p/${encodeURIComponent(key)}${section ? `/${section}` : ""}`;

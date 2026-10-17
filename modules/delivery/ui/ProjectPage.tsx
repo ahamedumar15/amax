@@ -7,6 +7,7 @@ import { getProject, listEnvironments, type ProposalRow } from "../server/querie
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
 import { initials, needViewer, PHASE_UI, SignInFirst, Stk } from "./parts";
+import { ProjectTabs } from "./ProjectSections";
 
 const D = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
 // "Sprint 18 runs Mon Oct 12 to Fri Oct 23. 9 of 16 tasks done, on track for v2.5.0. "
@@ -96,14 +97,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           <IntentButton intent="delivery.new-proposal" label="New proposal" />
         </div>
       </div>
-      <div className="tabs" role="group" aria-label="Sections">
-        <button type="button" className="btn sm" aria-pressed="true">Board</button>
-        <a className="btn sm" href={`/delivery/proposals?project=${project.key}`}>Proposals</a>
-        <a className="btn sm" href="/delivery/releases">Releases</a>
-        <button type="button" className="btn sm" aria-pressed="false" aria-disabled="true" title="Arrives with RAID logs">Risks and decisions</button>
-        <button type="button" className="btn sm" aria-pressed="false" aria-disabled="true" title="Arrives with allocations (010)">Team</button>
-        <button type="button" className="btn sm" aria-pressed="false" aria-disabled="true" title="Arrives with finance (017)">Contract</button>
-      </div>
+      <ProjectTabs projectKey={project.key} current="" />
       <div className="board">
         {PHASES.map((phase) => {
           const cards = proposals.filter((p) => p.phase === phase);

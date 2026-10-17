@@ -31,7 +31,7 @@ What changes on screen, and where to see it: [`051-project-sections`](../../mock
 
 ## Tasks
 
-- [ ] `T1` — Section tabs become links with `aria-current="page"` under a shared project header; Risks and decisions and Contract open empty states with an "Ask amax" chip; delivery routes `p/:key/<section>` (AC-1, AC-4)
+- [x] `T1` — Section tabs become links with `aria-current="page"` under a shared project header; Risks and decisions and Contract open empty states with an "Ask amax" chip; delivery routes `p/:key/<section>` (AC-1, AC-4)
   Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProjectSections.tsx, modules/delivery/ui/delivery.css, modules/delivery/module.ts, modules/delivery/contracts.ts
 - [ ] `T2` — Proposals and Releases sections reuse the global list components, scoped to the project in the query (AC-2)
   Files: modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/server/queries.ts
