@@ -24,4 +24,26 @@ Projects (portfolio), project page with the board, Proposals with phase bar, Rel
 
 ## Tasks
 
+Assumptions (Rule 1):
+- Built on 002 + 003 (merged). Phases are specclaw's five board columns: proposed, planned, building, verified, released; "released" is set only by a Prod deployment (AC-3), never by a board move.
+- Screens reuse the mock's markup and class names; the styles they need move from the mock into `modules/delivery/ui/delivery.css` (module standard: shared UI starts inside the module).
+- Without 004, `mcp.ts` tool definitions sit in the manifest unused; with it they register. Chat intents are plain manifest data.
+- Fixtures reproduce fixtures.md's delivery numbers (3 projects, 37 in flight = 6 + 4 + 18 + 9, 5 released this month, the Contoso board, the three releases), filling unnamed proposals with neutral titles.
+
+- [ ] `T1` — Contract first: `contracts.ts` (project lookups, proposal/release types, `delivery.release.deployed` and `delivery.proposal.phase_changed` payloads) with stubs and contract tests; manifest (grants, nav, routes); README; CODEOWNERS line (AC-5, AC-6)
+  Kind: impl
+  Files: modules/delivery/{module.ts,contracts.ts,package.json,tsconfig.json,README.md}, modules/delivery/tests/contracts.test.ts, .github/CODEOWNERS
+- [ ] `T2` — Schema and fixtures: `delivery.project`, `delivery.proposal` (project-scoped key, phase, tasks, hours, owner, release), `delivery.release`, `delivery.environment`, `delivery.deployment`, RLS on all; fixture seed matching fixtures.md (AC-1)
+  Kind: migration
+  Files: modules/delivery/db/{schema.ts,migrations/0001_delivery.sql}, modules/delivery/fixtures/index.ts, modules/delivery/tests/schema.test.ts
+  Depends: T1
+- [ ] `T3` — Services and queries: create project/proposal/release, `moveProposal` (explicit, audited, can't move into released), `recordDeployment` (Prod ⇒ proposals released; emits events), list/get queries behind `can()`; MCP tool and chat intent definitions (AC-3, AC-4, AC-5)
+  Kind: impl
+  Files: modules/delivery/server/{services,queries}.ts, modules/delivery/mcp.ts, modules/delivery/chat.ts, modules/delivery/tests/{services,mcp}.test.ts
+  Depends: T2
+- [ ] `T4` — Screens: Projects (tickets, portfolio), project page with the board and Move action, Proposals (phase bar, table), Releases (map, table) from the database; e2e visual check against the mock at 1440 px (≤2%) and axe (AC-2, AC-3)
+  Kind: impl
+  Files: modules/delivery/ui/*, modules/delivery/actions.ts, apps/web/tests/e2e/delivery.spec.ts
+  Depends: T3
+
 ## Verify

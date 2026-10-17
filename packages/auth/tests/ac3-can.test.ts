@@ -27,6 +27,12 @@ describe("AC-3 can()", () => {
     expect(can(maya, "time:approve")).toBe(false);
   });
 
+  it("canEver() counts qualified grants for the up-front check; the record check still applies", async () => {
+    const { canEver } = await import("../src/can");
+    expect(canEver(maya, "time:approve")).toBe(true);
+    expect(canEver(maya, "finance:read")).toBe(false);
+  });
+
   it("@assigned and @own", () => {
     expect(can(nimal, "time:read", { projectId: "flt" })).toBe(true);
     expect(can(nimal, "time:read", { projectId: "hri" })).toBe(false);

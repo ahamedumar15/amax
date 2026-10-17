@@ -4,7 +4,7 @@ import { setTenant, type Db, type Tx } from "@amax/db";
 import { appendAudit, redact, type Sensitivity } from "./audit";
 import { authorize, ForbiddenError, type ServiceContext } from "./authorize";
 
-export type Emitted = { name: string; payload: Record<string, unknown> };
+export type Emitted = { name: string; payload: object };
 
 export type ServiceOutcome<R> = {
   result: R;

@@ -2,7 +2,10 @@ import type { ComponentType } from "react";
 import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
 
-export type ModuleRoute = { path: string; title: string; component: ComponentType };
+/** What a screen receives: route params (":key" segments) and the signed-in viewer (null in the guest preview). */
+export type ScreenProps = { params: Record<string, string>; viewer: unknown };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ModuleRoute = { path: string; title: string; component: ComponentType<ScreenProps> | ComponentType<any> };
 
 export type JobContext = { tx: Tx; tenantId: string; payload: Record<string, unknown>; jobId: string };
 export type JobDef = {

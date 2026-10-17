@@ -25,7 +25,7 @@ export const lumen: SharedFixtures = {
   ],
   projects: [
     { key: "CON", name: "Contoso Portal", client: "Contoso", manager: "maya", billing: "fixed", contractValue: "420000", invoiced: "231000", currency: "USD" },
-    { key: "FLT", name: "Fleet Tracker", client: "Fabrikam", manager: "nimal", billing: "t&m", contractValue: "210000", invoiced: "151200", currency: "USD" },
-    { key: "HRI", name: "HR Insights", client: "Northwind", manager: "maya", billing: "retainer", contractValue: "144000", invoiced: "36000", currency: "USD" },
+    { key: "FLT", name: "Fleet Tracker", client: "Wide World Importers", manager: "nimal", billing: "t&m", contractValue: "210000", invoiced: "151200", currency: "USD" },
+    { key: "HRI", name: "HR Insights", client: "Northwind HR", manager: "ayesha", billing: "retainer", contractValue: "144000", invoiced: "36000", currency: "USD" },
   ],
 };
