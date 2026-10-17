@@ -53,4 +53,22 @@ What changes on screen, and where to see it: [`051-project-sections`](../../mock
 
 ## Verify
 
-Quality: not_run (`specclaw-quality-scan` fails with jq "Argument list too long", a known tool issue)
+**Verdict:** PASS
+
+- AC-1: pass — every tab is an `<a>` to `/delivery/p/<key>[/section]`; `apps/web/tests/e2e/sections.spec.ts` "AC1 AC4 …" focuses each tab, presses Enter, checks the URL, the h1, the section heading, `aria-current="page"` and axe (wcag2a/aa) on all six.
+- AC-2: pass — `modules/delivery/tests/sections.test.ts` "AC2 …" compares each project's scoped proposals and releases with the global lists for every project with releases (other projects' records absent); e2e checks every Proposals and Releases row on CON is Contoso Portal. Same `ProposalsTable`/`ReleasesCards` components as the global pages.
+- AC-3: pass — `modules/allocations/tests/team.test.ts` "AC3 …": three months from Oct 2026, role and percent per person, rows + hidden equals every allocated person, an hr scope limited to Australia sees fewer and counts the rest, an Engineer is refused. Data via `listAllocations({ projectIds })` with the viewer as reader. Every row has a pin (`get_project_team`), checked in e2e. `apps/web/tests/routes.test.ts` "AC3 …" covers the mount.
+- AC-4: pass — Risks and decisions and Contract render "Arrives with RAID logs" / "Arrives with finance, 017" with an "Ask amax about Contoso Portal's …" button (e2e); unit guard: no `aria-disabled` and no `<button>` in the tabs.
+- AC-5: pass — typecheck, unit tests, lint (incl. `check:graph`) and both e2e suites green; the 041 visual diff passes with no new allowance.
+
+Commands (exit codes):
+- `DATABASE_MIGRATE_URL=… pnpm test` → 0
+- `pnpm lint` → 0 (graph check ok, 5 modules)
+- `pnpm build` → 0
+- `E2E_DB=amax_e2e_051 E2E_AUTH_PORT=3551 pnpm --filter @amax/web e2e:auth` → 0 (47 passed). A first run had one failure in `audit.spec.ts` (050 AC-5, strict-mode `getByRole("alert")` also matched Next's route announcer); it passed on the re-run, so it's a timing flake outside this change.
+- `E2E_PORT=3552 pnpm --filter @amax/web e2e` → 0
+- `specclaw-preset-check .` → 1: 700 repo-wide violations (comments, file length) that predate this change; the new files have none. Edited existing files keep their style.
+- Quality: not_run (`specclaw-quality-scan` fails with jq "Argument list too long", a known tool issue)
+- specclaw-review loop: not run (operator's review cadence)
+
+Screenshots: `shots/app.png` (Team), `shots/app-contract.png`, `shots/app-releases.png`, `shots/mock.png`. The mock's 051 section sits inside the hidden 047-049 sections (unbalanced tags from earlier changes), so the mock shot moves it into `main` before capturing; the mock file is unchanged.
