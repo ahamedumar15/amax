@@ -32,12 +32,12 @@ The app shell: the expanding labelled rail grouped as Work, People, Business and
 ## Acceptance Criteria
 
 1. **AC-1** pnpm workspaces and Turborepo hold `apps/web` (Next.js 16, App Router, standalone output), `packages/{core,db,auth,ui,mcp,chat,agents,testing}` and `modules/*`. `pnpm build`, `pnpm lint` and `pnpm test` pass at the root.
-2. **AC-2** A module is a package with a `module.ts` manifest (id, nav entries, routes, permissions; the MCP tools, chat intents, jobs and fixtures slots can be empty for now). `apps/web` mounts modules through one registry file and a catch-all route. A sample `modules/hello` proves it: adding it is one line, and it shows up in the rail and at `/hello`.
+2. **AC-2** A module is a package with a `module.ts` manifest (id, nav entries, routes, permissions; the MCP tools, chat intents, jobs and fixtures slots can be empty for now). `apps/web` discovers modules at build time by scanning `modules/*/module.ts` (generated registry, git-ignored) and mounts them through a catch-all route, so a module change never edits a shared file. A sample `modules/hello` proves it: creating the folder is enough for it to appear in the rail and at `/hello`, and deleting the folder removes it cleanly.
 3. **AC-3** An import-boundary rule fails CI when a module imports anything from another module except its `contracts.ts`. A test fixture with a forbidden import fails the check.
 4. **AC-4** `@amax/ui` holds the design tokens as CSS variables (light and dark, contrast at least WCAG AA) and the components the mock uses: rail, top bar, cards, ticket stat cards, tables (stacked cards under 600 px), chips, segmented control, empty state, toast and live region. No component hard-codes a colour.
 5. **AC-5** The shell matches the mock at 1440 px and 390 px within a 2% visual diff, with no horizontal scroll. It is keyboard-complete: skip link, `main` landmark, focus moved to the heading and announced on navigation, and reduced motion respected.
 6. **AC-6** CI builds three targets on every pull request: Vercel (`vercel build`), Cloudflare (OpenNext `wrangler.jsonc` build) and a Docker image that starts and serves `/healthz`. `deploy/helm/amax` installs on k3s (checked with `helm template` and a kind or k3d smoke test).
-7. **AC-7** Configuration is environment variables only, validated at boot with a clear error. `CODEOWNERS` maps `packages/` and `apps/web` to the platform team and has a commented template line per module folder.
+7. **AC-7** Configuration is environment variables only, validated at boot with a clear error. `CODEOWNERS` maps `packages/` and `apps/web` to the platform team and has a commented template line per module folder. `docs/module-standard.md` is checked by a CI script that every module must pass.
 
 ## Tasks
 

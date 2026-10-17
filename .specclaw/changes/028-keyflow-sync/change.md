@@ -17,6 +17,7 @@ The Keyflow sister-product card.
 
 1. **AC-1** Two-way sync: people and teams out; goals, review scores and recognition in, shown on the person page.
 2. **AC-2** Sync status and errors on Integrations. Runs as a job.
+3. **AC-3** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

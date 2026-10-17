@@ -18,6 +18,7 @@ What changes on screen, and where to see it: [`001-amax-foundation-presales`](..
 1. **AC-1** Admin consent in Entra and an allow-list of channels and mailboxes per tenant. Nothing is read outside it.
 2. **AC-2** Each suggestion links to its source message and is routed to the module that owns the record type, through that module's chat intent.
 3. **AC-3** An hourly job, switchable on Insights.
+4. **AC-4** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

@@ -18,6 +18,7 @@ The Australia run (switch at the top of Payroll).
 1. **AC-1** PAYG withholding tables. Superannuation Guarantee at 12%, paid with each run under Payday Super and due within 7 days.
 2. **AC-2** STP Phase 2 lodgement status and payload generation (lodgement through an approved gateway is configured per tenant).
 3. **AC-3** Fortnightly pay groups.
+4. **AC-4** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

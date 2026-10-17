@@ -20,6 +20,7 @@ Projects (portfolio), project page with the board, Proposals with phase bar, Rel
 3. **AC-3** "Released" means reached Prod. Stage moves on the board use an explicit Move action and are audited.
 4. **AC-4** MCP tools: `list_projects`, `get_project`, `list_proposals`, `get_release`, `record_deployment` (PM/Admin). Chat intents: new project, new proposal, new release.
 5. **AC-5** `contracts.ts` exports project lookups and events `delivery.release.deployed` and `delivery.proposal.phase_changed`.
+6. **AC-6** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

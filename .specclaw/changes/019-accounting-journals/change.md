@@ -17,6 +17,7 @@ The Accounting connector card ("Not chosen yet").
 
 1. **AC-1** Journal model with an adapter interface. The first adapter is chosen when the customer names their accounting system; CSV export is always available.
 2. **AC-2** Postings are idempotent and audited.
+3. **AC-3** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

@@ -1,7 +1,7 @@
 # Allocations and capacity forecast
 
 **Change:** 010-allocations-forecast · **Created:** 2026-10-17
-**Lane:** Delivery · **Module:** `modules/allocations` · **Depends on:** [007](../007-delivery-projects/change.md), [011](../011-hr-core/change.md)
+**Lane:** Delivery · **Module:** `modules/allocations` · **Depends on:** [007](../007-delivery-projects/change.md), [011](../011-hr-core/change.md) · **Integrates with (optional):** [012](../012-leave/change.md)
 
 ## Problem
 
@@ -18,6 +18,7 @@ Allocations: capacity vs demand, January bench, per-person monthly grid with tot
 1. **AC-1** `allocations` schema: allocation (person, project, month, percent) and forecast. Per-person totals show, and over 100% is flagged.
 2. **AC-2** Capacity vs demand and bench come from allocations plus HR contracts (through the `hr` contract) and match fixtures.md (January bench 6).
 3. **AC-3** Copy to next month, an audited bulk action. Chat intent "allocate".
+4. **AC-4** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

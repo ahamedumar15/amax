@@ -1,7 +1,7 @@
 # Delivery: specclaw and git ingestion
 
 **Change:** 008-delivery-ingestion · **Created:** 2026-10-17
-**Lane:** Delivery · **Module:** `modules/delivery (ingestion)` · **Depends on:** [007](../007-delivery-projects/change.md), [006](../006-agent-governance/change.md), [029](../029-workflows-scheduler/change.md)
+**Lane:** Delivery · **Module:** `modules/delivery (ingestion)` · **Depends on:** [007](../007-delivery-projects/change.md), [006](../006-agent-governance/change.md), [029](../029-workflows-scheduler/change.md), [009](../009-time-and-approvals/change.md)
 
 ## Problem
 
@@ -19,6 +19,7 @@ The Overview activity feed and the "Claude for <person>" attribution.
 2. **AC-2** An Azure DevOps and GitHub webhook adapter maps commit authors to people through GitIdentity. Unmatched authors become a suggestion to link.
 3. **AC-3** Time logged from commits is a draft suggestion on the person's timesheet (through the `time` contract), never approved automatically.
 4. **AC-4** Each ingested event shows on the Overview feed with agent and person attribution.
+5. **AC-5** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

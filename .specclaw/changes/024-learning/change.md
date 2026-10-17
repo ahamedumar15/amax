@@ -17,6 +17,7 @@ Learning: stats, programmes, participation per month, expiring certifications.
 
 1. **AC-1** Programme, enrolment, completion and certification (with expiry). Counts match fixtures.md (18 programmes, 184 in ISO 27001, 126 in optional programmes).
 2. **AC-2** Expiry reminders as jobs. Chat intent "new programme".
+3. **AC-3** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 

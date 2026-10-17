@@ -19,6 +19,7 @@ People: stats, departments, joiners vs leavers, directory; Person page with empl
 2. **AC-2** Directory and person page match the mock. A PM sees masked pay; HR and Payroll see it per the 002 rules.
 3. **AC-3** Chat intent "add person". Events `hr.person.joined`, `hr.person.left` and `hr.person.changed`.
 4. **AC-4** `contracts.ts`: `getPerson`, `listPeople(scope)`, `getEmployment`.
+5. **AC-5** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 
 ## Tasks
 
