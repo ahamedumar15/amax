@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 16:56 UTC
+**Last Updated:** 2026-10-17 18:12 UTC
 
 ## Active Changes
 
@@ -15,10 +15,10 @@
 - 🔀 **041-delivery-mock-parity** — pr done | 6/6 tasks (100%) | 0 failed | PR #30 merged
 - 🔀 **045-delivery-create-project-contract** — pr raised | 3/3 tasks (100%) | 0 failed | PR #34 merged
 - 🔀 **046-chat-first-and-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #36 merged
-- 🔀 **047-admin-end-to-end** — pr raised | 7/7 tasks (100%) | 0 failed | PR #40 open
-- 🔀 **048-chat-cost** — pr raised | 5/5 tasks (100%) | 0 failed | PR #38 open
-- 🔀 **049-chat-history** — pr raised | 5/5 tasks (100%) | 0 failed | PR #37 open
-- 🔀 **050-immutable-trace** — pr raised | 6/6 tasks (100%) | 0 failed | PR #39 open
+- 🔀 **047-admin-end-to-end** — pr raised | 7/7 tasks (100%) | 0 failed | PR #40 merged
+- 🔀 **048-chat-cost** — pr raised | 5/5 tasks (100%) | 0 failed | PR #38 merged
+- 🔀 **049-chat-history** — pr raised | 5/5 tasks (100%) | 0 failed | PR #37 merged
+- 🔀 **050-immutable-trace** — pr raised | 6/6 tasks (100%) | 0 failed | PR #39 merged
 
 ## Pending Proposals
 
@@ -50,6 +50,7 @@
 - 📋 **038-navigation-scale** — proposal ready, awaiting planning
 - 📋 **043-chat-write-tool-contract** — proposal ready, awaiting planning
 - 📋 **044-release-and-region-hardening** — proposal ready, awaiting planning
+- 📋 **051-project-sections** — proposal ready, awaiting planning
 
 ## Recently Completed
 
