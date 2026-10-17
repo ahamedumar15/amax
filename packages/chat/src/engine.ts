@@ -184,16 +184,17 @@ const doneNote = (title: string, result: unknown) => {
   return `(I confirmed "${title}".${typeof key === "string" ? ` Record: ${key}.` : ""})`;
 };
 
-const decided = (viewer: Viewer, action: PendingAction, decision: "confirmed" | "cancelled", fn: () => Promise<unknown>) =>
-  withTrace(traceFor(viewer, action.traceId), async () => {
-    await traceStep({ kind: "decided", tool: action.tool, detail: { actionId: action.id, decision } });
-    return fn();
-  });
+// A confirm is recorded as the person decides, before the write runs; a cancel once it has taken effect.
+const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled") => traceStep({ kind: "decided", tool: action.tool, detail: { actionId: action.id, decision } });
+const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>) => withTrace(traceFor(viewer, action.traceId), fn);
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await card(db, viewer, conversationId, actionId);
-  return decided(viewer, action, "confirmed", () => confirmCard(db, registry, viewer, conversationId, action)) as ReturnType<typeof confirmCard>;
+  return inTrace(viewer, action, async () => {
+    await decidedStep(action, "confirmed");
+    return confirmCard(db, registry, viewer, conversationId, action);
+  });
 }
 
 async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction) {
@@ -242,7 +243,10 @@ export async function cancelAction(db: Db, viewer: Viewer, conversationId: strin
     throw e;
   });
   if (!action) return;
-  await decided(viewer, action, "cancelled", () => cancelCard(db, viewer, conversationId, action));
+  await inTrace(viewer, action, async () => {
+    await cancelCard(db, viewer, conversationId, action);
+    await decidedStep(action, "cancelled");
+  });
 }
 
 async function cancelCard(db: Db, viewer: Viewer, conversationId: string, action: PendingAction) {
