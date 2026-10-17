@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 import { lumen } from "@amax/testing";
 
 // Signed-in e2e: a real Postgres (DATABASE_MIGRATE_URL) and the fixtures-only demo provider.
-const port = 3501;
+const port = Number(process.env.E2E_PORT ?? 3501);
 const admin = new URL(process.env.DATABASE_MIGRATE_URL ?? "postgres://amax:amax@127.0.0.1:5440/amax");
 const appUrl = Object.assign(new URL(admin), { username: "amax_app", password: "amax_app", pathname: "/amax_e2e" }).toString();
 
@@ -10,7 +10,7 @@ export default defineConfig({
   testDir: "tests/e2e",
   // Chat writes proposals, so it runs after the specs that count fixture rows.
   projects: [
-    { name: "screens", testMatch: /(auth|delivery|ai|mcp)\.spec\.ts/ },
+    { name: "screens", testMatch: /(auth|delivery|ai|mcp|workflows)\.spec\.ts/ },
     { name: "writes", testMatch: /(chat|releases)\.spec\.ts/, dependencies: ["screens"] },
   ],
   workers: 1,

@@ -9,6 +9,7 @@ import { createRegistry } from "@amax/mcp";
 import type { Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
 import { engineFromEnv, pruneRunsJob, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
+import { platformWorkflows } from "./platform-workflows";
 import { installed } from "./registry";
 
 // One database client per server process; null until DATABASE_URL is configured.
@@ -47,7 +48,7 @@ const auth = { id: "auth", events: { handles: authEventHandlers } };
 
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
-export const workflowsRegistry = () => (workflows ??= workflowRegistry(installed));
+export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, ...installed]));
 let engine: Promise<WorkflowEngine> | undefined;
 export function workflowEngine(): Promise<WorkflowEngine> {
   const db = getDb();

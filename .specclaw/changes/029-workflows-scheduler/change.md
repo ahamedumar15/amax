@@ -33,7 +33,7 @@ Assumptions (stated per Rule 1):
 - Per-entity schedules take the time zone from the legal entity's country (LK → Asia/Colombo, AU → Australia/Sydney, else UTC).
 - The Temporal suite runs when `AMAX_TEMPORAL_TESTS=1` (local dev server via `@temporalio/testing`) or `TEMPORAL_ADDRESS` is set.
 
-- [ ] `T1` — Scheduler and Runs screen: `/settings/workflows` (Admin) with the schedules table (job, schedule + time zone, last and next run, last result, on/off switch) and the Runs list (status, workflow, acts for, steps with waits and retries, cost; masked fields; pause/resume/cancel/retry), matching the mock's "Recurring agent work" card; Settings nav link (AC-5, AC-6)
+- [x] `T1` — Scheduler and Runs screen: `/settings/workflows` (Admin) with the schedules table (job, schedule + time zone, last and next run, last result, on/off switch) and the Runs list (status, workflow, acts for, steps with waits and retries, cost; masked fields; pause/resume/cancel/retry), matching the mock's "Recurring agent work" card; Settings nav link (AC-5, AC-6)
   Files: apps/web/app/(app)/settings/workflows/{page,actions}.tsx, apps/web/app/(app)/settings/settings.css, apps/web/components/shell/Shell.tsx
   Depends: T3, T4
 - [x] `T2` — `@amax/workflows` API and replay core: `defineWorkflow`, `step` (retry policy, timeout, idempotency key, tool-call and cost recording), `sleep`, `waitForEvent`, `cron`, durations; manifest `workflows` and `schedules` fields (additive, opaque in core); registry from manifests; unit tests (AC-1, AC-4)
