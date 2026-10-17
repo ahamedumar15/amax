@@ -38,9 +38,14 @@ async function runsFor(d: AdminDeps, v: Viewer, status: z.infer<typeof RUN_STATU
 
 async function entityId(d: AdminDeps, v: Viewer, ref: string) {
   const rows = await withTenant(d.db(), v.tenantId, (tx) => tx.execute(sql`select id, name from core.legal_entity order by name`));
-  const hit = rows.find((r) => r.id === ref || String(r.name).toLowerCase() === ref.trim().toLowerCase());
-  if (!hit) throw notFound(`legal entity "${ref}"`);
-  return hit.id as string;
+  const byId = rows.find((r) => r.id === ref);
+  if (byId) return byId.id as string;
+  // A name that matches more than one entity is refused, as findSchedule does: picking the first
+  // would set the zone of an entity nobody named (053).
+  const byName = rows.filter((r) => String(r.name).toLowerCase() === ref.trim().toLowerCase());
+  if (byName.length > 1) throw new ToolError(`"${ref}" names ${byName.length} legal entities; give the id of one: ${byName.map((r) => `'${r.name}' (${r.id})`).join(", ")}`, "invalid_input");
+  if (!byName.length) throw notFound(`legal entity "${ref}"`);
+  return byName[0].id as string;
 }
 
 export const workflowTools = (d: AdminDeps) => [
