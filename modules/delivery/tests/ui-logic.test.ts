@@ -64,15 +64,18 @@ describe("the Active map", () => {
   const now = new Date("2026-10-16T15:00:00Z");
   const live = (version: string, at: string, projectId = "p1") => rel({ version, projectId }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, "deployed", at));
   const moving = (version: string, at: string, projectId = "p1") => rel({ version, projectId }, st("Dev", 1, false, "deployed", at), st("Prod", 2, true, null));
+  const failed = (version: string, at: string) => rel({ version }, st("Dev", 1, false, "rolled-back", at), st("Prod", 2, true, null));
   const fresh = (version: string) => rel({ version }, st("Dev", 1, false, null), st("Prod", 2, true, null));
-  // Rows are listed newest-written first; supersession must not depend on that (review round 2).
+  // Rows arrive newest-written first; nothing here may depend on that or on deployment timing races.
   it.each([
-    ["a recent live release, nothing after it", [live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["a recent live release, nothing in flight", [live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
     ["a live release more than 45 days old", [live("v1", "2026-08-20T09:00:00Z")], []],
-    ["superseded by a release first deployed after its Prod", [moving("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
-    ["an older version written later (backfill, import) does not hide the current one", [live("v0.9", "2026-09-01T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
-    ["a newer release not deployed anywhere does not supersede", [fresh("v2"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
-    ["another project's later release does not supersede", [moving("v9", "2026-10-05T09:00:00Z", "p2"), live("v1", "2026-10-01T09:00:00Z")], ["v9", "v1"]],
+    ["a release in flight replaces the live one", [moving("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
+    ["in flight, deployed to Dev before the live one reached Prod (overlap)", [moving("v2", "2026-09-20T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
+    ["a newer release that only failed is still in flight", [failed("v2", "2026-10-05T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v2"]],
+    ["two live releases: only the latest Prod, whatever the row order", [live("v0.9", "2026-09-01T09:00:00Z"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["a newer release not deployed anywhere changes nothing", [fresh("v2"), live("v1", "2026-10-01T09:00:00Z")], ["v1"]],
+    ["projects are independent", [moving("v9", "2026-10-05T09:00:00Z", "p2"), live("v1", "2026-10-01T09:00:00Z")], ["v9", "v1"]],
   ])("%s", (_, releases, want) => expect(onActiveMap(releases as ReleaseRow[], now).map((r) => r.version)).toEqual(want));
 });
 
@@ -85,4 +88,18 @@ describe("line chart runs never bridge a missing week", () => {
     ["all missing", [null, null], []],
     ["a zero is data, not a gap", [0, null, 0], [[[0, 0]], [[2, 0]]]],
   ])("%s", (_, data, want) => expect(runs(data as (number | null)[])).toEqual(want));
+});
+
+describe("line chart draws the latest marker only when the latest week has data", () => {
+  it.each([
+    ["latest week present", [1, 2, 3], 1],
+    ["latest week missing", [1, 2, null], 0],
+    ["only the latest week present", [null, null, 3], 1],
+  ])("%s", async (_, data, markers) => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const { LineChart } = await import("../ui/charts");
+    const html = renderToStaticMarkup(createElement(LineChart, { id: "t", label: "t", labels: ["W1", "W2", "W3"], max: 4, step: 2, series: [{ name: "Done", color: "#000", data: data as (number | null)[] }] }));
+    expect(html.match(/r="5"/g)?.length ?? 0).toBe(markers);
+  });
 });

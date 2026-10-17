@@ -62,22 +62,20 @@ export function actionFor(r: ReleaseRow, allowed: boolean): Action {
 }
 
 /**
- * The map's Active range: every release that has reached a stage, except a Live one that is stale
- * (Prod more than 45 days ago) or superseded: another release of its project was first deployed
- * after this one reached Prod. Deployment order, not when the row was written, so a backfilled or
- * imported older version never hides the current one (review round 2).
+ * The map's Active range, per project: its releases in flight (reached a stage, not Live), or, when
+ * nothing is in flight, its current Live release (the latest Prod deployment) if that was within 45
+ * days. No timestamp races between overlapping releases decide it (review round 3 redesign).
  */
 export function onActiveMap(releases: ReleaseRow[], now: Date): ReleaseRow[] {
-  const firstAt = (r: ReleaseRow) => Math.min(...r.stages.map((s) => (s.status && s.at ? Date.parse(s.at) : Infinity)));
-  return releases.filter((r) => {
-    const { last, live } = standing(r);
-    if (!last) return false;
-    if (!live?.at) return true;
-    const prodAt = Date.parse(live.at);
-    const stale = now.getTime() - prodAt > 45 * 86_400_000;
-    const superseded = releases.some((o) => o !== r && o.projectId === r.projectId && firstAt(o) > prodAt && firstAt(o) !== Infinity);
-    return !stale && !superseded;
-  });
+  const show = new Set<ReleaseRow>();
+  for (const projectId of new Set(releases.map((r) => r.projectId))) {
+    const own = releases.map((r) => ({ r, s: standing(r) })).filter((x) => x.r.projectId === projectId && x.s.last);
+    const moving = own.filter((x) => !x.s.live);
+    if (moving.length) { moving.forEach((x) => show.add(x.r)); continue; }
+    const current = own.filter((x) => x.s.live?.at).sort((a, b) => Date.parse(b.s.live!.at!) - Date.parse(a.s.live!.at!))[0];
+    if (current && now.getTime() - Date.parse(current.s.live!.at!) <= 45 * 86_400_000) show.add(current.r);
+  }
+  return releases.filter((r) => show.has(r));
 }
 
 function cell(s: ReleaseRow["stages"][number]) {

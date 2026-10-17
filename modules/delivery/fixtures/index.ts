@@ -80,6 +80,10 @@ const userId = async (tx: Tx, key: string) =>
 // Tasks done per week, W35-W42 2026 (Mondays), the portfolio roll-up: the mock's chart.
 const WEEKLY = { planned: [28, 30, 30, 32, 32, 34, 34, 36], done: [24, 29, 31, 27, 33, 35, 30, 38] };
 
+/** Pins a tenant's "today" (delivery.clock_pin) for date windows: the e2e tenant uses fixtures.md's Oct 16, 2026. */
+export const pinToday = (tx: Tx, tenantId: string, day: string) =>
+  tx.execute(sql`insert into delivery.clock_pin (tenant_id, today) values (${tenantId}, ${day}) on conflict (tenant_id) do update set today = excluded.today`);
+
 export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) => {
   const ids: Record<string, string> = {};
   for (const [i, p] of PROJECTS.entries()) {

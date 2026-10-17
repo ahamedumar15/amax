@@ -1,6 +1,7 @@
 -- 041 review: "Shipped to Prod per week" counts proposal.released_at, the source "Released this
--- month" reads, so the roll-up's shipped column goes (a new migration: 0009 may already be applied).
-alter table delivery.weekly_stat drop column shipped;
+-- month" reads, so the roll-up's shipped column goes. A new migration, 0009 unchanged, and "if
+-- exists" for a database migrated while the branch briefly had 0009 without it (review round 3).
+alter table delivery.weekly_stat drop column if exists shipped;
 comment on table delivery.weekly_stat is 'Weekly task roll-ups. project_id null = the portfolio''s own total, never the sum of the per-project rows.';
 
 -- 041 review: "today" for a tenant's date windows (week charts, this month, the release map). A row

@@ -49,7 +49,8 @@ export function LineChart({ id, label, labels, series, max, step, width = 560, h
         {series.map((se, k) => {
           const segs = runs(se.data).map((run) => run.map(([i, v]) => [X(i), Y(v)] as [number, number]));
           if (!segs.length) return null;
-          const last = segs[segs.length - 1].at(-1)!;
+          // The "latest" marker only when the latest week has data; otherwise it would read as current.
+          const last = se.data.at(-1) === null || se.data.at(-1) === undefined ? null : segs[segs.length - 1].at(-1)!;
           return (
             <g key={se.name}>
               {se.area && <defs><linearGradient id={`${id}g${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={se.color} stopOpacity=".25" /><stop offset="1" stopColor={se.color} stopOpacity="0" /></linearGradient></defs>}
@@ -59,7 +60,7 @@ export function LineChart({ id, label, labels, series, max, step, width = 560, h
                   <path d={curve(pts)} fill="none" stroke={se.color} strokeWidth={se.dashed ? 2.2 : 3} strokeDasharray={se.dashed ? "6 6" : "none"} strokeLinecap="round" />
                 </g>
               ))}
-              <circle cx={last[0]} cy={last[1]} r={5} fill="#fff" stroke={se.color} strokeWidth={2.5} />
+              {last && <circle cx={last[0]} cy={last[1]} r={5} fill="#fff" stroke={se.color} strokeWidth={2.5} />}
             </g>
           );
         })}

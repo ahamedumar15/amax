@@ -4,7 +4,7 @@ import { createDb, migrate, migrationScopes } from "@amax/db";
 import { loadFixtures, lumen } from "@amax/testing";
 import { authFixtures } from "@amax/auth/fixtures";
 import { upsertPasswordUser } from "@amax/auth/password";
-import { deliveryFixtures } from "../../../../modules/delivery/fixtures/index";
+import { deliveryFixtures, pinToday } from "../../../../modules/delivery/fixtures/index";
 import { readSpecclaw } from "../../../../modules/delivery/sync/specclaw";
 import { syncSpecclaw } from "../../../../modules/delivery/sync/import";
 import { configureRuntime } from "@amax/core/server";
@@ -34,7 +34,7 @@ export default async function setupE2eDatabase() {
   // 005: AI on for the e2e tenant (the scripted model stands in for Claude).
   await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into ai.settings (tenant_id, zdr_confirmed) values (${lumen.tenant.id}, true) on conflict do nothing`));
   // 041: fixtures.md's "today" (Fri Oct 16, 2026) for this tenant's date windows, so dates match the mock.
-  await withTenant(db, lumen.tenant.id, (tx) => tx.execute(sql`insert into delivery.clock_pin (tenant_id, today) values (${lumen.tenant.id}, '2026-10-16') on conflict do nothing`));
+  await withTenant(db, lumen.tenant.id, (tx) => pinToday(tx, lumen.tenant.id, "2026-10-16"));
   await client.end();
 }
 
