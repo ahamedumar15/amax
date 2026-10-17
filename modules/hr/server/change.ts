@@ -17,7 +17,11 @@ type ChangeInput = z.infer<typeof changeInput>;
 const PERSON_FIELDS = { title: "title", location: "location", workEmail: "work_email" } as const;
 const JOB_FIELDS = { department: "department", grade: "grade", contract: "contract", fte: "fte", nextReview: "next_review", baseSalary: "base_salary" } as const;
 
-/** A job change starts a new employment period on `effectiveOn`; the period before it ends the day before. */
+/**
+ * A job change starts a new employment period on `effectiveOn`; the period before it ends the day before.
+ * Periods that already start later (a planned FTE step) carry the change too, or it would be undone
+ * when they start.
+ */
 async function newPeriod(tx: Tx, personId: string, on: string, set: Record<string, unknown>) {
   const [cur] = await tx.execute(sql`select *, starts_on::text as starts from hr.employment where person_id = ${personId} and starts_on <= ${on}::date order by starts_on desc limit 1 for update`);
   if (!cur) throw new Error("this person has no employment on that date");
@@ -31,15 +35,20 @@ async function newPeriod(tx: Tx, personId: string, on: string, set: Record<strin
     await tx.execute(sql`update hr.employment set department = ${next.department}, grade = ${next.grade}, manager_person_id = ${next.manager_person_id}, contract = ${next.contract},
       fte = ${next.fte}, next_review = ${next.next_review}, base_salary = ${next.base_salary}, updated_at = now() where id = ${cur.id}`);
   }
+  const cols = Object.entries(set).map(([col, v]) => sql`${sql.identifier(col)} = ${v}`);
+  await tx.execute(sql`update hr.employment set ${sql.join(cols, sql`, `)}, updated_at = now() where person_id = ${personId} and starts_on > ${on}::date`);
 }
 
 export async function changePersonRun(tx: Tx, input: ChangeInput, ctx: ServiceContext) {
   const p = await personByNo(tx, input.employeeNo);
   inScope(ctx, "hr:person:update", p.legal_entity_id as string);
   const on = input.effectiveOn ?? today();
+  const personSet = Object.entries(PERSON_FIELDS).filter(([k]) => input[k as keyof ChangeInput] !== undefined);
+  // Title, location and work email aren't effective-dated: they change now, so the event and audit
+  // must not claim another date for them.
+  if (personSet.length && on !== today()) throw new Error(`${personSet.map(([k]) => k).join(", ")} change today: leave out effectiveOn or change them separately`);
   const changed = Object.keys(input).filter((k) => k !== "employeeNo" && k !== "effectiveOn" && input[k as keyof ChangeInput] !== undefined);
   if (!changed.length) throw new Error("nothing to change");
-  const personSet = Object.entries(PERSON_FIELDS).filter(([k]) => input[k as keyof ChangeInput] !== undefined);
   for (const [k, col] of personSet) await tx.execute(sql`update hr.person set ${sql.identifier(col)} = ${input[k as keyof ChangeInput]}, updated_at = now() where id = ${p.id}`);
   const job: Record<string, unknown> = Object.fromEntries(Object.entries(JOB_FIELDS).filter(([k]) => input[k as keyof ChangeInput] !== undefined).map(([k, col]) => [col, input[k as keyof ChangeInput]]));
   if (input.managerEmployeeNo) job.manager_person_id = (await personByNo(tx, input.managerEmployeeNo)).id;

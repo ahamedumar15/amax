@@ -1,8 +1,12 @@
 // The only import surface for other modules (docs/module-standard.md). Reads run in the caller's
-// tenant transaction. Pay and bank fields only leave through getEmployment, masked for a viewer.
+// tenant transaction, so RLS limits them to the caller's tenant. getPerson, listPeople and
+// listEmploymentPeriods return no classified field; pay and bank leave only through getEmployment,
+// always masked for the reading viewer. There is no unmasked read: a module that needs one (payroll)
+// adds its own audited system read.
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { mask, type Masked, type Viewer } from "@amax/auth";
+import { employmentAt, inForceOrder, today } from "./server/inforce";
 
 export const PERSON_STATUSES = ["joining", "active", "left"] as const;
 export type PersonStatus = (typeof PERSON_STATUSES)[number];
@@ -22,15 +26,14 @@ export type PeopleScope = { status?: PersonStatus[]; legalEntityId?: string; dep
 export type EmploymentPeriod = { personId: string; legalEntityId: string; department: string; fte: number; contract: ContractType; startsOn: string; endsOn: string | null };
 
 export type Employment = EmploymentPeriod & {
+  /** End of the contract: the last period's end. `endsOn` is only this period's end (a later change starts a new period). */
+  contractEndsOn: string | null;
   id: string; grade: string | null; managerPersonId: string | null; nextReview: string | null; currency: string;
   baseSalary: string | null | Masked; epfNumber: string | null | Masked; bankName: string | null | Masked; bankAccount: string | null | Masked;
 };
 
 /** 002 classes of the classified employment fields. Documents carry their own class per row. */
 export const EMPLOYMENT_SENSITIVE = { baseSalary: "pay", epfNumber: "pay", bankName: "bank", bankAccount: "bank" } as const;
-
-/** Who reads: a signed-in viewer (fields masked per 002) or trusted system code such as a payroll run. */
-export type Reader = Viewer | "system";
 
 export const EVENTS = { personJoined: "hr.person.joined", personLeft: "hr.person.left", personChanged: "hr.person.changed" } as const;
 export type PersonJoined = { personId: string; userId: string | null; legalEntityId: string; department: string; joinedOn: string; status: PersonStatus };
@@ -40,13 +43,9 @@ export type PersonChanged = { personId: string; userId: string | null; changed: 
 
 const day = (v: unknown) => (v === null || v === undefined ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10));
 
-/** The employment in force today, or the first one for someone who hasn't started yet. */
-export const CURRENT = sql`left join lateral (select * from hr.employment e where e.person_id = p.id
-  order by (e.starts_on <= current_date) desc, case when e.starts_on <= current_date then e.starts_on end desc nulls last, e.starts_on limit 1) emp on true
-  left join hr.person mgr on mgr.id = emp.manager_person_id`;
+const people = (at: string) => sql`select p.*, emp.department, emp.manager_person_id, mgr.user_id as manager_user_id, mgr.name as manager_name from hr.person p ${employmentAt(at)}`;
 
-const PEOPLE = sql`select p.*, emp.department, emp.manager_person_id, mgr.user_id as manager_user_id, mgr.name as manager_name from hr.person p ${CURRENT}`;
-
+/** @internal Row mapper shared with this module's own queries; not part of the v1 contract. */
 export const toPersonRef = (r: Record<string, unknown>): PersonRef => ({
   id: r.id as string, userId: (r.user_id as string | null) ?? null, employeeNo: r.employee_no as string, name: r.name as string, initials: r.initials as string,
   title: r.title as string, legalEntityId: r.legal_entity_id as string, department: (r.department as string | null) ?? null,
@@ -55,7 +54,7 @@ export const toPersonRef = (r: Record<string, unknown>): PersonRef => ({
 });
 
 export async function getPerson(tx: Tx, idOrEmployeeNo: string): Promise<PersonRef | null> {
-  const [r] = await tx.execute(sql`${PEOPLE} where p.employee_no = ${idOrEmployeeNo} or p.id::text = ${idOrEmployeeNo}`);
+  const [r] = await tx.execute(sql`${people(today())} where p.employee_no = ${idOrEmployeeNo} or p.id::text = ${idOrEmployeeNo}`);
   return r ? toPersonRef(r) : null;
 }
 
@@ -68,7 +67,7 @@ export async function listPeople(tx: Tx, scope: PeopleScope = {}): Promise<Perso
     scope.ids ? (scope.ids.length ? sql`p.id::text in (${sql.join(scope.ids.map((i) => sql`${i}`), sql`, `)})` : sql`false`) : undefined,
   ].filter((w): w is ReturnType<typeof sql> => Boolean(w));
   const filter = where.length ? sql`where ${sql.join(where, sql` and `)}` : sql``;
-  return (await tx.execute(sql`${PEOPLE} ${filter} order by p.name`)).map(toPersonRef);
+  return (await tx.execute(sql`${people(today())} ${filter} order by p.name`)).map(toPersonRef);
 }
 
 const toPeriod = (r: Record<string, unknown>): EmploymentPeriod => ({
@@ -82,22 +81,21 @@ export async function listEmploymentPeriods(tx: Tx, personIds?: string[]): Promi
   return (await tx.execute(sql`select * from hr.employment ${filter} order by person_id, starts_on`)).map(toPeriod);
 }
 
-/** The employment in force on `on` (default today), with pay and bank masked for a viewer. */
-export async function getEmployment(tx: Tx, personId: string, reader: Reader, on?: string): Promise<Employment | null> {
-  const at = on ?? new Date().toISOString().slice(0, 10);
-  const [r] = await tx.execute(sql`select e.*, p.user_id from hr.employment e join hr.person p on p.id = e.person_id where e.person_id::text = ${personId}
-    order by (e.starts_on <= ${at}::date) desc, case when e.starts_on <= ${at}::date then e.starts_on end desc nulls last, e.starts_on limit 1`);
+/** The employment in force on `on` (default today), with pay and bank masked per 002 for the reading viewer. */
+export async function getEmployment(tx: Tx, personId: string, viewer: Viewer, on?: string): Promise<Employment | null> {
+  const [r] = await tx.execute(sql`select e.*, p.user_id,
+      (select x.ends_on from hr.employment x where x.person_id = e.person_id order by x.starts_on desc limit 1) as contract_ends_on
+    from hr.employment e join hr.person p on p.id = e.person_id where e.person_id::text = ${personId} ${inForceOrder(on ?? today())}`);
   if (!r) return null;
   const full: Employment = {
-    ...toPeriod(r), id: r.id as string, grade: (r.grade as string | null) ?? null, managerPersonId: (r.manager_person_id as string | null) ?? null,
+    ...toPeriod(r), contractEndsOn: day(r.contract_ends_on), id: r.id as string, grade: (r.grade as string | null) ?? null, managerPersonId: (r.manager_person_id as string | null) ?? null,
     nextReview: day(r.next_review), currency: r.currency as string, baseSalary: r.base_salary === null ? null : String(r.base_salary),
     epfNumber: (r.epf_number as string | null) ?? null, bankName: (r.bank_name as string | null) ?? null, bankAccount: (r.bank_account as string | null) ?? null,
   };
-  if (reader === "system") return full;
-  return mask(reader, full, EMPLOYMENT_SENSITIVE, { ownerUserId: (r.user_id as string | null) ?? null, legalEntityId: full.legalEntityId }) as Employment;
+  return mask(viewer, full, EMPLOYMENT_SENSITIVE, { ownerUserId: (r.user_id as string | null) ?? null, legalEntityId: full.legalEntityId }) as Employment;
 }
 
 /** Auth users who report to this user (feeds the viewer's `reports` scope for manager-visible fields). */
 export async function reportUserIds(tx: Tx, userId: string): Promise<string[]> {
-  return (await tx.execute(sql`select p.user_id from hr.person p ${CURRENT} where mgr.user_id = ${userId} and p.user_id is not null and p.status <> 'left'`)).map((r) => r.user_id as string);
+  return (await tx.execute(sql`select p.user_id from hr.person p ${employmentAt(today())} where mgr.user_id = ${userId} and p.user_id is not null and p.status <> 'left'`)).map((r) => r.user_id as string);
 }

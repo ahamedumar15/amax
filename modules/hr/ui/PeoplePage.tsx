@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import type { ScreenProps } from "@amax/core";
 import { canEver } from "@amax/auth";
 import { IntentButton, Ticket } from "@amax/ui";
@@ -17,6 +18,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
   const today = new Date();
   const entities = await listEntities(viewer);
   const entity = entities.find((e) => e.code === params.entity);
+  if (params.entity && !entity) notFound();
   const all = params.all === "all";
   const [s, dir] = await Promise.all([peopleStats(viewer, today, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25 })]);
   const inEntities = s.byEntity.filter((e) => e.n > 0);
@@ -30,7 +32,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
           <p className="lede">{plural(s.headcount, "person", "people")} in {plural(inEntities.length, "entity", "entities")}. {plural(s.probation.dueThisMonth, "probation review")} {s.probation.dueThisMonth === 1 ? "is" : "are"} due this month and {plural(s.contractsEndingNextMonth, "contract")} end{s.contractsEndingNextMonth === 1 ? "s" : ""} in {nextMonthName(today)}.</p>
         </div>
         <div className="actions">
-          <EntityFilter entities={entities.map((e) => ({ code: e.code, label: countryName(e.code.toUpperCase(), e.name) }))} current={entity?.code} />
+          <EntityFilter entities={entities.map((e) => ({ code: e.code, label: countryName(e.country, e.name) }))} current={entity?.code} />
           {canEver(viewer, "hr:person:create") && <IntentButton intent="hr.add-person" label="Add person" />}
         </div>
       </div>

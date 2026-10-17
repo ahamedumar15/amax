@@ -33,7 +33,7 @@ describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
     });
   });
 
-  it("getEmployment masks pay and bank per 002: PM neither, Payroll both, HR neither, system and self see all", async () => {
+  it("getEmployment masks pay and bank per 002: PM neither, Payroll both, HR neither, self sees all", async () => {
     await db.tx(async (tx) => {
       const id = (await getPerson(tx, "LL-0417"))!.id;
       const pm = (await getEmployment(tx, id, db.mayaAs("PM")))!;
@@ -43,7 +43,6 @@ describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
       expect([payroll.baseSalary, payroll.bankAccount]).toEqual(["285000.0000", "8001207740"]);
       const hrRole = (await getEmployment(tx, id, db.mayaAs("HR")))!;
       expect(isMasked(hrRole.baseSalary)).toBe(true);
-      expect((await getEmployment(tx, id, "system"))!.baseSalary).toBe("285000.0000");
       expect((await getEmployment(tx, id, await db.as("kasun")))!.bankName).toBe("Commercial Bank");
     });
   });
