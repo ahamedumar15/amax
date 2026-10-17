@@ -36,5 +36,17 @@ export class ForbiddenError extends Error {
 export const contextFor = {
   ui: (tenantId: string, user: { id: string; roles?: string[] }): ServiceContext => ({ tenantId, actor: { kind: "user", ...user }, source: "ui" }),
   mcp: (tenantId: string, principal: Actor, onBehalfOf?: string): ServiceContext => ({ tenantId, actor: principal, onBehalfOf, source: "mcp" }),
-  job: (tenantId: string, jobName: string, onBehalfOf?: string): ServiceContext => ({ tenantId, actor: { id: `job:${jobName}`, kind: "system" }, onBehalfOf, source: "job" }),
+  job: (tenantId: string, jobName: string, onBehalfOf?: string): ServiceContext => {
+    // Frozen, so the tenant, actor and on-behalf-of it was issued with are the ones it keeps.
+    const ctx: ServiceContext = Object.freeze({ tenantId, actor: Object.freeze({ id: `job:${jobName}`, kind: "system" as const }), onBehalfOf, source: "job" as const });
+    issued.add(ctx);
+    return ctx;
+  },
 };
+
+// System contexts core itself issued. A plain object with `actor.kind: "system"` can be written by any
+// caller; only one from contextFor.job is in here, and it can't be added from outside this file.
+const issued = new WeakSet<ServiceContext>();
+
+/** True only for a context core issued for trusted system code (contextFor.job), never a hand-built literal. */
+export const isSystemContext = (ctx: ServiceContext) => ctx.actor.kind === "system" && issued.has(ctx);
