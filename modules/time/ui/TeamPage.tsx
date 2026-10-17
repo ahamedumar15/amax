@@ -1,18 +1,10 @@
 import type { ScreenProps } from "@amax/core";
 import { Card, EmptyState } from "@amax/ui";
 import { teamWeek } from "../server/team";
-import { parseWeekKey } from "../week";
-import { notFound } from "next/navigation";
-import { Head, SignInFirst, viewerOrNull, weekHref, weekSpan } from "./parts";
+import { Head, SignInFirst, viewerOrNull, weekParam, weekHref, weekSpan } from "./parts";
 import { ThisWeek } from "./ThisWeek";
 import { Timesheets } from "./Timesheets";
 import { WeekChart } from "./WeekChart";
-
-// A malformed or non-existent week in the URL is a 404, never a quiet fallback to another week.
-const weekParam = (key: string | undefined) => {
-  if (!key) return undefined;
-  return parseWeekKey(key) ?? notFound();
-};
 
 export async function TeamPage({ viewer: raw, params }: ScreenProps) {
   const viewer = viewerOrNull(raw);

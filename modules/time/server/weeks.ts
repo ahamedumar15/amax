@@ -40,7 +40,7 @@ export async function findWeek(tx: Tx, ref: WeekRef): Promise<WeekRow> {
   // An email is unique; a name may not be. Never act on whichever namesake sorts first.
   const exact = rows.filter((r) => String(r.email).toLowerCase() === ref.person!.toLowerCase());
   if (exact.length === 1) return exact[0] as WeekRow;
-  if (rows.length > 1) throw new Error(`more than one ${ref.person} has a timesheet in ${weekKey(w)}; use their email (${rows.map((r) => r.email).join(", ")})`);
+  if (rows.length > 1) throw new Error(`more than one ${ref.person} has a timesheet in ${weekKey(w)}; use their email`);
   return rows[0] as WeekRow;
 }
 

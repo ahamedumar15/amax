@@ -1,5 +1,5 @@
 import type { DayHours } from "../server/read";
-import { DAY_NAMES, today } from "./parts";
+import { DAY_NAMES } from "./parts";
 
 const AREA = 194;
 
@@ -21,7 +21,7 @@ export function WeekChart({ perDay, days, people }: { perDay: DayHours[]; days: 
           <div className="day" key={days[i]}>
             {d.person > 0 && <span style={{ height: px(d.person), background: "var(--mint)" }} />}
             {d.agent > 0 && <span style={{ height: px(d.agent), background: "var(--violet)" }} />}
-            <label>{DAY_NAMES[i]}{days[i] === today() ? ", today" : ""}</label>
+            <label>{DAY_NAMES[i]}</label>
           </div>
         ))}
         <div className="target" style={{ bottom: 26 + px(target) }}><b>{target} h a day planned</b></div>

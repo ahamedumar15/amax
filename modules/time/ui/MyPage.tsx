@@ -2,15 +2,7 @@ import type { ScreenProps } from "@amax/core";
 import { IntentButton } from "@amax/ui";
 import { logAction, submitAction } from "../actions";
 import { myWeek } from "../server/my";
-import { parseWeekKey } from "../week";
-import { notFound } from "next/navigation";
-import { DAY_NAMES, Head, hrs, SignInFirst, STATUS, viewerOrNull, weekSpan } from "./parts";
-
-// A malformed or non-existent week in the URL is a 404, never a quiet fallback to another week.
-const weekParam = (key: string | undefined) => {
-  if (!key) return undefined;
-  return parseWeekKey(key) ?? notFound();
-};
+import { DAY_NAMES, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
 
 export async function MyPage({ viewer: raw, params }: ScreenProps) {
   const viewer = viewerOrNull(raw);
