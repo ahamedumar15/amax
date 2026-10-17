@@ -407,24 +407,34 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     const [row] = await t.owner`select p.phase, r.version from delivery.proposal p join delivery.release r on r.id = p.release_id where p.id = ${p.id}`;
     // Never released under v2: either unreleased in v2, or released in v1.
     expect(row).toEqual(order === "move-first" ? { phase: "proposed", version: "v2" } : { phase: "released", version: "v1" });
+    // And the outbox agrees: a released event exactly when it was released (round 20).
+    const events = await t.owner`select 1 from core.event where name = 'delivery.proposal.phase_changed' and payload->>'proposalId' = ${p.id} and payload->>'to' = 'released'`;
+    expect(events).toHaveLength(order === "move-first" ? 0 : 1);
   });
 
-  it("writers sharing several proposals in opposite key orders never deadlock (round 19)", async () => {
+  it("two writers sharing two proposals in opposite key orders don't deadlock: one holds its lock, the other waits (rounds 19 and 20)", async () => {
     const { createProposal } = await import("../server/services");
     await createProject(ctx(), { key: "DLK", name: "DLK", client: "x", billing: "internal" });
-    for (let i = 0; i < 6; i++) {
-      const a = await createProposal(ctx(), { projectKey: "DLK", title: `a${i}` });
-      const b = await createProposal(ctx(), { projectKey: "DLK", title: `b${i}` });
-      await createRelease(ctx(), { projectKey: "DLK", version: `v${i}`, proposalKeys: [a.key, b.key] });
-      await createRelease(ctx(), { projectKey: "DLK", version: `w${i}`, proposalKeys: [] });
-      const results = await Promise.allSettled([
-        setReleaseProposals(ctx(), { projectKey: "DLK", version: `w${i}`, proposalKeys: [b.key, a.key] }),
-        createRelease(ctx(), { projectKey: "DLK", version: `x${i}`, proposalKeys: [a.key, b.key] }),
-        recordDeployment(ctx(), { projectKey: "DLK", version: `v${i}`, environment: "Prod" }),
-      ]);
-      for (const r of results) if (r.status === "rejected") expect(String(r.reason)).toMatch(/already shipped in another release/);
-      expect(results.map((r) => (r.status === "rejected" ? String(r.reason) : "")).join(" ")).not.toMatch(/deadlock/);
+    const a = await createProposal(ctx(), { projectKey: "DLK", title: "a" });
+    const b = await createProposal(ctx(), { projectKey: "DLK", title: "b" });
+    await createRelease(ctx(), { projectKey: "DLK", version: "w", proposalKeys: [] });
+    // Hold the first writer right after its first proposal lock: with per-key locking it would hold a
+    // only, the other writer would take b and then wait on a, and resuming would deadlock.
+    const h = holdAfterReleaseLock(/from delivery\.proposal where .*for update/s);
+    let first: Promise<unknown> = Promise.resolve(), second: Promise<unknown> = Promise.resolve();
+    try {
+      first = setReleaseProposals(ctx(), { projectKey: "DLK", version: "w", proposalKeys: [a.key, b.key] });
+      await h.inside;
+      second = createRelease(ctx(), { projectKey: "DLK", version: "x", proposalKeys: [b.key, a.key] });
+      await new Promise((r) => setTimeout(r, 300));
+    } finally {
+      h.release();
+      await Promise.allSettled([first, second]);
     }
+    await expect(first).resolves.toBeTruthy();
+    await expect(second).resolves.toBeTruthy();
+    const rows = await t.owner`select p.key, r.version from delivery.proposal p join delivery.release r on r.id = p.release_id where p.key in (${a.key}, ${b.key}) order by p.key`;
+    expect(rows).toEqual([{ key: a.key, version: "x" }, { key: b.key, version: "x" }]);
   });
 
   const MERGE = [

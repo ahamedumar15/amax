@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { textArray, type Tx } from "@amax/db";
+import { textArray, uuidArray, type Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
 import { EVENTS, PHASES, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
@@ -186,9 +186,13 @@ export const recordDeployment = defineService({
       payload: { releaseId: release.id as string, projectId: project.id as string, version: input.version, environment: env.name as string, status: input.status, released } satisfies ReleaseDeployed,
     }];
     if (released) {
-      const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released'`);
+      // Lock, then read, then update: the rows (and, through releaseOf, the release) are held, so the
+      // set read here is exactly the set released, and each event matches a row that changed (round 20).
       await lockProposals(tx, sql`release_id = ${release.id}`);
-      await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now() where release_id = ${release.id} and phase <> 'released'`);
+      const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released'`);
+      const done = await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now()
+        where id = any(${uuidArray(moved.map((p) => p.id as string))}) returning id`);
+      if (done.length !== moved.length) throw new Error("proposals changed while being released");
       events.push(...moved.map((p) => phaseEvent(p, "released", ctx)));
     }
     return { result: { id: d.id as string, released }, resourceId: d.id as string, after: input, events };
