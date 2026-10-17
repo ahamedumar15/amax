@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { appendAudit } from "../src/audit";
-import { contextFor, verifyAuditChain } from "../src/server";
+import { configureRuntime, contextFor, verifyAuditChain } from "../src/server";
 
 const T = "00000000-0000-4000-8000-0000000000c7";
 const U = "00000000-0000-4000-8000-0000000000c8";
@@ -17,9 +17,10 @@ describe.skipIf(!hasDb)("AC-7 append-only, hash-chained audit", () => {
     t = await migratedDatabase();
     await t.owner`insert into core.tenant (id, name) values (${T}, 'T'), (${U}, 'U')`;
     app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
     for (const tenant of [T, U]) {
       for (let i = 0; i < 5; i++) {
-        await withTenant(app, tenant, (tx) => appendAudit(tx, contextFor.ui(tenant, { id: "user:maya" }), { action: "x.update", resource: "x", resourceId: String(i), after: { n: i, nested: { b: 1, a: [1, 2] } } }));
+        await withTenant(app, tenant, (tx) => appendAudit(tx, contextFor.ui(tenant, { id: "user:maya" }), { action: "x.update", resource: "x", resourceId: String(i), after: { n: i, nested: { b: 1, a: [1, 2] }, dropped: undefined, at: new Date(0) } }));
       }
     }
   });
@@ -50,7 +51,7 @@ describe.skipIf(!hasDb)("AC-7 append-only, hash-chained audit", () => {
       await tx`update core.audit_event set after = '{"n": 99}' where tenant_id = ${U} and seq = 3`;
       await tx`alter table core.audit_event enable trigger audit_append_only`;
     });
-    expect(await verify(U)).toEqual({ ok: false, brokenAt: 3, reason: "hash mismatch" });
+    expect(await verify(U)).toEqual({ ok: false, brokenAt: 3, reason: "value mismatch" });
   });
 
   it("a deleted row breaks the chain", async () => {

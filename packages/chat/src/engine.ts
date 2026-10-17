@@ -2,14 +2,15 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
-import { CancelledByKeyError, claimKey, KEY_DAYS, logError, lookupKey, retryable, withIdempotency } from "@amax/core/server";
+import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, logError, lookupKey, retryable, traceStep, withIdempotency, withTrace } from "@amax/core/server";
 import type { Registry, RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type Pin = { label: string; tool: string; args: Record<string, unknown> };
 /** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string } };
+/** `traceId` (050): the turn that proposed it, so its confirm or cancel joins the same trace. */
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string };
 export type Highlight = { text: string; field: string; index: number };
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
 
@@ -55,11 +56,14 @@ export function highlightsFor(text: string, pending: PendingAction[]): Highlight
   return out.sort((a, b) => a.index - b.index);
 }
 
+// 050: a turn, and later its cards' decisions, run under one trace acting as the user.
+const traceFor = (viewer: Viewer, traceId?: string) => ({ traceId, tenantId: viewer.tenantId, actor: `user:${viewer.userId}`, source: "chat" as const });
+
 // The gateway hands write tools the input it validated, so a field the tool doesn't declare (a
 // "value" the model made up, say) never reaches the card. A tool that takes a typed secret marks the
 // card, which then asks the person for it in a masked field (047 AC-4).
 function pendingFor(t: RegisteredTool, input: Record<string, unknown>): PendingAction {
-  return { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), ...(t.secretInput ? { secret: t.secretInput } : {}) };
+  return { id: randomUUID(), tool: t.name, title: titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), traceId: currentTrace()?.traceId, ...(t.secretInput ? { secret: t.secretInput } : {}) };
 }
 
 // An error from a write that was given a secret never carries it on, even if some layer echoed it.
@@ -70,8 +74,12 @@ function scrub(e: unknown, secret: string | undefined): unknown {
 }
 
 /** One user message: answer with read tools, turn write calls into confirm cards. */
-export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> {
+export const chatTurn = (db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> =>
+  withTrace(traceFor(viewer), () => runTurn(db, registry, viewer, opts));
+
+async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> {
   const convo = await load(db, viewer, opts.conversationId);
+  await traceStep({ kind: "turn", recordId: convo.id, detail: { pins: opts.pins?.length ?? 0, intent: opts.intent?.id ?? null } });
   const pending: PendingAction[] = [];
   const tools: Tool[] = registry.toolsFor(viewer).map((t) => ({
     name: t.name,
@@ -82,6 +90,7 @@ export async function chatTurn(db: Db, registry: Registry, viewer: Viewer, opts:
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
       const action = pendingFor(t, input);
       pending.push(action);
+      await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id } });
       return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
     },
   }) as Tool);
@@ -191,9 +200,21 @@ const doneNote = (title: string, result: unknown) => {
   return `(I confirmed "${title}".${typeof key === "string" ? ` Record: ${key}.` : ""})`;
 };
 
+// A confirm is recorded as the person decides, before the write runs; a cancel once it has taken effect.
+const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled") => traceStep({ kind: "decided", tool: action.tool, detail: { actionId: action.id, decision } });
+const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>) => withTrace(traceFor(viewer, action.traceId), fn);
+
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
 export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string } = {}) {
   const action = await card(db, viewer, conversationId, actionId);
+  return inTrace(viewer, action, async () => {
+    await decidedStep(action, "confirmed");
+    return confirmCard(db, registry, viewer, conversationId, action, opts);
+  });
+}
+
+async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string }) {
+  const actionId = action.id;
   const key = keyOf(actionId);
   const done = async (result: unknown) => {
     await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, result));
@@ -240,6 +261,14 @@ export async function cancelAction(db: Db, viewer: Viewer, conversationId: strin
     throw e;
   });
   if (!action) return;
+  await inTrace(viewer, action, async () => {
+    await cancelCard(db, viewer, conversationId, action);
+    await decidedStep(action, "cancelled");
+  });
+}
+
+async function cancelCard(db: Db, viewer: Viewer, conversationId: string, action: PendingAction) {
+  const actionId = action.id;
   // The same expiry rule as confirm: past it, the key may have been pruned, so claiming it as
   // cancelled could hide a write that happened (review round 10).
   if (isExpired(action)) {

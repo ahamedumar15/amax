@@ -1,7 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { CronExpressionParser } from "cron-parser";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import type { EventHandlerDef, JobDef, ModuleManifest } from "./module";
+import { appendTrace } from "./trace";
+import { withTrace, type Trace } from "./trace-context";
 
 export type JobRegistry = { jobs: Map<string, JobDef>; handlers: EventHandlerDef[] };
 
@@ -58,14 +61,17 @@ export async function runDueJobs(db: Db, registry: JobRegistry, opts: { leaseSec
     const tenantId = job.tenant_id as string;
     try {
       if (!def) throw new Error(`no module declares job "${job.name}"`);
-      await withTenant(db, tenantId, async (tx) => {
+      // Each run is one trace, recorded in its own short transaction before the job's own.
+      const trace: Trace = { traceId: randomUUID(), tenantId, actor: `job:${job.name}`, source: "job" };
+      await withTenant(db, tenantId, (tx) => appendTrace(tx, trace, { kind: "job_run", tool: job.name as string, detail: { jobId: job.id as string } }));
+      await withTrace(trace, () => withTenant(db, tenantId, async (tx) => {
         await def.run({ tx, tenantId, payload: job.payload as Record<string, unknown>, jobId: job.id as string });
         if (job.cron) {
           await tx.execute(sql`update core.job set run_at = ${nextRun(job.cron as string).toISOString()}, attempts = 0, locked_until = null, last_error = null where id = ${job.id}`);
         } else {
           await tx.execute(sql`update core.job set status = 'done', locked_until = null, last_error = null where id = ${job.id}`);
         }
-      });
+      }));
       result.jobs++;
     } catch (e) {
       result.jobsFailed++;

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { z } from "zod";
 import { type Db, textArray, withTenant } from "@amax/db";
-import { logError, type Sensitivity, type Source } from "@amax/core/server";
+import { appendTrace, currentTrace, logError, type Sensitivity, type Source } from "@amax/core/server";
 import { blockedReason, loadPolicy, type AiPolicy } from "./policy";
 import { DATA_RULES, looksLikeInjection, quoteData } from "./prompt";
 import { redactDeep, type Redactions } from "./redact";
@@ -62,9 +62,15 @@ async function log(caller: AiCaller, entry: LogEntry) {
   const priced = entry.providerModel ?? entry.model;
   // The error text can quote model output, so only its first line, capped, is kept.
   const error = entry.error ? entry.error.split("\n")[0].slice(0, 200) : null;
-  await withTenant(db, caller.tenantId, (tx) => tx.execute(sql`insert into ai.call (tenant_id, user_id, conversation_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
-    values (${caller.tenantId}, ${caller.userId ?? null}, ${caller.conversationId ?? null}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
-            ${costOf(priced, entry.usage)}, ${JSON.stringify(entry.redactions)}::jsonb, ${entry.injection}, ${textArray(entry.toolsRun ?? [])}, ${entry.ok}, ${error})`));
+  // 050: the call carries its trace id, and the trace gets a model_call step pointing at it.
+  const trace = currentTrace();
+  const traced = trace?.tenantId === caller.tenantId ? trace : undefined;
+  await withTenant(db, caller.tenantId, async (tx) => {
+    const [row] = await tx.execute(sql`insert into ai.call (tenant_id, trace_id, user_id, conversation_id, caller, source, purpose, model, provider_model, policy_version, input_tokens, output_tokens, cost_usd, redactions, injection_suspected, tools_run, ok, error)
+    values (${caller.tenantId}, ${traced?.traceId ?? null}, ${caller.userId ?? null}, ${caller.conversationId ?? null}, ${caller.caller}, ${caller.source}, ${caller.purpose}, ${entry.model}, ${entry.providerModel ?? null}, ${entry.policyVersion}, ${entry.usage.inputTokens}, ${entry.usage.outputTokens},
+            ${costOf(priced, entry.usage)}, ${JSON.stringify(entry.redactions)}::jsonb, ${entry.injection}, ${textArray(entry.toolsRun ?? [])}, ${entry.ok}, ${error}) returning id`);
+    if (traced) await appendTrace(tx, traced, { kind: "model_call", recordId: row.id as string, detail: { model: entry.providerModel ?? entry.model, ok: entry.ok } });
+  });
 }
 
 // Primary model first; the fallback runs when the primary errors, refuses or breaks the schema.

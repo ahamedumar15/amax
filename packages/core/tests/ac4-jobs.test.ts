@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
-import { nextRun, registryFrom, runDueJobs, scheduleJob, type JobRegistry } from "../src/server";
+import { configureRuntime, nextRun, registryFrom, runDueJobs, scheduleJob, type JobRegistry } from "../src/server";
 
 const A = "00000000-0000-4000-8000-0000000000a4";
 const B = "00000000-0000-4000-8000-0000000000b4";
@@ -47,6 +47,7 @@ describe.skipIf(!hasDb)("AC-4 runDueJobs (Postgres)", () => {
     await t.owner`insert into core.tenant (id, name) values (${A}, 'A'), (${B}, 'B')`;
     await t.owner`insert into core.legal_entity (tenant_id, name, country, base_currency) values (${A}, 'a1', 'LK', 'LKR'), (${A}, 'a2', 'LK', 'LKR'), (${B}, 'b1', 'AU', 'AUD')`;
     app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
   });
   afterAll(() => t?.drop());
   beforeEach(() => { runs.length = 0; });

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { z } from "zod";
 import { setTenant, type Db, type Tx } from "@amax/db";
 import { appendAudit, redact, type Sensitivity } from "./audit";
+import { setChainKey } from "./chain-key";
 import { authorize, ForbiddenError, type ServiceContext } from "./authorize";
 import { CancelledByKeyError, claimKey, lookupKey, replayOf, settleKey, takeIdempotencyKey, type Replay } from "./idempotency";
 
@@ -36,6 +37,7 @@ let runtime: Runtime | undefined;
 
 export const configureRuntime = (r: Runtime) => {
   runtime = r;
+  setChainKey(r.auditKey);
 };
 
 export function getRuntime(): Runtime {

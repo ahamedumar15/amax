@@ -1,4 +1,4 @@
-import { bigint, char, integer, jsonb, pgSchema, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, char, integer, jsonb, pgSchema, primaryKey, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 // Mirrors packages/db/migrations; the SQL files are the source of truth for DDL and RLS.
 export const core = pgSchema("core");
@@ -25,14 +25,41 @@ export const auditEvent = core.table("audit_event", {
   tenantId: tenantId(),
   seq: bigint("seq", { mode: "number" }).notNull(),
   occurredAt: at("occurred_at").notNull().defaultNow(),
-  actor: text("actor").notNull(),
+  traceId: uuid("trace_id"),
+  chainV: smallint("chain_v").notNull().default(1),
+  actor: text("actor"),
+  actorKey: text("actor_key"),
   onBehalfOf: text("on_behalf_of"),
+  onBehalfOfKey: text("on_behalf_of_key"),
   source: text("source").notNull(),
   action: text("action").notNull(),
   resource: text("resource").notNull(),
   resourceId: text("resource_id"),
+  resourceIdKey: text("resource_id_key"),
   before: jsonb("before"),
+  beforeKey: text("before_key"),
   after: jsonb("after"),
+  afterKey: text("after_key"),
+  prevHash: text("prev_hash").notNull(),
+  hash: text("hash").notNull(),
+}, (t) => [primaryKey({ columns: [t.tenantId, t.seq] })]);
+
+export const traceEvent = core.table("trace_event", {
+  tenantId: tenantId(),
+  seq: bigint("seq", { mode: "number" }).notNull(),
+  occurredAt: at("occurred_at").notNull(),
+  traceId: uuid("trace_id").notNull(),
+  kind: text("kind").notNull(),
+  source: text("source").notNull(),
+  actor: text("actor"),
+  actorKey: text("actor_key"),
+  onBehalfOf: text("on_behalf_of"),
+  onBehalfOfKey: text("on_behalf_of_key"),
+  tool: text("tool"),
+  recordId: text("record_id"),
+  recordKey: text("record_key"),
+  argsKey: text("args_key"),
+  detail: jsonb("detail").notNull().default({}),
   prevHash: text("prev_hash").notNull(),
   hash: text("hash").notNull(),
 }, (t) => [primaryKey({ columns: [t.tenantId, t.seq] })]);

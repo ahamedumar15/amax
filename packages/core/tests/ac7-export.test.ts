@@ -5,6 +5,7 @@ import { memoryStorage, ObjectLockedError } from "../src/adapters/storage";
 import { exportAuditDay } from "../src/audit-export";
 import { appendAudit } from "../src/audit";
 import { contextFor } from "../src/authorize";
+import { configureRuntime } from "../src/service";
 
 const T = "00000000-0000-4000-8000-0000000000e7";
 const U = "00000000-0000-4000-8000-0000000000e8";
@@ -17,6 +18,7 @@ describe.skipIf(!hasDb)("AC-7 daily export to write-once storage", () => {
     t = await migratedDatabase();
     await t.owner`insert into core.tenant (id, name) values (${T}, 'T'), (${U}, 'U')`;
     app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
     for (const tenant of [T, U]) {
       for (let i = 0; i < 3; i++) await withTenant(app, tenant, (tx) => appendAudit(tx, contextFor.ui(tenant, { id: "user:maya" }), { action: "x", resource: "x", resourceId: String(i) }));
     }

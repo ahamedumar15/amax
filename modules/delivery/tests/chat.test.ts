@@ -237,11 +237,11 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       const h = holdNext();
       const confirming = confirmAction(app, reg, maya, a.convo, a.id);
       await h.inside;
-      const cancelling = cancelAction(app, maya, a.convo, a.id);
+      const cancelling = expect(cancelAction(app, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "confirmed" });
       await new Promise((r) => setTimeout(r, 200)); // the cancel is now blocked on the key
       h.release();
       await confirming;
-      await expect(cancelling).rejects.toMatchObject({ decision: "confirmed" });
+      await cancelling;
       expect(await rows("Cancel during write")).toHaveLength(1);
       const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select decided from chat.conversation where id = ${a.convo}`));
       expect((c.decided as Record<string, string>)[a.id]).toBe("confirmed");

@@ -56,7 +56,7 @@ describe.skipIf(!hasDb)("AC-3 defineService pipeline", () => {
     expect(rows).toHaveLength(3);
     // Same columns, same types (on_behalf_of is null only for a person acting directly), same before/after fields.
     const shape = (r: Record<string, unknown>) => ({
-      columns: Object.entries(r).filter(([k]) => k !== "on_behalf_of").map(([k, v]) => [k, typeof v]),
+      columns: Object.entries(r).filter(([k]) => !k.startsWith("on_behalf_of")).map(([k, v]) => [k, typeof v]),
       before: Object.keys(r.before as object).sort(),
       after: Object.keys(r.after as object).sort(),
     });
