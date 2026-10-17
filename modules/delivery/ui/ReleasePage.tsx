@@ -13,9 +13,10 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
   const canEdit = can(viewer, "delivery:release:create", { projectId: project.project.id });
   const canDeploy = can(viewer, "delivery:deployment:record", { projectId: project.project.id });
   const name = `${release.projectKey} ${release.version}`;
-  const ref = { label: name, tool: "get_release_history", args: { projectKey: release.projectKey, version: release.version } };
+  // Pins key on ids, so a re-tag can't strand them (057).
+  const ref = { label: name, tool: "get_release_history", args: { releaseId: release.id } };
   const deployPin = (d: { id: string; environment: string; at: string }) =>
-    ({ label: `${name} on ${d.environment}, ${day(d.at)}`, tool: "get_deployment", args: { projectKey: release.projectKey, version: release.version, deploymentId: d.id } });
+    ({ label: `${name} on ${d.environment}, ${day(d.at)}`, tool: "get_deployment", args: { deploymentId: d.id } });
   const pin = (label: string) => <PinButton inline pin={{ ...ref, label: `${name} ${label}` }} />;
   const included = release.proposals.filter((p) => p.included);
   return (

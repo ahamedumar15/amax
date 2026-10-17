@@ -216,9 +216,9 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: 
                     <td data-label="" className="num">
                       {act.kind === "text" ? <span className="muted">{act.text}</span> : act.kind === "link" ? <span className="muted"><a className="rowlink" href={act.href} title={act.title}>{act.text}</a></span> : (
                         <AskButton className={`btn sm${act.primary ? " primary" : ""}`} label={act.label} prompt={`Record a deployment of ${r.projectKey} ${r.version} to ${act.environment}`}
-                          pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
+                          pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } }} />
                       )}
-                      <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
+                      <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } }} />
                     </td>
                   </tr>
                 );

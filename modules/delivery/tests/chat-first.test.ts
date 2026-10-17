@@ -76,8 +76,11 @@ describe.skipIf(!hasDb)("054 board and release writes wait for chat's confirm (P
       ["get_proposal", { key: "CON-999" }, null],
       ["get_environment", { projectKey: "CON", name: "UAT" }, { projectKey: "CON", name: "UAT" }],
       ["get_environment", { projectKey: "CON", name: "Nowhere" }, null],
+      ["get_deployment", { deploymentId: dep.id }, { id: dep.id, projectKey: "CON", version: "v2.3.0" }],
       ["get_deployment", { projectKey: "CON", version: "v2.3.0", deploymentId: dep.id }, { id: dep.id, projectKey: "CON", version: "v2.3.0" }],
       ["get_deployment", { projectKey: "CON", version: "v2.4.0", deploymentId: dep.id }, null],
+      ["get_deployment", { projectKey: "HRI", deploymentId: dep.id }, null],
+      ["get_deployment", { deploymentId: "00000000-0000-4000-8000-000000000000" }, null],
     ];
     for (const [tool, args, want] of cases) {
       const got = await call(tool, args);
@@ -92,7 +95,14 @@ describe.skipIf(!hasDb)("054 board and release writes wait for chat's confirm (P
     const sahan = await as("sahan");
     configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "tag_release", input: { projectKey: "CON", version: from, newVersion: to } }] }), () => ({ text: "Confirm?" })]), db: app, model: "claude-haiku-5-5" });
     const turn = await chatTurn(app, registry, sahan, { text: "please tag" });
+    const [rel] = await q(sql`select r.id from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'CON' and r.version = ${from}`);
+    const [dep] = await q(sql`select id from delivery.deployment where release_id = ${rel.id} limit 1`);
     const { result } = await confirmAction(app, registry, sahan, turn.conversationId, turn.pending[0].id);
     expect(result).toMatchObject({ version: to, moved: { from: `/delivery/releases/CON/${encodeURIComponent(from)}`, to: href } });
+    // The release page's pins key on ids, so the ones already in the conversation still resolve after the re-tag.
+    const call = (tool: string, args: Record<string, unknown>) => registry.call(sahan, tool, args, { source: "chat" });
+    expect(await call("get_release_history", { releaseId: rel.id })).toMatchObject({ id: rel.id, version: to, projectKey: "CON" });
+    expect(await call("get_release", { releaseId: rel.id })).toMatchObject({ id: rel.id, version: to });
+    expect(await call("get_deployment", { deploymentId: dep.id })).toMatchObject({ id: dep.id, version: to });
   }, 60_000);
 });

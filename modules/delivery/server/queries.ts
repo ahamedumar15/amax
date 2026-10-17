@@ -200,16 +200,19 @@ export const listEnvironments = (v: Viewer, projectKey: string) =>
 export type DeploymentRow = { id: string; environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
 
 /** One release with its proposals and full deployment history, voided ones included. */
-export const getRelease = (v: Viewer, projectKey: string, version: string) =>
+export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
-    const [r] = await tx.execute(sql`select r.*, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where p.key = ${projectKey} and r.version = ${version}`);
+    // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
+    const where = releaseId ? sql`r.id = ${releaseId}` : projectKey && version ? sql`p.key = ${projectKey} and r.version = ${version}` : null;
+    if (!where) throw new Error("say which release: a releaseId, or a projectKey and version");
+    const [r] = await tx.execute(sql`select r.*, p.key as project_key, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where ${where}`);
     if (!r) return null;
     const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
       .map((d): DeploymentRow => ({ id: d.id as string, environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
         recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
     const proposals = (await tx.execute(sql`select key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
       .map((p) => ({ key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
-    return { id: r.id as string, version: r.version as string, projectKey, projectName: r.project_name as string, history, proposals };
+    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, history, proposals };
   });
 
 // One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.
@@ -222,8 +225,14 @@ export const getEnvironment = async (v: Viewer, projectKey: string, name: string
   return e ? { projectKey, ...e } : null;
 };
 
-/** One deployment of a release by id, voided or not, or null. */
-export const getDeployment = async (v: Viewer, projectKey: string, version: string, deploymentId: string) => {
-  const d = (await getRelease(v, projectKey, version))?.history.find((x) => x.id === deploymentId);
-  return d ? { projectKey, version, ...d } : null;
+/**
+ * One deployment by its id, voided or not, or null (057). The id is the key: a re-tag doesn't move it.
+ * A project key or version, when given, only narrows: a mismatch reads as not found.
+ */
+export const getDeployment = async (v: Viewer, deploymentId: string, scope: { projectKey?: string; version?: string } = {}) => {
+  const [hit] = await read(v, (tx) => tx.execute(sql`select r.id as release_id, r.version, p.key as project_key from delivery.deployment d
+    join delivery.release r on r.id = d.release_id join delivery.project p on p.id = r.project_id where d.id = ${deploymentId}`));
+  if (!hit || (scope.projectKey && scope.projectKey !== hit.project_key) || (scope.version && scope.version !== hit.version)) return null;
+  const d = (await getRelease(v, undefined, undefined, hit.release_id as string))?.history.find((x) => x.id === deploymentId);
+  return d ? { projectKey: hit.project_key as string, version: hit.version as string, ...d } : null;
 };

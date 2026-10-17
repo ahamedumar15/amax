@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { defineService } from "@amax/core/server";
-import { lockOpenOpportunity, NUMBER, ownerLink, toUsd } from "./common";
+import { lockOpenOpportunity, NUMBER, ownerLink, sameName, toUsd } from "./common";
 import { newOpportunity } from "./opportunities";
 
 const COLUMNS = {
@@ -23,7 +23,7 @@ export const updateOpportunity = defineService({
   async run(tx, input, ctx) {
     const o = await lockOpenOpportunity(tx, input.number);
     // Saying the current owner again changes nothing, so it keeps the owner's user link (057).
-    const same = input.ownerName !== undefined && input.ownerName.trim() === String(o.owner_name ?? "").trim();
+    const same = input.ownerName !== undefined && sameName(input.ownerName, o.owner_name as string | null);
     const fields = (Object.keys(COLUMNS) as Field[]).filter((f) => input[f] !== undefined && !(f === "ownerName" && same));
     const sets = fields.map((f) => sql`${sql.identifier(COLUMNS[f])} = ${input[f]!}`);
     const money = input.value !== undefined || input.currency !== undefined;

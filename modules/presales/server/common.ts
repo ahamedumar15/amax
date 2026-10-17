@@ -15,8 +15,12 @@ export const nameOf = (ctx: ServiceContext) => viewerOf(ctx)?.name ?? actorOf(ct
 export function ownerLink(ctx: ServiceContext, ownerName: string | undefined): string | null {
   const v = viewerOf(ctx);
   if (!v?.userId) return null;
-  return ownerName === undefined || ownerName.trim().toLowerCase() === (v.name ?? "").trim().toLowerCase() ? v.userId : null;
+  return ownerName === undefined || sameName(ownerName, v.name) ? v.userId : null;
 }
+
+const nameKey = (s: string) => s.normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
+/** The one way presales compares people's names: Unicode-normalised, spacing and case ignored (057). */
+export const sameName = (a: string | null | undefined, b: string | null | undefined) => a != null && b != null && nameKey(a) === nameKey(b);
 
 export const NUMBER = /^PS-\d{1,6}$/;
 
