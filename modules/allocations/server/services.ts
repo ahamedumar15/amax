@@ -1,0 +1,72 @@
+import { sql } from "drizzle-orm";
+import { z } from "zod";
+import type { Tx } from "@amax/db";
+import { can, ScopeError, viewerOf } from "@amax/auth";
+import { defineService, type ServiceContext } from "@amax/core/server";
+import { getProjectRef } from "@amax/delivery/contracts";
+import { getPerson, listPeople } from "@amax/hr/contracts";
+import { EVENTS, monthOf, type AllocationSet, type MonthCopied } from "../contracts";
+import { teamMembers } from "./forecast";
+
+const month = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, "a month, e.g. 2026-11").transform(monthOf);
+const by = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
+const nextMonth = (m: string) => { const d = new Date(`${m}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + 1); return d.toISOString().slice(0, 10); };
+const monthsBetween = (from: string, to: string) => { const out = [from]; while (out[out.length - 1] < to) out.push(nextMonth(out[out.length - 1])); return out; };
+
+/** Allocating on a project needs the grant for that project (PMs: the projects they manage); other work needs an unscoped grant. */
+const mayAllocate = (ctx: ServiceContext, projectId: string | null) => {
+  const v = viewerOf(ctx);
+  return !v || can(v, "allocations:allocate", projectId ? { projectId } : {});
+};
+
+async function personOf(tx: Tx, who: string) {
+  const exact = await getPerson(tx, who);
+  if (exact) return exact;
+  const named = (await listPeople(tx, { status: ["active", "joining"] })).filter((p) => p.name.toLowerCase() === who.trim().toLowerCase());
+  if (named.length !== 1) throw new Error(named.length ? `${who} matches more than one person; use the employee number` : `no person ${who}`);
+  return named[0];
+}
+
+export const allocate = defineService({
+  scoped: true,
+  name: "allocations.allocation.set",
+  action: "allocations:allocate",
+  resource: "allocations.allocation",
+  input: z.object({ person: z.string().min(2), projectKey: z.string().optional(), work: z.string().min(2).optional(), month, through: month.optional(), percent: z.number().int().min(0).max(200) })
+    .refine((i) => Boolean(i.projectKey) !== Boolean(i.work), "name a project key or other work, not both"),
+  async run(tx, input, ctx) {
+    const person = await personOf(tx, input.person);
+    const project = input.projectKey ? await getProjectRef(tx, input.projectKey) : null;
+    if (input.projectKey && !project) throw new Error(`no project ${input.projectKey}`);
+    if (!mayAllocate(ctx, project?.id ?? null)) throw new ScopeError("allocations:allocate");
+    const months = monthsBetween(input.month, input.through ?? input.month);
+    const slot = project ? sql`project_id = ${project.id}` : sql`work = ${input.work}`;
+    const before = (await tx.execute(sql`select month::text as month, percent from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date order by month`));
+    await tx.execute(sql`delete from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date`);
+    if (input.percent > 0) for (const m of months) {
+      await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, work, month, percent, updated_by) values (${ctx.tenantId}, ${person.id}, ${project?.id ?? null}, ${project ? null : input.work}, ${m}, ${input.percent}, ${by(ctx)})`);
+    }
+    const payload: AllocationSet = { personId: person.id, projectId: project?.id ?? null, work: project ? null : input.work!, months, percent: input.percent, by: by(ctx) };
+    return { result: { person: person.name, months, percent: input.percent }, resourceId: person.id, before: { rows: before }, after: { months, percent: input.percent, project: input.projectKey ?? input.work }, events: [{ name: EVENTS.allocationSet, payload }] };
+  },
+});
+
+/** Copy to next month: each person/project row of `from` the viewer may allocate is copied into the month after, unless that slot is already planned. */
+export const copyMonth = defineService({
+  name: "allocations.month.copy",
+  action: "allocations:copy",
+  resource: "allocations.allocation",
+  input: z.object({ team: z.string().default("Delivery team"), from: month }),
+  async run(tx, input, ctx) {
+    const to = nextMonth(input.from);
+    const members = (await teamMembers(tx, input.team)).map((m) => m.personId);
+    const rows = await tx.execute(sql`select * from allocations.allocation a where month = ${input.from}::date and person_id::text in (${sql.join([...members, "none"].map((i) => sql`${i}`), sql`, `)})
+      and not exists (select 1 from allocations.allocation b where b.person_id = a.person_id and b.month = ${to}::date and coalesce(b.project_id::text, 'work:' || b.work) = coalesce(a.project_id::text, 'work:' || a.work))`);
+    const allowed = rows.filter((r) => mayAllocate(ctx, (r.project_id as string | null) ?? null));
+    for (const r of allowed) {
+      await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, work, month, percent, updated_by) values (${ctx.tenantId}, ${r.person_id}, ${r.project_id}, ${r.work}, ${to}, ${r.percent}, ${by(ctx)})`);
+    }
+    const payload: MonthCopied = { team: input.team, from: input.from, to, rows: allowed.length, by: by(ctx) };
+    return { result: { from: input.from, to, copied: allowed.length, skipped: rows.length - allowed.length }, resourceId: null, after: { ...payload, skipped: rows.length - allowed.length }, events: [{ name: EVENTS.monthCopied, payload }] };
+  },
+});
