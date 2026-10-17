@@ -46,3 +46,6 @@ New admin screen, API and webhooks: service credentials with owner, scopes, expi
   Depends: T1, T2, T3, T4, T5, T6
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan fails with jq "Argument list too long", a known tool issue)
+

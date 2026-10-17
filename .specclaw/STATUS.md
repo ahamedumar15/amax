@@ -1,12 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:12 UTC
+**Last Updated:** 2026-10-17 19:35 UTC
 
 ## Active Changes
 
 
-- 📝 **035-api-webhooks-and-rate-limits** — tasks done | 0/7 tasks (0%) | 0 failed
+- 📝 **035-api-webhooks-and-rate-limits** — tasks done | 7/7 tasks (100%) | 0 failed
 - 🔀 **051-project-sections** — pr raised | 5/5 tasks (100%) | 0 failed | PR #42 merged
 - 🔀 **052-settings-review** — PR #43 merged
 

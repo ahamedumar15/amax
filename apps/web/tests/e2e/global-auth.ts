@@ -13,6 +13,7 @@ import { withTenant } from "@amax/db";
 import { sql } from "drizzle-orm";
 import { syncSchedules } from "@amax/workflows/server";
 import { seedSecrets } from "./secrets-seed";
+import { seedApi } from "./api-seed";
 
 // Fresh amax_e2e database: migrate, then seed Lumen Labs, its demo users and every installed module's fixtures as the app role.
 // E2E_DB lets parallel worktrees each use their own database.
@@ -41,6 +42,8 @@ export default async function setupE2eDatabase() {
   // 047: the Scheduler page no longer syncs schedules on GET; the tick does, and here the seed.
   await syncSchedules(db, (await import("../../lib/server")).workflowsRegistry());
   if (process.env.AMAX_KMS_KEY_FILE) await seedSecrets(db, lumen.tenant.id, process.env.AMAX_KMS_KEY_FILE);
+  // 035: the API and webhooks screen's credentials, webhooks and this week's counts, as in its mock.
+  await seedApi(db, lumen.tenant.id);
   await client.end();
 }
 
