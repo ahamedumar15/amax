@@ -1,6 +1,8 @@
+import { notFound } from "next/navigation";
 import type { ScreenProps } from "@amax/core";
 import { canEver } from "@amax/auth";
 import { IntentButton, Ticket } from "@amax/ui";
+import { today as todayIso } from "../server/inforce";
 import { listDirectory, listEntities } from "../server/queries";
 import { peopleStats } from "../server/stats";
 import { GBars, HBars } from "./charts";
@@ -14,11 +16,12 @@ const nextMonthName = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUT
 export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>People</h1><SignInFirst /></>;
-  const today = new Date();
+  const on = todayIso(), today = new Date(`${on}T00:00:00Z`);
   const entities = await listEntities(viewer);
   const entity = entities.find((e) => e.code === params.entity);
+  if (params.entity && !entity) notFound();
   const all = params.all === "all";
-  const [s, dir] = await Promise.all([peopleStats(viewer, today, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25 })]);
+  const [s, dir] = await Promise.all([peopleStats(viewer, on, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25, on })]);
   const inEntities = s.byEntity.filter((e) => e.n > 0);
   const joined = s.joiners.reduce((a, b) => a + b, 0), left = s.leavers.reduce((a, b) => a + b, 0);
   const q = `Q${Math.floor(today.getUTCMonth() / 3) + 1}`;
@@ -30,7 +33,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
           <p className="lede">{plural(s.headcount, "person", "people")} in {plural(inEntities.length, "entity", "entities")}. {plural(s.probation.dueThisMonth, "probation review")} {s.probation.dueThisMonth === 1 ? "is" : "are"} due this month and {plural(s.contractsEndingNextMonth, "contract")} end{s.contractsEndingNextMonth === 1 ? "s" : ""} in {nextMonthName(today)}.</p>
         </div>
         <div className="actions">
-          <EntityFilter entities={entities.map((e) => ({ code: e.code, label: countryName(e.code.toUpperCase(), e.name) }))} current={entity?.code} />
+          <EntityFilter entities={entities.map((e) => ({ code: e.code, label: countryName(e.country, e.name) }))} current={entity?.code} />
           {canEver(viewer, "hr:person:create") && <IntentButton intent="hr.add-person" label="Add person" />}
         </div>
       </div>
@@ -52,7 +55,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
           <div className="legend"><span><i className="sq" style={{ background: "#2FCB8C" }} />Joiners</span><span><i className="sq" style={{ background: "#F48B9B" }} />Leavers</span></div>
         </div>
       </div>
-      <Directory rows={dir.rows} total={dir.total} today={today.toISOString().slice(0, 10)} allHref={all ? undefined : entity ? `/hr/e/${entity.code}/all` : "/hr/all"} />
+      <Directory rows={dir.rows} total={dir.total} today={on} allHref={all ? undefined : entity ? `/hr/e/${entity.code}/all` : "/hr/all"} />
     </>
   );
 }

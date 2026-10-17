@@ -15,7 +15,7 @@ export function EmploymentCard({ e, probationEnds }: { e: Employment | null; pro
     <div className="card" id="employment">
       <h2>Employment</h2>
       <dl className="kv" style={{ marginTop: 18 }}>
-        <dt>Contract</dt><dd>{CONTRACT[e.contract]}, {hours}{e.endsOn ? `, ends ${shortDate(e.endsOn)}` : ""}</dd>
+        <dt>Contract</dt><dd>{CONTRACT[e.contract]}, {hours}{e.contractEndsOn ? `, ends ${shortDate(e.contractEndsOn)}` : ""}</dd>
         <dt>Grade</dt><dd>{e.grade ?? "–"}</dd>
         <dt>Basic salary</dt>
         <dd>{hidden(e.baseSalary) ? <Masked masked /> : e.baseSalary === null ? "–" : <Reveal label="basic salary">{e.currency} {Number(e.baseSalary).toLocaleString("en-US")}</Reveal>}</dd>

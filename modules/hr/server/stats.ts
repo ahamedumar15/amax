@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Viewer } from "@amax/auth";
+import { employmentAt, today as todayIso } from "./inforce";
 import { readHr } from "./read";
 
 export type PeopleStats = {
@@ -11,16 +12,16 @@ export type PeopleStats = {
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const monthStart = (y: number, m: number) => iso(new Date(Date.UTC(y, m, 1)));
 
-/** Ticket, chart and lede numbers for the People screen, as of `today`. */
-export const peopleStats = (v: Viewer, today = new Date(), entityId?: string) =>
+/** Ticket, chart and lede numbers for the People screen, as of `asOf` (a date, default today). */
+export const peopleStats = (v: Viewer, asOf: string | Date = todayIso(), entityId?: string) =>
   readHr(v, async (tx): Promise<PeopleStats> => {
-    const y = today.getUTCFullYear(), m = today.getUTCMonth(), now = iso(today);
+    const day0 = typeof asOf === "string" ? new Date(`${asOf}T00:00:00Z`) : asOf;
+    const y = day0.getUTCFullYear(), m = day0.getUTCMonth(), now = iso(day0);
     const ent = entityId ? sql`and p.legal_entity_id = ${entityId}` : sql``;
     const byEntity = await tx.execute(sql`select le.id, le.name, le.country, count(p.id)::int as n from core.legal_entity le
       left join hr.person p on p.legal_entity_id = le.id and p.status = 'active' ${ent} group by le.id order by n desc`);
-    const departments = await tx.execute(sql`select e.department as name, count(*)::int as n from hr.person p
-      join lateral (select department from hr.employment x where x.person_id = p.id and x.starts_on <= ${now}::date order by x.starts_on desc limit 1) e on true
-      where p.status = 'active' ${ent} group by e.department order by n desc, name`);
+    const departments = await tx.execute(sql`select emp.department as name, count(*)::int as n from hr.person p ${employmentAt(now)}
+      where p.status = 'active' ${ent} group by emp.department order by n desc, name`);
     const flows = await tx.execute(sql`select extract(month from d)::int as m, sum(j)::int as joined, sum(l)::int as left from (
         select joined_on as d, 1 as j, 0 as l from hr.person p where joined_on between ${monthStart(y, 0)}::date and ${now}::date ${ent}
         union all select left_on, 0, 1 from hr.person p where status = 'left' and left_on between ${monthStart(y, 0)}::date and ${now}::date ${ent}) f group by 1`);
@@ -32,7 +33,8 @@ export const peopleStats = (v: Viewer, today = new Date(), entityId?: string) =>
            and b.ends_on >= ${monthStart(y, m)}::date and b.ends_on < ${monthStart(y, m + 1)}::date ${ent}) as due,
         (select count(*)::int from hr.document d join hr.person p on p.id = d.person_id where d.status = 'missing' and p.status <> 'left' ${ent}) as missing,
         (select count(distinct x.person_id)::int from hr.employment x join hr.person p on p.id = x.person_id where p.status <> 'left' and x.contract = 'fixed-term'
-           and x.ends_on >= ${monthStart(y, m + 1)}::date and x.ends_on < ${monthStart(y, m + 2)}::date ${ent}) as ending`);
+           and x.ends_on >= ${monthStart(y, m + 1)}::date and x.ends_on < ${monthStart(y, m + 2)}::date ${ent}
+           and not exists (select 1 from hr.employment later where later.person_id = x.person_id and later.starts_on > x.starts_on)) as ending`);
     const months = Array.from({ length: m + 1 }, (_, i) => new Date(Date.UTC(y, i, 1)).toLocaleString("en-US", { month: "short", timeZone: "UTC" }));
     const at = (i: number, k: "joined" | "left") => Number(flows.find((f) => Number(f.m) === i + 1)?.[k] ?? 0);
     const q = Math.floor(m / 3) * 3;

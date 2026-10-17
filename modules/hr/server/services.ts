@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
+import { ScopeError } from "@amax/auth";
 import { defineService } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contracts";
 import { changePersonRun, changeInput } from "./change";
@@ -10,12 +11,17 @@ const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).j
 
 const COUNTRY: Record<string, string> = { "sri lanka": "LK", australia: "AU" };
 
-async function entityOf(tx: Tx, entity: string) {
-  const code = COUNTRY[entity.trim().toLowerCase()] ?? entity.trim();
-  const [e] = await tx.execute(sql`select id, country, base_currency from core.legal_entity
-    where id::text = ${entity} or lower(country) = lower(${code}) or name ilike ${`%${entity}%`} order by name limit 1`);
-  if (!e) throw new Error(`no legal entity ${entity}`);
-  return e;
+/** Exactly one legal entity: by id or full name first, else by country (name or code). Never a guess. */
+export async function entityOf(tx: Tx, entity: string) {
+  const key = entity.trim();
+  const code = COUNTRY[key.toLowerCase()] ?? key;
+  const rows = await tx.execute(sql`select id, country, base_currency, (id::text = ${key} or lower(name) = lower(${key})) as exact
+    from core.legal_entity where id::text = ${key} or lower(name) = lower(${key}) or lower(country) = lower(${code})`);
+  const exact = rows.filter((r) => r.exact);
+  const hits = exact.length ? exact : rows;
+  if (!hits.length) throw new Error(`no legal entity ${key}`);
+  if (hits.length > 1) throw new Error(`${key} matches ${hits.length} legal entities: give the entity's full name`);
+  return hits[0];
 }
 
 /** Next employee number in the entity's series (LL-0641 after LL-0640), serialised per tenant. */
@@ -66,8 +72,34 @@ export const recordLeaver = defineService({
     if (p.status === "left") throw new Error(`${input.employeeNo} has already left`);
     const status = input.leftOn <= today() ? "left" : p.status;
     await tx.execute(sql`update hr.person set left_on = ${input.leftOn}, status = ${status}, updated_at = now() where id = ${p.id}`);
-    await tx.execute(sql`update hr.employment set ends_on = ${input.leftOn}, updated_at = now() where person_id = ${p.id} and starts_on <= ${input.leftOn}::date and (ends_on is null or ends_on > ${input.leftOn}::date)`);
+    // Periods that would only start after the last day never happen (a future FTE step, or the whole
+    // employment of someone who leaves before their start date); the one in force ends that day.
+    const removed = await tx.execute(sql`delete from hr.employment where person_id = ${p.id} and starts_on > ${input.leftOn}::date
+      returning id, starts_on::text as "startsOn", ends_on::text as "endsOn", department, grade, manager_person_id as "managerPersonId", contract, fte::float as fte,
+        next_review::text as "nextReview", currency, (base_salary is not null) as "hadPay"`);
+    const ended = await tx.execute(sql`update hr.employment e set ends_on = ${input.leftOn}, updated_at = now() from hr.employment old
+      where old.id = e.id and e.person_id = ${p.id} and (e.ends_on is null or e.ends_on > ${input.leftOn}::date)
+      returning e.id, e.starts_on::text as "startsOn", old.ends_on::text as "endsOnBefore"`);
     const payload: PersonLeft = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, leftOn: input.leftOn };
-    return { result: { employeeNo: input.employeeNo, status, leftOn: input.leftOn }, resourceId: p.id as string, before: { status: p.status }, after: { status, ...input }, events: [{ name: EVENTS.personLeft, payload }] };
+    return { result: { employeeNo: input.employeeNo, status, leftOn: input.leftOn }, resourceId: p.id as string, before: { status: p.status, leftOn: p.left_on ?? null, removedPeriods: removed.map((r) => ({ ...r })), endedPeriods: ended.map((r) => ({ ...r })) }, after: { status, ...input }, events: [{ name: EVENTS.personLeft, payload }] };
+  },
+});
+
+/**
+ * Moves people whose dates have come: 'joining' to 'active' once joined_on passes, anyone to 'left'
+ * once left_on passes. Run daily by the hr.person.status job; safe to re-run.
+ */
+export const applyStatusDates = defineService({
+  name: "hr.person.status-dates",
+  action: "hr:person:update",
+  resource: "hr.person",
+  input: z.object({ on: date }),
+  async run(tx, { on }, ctx) {
+    if (ctx.actor.kind !== "system") throw new ScopeError("hr:person:update");
+    const left = await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where status <> 'left' and left_on <= ${on}::date returning employee_no`);
+    const started = await tx.execute(sql`update hr.person set status = 'active', updated_at = now()
+      where status = 'joining' and joined_on <= ${on}::date returning employee_no`);
+    const result = { on, started: started.map((r) => r.employee_no as string), left: left.map((r) => r.employee_no as string) };
+    return { result, after: result };
   },
 });

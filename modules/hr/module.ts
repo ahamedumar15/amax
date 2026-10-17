@@ -3,6 +3,7 @@ import { chatIntents } from "./chat";
 import { EVENTS, reportUserIds } from "./contracts";
 import { hrFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
+import { statusDatesJob } from "./server/jobs";
 import { PeopleAllPage, PeoplePage } from "./ui/PeoplePage";
 import { PersonPage } from "./ui/PersonPage";
 
@@ -44,7 +45,7 @@ export default defineModule({
   ],
   viewerScopes: async (tx, user) => ({ reports: await reportUserIds(tx, user.userId) }),
   chatIntents,
-  jobs: [],
+  jobs: [statusDatesJob],
   events: { emits: Object.values(EVENTS) },
   fixtures: [hrFixtures],
 });
