@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { z } from "zod";
 import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
 
@@ -39,6 +40,22 @@ export type SharedFixtures = {
 /** A module's fixtures: seeds its own tables for the shared tenant, inside a tenant-scoped transaction. */
 export type FixtureSeed = (ctx: { tx: Tx; tenantId: string; shared: SharedFixtures }) => Promise<void>;
 
+/** An MCP tool (004). `run` gets the signed-in viewer from @amax/auth (opaque here) and validated input. */
+export type McpToolDef = {
+  name: string;
+  description: string;
+  input: z.ZodType;
+  /** The permission the viewer needs (checked with canEver up front; the service checks scope again). */
+  permission: string;
+  scope: "read" | "write" | "sensitive";
+  readOnly?: boolean;
+  destructive?: boolean;
+  run: (viewer: never, input: never, source: "mcp" | "chat") => Promise<unknown>;
+};
+
+/** A search hit for the built-in `search` tool and the chat. */
+export type SearchHit = { type: string; id: string; title: string; url?: string; summary?: string };
+
 export type ModuleManifest = {
   id: string;
   title: string;
@@ -56,7 +73,9 @@ export type ModuleManifest = {
    */
   grants?: Partial<Record<"Admin" | "Leadership" | "PM" | "Engineer" | "Finance" | "Sales" | "HR" | "Payroll" | "Employee", string[]>>;
   routes: ModuleRoute[];
-  mcpTools?: unknown[];
+  mcpTools?: McpToolDef[];
+  /** Contributes results to the built-in `search` tool. */
+  search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];
   jobs?: JobDef[];
   events?: { emits?: string[]; handles?: EventHandlerDef[] };

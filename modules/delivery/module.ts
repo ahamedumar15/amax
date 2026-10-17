@@ -1,7 +1,7 @@
 import { defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
-import { mcpTools } from "./mcp";
+import { mcpTools, search } from "./mcp";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -33,6 +33,7 @@ export default defineModule({
     { path: "releases", title: "Releases", component: ReleasesPage },
   ],
   mcpTools,
+  search: search as never,
   chatIntents,
   jobs: [],
   events: { emits: ["delivery.release.deployed", "delivery.proposal.phase_changed"] },

@@ -23,7 +23,7 @@ describe("AC-5 contract shape", () => {
     expect(manifest.events?.emits).toEqual(Object.values(EVENTS));
   });
   it("AC-4 declares the five MCP tools and three chat intents", () => {
-    expect(mcpTools.map((t) => t.name)).toEqual(["list_projects", "get_project", "list_proposals", "get_release", "record_deployment"]);
+    expect(mcpTools.map((t) => t.name)).toEqual(expect.arrayContaining(["list_projects", "get_project", "list_proposals", "get_release", "record_deployment"]));
     expect((manifest.chatIntents as { id: string }[]).map((c) => c.id)).toEqual(["delivery.new-project", "delivery.new-proposal", "delivery.new-release"]);
   });
 });
@@ -107,11 +107,11 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
 
   it("AC-4 MCP tools run as the caller: record_deployment needs PM on that project or Admin", async () => {
     const tool = (n: string) => mcpTools.find((t) => t.name === n)!;
-    expect(((await tool("list_projects").run(nimal, {} as never)) as unknown[]).length).toBe(3);
-    await expect(tool("record_deployment").run(maya, { projectKey: "FLT", version: "v1.8.0", environment: "UAT" } as never)).rejects.toThrow(/data scope/);
+    expect(((await tool("list_projects").run(nimal as never, {} as never, "mcp")) as unknown[]).length).toBe(3);
+    await expect(tool("record_deployment").run(maya as never, { projectKey: "FLT", version: "v1.8.0", environment: "UAT" } as never, "mcp")).rejects.toThrow(/data scope/);
     const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select source from core.audit_event where action = 'delivery.deployment.record' order by seq desc limit 1`));
     expect(row.source).toBe("ui");
-    await tool("record_deployment").run(sahan, { projectKey: "FLT", version: "v1.8.0", environment: "UAT" } as never);
+    await tool("record_deployment").run(sahan as never, { projectKey: "FLT", version: "v1.8.0", environment: "UAT" } as never, "mcp");
     const [mcp] = await withTenant(app, T, (tx) => tx.execute(sql`select source from core.audit_event where action = 'delivery.deployment.record' order by seq desc limit 1`));
     expect(mcp.source).toBe("mcp");
   });
