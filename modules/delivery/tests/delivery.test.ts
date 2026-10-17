@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase, tablesMissingRls } from "@amax/db/testdb";
 import { configureRuntime } from "@amax/core/server";
-import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer } from "@amax/auth";
+import { applyViewAs, installAuthorizer, setGrants, setViewerScopeResolvers, viewerForUser, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import manifest from "../module";
@@ -35,7 +35,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
   const as = async (email: string) => {
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${email}`));
     const v = (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
-    return { ...v, managedProjects: await withTenant(app, T, (tx) => managedProjectIds(tx, v.userId)) };
+    return v;
   };
 
   beforeAll(async () => {
@@ -43,6 +43,7 @@ describe.skipIf(!hasDb)("delivery against Postgres", () => {
     app = t.app();
     configureRuntime({ db: app, auditKey: "k".repeat(32) });
     setGrants([manifest]);
+    setViewerScopeResolvers([manifest.viewerScopes!]);
     installAuthorizer();
     await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, manifest], lumen);
     [maya, nimal, liam, sahan] = await Promise.all(["maya", "nimal", "liam", "sahan"].map((k) => as(`${k}@lumenlabs.test`)));

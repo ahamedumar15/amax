@@ -20,6 +20,8 @@ export type ServiceSpec<I, R> = {
   action: string;
   resource: string;
   input: z.ZodType<I>;
+  /** The service calls assertCan with the loaded record, so qualified grants pass the up-front check. */
+  scoped?: boolean;
   /** Classified fields: audited as name + keyed hash, never the value. */
   sensitive?: Record<string, Sensitivity>;
   run: (tx: Tx, input: I, ctx: ServiceContext) => Promise<ServiceOutcome<R>>;
@@ -49,7 +51,7 @@ export class ValidationError extends Error {
 export function defineService<I, R>(spec: ServiceSpec<I, R>) {
   const call = async (ctx: ServiceContext, raw: unknown): Promise<R> => {
     const { db, auditKey } = getRuntime();
-    if (!(await authorize(ctx, spec.action, spec.resource, raw))) throw new ForbiddenError(spec.action, spec.resource);
+    if (!(await authorize(ctx, spec.action, spec.resource, raw, { scoped: spec.scoped }))) throw new ForbiddenError(spec.action, spec.resource);
     const parsed = spec.input.safeParse(raw);
     if (!parsed.success) throw new ValidationError(parsed.error.issues);
     return db.transaction(async (tx) => {

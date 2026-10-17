@@ -89,12 +89,26 @@ export async function loadViewer(db: Db, tenantId: string, sessionId: string): P
   });
 }
 
+type ScopeResolver = (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
+let scopeResolvers: ScopeResolver[] = [];
+/** Modules that own scopes (delivery: managed projects; hr: reports) register here at boot. */
+export const setViewerScopeResolvers = (fns: ScopeResolver[]) => {
+  scopeResolvers = fns;
+};
+
 // An active user's roles and scopes, for a session or a personal API/MCP token.
 export async function viewerForUser(tx: Tx, tenantId: string, userId: string): Promise<Viewer | null> {
   const [u] = await tx.execute(sql`select name, email from auth.user where id = ${userId} and status = 'active'`);
   if (!u) return null;
   const assignments = (await tx.execute(sql`select role, legal_entity_ids, departments from auth.role_assignment where user_id = ${userId}`))
     .map((a) => ({ role: a.role as Role, legalEntityIds: (a.legal_entity_ids as string[] | null) ?? null, departments: (a.departments as string[] | null) ?? null }) satisfies Assignment);
+  const scopes = { managedProjects: [] as string[], assignedProjects: [] as string[], reports: [] as string[] };
+  for (const resolve of scopeResolvers) {
+    const r = await resolve(tx, { tenantId, userId });
+    scopes.managedProjects.push(...(r.managedProjects ?? []));
+    scopes.assignedProjects.push(...(r.assignedProjects ?? []));
+    scopes.reports.push(...(r.reports ?? []));
+  }
   return {
     tenantId,
     userId,
@@ -102,9 +116,7 @@ export async function viewerForUser(tx: Tx, tenantId: string, userId: string): P
     email: u.email as string,
     assignments,
     actualRoles: [...new Set(assignments.map((a) => a.role))],
-    managedProjects: [],
-    assignedProjects: [],
-    reports: [],
+    ...scopes,
   };
 }
 

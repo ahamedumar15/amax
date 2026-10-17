@@ -11,7 +11,10 @@ export type ServiceContext = {
   viewer?: unknown;
 };
 
-export type Authorizer = (ctx: ServiceContext, action: string, resource: string, input: unknown) => boolean | Promise<boolean>;
+/** `scoped`: the service checks the record's data scope itself after loading it (assertCan), so the
+ * up-front check may accept qualified grants (@managed, @assigned, @own). Unscoped services get the
+ * strict check. */
+export type Authorizer = (ctx: ServiceContext, action: string, resource: string, input: unknown, opts?: { scoped?: boolean }) => boolean | Promise<boolean>;
 
 // Deny by default. 002 registers can() here; tests register their own.
 let authorizer: Authorizer = () => false;

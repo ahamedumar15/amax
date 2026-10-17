@@ -74,6 +74,11 @@ export type ModuleManifest = {
   grants?: Partial<Record<"Admin" | "Leadership" | "PM" | "Engineer" | "Finance" | "Sales" | "HR" | "Payroll" | "Employee", string[]>>;
   routes: ModuleRoute[];
   mcpTools?: McpToolDef[];
+  /**
+   * Contributes to the signed-in viewer's data scopes at load time (002 AC-3): e.g. delivery returns
+   * the projects a user manages, so "@managed" grants work for real users, not just in tests.
+   */
+  viewerScopes?: (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];

@@ -2,6 +2,7 @@ import { defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
+import { managedProjectIds } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -36,6 +37,7 @@ export default defineModule({
   ],
   mcpTools,
   search: search as never,
+  viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
   jobs: [],
   events: { emits: ["delivery.release.deployed", "delivery.proposal.phase_changed"] },

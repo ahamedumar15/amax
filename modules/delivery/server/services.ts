@@ -60,6 +60,7 @@ export const createProject = defineService({
 });
 
 export const createProposal = defineService({
+  scoped: true,
   name: "delivery.proposal.create",
   action: "delivery:proposal:create",
   resource: "delivery.proposal",
@@ -78,6 +79,7 @@ export const createProposal = defineService({
 
 // The board's explicit Move action. Released is reached only through a Prod deployment.
 export const moveProposal = defineService({
+  scoped: true,
   name: "delivery.proposal.move",
   action: "delivery:proposal:move",
   resource: "delivery.proposal",
@@ -100,6 +102,7 @@ export const moveProposal = defineService({
 });
 
 export const createRelease = defineService({
+  scoped: true,
   name: "delivery.release.create",
   action: "delivery:release:create",
   resource: "delivery.release",
@@ -117,6 +120,7 @@ export const createRelease = defineService({
 
 // A pipeline, an agent or a person records a deployment. Reaching Prod releases its proposals.
 export const recordDeployment = defineService({
+  scoped: true,
   name: "delivery.deployment.record",
   action: "delivery:deployment:record",
   resource: "delivery.deployment",
@@ -200,6 +204,7 @@ export const syncProposal = defineService({
 
 // Add, rename, reorder or mark Prod. Marking one Prod unmarks the others; isProd false leaves none.
 export const upsertEnvironment = defineService({
+  scoped: true,
   name: "delivery.environment.upsert",
   action: "delivery:release:create",
   resource: "delivery.environment",
@@ -228,6 +233,7 @@ export const upsertEnvironment = defineService({
 });
 
 export const removeEnvironment = defineService({
+  scoped: true,
   name: "delivery.environment.remove",
   action: "delivery:release:create",
   resource: "delivery.environment",
@@ -245,6 +251,7 @@ export const removeEnvironment = defineService({
 });
 
 export const tagRelease = defineService({
+  scoped: true,
   name: "delivery.release.tag",
   action: "delivery:release:create",
   resource: "delivery.release",
@@ -259,6 +266,7 @@ export const tagRelease = defineService({
 });
 
 export const setReleaseProposals = defineService({
+  scoped: true,
   name: "delivery.release.proposals",
   action: "delivery:release:create",
   resource: "delivery.release",
@@ -280,6 +288,7 @@ export const setReleaseProposals = defineService({
 // A wrong record is voided with a reason, never deleted. Voiding the only Prod deployment takes
 // its proposals out of Released again.
 export const voidDeployment = defineService({
+  scoped: true,
   name: "delivery.deployment.void",
   action: "delivery:deployment:record",
   resource: "delivery.deployment",

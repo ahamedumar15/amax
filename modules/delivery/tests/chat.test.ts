@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { configureRuntime } from "@amax/core/server";
-import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer } from "@amax/auth";
+import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer, setViewerScopeResolvers } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
@@ -24,7 +24,7 @@ describe.skipIf(!hasDb)("005 chat engine with delivery (Postgres, scripted model
   const as = async (email: string) => {
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${email}`));
     const v = (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
-    return { ...v, managedProjects: await withTenant(app, T, (tx) => managedProjectIds(tx, v.userId)) };
+    return v;
   };
   const proposals = (title: string) => withTenant(app, T, (tx) => tx.execute(sql`select key from delivery.proposal where title = ${title}`));
 
@@ -33,6 +33,8 @@ describe.skipIf(!hasDb)("005 chat engine with delivery (Postgres, scripted model
     app = t.app();
     configureRuntime({ db: app, auditKey: "k".repeat(32) });
     setGrants([delivery]);
+    // Managed projects come from the real resolver, as in the app (not planted on the viewer).
+    setViewerScopeResolvers([delivery.viewerScopes!]);
     installAuthorizer();
     await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, delivery], lumen);
     await t.owner`insert into ai.settings (tenant_id, zdr_confirmed) values (${T}, true)`;

@@ -4,7 +4,7 @@ import { auditExportJob, configureRuntime, registryFrom, storageFromEnv } from "
 import { configureAi } from "@amax/ai";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
-import { installAuthorizer, setGrants } from "@amax/auth";
+import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/auth";
 import { createRegistry } from "@amax/mcp";
 import type { Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
@@ -26,6 +26,7 @@ export function getDb(): Db | null {
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     setGrants(installed);
+    setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
