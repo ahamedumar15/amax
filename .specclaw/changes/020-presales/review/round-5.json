@@ -1,0 +1,136 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 5,
+  "minor": 1
+ },
+ "escalated": [
+  "1706c36e1b8a",
+  "605ef6933179",
+  "41a83c23e3d4"
+ ],
+ "files": [
+  "modules/presales/db/migrations/0001_presales.sql",
+  "modules/presales/server/claim.ts",
+  "modules/presales/server/promote.ts",
+  "modules/presales/tests/review.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/presales/server/promote.ts",
+   "fp": "1706c36e1b8a",
+   "in_delta": true,
+   "line": 61,
+   "message": "This is an instance fix. Only a Postgres 23505 from recordPromotion counts as a lasting refusal. Other failures after `made = true` also come back on every replay, and they still keep the claim for good. There are three: (a) projectOf now throws when delivery's result or replay has no `key`; (b) recordPromotion refuses when the key delivery returned differs from `claim_key`, because `o.claim_key !== input.projectKey` is checked against delivery's key, not the requested one; (c) the client lookup finds no row, so `c.name` throws. In each case a same-key retry replays the same value and fails the same way. Any other key or billing is refused because the series made a project. The opportunity cannot be promoted and nothing records it as stuck. Fix: decide 'lasting' by kind of failure, not by one SQLSTATE. Treat any deterministic refusal of a replayed project as lasting (validation of delivery's result, key mismatch, missing client, unique violation). Or make recordPromotion compare against the requested key and return a typed lasting error. Add a table row for each.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Delivery normalises or suffixes the key: promote {key:'slo'} \u2192 create returns {id, key:'SLO'} \u2192 recordPromotion throws 'no longer claimed' because claim_key 'slo' \u2260 'SLO' \u2192 the claim is kept \u2192 each same-key retry after 120 s replays SLO and fails the same way, and each other key gets 'was promoted as slo (fixed); promote it with those to finish'. The opportunity is locked for good.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/server/claim.ts",
+   "fp": "ea1e9eaea4b3",
+   "in_delta": true,
+   "line": 41,
+   "message": "This is a partial fix for the round-3 input-fingerprint finding, which named billing, name and client. The series identity (`same`) covers only key and billing. The project's name and client come from the opportunity, read again on every attempt (`opp.title`, `opp.client`). When a resume replays the series' project, any change to those is silently dropped and the promotion reports success. Fix: store a fingerprint of the whole create input (key, billing, name, client) on the claim, and treat a mismatch like a billing mismatch (end the series if it made nothing, otherwise refuse). Or refuse edits to title/client while a claim is held.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Attempt 1 promotes 'Northwind RFP' as NWR/fixed. Delivery creates the project, then the link fails. The user renames the opportunity to 'Northwind Fleet' (or corrects the client). The retry with NWR/fixed after 120 s gets resumed=true, the replay returns the project named 'Northwind RFP' with the old client, it is linked, and the call returns success.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/tests/review.test.ts",
+   "fp": "343c5e6e61e3",
+   "in_delta": true,
+   "line": 81,
+   "message": "This round-3 finding is still not addressed. The rewritten slow-attempt test still holds the gate before `create` is called. So attempt A's claimKey runs only after B's endSeries has committed the cancelled marker, and A just reads the marker sequentially. Two cases have no test: a create in flight (key row inserted but not committed) while endSeries runs, which the endSeries docstring says 'waits for this, then fails'; and two same-key creates in flight together. Both tests would stay green if claimKey did not block on an uncommitted row. The same-key overtake test from round 3 was also deleted and not replaced. Fix: block inside delivery's create after its key claim and insert, before commit. Then (1) run a takeover with another key and assert it either waits and is refused, or cancels with no SLO project; and (2) run a same-key resume concurrently and assert exactly one project and both attempts linked to it.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B7",
+   "scenario": "Remove the row lock or blocking behaviour from claimKey. The current test still passes, because A's create starts only after `open()`, when B is already done.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/tests/review.test.ts",
+   "fp": "605ef6933179",
+   "in_delta": true,
+   "line": 68,
+   "message": "The shared-project race now checks the loser's state, but the table still has only the sequential and concurrent rows. The resumed-claim row the previous finding asked for is still missing. Nothing drives the case where the loser's 23505 comes from a resumed claim replaying a project, which is the force-release path after a replay. Add that row: the loser made the project under its series, its link failed, the claim went stale, the retry replays and hits 23505. Assert that the claim is released and that another key then works.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Make releasePromotion's force branch skip a series that has a done record. The two existing rows still pass, because their loser never replays.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/tests/review.test.ts",
+   "fp": "41a83c23e3d4",
+   "in_delta": true,
+   "line": 127,
+   "message": "The billing half of the series fix has no variant test. The test is named 'gives way to another key or billing; one that made a project doesn't', but it only checks a different key (SWA\u2192SWB). It has no row for the same key with a different billing when the series made nothing (must take over with a new series), and none for the same key with a different billing after the series made a project (must be refused, not resumed). The 'doesn't' half is not in this test either. Make it table-driven over {other key, same key + other billing, other key + other billing} \u00d7 {made nothing, made a project}.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Change `same` to compare only `claim_key`. Every presales test still passes, and a same-key retry with billing 'retainer' silently resumes and links the 'fixed' project.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/presales/server/claim.ts",
+   "fp": "f4e42f770fd3",
+   "in_delta": true,
+   "line": 81,
+   "message": "The new idempotent early return in recordPromotion returns `input.projectKey` instead of the stored `o.project_key`, and it skips the token and claim check without leaving any audit `after` record. A caller with a stale token gets success that echoes whatever key it passed. Return `o.project_key`.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B10",
+   "scenario": "recordPromotion({projectId: P, projectKey: 'WRONG'}) on an opportunity already linked to P as 'SLO' \u2192 returns {projectKey: 'WRONG'}.",
+   "severity": "minor"
+  }
+ ],
+ "head": "a382a9251aef2861f65f08b0c5e06d05642ec796",
+ "impact": [
+  "apps/mock/app/page.tsx",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/[module]/[[...path]]/page.tsx",
+  "apps/web/app/(app)/settings/integrations/page.tsx",
+  "apps/web/lib/tick.ts",
+  "apps/web/tests/e2e/chat.spec.ts",
+  "apps/web/tests/e2e/delivery-visual.spec.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "deploy/helm/amax/values.yaml",
+  "modules/delivery/db/migrations/0008_environment_name_ci.sql",
+  "modules/delivery/mcp.ts",
+  "modules/delivery/server/queries.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/sync/specclaw.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/mcp-registry.test.ts",
+  "modules/delivery/ui/ProposalsPage.tsx",
+  "packages/ai/src/prompt.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/service.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 52291,
+ "round": 5,
+ "since": "46a4239190",
+ "status": "escalate",
+ "system_chars": 20856,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792245390,
+ "ts_start": 1792245236
+}

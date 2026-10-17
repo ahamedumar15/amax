@@ -34,12 +34,14 @@
 .pinnable:hover>.pin,.pin:focus-visible,.pinnable:focus-within>.pin,.pinnable:focus-within>.card-head>.pin,tr.pinnable:hover .pin,tr.pinnable:focus-within .pin{opacity:1;transform:none}
 .pinnable:hover>.card-head>.pin{opacity:1;transform:none}
 .card-head h2{margin-right:0}
-.row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
-.row.head>.actions .seg{flex:1 1 100%}
-.card.flush .card-head{padding:22px 22px 0}
-.tickets,.tickets.four{gap:12px}
-.ticket .v,.tickets.four .v{font-size:20px;margin-top:4px}
-.ticket svg.art,.tickets.four svg.art{width:58px;right:6px;top:8px}
-.card.flush .scroll-x{overflow-x:visible}
-.tbl td .row{gap:10px}
 @media (max-width:860px){.tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
+  .row.head>.actions .seg{flex:1 1 100%}
+  .card.flush .card-head{padding:22px 22px 0}
+  .tickets,.tickets.four{gap:12px}
+  .ticket .v,.tickets.four .v{font-size:20px;margin-top:4px}
+  .ticket svg.art,.tickets.four svg.art{width:58px;right:6px;top:8px}
+  .card.flush .scroll-x{overflow-x:visible}
+  .tbl td .row{gap:10px}
+}

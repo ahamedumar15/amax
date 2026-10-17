@@ -110,6 +110,25 @@ importers:
         specifier: 4.149.0
         version: 4.149.0(@types/node@24.19.2)
 
+  modules/allocations:
+    dependencies:
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@opentelemetry/api@1.9.1)(postgres@3.4.9)
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/react':
+        specifier: '19'
+        version: 19.3.0
+      next:
+        specifier: 16.4.2
+        version: 16.4.2(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(@types/node@24.19.2)(react-dom@19.3.1(react@19.2.0))(react@19.2.0)
+      react:
+        specifier: 19.2.0
+        version: 19.2.0
+
   modules/delivery:
     dependencies:
       drizzle-orm:
@@ -125,6 +144,43 @@ importers:
       next:
         specifier: 16.4.2
         version: 16.4.2(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(@types/node@24.19.2)(react-dom@19.3.1(react@19.2.0))(react@19.2.0)
+      react:
+        specifier: 19.2.0
+        version: 19.2.0
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
+  modules/presales:
+    dependencies:
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@opentelemetry/api@1.9.1)(postgres@3.4.9)
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@axe-core/playwright':
+        specifier: 4.14.0
+        version: 4.14.0(playwright-core@1.64.0)
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      '@types/pngjs':
+        specifier: '6'
+        version: 6.0.5
+      '@types/react':
+        specifier: '19'
+        version: 19.3.0
+      next:
+        specifier: 16.4.2
+        version: 16.4.2(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(@types/node@24.19.2)(react-dom@19.3.1(react@19.2.0))(react@19.2.0)
+      pixelmatch:
+        specifier: 8.0.0
+        version: 8.0.0
+      pngjs:
+        specifier: 7.0.0
+        version: 7.0.0
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -168,6 +224,25 @@ importers:
       tsx:
         specifier: 4.23.15
         version: 4.23.15
+
+  modules/hr:
+    dependencies:
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@opentelemetry/api@1.9.1)(postgres@3.4.9)
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/react':
+        specifier: '19'
+        version: 19.3.0
+      next:
+        specifier: 16.4.2
+        version: 16.4.2(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(@types/node@24.19.2)(react-dom@19.3.1(react@19.2.0))(react@19.2.0)
+      react:
+        specifier: 19.2.0
+        version: 19.2.0
 
   packages/agents: {}
 

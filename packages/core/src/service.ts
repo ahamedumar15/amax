@@ -25,6 +25,9 @@ export type ServiceSpec<I, R> = {
   scoped?: boolean;
   /** Classified fields: audited as name + keyed hash, never the value. */
   sensitive?: Record<string, Sensitivity>;
+  /** Never takes the caller's idempotency key: for audited reads (031 secret use) that may run inside
+   * a keyed write without claiming its key or counting as one of its writes. */
+  keyless?: boolean;
   run: (tx: Tx, input: I, ctx: ServiceContext) => Promise<ServiceOutcome<R>>;
 };
 
@@ -57,7 +60,7 @@ export function defineService<I, R>(spec: ServiceSpec<I, R>) {
     const { db, auditKey } = getRuntime();
     // Under an idempotency key, an earlier attempt's outcome comes first: before authorize and
     // validation, which could otherwise refuse a retry of a write that already happened (round 8).
-    const key = takeIdempotencyKey();
+    const key = spec.keyless ? null : takeIdempotencyKey();
     const known = key ? await lookupKey(db, ctx.tenantId, key) : null;
     if (known && "cancelled" in known) throw new CancelledByKeyError(key!);
     if (known) return known.done as Replay as unknown as R;
