@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { configDefaults, defineConfig } from "vitest/config";
 
-const platform = "core|db|auth|ui|mcp|chat|agents|testing|ai";
+const platform = "core|db|auth|ui|mcp|chat|agents|testing|ai|workflows";
 
 export default defineConfig({
   test: { exclude: [...configDefaults.exclude, "**/tests/e2e/**"] },

@@ -105,6 +105,10 @@ export type ModuleManifest = {
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];
   jobs?: JobDef[];
+  /** Durable workflows (029): defineWorkflow() results from @amax/workflows, opaque to core. */
+  workflows?: readonly unknown[];
+  /** Cron schedules (029): cron() results from @amax/workflows, opaque to core. */
+  schedules?: readonly unknown[];
   events?: { emits?: string[]; handles?: EventHandlerDef[] };
   fixtures?: FixtureSeed[];
 };
