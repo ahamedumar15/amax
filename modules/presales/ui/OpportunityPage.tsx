@@ -1,19 +1,19 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
-import { moveAction } from "../actions";
 import { OPEN_STAGES } from "../contracts";
 import { recordsOf } from "../server/detail";
 import { deliveryCreateProject } from "../server/promote";
 import { getOpportunity, historyOf, type OpportunityRow } from "../server/queries";
 import { ActivitiesCard } from "./ActivitiesCard";
+import { AskButton } from "./AskButton";
+import { AskChips } from "./AskChips";
 import { DetailsCard } from "./DetailsCard";
 import { HistoryCard } from "./HistoryCard";
-import { LineChart } from "./LineChart";
-import { LostDialog } from "./LostDialog";
-import { daysBetween, day, needViewer, SignInFirst, STAGE_UI } from "./parts";
+import { daysBetween, day, needViewer, oppPin, SignInFirst, STAGE_UI } from "./parts";
 import { PromoteCard } from "./PromoteCard";
 import { StageSteps } from "./StageSteps";
 import { RisksCard, TasksCard } from "./TasksRisks";
+import { NextStepCard, WinCard } from "./WinCard";
 
 const KIND: Record<string, string> = { demo: "demo", workshop: "workshop", call: "call", meeting: "meeting", proposal: "proposal", email: "email" };
 
@@ -42,41 +42,29 @@ export async function OpportunityPage({ viewer: raw, params }: ScreenProps) {
   const canEdit = can(viewer, "presales:opportunity:edit");
   const next = open ? (OPEN_STAGES[OPEN_STAGES.indexOf(o.stage) + 1] ?? "won") : null;
   const why = promotion(o, viewer);
-  const points = [...history].reverse();
-  const rising = history[0] ? history[0].toChance > (history[0].fromChance ?? 0) : false;
   return (
     <div className="presales">
       <nav className="crumb" aria-label="Breadcrumb"><a href="/presales">Presales</a><span>/</span>{o.client}<span>/</span>{o.title}</nav>
       <div className="row head">
-        <div><h1>{o.title}</h1><p className="lede">{lede(o, today)}</p></div>
-        {open && canEdit && (
-          <div className="actions">
-            <LostDialog number={o.number} title={o.title} />
-            <form action={moveAction}><input type="hidden" name="number" value={o.number} /><input type="hidden" name="to" value={next!} />
-              <button className="btn primary" type="submit">Move to {STAGE_UI[next!].label}</button></form>
-          </div>
-        )}
+        <div><h1>{o.title}</h1><p className="lede">{lede(o, today)}</p><p className="src hint">Changes happen in chat. Pin anything, then ask.</p></div>
+        <div className="actions"><AskButton className="btn primary" label="Ask amax about this deal" prompt={`About ${o.number}: `} pin={oppPin(o)} /></div>
       </div>
-      <StageSteps stage={o.stage} history={history} />
+      <StageSteps o={o} history={history} />
+      {open && canEdit && <AskChips o={o} next={next!} />}
       <nav className="tabs" aria-label="Sections">
         <a className="btn sm" href="#details" aria-current="true">Overview</a><a className="btn sm" href="#activities">Activities {records.activities.length}</a>
         <a className="btn sm" href="#tasks">Tasks {records.tasks.length}</a><a className="btn sm" href="#risks">Risks and issues {records.risks.length}</a>
       </nav>
       <div className="cols">
         <div className="stack">
-          <div className="cols even"><DetailsCard o={o} /><HistoryCard history={history} today={today} /></div>
-          <ActivitiesCard number={o.number} rows={records.activities} canEdit={canEdit && open} today={today} />
-          <div className="cols even"><TasksCard number={o.number} rows={records.tasks} canEdit={canEdit && open} /><RisksCard number={o.number} rows={records.risks} canEdit={canEdit && open} /></div>
+          <div className="cols even"><DetailsCard o={o} /><HistoryCard number={o.number} history={history} today={today} /></div>
+          <ActivitiesCard number={o.number} rows={records.activities} />
+          <div className="cols even"><TasksCard number={o.number} rows={records.tasks} /><RisksCard number={o.number} rows={records.risks} canEdit={canEdit} /></div>
         </div>
         <aside className="stack">
-          <div className="card">
-            <div className="card-head"><h2>Win chance</h2><span className={rising ? "up" : "muted"}>{rising ? "↑ " : ""}{o.winChance}%</span></div>
-            <LineChart id="winChart" label="Win chance over time" width={340} height={180} max={100} step={50}
-              labels={[...points.map((h) => day(h.at)), ...(open ? [day(today)] : [])]}
-              series={[{ name: "Win chance", color: "#7B61FF", area: true, data: [...points.map((h) => h.toChance), ...(open ? [o.winChance] : [])] }]} />
-          </div>
-          {o.nextStep && <div className="card"><div className="card-head"><h2>Next step</h2></div><p className="next-step">{o.nextStep}</p></div>}
-          <PromoteCard o={o} available={!why} why={why} />
+          <WinCard o={o} history={history} today={today} />
+          <NextStepCard o={o} />
+          <PromoteCard o={o} why={why} />
         </aside>
       </div>
     </div>

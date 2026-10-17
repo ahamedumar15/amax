@@ -1,5 +1,6 @@
 export { signalHandlers } from "./bridge";
 export { controlRun, setScheduleEnabled, WORKFLOWS_ADMIN } from "./control";
+export { setEntityZone } from "./zone";
 export type { RunAction, SignalOptions, StartOptions, WorkflowEngine, WorkflowTickResult } from "./engine";
 export { engineConfig, engineFromEnv, type EngineConfig } from "./config";
 export { createPostgresEngine } from "./pg/engine";

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { type Db, textArray, withTenant } from "@amax/db";
-import { appendAudit } from "@amax/core/server";
+import { z } from "zod";
+import { defineService, SENSITIVITY_CLASSES } from "@amax/core/server";
 import { loadPolicy, normalizeRegion, type AiPolicy } from "./policy";
 
 export type AiStats = { calls: number; costUsd: number; unpriced: number; redactions: Record<string, number>; injections: number; failures: number };
@@ -19,20 +20,45 @@ export async function aiStats(db: Db, tenantId: string, now = new Date()): Promi
   });
 }
 
-export type PolicyPatch = { allowedClasses: string[]; zdrConfirmed: boolean; voiceEnabled: boolean; enabled: boolean; dataRegion: string | null; providerRegion: string | null; aiRegion: string | null; dbRegion: string | null; storageRegion: string | null };
+const region = z.string().nullable().optional();
 
-// Admin only, checked here so no caller can forget. Each change bumps the policy version and is audited.
-export async function savePolicy(db: Db, admin: { tenantId: string; userId: string; roles: string[] }, patch: PolicyPatch) {
-  if (!admin.roles.includes("Admin")) throw new Error("forbidden: only an Admin may change the AI policy");
-  const tenantId = admin.tenantId, actorId = `user:${admin.userId}`;
-  patch = { ...patch, dataRegion: normalizeRegion(patch.dataRegion), providerRegion: patch.providerRegion?.trim() || null, aiRegion: normalizeRegion(patch.aiRegion), dbRegion: normalizeRegion(patch.dbRegion), storageRegion: normalizeRegion(patch.storageRegion) };
-  await withTenant(db, tenantId, async (tx) => {
+/** What may change; anything left out keeps its current value. */
+export const policyPatch = z.object({
+  allowedClasses: z.array(z.enum(SENSITIVITY_CLASSES)).optional(),
+  zdrConfirmed: z.boolean().optional(),
+  voiceEnabled: z.boolean().optional(),
+  enabled: z.boolean().optional(),
+  dataRegion: region,
+  providerRegion: region,
+  aiRegion: region,
+  dbRegion: region,
+  storageRegion: region,
+}).strict();
+export type PolicyPatch = z.infer<typeof policyPatch>;
+
+const merged = (p: AiPolicy, x: PolicyPatch) => ({
+  allowedClasses: x.allowedClasses ?? p.allowedClasses, zdrConfirmed: x.zdrConfirmed ?? p.zdrConfirmed, voiceEnabled: x.voiceEnabled ?? p.voiceEnabled, enabled: x.enabled ?? p.enabled,
+  dataRegion: normalizeRegion(x.dataRegion === undefined ? p.dataRegion : x.dataRegion), providerRegion: (x.providerRegion === undefined ? p.providerRegion : x.providerRegion)?.trim() || null,
+  aiRegion: normalizeRegion(x.aiRegion === undefined ? p.regions.ai : x.aiRegion), dbRegion: normalizeRegion(x.dbRegion === undefined ? p.regions.database : x.dbRegion),
+  storageRegion: normalizeRegion(x.storageRegion === undefined ? p.regions.storage : x.storageRegion),
+});
+
+// Admin only (the permission is Admin's alone). Each change bumps the policy version, is audited
+// with who did it (or the agent acting for them) and announced as ai.policy.updated (047 AC-3).
+export const setAiPolicy = defineService({
+  name: "ai.policy.update",
+  action: "ai:policy:manage",
+  resource: "ai.settings",
+  input: policyPatch,
+  async run(tx, patch, ctx) {
     const before = await loadPolicy(tx);
+    const next = merged(before, patch);
     await tx.execute(sql`insert into ai.settings (tenant_id, policy_version, enabled, allowed_classes, zdr_confirmed, voice_enabled, data_region, provider_region, ai_region, db_region, storage_region)
-      values (${tenantId}, ${before.version + 1}, ${patch.enabled}, ${textArray(patch.allowedClasses)}, ${patch.zdrConfirmed}, ${patch.voiceEnabled}, ${patch.dataRegion}, ${patch.providerRegion}, ${patch.aiRegion}, ${patch.dbRegion}, ${patch.storageRegion})
+      values (${ctx.tenantId}, ${before.version + 1}, ${next.enabled}, ${textArray(next.allowedClasses)}, ${next.zdrConfirmed}, ${next.voiceEnabled}, ${next.dataRegion}, ${next.providerRegion}, ${next.aiRegion}, ${next.dbRegion}, ${next.storageRegion})
       on conflict (tenant_id) do update set enabled = excluded.enabled, allowed_classes = excluded.allowed_classes, zdr_confirmed = excluded.zdr_confirmed,
         voice_enabled = excluded.voice_enabled, data_region = excluded.data_region, provider_region = excluded.provider_region, ai_region = excluded.ai_region,
         db_region = excluded.db_region, storage_region = excluded.storage_region, policy_version = ai.settings.policy_version + 1, updated_at = now()`);
-    await appendAudit(tx, { tenantId, actor: { id: actorId, kind: "user" }, source: "ui" }, { action: "ai.policy.update", resource: "ai.settings", resourceId: tenantId, before, after: patch });
-  });
-}
+    const after = { ...next, version: before.version + 1 };
+    return { result: after, resourceId: ctx.tenantId, before: { ...before }, after, events: [{ name: "ai.policy.updated", payload: { version: after.version } }] };
+  },
+});

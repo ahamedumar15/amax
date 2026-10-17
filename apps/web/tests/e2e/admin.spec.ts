@@ -1,0 +1,105 @@
+import { randomBytes } from "node:crypto";
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+async function signIn(page: Page, email: string, to: string) {
+  await page.goto(to);
+  await page.getByLabel("Demo user (fixtures only)").fill(email);
+  await page.getByRole("button", { name: "Sign in as demo user" }).click();
+  await expect(page).toHaveURL((u) => u.pathname === to);
+}
+
+const SCREENS = ["/settings", "/settings/keys", "/settings/integrations", "/settings/ai", "/settings/workflows"];
+const chat = (page: Page) => page.getByRole("complementary", { name: "amax chat" });
+const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
+const unpinned = (page: Page) => page.locator("main").evaluate((root) =>
+  [...root.querySelectorAll(".card, .app-card, .ticket, tbody tr")]
+    .filter((el) => !el.closest("table.sr") && !el.querySelector(":scope > td[colspan]") && !el.querySelector(".pin[data-pin]"))
+    .map((el) => (el.textContent ?? "").trim().slice(0, 60)));
+
+test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
+
+test("047 AC1 the Settings hub lists every admin screen with a live status; the nav and profile menu link to it", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/settings");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Settings");
+  const cards = page.locator(".app-card h2");
+  await expect(cards).toHaveCount(9);
+  expect((await cards.allTextContents()).sort()).toEqual(["AI and data", "AI usage", "API and webhooks", "Audit and trace", "Backups and export", "Connections and keys", "Data retention", "Integrations", "Scheduler"]);
+  await expect(cards.first()).toHaveText("Connections and keys");
+  await expect(page.locator(".app-card", { hasText: "Connections and keys" }).locator(".chip")).toHaveText("1 expiring");
+  await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon", "Coming soon", "Coming soon"]);
+  await expect(page.getByRole("link", { name: "Audit and trace" })).toHaveAttribute("href", "/settings/audit");
+  await expect(page.getByRole("link", { name: "AI usage" })).toHaveAttribute("href", "/settings/ai/usage");
+  await expect(page.locator(".lede")).toContainText("One thing needs you: the Azure DevOps credential expires in 12 days");
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Settings" }).first()).toHaveAttribute("href", "/settings");
+  await page.getByRole("button", { name: /profile menu/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Settings", exact: true })).toHaveAttribute("href", "/settings");
+  await page.keyboard.press("Escape");
+  expect(await axe(page)).toEqual([]);
+});
+
+test("047 AC2 AC5 no form on the hub or the four screens, and every ticket, card and row has a pin", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/settings");
+  for (const path of SCREENS) {
+    await page.goto(path);
+    await expect(page.locator("main h1")).toBeVisible();
+    await expect(page.locator("main form, main dialog")).toHaveCount(0);
+    expect([path, await unpinned(page)]).toEqual([path, []]);
+  }
+});
+
+test("047 AC4 AC7 pin a credential, ask to rotate it, confirm with the masked field: Rotated today, and the value is nowhere on the page", async ({ page }) => {
+  const VALUE = `test-e2e-${randomBytes(12).toString("hex")}`;
+  await signIn(page, "maya@lumenlabs.test", "/settings/keys");
+  const row = page.locator("tr", { hasText: "Azure DevOps" });
+  // The Ask chip pins the credential (get_secret_meta) and fills in the prompt.
+  await row.getByRole("button", { name: "Ask to rotate Azure DevOps" }).click();
+  await expect(chat(page).locator(".pinchip > span")).toHaveText(["Azure DevOps"]);
+  await expect(page.getByLabel("Message amax")).toHaveValue("Rotate the Azure DevOps token, keep its expiry");
+  await page.getByRole("button", { name: "Send" }).click();
+  const card = page.getByRole("group", { name: /^Confirm:/ });
+  const field = card.getByLabel("New value");
+  await expect(field).toHaveAttribute("type", "password");
+  expect(await axe(page)).toEqual([]);
+  await field.fill(VALUE);
+  await card.getByRole("button", { name: "Confirm" }).click();
+  await expect(card).toContainText("saved to the vault");
+  expect(await page.content()).not.toContain(VALUE);
+  await page.reload();
+  await expect(row).toContainText("Rotated today");
+  await expect(row).toContainText("Expires in 12 days");
+  expect(await page.content()).not.toContain(VALUE);
+});
+
+test("047 AC7 pin a schedule, ask to pause it, confirm: it shows Paused", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/settings/workflows");
+  const row = page.locator("tr", { hasText: "Audit chain check" });
+  await expect(row).toContainText("On");
+  await row.getByRole("button", { name: "Ask to pause Audit chain check" }).click();
+  await expect(chat(page).locator(".pinchip > span")).toHaveText(["Audit chain check"]);
+  await expect(page.getByLabel("Message amax")).toHaveValue("Pause the Audit chain check schedule");
+  await page.getByRole("button", { name: "Send" }).click();
+  const card = page.getByRole("group", { name: /^Confirm:/ });
+  await card.getByRole("button", { name: "Add it" }).click();
+  await expect(card).toContainText("Done");
+  await page.reload();
+  await expect(row).toContainText("Paused");
+  await expect(row.getByRole("button", { name: "Ask to resume Audit chain check" })).toBeVisible();
+});
+
+test("047 AC6 non-Admins get the 404 page on every admin screen, and chat refuses the admin writes", async ({ page }) => {
+  await signIn(page, "nimal@lumenlabs.test", "/settings");
+  for (const path of SCREENS) {
+    expect([path, (await page.goto(path))?.status()]).toEqual([path, 404]);
+    await expect(page.getByText("This page could not be found")).toBeVisible();
+    await expect(page.locator("main table, main .app-card")).toHaveCount(0);
+  }
+  await page.goto("/");
+  await page.getByRole("button", { name: "Ask amax" }).click();
+  for (const ask of ["Rotate the GitHub token", "Pause the Audit chain check schedule"]) {
+    await page.getByLabel("Message amax").fill(ask);
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".m .b").last()).toContainText(/couldn't do that/);
+  }
+  await expect(page.getByRole("group", { name: /^Confirm:/ })).toHaveCount(0);
+});
