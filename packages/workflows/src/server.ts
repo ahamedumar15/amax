@@ -7,4 +7,4 @@ export { createPostgresEngine } from "./pg/engine";
 export { workflowRegistry, type WorkflowRegistry } from "./registry";
 export { pruneRunsJob, workflowsRetention } from "./retention";
 export { ENTITY_ZONES, syncSchedules } from "./schedules";
-export { getRun, listRuns, listSchedules, type CanSee, type Masked, type RunView, type ScheduleView, type StepView } from "./views";
+export { getRun, LATEST_RUNS, listRuns, listSchedules, type CanSee, type Masked, type RunView, type ScheduleView, type StepView } from "./views";

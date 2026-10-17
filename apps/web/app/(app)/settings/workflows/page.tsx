@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { canSee, rolesOf } from "@amax/auth";
-import { listRuns, listSchedules } from "@amax/workflows/server";
+import { LATEST_RUNS, listRuns, listSchedules } from "@amax/workflows/server";
 import { PinnedTicket as Ticket } from "../../../../components/settings/PinnedTicket";
 import { RunsCard } from "../../../../components/workflows/RunsCard";
 import { SchedulesCard } from "../../../../components/workflows/SchedulesCard";
@@ -21,7 +21,7 @@ export default async function WorkflowsSettingsPage() {
   const registry = workflowsRegistry();
   const [schedules, runs] = await Promise.all([
     listSchedules(db, registry, viewer.tenantId),
-    listRuns(db, registry, viewer.tenantId, (cls, actsFor) => canSee(viewer, cls, { ownerUserId: ownerOf(actsFor) }), { limit: 50 }),
+    listRuns(db, registry, viewer.tenantId, (cls, actsFor) => canSee(viewer, cls, { ownerUserId: ownerOf(actsFor) }), { limit: LATEST_RUNS }),
   ]);
   const active = runs.filter((r) => ["running", "sleeping", "waiting"].includes(r.status));
   const waiting = runs.filter((r) => r.status === "waiting").length;

@@ -61,4 +61,24 @@ describe.skipIf(!hasDb)("050 AC-6 the write-once export covers the trace and AI 
     expect(storage.objects.size).toBe(3);
     expect(await exports()).toEqual([{ n: 1 }]);
   });
+
+  // 052 review round 4: two runs of the same day at once (a retry overlapping a slow run) serialise
+  // on the (tenant, day) lock: each object is put once, one export row, and neither run fails.
+  it.each([2, 3])("%i overlapping exports of one day record it once", async (n) => {
+    const storage = memoryStorage();
+    const puts: string[] = [];
+    const put = storage.put.bind(storage);
+    storage.put = async (key, body, opts) => {
+      puts.push(key);
+      await new Promise((r) => setTimeout(r, 20));
+      return put(key, body, opts);
+    };
+    const day = new Date(Date.now() - (10 + n) * 86_400_000);
+    const runs = await Promise.allSettled(Array.from({ length: n }, () => withTenant(app, T, (tx) => exportAuditDay(tx, T, day, storage, 30))));
+    expect(runs.map((r) => r.status)).toEqual(Array(n).fill("fulfilled"));
+    expect(puts.sort()).toEqual([...storage.objects.keys()].sort());
+    expect(storage.objects.size).toBe(3);
+    const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'core.audit.export' and resource_id = ${day.toISOString().slice(0, 10)}`));
+    expect(row.n).toBe(1);
+  });
 });

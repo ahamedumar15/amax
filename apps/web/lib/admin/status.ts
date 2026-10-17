@@ -5,7 +5,7 @@ import { aiStats } from "@amax/ai/admin";
 import { auditStatus, logError, type AuditStatus } from "@amax/core/server";
 import { CONNECTORS, EXPIRY_WINDOW_DAYS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
-import { listRuns, listSchedules } from "@amax/workflows/server";
+import { LATEST_RUNS, listRuns, listSchedules } from "@amax/workflows/server";
 import type { Viewer } from "@amax/auth";
 import { ctxFor, type AdminDeps } from "./tool";
 
@@ -43,7 +43,7 @@ async function ai(d: AdminDeps, v: Viewer): Promise<Area[]> {
 }
 
 async function scheduler(d: AdminDeps, v: Viewer): Promise<Area> {
-  const [schedules, runs] = await Promise.all([listSchedules(d.db(), d.workflows(), v.tenantId), listRuns(d.db(), d.workflows(), v.tenantId, () => false, { limit: 50 })]);
+  const [schedules, runs] = await Promise.all([listSchedules(d.db(), d.workflows(), v.tenantId), listRuns(d.db(), d.workflows(), v.tenantId, () => false, { limit: LATEST_RUNS })]);
   const failed = runs.filter((r) => r.status === "failed").length;
   const noZone = schedules.filter((s) => s.enabled && !s.timezone).length;
   const off = schedules.filter((s) => !s.enabled).length;

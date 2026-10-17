@@ -34,10 +34,15 @@ function stepView(s: Record<string, unknown>, see: (c: Sensitivity) => boolean):
   };
 }
 
+/** How many runs the run views show: the Scheduler screen's window and its tickets' counts. */
+export const LATEST_RUNS = 50;
+
 export async function listRuns(db: Db, registry: WorkflowRegistry, tenantId: string, see: CanSee, o: { limit?: number; status?: RunStatus | RunStatus[]; id?: string } = {}): Promise<RunView[]> {
   const statuses = o.status === undefined ? [] : [o.status].flat();
+  // An empty status list matches no run; it never widens to every run (052 review).
+  if (o.status !== undefined && !statuses.length) return [];
   return withTenant(db, tenantId, async (tx) => {
-    const runs = await tx.execute(sql`select * from workflows.run where ${o.id ? sql`id = ${o.id}` : statuses.length ? sql`status in (${sql.join(statuses.map((s) => sql`${s}`), sql`, `)})` : sql`true`} order by created_at desc limit ${o.limit ?? 50}`);
+    const runs = await tx.execute(sql`select * from workflows.run where ${o.id ? sql`id = ${o.id}` : statuses.length ? sql`status in (${sql.join(statuses.map((s) => sql`${s}`), sql`, `)})` : sql`true`} order by created_at desc limit ${o.limit ?? LATEST_RUNS}`);
     const ids = JSON.stringify(runs.map((r) => r.id));
     const steps = await tx.execute(sql`select * from workflows.step where run_id in (select jsonb_array_elements_text(${ids}::jsonb)::uuid) order by seq`);
     return runs.map((r) => {

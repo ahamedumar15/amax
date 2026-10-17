@@ -3,7 +3,7 @@ import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { canSee, type Viewer } from "@amax/auth";
 import { ToolError } from "@amax/mcp";
-import { getRun, listRuns, listSchedules, setEntityZone, setScheduleEnabled, WORKFLOWS_ADMIN, type ScheduleView } from "@amax/workflows/server";
+import { getRun, LATEST_RUNS, listRuns, listSchedules, setEntityZone, setScheduleEnabled, WORKFLOWS_ADMIN, type ScheduleView } from "@amax/workflows/server";
 import { ctxFor, notFound, read, tool, write, type AdminDeps } from "./tool";
 
 const ownerOf = (actsFor: string | null) => (actsFor?.startsWith("user:") ? actsFor.slice(5) : null);
@@ -27,7 +27,7 @@ async function findSchedule(d: AdminDeps, v: Viewer, ref: string) {
 // By default the status filter is in the query, so older matching runs are found. The Scheduler
 // screen's tickets count within the latest runs; their pins pass withinLatest, so "Failed runs" and
 // "Runs in progress" resolve to exactly the runs they count (052 review rounds 2 and 3).
-const LATEST = 50;
+const LATEST = LATEST_RUNS;
 const RUN_STATUS = z.enum(["running", "sleeping", "waiting", "paused", "failed", "completed", "cancelled"]);
 async function runsFor(d: AdminDeps, v: Viewer, status: z.infer<typeof RUN_STATUS> | z.infer<typeof RUN_STATUS>[] | undefined, withinLatest: boolean) {
   if (!withinLatest) return listRuns(d.db(), d.workflows(), v.tenantId, see(v), { limit: LATEST, status });
