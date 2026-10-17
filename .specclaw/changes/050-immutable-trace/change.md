@@ -40,7 +40,7 @@ What changes on screen, and where to see it: [`050-immutable-trace`](../../mock/
 - [x] `T5` — Read side: `auditStatus`, `searchAudit`, `getTrace` in core; Admin-only read tools `search_audit`, `get_trace`, `audit_status` (permission `core.audit.read`); export covers `core.trace_event` and `ai.call` and records itself in the audit (AC-4, AC-5, AC-6)
   Files: packages/core/src/audit-read.ts, packages/core/src/audit-export.ts, packages/mcp/src/registry.ts
   Depends: T3
-- [ ] `T6` — Tests: tamper tests as `amax_app` (UPDATE/DELETE fail on all three tables, trigger proven with a temporary grant), superuser tamper shows "Chain broken at event N" via the read tool, erasure keeps both chains verifiable, trace propagation through chat and MCP, export coverage (AC-1..AC-7)
+- [x] `T6` — Tests: tamper tests as `amax_app` (UPDATE/DELETE fail on all three tables, trigger proven with a temporary grant), superuser tamper shows "Chain broken at event N" via the read tool, erasure keeps both chains verifiable, trace propagation through chat and MCP, export coverage (AC-1..AC-7)
   Files: packages/core/tests/trace-ac2-ac3-append-only.test.ts, packages/core/tests/trace-ac5-tamper.test.ts, packages/core/tests/trace-ac7-erasure.test.ts, packages/core/tests/trace-ac6-export.test.ts, packages/core/tests/ac7-chain.test.ts, packages/core/tests/ac7-export.test.ts, modules/delivery/tests/trace-ac1.test.ts
   Depends: T4, T5
 
