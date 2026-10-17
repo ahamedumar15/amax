@@ -27,7 +27,7 @@ What changes on screen, and where to see it: [`049-chat-history`](../../mock/ind
 
 - [x] `T1` — History view in the chat panel: History button, search, rows with title, date, message count, pins and a PinButton; reopen restores messages, pins and cards, expired cards show "Expired" (AC-2, AC-3)
   Files: apps/web/components/chat/Chat.tsx, apps/web/components/chat/History.tsx, apps/web/app/globals.css
-- [ ] `T2` — Migration 0020: `title`, `archived_at` and `pins` on `chat.conversation`, backfilled for existing rows; the engine sets the title from the first message and stores the turn's pins (AC-1, AC-3)
+- [x] `T2` — Migration 0020: `title`, `archived_at` and `pins` on `chat.conversation`, backfilled for existing rows; the engine sets the title from the first message and stores the turn's pins (AC-1, AC-3)
   Files: packages/db/migrations/0020_chat_history.sql, packages/chat/src/engine.ts
 - [ ] `T3` — History reads and the archive service: `listConversations`, `getConversation` scoped to the signed-in person; `archiveConversation` through defineService; MCP tools `list_conversations`, `get_conversation`, `archive_conversation` (AC-4, AC-5)
   Files: packages/chat/src/history.ts, packages/chat/src/index.ts
