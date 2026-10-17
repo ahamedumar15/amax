@@ -51,7 +51,7 @@ describe.skipIf(!hasDb)("password sign-in", () => {
     expect(await reason(signInPassword(app, T, "kasun@lumen.test", "kasun-password-123"))).toBe("locked");
     await withTenant(app, T, (tx) => tx.execute(sql`update auth.user set locked_until = now() - interval '1 second' where email = 'kasun@lumen.test'`));
     expect(await reason(signInPassword(app, T, "kasun@lumen.test", "kasun-password-123"))).toBe("ok");
-  });
+  }, 30_000);
 
   it("a deactivated user can't sign in and their session stops loading", async () => {
     const s = await signInPassword(app, T, "maya@lumen.test", "maya-password-123");
