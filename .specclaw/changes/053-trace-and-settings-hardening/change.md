@@ -43,3 +43,27 @@ What changes on screen, and where to see it: none. Fixes only; screens stay as i
   Depends: T2, T3, T4, T5
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `traceStep` (packages/core/src/trace.ts) catches, logs with `logError` and resolves `false`; `traceStepOrFail` throws and is called only for confirm's `run` decided step. The `.catch` wrappers in registry.ts and engine.ts are gone; job_run goes through the same best-effort `traceStepIn`.
+- AC-2: pass — graph rule R8 (scripts/graph/rules.mjs) scans modules, packages and apps; fixture `packages/testing/boundaries/r8-trace-or-fail` fails on a package and an app file and passes the chat engine (`ac3-boundaries.test.ts`).
+- AC-3: pass — `runTurn` writes the pending step first; on `false` no card is pushed and the model gets `not_proposed` (table row "pending").
+- AC-4: pass — `packages/chat/tests/trace-store-down.test.ts`: a real Postgres trigger fails `core.trace_event` inserts per kind; 11 rows (turn, tool_call, pending, decided confirm ×5, decided cancel, mcp_call, job_run). Only confirm `run` changes outcome (fails closed, write never runs). Without the fix, 5 rows fail.
+- AC-5: pass — expired rows prompt "Rotate … and set a new expiry date"; `rotate_secret.propose` runs `keptExpiry` when chat proposes the card (`hardening-053.test.ts` AC-5: no card for the expired credential, the model is told why).
+- AC-6: pass — `list_secrets { filter: all | expiring | rotated }`; tickets pin their filter; AC-6 test asserts each filter returns exactly the ticket's rows.
+- AC-7: pass — hub uses shared `expiringSoon`/`pastExpiry` (lib/admin/credentials.ts) and `aiUsageTotals` + `costLabel`; tests cover past-expiry and an unpriced call shown as unknown.
+- AC-8: pass — `set_entity_zone` refuses a name matching 2 entities and lists names with ids; the id still resolves.
+- AC-9: pass — each new test failed with the source changes stashed (5/11 table rows; all 4 settings tests). All checks green.
+
+Commands (exit codes):
+- `pnpm lint` (turbo tsc + check-graph): 0
+- `DATABASE_MIGRATE_URL=… npx turbo run test --concurrency=2`: 0 (16/16 packages)
+- `pnpm build`: 0
+- `E2E_PORT=3554 npx playwright test`: 0 (1 passed)
+- `E2E_DB=amax_e2e_053 E2E_AUTH_PORT=3553 npx playwright test --config playwright.auth.config.ts`: 0 (47 passed, including 031 AC4 Keys screen within 2% of its mock)
+- `specclaw-preset-check .`: no violations in this change's new files (repo-wide violations pre-exist)
+- Quality: not_run (`specclaw-quality-scan` fails: jq "Argument list too long")
+- specclaw-review: not run (operator: review once per module end)
+
+Screenshots: `shots/mock.png` (031 Keys mock). No mock delta; the Keys screen's mock comparison is the 2% diff in `secrets.spec.ts`, which passed.
