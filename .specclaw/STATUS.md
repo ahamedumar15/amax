@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 12:42 UTC
+**Last Updated:** 2026-10-17 12:43 UTC
 
 ## Active Changes
 
@@ -15,7 +15,7 @@
 - 🔍 **033-ai-gateway-and-residency** — verify done | 3/3 tasks (100%) | 0 failed
 - 🔍 **039-specclaw-self-sync** — verify done | 3/3 tasks (100%) | 0 failed | PR #18 closed
 - ✅ **040-dependency-updates** — 2/2 tasks (100%) | 0 failed
-- 🔍 **041-delivery-mock-parity** — verify done | 6/6 tasks (100%) | 0 failed
+- 🔀 **041-delivery-mock-parity** — pr done | 6/6 tasks (100%) | 0 failed | PR #30 open
 - 🔍 **042-release-management** — verify done | 3/3 tasks (100%) | 0 failed | PR #24 closed
 
 ## Pending Proposals
