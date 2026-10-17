@@ -237,7 +237,6 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       const h = holdNext();
       const confirming = confirmAction(app, reg, maya, a.convo, a.id);
       await h.inside;
-      // The expectation is attached now: the cancel may settle before the confirm returns (050 adds a trace step after the write).
       const cancelling = expect(cancelAction(app, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "confirmed" });
       await new Promise((r) => setTimeout(r, 200)); // the cancel is now blocked on the key
       h.release();
