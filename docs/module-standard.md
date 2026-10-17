@@ -9,6 +9,10 @@ Every module change (lanes other than Platform) must meet this before it is veri
 - ✓auto **The change touches only `modules/<name>/`**, plus one `CODEOWNERS` line. Modules are discovered by scanning `modules/*/module.ts`, so no shared registry file is edited.
 - ✓auto **Imports are limited** to `@amax/core`, `@amax/db`, `@amax/auth`, `@amax/ui`, `@amax/mcp`, `@amax/chat`, `@amax/agents`, `@amax/workflows`, and other modules' `contracts.ts`. Never another module's internals.
 - **Writes go only to the module's own Postgres schema,** through `defineService()`, so every write is permission-checked, audited and emits its events.
+- ✓auto **Every table has row-level security on `tenant_id`** (003); the leak test in `@amax/testing` runs against the module.
+- ✓auto **Personal data is classified and has a retention rule.** Fields carry a 002 sensitivity class (`pay`, `health`, `bank`, `performance`, `candidate`), and every personal-data table has a 032 retention entry in the manifest.
+- **AI only through `@amax/ai`** (033). Untrusted text is passed as data, and agent output is a suggestion validated against its schema.
+- **No credentials in code or env vars.** Connector secrets go through 031.
 - **The mock is read-only during a build.** If a screen needs to change, propose it in its own small change.
 - **Shared UI:** components start inside the module. Moving one into `@amax/ui` is a separate platform-lane change.
 

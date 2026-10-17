@@ -66,19 +66,22 @@ modules/hr/
   mcp.ts               MCP tools (they call the same services)
   chat.ts              chat intents: fields, prompts, the create call
   ui/                  React screens and components, built only from @amax/ui
-  contracts.ts         the only thing other modules may import: types, read functions, event names
+  contracts.ts         the only thing other modules may import: types, read functions,
+                       command functions, event names
   fixtures/            demo data for this module (it reads shared people and projects from core fixtures)
   tests/
 ```
 
 - **Mounting:** `apps/web/app/(app)/[module]/[[...path]]/page.tsx` resolves the route through the registry. Adding a module means one line in `apps/web/modules.ts`; nothing else in the app changes.
 - **Boundaries** are enforced by an ESLint import rule plus a CI check:
-  - A module may import `@amax/core`, `@amax/ui`, `@amax/auth`, `@amax/db` and other modules' `contracts.ts`, and nothing else.
+  - A module may import `@amax/core`, `@amax/ui`, `@amax/auth`, `@amax/db`, `@amax/ai`, `@amax/agents`, `@amax/workflows` and other modules' `contracts.ts`, and nothing else. No module or package imports a model provider SDK; every LLM call goes through `@amax/ai` (033).
   - For example, `payroll` reads leave through `@amax/leave/contracts`, never through `leave/db`.
 - **Data ownership:**
   - A module writes only its own schema.
   - Cross-module reads go through contract functions, which apply the caller's data scope.
+  - Cross-module writes go through **command functions** on the owning module's contract (for example `hr.contracts.createPersonFromHire`). A command runs the owner's service, authorised as the caller and audited; it never touches another schema directly.
   - Cross-module reactions go through events. Example: `hr.person.left` makes `it-access` revoke access as a suggestion that someone must approve.
+- **Dependencies:** manifest slots that are plain data (chat intents, notification rules, retention rules) need no dependency on the change that consumes them. Calling `@amax/agents` (suggestions) or `@amax/workflows` (jobs, schedules) is a hard dependency on 006 or 029.
 - **Every write** goes through the service pipeline, so every path (UI, MCP, chat, agent, pipeline) gets the same permission check and the same audit record.
 - **Ownership:** `CODEOWNERS` maps each `modules/<name>/` folder to its team (HR team → `hr`, `leave`, `onboarding`; IT department → `it-access`, `helpdesk`; and so on). The platform team owns `packages/` and `apps/web`.
 

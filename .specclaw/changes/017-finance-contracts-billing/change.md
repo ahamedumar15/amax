@@ -1,7 +1,7 @@
 # Finance: contracts, billing and receivables
 
 **Change:** 017-finance-contracts-billing · **Created:** 2026-10-17
-**Lane:** Finance · **Module:** `modules/finance` · **Depends on:** [007](../007-delivery-projects/change.md), [003](../003-data-core/change.md), [009](../009-time-and-approvals/change.md)
+**Lane:** Finance · **Module:** `modules/finance` · **Depends on:** [007](../007-delivery-projects/change.md), [003](../003-data-core/change.md), [009](../009-time-and-approvals/change.md), [006](../006-agent-governance/change.md)
 
 ## Problem
 
