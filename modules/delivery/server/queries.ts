@@ -48,7 +48,7 @@ const PROPOSALS = sql`
   left join delivery.release r on r.id = p.release_id
   left join lateral (
     select e.name, d.status from delivery.deployment d join delivery.environment e on e.id = d.environment_id
-    where d.release_id = p.release_id order by e.position desc, d.at desc limit 1) last on true`;
+    where d.release_id = p.release_id and d.voided_at is null order by e.position desc, d.at desc limit 1) last on true`;
 
 export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: string } = {}) =>
   read(v, async (tx) => {
@@ -82,18 +82,40 @@ export type ReleaseRow = {
 
 export const listReleases = (v: Viewer) =>
   read(v, async (tx) => {
-    const envs = await tx.execute(sql`select * from delivery.environment order by position`);
+    const envs = await tx.execute(sql`select * from delivery.environment order by project_id, position`);
     const releases = await tx.execute(sql`select r.*, pr.key as project_key, pr.name as project_name, pr.color as project_color,
       (select count(*)::int from delivery.proposal p where p.release_id = r.id) as proposals
       from delivery.release r join delivery.project pr on pr.id = r.project_id order by r.created_at desc`);
-    const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment order by release_id, environment_id, at desc`);
+    const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
       id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
       projectColor: r.project_color as string, proposals: Number(r.proposals),
-      stages: envs.map((e) => {
+      stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
         return { environment: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,
           at: d ? new Date(d.at as string).toISOString() : null, note: (d?.note as string | null) ?? null, run: (d?.pipeline_run as string | null) ?? null };
       }),
     }));
+  });
+
+export type EnvironmentRow = { name: string; position: number; isProd: boolean; deployments: number };
+
+export const listEnvironments = (v: Viewer, projectKey: string) =>
+  read(v, async (tx) => (await tx.execute(sql`select e.name, e.position, e.is_prod, (select count(*)::int from delivery.deployment d where d.environment_id = e.id) as deployments
+    from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = ${projectKey} order by e.position`))
+    .map((e): EnvironmentRow => ({ name: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), deployments: Number(e.deployments) })));
+
+export type DeploymentRow = { environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
+
+/** One release with its proposals and full deployment history, voided ones included. */
+export const getRelease = (v: Viewer, projectKey: string, version: string) =>
+  read(v, async (tx) => {
+    const [r] = await tx.execute(sql`select r.*, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where p.key = ${projectKey} and r.version = ${version}`);
+    if (!r) return null;
+    const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
+      .map((d): DeploymentRow => ({ environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
+        recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
+    const proposals = (await tx.execute(sql`select key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
+      .map((p) => ({ key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
+    return { id: r.id as string, version: r.version as string, projectKey, projectName: r.project_name as string, history, proposals };
   });

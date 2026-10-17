@@ -7,4 +7,8 @@ export const chatIntents = [
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "title", ask: "What's the change?" }, { name: "estimateHours", ask: "Roughly how many hours?" }] },
   { id: "delivery.new-release", label: "New release", tool: "create_release", required: ["projectKey", "version"],
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Version, e.g. v2.5.0" }] },
+  { id: "delivery.deploy", label: "Record a deployment", tool: "record_deployment", required: ["projectKey", "version", "environment"],
+    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Which release version?" }, { name: "environment", ask: "Which environment, e.g. Dev, QA, UAT or Prod?" }] },
+  { id: "delivery.tag-release", label: "Change a release", tool: "set_release_proposals", required: ["projectKey", "version", "proposalKeys"],
+    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Which release?" }, { name: "proposalKeys", ask: "Which proposals should it contain?" }] },
 ];

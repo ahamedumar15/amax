@@ -21,4 +21,22 @@ Small additions to [`001-amax-foundation-releases`](../../mock/index.html#001-am
 
 ## Tasks
 
+Assumptions (Rule 1):
+- Built on the 005 stack (#22): the MCP registry and chat confirm cards give AC-4's tools and intents for free.
+- The mock isn't redrawn first (the proposal asked for it); the new controls reuse the mock's card, table and form styles and are listed for 041's parity pass.
+- The data migration copies the tenant-wide Dev/QA/UAT/Prod to every project and repoints deployments by name. It lifts FORCE RLS on the two tables for its own transaction so it also runs where the schema owner isn't a superuser.
+- Voiding keeps the row (with who, when and why) and every read ignores voided rows, so the map recomputes and history stays.
+
+- [ ] `T1` — Migration (per-project environments, at most one Prod, void columns); services: `upsertEnvironment`, `removeEnvironment`, `tagRelease`, `setReleaseProposals`, `recordDeployment` to any environment of the project, `voidDeployment` (un-releases when the only Prod deployment goes); new projects get default environments; queries per project (AC-1, AC-2, AC-3, AC-5)
+  Kind: impl
+  Files: modules/delivery/db/migrations/0002_release_management.sql, modules/delivery/server/{services,queries}.ts, modules/delivery/fixtures/index.ts, modules/delivery/tests/releases.test.ts
+- [ ] `T2` — MCP tools and chat intents: `list_environments`, `upsert_environment`, `tag_release`, `set_release_proposals`, `void_deployment` (+ existing `create_release`, `record_deployment`); "deploy … to UAT", "tag … into v2.5.0" (AC-4)
+  Kind: impl
+  Files: modules/delivery/{mcp,chat}.ts
+  Depends: T1
+- [ ] `T3` — UI: Environments card on the project page; release page (rename tag, choose proposals, deploy to any environment with status and note, deployment history with Void and a reason); releases table links and per-project columns; e2e (AC-1, AC-2, AC-3)
+  Kind: impl
+  Files: modules/delivery/ui/{ProjectPage,ReleasesPage,ReleasePage,EnvironmentsCard}.tsx, modules/delivery/actions.ts, modules/delivery/module.ts, apps/web/tests/e2e/releases.spec.ts
+  Depends: T2
+
 ## Verify

@@ -72,8 +72,10 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
       on conflict (tenant_id, key) do update set name = excluded.name returning id`);
     ids[p.key] = row.id as string;
   }
-  for (const [i, name] of ["Dev", "QA", "UAT", "Prod"].entries()) {
-    await tx.execute(sql`insert into delivery.environment (tenant_id, name, position, is_prod) values (${tenantId}, ${name}, ${i + 1}, ${name === "Prod"}) on conflict do nothing`);
+  for (const projectId of Object.values(ids)) {
+    for (const [i, name] of ["Dev", "QA", "UAT", "Prod"].entries()) {
+      await tx.execute(sql`insert into delivery.environment (tenant_id, project_id, name, position, is_prod) values (${tenantId}, ${projectId}, ${name}, ${i + 1}, ${name === "Prod"}) on conflict do nothing`);
+    }
   }
   const releaseIds: Record<string, string> = {};
   for (const [i, r] of RELEASES.entries()) {
@@ -82,10 +84,10 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
       on conflict (project_id, version) do update set version = excluded.version returning id`);
     releaseIds[`${r.project} ${r.version}`] = row.id as string;
     for (const [env, status, at, note, run] of r.deployments) {
-      const exists = await tx.execute(sql`select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${row.id} and e.name = ${env}`);
+      const exists = await tx.execute(sql`select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${row.id} and e.name = ${env} and e.project_id = ${ids[r.project]}`);
       if (exists.length) continue;
       await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, at, note, pipeline_run, recorded_by)
-        select ${tenantId}, ${row.id}, id, ${status}, ${at}, ${note ?? null}, ${run ?? null}, 'fixtures' from delivery.environment where name = ${env}`);
+        select ${tenantId}, ${row.id}, id, ${status}, ${at}, ${note ?? null}, ${run ?? null}, 'fixtures' from delivery.environment where name = ${env} and project_id = ${ids[r.project]}`);
     }
   }
   for (const [i, p] of [...NAMED, ...fillers()].entries()) {

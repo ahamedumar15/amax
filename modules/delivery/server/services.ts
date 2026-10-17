@@ -19,6 +19,21 @@ async function projectByKey(tx: Tx, key: string) {
   return p;
 }
 
+export const DEFAULT_ENVIRONMENTS = ["Dev", "QA", "UAT", "Prod"];
+
+async function ensureEnvironments(tx: Tx, tenantId: string, projectId: string) {
+  for (const [i, name] of DEFAULT_ENVIRONMENTS.entries()) {
+    await tx.execute(sql`insert into delivery.environment (tenant_id, project_id, name, position, is_prod)
+      values (${tenantId}, ${projectId}, ${name}, ${i + 1}, ${name === "Prod"}) on conflict (project_id, name) do nothing`);
+  }
+}
+
+async function releaseOf(tx: Tx, projectId: unknown, version: string) {
+  const [r] = await tx.execute(sql`select * from delivery.release where project_id = ${projectId} and version = ${version}`);
+  if (!r) throw new Error(`no release ${version}`);
+  return r;
+}
+
 const phaseEvent = (p: Record<string, unknown>, to: Phase, ctx: ServiceContext): Emitted => ({
   name: EVENTS.proposalPhaseChanged,
   payload: { proposalId: p.id as string, key: p.key as string, projectId: p.project_id as string, from: p.phase as Phase, to, by: by(ctx) } satisfies ProposalPhaseChanged,
@@ -39,6 +54,7 @@ export const createProject = defineService({
     const [p] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, manager_name, manager_user_id)
       values (${ctx.tenantId}, ${input.key}, ${input.name}, ${input.client}, ${input.billing}, ${input.managerName ?? null},
               ${viewerOf(ctx)?.userId ?? null}) returning id, key`);
+    await ensureEnvironments(tx, ctx.tenantId, p.id as string);
     return { result: { id: p.id as string, key: p.key as string }, resourceId: p.id as string, after: input };
   },
 });
@@ -115,10 +131,10 @@ export const recordDeployment = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:deployment:record", project.id as string);
-    const [release] = await tx.execute(sql`select * from delivery.release where project_id = ${project.id} and version = ${input.version}`);
-    if (!release) throw new Error(`no release ${input.version} for ${input.projectKey}`);
-    const [env] = await tx.execute(sql`select * from delivery.environment where name = ${input.environment}`);
-    if (!env) throw new Error(`no environment ${input.environment}`);
+    const release = await releaseOf(tx, project.id, input.version);
+    // 042: any environment of this project, not only the next one; matched by name, as pipelines report it.
+    const [env] = await tx.execute(sql`select * from delivery.environment where project_id = ${project.id} and lower(name) = lower(${input.environment})`);
+    if (!env) throw new Error(`${input.projectKey} has no environment ${input.environment}`);
     const [d] = await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, note, pipeline_run, recorded_by)
       values (${ctx.tenantId}, ${release.id}, ${env.id}, ${input.status}, ${input.note ?? null}, ${input.pipelineRun ?? null}, ${by(ctx)}) returning id`);
     const released = Boolean(env.is_prod) && input.status === "deployed";
@@ -159,6 +175,7 @@ export const syncProposal = defineService({
     if (!project) {
       [project] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, color, sprint)
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
+      await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
     const [before] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
     const meta = JSON.stringify(input.meta);
@@ -176,5 +193,113 @@ export const syncProposal = defineService({
       after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha },
       events,
     };
+  },
+});
+
+// ---- 042 release management -------------------------------------------------------------------
+
+// Add, rename, reorder or mark Prod. Marking one Prod unmarks the others; isProd false leaves none.
+export const upsertEnvironment = defineService({
+  name: "delivery.environment.upsert",
+  action: "delivery:release:create",
+  resource: "delivery.environment",
+  input: z.object({ projectKey: z.string(), name: z.string().min(1).max(40), rename: z.string().min(1).max(40).optional(), position: z.number().int().min(1).optional(), isProd: z.boolean().optional() }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:release:create", project.id as string);
+    const [before] = await tx.execute(sql`select * from delivery.environment where project_id = ${project.id} and name = ${input.name}`);
+    if (input.isProd) await tx.execute(sql`update delivery.environment set is_prod = false where project_id = ${project.id}`);
+    let row;
+    if (before) {
+      [row] = await tx.execute(sql`update delivery.environment set name = ${input.rename ?? input.name}, is_prod = ${input.isProd ?? before.is_prod} where id = ${before.id} returning *`);
+    } else {
+      const [{ n }] = await tx.execute(sql`select coalesce(max(position), 0) + 1 as n from delivery.environment where project_id = ${project.id}`);
+      [row] = await tx.execute(sql`insert into delivery.environment (tenant_id, project_id, name, position, is_prod) values (${ctx.tenantId}, ${project.id}, ${input.rename ?? input.name}, ${n}, ${input.isProd ?? false}) returning *`);
+    }
+    if (input.position) {
+      // Move to the requested slot and close the gaps, keeping the others in order.
+      const envs = (await tx.execute(sql`select id from delivery.environment where project_id = ${project.id} and id <> ${row.id} order by position`)).map((e) => e.id as string);
+      envs.splice(Math.min(input.position - 1, envs.length), 0, row.id as string);
+      for (const [i, id] of envs.entries()) await tx.execute(sql`update delivery.environment set position = ${-(i + 1)} where id = ${id}`);
+      await tx.execute(sql`update delivery.environment set position = -position where project_id = ${project.id}`);
+    }
+    return { result: { name: row.name as string }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null, after: input };
+  },
+});
+
+export const removeEnvironment = defineService({
+  name: "delivery.environment.remove",
+  action: "delivery:release:create",
+  resource: "delivery.environment",
+  input: z.object({ projectKey: z.string(), name: z.string() }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:release:create", project.id as string);
+    const [env] = await tx.execute(sql`select * from delivery.environment where project_id = ${project.id} and name = ${input.name}`);
+    if (!env) throw new Error(`no environment ${input.name}`);
+    const [{ n }] = await tx.execute(sql`select count(*)::int as n from delivery.deployment where environment_id = ${env.id}`);
+    if (Number(n) > 0) throw new Error(`${input.name} has deployments; void them or keep the environment`);
+    await tx.execute(sql`delete from delivery.environment where id = ${env.id}`);
+    return { result: { removed: input.name }, resourceId: env.id as string, before: { name: env.name } };
+  },
+});
+
+export const tagRelease = defineService({
+  name: "delivery.release.tag",
+  action: "delivery:release:create",
+  resource: "delivery.release",
+  input: z.object({ projectKey: z.string(), version: z.string(), newVersion: z.string().min(1).max(40) }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:release:create", project.id as string);
+    const r = await releaseOf(tx, project.id, input.version);
+    await tx.execute(sql`update delivery.release set version = ${input.newVersion} where id = ${r.id}`);
+    return { result: { version: input.newVersion }, resourceId: r.id as string, before: { version: input.version }, after: { version: input.newVersion } };
+  },
+});
+
+export const setReleaseProposals = defineService({
+  name: "delivery.release.proposals",
+  action: "delivery:release:create",
+  resource: "delivery.release",
+  input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()) }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:release:create", project.id as string);
+    const r = await releaseOf(tx, project.id, input.version);
+    const before = (await tx.execute(sql`select key from delivery.proposal where release_id = ${r.id} order by key`)).map((p) => p.key as string);
+    await tx.execute(sql`update delivery.proposal set release_id = null where release_id = ${r.id} and phase <> 'released'`);
+    for (const key of input.proposalKeys) {
+      const [p] = await tx.execute(sql`update delivery.proposal set release_id = ${r.id} where key = ${key} and project_id = ${project.id} returning id`);
+      if (!p) throw new Error(`no proposal ${key} in ${input.projectKey}`);
+    }
+    return { result: { version: input.version, proposals: input.proposalKeys }, resourceId: r.id as string, before: { proposals: before }, after: { proposals: input.proposalKeys } };
+  },
+});
+
+// A wrong record is voided with a reason, never deleted. Voiding the only Prod deployment takes
+// its proposals out of Released again.
+export const voidDeployment = defineService({
+  name: "delivery.deployment.void",
+  action: "delivery:deployment:record",
+  resource: "delivery.deployment",
+  input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), reason: z.string().min(3).max(500) }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:deployment:record", project.id as string);
+    const release = await releaseOf(tx, project.id, input.version);
+    const [d] = await tx.execute(sql`update delivery.deployment set voided_at = now(), void_reason = ${input.reason}, voided_by = ${by(ctx)}
+      where id = (select d.id from delivery.deployment d join delivery.environment e on e.id = d.environment_id
+                  where d.release_id = ${release.id} and lower(e.name) = lower(${input.environment}) and d.voided_at is null order by d.at desc limit 1)
+      returning *`);
+    if (!d) throw new Error(`no deployment of ${input.version} to ${input.environment} to void`);
+    const events: Emitted[] = [];
+    const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment d join delivery.environment e on e.id = d.environment_id
+      where d.release_id = ${release.id} and e.is_prod and d.status = 'deployed' and d.voided_at is null`);
+    if (Number(live) === 0) {
+      const back = await tx.execute(sql`update delivery.proposal set phase = 'verified', released_at = null, updated_at = now() where release_id = ${release.id} and phase = 'released' returning *`);
+      events.push(...back.map((p) => phaseEvent({ ...p, phase: "released" }, "verified", ctx)));
+    }
+    return { result: { voided: d.id as string, unreleased: events.length }, resourceId: d.id as string, after: input, events };
   },
 });

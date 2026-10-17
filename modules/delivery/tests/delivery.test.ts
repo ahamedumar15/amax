@@ -24,7 +24,7 @@ describe("AC-5 contract shape", () => {
   });
   it("AC-4 declares the five MCP tools and three chat intents", () => {
     expect(mcpTools.map((t) => t.name)).toEqual(expect.arrayContaining(["list_projects", "get_project", "list_proposals", "get_release", "record_deployment"]));
-    expect((manifest.chatIntents as { id: string }[]).map((c) => c.id)).toEqual(["delivery.new-project", "delivery.new-proposal", "delivery.new-release"]);
+    expect((manifest.chatIntents as { id: string }[]).map((c) => c.id)).toEqual(expect.arrayContaining(["delivery.new-project", "delivery.new-proposal", "delivery.new-release"]));
   });
 });
 

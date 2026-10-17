@@ -26,6 +26,27 @@ function Marked({ text, highlights, fields }: { text: string; highlights: Highli
   return <>{parts}</>;
 }
 
+// The model writes light markdown; render **bold**, `code`, line breaks and "- " lists as React
+// elements (never HTML), so model text can't inject markup.
+function inline(text: string, key: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <b key={`${key}-${i}`}>{part.slice(2, -2)}</b>
+      : part.startsWith("`") && part.endsWith("`") && part.length > 2 ? <code key={`${key}-${i}`}>{part.slice(1, -1)}</code> : part);
+}
+export function Markdown({ text }: { text: string }) {
+  const blocks: ReactNode[] = [];
+  let list: ReactNode[] = [];
+  const flush = () => { if (list.length) { blocks.push(<ul key={`ul${blocks.length}`} style={{ margin: "6px 0", paddingLeft: 18 }}>{list}</ul>); list = []; } };
+  text.split("\n").forEach((line, i) => {
+    const item = line.match(/^\s*[-*•]\s+(.*)$/);
+    if (item) { list.push(<li key={i}>{inline(item[1], `l${i}`)}</li>); return; }
+    flush();
+    if (line.trim()) blocks.push(<p key={i} style={{ margin: "0 0 6px" }}>{inline(line, `p${i}`)}</p>);
+  });
+  flush();
+  return <>{blocks}</>;
+}
+
 type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; start: () => void; stop: () => void };
 
 export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean }) {
@@ -135,7 +156,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice }: { open: bo
           if (e.kind === "amax") return (
             <div key={i} className="m"><div className="b">
               {e.tools.length > 0 && <div className="tools" aria-label="Tools used">{e.tools.map((t, j) => <span key={j}>{t}</span>)}</div>}
-              <p className={e.error ? "err" : undefined}>{e.text}</p>
+              {e.error ? <p className="err">{e.text}</p> : <Markdown text={e.text} />}
             </div></div>
           );
           return (
