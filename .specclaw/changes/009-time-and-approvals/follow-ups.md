@@ -1,0 +1,8 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B10] `modules/time/module.ts:40` The retention entries use class 'personal'. That is not one of the 002 sensitivity classes the module standard lists (pay, health, bank, performance, candidate). Reject comments and approval decisions are arguably 'performance'. Use a real 002 class so masking and retention apply. (round 1) <!-- fp:0023b31f12d4 -->
+- [minor B8] `modules/time/ui/Timesheets.tsx:5` The CSV export wraps personName in quotes without escaping any embedded `"`, and it does not neutralise a leading `=`, `+`, `-` or `@`. A name containing a quote breaks the row, and one starting with '=' becomes a spreadsheet formula. Double embedded quotes and prefix formula characters with an apostrophe. (round 1) <!-- fp:17ebf475c823 -->
+- [minor B6] `modules/time/actions.ts:15` A bulk approve or remind runs each week in its own transaction. If one week fails (for example, another approver handled it first), the weeks before it stay committed, the rest are skipped and the action throws, so the result is partial with only one generic error shown. Fix: run them in one transaction, or report each week's outcome. (round 1) <!-- fp:44260e9a49e9 -->
+- [minor B6] `modules/time/README.md:8` The README says reminders reach people through notification rules. The manifest declares no notification rule for time.week.reminded, so 'Remind N people' only writes an event that nothing consumes. Fix: add the rule (plain manifest data), or say in the README that reminders are not delivered yet. (round 1) <!-- fp:3cda6d1780ae -->
