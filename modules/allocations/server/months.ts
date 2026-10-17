@@ -1,0 +1,20 @@
+import type { EmploymentPeriod } from "@amax/hr/contracts";
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/** `n` months starting with the month of `today`, as first-of-month dates. */
+export const windowMonths = (today: Date, n: number) => Array.from({ length: n }, (_, i) => iso(new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + i, 1))));
+
+/** Months after the current quarter are a forecast (the mock's "Jan, forecast"). */
+export const isForecast = (month: string, today: Date) => {
+  const end = new Date(Date.UTC(today.getUTCFullYear(), Math.floor(today.getUTCMonth() / 3) * 3 + 3, 1));
+  return month >= iso(end);
+};
+
+export const monthLabel = (month: string, style: "short" | "long" = "short") => new Date(`${month}T00:00:00Z`).toLocaleString("en-US", { month: style, timeZone: "UTC" });
+
+/** FTE on the 15th of the month: a joiner on Nov 2 counts for November, a leaver on Nov 10 doesn't. */
+export function fteIn(periods: EmploymentPeriod[], month: string) {
+  const mid = `${month.slice(0, 8)}15`;
+  return periods.find((p) => p.startsOn <= mid && (p.endsOn === null || p.endsOn >= mid))?.fte ?? 0;
+}
