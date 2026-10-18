@@ -1,13 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 04:46 UTC
+**Last Updated:** 2026-10-18 04:52 UTC
 
 ## Active Changes
 
 
 - 🔀 **012-leave** — PR #57 open
-- 📝 **030-notifications** — tasks done | 7/7 tasks (100%) | 0 failed
+- 🔍 **030-notifications** — verify done | 7/7 tasks (100%) | 0 failed
 - 🔍 **055-it-admin-role** — verify done | 5/5 tasks (100%) | 0 failed | PR #56 merged
 - 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
 

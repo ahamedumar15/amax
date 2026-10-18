@@ -16,7 +16,7 @@
 .n-list .pin.inline{position:static;opacity:1;transform:none;flex:none}
 .n-list .unread b::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--coral);margin-left:8px;vertical-align:1px}
 .bellwrap{position:relative}
-.bellwrap .iconbtn .count{position:absolute;top:4px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#B42318;color:#fff;font:700 11px/18px var(--font);font-style:normal;border:2px solid var(--card);box-sizing:content-box}
+.bellwrap .iconbtn .count{position:absolute;top:-6px;right:-6px;min-width:16px;height:18px;padding:0 4px;border-radius:9px;background:#B42318;color:#fff;font:700 11px/18px var(--font);font-style:normal;border:2px solid var(--card);box-sizing:content-box}
 .bell-panel{position:absolute;right:0;top:calc(100% + 10px);z-index:36;width:min(380px,calc(100vw - 32px));max-height:min(560px,80dvh);overflow-y:auto;background:var(--card);border-radius:20px;box-shadow:0 24px 60px -20px rgba(40,30,110,.45),0 0 0 1px var(--line);padding:18px 20px}
 .bell-panel h2{font-size:16px;margin:0}
 .bell-panel h2:focus{outline:none}
