@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { repinAll } from "@amax/chat/pins";
+import { withFresh } from "@amax/chat/pins";
 import { followMove, movedOf } from "../lib/chat-move";
 
 const moved = { from: "/delivery/releases/CON/v2.4.0", to: "/delivery/releases/CON/v2.4.1" };
@@ -25,16 +25,17 @@ describe("057 chat follows a renamed record's page", () => {
 });
 
 
-// 057 follow-up: after a rename the panel rewrites only the matching pins in its own current state.
-describe("057 the chat panel merges a repin into its current pins", () => {
-  const repin = { tools: ["get_release_history"], match: { projectKey: "CON", version: "v2.4.0" }, set: { version: "v2.4.1" }, label: ["v2.4.0", "v2.4.1"] as [string, string] };
-  const rel = (version: string) => ({ label: `CON ${version} proposals`, tool: "get_release_history", args: { projectKey: "CON", version } });
-  const other = { label: "HRI environments", tool: "list_environments", args: { projectKey: "HRI" } };
-  const added = { label: "CON-017 CSV import", tool: "get_proposal", args: { key: "CON-017" } };
+// 059: the panel takes the pins as the server read them, keeping any pin added or removed meanwhile.
+describe("059 the chat panel takes refreshed pins into its current pins", () => {
+  const rel = (version: string) => ({ label: `CON ${version}`, tool: "get_release_history", args: { releaseId: "r-1" }, facet: " proposals" });
+  const old = { label: "CON v2.3.0", tool: "get_release", args: { projectKey: "CON", version: "v2.3.0" } };
+  const moved = { label: "Contoso Portal v2.3.0", tool: "get_release", args: { releaseId: "r-0" } };
+  const added = { label: "CON-017 CSV import", tool: "get_proposal", args: { proposalId: "p-17" } };
+  const sent = [rel("v2.4.0"), old];
+  const fresh = [rel("v2.4.1"), moved];
   it.each([
-    ["a pin added since the last message stays", [rel("v2.4.0"), added], [rel("v2.4.1"), added]],
-    ["a pin removed since the last message stays removed", [rel("v2.4.0")], [rel("v2.4.1")]],
-    ["untouched pins keep their order", [other, rel("v2.4.0"), rel("v2.3.0")], [other, rel("v2.4.1"), rel("v2.3.0")]],
-    ["no matching pin: nothing changes", [other, added], [other, added]],
-  ])("%s", (_n, panel, want) => expect(repinAll(panel, repin)).toEqual(want));
+    ["a pin added since it was sent stays", [...sent, added], [rel("v2.4.1"), moved, added]],
+    ["a pin removed since it was sent stays removed", [old], [moved]],
+    ["the panel's order is kept", [added, old, rel("v2.4.0")], [added, moved, rel("v2.4.1")]],
+  ])("%s", (_n, panel, want) => expect(withFresh(panel, sent, fresh)).toEqual(want));
 });
