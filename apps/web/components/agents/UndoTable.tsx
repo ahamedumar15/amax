@@ -18,7 +18,7 @@ export function UndoTable({ rows }: { rows: SuggestionView[] }) {
               <td data-label="Decided">{named(s.decidedBy)}<small>{day(s.decidedAt)}</small></td>
               <td data-label="Undo until">{day(s.undoUntil)}</td>
               <td className="num"><span className="ask-row">
-                <AskButton label="Ask amax to undo" prompt={prompts.undo(s)} pin={pinOf(s)} tool="undo_agent_suggestion" name={`Ask amax to undo ${s.title}`} />
+                <AskButton label="Undo" prompt={prompts.undo(s)} pin={pinOf(s)} tool="undo_agent_suggestion" name={`Ask amax to undo ${s.title}`} />
                 <PinButton pin={pinOf(s)} />
               </span></td>
             </tr>))}</tbody>

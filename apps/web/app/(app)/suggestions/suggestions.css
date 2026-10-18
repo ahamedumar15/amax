@@ -8,3 +8,6 @@
 .sugg-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;margin:28px 0;align-items:start}
 @media (max-width: 900px){.sugg-cols{grid-template-columns:minmax(0,1fr)}.tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tbl td a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+.tbl .ask-row{flex-wrap:nowrap}
+.tbl td.evidence{white-space:normal;min-width:180px;max-width:300px}
+.tbl td.evidence .chip{display:flex;width:fit-content;margin-top:6px}

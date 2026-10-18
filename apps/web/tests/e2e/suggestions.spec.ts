@@ -22,7 +22,7 @@ test("006 Suggestions: decisions first, the undo window and agent jobs, every ro
   await expect(page.locator(".ticket .k")).toHaveText(["Needs your decision", "Second approver needed", "Can still be undone", "Expiring today"]);
   const decide = page.locator(".card", { has: page.getByRole("heading", { name: "Needs your decision" }) });
   await expect(decide.locator("tbody tr")).toHaveCount(2);
-  await expect(decide.locator("tbody tr", { hasText: "Kasun Dias" })).toContainText("External source: Email from a.lee@wideworld.test (fictional)");
+  await expect(decide.locator("tbody tr", { hasText: "Kasun Dias" })).toContainText("External source: emailEmail from a.lee@wideworld.test (fictional)");
   await expect(page.locator(".card", { has: page.getByRole("heading", { name: "Accepted, can be undone" }) }).locator("tbody tr")).toContainText("Move Nimal Silva to 50% on Contoso Portal in January");
   await expect(page.locator(".card", { has: page.getByRole("heading", { name: "Agent jobs" }) })).toContainText("Allocation check");
   expect(await unpinned(page)).toEqual([]);

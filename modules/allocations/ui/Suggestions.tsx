@@ -17,7 +17,7 @@ export async function AllocationSuggestions({ viewer }: { viewer: Viewer }) {
         <tbody>{rows.map((s) => (
           <tr key={s.id} className="pinnable">
             <td style={{ whiteSpace: "normal" }}><b>{s.title}</b>{s.detail && <small style={{ display: "block" }}>{s.detail}</small>}</td>
-            <td><span className="chip agent">{s.agent.name}</span>{s.source.external && <span className="chip warn">External source: {s.source.label}</span>}</td>
+            <td><span className="chip agent">{s.agent.name}</span>{s.source.external && <small style={{ display: "block" }}>External source: {s.source.label}</small>}</td>
             <td className="num"><AskButton label="Ask amax to accept" prompt={`Accept the suggestion "${s.title}" (suggestion id ${s.id})`} pin={{ label: s.title, tool: "get_agent_suggestion", args: { id: s.id } }} name={`Ask amax to accept ${s.title}`} />{" "}
               <PinButton pin={{ label: s.title, tool: "get_agent_suggestion", args: { id: s.id } }} /></td>
           </tr>))}</tbody>
