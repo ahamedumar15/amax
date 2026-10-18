@@ -1,13 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 03:30 UTC
+**Last Updated:** 2026-10-18 03:50 UTC
 
 ## Active Changes
 
 
 - 🔀 **057-chat-first-review** — PR #50 merged
-- 📝 **060-privacy-api-hardening** — tasks done | 0/9 tasks (0%) | 0 failed
+- 🔍 **060-privacy-api-hardening** — verify done | 9/9 tasks (100%) | 0 failed
 
 ## Pending Proposals
 

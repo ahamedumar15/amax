@@ -43,8 +43,25 @@ None. Fixes only.
   Files: packages/api/src/webhooks.ts, packages/api/src/deliver.ts, packages/api/tests/ac4-outgoing.test.ts
 - [x] `T8` — Durable replay keys for GitHub and Graph webhooks, outside the retention purge (AC-8, AC-9)
   Files: packages/db/migrations/0026_api_replay.sql, packages/api/src/module.ts, packages/api/src/inbound.ts, packages/api/tests/ac3-incoming.test.ts
-- [ ] `T9` — Full gates: typecheck, unit tests, lint, module-standard check, guest and signed-in e2e (AC-9)
+- [x] `T9` — Full gates: typecheck, unit tests, lint, module-standard check, guest and signed-in e2e (AC-9)
   Files: .specclaw/changes/060-privacy-api-hardening/change.md
   Depends: T1, T2, T3, T4, T5, T6, T7, T8
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `packages/core/tests/privacy-060-holds.test.ts`: a table over (person hold before, matter hold on a project) × (purge, erasure); a person hold also holds an id gained after it was placed, and refuses that person's erasure; rows a matter hold kept are stored as `kept: legal hold`. `held()` re-resolves `subject_user_id` (migration `0026_hold_person.sql`).
+- AC-2: pass — `privacy-060-columns.test.ts`: erasing the employee clears their name, note and own `person_id` and keeps the approver's `decided_by`/`updated_by`; erasing the approver clears only theirs. `defineModule` refuses a rule with an unfound personal column, and `check-module-standard.mjs` flags it (it found 6 on main; fixed in time, presales, delivery and allocations).
+- AC-3: pass — `privacy-060-limits.test.ts`: 501 name-only rows and a 5003-row package section are refused with the reason (read and complete), and the request stays open.
+- AC-4: pass — `rate-limit-pages.test.ts`: a GET with a spoofed `next-action` is limited; prefetches draw on their own budget (10× pages) and stop at it; only POST server actions are exempt.
+- AC-5: pass — `packages/api/tests/ac5-rate-limits.test.ts`: the 429 counts reach `api.rate_limited` through the promises handed to the deferrer, with no timer or manual flush; the web app hands them to `after()`.
+- AC-6: pass — `ac1-rest.test.ts`: a refusal with `retryable === false` answers 409 with its message; an unexpected error stays 500 without its message.
+- AC-7: pass — `ac4-outgoing.test.ts`: without the signing secret, subscribing is refused, and 6 deliveries leave the webhook active with 0 failures.
+- AC-8: pass — `ac3-incoming.test.ts`: a GitHub and a Graph call replayed after their `api.inbound` log was purged (aged past P90D and deleted) is still a duplicate (`api.replay_key`, migration `0027_api_replay.sql`, backfilled from the log).
+- AC-9: pass — each fix has a test that fails without it; the commands below all exit 0.
+
+Commands (exit 0, `DATABASE_MIGRATE_URL` on a private Postgres): `pnpm lint` (graph check ok), `pnpm turbo run test --concurrency=1` (all packages), `node scripts/check-module-standard.mjs`, `pnpm build`, `pnpm --filter @amax/web e2e` (1 passed, no `DATABASE_URL`, as in CI), `pnpm --filter @amax/web e2e:auth` (57 passed).
+`specclaw-preset-check .` exits 1 on the repo-wide comment and line-length convention (861 on the tree; in this change's files only lines it inherited, plus the existing `check-module-standard.mjs` length). Quality: not_run (`specclaw-quality-scan` fails with "jq: Argument list too long" on this repo).
+Screenshots: none; this change has no UI (Mock Delta: none).
+Review: not run per change; the operator runs specclaw-review once per module end.

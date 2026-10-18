@@ -1,8 +1,9 @@
 {
   "change": "060-privacy-api-hardening",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T03:30:10Z"}
+    "tasks": {"status":"done","at":"2026-10-18T03:30:10Z"},
+    "verify": {"status":"done","at":"2026-10-18T03:50:40Z"}
   }
 }
