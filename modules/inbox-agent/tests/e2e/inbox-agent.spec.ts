@@ -22,6 +22,7 @@ test("AC1 AC2 AC3 the inbox agent screen leads with the finds, links each to its
   await expect(page.locator(".lede")).toHaveText(/^3 finds from Teams and email wait for you\. The agent reads 4 channels and 6 mailboxes every hour\. Nothing is added until someone accepts it/);
   await expect(page.locator(".ticket .k")).toHaveText(["Open finds", "Allowed sources", "Last scan", "Admin consent"]);
   await expect(page.locator(".ticket .v")).toHaveText(["3", "10", /min ago$/, "Granted"]);
+  await expect(page.locator(".ticket .p").first()).toHaveText("1 leave request, 2 new opportunities");
   await expect(page.locator(".ticket .p").nth(2)).toHaveText(/^Hourly, next in \d+ min$/);
   const finds = page.locator(".found-item");
   await expect(finds.locator("b")).toHaveText(["Leave request: annual", "New opportunity: Woodgrove Bank", "New opportunity: Adatum, Australia"]);

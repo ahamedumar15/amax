@@ -8,7 +8,7 @@ const pin = (label: string) => <PinButton pin={viewPin(label)} />;
 function kinds(o: Overview) {
   const by = new Map<string, number>();
   for (const f of o.finds) if (f.route) by.set(f.route.label, (by.get(f.route.label) ?? 0) + 1);
-  return [...by].map(([label, n]) => `${n} ${label.toLowerCase()}${n === 1 ? "" : "s"}`).join(", ");
+  return [...by].map(([label, n]) => plural(n, label.toLowerCase(), label.toLowerCase().replace(/y$/, "ie") + "s")).join(", ");
 }
 
 export function Tickets({ o }: { o: Overview }) {
