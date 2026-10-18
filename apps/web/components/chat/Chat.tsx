@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObjec
 import { useRouter } from "next/navigation";
 import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
 import type { Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
-import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
-import { repinAll } from "@amax/chat/pins";
+import { cancelChat, confirmChat, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
+import { pinKey, withFresh, type Pin } from "@amax/chat/pins";
 import { followMove } from "../../lib/chat-move";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
@@ -63,7 +63,7 @@ type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (
 
 export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean; usage?: string | null }) {
   const [log, setLog] = useState<Entry[]>([]);
-  const [pins, setPins] = useState<PinRef[]>([]);
+  const [pins, setPins] = useState<Pin[]>([]);
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
@@ -84,7 +84,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   useEffect(() => {
     const onEvent = (e: Event) => {
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
-      if (d.pin) { setPins((p) => (p.some((x) => x.label === d.pin!.label) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
+      if (d.pin) { setPins((p) => (p.some((x) => pinKey(x) === pinKey(d.pin!)) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
       else if (d.prompt) {
         setText(d.prompt);
@@ -161,10 +161,13 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
     setHistory(null);
     setBusy(true);
     setLog((l) => [...l, { kind: "me", text: message, highlights: [] }]);
-    const r = await sendChat({ conversationId: convo.current, text: message, pins, intentId: intent });
+    const sent = pins;
+    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId: intent });
     setBusy(false);
     if (!r.ok) { setLog((l) => [...l, { kind: "amax", text: r.error, tools: [], error: true }]); return; }
     convo.current = r.conversationId;
+    // The pins as the turn read them: current labels, old pins moved onto ids (059).
+    setPins((ps) => withFresh(ps, sent, r.pins));
     if (r.usage) setTurnUsage(r.usage);
     setIntent(undefined);
     fields.current = r.pending.flatMap((p) => p.fields);
@@ -189,11 +192,15 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       announce(o.note);
       // The record this page shows was renamed (a re-tag): follow it, or the page would read "not found".
       // A client-side replace keeps this conversation open on the new page.
-      // A rename: rewrite only the panel's pins that name the record the old way, keeping any pin
-      // added or removed since the last message (057). The server did the same to the saved copies.
-      if (o.repin) setPins((ps) => repinAll(ps, o.repin));
       const to = followMove(window.location.pathname, o.moved);
       if (to) router.replace(to);
+      // A write may have renamed a pinned record: read the pins' labels again (059). Pins name records
+      // by id, so nothing is rewritten; a pin added or removed meanwhile stays as it is.
+      const sent = pins;
+      if (o.state === "done" && sent.length) {
+        const fresh = await refreshPins(sent);
+        if (fresh) setPins((ps) => withFresh(ps, sent, fresh));
+      }
     } catch {
       // The request itself failed (network, server): bring the buttons back so the user can retry.
       apply({ state: "open", note: "That didn't go through. Try again." });
@@ -259,7 +266,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       </div>
       <div className="c-ctx" aria-label="Pinned context">
         {pins.map((p) => (
-          <span key={p.label} className="pinchip"><span>{p.label}</span><button type="button" aria-label={`Remove ${p.label} from chat`} onClick={() => setPins((x) => x.filter((y) => y.label !== p.label))}>×</button></span>
+          <span key={pinKey(p)} className={p.unavailable ? "pinchip muted" : "pinchip"}><span>{p.label}</span><button type="button" aria-label={`Remove ${p.label} from chat`} onClick={() => setPins((x) => x.filter((y) => pinKey(y) !== pinKey(p)))}>×</button></span>
         ))}
       </div>
       <form className="c-input" onSubmit={(e) => { e.preventDefault(); send(text); }}>

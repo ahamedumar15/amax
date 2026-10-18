@@ -57,9 +57,9 @@ export async function OpportunityPage({ viewer: raw, params }: ScreenProps) {
       </nav>
       <div className="cols">
         <div className="stack">
-          <div className="cols even"><DetailsCard o={o} /><HistoryCard number={o.number} history={history} today={today} /></div>
-          <ActivitiesCard number={o.number} rows={records.activities} />
-          <div className="cols even"><TasksCard number={o.number} rows={records.tasks} /><RisksCard number={o.number} rows={records.risks} canEdit={canEdit} /></div>
+          <div className="cols even"><DetailsCard o={o} /><HistoryCard opp={o} history={history} today={today} /></div>
+          <ActivitiesCard opp={o} rows={records.activities} />
+          <div className="cols even"><TasksCard opp={o} rows={records.tasks} /><RisksCard opp={o} rows={records.risks} canEdit={canEdit} /></div>
         </div>
         <aside className="stack">
           <WinCard o={o} history={history} today={today} />

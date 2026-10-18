@@ -1,11 +1,12 @@
-import { PinButton } from "@amax/ui";
+import { PinButton, type PinRef } from "@amax/ui";
+import { environmentPin } from "../pins";
 import type { EnvironmentRow } from "../server/queries";
 import { AskButton } from "./AskButton";
 
 // Keyed on the id, so a rename can't strand the pin (057).
-const envPin = (projectKey: string, e: EnvironmentRow) => ({ label: `${projectKey} ${e.name}`, tool: "get_environment", args: { environmentId: e.id } });
+const envPin = (projectKey: string, e: EnvironmentRow) => environmentPin({ ...e, projectKey });
 
-function RowAsks({ projectKey, e, pin }: { projectKey: string; e: EnvironmentRow; pin: { label: string; tool: string; args: Record<string, unknown> } }) {
+function RowAsks({ projectKey, e, pin }: { projectKey: string; e: EnvironmentRow; pin: PinRef }) {
   const of = `the ${e.name} environment of ${projectKey}`;
   return (
     <>
