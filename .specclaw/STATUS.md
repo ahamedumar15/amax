@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 19:12 UTC
+**Last Updated:** 2026-10-18 19:26 UTC
 
 ## Active Changes
 
@@ -19,6 +19,7 @@
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
+- 📋 **066-career-tree** — proposal ready, awaiting planning
 
 ## Recently Completed
 

@@ -104,7 +104,7 @@ Proposals in the same wave have no dependency on each other, so separate teams o
 | 2 | 004 mcp-gateway (Platform), 007 delivery-projects (Delivery), 011 hr-core (People), 029 workflows-scheduler (Platform), 031 secrets-and-keys (Platform), 033 ai-gateway-and-residency (Platform) |
 | 3 | 005 amax-chat (Platform), 006 agent-governance (Platform), 009 time-and-approvals (Delivery), 010 allocations-forecast (Delivery), 012 leave (People), 020 presales (Sales), 024 learning (Talent), 028 keyflow-sync (Integrations), 030 notifications (Platform), 039 specclaw-self-sync (Delivery), 032 data-retention-and-erasure (Platform), 034 backup-restore-and-export (Platform), 035 api-webhooks-and-rate-limits (Platform), 036 compliance-registers (IT) |
 | 4 | 008 delivery-ingestion (Delivery), 013 onboarding-offboarding (People), 014 payroll-engine (Payroll), 017 finance-contracts-billing (Finance), 018 expenses (Finance), 021 it-access-licences (IT), 022 helpdesk (IT), 023 recruitment (Talent), 025 inbox-agent (Intelligence), 026 insights (Intelligence), 027 reports (Delivery) |
-| 5 | 015 payroll-sri-lanka (Payroll), 016 payroll-australia (Payroll), 019 accounting-journals (Finance), 037 digital-experience (IT) |
+| 5 | 015 payroll-sri-lanka (Payroll), 016 payroll-australia (Payroll), 019 accounting-journals (Finance), 037 digital-experience (IT), 066 career-tree (Talent) |
 
 ```mermaid
 graph LR
