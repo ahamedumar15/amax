@@ -64,9 +64,9 @@ Mock: `shots/app.png` (`/it-access` as Maya, Admin) matches `shots/mock.png`: th
 - The spend legend shows amounts where the mock shows percentages.
 - Devices compliant reads 96.5% from fixtures, where the mock shows 96.4%.
 
-Commands (re-run after merging origin/main at 3639408, with 027; Postgres 16 at `DATABASE_MIGRATE_URL`, HEAD a7cd2c3):
-- `pnpm turbo run lint --force` → 0 (30/30)
-- `pnpm turbo run test --force --continue --concurrency=2` → 0 (30/30)
+Commands (re-run after merging origin/main at 939a894, with 027 and 025; Postgres 16 at `DATABASE_MIGRATE_URL`, HEAD 1dfffdc):
+- `pnpm turbo run lint --force` → 0 (31/31)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (31/31)
 - `pnpm --filter @amax/web build` → 0
 - `playwright test --config playwright.auth.config.ts` (apps/web) → 81/81
 - module e2e `pnpm --filter @amax/it-access e2e` → 3/3
