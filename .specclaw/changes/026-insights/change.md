@@ -69,3 +69,5 @@ The "Next 90 days" and "Next 12 months" tabs are read-only horizons. "Board pack
   Depends: T3
 
 ## Verify
+
+Quality: 0 → 0 duplicated lines (npx jscpd modules/insights; specclaw-quality-scan failed with jq "Argument list too long"), so no refactor commit.
