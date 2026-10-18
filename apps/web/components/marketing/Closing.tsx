@@ -9,7 +9,7 @@ export function Closing({ salesEmail }: { salesEmail?: string }) {
         <div className="ask" data-ui>
           <div className="h"><Mascot />Ask amax</div>
           <div className="bub mine">Who is over-allocated next month?</div>
-          <div className="bub">Two people are over 100% in November: Sophie Nguyen (120%) and Liam Walsh (110%). Should I suggest moving 20% of Sophie to December?</div>
+          <div className="bub">Two people are over 100% in November: Sophie Nguyen (120%) and Liam Walsh (110%). Should I trim Sophie&apos;s largest project to clear her overbooking?</div>
           <div className="in"><span>Ask, add or drop anything here</span>{salesEmail ? <DemoLink email={salesEmail} primary /> : <a className="btn2 b-act" href="/signin">Sign in</a>}</div>
         </div>
       </div>

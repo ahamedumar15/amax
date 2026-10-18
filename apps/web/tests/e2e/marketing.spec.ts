@@ -28,7 +28,11 @@ test("064 AC2 the queue switches roles by keyboard and records who decided", asy
   await expect(tabs.getByRole("tab", { name: "Finance" })).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("End");
   await expect(tabs.getByRole("tab", { name: "Engineer" })).toBeFocused();
-  await page.getByRole("tabpanel").getByRole("button", { name: "Accept" }).click();
+  await page.getByRole("tabpanel").getByRole("button", { name: "Accept" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#ok-en1")).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Submit week" })).toBeFocused();
   await expect(page.getByRole("tabpanel")).toContainText("✓ Accepted by you, Liam Walsh · drafted by Git ingestion · in chat");
   await expect(page.getByRole("status")).toHaveText("Accepted by you, Liam Walsh · drafted by Git ingestion · in chat");
 });

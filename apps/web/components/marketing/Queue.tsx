@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { QUEUES, ROLES, type Role } from "./queues";
 
 export function Queue() {
   const [role, setRole] = useState<Role>("PM");
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [said, setSaid] = useState("");
+  const [last, setLast] = useState("");
+  useEffect(() => { if (last) document.getElementById(`ok-${last}`)?.focus(); }, [last]);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const pick = (i: number) => {
     const next = ROLES[(i + ROLES.length) % ROLES.length];
@@ -39,9 +41,9 @@ export function Queue() {
               <div className="t">{c.title}</div>
               <div className="d">{c.detail}</div>
               <span className="who">{c.by}</span>
-              {done[c.id] && <div className="ok">✓ {c.done}</div>}
+              {done[c.id] && <div className="ok" id={`ok-${c.id}`} tabIndex={-1}>✓ {c.done}</div>}
             </div>
-            {!done[c.id] && <button className="go" onClick={() => { setDone({ ...done, [c.id]: true }); setSaid(c.done); }}>{c.action}</button>}
+            {!done[c.id] && <button className="go" onClick={() => { setDone({ ...done, [c.id]: true }); setSaid(c.done); setLast(c.id); }}>{c.action}</button>}
           </li>
         ))}
       </ul>
