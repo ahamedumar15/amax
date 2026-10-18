@@ -29,7 +29,7 @@ test("AC3 chat-first create: a confirm card with coloured fields; Add it creates
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
   await page.getByRole("button", { name: "New proposal" }).click();
   await page.getByLabel("Message amax").fill("add Export invoices to PDF to CON");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
   await expect(card).toContainText("Export invoices to PDF");
   await expect(page.locator(".m.me mark.x")).toHaveCount(2);

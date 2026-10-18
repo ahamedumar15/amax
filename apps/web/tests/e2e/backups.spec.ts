@@ -59,7 +59,7 @@ test("034 AC-4 whoever asked for the export can't approve it; a second Admin app
   const approve = async () => {
     await page.getByRole("button", { name: "Ask to approve the tenant export Sahan Kumara asked for" }).click();
     await expect(chat(page).locator(".pinchip > span")).toHaveText(["Tenant export Oct 17"]);
-    await page.getByRole("button", { name: "Send" }).click();
+    await page.getByRole("button", { name: "Send", exact: true }).click();
     const card = page.getByRole("group", { name: /^Confirm:/ }).last();
     await card.getByRole("button", { name: /Add it|Confirm/ }).click();
     return card;

@@ -62,7 +62,7 @@ for (const who of ADMINS) test(`047 AC4 AC7 pin a credential, ask to rotate it, 
   await row.getByRole("button", { name: "Ask to rotate Azure DevOps" }).click();
   await expect(chat(page).locator(".pinchip > span")).toHaveText(["Azure DevOps"]);
   await expect(page.getByLabel("Message amax")).toHaveValue("Rotate the Azure DevOps token, keep its expiry");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
   const field = card.getByLabel("New value");
   await expect(field).toHaveAttribute("type", "password");
@@ -84,7 +84,7 @@ test("047 AC7 pin a schedule, ask to pause it, confirm: it shows Paused", async 
   await row.getByRole("button", { name: "Ask to pause Audit chain check" }).click();
   await expect(chat(page).locator(".pinchip > span")).toHaveText(["Audit chain check"]);
   await expect(page.getByLabel("Message amax")).toHaveValue("Pause the Audit chain check schedule");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
   await card.getByRole("button", { name: "Add it" }).click();
   await expect(card).toContainText("Done");
@@ -98,7 +98,7 @@ test("047 AC7 as IT Admin (055): ask to resume the paused schedule, confirm: it 
   const row = page.locator("tr", { hasText: "Audit chain check" });
   await row.getByRole("button", { name: "Ask to resume Audit chain check" }).click();
   await expect(page.getByLabel("Message amax")).toHaveValue("Resume the Audit chain check schedule");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
   await card.getByRole("button", { name: "Add it" }).click();
   await expect(card).toContainText("Done");
