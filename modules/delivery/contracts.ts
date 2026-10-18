@@ -6,6 +6,9 @@ import type { Tx } from "@amax/db";
 export const PHASES = ["proposed", "planned", "building", "verified", "released"] as const;
 export type Phase = (typeof PHASES)[number];
 
+/** A release's page. A re-tag changes it, so tag_release returns the old and new page as `moved` (057). */
+export const releaseHref = (r: { projectKey: string; version: string }) => `/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`;
+
 export type ProjectRef = { id: string; key: string; name: string; client: string; managerUserId: string | null; legalEntityId: string | null };
 
 /** Emitted when a deployment is recorded. `released` is true when the environment is Prod. */

@@ -1,6 +1,7 @@
 import { PinButton } from "@amax/ui";
 import type { TeamRow } from "../server/team";
 import { AskButton } from "./AskButton";
+import { approveAllPrompt } from "./prompts";
 import { COLORS, hrs } from "./parts";
 
 export function ThisWeek({ rows, projects, week }: { rows: TeamRow[]; projects: { name: string; hours: number }[]; week: string }) {
@@ -19,7 +20,7 @@ export function ThisWeek({ rows, projects, week }: { rows: TeamRow[]; projects: 
       ))}
       {ready.length ? (
         <AskButton className="btn primary" spark={false} style={{ width: "100%", justifyContent: "center", height: 46, marginTop: 16 }} label={`Approve ${ready.length} submitted (${hrs(readyHours)} h)`}
-          prompt={`Approve the submitted timesheets for ${week}: ${ready.map((r) => r.personName).join(", ")}`} pin={{ label: `Submitted timesheets, ${week}`, tool: "get_team_week", args: { week } }} />
+          prompt={approveAllPrompt(ready, week)} pin={{ label: `Submitted timesheets, ${week}`, tool: "get_team_week", args: { week } }} />
       ) : <button className="btn primary" type="button" disabled style={{ width: "100%", justifyContent: "center", height: 46, marginTop: 16 }}>Nothing waiting for you</button>}
     </div>
   );

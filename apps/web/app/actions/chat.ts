@@ -5,9 +5,9 @@ import { z } from "zod";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
-import { cancelAction, chatTurn, confirmAction, type ChatTurn, type Pin } from "@amax/chat";
+import { cancelAction, chatTurn, confirmAction, repinConversations, type ChatTurn, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
-import { outcomeOf, revealOf, type CardOutcome } from "../../lib/chat-outcome";
+import { doneOutcome, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
@@ -31,17 +31,17 @@ export async function sendChat(input: { conversationId?: string; text: string; p
 export type { CardOutcome };
 
 export async function confirmChat(conversationId: string, actionId: string): Promise<CardOutcome> {
+  let done: { title: string; result: unknown; viewer: Awaited<ReturnType<typeof currentViewer>> };
   try {
     const viewer = await currentViewer();
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
-    revalidatePath("/", "layout");
-    const key = (result as { key?: string } | null)?.key;
-    const reveal = revealOf(result);
-    if (reveal) return { state: "done", note: `Done. Copy the ${reveal.label.toLowerCase()} now: it is shown only this once.`, reveal };
-    return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${action.title}.` };
+    done = { title: action.title, result, viewer };
   } catch (e) {
     return outcomeOf(e);
   }
+  // The write has committed: nothing after this may turn the card into an error (057).
+  try { revalidatePath("/", "layout"); } catch (e) { logError("chat.revalidate", e); }
+  return doneOutcome(done.title, done.result, (r) => repinConversations(getDb()!, done.viewer, conversationId, r), (e) => logError("chat.repin", e));
 }
 
 export async function cancelChat(conversationId: string, actionId: string): Promise<CardOutcome> {

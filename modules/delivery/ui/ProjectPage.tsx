@@ -36,7 +36,7 @@ function SpecFacts({ p }: { p: ProposalRow }) {
 function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
-  const pin = { label: `${p.key} ${p.title}`, tool: "list_proposals", args: { projectKey: p.projectKey } };
+  const pin = { label: `${p.key} ${p.title}`, tool: "get_proposal", args: { key: p.key } };
   return (
     <div className="tcard pinnable">
       <PinButton pin={pin} />

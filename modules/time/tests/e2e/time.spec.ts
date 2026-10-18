@@ -43,7 +43,7 @@ test("AC2 / 054 AC5 approving through chat locks the week; the My timesheet swit
   await expect(page.locator("main form, main dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Approve Nimal Silva" }).click();
   await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText("Nimal Silva, 2026-W42");
-  await expect(page.getByLabel("Message amax")).toHaveValue("Approve Nimal Silva's timesheet for 2026-W42");
+  await expect(page.getByLabel("Message amax")).toHaveValue(/^Approve Nimal Silva's timesheet for 2026-W42 \(week id [0-9a-f-]{36}\)$/);
   await page.getByRole("button", { name: "Send" }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
   await card.getByRole("button", { name: "Add it" }).click();

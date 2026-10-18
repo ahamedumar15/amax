@@ -13,11 +13,11 @@ test("042 AC-1 / 054 AC5 environments per project: add, rename and choose Prod b
   await expect(card.locator("form")).toHaveCount(0);
   await askAndConfirm(page, card.getByRole("button", { name: "Ask amax to add an environment" }), { pin: "HRI environments", prompt: "Add an environment to HRI: ", type: "Staging" });
   await expect(card.locator("tbody tr")).toHaveCount(5);
-  await askAndConfirm(page, card.getByRole("button", { name: "Rename Staging" }), { pin: "HRI environments", prompt: "Rename the Staging environment of HRI to ", type: "Preview" });
+  await askAndConfirm(page, card.getByRole("button", { name: "Rename Staging" }), { pin: "HRI Staging", prompt: "Rename the Staging environment of HRI to ", type: "Preview" });
   await expect(card.locator("tbody tr", { hasText: "Preview" })).toHaveCount(1);
-  await askAndConfirm(page, card.getByRole("button", { name: "Make Prod: Preview" }), { pin: "HRI environments", prompt: "Make Preview the Prod environment of HRI" });
+  await askAndConfirm(page, card.getByRole("button", { name: "Make Prod: Preview" }), { pin: "HRI Preview", prompt: "Make Preview the Prod environment of HRI" });
   await expect(card).toContainText("Released means it reached Preview");
-  await askAndConfirm(page, card.getByRole("button", { name: "Unmark Prod: Preview" }), { pin: "HRI environments", prompt: "Unmark Preview as the Prod environment of HRI" });
+  await askAndConfirm(page, card.getByRole("button", { name: "Unmark Prod: Preview" }), { pin: "HRI Preview", prompt: "Unmark Preview as the Prod environment of HRI" });
   await expect(card).toContainText("No Prod");
   expect(await axe(page)).toEqual([]);
 });
@@ -28,14 +28,15 @@ test("042 AC-2/AC-3 / 054 AC5 a release page: re-tag, record a deployment and vo
   await page.getByRole("link", { name: "v2.4.0" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Contoso Portal v2.4.0");
   await expect(page.locator("main form, main dialog")).toHaveCount(0);
-  await askAndConfirm(page, page.getByRole("button", { name: "Ask amax to re-tag" }), { pin: "CON v2.4.0", prompt: "Tag CON v2.4.0 as ", type: "v2.4.1" });
-  await page.goto("/delivery/releases/CON/v2.4.1");
+  await askAndConfirm(page, page.getByRole("button", { name: "Ask amax to re-tag" }), { pin: "CON v2.4.0", prompt: "Tag CON v2.4.0 as ", type: "v2.4.1", reload: false });
+  // 057: no manual goto. Chat follows the re-tagged release to its new page.
+  await expect(page).toHaveURL((u) => u.pathname === "/delivery/releases/CON/v2.4.1");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Contoso Portal v2.4.1");
   await askAndConfirm(page, page.getByRole("button", { name: "Ask amax to record a deployment" }), { pin: "CON v2.4.1", prompt: "Record a deployment of CON v2.4.1 to ", type: "Prod" });
   const prodRow = page.locator("tbody tr", { hasText: "Prod" }).first();
   await expect(prodRow).toContainText("deployed");
   const id = await prodRow.getByRole("button", { name: /^Void the Prod deployment/ }).getAttribute("data-ask");
-  await askAndConfirm(page, prodRow.getByRole("button", { name: /^Void the Prod deployment/ }), { pin: "CON v2.4.1", prompt: id!, type: "wrong pipeline" });
+  await askAndConfirm(page, prodRow.getByRole("button", { name: /^Void the Prod deployment/ }), { pin: /^CON v2\.4\.1 on Prod, /, prompt: id!, type: "wrong pipeline" });
   await expect(page.locator("tbody tr", { hasText: "Prod" }).first()).toContainText("Voided: wrong pipeline");
   expect(await axe(page)).toEqual([]);
 });
