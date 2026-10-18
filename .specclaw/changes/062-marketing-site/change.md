@@ -73,7 +73,7 @@ Commands (in the worktree):
 - `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes. Nothing in this change breaks a non-comment rule.
 - `specclaw-quality-scan . --gate` → 1: three high-complexity functions, all outside this change (`delivery/sync/specclaw.ts` parse, `AiSettingsPage`, `BackupTickets`). This change adds no new high functions or duplicates.
 - Decision (the user, 2026-10-18, after review escalation in rounds 10–13): the automated time-claim guard was dropped. A regex test cannot cover every way of saying "hours get logged". Code review checks the marketing copy's time claims instead. The copy itself says commits draft hours that the person accepts, and the week is submitted before approval (`modules/time/suggestions.ts`, `modules/time/server/decide.ts`).
-- Review: CLEAN — 19 rounds, final pass 8bb0f2796a (opus/opus), 0/0/2 b/M/m. CI round 1 failed AC-6 on Linux fonts (431 px at 390); fixed, and the e2e now forces a wide fallback font. Rounds 9–13 corrected the time-logging and submit-before-approve claims across the page, video and mock.
+- Review: CLEAN — 20 rounds, final pass 297818c6ad (opus/opus), 0/0/2 b/M/m. CI round 1 failed AC-6 on Linux fonts (431 px at 390): fixed, and the e2e now forces a wide fallback font. CI round 2 failed in e2e:auth: sign-in helpers opened a signed-out / for the form. Every apps/web sign-in helper now starts from /signin for /. Rounds 9–13 corrected the time-logging and submit-before-approve claims across the page, video and mock.
 
 Quality: 360 → 354 duplicated lines
 
