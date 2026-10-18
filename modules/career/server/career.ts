@@ -2,6 +2,7 @@ import type { Tx } from "@amax/db";
 import { listProjectRefs } from "@amax/delivery/contracts";
 import { getPerson, type Reader } from "@amax/hr/contracts";
 import type { CareerEvent, CareerKind, Project } from "../contracts";
+import { maySee } from "./access";
 import { historyOf, importOf, tagsOf, withTags } from "./history";
 import { liveOf, type Sources } from "./live";
 import { installed, todayOf } from "./read";
@@ -23,10 +24,10 @@ const merged = (imported: CareerEvent[], live: CareerEvent[]) => live.reduce((ou
   return at < 0 ? [...out, e] : out.map((o, i) => (i === at ? { ...(o as Project), months: [...(o as Project).months, ...(e as Project).months] } : o));
 }, imported);
 
-/** One person's career as the reader may see it, oldest first; null when hr doesn't let them see the person. */
+/** One person's career as the reader may see it, oldest first; null when they may not see this person's career. */
 export async function careerData(tx: Tx, reader: Reader, tenantId: string, idOrNo: string): Promise<CareerData | null> {
   const person = await getPerson(tx, reader, idOrNo);
-  if (!person) return null;
+  if (!person || !(await maySee(tx, reader, tenantId, person))) return null;
   const today = await todayOf(tx);
   const on: Sources = { allocations: await installed(tx, "allocations.allocation"), learning: await installed(tx, "learning.certification"), delivery: await installed(tx, "delivery.project") };
   const kept = (e: CareerEvent) => e.trace.source.module === "hr" || on[e.trace.source.module as keyof Sources];

@@ -215,7 +215,7 @@ Two differences from the mock, on purpose:
   - Fictional fixtures that match AC-9's table for Kasun Dias (AC-1, AC-3, AC-4, AC-5, AC-9)
   Files: modules/career/contracts.ts, modules/career/db/migrations/0001_career.sql, modules/career/server/*.ts, modules/career/mcp.ts, modules/career/pins.ts, modules/career/fixtures/*, modules/career/tests/db.ts, modules/career/tests/installed.ts, modules/career/tests/contracts.test.ts, modules/career/tests/career.test.ts
   Depends: T2
-- [ ] `T4` — Who sees it, and what is left out:
+- [x] `T4` — Who sees it, and what is left out:
   - The person, their manager chain (through hr's `getPerson`), HR and leadership see it. Anyone else
     gets not found.
   - Pay is never a node, and health documents are never read.
