@@ -5,6 +5,8 @@ import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFr
 import { apiPlatform } from "@amax/api/module";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
 import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
+import { backupStorageFromEnv, configureBackups, pitrFromEnv } from "@amax/core/backup";
+import { startWorkflow } from "@amax/workflows";
 import { configureAi } from "@amax/ai";
 import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
@@ -48,6 +50,8 @@ export function getDb(): Db | null {
     // 030: modules start runs (notification deliveries) on the host's engine without importing it.
     setWorkflowEngine(workflowEngine);
     const env = loadEnv();
+    // 034: tenant snapshots and exports in the tenant's data region; builds and offboarding run as 029 workflows.
+    configureBackups({ storageFor: backupStorageFromEnv(env), files: () => storageFromEnv(), pitr: pitrFromEnv(env), linkKey: env.AUTH_SECRET ?? env.AUDIT_HASH_KEY!, start: (t, w, i, o) => startWorkflow(t, w, i, o) });
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
     wired = true;
