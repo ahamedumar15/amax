@@ -1,6 +1,6 @@
-# Status: 008-delivery-ingestion
+# Status: 038-navigation-scale
 
-**Change:** 008-delivery-ingestion
+**Change:** 038-navigation-scale
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -8,13 +8,14 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Proposal | - | - |
+| Proposal | ✅ Done |  |
 | Spec | - | - |
 | Design | - | - |
 | Tasks | ✅ Done |  |
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/70 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/69 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

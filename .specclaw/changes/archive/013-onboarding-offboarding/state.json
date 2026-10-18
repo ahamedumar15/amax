@@ -1,11 +1,12 @@
 {
   "change": "013-onboarding-offboarding",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T10:56:00Z"},
     "build": {"status":"done","at":"2026-10-18T11:20:55Z"},
     "verify": {"status":"done","at":"2026-10-18T11:20:55Z"},
-    "pr": {"status":"raised","at":"2026-10-18T11:22:15Z","url":"https://github.com/chan4lk/amax/pull/71"}
+    "pr": {"status":"raised","at":"2026-10-18T11:22:15Z","url":"https://github.com/chan4lk/amax/pull/71"},
+    "archived": {"status":"done","at":"2026-10-18T12:08:26Z"}
   }
 }
