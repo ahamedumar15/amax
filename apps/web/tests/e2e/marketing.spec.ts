@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { AREAS } from "../../components/marketing/areas";
 
 const longHeadings = (page: Page) => page.evaluate(() =>
   [...document.querySelectorAll("main h1, main h2, main h3")].filter((h) => !h.closest(".sr") && !h.classList.contains("sr"))
@@ -16,7 +17,7 @@ test("064 AC1 AC6 AC9 the sections in order, no app shell, no forms, fictional a
   await expect(page.getByRole("link", { name: "Book a demo" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(3);
   const coming = page.getByText("Coming", { exact: true });
-  await expect(coming).toHaveCount(3);
+  await expect(coming).toHaveCount(AREAS.filter((a) => a.coming.length > 0).length);
   for (const c of await coming.all()) await expect(c).toBeVisible();
 });
 
