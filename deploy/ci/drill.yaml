@@ -54,7 +54,8 @@ kind: Job
 metadata:
   name: drill-prepare
 spec:
-  backoffLimit: 0
+  # Applied together with Postgres, so its first try can beat the server's init restart: retry, don't fail.
+  backoffLimit: 4
   template:
     spec:
       restartPolicy: Never
