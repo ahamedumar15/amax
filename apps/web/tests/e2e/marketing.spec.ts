@@ -40,6 +40,7 @@ test("062 AC6 accessible in light and dark, keyboard skip link, no sideways scro
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/welcome");
+  await page.addStyleTag({ content: "*{font-family:Verdana,'DejaVu Sans',sans-serif!important}" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
