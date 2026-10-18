@@ -1,11 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 17:21 UTC
+**Last Updated:** 2026-10-18 17:33 UTC
 
 ## Active Changes
 
 
+- 📝 **026-insights** — tasks done | 0/4 tasks (0%) | 0 failed
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
@@ -16,7 +17,6 @@
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
-- 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
 
 ## Recently Completed
@@ -80,6 +80,6 @@
 
 ## Stats
 
-- **Total changes:** 57
-- **Active:** 2
+- **Total changes:** 58
+- **Active:** 3
 - **Completed:** 55
