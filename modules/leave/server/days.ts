@@ -31,6 +31,8 @@ export function monthDays(month: string) {
   return Array.from({ length: last }, (_, i) => `${month}-${String(i + 1).padStart(2, "0")}`);
 }
 
+export const monthName = (month: string) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
 export type Holiday = { on: string; name: string; kind: string; country: string };
 
 export async function holidaysIn(tx: Tx, country: string | null, from: string, to: string): Promise<Holiday[]> {

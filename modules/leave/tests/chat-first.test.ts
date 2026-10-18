@@ -53,8 +53,8 @@ describe.skipIf(!hasDb)("leave through chat, pins and masked medical details (Po
     expect(await get("maya", "PM")).toMatchObject({ type: "medical", medicalReason: { masked: true, class: "health" }, certificateRef: { masked: true, class: "health" } });
     expect(await get("nimal")).toBeNull();
     const maya = await db.as("maya", "PM");
-    const row = (await registry.call(maya, "get_team_calendar", { month: "2026-10", userId: (await db.as("ayesha")).userId }, { source: "chat" })) as { rows: { name: string; marks: (string | null)[] }[] };
+    const row = (await registry.call(maya, "get_calendar_row", { month: "2026-10", userId: (await db.as("ayesha")).userId }, { source: "chat" })) as { rows: { name: string; marks: (string | null)[] }[] };
     expect(row.rows.map((r) => [r.name, r.marks[15]])).toEqual([["Ayesha Rahman", "casual"]]);
-    expect(await registry.call(await db.as("kasun"), "get_team_calendar", { month: "2026-10", userId: (await db.as("ayesha")).userId }, { source: "chat" })).toBeNull();
+    expect(await registry.call(await db.as("kasun"), "get_calendar_row", { month: "2026-10", userId: (await db.as("ayesha")).userId }, { source: "chat" })).toBeNull();
   }, 60_000);
 });

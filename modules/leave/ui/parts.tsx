@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Viewer } from "@amax/auth";
 import { Card, EmptyState } from "@amax/ui";
 import { monthOf } from "../server/calendar";
+export { monthName } from "../server/days";
 import "./leave.css";
 
 /** A leave type's colour and calendar class, as in the mock's legend. */
@@ -16,7 +17,6 @@ export const avatar = (name: string) => `a${([...name].reduce((n, c) => n + c.ch
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 export const longDate = (iso: string, weekday = false) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", { weekday: weekday ? "short" : undefined, month: "short", day: "numeric", timeZone: "UTC" });
-export const monthName = (month: string) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
 export const viewerOrNull = (viewer: unknown) => (viewer as Viewer | null) ?? null;
 

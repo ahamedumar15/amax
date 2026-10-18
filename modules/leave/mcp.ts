@@ -1,7 +1,8 @@
 import { z } from "zod";
-import type { McpToolDef } from "@amax/core";
+import type { McpToolDef, PinnedRecord } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { LEAVE_SENSITIVE, LEAVE_TYPES } from "./contracts";
+import { monthName } from "./server/days";
 import { cancelLeave } from "./server/cancel";
 import { ctxFor } from "./server/context";
 import { approveLeave, rejectLeave } from "./server/decide";
@@ -16,16 +17,20 @@ const read = { scope: "read" as const, readOnly: true, permission: "leave:read" 
 const month = z.string().regex(/^\d{4}-\d{2}$/).optional().describe("Month such as 2026-10; this month if left out");
 const requestId = z.string().uuid().describe("The request's id, from get_leave_overview or get_my_leave");
 const date = z.string().describe("YYYY-MM-DD");
+const requestOf = (r: { id: string; person: string; type: string; dates: string } | null): PinnedRecord | null => (r ? { id: r.id, label: `${r.person}, ${r.type} leave ${r.dates}` } : null);
+const rowOf = (c: { month: string; rows: { userId: string; name: string }[] } | null): PinnedRecord | null => (c?.rows[0] ? { id: c.rows[0].userId, label: `${c.rows[0].name}, ${monthName(c.month)}` } : null);
 
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, name: "get_leave_overview", description: "Leave at a glance: who is on leave today, requests waiting for you with their release clash checks, days booked this month, unused annual leave, leave by type and per month, and the team calendar.",
+  tool({ ...read, pin: "view", name: "get_leave_overview", description: "Leave at a glance: who is on leave today, requests waiting for you with their release clash checks, days booked this month, unused annual leave, leave by type and per month, and the team calendar.",
     input: z.object({ month }), run: (v, a) => leaveOverview(v, a.month) }),
-  tool({ ...read, name: "get_team_calendar", description: "The team calendar for a month: each person's leave by day, pending requests, holidays. Give userId for one person's row.",
-    input: z.object({ month, userId: z.string().uuid().optional() }), run: (v, a) => leaveCalendar(v, a.month, a.userId) }),
-  tool({ ...read, name: "get_leave_request", description: "One leave request with its status, days and release clash check. Medical reasons and certificates show only to HR and the person.",
+  tool({ ...read, pin: "view", name: "get_team_calendar", description: "The team calendar for a month: each person's leave by day, pending requests, holidays.",
+    input: z.object({ month }), run: (v, a) => leaveCalendar(v, a.month) }),
+  tool({ ...read, pin: { id: "userId", of: rowOf }, name: "get_calendar_row", description: "One person's row of the team calendar for a month: their leave by day and pending requests.",
+    input: z.object({ userId: z.string().uuid(), month }), run: (v, a) => leaveCalendar(v, a.month, a.userId) }),
+  tool({ ...read, pin: { id: "requestId", of: requestOf }, name: "get_leave_request", description: "One leave request with its status, days and release clash check. Medical reasons and certificates show only to HR and the person.",
     sensitive: LEAVE_SENSITIVE, input: z.object({ requestId }), run: (v, a) => getLeaveRequest(v, a.requestId) }),
-  tool({ ...read, name: "get_my_leave", description: "Your own leave balances this year and your requests.", sensitive: LEAVE_SENSITIVE, input: z.object({}), run: (v) => myLeave(v) }),
-  tool({ ...read, name: "list_holidays", description: "Public and Poya holidays from the country packs, for a country (LK, AU) and year.",
+  tool({ ...read, pin: "view", name: "get_my_leave", description: "Your own leave balances this year and your requests.", sensitive: LEAVE_SENSITIVE, input: z.object({}), run: (v) => myLeave(v) }),
+  tool({ ...read, pin: "view", name: "list_holidays", description: "Public and Poya holidays from the country packs, for a country (LK, AU) and year.",
     input: z.object({ country: z.string().length(2).optional(), year: z.number().int().optional() }), run: (v, a) => listHolidays(v, a) }),
   tool({ name: "request_leave", description: "Request leave from startsOn to endsOn (inclusive, YYYY-MM-DD). Working days only count; give halfDay am or pm for half a day. Says whether it clashes with a release. HR may name another person by employee number or name.",
     scope: "write", permission: "leave:request", sensitive: LEAVE_SENSITIVE,

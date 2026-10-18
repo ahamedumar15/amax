@@ -36,7 +36,7 @@ export function Calendar({ cal, labels }: { cal: Cal; labels: Record<string, str
           {cal.rows.map((r) => (
             <tr key={r.userId} className="pinnable">
               <th className="nm" scope="row"><span className="who"><span className={`av sm ${avatar(r.name)}`} aria-hidden="true">{initials(r.name)}</span>{r.name}
-                <PinButton inline pin={{ label: `${r.name}, ${monthName(cal.month)}`, tool: "get_team_calendar", args: { month: cal.month, userId: r.userId } }} /></span></th>
+                <PinButton inline pin={{ label: `${r.name}, ${monthName(cal.month)}`, tool: "get_calendar_row", args: { userId: r.userId, month: cal.month } }} /></span></th>
               {cal.days.map((d, i) => {
                 const c = cell(d, r.marks[i], holidays.get(d), labels);
                 return <td key={d} className={`d ${c.cls}${d === today ? " today" : ""}`} title={`${longDate(d)}${c.text ? `: ${c.text}` : ""}`}>{c.text && <span className="sr">{c.text}</span>}</td>;
