@@ -1,10 +1,11 @@
 {
   "change": "060-privacy-api-hardening",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T03:30:10Z"},
     "verify": {"status":"done","at":"2026-10-18T03:50:40Z"},
-    "pr": {"status":"raised","at":"2026-10-18T03:51:18Z","url":"https://github.com/chan4lk/amax/pull/53"}
+    "pr": {"status":"raised","at":"2026-10-18T03:51:18Z","url":"https://github.com/chan4lk/amax/pull/53"},
+    "archived": {"status":"done","at":"2026-10-18T03:59:36Z"}
   }
 }

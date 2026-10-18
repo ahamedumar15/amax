@@ -1,0 +1,11 @@
+{
+  "change": "057-chat-first-review",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-17T19:40:14Z"},
+    "verify": {"status":"done","at":"2026-10-18T03:59:32Z"},
+    "pr": {"status":"raised","at":"2026-10-18T03:59:32Z"},
+    "archived": {"status":"done","at":"2026-10-18T03:59:36Z"}
+  }
+}
