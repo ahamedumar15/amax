@@ -14,5 +14,7 @@ export default defineConfig({
     command: `pnpm start --port ${port}`,
     url: `http://localhost:${port}/healthz`,
     reuseExistingServer: !process.env.CI,
+    // 062: the marketing page's canonical, Open Graph and sitemap URLs need a known public origin.
+    env: { AMAX_BASE_URL: `http://localhost:${port}` },
   },
 });

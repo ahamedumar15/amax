@@ -35,4 +35,4 @@ export async function proxy(req: NextRequest, ev: NextFetchEvent) {
   return (await guarded)(req, ev);
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|webp|ico|css|js|mp4|webm|vtt)$).*)"] };
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|marketing/|.*\\.(?:svg|png|jpg|webp|ico|css|js)$).*)"] };

@@ -28,6 +28,7 @@
 .mk-f{position:relative;border-radius:var(--r-card);padding:24px 24px 104px;min-height:220px;color:#1D1B2E;overflow:hidden}
 .mk-f h3{margin:0 0 8px}
 .mk-f p{color:#1D1B2E;opacity:.82;max-width:24ch;margin:0 0 10px}
+.mk-coming{font-size:13px;font-weight:600}
 .mk-f .chip{background:rgba(29,27,46,.12);color:#1D1B2E}
 .mk-f .art{position:absolute;right:-6px;bottom:-6px;width:110px;height:100px}
 .mk-f.info{background:linear-gradient(135deg,#D9CFFF,#A792FF)}

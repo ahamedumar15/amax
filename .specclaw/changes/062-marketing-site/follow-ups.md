@@ -1,0 +1,8 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B1] `apps/web/proxy.ts:38` The matcher now skips the proxy for any path ending in .mp4, .webm or .vtt, not just for files under /marketing/. App page routes with those suffixes then skip the gate and the 035 page rate limit, the same hole that already exists for .png and .svg. Fix: exclude only `/marketing/` (or `public/` assets) by prefix, not by extension. (round 1) <!-- fp:ccca2506128a -->
+- [minor B3] `apps/web/tests/e2e/marketing.spec.ts:1` T5 is checked off, but the diff has no Lighthouse run (AC-8) and no visual snapshot. AC-10's check at the signed-out `/` only looks for the Main nav (landing.spec.ts:7); it does not check the top bar, search, chat launcher or profile. Either add these checks or mark them as not run in the change record. (round 1) <!-- fp:b71445560a04 -->
+- [minor AC-9] `apps/web/app/(public)/welcome/welcome.css:14` AC-9 says the page takes its colours from `packages/ui` tokens. Instead, many brand and ticket colours are hard-coded (#A792FF, #53D6A1, #1D1B2E, the gradient stops in .mk-f.*, .mk-band, .mk-cta), so a token change won't reach the page. Use the token variables (e.g. --brand-violet, --brand-mint) or ticket-gradient tokens. (round 1) <!-- fp:560c6433d2d4 -->
+- [minor AC-7] `apps/web/app/robots.ts:8` `disallow: "/"` with an allow-list that leaves out `/icon.svg` (the new favicon) and `/signin` (the public page's only links besides anchors). Crawlers can't fetch the site icon shown in search results. Add `/icon.svg` to the allow list. (round 1) <!-- fp:9caa07003494 -->

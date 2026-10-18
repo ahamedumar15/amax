@@ -12,7 +12,10 @@ test("062 AC3 AC4 AC10 the public page sells amax with no app shell and no forms
   await expect(page.locator("form")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Book a demo" })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Marketing" }).getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
-  await expect(page.getByText("Coming", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("Coming", { exact: true })).toHaveCount(3);
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(3);
+  await expect(page.getByRole("search")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /profile menu/ })).toHaveCount(0);
 });
 
 test("062 AC5 the product video is captioned, lazy and never autoplays", async ({ page, request }) => {
