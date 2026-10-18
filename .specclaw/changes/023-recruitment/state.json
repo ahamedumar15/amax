@@ -1,0 +1,10 @@
+{
+  "change": "023-recruitment",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T13:13:57Z"},
+    "verify": {"status":"done","at":"2026-10-18T13:41:07Z"},
+    "pr": {"status":"raised","at":"2026-10-18T13:41:19Z","url":"https://github.com/chan4lk/amax/pull/77"}
+  }
+}

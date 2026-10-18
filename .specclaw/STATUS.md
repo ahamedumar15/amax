@@ -1,15 +1,15 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 14:01 UTC
+**Last Updated:** 2026-10-18 14:02 UTC
 
 ## Active Changes
 
 
 - 🔀 **014-payroll-engine** — pr raised | 6/6 tasks (100%) | 0 failed | PR #75 merged
 - 🔀 **017-finance-contracts-billing** — pr raised | 5/5 tasks (100%) | 0 failed | PR #76 merged
-- 🔍 **018-expenses** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔀 **023-recruitment** — PR #77 merged
+- 🔀 **018-expenses** — pr raised | 5/5 tasks (100%) | 0 failed | PR #78 open
+- 🔀 **023-recruitment** — pr raised | 6/6 tasks (100%) | 0 failed | PR #77 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
 ## Pending Proposals
