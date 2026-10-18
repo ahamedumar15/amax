@@ -8,15 +8,17 @@ import type { Viewer } from "./viewer";
 
 // Service principals are identities for CI, specclaw and integrations: an owner, scopes, an expiry
 // and the people they may act for. Personal API and MCP tokens act as their user.
-export type Principal = { id: string; tenantId: string; name: string; ownerUserId: string; scopes: string[]; actsFor: string[]; expiresAt: Date };
+/** `tools`: the only tools it may call (008), or null for every tool its scopes allow. */
+export type Principal = { id: string; tenantId: string; name: string; ownerUserId: string; scopes: string[]; actsFor: string[]; expiresAt: Date; tools?: string[] | null };
 export type Identity = { kind: "user"; viewer: Viewer; tokenKind: "api" | "mcp" } | { kind: "principal"; principal: Principal };
 
 const MAX_DAYS = 365;
 const scopeAllows = (scopes: string[], action: string) => scopes.some((s) => s === action || (s.endsWith(":*") && action.startsWith(s.slice(0, -1))));
 
 // 035: per-module tool scopes ("delivery:write"). Write includes read; sensitive is its own grant.
-export const principalAllowsTool = (p: Pick<Principal, "scopes">, module: string, scope: "read" | "write" | "sensitive") =>
-  p.scopes.includes(`${module}:${scope}`) || (scope === "read" && p.scopes.includes(`${module}:write`));
+// 008: a credential limited to named tools may call only those, whatever its scopes allow.
+export const principalAllowsTool = (p: Pick<Principal, "scopes" | "tools">, module: string, scope: "read" | "write" | "sensitive", name?: string) =>
+  (p.scopes.includes(`${module}:${scope}`) || (scope === "read" && p.scopes.includes(`${module}:write`))) && (!p.tools || (name !== undefined && p.tools.includes(name)));
 
 export async function createPrincipal(db: Db, owner: Viewer, p: { name: string; scopes: string[]; actsFor: string[]; days: number }) {
   if (!owner.actualRoles.includes("Admin")) throw new ForbiddenError("auth:principal:create", "auth.service_principal");
@@ -52,7 +54,7 @@ export async function authenticateToken(db: Db, token: string): Promise<Identity
     if (hit.kind === "principal") {
       const [p] = await tx.execute(sql`select * from auth.service_principal where id = ${hit.id} and revoked_at is null and expires_at > now()`);
       if (!p) return null;
-      return { kind: "principal", principal: { id: p.id as string, tenantId, name: p.name as string, ownerUserId: p.owner_user_id as string, scopes: p.scopes as string[], actsFor: p.acts_for as string[], expiresAt: new Date(p.expires_at as string) } };
+      return { kind: "principal", principal: { id: p.id as string, tenantId, name: p.name as string, ownerUserId: p.owner_user_id as string, scopes: p.scopes as string[], actsFor: p.acts_for as string[], expiresAt: new Date(p.expires_at as string), tools: (p.tools as string[] | null) ?? null } };
     }
     const [t] = await tx.execute(sql`select user_id, kind from auth.api_token where id = ${hit.id} and revoked_at is null and expires_at > now()`);
     if (!t) return null;

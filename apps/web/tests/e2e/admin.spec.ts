@@ -115,8 +115,8 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
     const nav = page.getByRole("navigation", { name: "Main" });
     await expect(nav.locator(".grp", { hasText: "Operations" })).toHaveCount(1);
     for (const label of OPERATIONS) await expect(nav.getByRole("link", { name: label, exact: true }), `${who.role} ${label}`).toBeVisible();
-    // 034 AC-6: the real Backups and export screen replaced its Coming soon entry, for Admin only.
-    await expect(nav.getByRole("link", { name: "Backups and export", exact: true })).toHaveCount(who.pricing ? 1 : 0);
+    // 038: Backups and export is a Settings hub card now, not a rail item.
+    await expect(nav.getByRole("link", { name: "Backups and export", exact: true })).toHaveCount(0);
     await nav.getByRole("link", { name: "Helpdesk", exact: true }).click();
     await expect(page).toHaveURL(/\/operations\/helpdesk$/);
     await expect(page.locator("main h1")).toHaveText("Helpdesk");
@@ -130,6 +130,28 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
   await signIn(page, "nimal@lumenlabs.test", "/");
   for (const label of OPERATIONS) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label, exact: true })).toHaveCount(0);
   expect((await page.goto("/operations/helpdesk"))?.status()).toBe(404);
+});
+
+test("038 AC-3, AC-5 a rail taller than the window keeps the current and focused item in view and fades its hidden edge", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await signIn(page, ADMINS[0].email, "/");
+  const nav = page.getByRole("navigation", { name: "Main" });
+  const inView = (name: string) => nav.getByRole("link", { name, exact: true }).evaluate((el) => {
+    const r = el.getBoundingClientRect(), box = el.closest("nav")!.getBoundingClientRect();
+    return r.top >= box.top && r.bottom <= box.bottom;
+  });
+  expect(await nav.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  await expect(nav).toHaveAttribute("data-fade-bottom", "true");
+  const last = (await nav.getByRole("link").allInnerTexts()).at(-1)!.trim();
+  await page.goto(await nav.getByRole("link", { name: last, exact: true }).getAttribute("href") as string);
+  await expect(nav.getByRole("link", { name: last, exact: true })).toHaveAttribute("aria-current", "page");
+  await expect.poll(() => inView(last)).toBe(true);
+  await expect(nav).toHaveAttribute("data-fade-top", "true");
+  await nav.getByRole("link", { name: "Overview", exact: true }).focus();
+  await expect.poll(() => inView("Overview")).toBe(true);  // 038 AC-5: on a phone the More sheet lists Settings.
+  await page.setViewportSize({ width: 390, height: 800 });
+  await nav.getByRole("button", { name: "More" }).click();
+  await expect(page.getByRole("dialog").getByRole("link", { name: "Settings", exact: true })).toBeVisible();
 });
 
 test("047 AC6 non-Admins get the 404 page on every admin screen, and chat refuses the admin writes", async ({ page }) => {

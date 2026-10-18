@@ -5,6 +5,7 @@ import { assertCan, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
+import { TaskInput, writeTasks } from "./tasks";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -204,6 +205,8 @@ export const syncProposal = defineService({
     sourceRef: z.string(),
     releasedAt: z.string().nullable(),
     meta: z.record(z.string(), z.unknown()),
+    // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
+    tasks: z.array(TaskInput).optional(),
   }),
   async run(tx, input, ctx) {
     let [project] = await tx.execute(sql`select * from delivery.project where key = ${input.projectKey}`);
@@ -241,6 +244,7 @@ export const syncProposal = defineService({
         where delivery.proposal.source = excluded.source
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
+    if (input.tasks) await writeTasks(tx, ctx.tenantId, row.id as string, input.tasks);
     // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
     if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {

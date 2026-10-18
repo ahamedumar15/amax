@@ -1,8 +1,11 @@
 import type { ComponentType, ReactNode } from "react";
 import type { IconName } from "./icons";
 
-/** `permission`: the read permission that shows the item, when it isn't the href's first segment's (034). */
-export type NavItem = { href: string; label: string; icon: IconName; group?: string; primary?: boolean; permission?: string };
+/**
+ * `permission`: the read permission that shows the item, when it isn't the href's first segment's (034).
+ * `hub`: shown when the viewer may open any screen behind it (038's Settings), decided by the app.
+ */
+export type NavItem = { href: string; label: string; icon: IconName; group?: string; primary?: boolean; permission?: string; hub?: boolean };
 
 export type LinkLike = ComponentType<{ href: string; className?: string; "aria-current"?: "page"; children: ReactNode }>;
 
