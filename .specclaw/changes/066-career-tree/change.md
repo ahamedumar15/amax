@@ -135,7 +135,102 @@ Below the tree:
 
 ## Tasks
 
-<!-- Added by plan. -->
+Approved by the product owner in Discord, 2026-10-18 ("start work on 066 and 037").
+
+Answers to the open questions:
+- **Delivery's ingested data has no languages or dependencies.** Its contract publishes `ProjectRef`
+  (name, client), `CommitTime` (hours) and `TaskDone`, nothing about a repo's languages or packages.
+  So `tag_technology` starts chat-only: a person confirms a proposed tag, or adds one, after chat's
+  confirm. The agent that proposes tags from commits and linked repos is a BACKLOG follow-up. The
+  fixture's two faint leaves (AWS, PostgreSQL on Fleet Tracker) are seeded as that agent's earlier,
+  fictional proposals, so the confirm path can be shown.
+- **The Person page link is a tab.** The Person page already has a Sections nav (Employment,
+  Documents, Leave). keyflow's Performance section is mounted at `/hr/p/:employeeNo/performance` but
+  the page has no link to it, so no slot exists yet. The one allowed ripple is a minimal slot:
+  `PERSON_SECTIONS` in `hr/contracts.ts` (data, as delivery's `PROJECT_SECTIONS` is), plus the nav
+  renders a tab for each section whose module is installed. Career is its first entry.
+- **Compact mode above 4 lanes per side.** At the mock's 92px lane pitch, a fifth lane would leave the
+  canvas. Above 4 lanes on either side, the pitch shrinks so every lane fits, and branch labels are
+  dropped. The list carries the labels. The layout test covers 10 projects at once.
+
+Contract reads (all exist):
+- hr: `getPerson` (visibility and manager chain), `listEmploymentPeriods`, and `getEmployment` at each
+  period's start for grade and manager.
+- allocations: `listAllocations`.
+- delivery: `listProjectRefs` and `getProjectRef`.
+- learning: `certificationsOf`.
+- 050: `searchAudit` from `@amax/core/server` gives who recorded a live change, and when.
+
+Gaps:
+- allocations' `member.skill` is not in its contract. The skills-matrix leaf on the trunk is left out
+  (the mock shows none), and publishing it is a BACKLOG item.
+- The route is mounted under hr, so `hr:read` gates the URL. Kasun can read his own tree through
+  `get_career`, but an Engineer can't open `/hr/p/<id>/career`, the same as his Person page.
+
+Fixture data: the other modules' fixtures hold Kasun as of 2026 only. hr has one period from
+2022-03-03 at grade E4, and allocations has Oct 2026 to Mar 2027. AC-8 forbids editing them. So career keeps
+the history from before amax in its own schema: `career.history` rows plus a per-person cutover in
+`career.import`. They are clearly fictional, and say they came from the previous HR system. After the
+cutover the tree reads live through the contracts above. Kasun's tree follows the imported history
+(joined Jun 7, 2021); his hr record still says Mar 3, 2022. The demo's "today" is pinned in
+`career.settings` (Oct 16, 2026, the shared fixtures' date).
+
+Two differences from the mock, on purpose:
+- The mock's list merges the Nov 2023 project start and manager move into one row. Here each event has
+  its own row, so each row pins exactly one event (AC-4). That gives 13 rows: the join and its first
+  manager are separate events, which makes the two moves.
+- The lede names the certification in full ("Azure Developer AZ-204").
+
+- [ ] `T1` — Career screen at `/hr/p/:employeeNo/career`, mounted under hr, as in the mock:
+  - The crumb, and a lede that leads with what needs attention: proposed technologies waiting, and an
+    expired certification.
+  - Two "✦ Ask amax" buttons with the person pinned, and four pinned tickets.
+  - The tree as an SVG with `role="group"`. Each node has a label and a pin. A technology colour key
+    sits below it.
+  - A read-only filter, the Selected trace card, and "What changed", newest first.
+  - Selecting an item in the tree or the list highlights both. Arrow keys move along the trunk and
+    Enter opens a node's trace.
+  - The growth animation is off under reduced motion. Light and dark themes. Below 720px the list
+    comes first.
+  - No forms (AC-3, AC-4, AC-7)
+  Files: modules/career/ui/*.tsx, modules/career/ui/career.css, modules/career/server/view.ts, modules/career/module.ts, modules/career/tests/e2e/*
+  Depends: T2, T3
+- [ ] `T2` — The pure layout `layoutTree()`, a port of `tree-layout.py`: career events plus today in,
+  geometry out, with no DOM.
+  - Linear months, and consecutive months merged into one branch. Stroke width `1.5 + 4 × allocation`.
+  - Greedy lanes: the side with fewer active branches, alternating on a tie, then the innermost free
+    lane. Halo order where a connector crosses a branch.
+  - Leaves on a half-circle, fruit on the branch active at issue (else the trunk), rings and trunk
+    width by grade, and roots at equal angles.
+  - Compact above 4 lanes per side.
+  - One test: the fixture's counts and lanes, 10 projects at once with no shared lane, and compact
+    mode (AC-2)
+  Files: modules/career/layout/*.ts, modules/career/tests/layout.test.ts, modules/career/package.json, modules/career/tsconfig.json
+- [ ] `T3` — Contracts first, then the rest:
+  - The `career` schema (history, import, technology, settings), with RLS.
+  - Reads through the hr, allocations, delivery and learning contracts and core's audit trail after
+    the cutover, merged with the imported history.
+  - Read tools `get_career` and `get_career_event` (its pin resolves by event id), and the one write
+    tool `tag_technology` (`career:tag`, confirmed in chat).
+  - Fictional fixtures that match AC-9's table for Kasun Dias (AC-1, AC-3, AC-4, AC-5, AC-9)
+  Files: modules/career/contracts.ts, modules/career/db/migrations/0001_career.sql, modules/career/server/*.ts, modules/career/mcp.ts, modules/career/pins.ts, modules/career/fixtures/*, modules/career/tests/db.ts, modules/career/tests/installed.ts, modules/career/tests/contracts.test.ts, modules/career/tests/career.test.ts
+  Depends: T2
+- [ ] `T4` — Who sees it, and what is left out:
+  - The person, their manager chain (through hr's `getPerson`), HR and leadership see it. Anyone else
+    gets not found.
+  - Pay is never a node, and health documents are never read.
+  - Each optional source (allocations, learning, delivery) that is off leaves its part out, with a
+    note. hr alone gives the trunk and rings (AC-6, AC-8)
+  Files: modules/career/server/access.ts, modules/career/tests/access.test.ts
+  Depends: T3
+- [ ] `T5` — Module standard and the Person page slot:
+  - README, a CODEOWNERS line, retention entries, and a switch-off test.
+  - hr's `PERSON_SECTIONS` and the Career tab.
+  - BACKLOG gets three follow-ups: delivery publishes repo languages and dependencies, so the agent
+    can propose tags; allocations publishes member skill; and keyflow's Performance joins the slot
+    (AC-1, AC-8)
+  Files: modules/career/README.md, modules/career/css.d.ts, .github/CODEOWNERS, modules/career/tests/standard.test.ts, modules/hr/contracts.ts, modules/hr/ui/PersonPage.tsx, pnpm-lock.yaml, BACKLOG.md
+  Depends: T1, T4
 
 ## Verify
 
