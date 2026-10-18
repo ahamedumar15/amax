@@ -34,8 +34,10 @@ What changes on screen, and where to see it: [`055-it-admin-role`](../../mock/in
 - [x] `T4` — The `pricing` class: `canSeePricing`, cost fields left out (not null) of `aiUsage`, `aiUsageTotals`, `get_ai_usage`, `get_ai_policy`, workflow run and trace tools for roles without it; the chat footer keeps your own cost (AC-3)
   Files: packages/auth/src/sensitivity.ts, packages/ai/src/usage.ts, packages/ai/src/usage-tool.ts, packages/ai/src/usage-format.ts, apps/web/lib/admin/ai.ts, apps/web/lib/admin/workflows.ts, packages/mcp/src/audit-tools.ts
   Depends: T3
-- [ ] `T5` — Tests: the Admin-only tool table for IT Admin, pricing on screen, tool and page HTML, and each Admin-only e2e spec run as IT Admin (AC-2, AC-3, AC-5)
+- [x] `T5` — Tests: the Admin-only tool table for IT Admin, pricing on screen, tool and page HTML, and each Admin-only e2e spec run as IT Admin (AC-2, AC-3, AC-5)
   Files: packages/auth/tests/*, packages/ai/tests/usage.test.ts, apps/web/tests/admin/*, apps/web/tests/e2e/*
   Depends: T1, T2, T3, T4
 
 ## Verify
+
+Quality: not_run (specclaw-quality-scan fails on this repo: jq "Argument list too long")
