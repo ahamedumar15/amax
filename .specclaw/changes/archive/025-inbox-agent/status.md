@@ -1,6 +1,6 @@
-# Status: 021-it-access-licences
+# Status: 025-inbox-agent
 
-**Change:** 021-it-access-licences
+**Change:** 025-inbox-agent
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/82 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/81 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

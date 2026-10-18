@@ -1,0 +1,11 @@
+{
+  "change": "025-inbox-agent",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T14:11:36Z"},
+    "verify": {"status":"done","at":"2026-10-18T16:16:30Z"},
+    "pr": {"status":"raised","at":"2026-10-18T16:16:42Z","url":"https://github.com/chan4lk/amax/pull/81"},
+    "archived": {"status":"done","at":"2026-10-18T17:07:48Z"}
+  }
+}

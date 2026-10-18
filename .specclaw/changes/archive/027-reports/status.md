@@ -1,6 +1,6 @@
-# Status: 025-inbox-agent
+# Status: 027-reports
 
-**Change:** 025-inbox-agent
+**Change:** 027-reports
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/81 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/80 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
