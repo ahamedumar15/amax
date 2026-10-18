@@ -40,3 +40,15 @@ Learning: stats, programmes, participation per month, expiring certifications.
   Depends: T5
 
 ## Verify
+**Verdict:** PASS
+
+- AC-1: pass — `learning.test.ts` "AC-1 programmes, enrolment, completion and certifications…": 18 programmes (11 internal, 7 external), 184 completed ISO 27001 awareness, 126 people (68%) in optional programmes, 74% completion against 80%, 41 certifications with 6 expiring before January, monthly participation 8…41…29 as in the mock; HR's create, enrol, completion and certification writes are audited. Module e2e `learning.spec.ts` AC1 checks the same figures on screen, every card, ticket, row and item pinned, axe clean (WCAG 2.2 AA tags), and the participation chart within 2% of the mock's.
+- AC-2: pass — `reminders.test.ts`: the `learning.certification-expiry` workflow on a daily schedule; the sweep reminds each certification once per window (60, then 14 days) and emits `learning.certification.expiring`, audited as a job. `chat.test.ts`: the `learning.new-programme` intent names `create_programme`; it and `remind_certification` become confirm cards and write only once confirmed (audited as chat); no form, dialog or input in the UI. e2e AC2: "New programme" opens chat in the intent, Remind opens chat with the certification pinned and the prompt filled in.
+- AC-3: pass — only `modules/learning/` changed, plus its CODEOWNERS line and the workspace's `pnpm-lock.yaml` entry for the new package (as 020 presales did); `contracts.ts` with contract tests (`contracts.test.ts`); README, fixtures, manifest; `standard.test.ts` switches it off (nothing else imports `@amax/learning`); `node scripts/check-module-standard.mjs` ok (retention entries name every personal column in `subject`); RLS on every table (`tablesMissingRls` empty). No optional integrations to degrade.
+
+Commands (all exit 0): `pnpm lint`; `pnpm turbo run test --concurrency=1` (learning 10, web 140, all packages green); `node scripts/check-module-standard.mjs`; `pnpm build`; `env -u DATABASE_URL -u DATABASE_MIGRATE_URL pnpm --filter @amax/web e2e` (1 passed); `pnpm --filter @amax/web e2e:auth` (69 passed); `pnpm --filter @amax/learning e2e` (3 passed).
+
+Preset check: exit 1, repo-wide on the existing comment convention (982 violations). In this change's files: comment-rule only (51 doc comments, matching the surrounding modules); no file over 80 lines.
+Quality: not_run (specclaw-quality-scan: "Argument list too long")
+
+Screenshots: `.specclaw/changes/024-learning/shots/app.png` (the app at 1440, Programmes filtered to Running), `.specclaw/changes/024-learning/shots/mock.png` (the mock section).
