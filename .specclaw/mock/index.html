@@ -2287,6 +2287,41 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   <div class="card" style="margin-top:20px;max-width:520px"><div class="card-head"><h2>Release v2.4.0</h2><button class="btn sm">📌</button></div><p class="muted">Edit tag, record or void a deployment: ask in chat.</p><button class="btn sm">✦ Ask amax to record a deployment</button></div>
 </section>
 
+<!-- ================= 030 Notifications ================= -->
+<section data-change="030-notifications" id="030-notifications" data-roles="all" data-title="Notifications" data-nav="no" data-icon="spark">
+  <div class="row head"><div><h1>Notifications</h1><p class="lede">How amax reaches you. Urgent items skip the digest but wait for your quiet hours. Change anything in chat.</p></div><div class="actions"><button class="btn sm">✦ Ask amax to change my notifications</button></div></div>
+  <div class="cols">
+    <div>
+      <div class="card flush pinnable">
+        <div class="card-head"><h2>Channels per category</h2></div>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Category</th><th>In app</th><th>Email</th><th>Teams</th><th>Digest</th><th></th></tr></thead><tbody>
+          <tr><td>Approvals</td><td>On</td><td>On</td><td>On</td><td>Off</td><td><button class="btn sm">📌</button></td></tr>
+          <tr><td>Releases</td><td>On</td><td>Off</td><td>On</td><td>Daily at 08:00</td><td><button class="btn sm">📌</button></td></tr>
+          <tr><td>Reminders</td><td>On</td><td>On</td><td>Off</td><td>Daily at 08:00</td><td><button class="btn sm">📌</button></td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="card pinnable" style="margin-top:20px">
+        <div class="card-head"><h2>Quiet hours</h2><button class="btn sm">📌</button></div>
+        <p>21:00 to 07:00, Asia/Colombo (Lumen Labs Lanka, fictional)</p>
+        <p class="muted" style="font-size:13px">Email and Teams wait until quiet hours end. The bell always shows new items.</p>
+        <button class="btn sm">✦ Ask amax to change quiet hours</button>
+      </div>
+    </div>
+    <div class="card pinnable">
+      <div class="card-head"><h2>The bell <span class="chip">2 unread</span></h2><button class="btn sm">✦ Mark all read</button></div>
+      <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:4px 0">Delivery</h3>
+      <ul class="list">
+        <li><span><a href="#001-amax-foundation-releases"><b>Release v2.4.0 failed in UAT</b></a><small><span class="chip bad">Urgent</span> Fleet Tracker (fictional) · 2 h ago · Unread</small></span><button class="btn sm">📌</button></li>
+      </ul>
+      <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 4px">Time</h3>
+      <ul class="list">
+        <li><span><a href="#001-amax-foundation-time"><b>Kasun Dias submitted 2026-W42</b></a><small>32.5 h to approve · 10 min ago · Unread</small></span><button class="btn sm">📌</button></li>
+        <li><span><a href="#001-amax-foundation-time"><b>Your timesheet for 2026-W41 was approved</b></a><small>Yesterday</small></span><button class="btn sm">📌</button></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
     </main>
   </div>
 </div>
