@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Chat } from "../chat/Chat";
 import { LiveRegion, MoreSheet, Rail, TopBar, type LinkLike, type NavItem } from "@amax/ui";
-import { ProfileMenu, type Profile } from "./ProfileMenu";
+import { ProfileMenu, type MenuLink, type Profile } from "./ProfileMenu";
 import { useRouteFocus } from "./useRouteFocus";
 
 type ShellProps = {
@@ -18,9 +18,13 @@ type ShellProps = {
   voice?: boolean;
   /** The signed-in person's own AI usage this month, for the chat footer (048). */
   usage?: string | null;
+  /** Controls modules add to the top bar (030's bell), rendered on the server. */
+  topBar?: ReactNode;
+  /** Module screens reached from the profile menu (030's Notifications). */
+  menuLinks?: MenuLink[];
 };
 
-export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false, usage = null }: ShellProps) {
+export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false, usage = null, topBar, menuLinks = [] }: ShellProps) {
   const pathname = useRouteFocus();
   // The rail marks the deepest entry the page sits under (/delivery/p/CON → Projects).
   const current = items.map((i) => i.href).filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`))).sort((a, b) => b.length - a.length)[0] ?? pathname;
@@ -44,7 +48,7 @@ export function Shell({ items, children, profile = null, banner, onViewAs, onSig
       <div className="app">
         <Rail items={items} current={current} link={link} onMore={() => sheet.current?.showModal()} />
         <div className="content">
-          <TopBar askRef={askRef} askOpen={chatOpen} onAsk={() => setChatOpen((o) => !o)} profile={<ProfileMenu profile={profile} onViewAs={onViewAs} onSignOut={onSignOut} />} />
+          <TopBar askRef={askRef} askOpen={chatOpen} onAsk={() => setChatOpen((o) => !o)} bell={topBar} profile={<ProfileMenu profile={profile} onViewAs={onViewAs} onSignOut={onSignOut} links={menuLinks} />} />
           <main id="main" tabIndex={-1}>
             {banner && <div className="viewbanner" role="note">{banner}</div>}
             {children}

@@ -1,4 +1,5 @@
 export { signalHandlers } from "./bridge";
+export { setWorkflowEngine } from "./host";
 export { controlRun, setScheduleEnabled, WORKFLOWS_ADMIN } from "./control";
 export { setEntityZone } from "./zone";
 export type { RunAction, SignalOptions, StartOptions, WorkflowEngine, WorkflowTickResult } from "./engine";

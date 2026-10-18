@@ -16,7 +16,8 @@ export function registryFrom(modules: Pick<ModuleManifest, "id" | "jobs" | "even
       jobs.set(j.name, j);
     }
   }
-  return { jobs, handlers: modules.flatMap((m) => m.events?.handles ?? []) };
+  const all = modules as unknown as ModuleManifest[];
+  return { jobs, handlers: modules.flatMap((m) => [...(m.events?.handles ?? []), ...(m.events?.handlesFrom?.(all) ?? [])]) };
 }
 
 export const nextRun = (cron: string, from = new Date()) => CronExpressionParser.parse(cron, { currentDate: from, tz: "UTC" }).next().toDate();

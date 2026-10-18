@@ -5,7 +5,7 @@ Timesheets: hours logged by people and by agents against delivery projects, ISO 
 - **Owner:** `/modules/time/` in `.github/CODEOWNERS`
 - **Screens:** `/time` and `/time/w/:week` (Team time), `/time/my` and `/time/my/:week` (My timesheet). Weeks are ISO keys such as `2026-W42`.
 - **Contracts** (`contracts.ts`): `weekTotals(tx, viewer, week)` and `projectHours(tx, viewer, range)`, which apply the caller's data scope (own time, plus weeks they could see on Team time; `projectHours` returns aggregates only), ISO week helpers (`isoWeekOf`, `weekStart`, `workDays`, `shiftWeek`, `weekKey`, `parseWeekKey`), `EVENTS`, `WEEK_STATUSES` and the event payload types. Version 1.
-- **Events:** `time.entry.logged`, `time.week.submitted`, `time.week.approved`, `time.week.rejected`, `time.week.reopened`, `time.week.reminded` (reminders are recorded as events only: no notification rule delivers them yet, so 030 has to add one).
+- **Events:** `time.entry.logged`, `time.week.submitted`, `time.week.approved`, `time.week.rejected`, `time.week.reopened`, `time.week.reminded` (notification rules for submitted, approved, rejected and reminded weeks live in `module.ts`; 030 delivers them).
 - **MCP tools** (`mcp.ts`): read `get_team_week`, `get_my_week`; write `log_time`, `submit_week`, `approve_week`, `reject_week`, `remind_week`, `reopen_week`. Time logged over MCP is agent time.
 - **Chat intents** (`chat.ts`): log time.
 - **Logging:** a day is required (YYYY-MM-DD in the person's calendar; the server doesn't guess "today" in UTC) and must be Monday to Friday. A submitted week can't change until the approver sends it back.

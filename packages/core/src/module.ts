@@ -32,6 +32,39 @@ export type EventHandlerDef = {
   handle: (ctx: EventContext) => Promise<void>;
 };
 
+/** Who a notification rule reaches (030 AC-1): everyone holding a role, the person a payload field names
+ * (the record's owner), or the approver chain of the person a payload field names (their manager, else Admins). */
+export type NotificationRecipient = { role: string } | { owner: string } | { approvers: string };
+
+/**
+ * A notification rule (030 AC-1), plain data in the emitting module's manifest. The notifications module
+ * turns the event into messages; modules never send any themselves. Templates fill `{field}` from the
+ * event payload, and `{field|name}` turns a user id into the person's name. A field the emitter declared
+ * as a 002 class (or didn't declare) shows as "•••" unless the recipient may see that class.
+ */
+export type NotificationRule = {
+  /** Unique across modules: "<module>.<rule>". */
+  id: string;
+  event: string;
+  /** Payload values the event must carry for the rule to fire, e.g. { status: "rolled-back" }. */
+  when?: Record<string, string | number | boolean>;
+  category: "approvals" | "releases" | "reminders";
+  /** Urgent items skip the digest; they still wait for quiet hours. */
+  urgency?: "normal" | "urgent";
+  to: NotificationRecipient[];
+  /** A recipient must hold this permission, on the record the `scope` payload fields describe (its data scope). */
+  permission?: string;
+  scope?: Record<string, string>;
+  /** The payload field naming the person the record is about, for the masking rules ("self" sees their own pay). */
+  subject?: string;
+  /** A payload field naming who acted ("by"): they are not told about their own action. */
+  except?: string;
+  title: string;
+  body?: string;
+  /** Where the item links: the record's screen, which takes focus when the link is followed. */
+  href?: string;
+};
+
 export type SharedFixtures = {
   tenant: { id: string; name: string };
   today: string;
@@ -167,9 +200,21 @@ export type ModuleManifest = {
   schedules?: readonly unknown[];
   /** Agent suggestion kinds (006): defineSuggestionKind() results from @amax/agents, opaque to core. */
   suggestions?: readonly unknown[];
+  /** Notification rules for the events this module emits (030). */
+  notifications?: NotificationRule[];
+  /** Where the module's root screen is reached: the rail (default) or the profile menu (030's preferences). */
+  menu?: "rail" | "profile";
+  /** A control the module adds to the top bar for the signed-in viewer (030's bell). */
+  topBar?: ComponentType<{ viewer: unknown }>;
   /** `payloads`: each emitted event's fields with their 002 class or "plain" (declarePayload). Outgoing
    * webhooks send a declared plain field, mask a classified one and mask any field not declared (035, review 058). */
-  events?: { emits?: string[]; handles?: EventHandlerDef[]; payloads?: Record<string, PayloadFields> };
+  events?: {
+    emits?: string[];
+    handles?: EventHandlerDef[];
+    payloads?: Record<string, PayloadFields>;
+    /** Handlers built from every installed manifest (030 turns other modules' notification rules into handlers). */
+    handlesFrom?: (modules: ModuleManifest[]) => EventHandlerDef[];
+  };
   fixtures?: FixtureSeed[];
 };
 
