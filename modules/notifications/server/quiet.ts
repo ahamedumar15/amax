@@ -2,9 +2,9 @@ import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { entityZone } from "@amax/workflows";
 
-const minutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+export const minutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
-function localMinutes(at: Date, zone: string) {
+export function localMinutes(at: Date, zone: string) {
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(at);
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
   return get("hour") * 60 + get("minute");

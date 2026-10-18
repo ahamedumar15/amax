@@ -1,20 +1,31 @@
 import { sql } from "drizzle-orm";
 import { contextFor } from "@amax/core/server";
-import { cron, defineWorkflow, step, StepFailedError } from "@amax/workflows";
+import { cron, defineWorkflow, entityZone, step, StepFailedError } from "@amax/workflows";
 import { DIGEST_HOUR, type Channel } from "../contracts";
 import { RETRY } from "./deliver";
 import { recordDelivery } from "./record";
+import { localMinutes, minutes } from "./quiet";
 import { inTenant, NOT_SET_UP, outgoing, recipient, sendVia } from "./send";
 
 export const DIGEST = "notifications.digest";
 type Batch = { userId: string; channel: Channel; ids: string[]; lines: string[] };
 
-// Everyone in this legal entity (or with none, for the UTC run) with digest deliveries waiting.
-const collect = (tenantId: string, entity: string | null) => inTenant(tenantId, async (tx) => {
-  const rows = await tx.execute(sql`select d.user_id, d.channel, array_agg(d.id::text order by n.created_at) as ids, array_agg(n.title order by n.created_at) as lines
+const SLOT_MINUTES = 30;
+
+// People whose local time (their legal entity's zone) is in the digest's half-hour slot, with digest deliveries waiting.
+const collect = (tenantId: string, at: Date) => inTenant(tenantId, async (tx) => {
+  const rows = await tx.execute(sql`select d.user_id, d.channel, u.legal_entity_id, array_agg(d.id::text order by n.created_at) as ids, array_agg(n.title order by n.created_at) as lines
     from notifications.delivery d join notifications.notification n on n.id = d.notification_id join auth.user u on u.id = d.user_id
-    where d.status = 'digest' and ${entity ? sql`u.legal_entity_id = ${entity}` : sql`u.legal_entity_id is null`} group by d.user_id, d.channel`);
-  return rows.map((r) => ({ userId: r.user_id as string, channel: r.channel as Channel, ids: r.ids as string[], lines: r.lines as string[] }));
+    where d.status = 'digest' group by d.user_id, d.channel, u.legal_entity_id`);
+  const zones = new Map<string, string>();
+  const due: Batch[] = [];
+  for (const r of rows) {
+    const entity = (r.legal_entity_id as string | null) ?? "";
+    if (!zones.has(entity)) zones.set(entity, await entityZone(tx, entity || null));
+    const m = localMinutes(at, zones.get(entity)!) - minutes(DIGEST_HOUR);
+    if (m >= 0 && m < SLOT_MINUTES) due.push({ userId: r.user_id as string, channel: r.channel as Channel, ids: r.ids as string[], lines: r.lines as string[] });
+  }
+  return due;
 });
 
 async function sendBatch(tenantId: string, b: Batch, signal: AbortSignal) {
@@ -26,11 +37,12 @@ async function sendBatch(tenantId: string, b: Batch, signal: AbortSignal) {
 }
 
 /** The daily digest (030 AC-3): one message per person and channel with everything that waited for it. */
-export const sendDigest = defineWorkflow({
+export const sendDigest = defineWorkflow<{ at?: string }>({
   name: DIGEST,
   title: "Notification digest",
-  async run(ctx) {
-    const batches = await step("collect", () => collect(ctx.tenantId, ctx.legalEntityId));
+  async run(ctx, input) {
+    const at = await step("at", async () => input?.at ?? new Date().toISOString());
+    const batches = await step("collect", () => collect(ctx.tenantId, new Date(at)));
     let sent = 0;
     for (const b of batches) {
       const key = `${b.userId}:${b.channel}`;
@@ -47,8 +59,7 @@ export const sendDigest = defineWorkflow({
   },
 });
 
-const at = `${Number(DIGEST_HOUR.slice(3))} ${Number(DIGEST_HOUR.slice(0, 2))} * * *`;
+// Every half hour in UTC, so 08:00 falls in a slot in every zone, including half-hour offsets such as Colombo's.
 export const digestSchedules = [
-  cron({ name: "notifications.digest", title: "Notification digest", description: "Sends each person's waiting notifications as one message, at 08:00 in their legal entity's zone", workflow: DIGEST, cron: at, timezone: "entity" }),
-  cron({ name: "notifications.digest-utc", title: "Notification digest (no legal entity)", description: "The same digest at 08:00 UTC, for people with no legal entity", workflow: DIGEST, cron: at }),
+  cron({ name: "notifications.digest", title: "Notification digest", description: "Sends each person's waiting notifications as one message at 08:00 in their legal entity's zone", workflow: DIGEST, cron: `*/${SLOT_MINUTES} * * * *` }),
 ];

@@ -70,8 +70,10 @@ describe.skipIf(!hasDb)("030 channels, digest and quiet hours (Postgres)", () =>
     const [run] = await db.t.owner`select id, status from workflows.run where workflow = 'notifications.deliver' and status <> 'completed'`;
     expect(run.status).toBe("sleeping");
     await db.t.owner`update workflows.run set status = 'cancelled' where id = ${run.id}`;
-    const entity = (await db.q(sql`select legal_entity_id from auth.user where id = ${nimal.userId}`))[0].legal_entity_id as string;
-    await db.engine.start(T, DIGEST, {}, { startedBy: "test", legalEntityId: entity });
+    await db.engine.start(T, DIGEST, { at: "2026-10-19T03:00:00Z" }, { startedBy: "test" });
+    await db.drain();
+    expect(wire.filter((w) => w.body.includes("Nimal"))).toEqual([]);
+    await db.engine.start(T, DIGEST, { at: "2026-10-19T02:40:00Z" }, { startedBy: "test" });
     await db.drain();
     const digest = wire.filter((w) => w.url.includes("/sendMail") && w.body.includes("Nimal")).map((w) => JSON.parse(w.body).message.subject);
     expect(digest).toEqual(["Your amax digest: 2 notifications"]);

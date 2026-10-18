@@ -10,6 +10,7 @@ import { NotificationList } from "./List";
 import { pollInbox } from "./poll";
 
 const POLL_MS = 60_000;
+const NAV_DELAY_MS = 400;
 const unreadIds = (i: Inbox) => i.groups.flatMap((g) => g.items.filter((n) => !n.read));
 const label = (n: number) => (n ? `Notifications, ${n} unread` : "Notifications, none unread");
 
@@ -21,9 +22,11 @@ function useInbox(initial: Inbox, now: number) {
   const first = useRef(true);
   const refresh = () => void pollInbox().then(setState, () => undefined);
   useEffect(() => setState({ inbox: initial, now }), [initial, now]);
+  // Shortly after the move, so a navigation that leaves the app (signing out) unmounts the bell first.
   useEffect(() => {
     if (first.current) return void (first.current = false);
-    refresh();
+    const id = window.setTimeout(refresh, NAV_DELAY_MS);
+    return () => window.clearTimeout(id);
   }, [pathname]);
   useEffect(() => {
     const id = window.setInterval(() => document.visibilityState === "visible" && refresh(), POLL_MS);
