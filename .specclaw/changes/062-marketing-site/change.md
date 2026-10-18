@@ -71,6 +71,7 @@ Commands (in the worktree):
 - `E2E_PORT=3510 npx playwright test tests/e2e/marketing.spec.ts` (production build, AMAX_BASE_URL set) → 4 passed.
 - `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes. Nothing in this change breaks a non-comment rule.
 - `specclaw-quality-scan . --gate` → 1: three high-complexity functions, all outside this change (`delivery/sync/specclaw.ts` parse, `AiSettingsPage`, `BackupTickets`). This change adds no new high functions or duplicates.
+- Decision (the user, 2026-10-18, after review escalation in rounds 10–13): the automated time-claim guard was dropped. A regex test cannot cover every way of saying "hours get logged". Code review checks the marketing copy's time claims instead. The copy itself says commits draft hours that the person accepts, and the week is submitted before approval (`modules/time/suggestions.ts`, `modules/time/server/decide.ts`).
 - Review: CLEAN — 7 rounds, final pass c8fe5d8ebe, models opus/opus; last round 0/0/3 b/M/m.
 
 Quality: 360 → 354 duplicated lines
