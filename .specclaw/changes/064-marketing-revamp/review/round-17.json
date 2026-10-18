@@ -1,0 +1,50 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 0
+ },
+ "error": "backend exited 1: Error: Reached max turns (12)",
+ "files": [
+  "apps/web/components/marketing/queues.ts",
+  "apps/web/tests/marketing-queue.test.ts"
+ ],
+ "final": false,
+ "findings": [],
+ "head": "1b04bddf1de808d4fab0c36cc76847bf5fc0665c",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/retention/RetentionTickets.tsx",
+  "apps/web/app/(app)/settings/retention/page.tsx",
+  "apps/web/components/marketing/Queue.tsx",
+  "apps/web/components/marketing/copy.ts",
+  "apps/web/lib/admin/backups.ts",
+  "apps/web/lib/admin/privacy.ts",
+  "apps/web/lib/admin/status.ts",
+  "apps/web/lib/privacy-sources.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/tests/admin/it-admin.test.ts",
+  "apps/web/tests/admin/privacy.test.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/retention.spec.ts",
+  "modules/recruitment/fixtures/data.ts",
+  "modules/recruitment/fixtures/index.ts",
+  "packages/auth/src/index.ts",
+  "packages/auth/src/roles.ts",
+  "packages/chat/src/tools.ts",
+  "packages/mcp/src/admin.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "round": 17,
+ "since": "2c39d5fba9",
+ "status": "not_run",
+ "system_chars": 39641,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792346539,
+ "ts_start": 1792346472
+}

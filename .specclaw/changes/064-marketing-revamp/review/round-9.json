@@ -1,0 +1,49 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/tests/e2e/marketing-video.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/marketing-video.spec.ts",
+   "fp": "13c716eefa6d",
+   "in_delta": true,
+   "line": 14,
+   "message": "The fix itself covers the class. The loop checks 1440, 768 and 390 px, and 390 falls in the \u2264480 px rule (welcome.css:57) where the defect was, so the 64 px check would have failed before the CSS fix. Side effect: the loop never resets the viewport, so everything after it now runs only at 390\u00d7900. That covers the play click, the focus-on-play check, the Tab/Shift+Tab reachability loop and the Space round trip. These checks used to run at the 1280\u00d7720 desktop default and no longer run on the desktop layout at all. Fix: reset the viewport after the loop (`page.setViewportSize({ width: 1280, height: 720 })`), or put the size check in its own test so the keyboard checks keep their earlier conditions.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "A desktop-only layout change (e.g. something visible only above 900 px is inserted between the Queue tabpanel's last button and the video) breaks Tab order at 1280 px \u2192 the test stays green, because the keyboard checks now run only at 390 px.",
+   "severity": "minor"
+  }
+ ],
+ "head": "b38281f0a78b888636d43be872ddb2ba30ef7eca",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(public)/welcome/welcome.css",
+  "apps/web/components/marketing/ProductVideo.tsx",
+  "modules/presales/contracts.ts",
+  "modules/presales/server/common.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 44015,
+ "round": 9,
+ "since": "68f24e649f",
+ "status": "clean",
+ "system_chars": 39605,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792344489,
+ "ts_start": 1792344449
+}

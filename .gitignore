@@ -35,3 +35,6 @@ apps/mock/out/
 apps/web/generated/
 **/test-results/
 **/playwright-report/
+
+# 064: copied from .specclaw/mock/media by apps/mock/scripts/copy-mock.mjs at build
+apps/mock/public/mock/media/
