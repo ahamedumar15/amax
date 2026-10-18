@@ -41,8 +41,8 @@ seen at run time, so `check:modules` closes that gap statically: every `scope: "
 - [x] `T4` — Every write tool declares its service, and `check:modules` fails a write tool that declares none (AC-1)
   Files: modules/*/mcp.ts, packages/chat/src/tools.ts, packages/agents/src/mcp.ts, apps/web/lib/admin/*.ts, scripts/check-module-standard.mjs, docs/module-standard.md
   Depends: T1
-- [ ] `T5` — Tests for the real failure paths (settle fails after the service commit, raw write then throw, raw write against cancel), a table of refusal kinds (authorize, validation, registry pre-check), and the idempotency contract documented (AC-2, AC-3, AC-6)
-  Files: packages/chat/tests/confirm-043.test.ts, modules/delivery/tests/chat.test.ts, docs/architecture.md
+- [x] `T5` — Tests for the real failure paths (settle fails after the service commit, raw write then throw, raw write against cancel), a table of refusal kinds (authorize, validation, registry pre-check), and the idempotency contract documented (AC-2, AC-3, AC-6)
+  Files: modules/delivery/tests/chat-043.test.ts, modules/delivery/tests/chat.test.ts, packages/testing/tests/ac7-config.test.ts, docs/architecture.md
   Depends: T3, T4
 
 ## Verify

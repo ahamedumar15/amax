@@ -67,5 +67,18 @@ describe("AC7 configuration and ownership", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
-});
 
+  it("043 AC-1 a write tool that declares no service fails the standard; one that declares a service or null passes", () => {
+    const root = mkdtempSync(join(tmpdir(), "amax-standard-"));
+    try {
+      cpSync(join(__dirname, "../standard/no-retention"), root, { recursive: true });
+      const mcp = (tools: string) => writeFileSync(join(root, "modules/people/mcp.ts"), `export const mcpTools = [${tools}];`);
+      mcp(`tool({ ...write("people:visit"), name: "log_visit", run: (v, a) => logVisit(ctxFor(v), a) }), tool({ ...read, name: "list_visits", run: list })`);
+      expect(standard(root).stderr).toMatch(/modules\/people: write tool log_visit declares no service \(043\)/);
+      mcp(`tool({ ...write("people:visit"), name: "log_visit", service: logVisit, run: (v, a) => logVisit(ctxFor(v), a) }), tool({ scope: "write", name: "promote", service: null, run: promote })`);
+      expect(standard(root).stderr).not.toMatch(/declares no service/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
