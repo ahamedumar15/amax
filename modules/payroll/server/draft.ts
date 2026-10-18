@@ -67,7 +67,7 @@ async function overtime(tx: Tx, ctx: ServiceContext, from: string, to: string): 
  * time, when installed, gives overtime; the group's own components add the rest. The pay group's
  * country pack turns that into lines; the engine only sums them.
  */
-export async function buildDraft(tx: Tx, ctx: ServiceContext, g: Group, month: string): Promise<{ slips: DraftSlip[]; sources: Sources }> {
+export async function buildDraft(tx: Tx, ctx: ServiceContext, g: Group, month: string, withTime = true): Promise<{ slips: DraftSlip[]; sources: Sources }> {
   const p = periodOf(month);
   const pack = packFor(g.pack);
   const members = (await tx.execute(sql`select person_id from payroll.pay_group_member where pay_group_id = ${g.id}`)).map((r) => r.person_id as string);
@@ -75,7 +75,7 @@ export async function buildDraft(tx: Tx, ctx: ServiceContext, g: Group, month: s
     .filter((x) => x.joinedOn && x.joinedOn <= p.to && (!x.leftOn || x.leftOn >= p.from));
   const ids = people.map((x) => x.id);
   const leave = await approvedLeave(tx, ctx, { from: p.from, to: p.to, personIds: ids });
-  const time = await overtime(tx, ctx, p.from, p.to);
+  const time = withTime ? await overtime(tx, ctx, p.from, p.to) : { hours: new Map<string, number>(), source: "Demo data: no overtime from timesheets" };
   const components = ids.length ? await tx.execute(sql`select * from payroll.pay_component where pay_group_id = ${g.id} and starts_on <= ${p.to} and (ends_on is null or ends_on >= ${p.from})
     and person_id::text in (${sql.join(ids.map((i) => sql`${i}`), sql`, `)}) order by created_at, code`) : [];
   const total = workingDays(p.from, p.to);

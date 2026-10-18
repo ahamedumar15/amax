@@ -14,3 +14,5 @@ export const viewPin = (label: string, tool = "list_payroll_runs"): PinRef => ({
 export const runOf = (r: RunLike | null): PinnedRecord | null => (r ? { id: r.id, label: runLabel(r) } : null);
 export const changeOf = (c: { id: string; personName: string; periodLabel: string } | null): PinnedRecord | null => (c ? { id: c.id, label: changePin(c).label } : null);
 export const payslipOf = (s: { id: string; personName: string; periodLabel: string } | null): PinnedRecord | null => (s ? { id: s.id, label: payslipPin(s).label } : null);
+/** A metric or step of one run (a total, a cost centre, a step): it resolves to the run that holds it. */
+export const metricPin = (r: RunLike, what: string): PinRef => ({ label: `${what}, ${runLabel(r)}`, tool: "get_payroll_run", args: { runId: r.id } });
