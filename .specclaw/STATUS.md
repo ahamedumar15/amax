@@ -1,20 +1,20 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 13:22 UTC
+**Last Updated:** 2026-10-18 13:38 UTC
 
 ## Active Changes
 
 
 - 🔀 **014-payroll-engine** — pr raised | 6/6 tasks (100%) | 0 failed | PR #75 merged
-- 🔍 **017-finance-contracts-billing** — verify done | 5/5 tasks (100%) | 0 failed
+- 🔀 **017-finance-contracts-billing** — pr raised | 5/5 tasks (100%) | 0 failed | PR #76 merged
+- 📝 **018-expenses** — tasks done | 0/5 tasks (0%) | 0 failed
 
 ## Pending Proposals
 
 
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
-- 📋 **018-expenses** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
 - 📋 **021-it-access-licences** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
@@ -78,6 +78,6 @@
 
 ## Stats
 
-- **Total changes:** 50
-- **Active:** 2
+- **Total changes:** 51
+- **Active:** 3
 - **Completed:** 48
