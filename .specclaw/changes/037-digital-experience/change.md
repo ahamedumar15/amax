@@ -71,7 +71,7 @@ Ripples outside the module (AC-8, besides CODEOWNERS and BACKLOG):
 - In `apps/web/lib/operations.ts` the Coming-soon slug `dex` becomes `experience`, so the installed module replaces it, as 021 did.
 - `apps/web/tests/e2e/admin.spec.ts` has no unbuilt Operations screen left to use as its Coming-soon example, so it follows Digital experience to its real screen instead.
 
-- [ ] `T1` — Digital experience screen, as in the mock:
+- [x] `T1` — Digital experience screen, as in the mock:
   - the lede, "Send pulse survey" (chat intent `experience.send-pulse`) and "Review fixes" (Ask amax)
   - four tiles: experience score, devices needing attention, pulse responses, fixes waiting
   - the group table (department, site or device model through a read-only select): people, score with its meter, top issue and the 4-week trend, the total row and the formula, with groups under 5 people never shown
