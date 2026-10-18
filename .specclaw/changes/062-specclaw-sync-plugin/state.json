@@ -1,0 +1,11 @@
+{
+  "change": "062-specclaw-sync-plugin",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-18T10:42:14Z"},
+    "tasks": {"status":"done","at":"2026-10-18T10:43:35Z"},
+    "verify": {"status":"done","at":"2026-10-18T11:25:14Z"},
+    "pr": {"status":"raised","at":"2026-10-18T11:26:29Z","url":"https://github.com/chan4lk/amax/pull/72"}
+  }
+}
