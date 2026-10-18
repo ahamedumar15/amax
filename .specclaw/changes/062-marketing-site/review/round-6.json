@@ -1,0 +1,78 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/marketing-confirm.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/marketing-confirm.test.ts",
+   "fp": "9316b36a04ee",
+   "in_delta": true,
+   "line": 12,
+   "message": "This only partly fixes the class. The surfaces list covers copy.ts, AREAS and the mock section. It does not cover the other copy that /welcome renders inline: Trust.tsx POINTS, Problem.tsx, ProductVideo.tsx figcaption, ChatPreview.tsx and Closing.tsx. A confirm claim added to any of them is never checked. Fix: check the HTML that WelcomePage actually renders (renderToStaticMarkup, then strip tags), or move those strings into copy.ts and add them to `surfaces`.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Change Trust.tsx POINTS[2] to [\"Role-scoped MCP\", \"Every MCP write waits for your confirm\"] \u2192 marketing-confirm.test.ts stays green, and /welcome claims MCP writes are confirmed.",
+   "severity": "minor"
+  },
+  {
+   "file": "apps/web/tests/marketing-confirm.test.ts",
+   "fp": "2264a3b24781",
+   "in_delta": true,
+   "line": 19,
+   "message": "The test only checks that the words \"in chat\" appear somewhere in the sentence. It doesn't check that the confirm is limited to chat. A sentence that names chat and also claims a confirm for MCP or for every write still passes. The reject table only tries claims with no \"in chat\" at all, so this case is never tested. Fix: also reject confirm sentences that match /\\b(every|each|all)\\b[^.]*\\bwrites?\\b|\\bMCP\\b/ in the same clause as the confirm. Add a reject case such as \"In chat and over MCP, amax asks before it changes anything.\"",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Set STEPS[1].body to \"In chat and over MCP, every write waits for a confirm.\" \u2192 the test passes, and the page claims MCP writes are confirmed.",
+   "severity": "minor"
+  }
+ ],
+ "head": "d492ded9f3cc875cd1f62e3d430823fb9eda16f5",
+ "impact": [
+  ".dockerignore",
+  ".github/workflows/pages.yml",
+  ".gitignore",
+  "apps/mock/app/page.tsx",
+  "apps/mock/package.json",
+  "apps/mock/scripts/copy-mock.mjs",
+  "apps/web/app/(app)/settings/backups/Art.tsx",
+  "apps/web/app/(app)/settings/hub.css",
+  "apps/web/app/(app)/settings/settings.css",
+  "apps/web/app/(app)/suggestions/suggestions.css",
+  "apps/web/lib/backup-fixtures.ts",
+  "apps/web/lib/profile.ts",
+  "apps/web/lib/registry.ts",
+  "apps/web/playwright.auth.config.ts",
+  "apps/web/tests/chat-history-action.test.ts",
+  "apps/web/tests/e2e/api-visual.spec.ts",
+  "apps/web/tests/e2e/backups-visual.spec.ts",
+  "apps/web/tests/e2e/delivery-visual.spec.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/global-auth.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 56167,
+ "round": 6,
+ "since": "11e9abbd7c",
+ "status": "clean",
+ "system_chars": 38695,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792325852,
+ "ts_start": 1792325768
+}
