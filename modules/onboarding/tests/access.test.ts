@@ -28,9 +28,11 @@ describe.skipIf(!hasDb)("IT access as suggestions (Postgres)", () => {
     expect(e.payload as AccessRequested).toEqual({ personId: expect.any(String), userId: (await db.as("ayesha")).userId, kind: "revoke", legalEntityId: expect.any(String) });
     expect(await access("Ayesha Rahman")()).toEqual([["revoke", "ITAdmin", "2026-10-31", false]]);
 
-    // 021 isn't installed: no handler takes the suggestion, so it waits on IT's task. Ticking that off
-    // records what IT did; Ayesha's sign-in and roles are untouched either way.
-    expect(db.modules.flatMap((m) => m.events?.handles ?? []).filter((h) => h.event === EVENTS.accessRequested)).toEqual([]);
+    // Only 021 (it-access) may take the request, and it only makes a suggestion IT approves; without it
+    // the request waits on IT's task. Ticking that off records what IT did; Ayesha's sign-in and roles
+    // are untouched either way.
+    expect(db.modules.flatMap((m) => m.events?.handles ?? []).filter((h) => h.event === EVENTS.accessRequested).map((h) => h.id)).toEqual(
+      db.modules.some((m) => m.id === "it-access") ? ["it-access.onboarding"] : []);
     const task = (await listChecklists(ravi, ON)).find((c) => c.personName === "Ayesha Rahman")!.tasks.find((t) => t.access)!;
     expect(task.canComplete).toBe(true);
     await completeTask(ctxFor(ravi), { taskId: task.id, note: "Revoked in the directory (fictional)" });
