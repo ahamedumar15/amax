@@ -17,6 +17,11 @@ Report these as findings:
   shows a record or a metric and has no `PinButton` (`packages/ui/src/components/PinButton.tsx`).
   Its `PinRef` must resolve through a read tool to that exact record. A pin with no matching read
   tool counts as missing.
+- **Pin keyed on a name** (059). A record's `PinRef` names it by its UUID (the read tool's
+  `pin: { id, of }`), never by a name, version tag or key that can be renamed or reused; a list,
+  total or period is a `pin: "view"`. A new pin-resolving read tool without a `pin` spec, or a
+  pin's label rewritten after a rename instead of read from the record, is a finding.
+  `apps/web/tests/pin-refs.test.ts` and the registry's startup check catch most of these.
 
 Not findings:
 

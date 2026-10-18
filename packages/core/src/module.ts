@@ -70,7 +70,19 @@ export type McpToolDef = {
    * a ToolError (code invalid_input) to refuse the card; its message is what the model is told.
    */
   propose?: (viewer: never, input: never) => Promise<void>;
+  /** How a pin on this read tool names what it shows (059); the registry checks it at startup. */
+  pin?: PinSpec;
 };
+
+/**
+ * A pin names one record by its stable id, never by a name or key that can be renamed (059).
+ * `id`: the input field holding the record's UUID; the registry refuses a spec whose field isn't one.
+ * `of`: reads the record's id, current label and, where a key can be reused, when it was made, from
+ * the tool's result, or null when there is no such record. `"view"`: a list, a total or a period,
+ * with no record behind it to rename, so its label never changes.
+ */
+export type PinSpec = { id: string; of: (result: never) => PinnedRecord | null } | "view";
+export type PinnedRecord = { id: string; label: string; createdAt?: string | null };
 
 /**
  * One retention rule (032 AC-1): the data class (002 classes, or "personal" for identifying data

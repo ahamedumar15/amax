@@ -38,6 +38,7 @@ export const getAiUsageTool = {
   permission: "",
   scope: "read" as const,
   readOnly: true,
+  pin: "view" as const,
   run: async (viewer: Viewer, input: UsageInput) => shapeUsage(await aiUsage(getRuntime().db, usageViewer(viewer), input), input),
 };
 

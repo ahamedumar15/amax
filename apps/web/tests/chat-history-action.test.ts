@@ -7,7 +7,7 @@ import { chatWorld, registry, scripted } from "../../../packages/chat/tests/worl
 
 const signedIn = vi.hoisted(() => ({ viewer: undefined as unknown, db: undefined as unknown }));
 vi.mock("@amax/auth", async (real) => ({ ...(await real<object>()), currentViewer: async () => signedIn.viewer }));
-vi.mock("../lib/server", () => ({ getDb: () => signedIn.db }));
+vi.mock("../lib/server", () => ({ getDb: () => signedIn.db, toolRegistry: () => registry }));
 
 const { listChats, openChat } = await import("../app/actions/chat-history");
 

@@ -1,5 +1,6 @@
 import { isMasked } from "@amax/auth";
-import { PinButton } from "@amax/ui";
+import { facet, PinButton } from "@amax/ui";
+import { personPin } from "../pins";
 import type { DocumentRow } from "../server/queries";
 import { shortDate, longDate } from "./parts";
 
@@ -12,11 +13,11 @@ const DocIcon = ({ warn }: { warn: boolean }) => (
   </span>
 );
 
-export function DocumentsCard({ docs, employeeNo, name }: { docs: DocumentRow[]; employeeNo: string; name: string }) {
-  const pin = (label: string) => <PinButton pin={{ label, tool: "get_person", args: { employeeNo } }} />;
+export function DocumentsCard({ docs, person }: { docs: DocumentRow[]; person: { id: string; name: string } }) {
+  const pin = (part: string) => <PinButton pin={facet(personPin(person), `, ${part}`)} />;
   return (
     <div className="card pinnable" id="documents">
-      {pin(`${name}, documents`)}
+      {pin("documents")}
       <h2>Documents</h2>
       {docs.length === 0 ? <p className="muted">No documents yet.</p> : (
         <ul className="list" style={{ marginTop: 14 }}>
@@ -29,7 +30,7 @@ export function DocumentsCard({ docs, employeeNo, name }: { docs: DocumentRow[];
                   <div>{masked ? <span title="Hidden for your role">Restricted document ({d.class})</span> : (d.title as string)}<small>{verb} {d.status === "signed" ? longDate(d.datedOn) : shortDate(d.datedOn)}</small></div>
                 </div>
                 <span className={`chip ${tone}`}>{chip}</span>
-                {pin(`${name}, ${masked ? "restricted document" : (d.title as string)}`)}
+                {pin(masked ? "restricted document" : (d.title as string))}
               </li>
             );
           })}

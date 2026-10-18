@@ -49,14 +49,14 @@ async function entityId(d: AdminDeps, v: Viewer, ref: string) {
 }
 
 export const workflowTools = (d: AdminDeps) => [
-  tool({ ...read(WORKFLOWS_ADMIN), name: "list_schedules", description: "Recurring agent work: each schedule, whether it is on, its zone and its last and next run.", input: z.object({}),
+  tool({ ...read(WORKFLOWS_ADMIN), pin: "view", name: "list_schedules", description: "Recurring agent work: each schedule, whether it is on, its zone and its last and next run.", input: z.object({}),
     run: (v) => listSchedules(d.db(), d.workflows(), v.tenantId) }),
-  tool({ ...read(WORKFLOWS_ADMIN), name: "get_schedule", description: "One recurring schedule: on or paused, zone, last result and next run.", input: z.object({ schedule }),
+  tool({ ...read(WORKFLOWS_ADMIN), pin: "view", name: "get_schedule", description: "One recurring schedule: on or paused, zone, last result and next run.", input: z.object({ schedule }),
     run: (v, a) => findSchedule(d, v, a.schedule) }),
-  tool({ ...read(WORKFLOWS_ADMIN), name: "list_workflow_runs", description: `Up to ${LATEST} workflow runs, newest first, with their steps, cost and status; classified fields masked. status filters by one or more statuses. withinLatest: true filters only the latest ${LATEST} runs, as the Scheduler screen's tickets count them.`,
+  tool({ ...read(WORKFLOWS_ADMIN), pin: "view", name: "list_workflow_runs", description: `Up to ${LATEST} workflow runs, newest first, with their steps, cost and status; classified fields masked. status filters by one or more statuses. withinLatest: true filters only the latest ${LATEST} runs, as the Scheduler screen's tickets count them.`,
     input: z.object({ status: z.union([RUN_STATUS, z.array(RUN_STATUS).min(1)]).optional(), withinLatest: z.boolean().optional() }),
     run: async (v, a) => pricedFor(v, await runsFor(d, v, a.status, a.withinLatest ?? false)) }),
-  tool({ ...read(WORKFLOWS_ADMIN), name: "get_workflow_run", description: "One workflow run with its steps, cost and status; classified fields masked.", input: z.object({ runId: z.uuid() }),
+  tool({ ...read(WORKFLOWS_ADMIN), pin: { id: "runId", of: (r: { id: string; title: string } | null) => (r ? { id: r.id, label: `${r.title} run ${r.id.slice(0, 8)}` } : null) }, name: "get_workflow_run", description: "One workflow run with its steps, cost and status; classified fields masked.", input: z.object({ runId: z.uuid() }),
     run: async (v, a) => pricedFor(v, (await getRun(d.db(), d.workflows(), v.tenantId, a.runId, see(v))) ?? await Promise.reject(notFound(`run ${a.runId}`))) }),
   tool({ ...write(WORKFLOWS_ADMIN), name: "control_workflow_run", description: "Pause, resume, cancel or retry a workflow run. Retry re-runs only the failed step.",
     input: z.object({ runId: z.uuid(), action: z.enum(["pause", "resume", "cancel", "retry"]) }),

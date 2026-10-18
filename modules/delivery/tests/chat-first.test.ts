@@ -106,13 +106,13 @@ describe.skipIf(!hasDb)("054 board and release writes wait for chat's confirm (P
       await expect(registry.call(await as("sahan"), "get_environment", { environmentId: env.id, name }, { source: "chat" })).rejects.toThrow(/say which environment: .* is UAT, not /);
     }, 60_000);
 
-  it("057 renaming an environment returns a repin, and its id-keyed pin still resolves", async () => {
+  it("057 renaming an environment keeps its id-keyed pin resolving, with no repin (059)", async () => {
     const sahan = await as("sahan");
     const [env] = await q(sql`select e.id from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = 'CON' and e.name = 'QA'`);
     configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "upsert_environment", input: { projectKey: "CON", name: "QA", rename: "Test" } }] }), () => ({ text: "Confirm?" })]), db: app, model: "claude-haiku-5-5" });
     const turn = await chatTurn(app, registry, sahan, { text: "please rename" });
     const { result } = await confirmAction(app, registry, sahan, turn.conversationId, turn.pending[0].id);
-    expect(result).toMatchObject({ repin: { tools: ["get_environment"], match: { projectKey: "CON", name: "QA" }, set: { name: "Test" }, label: ["QA", "Test"] } });
+    expect(result).toEqual({ name: "Test" });
     expect(await registry.call(sahan, "get_environment", { environmentId: env.id }, { source: "chat" })).toMatchObject({ id: env.id, name: "Test" });
   }, 60_000);
 
@@ -126,8 +126,7 @@ describe.skipIf(!hasDb)("054 board and release writes wait for chat's confirm (P
     const [rel] = await q(sql`select r.id from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'CON' and r.version = ${from}`);
     const [dep] = await q(sql`select id from delivery.deployment where release_id = ${rel.id} limit 1`);
     const { result } = await confirmAction(app, registry, sahan, turn.conversationId, turn.pending[0].id);
-    expect(result).toMatchObject({ version: to, moved: { from: `/delivery/releases/CON/${encodeURIComponent(from)}`, to: href },
-      repin: { match: { projectKey: "CON", version: from }, set: { version: to }, label: [from, to] } });
+    expect(result).toEqual({ version: to, moved: { from: `/delivery/releases/CON/${encodeURIComponent(from)}`, to: href } });
     // The release page's pins key on ids, so the ones already in the conversation still resolve after the re-tag.
     const call = (tool: string, args: Record<string, unknown>) => registry.call(sahan, tool, args, { source: "chat" });
     expect(await call("get_release_history", { releaseId: rel.id })).toMatchObject({ id: rel.id, version: to, projectKey: "CON" });

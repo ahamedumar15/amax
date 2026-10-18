@@ -33,11 +33,11 @@ const db = () => getRuntime().db;
 const conversationId = z.object({ id: z.uuid() }).strict();
 
 export const chatTools: McpToolDef[] = [
-  tool({ ...read, name: "list_conversations", description: "Your own past amax chats, newest first, with title, last updated, message count and pins. Optional text search.",
+  tool({ ...read, pin: "view", name: "list_conversations", description: "Your own past amax chats, newest first, with title, last updated, message count and pins. Optional text search.",
     input: z.object({ query: z.string().max(200).optional(), limit: z.number().int().min(1).max(100).optional() }).strict(),
     run: (v, a) => listConversations(db(), v, a) }),
   tool({ ...read, name: "get_conversation", description: "One of your own past amax chats: its messages, pins and pending actions (expired ones are marked).",
-    input: conversationId,
+    input: conversationId, pin: { id: "id", of: (c: { id: string; title: string } | null) => (c ? { id: c.id, label: c.title } : null) },
     run: async (v, a) => (await getConversation(db(), v, a.id)) ?? Promise.reject(new ToolError("conversation not found", "not_found")) }),
   tool({ name: "archive_conversation", description: "Archive one of your own past amax chats so it leaves your history.", scope: "write", permission: ARCHIVE,
     input: conversationId,

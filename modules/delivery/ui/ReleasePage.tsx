@@ -1,6 +1,7 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
-import { PinButton } from "@amax/ui";
+import { facet, PinButton } from "@amax/ui";
+import { deploymentPin, historyPin, proposalPin } from "../pins";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { AskButton } from "./AskButton";
 import { day, needViewer, PhaseChip, SignInFirst } from "./parts";
@@ -13,11 +14,10 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
   const canEdit = can(viewer, "delivery:release:create", { projectId: project.project.id });
   const canDeploy = can(viewer, "delivery:deployment:record", { projectId: project.project.id });
   const name = `${release.projectKey} ${release.version}`;
-  // Pins key on ids, so a re-tag can't strand them (057).
-  const ref = { label: name, tool: "get_release_history", args: { releaseId: release.id } };
-  const deployPin = (d: { id: string; environment: string; at: string }) =>
-    ({ label: `${name} on ${d.environment}, ${day(d.at)}`, tool: "get_deployment", args: { deploymentId: d.id } });
-  const pin = (label: string) => <PinButton inline pin={{ ...ref, label: `${name} ${label}` }} />;
+  // Pins key on ids, so a re-tag can't strand them (057, 059).
+  const ref = historyPin(release);
+  const deployPin = (d: { id: string; environment: string; at: string }) => deploymentPin({ ...release, ...d });
+  const pin = (label: string) => <PinButton inline pin={facet(ref, ` ${label}`)} />;
   const included = release.proposals.filter((p) => p.included);
   return (
     <>
@@ -27,7 +27,7 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
         <div className="card pinnable">
           <div className="card-head"><h2>Tag and proposals</h2>{pin("proposals")}</div>
           <ul aria-label="Proposals in this release" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6, margin: "14px 0", maxHeight: 280, overflow: "auto" }}>
-            {included.map((p) => <li key={p.key} className="pinnable"><b>{p.key}</b> {p.title} <PhaseChip phase={p.phase} /><PinButton pin={{ label: `${p.key} ${p.title}`, tool: "get_proposal", args: { key: p.key } }} /></li>)}
+            {included.map((p) => <li key={p.key} className="pinnable"><b>{p.key}</b> {p.title} <PhaseChip phase={p.phase} /><PinButton pin={proposalPin(p)} /></li>)}
             {included.length === 0 && <li className="muted">No proposals yet.</li>}
           </ul>
           {canEdit && <div className="actions">
