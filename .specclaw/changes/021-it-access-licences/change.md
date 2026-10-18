@@ -47,6 +47,37 @@ licences and 1 device). No grant, revoke or seat removal ever runs without a per
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass. Sync reads Microsoft Graph (Entra, licences, Intune), Azure DevOps and GitHub with read credentials only. Approved changes use `msgraph-write`, only after an Admin consents with named scopes, and it is off by default. Both credentials are 031 secrets. Test: `tests/sync.test.ts` ("AC1 sync opens only read credentials…").
+- AC-2: pass.
+  - Grant, revoke and remove seat are licence-agent suggestions through 006, approved by IT, with undo while queued or manual.
+  - A change left to IT by hand stays pending until a person confirms it (`confirm_access_change`).
+  - IT Admin sees seats and use but no prices.
+  - Tests: `tests/changes.test.ts`, module e2e.
+- AC-3: pass — `hr.person.left` proposes revoking everything on the last day, once, alongside onboarding's own handler. Test: `tests/leavers.test.ts`.
+- AC-4: pass — contracts and contract tests, README, fixtures, manifest, retention per 032 and a CODEOWNERS line. The module can be switched off; someone without it-access gets a 404. Tests: `tests/contracts.test.ts`, `tests/standard.test.ts`, module e2e.
+
+Mock: `shots/app.png` (`/it-access` as Maya, Admin) matches `shots/mock.png`: the lede with "Start access review" and "Add licence", four tiles, Licences, Spend by product, Licence savings, Devices and People and access.
+- The tiles have no illustrations.
+- The licence table has no Export.
+- The spend legend shows amounts where the mock shows percentages.
+- Devices compliant reads 96.5% from fixtures, where the mock shows 96.4%.
+
+Commands (worktree merged with origin/main at 2e305de, Postgres 16 at `DATABASE_MIGRATE_URL`, HEAD bc770f9):
+- `pnpm turbo run lint --force` → 0 (29/29)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (29/29)
+- `pnpm --filter @amax/web build` → 0
+- `playwright test --config playwright.auth.config.ts` (apps/web) → 81/81
+- module e2e `pnpm --filter @amax/it-access e2e` → 3/3
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
+
+Ripple: `apps/web/components/marketing/areas.ts` moves Access and licences out of the marketing page's "Coming" claims, because 062's test requires a Coming claim to have no installed module.
+
+Screenshots: `.specclaw/changes/021-it-access-licences/shots/app.png`, `.specclaw/changes/021-it-access-licences/shots/mock.png`.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
+
 Quality: 0 → 0 duplicated lines (jscpd over modules/it-access; specclaw-quality-scan fails on this repo with jq "Argument list too long", so jscpd was run directly).
 
 Ripple: `modules/onboarding/tests/access.test.ts` asserted that nothing handles `onboarding.access.requested` ("021 isn't installed"); it now expects exactly `it-access.onboarding` when it-access is installed, and still that nothing is revoked.

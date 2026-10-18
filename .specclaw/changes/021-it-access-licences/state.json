@@ -1,8 +1,9 @@
 {
   "change": "021-it-access-licences",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T14:08:58Z"}
+    "tasks": {"status":"done","at":"2026-10-18T14:08:58Z"},
+    "verify": {"status":"done","at":"2026-10-18T16:16:25Z"}
   }
 }
