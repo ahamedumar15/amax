@@ -47,9 +47,11 @@ test("064 AC3 the tour plays when asked, with captions, and never on its own", a
   expect(await video.evaluate((v: HTMLVideoElement) => v.error)).toBeNull();
   await expect(video).toHaveAttribute("controls", "");
   await expect(video).toBeFocused();
-  await page.keyboard.press("Tab");
-  await page.keyboard.press("Shift+Tab");
-  await expect(video).toBeFocused();
+  for (const [from, key] of [[page.getByRole("tabpanel").getByRole("button").last(), "Tab"], [page.getByRole("switch").first(), "Shift+Tab"]] as const) {
+    await from.focus();
+    await page.keyboard.press(key);
+    await expect(video).toBeFocused();
+  }
 });
 
 test("064 AC1 AC7 accessible in light and dark, skip link, no sideways scroll on a phone", async ({ page }) => {
