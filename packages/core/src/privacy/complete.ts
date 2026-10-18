@@ -2,12 +2,12 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { textArray, type Tx } from "@amax/db";
 import { defineService } from "../service";
-import { applyRule } from "./apply";
+import { applyRule, countRule } from "./apply";
 import { secondApproval } from "./approval";
 import { PRIVACY_MANAGE, privacyRules } from "./catalog";
 import { held as heldNow } from "./holds";
 import { assertChecked, EXCLUDED_BY_APPROVER, inventory, matchOf, summarise, type Item } from "./inventory";
-import { about, type Match } from "./match";
+import { about, notHeld, type Match } from "./match";
 import { decideNameRows, includedRows, nameRows } from "./name-rows";
 import { buildPackage } from "./package";
 import { loadRequest, personOf, type RequestRow } from "./requests";
@@ -17,17 +17,25 @@ export const ERASED_LABEL = "Erased person";
 
 const lower = (s: string) => s.trim().toLowerCase();
 
-async function erase(tx: Tx, req: RequestRow, who: Match, items: Item[], approver: string) {
+export const HOLD_KEPT = "kept: legal hold. Release the hold, then erase these rows with a new request";
+
+async function erase(tx: Tx, req: RequestRow, who: Match, found: Item[], approver: string) {
   const held = await heldNow(tx);
   const names = new Set(held.names.map(lower));
   if (who.ids.some((id) => held.ids.includes(id)) || who.names.some((n) => names.has(lower(n)))) throw new PrivacyError("this person is under a legal hold; release the hold before erasing");
   let n = 0;
-  // Rows found by id, and the name-only rows the approver included, by their ids (decideNameRows).
+  const items = [...found];
+  // Rows found by id, and the name-only rows the approver included, by their ids (decideNameRows). Every
+  // path keeps what a matter hold holds, through the same predicate as the purge (060 AC-1).
   for (const rule of privacyRules()) {
-    const mine = items.filter((i) => i.rule === rule.id && !i.kept && !i.review);
-    if (mine.some((i) => !i.rows)) n += await applyRule(tx, rule, about(rule, who));
+    const mine = found.filter((i) => i.rule === rule.id && !i.kept && !i.review);
     const rows = mine.flatMap((i) => i.rows ?? []);
-    if (rows.length) n += await applyRule(tx, rule, includedRows(rows));
+    const targets = [...(mine.some((i) => !i.rows) ? [about(rule, who)] : []), ...(rows.length ? [includedRows(rows)] : [])];
+    for (const target of targets) {
+      const kept = await countRule(tx, rule, sql`${target} and not ${notHeld(rule, held)}`);
+      if (kept) items.push({ source: rule.table, rule: rule.id, label: rule.label ?? rule.table, class: rule.class, action: rule.action, n: kept, kept: HOLD_KEPT });
+      n += await applyRule(tx, rule, sql`${target} and ${notHeld(rule, held)}`);
+    }
   }
   // erase_request erases the audit and trace chains for the stored ids, so store every id the
   // inventory used, including ones resolved since the request was opened (review 058 B1).
