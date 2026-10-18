@@ -21,7 +21,7 @@ The Keyflow sister-product card.
 
 ## Tasks
 
-- [ ] `T1` — Mock: add this change's own sections, the Keyflow sync screen (connection, last sync, what went out and came in, sync errors with Ask amax, recent runs) and a person's Keyflow performance page (goals, review scores masked by `performance`, recognition); a pin on every card, ticket and row (AC-1, AC-2)
+- [x] `T1` — Mock: add this change's own sections, the Keyflow sync screen (connection, last sync, what went out and came in, sync errors with Ask amax, recent runs) and a person's Keyflow performance page (goals, review scores masked by `performance`, recognition); a pin on every card, ticket and row (AC-1, AC-2)
   Files: .specclaw/mock/index.html
 - [ ] `T2` — Publish `contracts.ts`: goal, review score, recognition and sync-run types, event names and payloads (`keyflow.sync.completed`, `keyflow.sync.failed`), `keyflowProfile(tx, reader, personId)` (scores masked per `performance`) and `lastSync(tx, reader)` reads, with contract tests (AC-1, AC-3)
   Files: modules/keyflow/contracts.ts, modules/keyflow/package.json, modules/keyflow/tsconfig.json, modules/keyflow/css.d.ts, modules/keyflow/.gitignore, modules/keyflow/tests/contracts.test.ts, pnpm-lock.yaml
