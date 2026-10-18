@@ -1,0 +1,47 @@
+/* Compliance screen: rules lifted from .specclaw/mock/index.html (module standard: shared UI starts in the module). */
+.compliance .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.compliance .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.compliance .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.compliance .row.head .lede{margin:0}
+.compliance .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.compliance .row.line{font-size:14px;padding:11px 0;border-top:1px solid var(--line)}
+.compliance .row.line:first-of-type{border-top:0}
+.compliance .row.line>span{display:flex;align-items:center;gap:8px;min-width:0}
+.compliance .row.line>b{display:flex;align-items:center;gap:6px;text-align:right}
+.compliance .row.line.pinnable{position:relative}
+.compliance .warn-t{color:#8A5200}
+.compliance .bad-t{color:#A8321F}
+.compliance .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.compliance .tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.compliance .ticket svg.art{position:absolute;right:12px;top:10px;width:clamp(70px,5.6vw,100px);height:auto;opacity:.95}
+.compliance .tickets .p{z-index:1}
+.compliance .ticket .pin{top:auto;bottom:10px}
+.compliance .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start;margin-bottom:28px}
+.compliance .cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.compliance .stack{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;min-width:0}
+.compliance .card-head{min-height:38px}
+.compliance .card-head h2{margin-right:0}
+.compliance .muted{color:var(--ink-3)}
+.compliance .scroll-x{overflow-x:auto}
+.compliance .tbl td small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px;font-weight:400}
+.compliance .tbl td.act{white-space:nowrap;text-align:right}
+.compliance .chip.pink{background:#FFE4EA;color:#A3345A}
+.compliance .chip.info{background:var(--violet-soft);color:var(--chip-agent)}
+.compliance .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.compliance .btn.ghost{border-color:transparent;color:var(--ink-2)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .compliance .warn-t{color:#F2C26B}
+  :root:not([data-theme="light"]) .compliance .bad-t{color:#FF9C8C}
+  :root:not([data-theme="light"]) .compliance .chip.pink{background:#3A1F2E;color:#FF9CB6}
+}
+:root[data-theme="dark"] .compliance .warn-t{color:#F2C26B}
+:root[data-theme="dark"] .compliance .bad-t{color:#FF9C8C}
+:root[data-theme="dark"] .compliance .chip.pink{background:#3A1F2E;color:#FF9CB6}
+@media (max-width:900px){.compliance .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.compliance .cols,.compliance .cols.even{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .compliance .row.head>.actions{width:100%}
+  .compliance .tickets.four{gap:12px}
+  .compliance .tickets.four .v{font-size:20px;margin-top:4px}
+  .compliance .ticket svg.art{width:58px;right:6px;top:8px}
+}
+.compliance .row.line>.pin{top:50%;margin-top:-15px;right:-8px}

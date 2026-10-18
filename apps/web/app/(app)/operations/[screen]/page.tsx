@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { can } from "@amax/auth";
 import { EmptyState } from "@amax/ui";
 import { operationOf } from "../../../../lib/operations";
+import { installed } from "../../../../lib/registry";
 import { getViewer } from "../../../../lib/viewer";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,8 @@ export default async function ComingSoon({ params }: { params: Promise<{ screen:
   const viewer = await getViewer();
   const op = operationOf((await params).screen);
   if (!viewer || !op || !can(viewer, "operations:read")) notFound();
+  // Shipped since (036's Compliance): the old link goes to the real screen.
+  if (installed.some((m) => m.id === op.slug)) redirect(`/${op.slug}`);
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><span>Operations</span><span>/</span>{op.title}</nav>
