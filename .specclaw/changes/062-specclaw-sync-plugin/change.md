@@ -32,19 +32,19 @@ same section.
    `dryRun: true` first and shows the created, updated, unchanged and refused counts. It applies only
    when the user confirms, or when the run is unattended (AC-9).
 3. **AC-3** The new MCP write tool `sync_specclaw` (in `modules/delivery/mcp.ts`, permission
-   `delivery:proposal:push`) takes `{ projectKey, repoUrl, sha, ref, defaultRef, committedAt, records[], dryRun }`.
+   `delivery:proposal:push`) takes `{ projectKey, repoUrl, sha, ref, committedAt, records[], dryRun }`.
    It reuses 008/039's `syncSpecclaw()` (compare-before-write, done tasks stay done), so it writes only
    changed records, through `syncProposal`. It does not create projects and does not withdraw
    proposals. An unknown `projectKey` is refused. 008's `sync_proposal` stays as it is for CI.
 4. **AC-4** **Repo binding:** a project syncs only from its linked repo. The write tools
-   `link_project_repo` and `unlink_project_repo` are for PM or Admin and go through the chat confirm.
+   `link_project_repo` (with the default branch) and `unlink_project_repo` are for PM or Admin and go through the chat confirm.
    A push whose normalised `repoUrl` doesn't match the linked repo is refused with "repo not linked to
    <KEY>", and the refusal is audited.
 5. **AC-5** **Who:** the caller must be allowed on that project. A person needs project-scoped
    `delivery:proposal:push`, meaning they are on the project team or are its PM. That permission doesn't
    open 008's unguarded `sync_proposal`. Every write is attributed to the person, or to the credential
    acting for them (rule 4).
-6. **AC-6** **What:** a push from the default branch covers every change. A push from another branch
+6. **AC-6** **What:** a push from the project's default branch (stored with the link) covers every change. A push from another branch
    covers only its own change (`specclaw/<NNN-slug>`). A push never sets `released`, never moves a
    proposal out of `released` or back a phase, and never touches proposals from another source or
    proposals made by hand. Keys stay `<KEY>-<NNN>`. A record

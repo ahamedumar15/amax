@@ -135,7 +135,7 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
     await tx.execute(sql`insert into delivery.activity (tenant_id, at, actor_id, actor_kind, for_user_id, project_id, text, detail) values (${tenantId}, ${f.at}, ${f.actor}, ${f.kind}, ${f.for}, ${ids[f.project]}, ${f.text}, ${f.detail})`);
   }
   // 062: Contoso syncs from its (fictional) repo; the mock's Repo sync card, one push applied and two refused.
-  await tx.execute(sql`update delivery.project set repo_url = 'github.com/example/contoso-portal' where id = ${ids.CON} and repo_url is null`);
+  await tx.execute(sql`update delivery.project set repo_url = 'github.com/example/contoso-portal', repo_default_ref = 'main' where id = ${ids.CON} and repo_url is null`);
   const kasun = await userId(tx, "kasun");
   const PUSHES = [
     { at: "2026-10-16T09:42:00Z", who: kasun, repo: "github.com/example/contoso-portal", sha: "4f2c9a1e", outcome: "applied", updated: 3, unchanged: 14, reason: null },

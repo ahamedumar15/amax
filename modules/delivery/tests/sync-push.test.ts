@@ -5,14 +5,15 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
-import { configureRuntime } from "@amax/core/server";
-import { completePrivacyRequest, openPrivacyRequest, setPrivacySources } from "@amax/core/privacy";
+import { configureRuntime, traceStep, withTrace } from "@amax/core/server";
+import { completePrivacyRequest, openPrivacyRequest, requestNameRows, setPrivacySources } from "@amax/core/privacy";
 import { installAuthorizer, loadViewer, setGrants, setViewerScopeResolvers, signInDemo, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { ctxFor } from "../server/context";
 import { syncProposal } from "../server/services";
+import { syncSpecclaw } from "../sync/import";
 import { getRepoSync, linkProjectRepo } from "../server/repo-sync";
 import { normaliseRepo } from "../sync/repo-url";
 import { pushSpecclaw } from "../server/push";
@@ -66,6 +67,13 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
     await expect(linkProjectRepo(ctxFor(nimal), { projectKey: "CON", repoUrl: REPO })).rejects.toThrow(/data scope/);
     await expect(linkProjectRepo(ctxFor(nimal), { projectKey: "FLT", repoUrl: "https://x-access-token:ghp_secret@github.com/example/fleet-tracker" })).rejects.toThrow(/user name or token/);
     await expect(push({ repoUrl: "https://bob:pw@github.com/example/fleet-tracker" })).rejects.toThrow(/user name or token/);
+    await expect(push({ repoUrl: "x-access-token:ghp_secret@github.com:example/fleet-tracker" })).rejects.toThrow(/user name or token/);
+    // What the MCP handler writes before the tool runs (packages/mcp/src/server.ts): a keyed hash of the
+    // arguments, never the arguments, so a token in one is not stored (review rounds 1-3).
+    await withTrace({ tenantId: T, actor: `user:${nimal.userId}`, source: "mcp" }, () =>
+      traceStep({ kind: "mcp_call", tool: "link_project_repo", args: { projectKey: "FLT", repoUrl: "https://x-access-token:ghp_TRACESECRET@github.com/example/fleet-tracker" } }));
+    expect(await count(sql`select count(*)::int as n from core.trace_event where tool = 'link_project_repo'`)).toBe(1);
+    expect(await count(sql`select count(*)::int as n from core.trace_event t where t::text like '%TRACESECRET%'`)).toBe(0);
     await linkProjectRepo(ctxFor(nimal), { projectKey: "FLT", repoUrl: "git@github.com:example/fleet-tracker" });
     expect(await push({ repoUrl: "https://github.com/example/other", dryRun: false })).toMatchObject({ outcome: "refused", reason: expect.stringMatching(/repo not linked to FLT/) });
     expect((await getRepoSync(nimal, { projectKey: "FLT" }))!.recent.map((p) => p.outcome)).toEqual(["refused", "refused"]);
@@ -91,12 +99,12 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
     // The archived change is skipped every time; that alone isn't a write (review round 1).
     expect(await push({ sha: "b2c3d4e", committedAt: "2026-10-08T10:00:00Z", dryRun: false })).toMatchObject({ outcome: "unchanged", created: 0, updated: 0, unchanged: 2, skipped: preview.skipped });
     expect([await audits(), await pushRows()]).toEqual([settled, rows]);
-    expect(new Date((await proposal("FLT-102")).synced_commit_at as string).toISOString()).toBe("2026-10-08T10:00:00.000Z");
+    expect(new Date((await proposal("FLT-102")).synced_commit_at as string).toISOString()).toBe("2026-10-08T09:00:00.000Z");
     await expect(push({ records: Array(201).fill(records[0]) })).rejects.toThrow(/200/);
   });
 
   it.each([
-    ["an older commit, from its own branch", { ref: "specclaw/101-export", sha: "01dc0de", committedAt: "2026-10-07T09:00:00Z", repo: { "101-export": { tasks: "- [x] `T1` — one\n- [x] `T2` — two" } } }, /^FLT-101: stale: last pushed from a newer commit/],
+    ["an older commit, from its own branch", { ref: "specclaw/101-export", sha: "01dc0de", committedAt: "2026-10-07T09:00:00Z", repo: { "101-export": { tasks: "- [x] `T1` — one\n- [x] `T2` — two" } } }, /^FLT-101: stale: last synced from a newer commit/],
     ["its own change's earlier phase", { ref: "specclaw/101-export", sha: "c0ffee1", committedAt: "2026-10-08T11:00:00Z", repo: { "101-export": {} } }, /^FLT-101: would move back from building to planned$/],
     ["its own change archived", { ref: "specclaw/102-import", sha: "c0ffee2", committedAt: "2026-10-08T11:00:00Z", repo: { "102-import": { archived: true } } }, /^FLT-102: released comes from Prod deployments$/],
   ])("AC-6/AC-8 a branch push skips %s and writes nothing for it", async (_name, o, why) => {
@@ -114,6 +122,25 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
     expect((await proposal("FLT-102")).title).toBe("Import, renamed on the branch");
   });
 
+  it("AC-6 the default branch is the one stored with the link: a payload can't claim it, and a branch naming no change is flagged", async () => {
+    const claim = await push({ ref: "release", defaultRef: "release", sha: "a0a0a0a", committedAt: "2026-10-08T12:10:00Z", records: readSpecclaw(fakeRepo({ "101-export": { title: "Hijacked" } })), dryRun: false } as never);
+    expect(claim).toMatchObject({ outcome: "applied", updated: 0, ignored: 1, needsReview: true, skipped: [expect.stringMatching(/^release: not the default branch \(main\)/)] });
+    expect((await proposal("FLT-101")).title).toBe("101-export title");
+  });
+
+  it("AC-7 on the default branch a step back is flagged for a person, not treated as standing", async () => {
+    const r = await push({ sha: "b1b1b1b", committedAt: "2026-10-08T12:20:00Z", records: readSpecclaw(fakeRepo({ "101-export": {} })) });
+    expect(r).toMatchObject({ needsReview: true, skipped: ["FLT-101: would move back from building to planned"] });
+  });
+
+  it("AC-8 a self-sync from a newer main commit moves the mark, so an older push is stale", async () => {
+    const maya = (await loadViewer(app, T, (await signInDemo(app, T, "maya@lumenlabs.test")).sessionId))!;
+    const main = readSpecclaw(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" }, "102-import": { title: "Import, renamed on the branch" } }));
+    await syncSpecclaw(app, ctxFor(maya), { projectKey: "FLT", projectName: "Fleet", client: "x", records: main, sha: "5e1f5e1", committedAt: "2026-10-08T12:30:00Z" });
+    const r = await push({ sha: "01d0001", committedAt: "2026-10-08T12:25:00Z", records: readSpecclaw(fakeRepo({ "102-import": { title: "Older title" } })) });
+    expect(r.skipped).toEqual([expect.stringMatching(/^FLT-102: stale/)]);
+  });
+
   it("AC-7 a skip a person should see is recorded and flagged; main can clear a PR link", async () => {
     const before = await pushRows();
     const r = await push({ sha: "d00d00d", committedAt: "2026-10-08T13:00:00Z", records: readSpecclaw(fakeRepo({ "101-export": { corrupt: true } })), dryRun: false });
@@ -124,49 +151,51 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
     expect((await proposal("FLT-102")).pr).toBeNull();
   });
 
-  it("AC-8 refuses a commit time in the future; a push waits for the project lock and then sees what landed meanwhile", async () => {
+  it("AC-8 refuses a commit time in the future; a push waits on the project lock before reading anything", async () => {
     await expect(push({ committedAt: new Date(Date.now() + 3_600_000).toISOString() })).rejects.toThrow(/future/);
     let release!: () => void;
     const held = new Promise<void>((r) => (release = r));
     let locked!: () => void;
     const isLocked = new Promise<void>((r) => (locked = r));
-    // Another session holds FLT and moves FLT-102's mark past the push's commit before letting go.
+    // Another session holds only FLT's row. The push below changes nothing, so it would never reach a
+    // write's lock: only applyPush's own lock can make it wait (review round 3).
     const other = app.transaction(async (tx) => {
       await tx.execute(sql`select set_config('app.tenant_id', ${T}, true)`);
       await tx.execute(sql`select 1 from delivery.project where key = 'FLT' for update`);
-      await tx.execute(sql`update delivery.proposal set synced_commit_at = '2026-10-08T15:00:00Z' where key = 'FLT-102'`);
       locked();
       await held;
     });
     await isLocked;
-    const late = push({ sha: "abc14de", committedAt: "2026-10-08T14:00:00Z", dryRun: false, records: readSpecclaw(fakeRepo({ "102-import": { tasks: "- [x] `T1` — one" } })) });
-    const waited = await Promise.race([late.then(() => false), new Promise<boolean>((r) => setTimeout(() => r(true), 300))]);
+    const stored = readSpecclaw(fakeRepo({ "102-import": { title: "Import, renamed on the branch" } }));
+    const pending = push({ sha: "abc14de", committedAt: "2026-10-08T14:00:00Z", records: stored });
+    const waited = await Promise.race([pending.then(() => false), new Promise<boolean>((r) => setTimeout(() => r(true), 300))]);
     release();
     await other;
     expect(waited).toBe(true);
-    expect((await late).skipped).toEqual([expect.stringMatching(/^FLT-102: stale/)]);
-    expect(Number((await proposal("FLT-102")).tasks_done)).toBe(0);
+    expect(await pending).toMatchObject({ outcome: "preview", unchanged: 1 });
   });
 
   it.each([
     ["who pushed", "actor", "ayesha@lumenlabs.test"],
     ["the person a credential pushed for", "for_user", "kasun@lumenlabs.test"],
+    ["someone who is both on one row", "both", "ravi@lumenlabs.test"],
   ])("AC-11 erasing %s anonymises their sync_push rows", async (_name, column, email) => {
     const ayesha = (await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${email}`)))[0].id as string;
     const project = (await withTenant(app, T, (tx) => tx.execute(sql`select id from delivery.project where key = 'FLT'`)))[0].id as string;
     const [row] = await withTenant(app, T, (tx) => tx.execute(sql`insert into delivery.sync_push (tenant_id, project_id, actor_id, actor_kind, for_user_id, repo_url, ref, sha, committed_at, outcome)
-      values (${T}, ${project}, ${column === "actor" ? `user:${ayesha}` : "sp:00000000-0000-4000-8000-000000000001"}, ${column === "actor" ? "user" : "service"}, ${column === "actor" ? null : ayesha},
+      values (${T}, ${project}, ${column === "for_user" ? "sp:00000000-0000-4000-8000-000000000001" : `user:${ayesha}`}, ${column === "for_user" ? "service" : "user"}, ${column === "actor" ? null : ayesha},
               'github.com/example/fleet-tracker', 'main', 'abcdef1', now(), 'applied') returning id`));
-    // Proposal owners recorded only by name need a person's decision; not what this test is about.
-    await t.owner`update delivery.proposal set owner_name = null`;
     setPrivacySources([delivery]);
     // Two people, as erasure requires: one opens the request, another completes it.
     const as = async (who: string) => (await loadViewer(app, T, (await signInDemo(app, T, who)).sessionId))!;
     const maya = await as("maya@lumenlabs.test");
     const req = await openPrivacyRequest(ctxFor(await as("sahan@lumenlabs.test")), { kind: "erasure", person: email });
-    await completePrivacyRequest(ctxFor(maya), { id: req.id });
+    // Proposal owners recorded only by name need a decision; they aren't this person's here.
+    const named = await withTenant(app, T, (tx) => requestNameRows(tx, req.id));
+    await completePrivacyRequest(ctxFor(maya), { id: req.id, nameRows: { exclude: named.flatMap((n) => n.rows.map((r) => r.id)) } });
     const [after] = await t.owner`select actor_id, for_user_id from delivery.sync_push where id = ${row.id as string}`;
     expect(after.actor_id).not.toContain(ayesha);
     expect(after.for_user_id).toBeNull();
+    if (column === "for_user") expect(after.actor_id).toBe("sp:00000000-0000-4000-8000-000000000001");
   });
 });

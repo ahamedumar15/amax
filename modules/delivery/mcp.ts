@@ -76,9 +76,9 @@ export const mcpTools: McpToolDef[] = [
     service: voidDeployment, run: (v, a, s = "mcp") => voidDeployment(ctxFor(v, s), a) }),
   // 008 AC-1: what specclaw and CI call, as a person or as a service credential acting for one.
   tool({ name: "sync_proposal", description: "Create or update a specclaw proposal from its spec: title, phase, and tasks by id (T1, T2, …). A task once done stays done.", scope: "write", permission: "delivery:proposal:sync",
-    input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional() }),
+    input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional(), committedAt: z.string().datetime({ offset: true }).optional() }),
     service: syncProposal, run: (v, a, s = "mcp") => syncProposal(ctxFor(v, s), { projectKey: a.projectKey, project: { name: a.projectName, client: a.client }, key: a.key, title: a.title, phase: a.phase,
-      tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks }) }),
+      tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks, committedAt: a.committedAt }) }),
   // 062: the amax plugin's push of a whole repo's specclaw state. Many keyed writes, so never a chat
   // confirm card (service: null); the plugin previews with dryRun and the developer confirms there.
   tool({ name: "sync_specclaw", description: "Push a repo's specclaw changes to its linked project. dryRun (the default) previews created, updated, unchanged and skipped; dryRun false applies. Refused when the repo isn't the project's linked repo or you're not on the project. Per proposal it skips Released, a step back a phase, and anything older than the commit it was last synced from. Never creates a project.",
@@ -87,10 +87,10 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ projectId: z.string().uuid().optional(), projectKey: z.string().optional() }), run: (v, a) => getRepoSync(v, a) }),
   tool({ ...read, pin: { id: "pushId", of: pinOf.push }, name: "get_sync_push", description: "One specclaw push to a project by pushId: who, branch and commit, counts, and what was skipped or why it was refused.",
     input: z.object({ pushId: z.string().uuid() }), run: (v, a) => getSyncPush(v, a.pushId) }),
-  tool({ name: "link_project_repo", description: "Link the one repo a project's specclaw proposals sync from, e.g. https://github.com/example/portal. Pushes from any other repo are refused. PM or Admin.", scope: "write",
-    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: RepoUrl }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
+  tool({ name: "link_project_repo", description: "Link the one repo a project's specclaw proposals sync from, e.g. https://github.com/example/portal, and its default branch (main unless said). Pushes from any other repo are refused; only the default branch's pushes may update every change. PM or Admin.", scope: "write",
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: RepoUrl, defaultBranch: z.string().min(1).max(200).default("main") }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
   tool({ name: "unlink_project_repo", description: "Unlink a project's repo, so no specclaw push is accepted until one is linked again. PM or Admin.", scope: "write", destructive: true,
-    permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null }) }),
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null, defaultBranch: "main" }) }),
   tool({ name: "mark_task_done", description: "Mark one task of a proposal done by its id, e.g. CON-014 T3, optionally naming the commit that finished it.", scope: "write", permission: "delivery:task:done",
     input: z.object({ key: z.string(), task: z.string(), commit: z.string().optional() }), service: markTaskDone, run: (v, a, s = "mcp") => markTaskDone(ctxFor(v, s), a) }),
   // 008 AC-6: drafting timesheets from commits, per legal entity, Admin only.

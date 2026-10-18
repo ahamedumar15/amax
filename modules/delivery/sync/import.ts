@@ -41,7 +41,7 @@ export const storedSpecRows = (tx: Tx, projectKey: string) =>
  * One-way import of a repo's specclaw changes into a delivery project, as a caller of sync_proposal's
  * service (008 AC-7): audited as `ctx`, the sync's service principal, and only for changed rows.
  */
-export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string }): Promise<SyncResult> {
+export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt?: string }): Promise<SyncResult> {
   const existing = await withTenant(db, ctx.tenantId, (tx) => storedSpecRows(tx, opts.projectKey));
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
@@ -58,7 +58,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
       continue;
     }
     try {
-      await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
+      await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, committedAt: opts.committedAt, ...d });
     } catch (e) {
       // A released hand-made proposal or another source holds the key: left alone and reported.
       if (!(e instanceof KeyTakenError)) throw e;

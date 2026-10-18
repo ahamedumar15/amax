@@ -7,7 +7,8 @@ argument-hint: "[--apply] [--project KEY]"
 # Sync specclaw to amax
 
 amax decides what it accepts. It refuses a push from a repo that isn't the project's linked repo, or
-from someone not on the project. A push from the default branch covers every change. A push from any
+from someone not on the project. A push from the project's default branch (stored with the repo link)
+covers every change. A push from any
 other branch covers only its own change (`specclaw/<NNN-slug>`). For each proposal, amax skips anything
 that would be Released, would move back a phase, or is older than the commit the proposal was last
 pushed from. Report what amax says. Never work around a refusal.
@@ -23,7 +24,7 @@ preview is clean (step 4). `--project KEY` overrides `amax.project` in `.speccla
 
    If it fails, show its one-line error and stop. The usual cause is uncommitted `.specclaw` edits or
    no project key. The file holds `projectKey`, `repoUrl` (the normalised name, never credentials), `ref`,
-   `defaultRef`, `sha`, `committedAt` and `records`.
+   `sha`, `committedAt` and `records`.
 
 2. **Preview.** Call the amax MCP tool `sync_specclaw` with every field from the file and
    `dryRun: true`. If `records` has more than 200 entries, send it in batches of 200, in order.
@@ -32,7 +33,7 @@ preview is clean (step 4). `--project KEY` overrides `amax.project` in `.speccla
 
    ```
    amax sync: <repoUrl> @ <ref> <sha 7>  →  <projectKey>
-   preview: <created> created · <updated> updated · <unchanged> unchanged · <skipped> skipped
+   preview: <created> created · <updated> updated · <unchanged> unchanged · <skipped> skipped · <ignored> not this branch's
      skipped <each skipped line>
    ```
 

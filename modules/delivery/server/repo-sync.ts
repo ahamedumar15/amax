@@ -15,15 +15,17 @@ export const linkProjectRepo = defineService({
   name: "delivery.project.repo",
   action: "delivery:project:link",
   resource: "delivery.project",
-  input: z.object({ projectKey: z.string(), repoUrl: RepoUrl.nullable() }),
+  input: z.object({ projectKey: z.string(), repoUrl: RepoUrl.nullable(), defaultBranch: z.string().min(1).max(200).default("main") }),
   async run(tx, input, ctx) {
-    const [p] = await tx.execute(sql`select id, repo_url from delivery.project where key = ${input.projectKey}`);
+    const [p] = await tx.execute(sql`select id, repo_url, repo_default_ref from delivery.project where key = ${input.projectKey}`);
     if (!p) throw new Error(`no project ${input.projectKey}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:project:link", { projectId: p.id as string });
     const repoUrl = input.repoUrl ? normaliseRepo(input.repoUrl) : null;
-    await tx.execute(sql`update delivery.project set repo_url = ${repoUrl} where id = ${p.id}`);
-    return { result: { projectKey: input.projectKey, repoUrl }, resourceId: p.id as string, before: { repoUrl: p.repo_url }, after: { repoUrl } };
+    // The default branch is stored with the link, never taken from a push: it decides which pushes cover every change.
+    const defaultRef = repoUrl ? input.defaultBranch : null;
+    await tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${p.id}`);
+    return { result: { projectKey: input.projectKey, repoUrl, defaultBranch: defaultRef }, resourceId: p.id as string, before: { repoUrl: p.repo_url, defaultBranch: p.repo_default_ref }, after: { repoUrl, defaultBranch: defaultRef } };
   },
 });
 

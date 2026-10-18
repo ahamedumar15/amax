@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { normaliseRepo } from "../../../../modules/delivery/sync/repo-url";
+import { normaliseRepo } from "../../../../modules/delivery/sync/repo-name";
 import { readSpecclaw } from "../../../../modules/delivery/sync/specclaw";
 
 export { normaliseRepo, readSpecclaw };
@@ -20,11 +20,6 @@ export const projectOf = (root: string, flag?: string) => {
   return m?.[1] ?? null;
 };
 
-/** The remote's default branch ("main"), the only ref whose push may update every change. */
-const defaultRefOf = (root: string) => {
-  try { return git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").replace(/^origin\//, ""); } catch { return "main"; }
-};
-
 export function payload(cwd: string, flag?: string) {
   const root = git(cwd, "rev-parse", "--show-toplevel");
   const projectKey = projectOf(root, flag);
@@ -35,7 +30,7 @@ export function payload(cwd: string, flag?: string) {
   const sha = git(root, "rev-parse", "HEAD");
   return {
     // Only the repo's normalised name is sent: a remote URL can carry a token, and amax never needs it.
-    projectKey, repoUrl: normaliseRepo(git(root, "remote", "get-url", "origin")), ref, sha, defaultRef: defaultRefOf(root),
+    projectKey, repoUrl: normaliseRepo(git(root, "remote", "get-url", "origin")), ref, sha,
     committedAt: git(root, "show", "-s", "--format=%cI", "HEAD"),
     records: readSpecclaw({ dir: root, ref: `${ref}@${sha}` }),
   };

@@ -203,6 +203,8 @@ export const SyncInput = z.object({
     meta: z.record(z.string(), z.unknown()),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
+    // 062: the commit time the spec was read at, when the writer knows it; it moves the stale mark.
+    committedAt: z.string().datetime({ offset: true }).optional(),
   });
 export type SyncInput = z.infer<typeof SyncInput>;
 
@@ -259,6 +261,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
     if (input.tasks) await writeTasks(tx, ctx.tenantId, row.id as string, input.tasks);
+    if (input.committedAt) await tx.execute(sql`update delivery.proposal set synced_commit_at = greatest(coalesce(synced_commit_at, ${input.committedAt}::timestamptz), ${input.committedAt}::timestamptz) where id = ${row.id}`);
     // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
     if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {

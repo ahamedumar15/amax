@@ -27,8 +27,9 @@ server yourself, either connection works.
      project: CON
    ```
 
-2. Ask the project's PM to link the repo in amax chat: "link CON to https://github.com/example/portal".
-   amax refuses pushes from any repo other than the linked one.
+2. Ask the project's PM to link the repo in amax chat: "link CON to https://github.com/example/portal,
+   default branch main". amax refuses pushes from any repo other than the linked one, and only the
+   default branch named there may update every change.
 
 ## Sync
 
@@ -43,7 +44,7 @@ What amax accepts:
 
 - **Who:** you're on the project (Engineer) or manage it (PM). Every write is recorded under your name.
 - **Where:** only the project's linked repo. An unknown project is refused: amax never creates one from a push.
-- **What:** a push from the default branch covers every change. A push from any other branch covers
+- **What:** a push from the default branch stored with the link covers every change. A push from any other branch covers
   only its own change (`specclaw/<NNN-slug>`), since it may have been cut from an older main. Never
   Released, which comes from Prod deployments. Never a step back to an earlier phase. Never a proposal
   made by hand or from another source.
