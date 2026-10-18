@@ -1,8 +1,9 @@
-export { ROLES, isRole, type Role } from "./roles";
+export { ROLES, isRole, roleLabel, type Role } from "./roles";
+export { IT_ADMIN_GRANTS, itAdminGrants } from "./it-admin";
 export { contextForViewer } from "./context";
 export { applyViewAs, currentViewer, rolesOf, setViewerResolver, type Assignment, type Viewer } from "./viewer";
 export { assertCan, can, canEver, installAuthorizer, ScopeError, setGrants, viewerOf, type ResourceAttrs } from "./can";
-export { canSee, isMasked, mask, SENSITIVITY_POLICY, type Masked, type MaskedRecord, type Subject } from "./sensitivity";
+export { canSee, canSeePricing, isMasked, mask, pricedFor, SENSITIVITY_POLICY, withoutPricing, type FieldClass, type Masked, type MaskedRecord, type Subject } from "./sensitivity";
 export { defineQuery, type QuerySpec } from "./query";
 export { loadViewer, setViewerScopeResolvers, viewerForUser, resolveTenant, setViewAs, signInDemo, signInFromDirectory, SignInDenied, signOutSession, type DirectoryClaims } from "./session";
 export { gate, isPublicPath } from "./gate";

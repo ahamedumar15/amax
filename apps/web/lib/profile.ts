@@ -1,18 +1,19 @@
-import { can, rolesOf, type Viewer } from "@amax/auth";
+import { can, roleLabel, rolesOf, type Viewer } from "@amax/auth";
 import type { NavItem } from "@amax/ui";
 import type { Profile } from "../components/shell/ProfileMenu";
 
-const ORDER = ["Admin", "Leadership", "PM", "HR", "Payroll", "Finance", "Sales", "Engineer", "Employee"];
+const ORDER = ["Admin", "ITAdmin", "Leadership", "PM", "HR", "Payroll", "Finance", "Sales", "Engineer", "Employee"];
 
 export function profileOf(v: Viewer): Profile {
   const primary = [...v.actualRoles].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b))[0] ?? "Employee";
   return {
     name: v.name,
     initials: v.name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase(),
-    chip: v.viewAs ?? primary,
-    subtitle: v.actualRoles.join(" · "),
+    chip: roleLabel(v.viewAs ?? primary),
+    subtitle: v.actualRoles.map(roleLabel).join(" · "),
     canViewAs: v.actualRoles.includes("Admin"),
-    isAdmin: rolesOf(v).includes("Admin"),
+    // The settings screens' own permission, so IT Admin (055) gets the links and a View-as preview doesn't.
+    isAdmin: can(v, "settings:read"),
     viewAs: v.viewAs,
   };
 }
@@ -20,6 +21,7 @@ export function profileOf(v: Viewer): Profile {
 // The mock's wording: what a preview hides.
 export function viewBanner(v: Viewer): string | null {
   if (!v.viewAs || v.viewAs === "Admin") return null;
+  if (v.viewAs === "ITAdmin") return "Viewing as IT Admin: prices are hidden.";
   return v.viewAs === "Payroll" ? "Viewing as Payroll: screens outside payroll are hidden." : `Viewing as ${v.viewAs}: pay, payroll and admin screens are hidden.`;
 }
 

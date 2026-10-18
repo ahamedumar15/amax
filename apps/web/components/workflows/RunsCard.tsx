@@ -24,7 +24,8 @@ function Value({ v }: { v: unknown }) {
   return <>{JSON.stringify(v)}</>;
 }
 
-export function RunsCard({ runs }: { runs: RunView[] }) {
+// 055: without the pricing class (`priced` false) the Cost column goes.
+export function RunsCard({ runs, priced = true }: { runs: RunView[]; priced?: boolean }) {
   return (
     <div className="card flush pinnable" style={{ marginTop: 28 }}>
       <div className="card-head"><h2>Runs</h2><PinButton inline pin={{ label: "Workflow runs", tool: "list_workflow_runs", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>Latest {runs.length}</span></div>
@@ -34,7 +35,7 @@ export function RunsCard({ runs }: { runs: RunView[] }) {
         <div className="scroll-x">
           <table className="tbl">
             <caption className="sr">Workflow runs</caption>
-            <thead><tr><th>Run</th><th>Status</th><th>Steps</th><th>Acts for</th><th className="num">Cost</th><th className="num"><span className="sr">Ask</span></th></tr></thead>
+            <thead><tr><th>Run</th><th>Status</th><th>Steps</th><th>Acts for</th>{priced && <th className="num">Cost</th>}<th className="num"><span className="sr">Ask</span></th></tr></thead>
             <tbody>
               {runs.map((r) => (
                 <tr key={r.id} className="pinnable">
@@ -42,7 +43,7 @@ export function RunsCard({ runs }: { runs: RunView[] }) {
                   <td data-label="Status"><span className={`chip ${TONE[r.status] ?? ""}`}>{r.status}</span>{r.error && <small>{isMasked(r.error) ? <Masked masked /> : r.error}</small>}</td>
                   <td data-label="Steps"><ol style={{ margin: 0, paddingLeft: 18 }}>{r.steps.map((s) => <li key={s.name}><b>{s.name}</b> {stepLine(s)}{Array.isArray(s.toolCalls) && s.toolCalls.length > 0 && <small>Tools: {s.toolCalls.map((t) => t.tool).join(", ")}</small>}</li>)}</ol></td>
                   <td data-label="Acts for">{r.actsFor ?? <span className="muted">{r.startedBy}</span>}</td>
-                  <td data-label="Cost" className="num">{usd(r.costUsd)}</td>
+                  {priced && <td data-label="Cost" className="num">{usd(r.costUsd)}</td>}
                   <td className="num">
                     <div className="ask-row">
                       {(ACTIONS[r.status] ?? []).map((a) => {

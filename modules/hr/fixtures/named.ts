@@ -17,6 +17,7 @@ export const NAMED: Record<string, Named> = {
   sarah: { no: "AU-0003", department: "Leadership", joined: "2018-04-09", grade: "L1", location: "Sydney, hybrid", salary: "26000" },
   liam: { no: "AU-0011", department: "Sales", joined: "2023-07-17", grade: "S3", location: "Melbourne, hybrid", salary: "14500" },
   sahan: { no: "LL-0150", department: "IT", joined: "2019-09-02", grade: "T4", location: "Colombo, office", salary: "310000" },
+  ravi: { no: "LL-0455", department: "IT", joined: "2022-06-13", grade: "T3", location: "Colombo, office", salary: "240000" },
   rizwan: { no: "LL-0388", department: "Engineering", joined: "2021-08-02", grade: "E3", location: "Colombo, hybrid" },
   rifkhan: { no: "LL-0640", department: "Engineering", joined: "2026-11-02", grade: "E2", location: "Colombo, hybrid", manager: "nimal" },
 };

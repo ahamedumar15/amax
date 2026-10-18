@@ -20,6 +20,7 @@ export const lumen: SharedFixtures = {
     { key: "sarah", name: "Sarah Chen", initials: "SC", title: "Managing director, Australia", entity: "au", roles: ["Leadership"], status: "active" },
     { key: "liam", name: "Liam Murphy", initials: "LM", title: "Account director", entity: "au", roles: ["Sales"], manager: "sarah", status: "active" },
     { key: "sahan", name: "Sahan Kumara", initials: "SK", title: "IT, Global admin", entity: "lk", roles: ["Admin"], status: "active" },
+    { key: "ravi", name: "Ravi Perera", initials: "RP", title: "IT administrator", entity: "lk", roles: ["ITAdmin"], manager: "sahan", status: "active" },
     { key: "rizwan", name: "Rizwan Farook", initials: "RF", title: "Software engineer", entity: "lk", roles: ["Employee"], status: "left", left: "2026-09-30" },
     { key: "rifkhan", name: "Mohamed Rifkhan", initials: "MR", title: "Software engineer", entity: "lk", roles: ["Employee"], status: "joining", joined: "2026-11-02" },
   ],

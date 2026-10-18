@@ -2,16 +2,17 @@ import { inArray } from "drizzle-orm";
 import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { auditStatus, getRuntime, getTrace, searchAudit, type AuditEntry, type AuditFilter } from "@amax/core/server";
-import { assertCan, type Viewer } from "@amax/auth";
+import { assertCan, pricedFor, type Viewer } from "@amax/auth";
 import { user } from "@amax/auth/schema";
 import type { RegisteredTool } from "./registry";
 
-/** 050: one permission for the Audit and trace screen and these tools. No role is granted it, so only Admin has it. */
+/** 050: one permission for the Audit and trace screen and these tools: Admin, and IT Admin by grant (055). */
 export const AUDIT_READ = "core.audit.read";
 
+// 055: a trace step's model cost is left out for a viewer without the pricing class (IT Admin).
 const read = <T>(viewer: Viewer, fn: (tx: Parameters<Parameters<typeof withTenant>[2]>[0]) => Promise<T>) => {
   assertCan(viewer, AUDIT_READ);
-  return withTenant(getRuntime().db, viewer.tenantId, fn);
+  return withTenant(getRuntime().db, viewer.tenantId, fn).then((x) => pricedFor(viewer, x));
 };
 
 // The audit chains are append-only, so a pin on them is a view (059): nothing in it is renamed.

@@ -40,7 +40,7 @@ export function stepText(s: TraceStepView, names: Names) {
   if (s.chain === "audit") return `Service write ${s.record ?? ""}, audited as ${s.what}`;
   switch (s.what) {
     case "turn": return `Prompt received from ${who(s.actor, names)}, ${s.detail.pins ?? 0} pin${s.detail.pins === 1 ? "" : "s"}`;
-    case "model_call": return `Model call, ${s.model ?? s.detail.model ?? "unknown model"}${s.tokens !== null ? `, ${count(s.tokens)} tokens` : ""}${s.costUsd !== null ? `, $${s.costUsd.toFixed(3)}` : ""}`;
+    case "model_call": return `Model call, ${s.model ?? s.detail.model ?? "unknown model"}${s.tokens !== null ? `, ${count(s.tokens)} tokens` : ""}${s.costUsd != null ? `, $${s.costUsd.toFixed(3)}` : ""}`;
     case "tool_call": return `${s.detail.scope === "write" ? "Write" : "Read"} tool ${s.tool}${refused(s)}`;
     case "pending": return `Pending write ${s.tool} created`;
     case "decided": return `${decision(s)} by ${who(s.actor, names)}`;
