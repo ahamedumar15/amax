@@ -40,7 +40,7 @@ suggestions, and a person adds the record through the owning module's chat inten
 - [x] `T4` — Triage in 006's untrusted-input mode (the excerpt only as quoted data, no write tool offered): each find becomes a 006 suggestion that links to its message and is routed to the module that owns the record type (Presales, Leave, Helpdesk) through its chat intent; a record type whose module isn't installed is never suggested. An injected instruction in a message is a test (AC-2, AC-5)
   Files: modules/inbox-agent/routes.ts, modules/inbox-agent/server/triage.ts, modules/inbox-agent/suggestions.ts, modules/inbox-agent/tests/triage.test.ts
   Depends: T3
-- [ ] `T5` — Module standard: README, package.json, CODEOWNERS line, retention (excerpts deleted 30 days after the find closes or expires, 032), can be switched off with and without each owning module installed (AC-4, AC-5)
+- [x] `T5` — Module standard: README, package.json, CODEOWNERS line, retention (excerpts deleted 30 days after the find closes or expires, 032), can be switched off with and without each owning module installed (AC-4, AC-5)
   Files: modules/inbox-agent/README.md, modules/inbox-agent/package.json, .github/CODEOWNERS, modules/inbox-agent/tests/standard.test.ts
   Depends: T4
 
