@@ -70,4 +70,48 @@ The "Next 90 days" and "Next 12 months" tabs are read-only horizons. "Board pack
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass.
+  - Every insight shown has at least one source linking to its evidence, a confidence and a date.
+  - `record_insight` refuses an insight with no source, and so does a deferred DB trigger at commit. One forced in with the trigger off is never shown.
+  - The strategy briefing reads insights only as untrusted data, and keeps each point's sources.
+  - Tests: `tests/insights.test.ts`, `tests/agents.test.ts`, module e2e.
+- AC-2: pass.
+  - Live figures come only through other modules' contracts, read as the viewer: hr people, learning certifications, allocations bench, leave, presales pipeline and won/lost, and reports utilisation. A narrower scope sees less: Sarah, limited to AU, sees headcount 13 and no LK risks. A PM sees no utilisation, and an Engineer is refused.
+  - With a module missing, the screen leaves its figures out and says so.
+  - Tests: `tests/insights.test.ts`, `tests/agents.test.ts`, `tests/standard.test.ts`.
+- AC-3: pass.
+  - Recurring agent work lists every installed agent job (025's Teams and email scan, 022's triage, allocations' check, and insights' briefing, risk scan and skills match). Each has an on/off switch through Ask amax (`set_schedule_enabled`), and "New job" opens chat.
+  - Tests: `tests/agents.test.ts`, module e2e.
+- AC-4: pass — contracts and contract tests, README, fixtures, manifest, retention (two years after as_of) and a CODEOWNERS line. The module can be switched off and imports other modules only through contracts. Tests: `tests/contracts.test.ts`, `tests/standard.test.ts`.
+
+Gaps (each in BACKLOG):
+- No contract yet publishes delivery velocity, due dates or margin, a skills matrix, promotions, or presales debriefs and close dates. Those insights are source-carrying records seeded by fixtures: the briefing's Fleet Tracker point, risk reasons, people with AI skills, promoted this year, and the 12-month win rate. Each record shows where it came from.
+- The live win rate is all-time (11 of 33 closed deals), shown under Market position.
+- Attrition is live (8.4%), but the mock's year-on-year change can't be computed from the fixtures. The stat says "14 left in 12 months" instead.
+- The mock's Region select and its "Market and trends scan" and "Payroll variance check" jobs aren't built. The list shows only jobs that exist.
+- The briefing acts for a named reader (`set_briefing_reader`, Maya in the fixtures), because `think` needs a viewer.
+
+Ripples outside the module:
+- `modules/presales/tests/permissions.test.ts`: its switch-off test now allows `@amax/presales/contracts`, which the module standard permits.
+- `apps/web/components/marketing/areas.ts`: Insights moves to live, merged with 022's Helpdesk move.
+- `BACKLOG.md`: 025's Insights switch item is ticked, and the missing-contract follow-ups are added.
+
+After merging 022, `tests/agents.test.ts` checks that the jobs list contains the named jobs instead of matching it exactly. Helpdesk's `helpdesk.triage` is a new installed job, and so will any later module's be.
+
+Mock: `shots/app.png` (`/insights` as Maya, Admin) matches `shots/mock.png` region by region: the lede with the horizon tabs and Board pack, the briefing, Projects at risk, Opportunities from your skills, Talent growth, Market position with the peer bars, World trends and Recurring agent work. Differences are the gaps above, and the horizon is tabs rather than a select.
+
+Commands (re-run after merging origin/main with 022; Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint --force` → 0 (33/33)
+- `pnpm turbo run test --force --continue --concurrency=2` → 32/33. `@amax/insights` failed only the exact job list above. After the fix, `pnpm turbo run test lint --filter=@amax/insights --force` → 0 (9/9).
+- `pnpm --filter @amax/web build` → 0
+- `playwright test --config playwright.auth.config.ts` (apps/web) → 81/81
+- module e2e `pnpm --filter @amax/insights e2e` → 2/2 (axe, nothing unpinned, no forms, switches and New job open chat)
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
+
+Screenshots: `.specclaw/changes/026-insights/shots/app.png`, `.specclaw/changes/026-insights/shots/mock.png`.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
+
 Quality: 0 → 0 duplicated lines (npx jscpd modules/insights; specclaw-quality-scan failed with jq "Argument list too long"), so no refactor commit.

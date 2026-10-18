@@ -1,8 +1,9 @@
 {
   "change": "026-insights",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T17:33:43Z"}
+    "tasks": {"status":"done","at":"2026-10-18T17:33:43Z"},
+    "verify": {"status":"done","at":"2026-10-18T18:34:36Z"}
   }
 }
