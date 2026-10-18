@@ -49,7 +49,7 @@ The "Next 90 days" and "Next 12 months" tabs are read-only horizons. "Board pack
   - Recurring agent work, with on/off through Ask amax and "New job" opening chat
   - Every card, row, stat and trend is pinned; no forms (AC-1, AC-3)
   Files: modules/insights/ui/*.tsx, modules/insights/ui/insights.css, modules/insights/server/views.ts, modules/insights/module.ts, modules/insights/tests/e2e/*
-- [ ] `T2` — Contracts first, then the `insights` schema with RLS:
+- [x] `T2` — Contracts first, then the `insights` schema with RLS:
   - an insight (kind briefing, risk, opportunity, trend or market, with title, body, suggestion, confidence, as_of, horizon and scope), and its sources (label, evidence ref), with a check that every insight has a source
   - settings (the demo's pinned today)
   - live reads through the contracts above, as the viewer, each yielding an insight with its source and evidence
