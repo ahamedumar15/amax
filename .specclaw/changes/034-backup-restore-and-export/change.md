@@ -24,7 +24,7 @@ New admin screen, Backups and export: the recovery window, last backup and last 
 
 ## Tasks
 
-- [ ] `T1` — Mock: the 034 section gains an Exports card (each export with its approval state, and a leaving tenant's countdown), and its buttons become Ask amax buttons (AC-4, AC-5, AC-6)
+- [x] `T1` — Mock: the 034 section gains an Exports card: each tenant export with its approval state and link expiry (AC-4, AC-6)
   Files: .specclaw/mock/index.html
 - [ ] `T2` — UI: the Backups and export screen at /settings/backups matching the mock (recovery tickets, restore drills, exports), Admin only: its nav entry replaces 055's "Coming soon" item and the Settings hub card goes live; read tools with pin specs (AC-3, AC-4, AC-6)
   Files: apps/web/app/(app)/settings/backups/*, apps/web/lib/admin/backups.ts, apps/web/lib/admin/index.ts, apps/web/lib/admin/status.ts, apps/web/lib/operations.ts, apps/web/lib/registry.ts, apps/web/lib/profile.ts, packages/ui/src/components/Shell.tsx, packages/core/src/backup/view.ts, packages/core/src/backup/catalog.ts, packages/db/migrations/0030_backup.sql, apps/web/tests/admin/it-admin.test.ts, apps/web/tests/e2e/admin.spec.ts
