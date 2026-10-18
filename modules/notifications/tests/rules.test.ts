@@ -29,6 +29,10 @@ describe.skipIf(!hasDb)("030 rules and delivery (Postgres)", () => {
       { email: "tharushi@lumenlabs.test", title: "Your timesheet for 2026-W42 was approved", href: "/time/my/2026-W42" },
     ]));
     expect((await titles("time.week-approved")).some((r) => r.email === "maya@lumenlabs.test" && String(r.title).includes("2026-W42"))).toBe(false);
+    await db.emit("leave.requested", { requestId: "00000000-0000-4000-8000-0000000000aa", personId: "00000000-0000-4000-8000-0000000000ab", userId: await db.idOf("kasun"),
+      legalEntityId: "11111111-1111-4111-8111-1111111111a1", type: "annual", startsOn: "2026-11-02", endsOn: "2026-11-03", halfDay: null, days: 2, clashes: 0 });
+    await db.drain();
+    expect(await titles("leave.requested")).toEqual([{ email: "maya@lumenlabs.test", title: "Kasun Dias asked for annual leave, 2026-11-02 to 2026-11-03", href: "/leave" }]);
   }, 120_000);
 
   it("AC5 a redelivered event makes no second notification; each channel is one audited run, recorded skipped while it has no credential", async () => {
