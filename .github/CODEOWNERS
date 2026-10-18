@@ -21,6 +21,8 @@
 /modules/finance/ @chan4lk
 /modules/expenses/ @chan4lk
 /modules/recruitment/ @chan4lk
+/modules/it-access/ @chan4lk
+/modules/inbox-agent/ @chan4lk
 /modules/reports/ @chan4lk
 # /modules/payroll/ @org/payroll-team
 # /modules/finance/ @org/finance-team
