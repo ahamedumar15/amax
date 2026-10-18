@@ -2,6 +2,7 @@ import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
+import { listActivity } from "./server/activity";
 import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
@@ -47,6 +48,7 @@ export default defineModule({
   ],
   mcpTools,
   search: search as never,
+  activity: listActivity as never,
   retention: [
     // Delivery evidence is kept seven years, then names are anonymised. A proposal's clock starts
     // when it's released (released_at, cleared again if the release is voided) or after a year with

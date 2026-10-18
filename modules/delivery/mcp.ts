@@ -4,6 +4,7 @@ import type { Viewer } from "@amax/auth";
 import { PHASES } from "./contracts";
 import { pinOf } from "./pins";
 import { ctxFor } from "./server/context";
+import { getActivity, listActivity } from "./server/activity";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -19,6 +20,11 @@ const view = "view" as const;
 
 export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release.", input: z.object({}), run: (v) => listProjects(v) }),
+  // 008 AC-4: the Overview's Agent activity feed, and one line of it for its pin.
+  tool({ ...read, pin: view, name: "list_activity", description: "What agents, pipelines and people did lately through ingestion, newest first, with who acted for whom.",
+    input: z.object({ limit: z.number().int().min(1).max(50).optional() }), run: (v, a) => listActivity(v, a.limit) }),
+  tool({ ...read, pin: { id: "id", of: (r: { id: string; pin: { label: string } } | null) => (r ? { id: r.id, label: r.pin.label } : null) }, name: "get_activity", description: "One line of the agent activity feed by id.",
+    input: z.object({ id: z.string().uuid() }), run: (v, a) => getActivity(v, a.id) }),
   tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_project", description: "One project and its proposals, by projectId or by project key such as CON or AMX.",
     input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
   tool({ ...read, pin: view, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),

@@ -32,7 +32,7 @@ Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
 - `/api/webhooks/[provider]`, which runs 035's `receiveWebhook` and then hands the verified event to the modules.
 - A principal's optional `tools` allow-list, checked wherever the principal's scope is checked.
 
-- [ ] `T1` — Overview "Agent activity" card: each module's `activity` feed, merged newest first, with "Claude for <person>" or "<principal> for <person>" attribution as in the 001 mock. Delivery contributes its ingested events (AC-4)
+- [x] `T1` — Overview "Agent activity" card: each module's `activity` feed, merged newest first, with "Claude for <person>" or "<principal> for <person>" attribution as in the 001 mock. Delivery contributes its ingested events (AC-4)
   Files: packages/core/src/module.ts, apps/web/app/(app)/page.tsx, apps/web/components/overview/ActivityFeed.tsx, modules/delivery/server/activity.ts, modules/delivery/module.ts, apps/web/tests/e2e/overview.spec.ts
 - [ ] `T2` — Proposal tasks as records: a `delivery.task` table that `sync_proposal` writes. `mark_task_done` closes one and keeps `tasks_done` in step. MCP tools `sync_proposal` and `mark_task_done` sit beside `record_deployment`, each declaring its service (AC-1)
   Files: modules/delivery/db/migrations/0013_tasks_ingest.sql, modules/delivery/server/tasks.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/tests/ingest-ac1.test.ts

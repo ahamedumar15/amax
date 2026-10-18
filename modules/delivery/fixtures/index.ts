@@ -123,6 +123,17 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
         ${p.release ? releaseIds[p.release] : null}, ${p.releasedAt ?? null}, ${new Date(Date.UTC(2026, 9, 16, 12, 0, 0) - i * 60_000).toISOString()})
       on conflict (tenant_id, key) do nothing`);
   }
+  // 008 AC-4: the mock's Agent activity feed (fictional people, as in fixtures.md).
+  const nimal = await userId(tx, "nimal"), ayesha = await userId(tx, "ayesha");
+  const FEED = [
+    { at: "2026-10-16T11:56:00Z", actor: "agent:claude", kind: "agent", for: nimal, project: "CON", text: "finished task 3 of CON-014 Invoice export", detail: "1.5 h logged from commit a91f3c2" },
+    { at: "2026-10-15T09:10:00Z", actor: ayesha ? `user:${ayesha}` : "user:fixture", kind: "user", for: null, project: "CON", text: "promoted Contoso v2.4.0 to QA", detail: "Confirmed by pipeline run 1182" },
+    { at: "2026-10-13T16:40:00Z", actor: "agent:specclaw", kind: "agent", for: null, project: "CON", text: "verified CON-012 SSO token refresh", detail: "4 of 4 criteria pass, tagged v2.4.0" },
+  ];
+  const fed = await tx.execute(sql`select 1 from delivery.activity limit 1`);
+  if (!fed.length) for (const f of FEED) {
+    await tx.execute(sql`insert into delivery.activity (tenant_id, at, actor_id, actor_kind, for_user_id, project_id, text, detail) values (${tenantId}, ${f.at}, ${f.actor}, ${f.kind}, ${f.for}, ${ids[f.project]}, ${f.text}, ${f.detail})`);
+  }
   for (let i = 0; i < 8; i++) {
     const week = new Date(Date.UTC(2026, 7, 24 + i * 7)).toISOString().slice(0, 10);
     await tx.execute(sql`insert into delivery.weekly_stat (tenant_id, project_id, week, planned, done) values (${tenantId}, null, ${week}, ${WEEKLY.planned[i]}, ${WEEKLY.done[i]}) on conflict do nothing`);
