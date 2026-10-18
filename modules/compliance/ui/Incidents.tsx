@@ -36,7 +36,7 @@ export function Incidents({ rows }: { rows: Incident[] }) {
                 <td data-label="Owner">{i.ownerName ?? "Unassigned"}</td>
                 <td data-label="Personal data"><Data i={i} /></td>
                 <td data-label="Decision due"><Due i={i} /></td>
-                <td data-label="Status" className="act">
+                <td data-label="Status" className="nw">
                   <span className={`chip ${STATUS[i.status][0]}`}>{STATUS[i.status][1]}</span>
                   {undecided(i) && <AskButton className="btn sm ghost" label="Decide" name={`Ask amax to decide on ${i.title}`} prompt={decidePrompt(i)} pin={rowPin(i)} />}
                   <PinButton pin={rowPin(i)} />

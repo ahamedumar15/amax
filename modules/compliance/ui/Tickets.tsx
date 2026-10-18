@@ -18,7 +18,7 @@ export function Tickets({ o }: { o: Overview }) {
       <Ticket tone="problem" label="Incident decisions due" value={String(due.length)} note={due[0]?.notifyBy ? `Decide by ${shortDate(due[0].notifyBy)}` : "Nothing to decide"} art={<>{art("shield")}{stat("Incident decisions due")}</>} />
       <Ticket tone="info" label="Open risks" value={String(o.risks.length)} note={`${high} high, ${medium} medium`} art={<>{art("target")}{stat("Open risks")}</>} />
       <Ticket tone={c && !c.ok ? "problem" : "good"} label={c && !c.ok ? "Audit chain broken" : "Audit chain verified"} value={c ? (c.ok ? time(c.checkedAt) : `#${c.brokenAt}`) : "Not yet"}
-        note={c ? (c.ok ? `${compact(c.events)} events, no gaps` : `${plural(c.events, "event")} verified before it`) : "Runs daily at 06:00 UTC"} art={<>{art("shield")}{stat("Audit chain")}</>} />
+        note={c ? (c.ok ? (c.events ? `${compact(c.events)} events, no gaps` : "Nothing audited yet") : `${plural(c.events, "event")} verified before it`) : "Runs daily at 06:00 UTC"} art={<>{art("shield")}{stat("Audit chain")}</>} />
     </div>
   );
 }

@@ -44,3 +44,21 @@ New screen, Compliance: policy acknowledgement rates, open risks and incidents (
   Depends: T5
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `tests/registers.test.ts` AC1: fixtures give 184 people, 167 fully acknowledged (Acceptable Use v4 17 pending); `publish_policy` Information Security v8 asks all 184 again (one `acknowledgement_requested` event per person with a sign-in); Dinesh acknowledges his own through `acknowledge_policy`.
+- AC-2: pass — `contracts.test.ts` AC2 (AU 30 days to assess, LK 72 hours, 72 hours without a pack); `registers.test.ts` AC2: a Sri Lanka breach is due 72 h after it is flagged, `breach_flagged` names the regulator, the AU fixture is due 2026-11-15, the daily reminder fires once a day in the last week (`deadline_due`, daysLeft 5). 030 rules `compliance.breach` and `compliance.breach-deadline` reach the owner.
+- AC-3: pass — `registers.test.ts` AC3: `list_suppliers` lists Anthropic (region from 033's `ai.settings`) and the database host beside the register's subprocessors; the screen shows them first.
+- AC-4: pass — `chain.test.ts` AC4: schedule `compliance.audit-chain` (`0 6 * * *`); changing one `core.audit_event` row fails verification with "Broken at event N (compliance.tampered on <resource>): hash mismatch".
+- AC-5: pass — `registers.test.ts` AC5: `export_evidence` writes one dated bundle per control (A.5.1, A.5.18 gap until 021, A.5.24, A.6.3 from learning's contract, A.8.15), HMAC-signed; changing one value makes `signatureValid` false.
+- AC-6: pass — `chat-first.test.ts` AC6 (no forms; "report incident" and "new risk" write only after the confirm, audited as chat); module e2e `compliance.spec.ts`: lede, tickets, every card/row/line pinned, axe clean light and dark, no horizontal scroll at 390 px; mock visual diff: every gated region 0.0000 (≤ 0.02), tickets row 0.0054 measured (`shots/diff/compliance-ratios.txt`).
+- AC-7: pass — `standard.test.ts` AC7: nothing outside the module imports it, tenant RLS on every table, contracts fail closed, and without learning the A.6.3 control states the gap; `node scripts/check-module-standard.mjs` ok. Outside the module: one CODEOWNERS line, the Operations nav hides the "Coming soon" entry of an installed module (`apps/web/lib/registry.ts`, old URL redirects), and learning's switch-off test now allows imports of its `contracts.ts` (it rejected any import).
+
+Commands (exit codes): `pnpm lint` 0 · `pnpm turbo run test --concurrency=1` 0 (21/21) · `node scripts/check-module-standard.mjs` 0 · `pnpm build` 0 · `env -u DATABASE_URL -u DATABASE_MIGRATE_URL pnpm --filter @amax/web e2e` 0 (1 passed) · `pnpm --filter @amax/web e2e:auth` 0 (73 passed) · `pnpm --filter @amax/compliance e2e` 0 (2 passed).
+
+Preset check: fails repo-wide on existing convention (1196 violations; the repo comments its code). New files: 69 `comment` violations, no line-limit ones.
+Quality: not_run (`specclaw-quality-scan` errors with "Argument list too long").
+Review: not run (per instructions).
+
+Screenshots: `.specclaw/changes/036-compliance-registers/shots/app.png`, `.specclaw/changes/036-compliance-registers/shots/mock.png` (section rendered on its own), region diffs in `shots/diff/`.

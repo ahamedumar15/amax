@@ -7,8 +7,9 @@ import { capture, diffRatio } from "./diff";
 
 const mockUrl = `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#036-compliance-registers`;
 // Same text and box in the mock and the app: each must be within 2% (AC-6). The rest differs by data and is measured.
-const REGIONS = [".row.head h1", ".tickets.four .ticket:nth-child(3) .k", ".cols > .card.flush .card-head h2", ".stack > .card:first-child .card-head h2", ".stack > .card:last-child .card-head h2"];
-const MEASURED = [".tickets.four", ".cols > .card.flush", ".stack > .card:first-child", ".stack > .card:last-child"];
+const REGIONS = [...[1, 2, 3, 4].map((n) => `.tickets.four .ticket:nth-child(${n}) .k`), ".cols > .card.flush .card-head h2", ".stack > .card:first-child .card-head h2", ".stack > .card:last-child .card-head h2"];
+// The title's box is as wide as the head's text column, which the longer lede widens.
+const MEASURED = [".row.head h1", ".tickets.four", ".cols > .card.flush", ".stack > .card:first-child", ".stack > .card:last-child"];
 
 async function signIn(page: Page, email: string, to: string) {
   await page.goto(to);
