@@ -1,17 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useRouter } from "next/navigation";
 import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
 import type { Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
 import { cancelChat, confirmChat, sendChat, type CardOutcome } from "../../app/actions/chat";
+import { repinAll } from "@amax/chat/pins";
+import { followMove } from "../../lib/chat-move";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
 import { SecretConfirm } from "./SecretConfirm";
+import { RevealOnce } from "./RevealOnce";
 
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
   | { kind: "amax"; text: string; tools: string[]; error?: boolean }
-  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string };
+  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string; reveal?: CardOutcome["reveal"] };
 
 const restoredLog = (c: Conversation): Entry[] => [
   ...c.messages.map((m): Entry => (m.role === "me" ? { kind: "me", text: m.text, highlights: [] } : { kind: "amax", text: m.text, tools: [] })),
@@ -60,6 +64,7 @@ type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (
 export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean; usage?: string | null }) {
   const [log, setLog] = useState<Entry[]>([]);
   const [pins, setPins] = useState<PinRef[]>([]);
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
   const [intent, setIntent] = useState<string | undefined>();
@@ -81,7 +86,13 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
       if (d.pin) { setPins((p) => (p.some((x) => x.label === d.pin!.label) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
-      else if (d.prompt) { setText(d.prompt); requestAnimationFrame(() => input.current?.focus()); }
+      else if (d.prompt) {
+        setText(d.prompt);
+        // Caret at the end, so what the person types finishes the prompt. Without this, a prompt filled
+        // after chat followed a record to a new page kept the caret at 0 and typing went in front.
+        const end = d.prompt.length;
+        requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(end, end); });
+      }
     };
     window.addEventListener("amax:chat", onEvent);
     return () => window.removeEventListener("amax:chat", onEvent);
@@ -176,6 +187,13 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       const o = ok ? await confirmChat(convo.current, action.id) : await cancelChat(convo.current, action.id);
       apply(o);
       announce(o.note);
+      // The record this page shows was renamed (a re-tag): follow it, or the page would read "not found".
+      // A client-side replace keeps this conversation open on the new page.
+      // A rename: rewrite only the panel's pins that name the record the old way, keeping any pin
+      // added or removed since the last message (057). The server did the same to the saved copies.
+      if (o.repin) setPins((ps) => repinAll(ps, o.repin));
+      const to = followMove(window.location.pathname, o.moved);
+      if (to) router.replace(to);
     } catch {
       // The request itself failed (network, server): bring the buttons back so the user can retry.
       apply({ state: "open", note: "That didn't go through. Try again." });
@@ -233,6 +251,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
               </>) : e.state === "expired" ? (
                 <p className="muted" style={{ marginTop: 10 }}><span className="chip">Expired</span> Ask again to make a fresh request.</p>
               ) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
+              {e.reveal && <RevealOnce reveal={e.reveal} onDone={() => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, reveal: undefined } : x)))} />}
             </div></div>
           );
         })}

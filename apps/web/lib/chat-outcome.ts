@@ -1,7 +1,18 @@
 import { ActionFailedError, NotPendingError } from "@amax/chat";
+import { repinOf, type Repin } from "@amax/chat/pins";
+import { movedOf, type Moved } from "./chat-move";
+
+export { movedOf } from "./chat-move";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; reveal?: Reveal; moved?: Moved; repin?: Repin };
+
+/** 035: a value shown once on the card (a new API key). It goes nowhere else: not the model, the conversation or the logs. */
+export type Reveal = { label: string; value: string };
+export const revealOf = (result: unknown): Reveal | undefined => {
+  const r = (result as { reveal?: Partial<Reveal> } | null)?.reveal;
+  return r && typeof r.label === "string" && typeof r.value === "string" ? { label: r.label, value: r.value } : undefined;
+};
 
 /**
  * What a failed confirm or cancel means for the card (review rounds 3 to 8). "cancelled" only when it
@@ -21,4 +32,21 @@ export function outcomeOf(e: unknown): CardOutcome {
     if (e.decision === "unknown") return { state: "error", note: "It wasn't clear whether this was done. Check the record before trying again." };
   }
   return { state: "error", note: e instanceof Error ? e.message : String(e) };
+}
+
+/**
+ * The card after a write that has committed (057 follow-up). The repin of saved pins is best-effort:
+ * if it fails it is logged and the card still says done, with `moved` and `repin` so the page follows
+ * the record and the panel rewrites its own pins.
+ */
+export async function doneOutcome(title: string, result: unknown, repinSaved: (r: Repin) => Promise<unknown>, log: (e: unknown) => void): Promise<CardOutcome> {
+  const repin = repinOf(result);
+  if (repin) {
+    try { await repinSaved(repin); } catch (e) { log(e); }
+  }
+  const reveal = revealOf(result);
+  if (reveal) return { state: "done", note: `Done. Copy the ${reveal.label.toLowerCase()} now: it is shown only this once.`, reveal };
+  const key = (result as { key?: string } | null)?.key;
+  const moved = movedOf(result);
+  return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${title}.`, ...(moved ? { moved } : {}), ...(repin ? { repin } : {}) };
 }

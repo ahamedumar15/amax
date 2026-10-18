@@ -64,7 +64,12 @@ export type McpToolDef = {
    * part of `input`, so the model can neither see nor fill it; `run` gets it as `secret`.
    */
   secretInput?: { label: string };
-  run: (viewer: never, input: never, source: "mcp" | "chat", secret?: string) => Promise<unknown>;
+  run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
+  /**
+   * A write tool's check when chat proposes its card, before the person types anything (053). Throw
+   * a ToolError (code invalid_input) to refuse the card; its message is what the model is told.
+   */
+  propose?: (viewer: never, input: never) => Promise<void>;
 };
 
 /**
@@ -82,7 +87,29 @@ export type RetentionEntry = {
   period: `P${string}`;
   start: { at: string[]; idle?: `P${string}` };
   action: "delete" | "anonymise";
+  /** What the Data retention screen calls it, e.g. "Leavers' HR record". */
+  label?: string;
+  /** Columns naming the person or matter a row is about (a user id, an hr.person id, "user:<id>", a
+   * project id). Legal holds and access and erasure requests find rows through them. */
+  subject?: string[];
+  /** Free-text columns holding the person's name where no id column names them (an owner_name on a
+   * sales task). Requests and holds match them case-insensitively against the person's name. */
+  subjectName?: string[];
+  /** The shortest period a tenant may set, for rows kept for security rather than for a person (the
+   * inbound webhook dedupe that stops replays). Tenant periods never go below it (review 058). */
+  minimum?: `P${string}`;
+  /** The row's legal entity column, so each entity's statutory minimum applies to its own rows. */
+  entity?: string;
 };
+
+/** Every field of an event payload with its 002 class, or "plain" for a field safe to send outside. */
+export type PayloadFields = Record<string, Sensitivity | "plain">;
+
+/** Declares a payload type's fields; the compiler requires every field of `T`, so a new one can't go out undeclared. */
+export const declarePayload = <T>(fields: Record<keyof T & string, Sensitivity | "plain">): PayloadFields => fields;
+
+/** A country pack's statutory minimum (032 AC-2): no tenant may keep this class for less. */
+export type StatutoryMinimum = { country: string; class: Sensitivity | "personal"; period: `P${string}`; reason: string };
 
 /** A search hit for the built-in `search` tool and the chat. */
 export type SearchHit = { type: string; id: string; title: string; url?: string; summary?: string };
@@ -114,6 +141,10 @@ export type ModuleManifest = {
   viewerScopes?: (tx: Tx, user: { tenantId: string; userId: string }) => Promise<{ managedProjects?: string[]; assignedProjects?: string[]; reports?: string[] }>;
   /** Retention for tables holding personal data, in the 032 AC-1 shape so it can be enforced. */
   retention?: RetentionEntry[];
+  /** Country packs' statutory minimum periods per class (032 AC-2). */
+  statutory?: StatutoryMinimum[];
+  /** Ids this module knows a signed-in person by (an hr.person id, say), for access and erasure (032 AC-4). */
+  subjectIds?: (tx: Tx, userId: string) => Promise<string[]>;
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];
@@ -122,7 +153,9 @@ export type ModuleManifest = {
   workflows?: readonly unknown[];
   /** Cron schedules (029): cron() results from @amax/workflows, opaque to core. */
   schedules?: readonly unknown[];
-  events?: { emits?: string[]; handles?: EventHandlerDef[] };
+  /** `payloads`: each emitted event's fields with their 002 class or "plain" (declarePayload). Outgoing
+   * webhooks send a declared plain field, mask a classified one and mask any field not declared (035, review 058). */
+  events?: { emits?: string[]; handles?: EventHandlerDef[]; payloads?: Record<string, PayloadFields> };
   fixtures?: FixtureSeed[];
 };
 

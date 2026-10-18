@@ -1,12 +1,12 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
-import { moveAction } from "../actions";
 import { PHASES, type Phase } from "../contracts";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
+import { AskButton } from "./AskButton";
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
-import { initials, needViewer, PHASE_UI, SignInFirst, Stk } from "./parts";
+import { initials, needViewer, SignInFirst, Stk } from "./parts";
 import { ProjectTabs } from "./ProjectSections";
 
 const D = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
@@ -19,7 +19,6 @@ function sprintLine(p: { sprint: string | null; sprintStart: string | null; spri
 }
 
 const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released to Prod" };
-const MOVABLE = PHASES.filter((p) => p !== "released");
 
 // Facts the specclaw sync adds (039): lane, queue status, claim, PR.
 function SpecFacts({ p }: { p: ProposalRow }) {
@@ -37,9 +36,10 @@ function SpecFacts({ p }: { p: ProposalRow }) {
 function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
+  const pin = { label: `${p.key} ${p.title}`, tool: "get_proposal", args: { key: p.key } };
   return (
     <div className="tcard pinnable">
-      <PinButton pin={{ label: `${p.key} ${p.title}`, tool: "list_proposals", args: { projectKey: p.projectKey } }} />
+      <PinButton pin={pin} />
       <div className="id">{p.key}</div>
       <p>{p.title}</p>
       {p.phase !== "proposed" && p.phase !== "released" && <div className="prog"><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
@@ -56,17 +56,7 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
       </div>
       {p.source === "specclaw" && <SpecFacts p={p} />}
       {canMove && p.phase !== "released" && p.source !== "specclaw" && (
-        <details className="cardmenu">
-          <summary aria-label={`Move ${p.key}`}>⋯</summary>
-          <form action={moveAction}>
-            <input type="hidden" name="key" value={p.key} />
-            <label className="sr" htmlFor={`mv-${p.key}`}>Move {p.key} to</label>
-            <select className="select" id={`mv-${p.key}`} name="to" defaultValue={p.phase}>
-              {MOVABLE.map((ph) => <option key={ph} value={ph}>{PHASE_UI[ph].label}</option>)}
-            </select>
-            <button className="btn sm" type="submit">Move</button>
-          </form>
-        </details>
+        <span className="cardmenu"><AskButton label="Move" name={`Move ${p.key}`} prompt={`Move ${p.key} to `} pin={pin} /></span>
       )}
     </div>
   );

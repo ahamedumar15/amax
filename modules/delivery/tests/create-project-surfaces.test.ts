@@ -34,9 +34,8 @@ describe("045 no screen creates projects", () => {
     expect(code).toMatch(CREATES);
   });
   it("AC-3 no server action in the module creates a project", () => {
-    const files = serverActionFiles();
-    expect(files).toContain("actions.ts");
-    expect(files.filter((f) => CREATES.test(readFileSync(join(root, f), "utf8")))).toEqual([]);
+    // 054: the module has no server actions at all; every write is a chat-confirmed MCP tool.
+    expect(serverActionFiles()).toEqual([]);
   });
 });
 

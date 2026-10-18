@@ -37,6 +37,8 @@ describe.skipIf(!hasDb)("AC-3 the new write tools wait for chat's confirm (Postg
     ["remove_opportunity", async () => ({ number: "PS-0137" }), sql`select (removed_at is not null)::text as v from presales.opportunity where number = 137`, "false", "true", "presales.opportunity.remove"],
     ["resolve_suggestion", async () => ({ id: await id(sql`select id from presales.suggestion where client_name = 'Adatum'`), decision: "dismiss" }),
       sql`select status as v from presales.suggestion where client_name = 'Adatum'`, "open", "dismissed", "presales.suggestion.dismiss"],
+    ["update_opportunity", async () => ({ number: "PS-0142", competing: "Globex (fictional)" }),
+      sql`select competing as v from presales.opportunity where number = 142`, "2 regional consultancies", "Globex (fictional)", "presales.opportunity.update"],
   ] as const;
 
   it.each(cases)("AC3 %s becomes a confirm card and writes only once confirmed, audited as chat", async (name, input, probe, before, after, action) => {
@@ -52,5 +54,30 @@ describe.skipIf(!hasDb)("AC-3 the new write tools wait for chat's confirm (Postg
     expect((await db.q(probe))[0].v).toBe(after);
     const [audit] = await db.q(sql`select source from core.audit_event where action = ${action} order by seq desc limit 1`);
     expect(audit.source).toBe("chat");
+  });
+
+  // 057: an owner name and the owner's user link never disagree, and an unlinked name is said, not silent.
+  it.each([
+    ["the current owner's name again", "PS-0142", "same", "kept", undefined],
+    ["the current owner's name in another case", "PS-0142", "SAME", "kept", undefined],
+    ["the current owner's name with extra spacing", "PS-0142", " same  ", "kept", undefined],
+    ["someone presales can't link", "PS-0139", "Ama Perera (fictional)", null, false],
+    ["the acting user's own name, after that", "PS-0139", "self", "self", true],
+    ["someone presales can't link, again", "PS-0139", "Ama Perera (fictional)", null, false],
+    ["the acting user's own name in lower case", "PS-0139", "self-lower", "self", true],
+  ] as const)("057 update_opportunity owner: %s", async (_n, number, name, link, linked) => {
+    const liam = await db.as("liam");
+    const n = Number(number.slice(3));
+    const [o] = await db.q(sql`select owner_name, owner_user_id from presales.opportunity where number = ${n}`);
+    const owner = String(o.owner_name);
+    const ownerName = name === "same" ? owner : name === "SAME" ? owner.toUpperCase() : name === " same  " ? ` ${owner.replace(" ", "  ")}  ` : name === "self" ? liam.name : name === "self-lower" ? liam.name.toLowerCase() : name;
+    const registry = createRegistry(db.modules);
+    configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "update_opportunity", input: { number, ownerName, nextStep: `Call back (${_n})` } }] }), () => ({ text: "Confirm?" })]), db: db.app, model: "claude-haiku-5-5" });
+    const turn = await chatTurn(db.app, registry, liam, { text: "please update" });
+    const { result } = await confirmAction(db.app, registry, liam, turn.conversationId, turn.pending[0].id);
+    const [after] = await db.q(sql`select owner_name, owner_user_id from presales.opportunity where number = ${n}`);
+    expect(after.owner_name).toBe(link === "kept" ? o.owner_name : ownerName);
+    expect(after.owner_user_id).toBe(link === "kept" ? o.owner_user_id : link === "self" ? liam.userId : null);
+    expect((result as { ownerLinked?: boolean }).ownerLinked).toBe(linked);
   });
 });

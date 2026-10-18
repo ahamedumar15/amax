@@ -1,4 +1,5 @@
 export { ROLES, isRole, type Role } from "./roles";
+export { contextForViewer } from "./context";
 export { applyViewAs, currentViewer, rolesOf, setViewerResolver, type Assignment, type Viewer } from "./viewer";
 export { assertCan, can, canEver, installAuthorizer, ScopeError, setGrants, viewerOf, type ResourceAttrs } from "./can";
 export { canSee, isMasked, mask, SENSITIVITY_POLICY, type Masked, type MaskedRecord, type Subject } from "./sensitivity";
@@ -8,3 +9,4 @@ export { gate, isPublicPath } from "./gate";
 export { hashPassword, MIN_PASSWORD, signInPassword, upsertPasswordUser, verifyPassword } from "./password";
 export { authenticateToken, createApiToken, createPrincipal, principalContext, type Identity, type Principal } from "./principals";
 export { revokeUser } from "./revoke";
+export { principalAllowsTool } from "./principals";

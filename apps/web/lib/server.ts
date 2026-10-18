@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
+import { apiPlatform } from "@amax/api/module";
 import { configureSecrets, kmsFromEnv, secretsSweepJob } from "@amax/core/secrets";
+import { privacyGrants, setPrivacySources } from "@amax/core/privacy";
 import { configureAi } from "@amax/ai";
 import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
@@ -11,10 +13,12 @@ import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/aut
 import { createRegistry } from "@amax/mcp";
 import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
-import { engineFromEnv, pruneRunsJob, signalHandlers, workflowRegistry, workflowsRetention, type WorkflowEngine } from "@amax/workflows/server";
+import { engineFromEnv, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
 import { platformWorkflows } from "./platform-workflows";
 import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
+import { privacySources } from "./privacy-sources";
+import { wireRateLimits } from "./rate-wiring";
 
 // One database client per server process; null until DATABASE_URL is configured.
 const cache = globalThis as unknown as { amaxDb?: Db | null };
@@ -30,12 +34,17 @@ export function getDb(): Db | null {
     if (env.NODE_ENV === "production" && !env.AMAX_BASE_URL) throw new Error("amax: AMAX_BASE_URL is required once DATABASE_URL is set in production");
     cache.amaxDb = createDb(env.DATABASE_URL).db;
   }
+  // `wired` is this bundle's own flag, never the shared Db cache: the proxy (wireProxy) may have opened
+  // the client first, and this bundle's copies of core, auth and the AI gateway still need wiring.
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
-    setGrants([...installed, chatPlatform]);
+    setGrants([...installed, chatPlatform, privacyGrants]);
+    setPrivacySources(privacySources(installed));
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
+    // 035 AC-5: limited requests are counted for the API and webhooks screen.
+    wireRateLimits(loadEnv());
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
@@ -51,9 +60,11 @@ export const authEnabled = () => Boolean(loadEnv().DATABASE_URL);
 
 const auth = { id: "auth", events: { handles: authEventHandlers } };
 
+// 035: outgoing webhooks for every event an installed module emits, delivered as 029 workflows.
+const api = () => apiPlatform(installed, workflowEngine);
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
-export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, ...installed]));
+export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), ...installed]));
 let engine: Promise<WorkflowEngine> | undefined;
 export function workflowEngine(): Promise<WorkflowEngine> {
   const db = getDb();
@@ -63,9 +74,10 @@ export function workflowEngine(): Promise<WorkflowEngine> {
     throw e;
   }));
 }
-const workflowsJobs = () => ({ id: "workflows", jobs: [pruneRunsJob], retention: workflowsRetention, events: { handles: signalHandlers(workflowsRegistry(), workflowEngine) } });
+// 032: the daily privacy purge (a platform workflow) applies workflowsRetention with legal holds.
+const workflowsJobs = () => ({ id: "workflows", events: { handles: signalHandlers(workflowsRegistry(), workflowEngine) } });
 
-export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), ...installed]);
+export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), api(), ...installed]);
 
 // 004/005: one tool registry and the chat intents, from the installed manifests. The AI gateway's
 // own read tool (048 get_ai_usage) sits beside them.

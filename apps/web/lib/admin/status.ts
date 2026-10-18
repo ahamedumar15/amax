@@ -2,43 +2,49 @@ import { sql } from "drizzle-orm";
 import { withTenant } from "@amax/db";
 import { aiConfigured, blockedReason, REGIONS } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
+import { aiUsageTotals } from "@amax/ai/usage";
+import { costLabel } from "@amax/ai/usage-format";
 import { auditStatus, logError, type AuditStatus } from "@amax/core/server";
-import { CONNECTORS, EXPIRY_WINDOW_DAYS, listCredentials } from "@amax/core/secrets";
+import { CONNECTORS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
 import { LATEST_RUNS, listRuns, listSchedules } from "@amax/workflows/server";
+import { listRequests, privacyRules, readPrivacy } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
+import { daysUntil, expiringSoon, pastExpiry } from "./credentials";
 import { ctxFor, type AdminDeps } from "./tool";
 
 export type Tone = "good" | "warn" | "bad" | "info";
 export type Area = { id: string; title: string; href: string | null; blurb: string; stat: string; chip: { tone: Tone; text: string }; attention?: string };
 
-const DAY = 86_400_000;
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
 async function keys(v: Viewer): Promise<Area> {
   const base = { id: "keys", title: "Connections and keys", href: "/settings/keys", blurb: "Connector credentials, encrypted with your own key, with rotation and expiry." };
   const data = await listCredentials(ctxFor(v, "ui"));
+  const now = new Date();
   const live = data.rows.filter((r) => r.status !== "revoked");
-  const expired = live.filter((r) => r.status === "expired");
-  const soon = live.filter((r) => r.status === "active" && r.expiresAt && r.expiresAt.getTime() - Date.now() <= EXPIRY_WINDOW_DAYS * DAY);
+  // The Keys screen's own rules (053): an active credential already past its expiry is expired, not expiring.
+  const expired = live.filter((r) => pastExpiry(r, now));
+  const soon = live.filter((r) => expiringSoon(r, now)).sort((a, b) => a.expiresAt!.getTime() - b.expiresAt!.getTime());
   const stat = plural(live.length, "credential");
   if (!data.key) return { ...base, stat, chip: { tone: "bad", text: "No key service" }, attention: "no key service is configured, so credentials are off" };
   if (expired.length) return { ...base, stat, chip: { tone: "bad", text: `${expired.length} expired` }, attention: `the ${CONNECTORS[expired[0].connector].name} credential has expired` };
   if (soon.length) {
-    const days = Math.ceil((soon[0].expiresAt!.getTime() - Date.now()) / DAY);
+    const days = daysUntil(soon[0].expiresAt!, now);
     return { ...base, stat, chip: { tone: "warn", text: `${soon.length} expiring` }, attention: `the ${CONNECTORS[soon[0].connector].name} credential expires in ${plural(days, "day")}` };
   }
   return { ...base, stat, chip: { tone: "good", text: "All current" } };
 }
 
 async function ai(d: AdminDeps, v: Viewer): Promise<Area[]> {
-  const s = await aiStats(d.db(), v.tenantId);
+  // The usage screen's totals and label (048 AC-5, 053): calls with no price show as unknown, never $0.
+  const [s, usage] = await Promise.all([aiStats(d.db(), v.tenantId), aiUsageTotals(d.db(), { tenantId: v.tenantId, userId: v.userId, roles: v.actualRoles }, { scope: "tenant" })]);
   const blocked = blockedReason(s.policy) ?? (aiConfigured() ? null : "no API key is configured on the server");
   const region = s.policy.dataRegion ? (REGIONS as Record<string, string>)[s.policy.dataRegion] ?? s.policy.dataRegion : "No data region";
   return [
     { id: "ai", title: "AI and data", href: "/settings/ai", blurb: "Where your data lives, which AI provider and region, and what may be sent to it.", stat: region,
       chip: blocked ? { tone: "bad", text: "AI off" } : s.policy.dataRegion ? { tone: "good", text: "In region" } : { tone: "warn", text: "No region set" }, ...(blocked ? { attention: `AI is off: ${blocked}` } : {}) },
-    { id: "ai-usage", title: "AI usage", href: "/settings/ai/usage", blurb: "What chat and agents cost this month, by person, feature and model.", stat: plural(s.calls, "call"), chip: { tone: "info", text: `$${s.costUsd.toFixed(2)} this month` } },
+    { id: "ai-usage", title: "AI usage", href: "/settings/ai/usage", blurb: "What chat and agents cost this month, by person, feature and model.", stat: plural(usage.calls, "call"), chip: { tone: "info", text: `${costLabel(usage)} this month` } },
   ];
 }
 
@@ -89,14 +95,21 @@ async function audit(d: AdminDeps, v: Viewer): Promise<Area> {
   return auditArea(today, status);
 }
 
+// 032: an open privacy request waits for a second Admin or HR person, so it comes first on the hub.
+async function retention(v: Viewer): Promise<Area> {
+  const base = { id: "retention", title: "Data retention", href: "/settings/retention", blurb: "How long each kind of data is kept, legal holds, and access and erasure requests.", stat: plural(privacyRules().length, "rule") };
+  const waiting = (await readPrivacy(ctxFor(v, "ui"), listRequests)).filter((r) => r.status === "open").length;
+  if (waiting) return { ...base, chip: { tone: "warn", text: `${waiting} waiting` }, attention: `${plural(waiting, "privacy request")} need${waiting === 1 ? "s" : ""} a second approver` };
+  return { ...base, chip: { tone: "good", text: "No open requests" } };
+}
+
 const SOON: Area[] = [
-  { id: "retention", title: "Data retention", href: null, blurb: "How long each kind of data is kept, legal holds, and access and erasure requests.", stat: "032", chip: { tone: "info", text: "Coming soon" } },
   { id: "backups", title: "Backups and export", href: null, blurb: "Point-in-time recovery, weekly restore drills, and exporting all your data.", stat: "034", chip: { tone: "info", text: "Coming soon" } },
-  { id: "api", title: "API and webhooks", href: null, blurb: "Service credentials for CI and tools, signed webhooks, and rate limits.", stat: "035", chip: { tone: "info", text: "Coming soon" } },
+  { id: "api", title: "API and webhooks", href: "/settings/api", blurb: "Service credentials for CI and tools, signed webhooks, and rate limits.", stat: "REST, MCP and webhooks", chip: { tone: "info", text: "Keys shown once" } },
 ];
 
 /** The Settings hub, attention first: each admin screen with a live status (047 AC-1). */
 export async function settingsStatus(d: AdminDeps, v: Viewer): Promise<Area[]> {
-  const [k, i, a, s, t] = await Promise.all([keys(v), integrations(d, v), ai(d, v), scheduler(d, v), audit(d, v)]);
-  return [k, i, ...a, s, t, ...SOON];
+  const [k, i, a, s, t, r] = await Promise.all([keys(v), integrations(d, v), ai(d, v), scheduler(d, v), audit(d, v), retention(v)]);
+  return [k, i, ...a, s, t, r, ...SOON];
 }

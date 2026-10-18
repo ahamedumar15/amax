@@ -1,6 +1,6 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
-import { EVENTS } from "./contracts";
+import { EVENTS, type EntryLogged, type WeekDecided, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
 import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { MyPage } from "./ui/MyPage";
@@ -36,12 +36,20 @@ export default defineModule({
   ],
   mcpTools,
   retention: [
-    { table: "time.week", fields: ["person_name", "note", "reject_comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["decided_at"], idle: "P1Y" }, action: "anonymise" },
-    { table: "time.entry", fields: ["note", "logged_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "time.approval", fields: ["comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
+    { table: "time.week", label: "Timesheet weeks", subject: ["user_id"], fields: ["person_name", "note", "reject_comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["decided_at"], idle: "P1Y" }, action: "anonymise" },
+    { table: "time.entry", label: "Time entries", subject: ["user_id", "project_id"], fields: ["note", "logged_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    { table: "time.approval", label: "Timesheet approvals", subject: ["decided_by"], fields: ["comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
   ],
   chatIntents,
   jobs: [],
-  events: { emits: Object.values(EVENTS) },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: { emits: Object.values(EVENTS), payloads: {
+    [EVENTS.entryLogged]: declarePayload<EntryLogged>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", billable: "plain", source: "plain", lockedChange: "plain" }),
+    [EVENTS.weekSubmitted]: declarePayload<WeekSubmitted>({ weekId: "plain", userId: "plain", week: "plain", hours: "plain" }),
+    [EVENTS.weekApproved]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
+    [EVENTS.weekRejected]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
+    [EVENTS.weekReopened]: declarePayload<WeekReopened>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", reason: "plain" }),
+    [EVENTS.weekReminded]: declarePayload<WeekReminded>({ weekId: "plain", userId: "plain", week: "plain", by: "plain" }),
+  } },
   fixtures: [timeFixtures],
 });

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { textArray, uuidArray, type Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
-import { EVENTS, PHASES, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
+import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
@@ -282,7 +282,10 @@ export const upsertEnvironment = defineService({
       for (const [i, id] of envs.entries()) await tx.execute(sql`update delivery.environment set position = ${-(i + 1)} where id = ${id}`);
       await tx.execute(sql`update delivery.environment set position = -position where project_id = ${project.id}`);
     }
-    return { result: { name: row.name as string }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null, after: input };
+    // A rename: pins in the conversation that name the environment by project and name follow it (057).
+    const renamed = before && input.rename && input.rename !== before.name;
+    const repin = renamed ? { tools: ["get_environment"], match: { projectKey: input.projectKey, name: before.name as string }, set: { name: input.rename! }, label: [before.name as string, input.rename!] } : undefined;
+    return { result: { name: row.name as string, ...(repin ? { repin } : {}) }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null, after: input };
   },
 });
 
@@ -316,7 +319,11 @@ export const tagRelease = defineService({
     scoped(ctx, "delivery:release:create", project.id as string);
     const r = await releaseOf(tx, project.id, input.version);
     await tx.execute(sql`update delivery.release set version = ${input.newVersion} where id = ${r.id}`);
-    return { result: { version: input.newVersion }, resourceId: r.id as string, before: { version: input.version }, after: { version: input.newVersion } };
+    // The release's page is named by its version: say where it moved, so chat can follow it (057).
+    const moved = { from: releaseHref(input), to: releaseHref({ projectKey: input.projectKey, version: input.newVersion }) };
+    // Pins already in the conversation that name it by project and version follow it too.
+    const repin = { tools: ["get_release", "get_release_history", "get_deployment"], match: { projectKey: input.projectKey, version: input.version }, set: { version: input.newVersion }, label: [input.version, input.newVersion] };
+    return { result: { version: input.newVersion, moved, repin }, resourceId: r.id as string, before: { version: input.version }, after: { version: input.newVersion } };
   },
 });
 

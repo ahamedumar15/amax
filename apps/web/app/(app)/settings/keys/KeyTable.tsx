@@ -1,12 +1,13 @@
 import { CONNECTORS, type CredentialRow } from "@amax/core/secrets";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "../../../../components/settings/AskButton";
-import { lastRotated, lastUsed, shortDate, statusChip } from "./format";
+import { lastRotated, lastUsed, pastExpiry, shortDate, statusChip } from "./format";
 
-function Ask({ r }: { r: CredentialRow }) {
+function Ask({ r, now }: { r: CredentialRow; now: Date }) {
   const c = CONNECTORS[r.connector];
   const pin = { label: c.name, tool: "get_secret_meta", args: { connector: r.connector } };
   if (r.status === "revoked") return <AskButton label="Ask amax" prompt={`Add a new ${c.name} ${c.noun}`} pin={pin} tool="put_secret" name={`Ask amax to add a new ${c.name} ${c.noun}`} />;
+  if (pastExpiry(r, now)) return <AskButton label="Ask to rotate" prompt={`Rotate the ${c.name} ${c.noun} and set a new expiry date: `} pin={pin} tool="rotate_secret" name={`Ask to rotate ${c.name} with a new expiry`} />;
   return <AskButton label="Ask to rotate" prompt={`Rotate the ${c.name} ${c.noun}, keep its expiry`} pin={pin} tool="rotate_secret" name={`Ask to rotate ${c.name}`} />;
 }
 
@@ -28,7 +29,7 @@ export function KeyTable({ rows, now }: { rows: CredentialRow[]; now: Date }) {
               <td data-label="Last rotated">{lastRotated(r, now)}</td>
               <td data-label="Expires">{r.expiresAt && r.status !== "revoked" ? shortDate(r.expiresAt, now, true) : "None"}</td>
               <td data-label="Last used">{lastUsed(r, now)}</td>
-              <td className="num"><Ask r={r} /><PinButton pin={{ label: c.name, tool: "get_secret_meta", args: { connector: r.connector } }} /></td>
+              <td className="num"><Ask r={r} now={now} /><PinButton pin={{ label: c.name, tool: "get_secret_meta", args: { connector: r.connector } }} /></td>
             </tr>
           );
         })}

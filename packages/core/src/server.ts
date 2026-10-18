@@ -4,7 +4,7 @@ export { authorize, contextFor, ForbiddenError, isSystemContext, setAuthorizer, 
 export { appendAudit, canonical, redact, SENSITIVITY_CLASSES, verifyAuditChain, type ChainResult, type Sensitivity } from "./audit";
 export { keyed } from "./chain-key";
 export { currentTrace, withTrace, type Trace } from "./trace-context";
-export { appendTrace, traceStep, verifyTraceChain, type TraceKind, type TraceStep } from "./trace";
+export { appendTrace, traceStep, traceStepOrFail, verifyTraceChain, type TraceKind, type TraceStep } from "./trace";
 export { configureRuntime, defineService, getRuntime, ValidationError, type Emitted, type Runtime, type ServiceOutcome, type ServiceSpec } from "./service";
 export * as coreSchema from "./schema";
 export { nextRun, onceForEvent, registryFrom, runDueJobs, scheduleJob, type JobRegistry, type TickResult } from "./jobs";
@@ -14,3 +14,4 @@ export { auditExportJob, exportAuditDay } from "./audit-export";
 export { auditStatus, getTrace, searchAudit, type AuditEntry, type AuditFilter, type AuditStatus, type ChainName, type TraceStepView } from "./audit-read";
 export { logError } from "./log";
 export { CancelledByKeyError, claimKey, KEY_DAYS, lookupKey, pruneKeysJob, retryable, settleKey, withIdempotency, type KeyOutcome, type Replay } from "./idempotency";
+export { configureRateLimits, countsAsPage, enforceRate, limitsFromEnv, rateLimits, RateLimitedError, takeRate, type Bucket, type Limited, type Limits, type RateChannel, type RateKey } from "./rate-limit";

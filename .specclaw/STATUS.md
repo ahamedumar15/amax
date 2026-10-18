@@ -1,12 +1,11 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 18:33 UTC
+**Last Updated:** 2026-10-17 22:08 UTC
 
 ## Active Changes
 
-
-- 🔍 **051-project-sections** — verify done | 5/5 tasks (100%) | 0 failed
+_No active changes._
 
 ## Pending Proposals
 
@@ -30,9 +29,7 @@
 - 📋 **027-reports** — proposal ready, awaiting planning
 - 📋 **028-keyflow-sync** — proposal ready, awaiting planning
 - 📋 **030-notifications** — proposal ready, awaiting planning
-- 📋 **032-data-retention-and-erasure** — proposal ready, awaiting planning
 - 📋 **034-backup-restore-and-export** — proposal ready, awaiting planning
-- 📋 **035-api-webhooks-and-rate-limits** — proposal ready, awaiting planning
 - 📋 **036-compliance-registers** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
 - 📋 **038-navigation-scale** — proposal ready, awaiting planning
@@ -54,7 +51,9 @@
 - ✅ **020-presales**
 - ✅ **029-workflows-scheduler**
 - ✅ **031-secrets-and-keys**
+- ✅ **032-data-retention-and-erasure**
 - ✅ **033-ai-gateway-and-residency**
+- ✅ **035-api-webhooks-and-rate-limits**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
 - ✅ **041-delivery-mock-parity**
@@ -65,9 +64,15 @@
 - ✅ **048-chat-cost**
 - ✅ **049-chat-history**
 - ✅ **050-immutable-trace**
+- ✅ **051-project-sections**
+- ✅ **052-settings-review**
+- ✅ **053-trace-and-settings-hardening**
+- ✅ **054-chat-first-everywhere**
+- ✅ **056-ci-flakes**
+- ✅ **058-settings-review-2**
 
 ## Stats
 
-- **Total changes:** 24
-- **Active:** 1
-- **Completed:** 23
+- **Total changes:** 31
+- **Active:** 0
+- **Completed:** 31

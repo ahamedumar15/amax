@@ -9,6 +9,7 @@ import { getOpportunity, historyOf, listOpportunities } from "./server/queries";
 import { addRisk, addTask, logActivity, setRiskStatus } from "./server/records";
 import { createOpportunity, moveOpportunity, newOpportunity, removeOpportunity } from "./server/opportunities";
 import { acceptSuggestion, dismissSuggestion } from "./server/suggestions";
+import { opportunityChanges, updateOpportunity } from "./server/update";
 import { pipelineStats } from "./server/stats";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -34,6 +35,8 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...write("presales:opportunity:edit"), name: "move_opportunity", description: `Move an opportunity to a stage (${STAGES.join(", ")}) or change its win chance. Lost needs a reason.`,
     input: z.object({ number, to: z.enum(STAGES), winChance: z.number().int().min(0).max(100).optional(), note: z.string().optional(), reason: z.string().optional(), competitor: z.string().optional() }),
     run: (v, a, s = "mcp") => moveOpportunity(ctxFor(v, s), a) }),
+  tool({ ...write("presales:opportunity:edit"), name: "update_opportunity", description: "Change an open opportunity's details: title, value and currency, account manager, presales lead, service, cost centre, estimate, expected close, lead source, competitor or next step. Stage and win chance change with move_opportunity.",
+    input: opportunityChanges, run: (v, a, s = "mcp") => updateOpportunity(ctxFor(v, s), a) }),
   tool({ ...write("presales:opportunity:edit"), name: "log_opportunity_activity", description: "Log a call, meeting, workshop, demo, proposal or email on an opportunity.",
     input: z.object({ number, title: z.string(), kind: z.enum(["call", "meeting", "workshop", "demo", "proposal", "email"]), on: z.string(), ownerName: z.string().optional(), note: z.string().optional(), progress: z.number().int().min(0).max(100).optional() }),
     run: (v, a, s = "mcp") => logActivity(ctxFor(v, s), a) }),
