@@ -1,0 +1,10 @@
+{
+  "change": "018-expenses",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T13:38:18Z"},
+    "verify": {"status":"done","at":"2026-10-18T14:01:42Z"},
+    "pr": {"status":"raised","at":"2026-10-18T14:01:56Z","url":"https://github.com/chan4lk/amax/pull/78"}
+  }
+}

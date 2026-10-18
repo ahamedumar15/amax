@@ -1,0 +1,47 @@
+/* Recruitment screen: the mock's tickets, pipeline board, funnel and bars (module standard: shared UI starts in the module). */
+.recruitment{--bar-dim:#D6CCFF}
+:root[data-theme="dark"] .recruitment{--bar-dim:#3A3466}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .recruitment{--bar-dim:#3A3466}}
+.recruitment .row.head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.recruitment .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.recruitment .row.head .lede{margin:0}
+.recruitment .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.recruitment .select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236A6681' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink)}
+.recruitment .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.recruitment .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.recruitment .board{display:grid;grid-template-columns:repeat(5,minmax(220px,1fr));gap:20px;overflow-x:auto;padding:4px 4px 12px}
+.recruitment .lane{background:var(--sunken);border-radius:24px;padding:16px;position:relative}
+.recruitment .lane-head{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 14px;font-weight:600;font-size:14px}
+.recruitment .lane-head>span:last-of-type{font-size:12px;font-weight:600;color:var(--ink-3);background:var(--card);border-radius:8px;padding:2px 8px}
+.recruitment .lane-head .lh{display:flex;align-items:center;gap:10px}
+.recruitment .lane>.pin{top:8px;right:52px}
+.recruitment .stk{--c:#7B61FF;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--c);border:2px solid #fff;box-shadow:0 4px 10px -3px rgba(40,30,110,.35);transform:rotate(-6deg);flex:none;color:#fff}
+:root[data-theme="dark"] .recruitment .stk{border-color:#1E1C33}
+.recruitment .stk svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.recruitment .tcard{position:relative;background:var(--card);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(40,30,110,.05)}
+.recruitment .tcard .foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-3);flex-wrap:wrap;row-gap:6px}
+.recruitment .tcard .foot>span:last-child{white-space:nowrap}
+.recruitment .cand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.recruitment .cand p{margin:0;font-weight:600;font-size:14.5px;line-height:1.35}
+.recruitment .prog{height:6px;border-radius:6px;background:var(--sunken);margin:0 0 12px;overflow:hidden}
+.recruitment .prog i{display:block;height:100%;border-radius:6px;background:var(--violet)}
+.recruitment .lane .more{display:block;width:100%;border:1.5px dashed var(--line-2);background:none;border-radius:14px;padding:9px;font:600 13px var(--font);color:var(--ink-2);text-align:center;text-decoration:none}
+.recruitment .av{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.recruitment .a1{background:linear-gradient(135deg,#FFB86B,#F48B9B)}
+.recruitment .a2{background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
+.recruitment .a3{background:linear-gradient(135deg,#7BE3B4,#2FB5A0)}
+.recruitment .a4{background:linear-gradient(135deg,#C3B5FF,#8E6CF0)}
+.recruitment .cols.even{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;margin-top:28px}
+.recruitment .card{position:relative}
+.recruitment .card-head .muted{font-size:13px;color:var(--ink-3)}
+.recruitment .up{display:inline-flex;align-items:center;gap:4px;color:var(--chip-good);font-weight:600;font-size:13px}
+.recruitment .funnel{display:grid;gap:12px;list-style:none;margin:0;padding:0}
+.recruitment .funnel li{position:relative;display:grid;grid-template-columns:100px 1fr 36px;align-items:center;gap:14px;font-size:14px}
+.recruitment .funnel li .pin{top:-2px;right:-6px}
+.recruitment .funnel i{display:block;height:30px;border-radius:10px;min-width:12px}
+.recruitment .funnel b{text-align:right}
+.recruitment .chart{width:100%;height:auto;display:block;overflow:visible}
+.recruitment .chart .ax{fill:var(--ink-3);font-size:12px;font-family:var(--font)}
+.recruitment .note{color:var(--ink-3);font-size:13px;margin:8px 0 0}
+@media (max-width:1180px){.recruitment .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.recruitment .cols.even{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.recruitment *{transition:none!important;animation:none!important}}

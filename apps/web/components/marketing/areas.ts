@@ -20,14 +20,15 @@ export const AREAS: Area[] = [
     { text: "Leave", module: "leave" },
     { text: "Onboarding and offboarding", module: "onboarding" },
     { text: "Payroll runs and payslips", module: "payroll" },
+    { text: "Recruitment, from open role to hire", module: "recruitment" },
     { text: "Learning", module: "learning" },
     { text: "OKRs from Keyflow", module: "keyflow" },
   ] },
   { title: "Finance and sales", tone: "attention", art: "coins", coming: [
-    { text: "Expenses", module: "expenses", words: ["expense"] },
     { text: "Xero, QuickBooks and Business Central", module: "accounting", words: ["xero", "quickbooks", "business central"] },
   ], live: [
     { text: "Contracts, invoicing and receivables, with invoices drafted for Finance to accept", module: "finance" },
+    { text: "Expense claims, approved by the manager and then Finance", module: "expenses" },
     { text: "Presales pipeline", module: "presales" },
   ] },
   { title: "Operations", tone: "sky", art: "key", coming: [
