@@ -20,6 +20,9 @@ export default defineConfig({
     { name: "audit", testMatch: /audit\.spec\.ts/, dependencies: ["writes"] },
     // 032: the privacy spec erases the demo erasure request's person, so it runs last.
     { name: "privacy", testMatch: /retention(-visual)?\.spec\.ts/, dependencies: ["audit"] },
+    // 034: the visual diff sees the fixtures' exports; the approval spec then changes them.
+    { name: "backups-visual", testMatch: /backups-visual\.spec\.ts/, dependencies: ["privacy"] },
+    { name: "backups", testMatch: /backups\.spec\.ts/, dependencies: ["backups-visual"] },
   ],
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -43,6 +46,11 @@ export default defineConfig({
       // The whole suite signs in as a handful of demo users; 035's own tests set low limits explicitly.
       AMAX_RATE_PAGE_USER: "100000",
       AMAX_KMS_KEY_FILE: join(tmpdir(), `amax-e2e-kms-${process.env.E2E_DB ?? "amax_e2e"}.key`),
+      // 034: what the Backups screen shows of the host's PITR, as in its mock; snapshots and exports on a temp dir.
+      AMAX_PITR: "cnpg",
+      AMAX_PITR_RPO_MINUTES: "5",
+      AMAX_PITR_WINDOW_DAYS: "14",
+      AMAX_BACKUP_DIR: join(tmpdir(), `amax-e2e-backups-${process.env.E2E_DB ?? "amax_e2e"}`),
     },
   },
 });

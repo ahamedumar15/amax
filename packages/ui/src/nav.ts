@@ -1,7 +1,8 @@
 import type { ComponentType, ReactNode } from "react";
 import type { IconName } from "./icons";
 
-export type NavItem = { href: string; label: string; icon: IconName; group?: string; primary?: boolean };
+/** `permission`: the read permission that shows the item, when it isn't the href's first segment's (034). */
+export type NavItem = { href: string; label: string; icon: IconName; group?: string; primary?: boolean; permission?: string };
 
 export type LinkLike = ComponentType<{ href: string; className?: string; "aria-current"?: "page"; children: ReactNode }>;
 

@@ -1,0 +1,17 @@
+# 034: the restore drill on a Podman host (systemd --user quadlet). Copy this and the .timer into
+# ~/.config/containers/systemd/, set the image tag, then `systemctl --user daemon-reload`.
+# amax.env holds DATABASE_URL (the app role), AUDIT_HASH_KEY, AMAX_KMS and its key, and
+# AMAX_DRILL_DATABASE_URL: the owner of a scratch database the drill may wipe, never the live one.
+[Unit]
+Description=amax restore drill (restores the latest snapshot into a scratch database and checks it)
+
+[Container]
+Image=ghcr.io/chan4lk/amax:latest-ops
+EnvironmentFile=%h/.config/amax/amax.env
+Environment=AMAX_BACKUP_DIR=/backups
+Volume=%h/srv/amax/backups:/backups:Z
+Network=host
+Exec=node --import tsx --import ./scripts/ignore-css.mjs scripts/backups.ts drill
+
+[Service]
+Type=oneshot

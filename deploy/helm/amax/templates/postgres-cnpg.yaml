@@ -1,0 +1,47 @@
+{{- if .Values.postgres.cnpg.enabled }}
+{{- $c := .Values.postgres.cnpg }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "amax.name" . }}-pg
+  labels: {{- include "amax.labels" . | nindent 4 }}
+spec:
+  instances: {{ $c.instances }}
+  imageName: {{ $c.imageName }}
+  storage:
+    size: {{ $c.storage }}
+  postgresql:
+    parameters:
+      archive_timeout: {{ $c.archiveTimeout | quote }}
+  backup:
+    retentionPolicy: {{ $c.retention | quote }}
+    barmanObjectStore:
+      destinationPath: {{ $c.objectStore.destinationPath | quote }}
+      {{- with $c.objectStore.endpointURL }}
+      endpointURL: {{ . | quote }}
+      {{- end }}
+      s3Credentials:
+        accessKeyId:
+          name: {{ $c.objectStore.secret }}
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: {{ $c.objectStore.secret }}
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+        encryption: {{ $c.objectStore.encryption }}
+      data:
+        compression: gzip
+        encryption: {{ $c.objectStore.encryption }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ include "amax.name" . }}-pg-nightly
+  labels: {{- include "amax.labels" . | nindent 4 }}
+spec:
+  schedule: {{ $c.backupSchedule | quote }}
+  backupOwnerReference: self
+  cluster:
+    name: {{ include "amax.name" . }}-pg
+{{- end }}

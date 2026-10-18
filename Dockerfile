@@ -18,6 +18,11 @@ WORKDIR /repo/apps/web
 ENV NODE_ENV=production
 CMD ["node", "--import", "tsx", "--import", "./scripts/ignore-css.mjs", "scripts/temporal-worker.ts"]
 
+# 034: the restore drill and snapshot CLI (scripts/backups.ts). It migrates the scratch database, so it
+# ships the workspace with every migration. Build with --target ops; the chart's restore-drill CronJob runs it.
+FROM temporal-worker AS ops
+CMD ["node", "--import", "tsx", "--import", "./scripts/ignore-css.mjs", "scripts/backups.ts", "drill"]
+
 FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0

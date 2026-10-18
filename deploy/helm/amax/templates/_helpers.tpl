@@ -26,3 +26,46 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   value: {{ .Values.workflows.temporal.taskQueue | quote }}
 {{- end }}
 {{- end -}}
+
+{{/* 034: snapshots on a volume and a local KMS key file, for the drill (and any pod that takes snapshots). */}}
+{{- define "amax.backupEnv" -}}
+- name: NODE_ENV
+  value: production
+{{- if .Values.backups.volumeClaim }}
+- name: AMAX_BACKUP_DIR
+  value: /backups
+{{- end }}
+{{- if .Values.backups.kmsKeySecret }}
+- name: AMAX_KMS_KEY_FILE
+  value: /etc/amax/kms/kms.key
+{{- end }}
+{{- end -}}
+
+{{- define "amax.backupMounts" -}}
+- name: tmp
+  mountPath: /tmp
+{{- if .Values.backups.volumeClaim }}
+- name: backups
+  mountPath: /backups
+{{- end }}
+{{- if .Values.backups.kmsKeySecret }}
+- name: kms
+  mountPath: /etc/amax/kms
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "amax.backupVolumes" -}}
+- name: tmp
+  emptyDir: {}
+{{- if .Values.backups.volumeClaim }}
+- name: backups
+  persistentVolumeClaim:
+    claimName: {{ .Values.backups.volumeClaim }}
+{{- end }}
+{{- if .Values.backups.kmsKeySecret }}
+- name: kms
+  secret:
+    secretName: {{ .Values.backups.kmsKeySecret }}
+{{- end }}
+{{- end -}}

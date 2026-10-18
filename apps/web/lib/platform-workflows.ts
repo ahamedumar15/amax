@@ -2,6 +2,7 @@ import { withTenant } from "@amax/db";
 import { contextFor, getRuntime, verifyAuditChain } from "@amax/core/server";
 import { purgeDue } from "@amax/core/privacy";
 import { cron, defineWorkflow, NonRetryableError, step } from "@amax/workflows";
+import { backupSchedules, backupWorkflows } from "./backup-workflows";
 
 export const auditCheck = defineWorkflow({
   name: "core.audit-check",
@@ -28,9 +29,10 @@ export const privacyPurge = defineWorkflow({
 
 export const platformWorkflows = {
   id: "core",
-  workflows: [auditCheck, privacyPurge],
+  workflows: [auditCheck, privacyPurge, ...backupWorkflows],
   schedules: [
     cron({ name: "core.privacy-purge", title: "Data retention purge", description: "Deletes or anonymises records past their retention period, except those under a legal hold", workflow: "core.privacy-purge", cron: "0 1 * * *" }),
     cron({ name: "core.audit-check", title: "Audit chain check", description: "Re-verifies the tamper-evident audit log", workflow: "core.audit-check", cron: "30 2 * * *" }),
+    ...backupSchedules,
   ],
 };
