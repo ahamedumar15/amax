@@ -86,7 +86,13 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
       if (d.pin) { setPins((p) => (p.some((x) => x.label === d.pin!.label) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
-      else if (d.prompt) { setText(d.prompt); requestAnimationFrame(() => input.current?.focus()); }
+      else if (d.prompt) {
+        setText(d.prompt);
+        // Caret at the end, so what the person types finishes the prompt. Without this, a prompt filled
+        // after chat followed a record to a new page kept the caret at 0 and typing went in front.
+        const end = d.prompt.length;
+        requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(end, end); });
+      }
     };
     window.addEventListener("amax:chat", onEvent);
     return () => window.removeEventListener("amax:chat", onEvent);
