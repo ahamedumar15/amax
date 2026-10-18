@@ -66,7 +66,7 @@ test("032 AC-4 the opener can't approve their own erasure request; a second Admi
   const approve = async () => {
     await page.getByRole("button", { name: "Ask to approve the erasure request for Rizwan Farook" }).click();
     await expect(chat(page).locator(".pinchip > span")).toHaveText(["Erasure, Rizwan Farook"]);
-    await page.getByRole("button", { name: "Send" }).click();
+    await page.getByRole("button", { name: "Send", exact: true }).click();
     const card = page.getByRole("group", { name: /^Confirm:/ }).last();
     await card.getByRole("button", { name: /Add it|Confirm/ }).click();
     return card;

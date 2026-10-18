@@ -14,7 +14,7 @@ export async function askAndConfirm(page: Page, chip: Locator, want: { pin: stri
   await expect(input).toHaveValue(want.prompt);
   if (want.replace) await input.fill(want.replace);
   if (want.type) await input.pressSequentially(want.type);
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ }).last();
   await card.getByRole("button", { name: "Add it" }).click();
   await expect(card).toContainText("Done:");

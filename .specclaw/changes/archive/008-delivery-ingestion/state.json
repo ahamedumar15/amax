@@ -1,0 +1,12 @@
+{
+  "change": "008-delivery-ingestion",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T10:33:50Z"},
+    "build": {"status":"done","at":"2026-10-18T10:54:59Z"},
+    "verify": {"status":"done","at":"2026-10-18T10:54:59Z"},
+    "pr": {"status":"raised","at":"2026-10-18T10:55:14Z","url":"https://github.com/chan4lk/amax/pull/70"},
+    "archived": {"status":"done","at":"2026-10-18T12:08:25Z"}
+  }
+}

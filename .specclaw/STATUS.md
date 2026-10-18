@@ -1,23 +1,20 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 11:25 UTC
+**Last Updated:** 2026-10-18 13:39 UTC
 
 ## Active Changes
 
 
-- 🔀 **008-delivery-ingestion** — pr raised | 7/7 tasks (100%) | 0 failed | PR #70 merged
-- 🔀 **013-onboarding-offboarding** — PR #71 open
-- 🔀 **038-navigation-scale** — pr raised | 3/3 tasks (100%) | 0 failed | PR #69 merged
-- 🔍 **062-specclaw-sync-plugin** — verify done | 6/6 tasks (100%) | 0 failed
+- 🔀 **014-payroll-engine** — pr raised | 6/6 tasks (100%) | 0 failed | PR #75 merged
+- 🔀 **017-finance-contracts-billing** — pr raised | 5/5 tasks (100%) | 0 failed | PR #76 merged
+- 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 open
 
 ## Pending Proposals
 
 
-- 📋 **014-payroll-engine** — proposal ready, awaiting planning
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
-- 📋 **017-finance-contracts-billing** — proposal ready, awaiting planning
 - 📋 **018-expenses** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
 - 📋 **021-it-access-licences** — proposal ready, awaiting planning
@@ -38,10 +35,12 @@
 - ✅ **005-amax-chat**
 - ✅ **006-agent-governance**
 - ✅ **007-delivery-projects**
+- ✅ **008-delivery-ingestion**
 - ✅ **009-time-and-approvals**
 - ✅ **010-allocations-forecast**
 - ✅ **011-hr-core**
 - ✅ **012-leave**
+- ✅ **013-onboarding-offboarding**
 - ✅ **020-presales**
 - ✅ **024-learning**
 - ✅ **028-keyflow-sync**
@@ -53,6 +52,7 @@
 - ✅ **034-backup-restore-and-export**
 - ✅ **035-api-webhooks-and-rate-limits**
 - ✅ **036-compliance-registers**
+- ✅ **038-navigation-scale**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
 - ✅ **041-delivery-mock-parity**
@@ -79,6 +79,6 @@
 
 ## Stats
 
-- **Total changes:** 49
-- **Active:** 4
-- **Completed:** 45
+- **Total changes:** 51
+- **Active:** 3
+- **Completed:** 48

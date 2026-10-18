@@ -15,7 +15,8 @@ describe("module standard", () => {
     expect(discoverModules(join(repoRoot, "modules"), ["time"])).not.toContain("time");
     const others = readdirSync(join(repoRoot, "modules")).filter((m) => m !== "time");
     const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((d) => d.isDirectory() ? (d.name === "node_modules" ? [] : files(join(dir, d.name))) : /\.tsx?$/.test(d.name) ? [join(dir, d.name)] : []);
-    expect(others.flatMap((m) => files(join(repoRoot, "modules", m))).filter((f) => readFileSync(f, "utf8").includes("@amax/time"))).toEqual([]);
+    // Other modules may integrate through the contract (014 payroll reads it there), never the internals.
+    expect(others.flatMap((m) => files(join(repoRoot, "modules", m))).filter((f) => /@amax\/time(?!\/contracts")/.test(readFileSync(f, "utf8")))).toEqual([]);
   });
 });
 

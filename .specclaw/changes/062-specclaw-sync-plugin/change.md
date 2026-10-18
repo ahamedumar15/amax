@@ -1,7 +1,7 @@
 # amax Claude plugin: specclaw sync
 
 **Change:** 062-specclaw-sync-plugin · **Created:** 2026-10-18
-**Lane:** Delivery · **Module:** `modules/delivery` + `plugins/amax` · **Depends on:** [008](../008-delivery-ingestion/change.md), [039](../archive/039-specclaw-self-sync/change.md), [044](../archive/044-release-and-region-hardening/change.md)
+**Lane:** Delivery · **Module:** `modules/delivery` + `plugins/amax` · **Depends on:** [008](../archive/008-delivery-ingestion/change.md), [039](../archive/039-specclaw-self-sync/change.md), [044](../archive/044-release-and-region-hardening/change.md)
 
 ## Problem
 
