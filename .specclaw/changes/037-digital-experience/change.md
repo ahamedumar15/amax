@@ -34,7 +34,7 @@ What is collected (AC-1):
   - `partnerReportedThreatState` on the managed device is Defender's risk, as reported to Intune.
 - It opens 021's read credential, the 031 `msgraph-read` secret (named in 021's `READ_CONNECTORS` contract), with `useSecret`. Calls go through the 035 egress guards (`@amax/api/egress`): public https to Graph only, pinned lookups, no redirects, a size cap.
 - Each Graph answer is parsed against a fixed shape. Device names, user names and anything else in it are dropped. A device is stored by its Intune id, model, owner (user id, from the UPN matched to `auth.user`) and that person's legal entity and department, read through hr's contract.
-- The demo tenant reads a built-in, clearly fictional sandbox Intune (`server/sandbox.ts`, as 025 does), so demo data never calls Graph.
+- The demo tenant has `sandbox` on: its fictional Intune readings are the seeded ones, so demo data never calls Graph.
 - `tests/collect.test.ts` lists every column of the `experience` schema against an allowed list. It fails if a column is added outside that list.
 
 Notice first (AC-2): collection is per legal entity. `set_experience_collection` (Admin) records the date of the notice to staff. It refuses to switch collection on without that notice, and the job keeps only devices whose owner is in an entity that is on. With no entity on, Graph isn't called.
@@ -86,13 +86,13 @@ Ripples outside the module (AC-8, besides CODEOWNERS and BACKLOG):
   - fictional fixtures that give the mock's numbers: 7.9 for 184 people, 18 of 231 devices, 118 of 184 answers, and the department rows and trends
   - Tests: groups under 5 hidden and no score for a named person (AC-2, AC-3, AC-4)
   Files: modules/experience/contracts.ts, modules/experience/db/migrations/0001_experience.sql, modules/experience/server/*.ts, modules/experience/mcp.ts, modules/experience/pins.ts, modules/experience/chat.ts, modules/experience/fixtures/*, modules/experience/tests/db.ts, modules/experience/tests/installed.ts, modules/experience/tests/contracts.test.ts, modules/experience/tests/privacy.test.ts, modules/experience/tests/pulse.test.ts
-- [ ] `T3` — The daily collection and the experience agent, as 029 workflows:
+- [x] `T3` — The daily collection and the experience agent, as 029 workflows:
   - Collection opens `msgraph-read` through `useSecret` and the egress guards, or reads the sandbox, and stores only the allowed fields, only for entities with a notice.
   - It finds issues and turns those on 5 or more devices into `experience.fix` suggestions with their evidence.
   - Approved remediations run through `msgraph-write` only when remediation is switched on, else they are recorded as manual.
   - It snapshots group scores and emits `experience.score.dropped` for a drop of 1 point or more.
   - Tests: the allowed-columns list, no read without a notice, fixes, and drops (AC-1, AC-2, AC-5, AC-6)
-  Files: modules/experience/workflows.ts, modules/experience/suggestions.ts, modules/experience/server/collect.ts, modules/experience/server/graph.ts, modules/experience/server/wire.ts, modules/experience/server/sandbox.ts, modules/experience/server/issues.ts, modules/experience/server/remediate.ts, modules/experience/tests/collect.test.ts, modules/experience/tests/fixes.test.ts
+  Files: modules/experience/workflows.ts, modules/experience/suggestions.ts, modules/experience/server/collect.ts, modules/experience/server/graph.ts, modules/experience/server/wire.ts, modules/experience/server/record.ts, modules/experience/server/snapshot.ts, modules/experience/server/remediate.ts, modules/experience/tests/collect.test.ts, modules/experience/tests/fixes.test.ts
   Depends: T2
 - [ ] `T4` — Module standard:
   - README, package.json, a CODEOWNERS line, retention (device data 90 days; pulses, notices and remediations with who set them), and switch-off
