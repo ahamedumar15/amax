@@ -26,19 +26,19 @@ New admin screen, Backups and export: the recovery window, last backup and last 
 
 - [x] `T1` — Mock: the 034 section gains an Exports card: each tenant export with its approval state and link expiry (AC-4, AC-6)
   Files: .specclaw/mock/index.html
-- [ ] `T2` — UI: the Backups and export screen at /settings/backups matching the mock (recovery tickets, restore drills, exports), Admin only: its nav entry replaces 055's "Coming soon" item and the Settings hub card goes live; read tools with pin specs (AC-3, AC-4, AC-6)
+- [x] `T2` — UI: the Backups and export screen at /settings/backups matching the mock (recovery tickets, restore drills, exports), Admin only: its nav entry replaces 055's "Coming soon" item and the Settings hub card goes live; read tools with pin specs (AC-3, AC-4, AC-6)
   Files: apps/web/app/(app)/settings/backups/*, apps/web/lib/admin/backups.ts, apps/web/lib/admin/index.ts, apps/web/lib/admin/status.ts, apps/web/lib/operations.ts, apps/web/lib/registry.ts, apps/web/lib/profile.ts, packages/ui/src/components/Shell.tsx, packages/core/src/backup/view.ts, packages/core/src/backup/catalog.ts, packages/db/migrations/0030_backup.sql, apps/web/tests/admin/it-admin.test.ts, apps/web/tests/e2e/admin.spec.ts
   Depends: T1
-- [ ] `T3` — Encrypted tenant snapshots: daily (kept 14 days) and monthly (kept 12 months) JSON per table sealed with the tenant's data key (031), written only to storage in the tenant's data region (033), pruning paused by a legal hold (032); the bucket's versioning is checked and shown (AC-2)
+- [x] `T3` — Encrypted tenant snapshots: daily (kept 14 days) and monthly (kept 12 months) JSON per table sealed with the tenant's data key (031), written only to storage in the tenant's data region (033), pruning paused by a legal hold (032); the bucket's versioning is checked and shown (AC-2)
   Files: packages/core/src/backup/snapshot.ts, packages/core/src/backup/storage.ts, packages/core/src/backup/tables.ts, packages/core/src/adapters/storage.ts, apps/web/lib/platform-workflows.ts, apps/web/lib/server.ts, packages/core/tests/backup-snapshot.test.ts
   Depends: T2
-- [ ] `T4` — Restore drill: restores the latest snapshot into a scratch database, checks every table's row count and the audit hash chain, and records the result (duration, rows, chain) through a service; due weekly or on request (`request_restore_drill`) (AC-3)
+- [x] `T4` — Restore drill: restores the latest snapshot into a scratch database, checks every table's row count and the audit hash chain, and records the result (duration, rows, chain) through a service; due weekly or on request (`request_restore_drill`) (AC-3)
   Files: packages/core/src/backup/drill.ts, apps/web/scripts/backups.ts, apps/web/lib/admin/backups.ts, packages/core/tests/backup-drill.test.ts
   Depends: T3
-- [ ] `T5` — Tenant export: an Admin asks in chat, a second Admin approves, then a 029 workflow writes JSON per module plus files to a tar, honouring the erasure state (032/060); a signed link expires in 24 hours (AC-4)
+- [x] `T5` — Tenant export: an Admin asks in chat, a second Admin approves, then a 029 workflow writes JSON per module plus files to a tar, honouring the erasure state (032/060); a signed link expires in 24 hours (AC-4)
   Files: packages/core/src/backup/export.ts, packages/core/src/backup/tar.ts, packages/core/src/backup/link.ts, apps/web/app/api/backups/export/[id]/route.ts, apps/web/lib/admin/backups.ts, apps/web/lib/platform-workflows.ts, packages/core/tests/backup-export.test.ts
   Depends: T3
-- [ ] `T6` — Leaving tenant: offboarding offers an export, waits 30 days (a 029 workflow, paused while a legal hold is active), then destroys the tenant's data key through a gated database function so snapshots can't be read; every step audited (AC-5)
+- [x] `T6` — Leaving tenant: offboarding offers an export, waits 30 days (a 029 workflow, paused while a legal hold is active), then destroys the tenant's data key through a gated database function so snapshots can't be read; every step audited (AC-5)
   Files: packages/core/src/backup/offboard.ts, packages/core/src/secrets/runtime.ts, packages/db/migrations/0030_backup.sql, apps/web/lib/platform-workflows.ts, apps/web/lib/admin/backups.ts, packages/core/tests/backup-offboard.test.ts
   Depends: T5
 - [ ] `T7` — Deploy: point-in-time recovery per host in docs/operations.md (managed Postgres for Vercel and Cloudflare, CloudNativePG with WAL archiving on k3s), the chart's CNPG Cluster, ScheduledBackup and restore-drill CronJob, a Dockerfile ops target, podman timer notes (AC-1, AC-3)
