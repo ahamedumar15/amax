@@ -14,6 +14,7 @@
 | Tasks | ✅ Done |  |
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/71 |
 
 ## Task Progress
 
