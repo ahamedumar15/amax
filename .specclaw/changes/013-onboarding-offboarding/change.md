@@ -31,7 +31,7 @@ automatically. With 021 installed, its own handler takes over the suggestion.
 
 - [ ] `T1` — Onboarding screen (`/onboarding`): what needs attention first (overdue tasks, joiners starting soon, leavers this week), then each person's checklist with tasks by owner. Every row and tile is pinned, and "Ask amax" handles completing a task (AC-1)
   Files: modules/onboarding/ui/OnboardingPage.tsx, modules/onboarding/ui/onboarding.css, modules/onboarding/module.ts, modules/onboarding/tests/e2e/onboarding.spec.ts
-- [ ] `T2` — Contracts first, then data. `contracts.ts` gets events and types. Templates by legal entity and role are fixtures. `hr.person.joined` and `left` start a checklist whose tasks go to owners (HR, IT Admin, the manager). MCP tools `list_checklists`, `get_checklist`, `complete_checklist_task` (AC-1)
+- [x] `T2` — Contracts first, then data. `contracts.ts` gets events and types. Templates by legal entity and role are fixtures. `hr.person.joined` and `left` start a checklist whose tasks go to owners (HR, IT Admin, the manager). MCP tools `list_checklists`, `get_checklist`, `complete_checklist_task` (AC-1)
   Files: modules/onboarding/contracts.ts, modules/onboarding/db/migrations/0001_onboarding.sql, modules/onboarding/server/*.ts, modules/onboarding/mcp.ts, modules/onboarding/fixtures/, modules/onboarding/tests/onboarding.test.ts, modules/onboarding/tests/contracts.test.ts
 - [ ] `T3` — IT access: a grant on joining, a revoke on leaving, as `onboarding.access.requested` plus an IT Admin task. Nothing is revoked automatically, and it degrades without 021 (AC-2)
   Files: modules/onboarding/server/access.ts, modules/onboarding/tests/access.test.ts
