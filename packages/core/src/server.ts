@@ -13,5 +13,5 @@ export { memoryCache, type Cache } from "./adapters/cache";
 export { auditExportJob, exportAuditDay } from "./audit-export";
 export { auditStatus, getTrace, searchAudit, type AuditEntry, type AuditFilter, type AuditStatus, type ChainName, type TraceStepView } from "./audit-read";
 export { logError } from "./log";
-export { CancelledByKeyError, claimKey, KEY_DAYS, lookupKey, pruneKeysJob, retryable, settleKey, withIdempotency, type KeyOutcome, type Replay } from "./idempotency";
+export { CancelledByKeyError, claimKey, KEY_DAYS, keyedOutcome, lookupKey, pruneKeysJob, ReplayedError, retryable, settleKey, UndeclaredWriteError, withIdempotency, type KeyedRun, type KeyOutcome, type Replay } from "./idempotency";
 export { configureRateLimits, pageChannel, enforceRate, limitsFromEnv, rateLimits, RateLimitedError, takeRate, type Bucket, type Limited, type Limits, type RateChannel, type RateKey } from "./rate-limit";

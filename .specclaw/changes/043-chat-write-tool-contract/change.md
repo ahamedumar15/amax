@@ -30,9 +30,9 @@ refused before it runs (a non-retryable `UndeclaredWriteError`), so "exactly one
 declared one" holds before the write, not just after it. A write made around `defineService` can't be
 seen at run time, so `check:modules` closes that gap statically: every `scope: "write"` tool must name its service.
 
-- [ ] `T1` — Core idempotency: declared-service scope, nested keys, one discriminated lookup (AC-1, AC-2, AC-4)
+- [x] `T1` — Core idempotency: declared-service scope, nested keys, one discriminated lookup (AC-1, AC-2, AC-4)
   Files: packages/core/src/module.ts, packages/core/src/idempotency.ts, packages/core/src/service.ts, packages/core/src/server.ts, packages/core/tests/idempotency-043.test.ts
-- [ ] `T2` — Replays bound to the actor that wrote them; a different actor's lookup is refused (AC-5)
+- [x] `T2` — Replays bound to the actor that wrote them; a different actor's lookup is refused (AC-5)
   Files: packages/core/src/idempotency.ts, packages/core/src/service.ts, packages/core/tests/idempotency-043.test.ts
   Depends: T1
 - [ ] `T3` — Chat engine: no card without a declared service; fail-closed error path; cancel that loses to an unknown write becomes unknown; wrapped or stored cancel both read "cancelled" (AC-1, AC-3, AC-4)

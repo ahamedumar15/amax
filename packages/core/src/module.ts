@@ -99,6 +99,11 @@ export type McpToolDef = {
   secretInput?: { label: string };
   run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
   /**
+   * A write tool's one service, the defineService result it calls (043 AC-1). Chat makes a confirm
+   * card only for a write tool that names one, and runs it with the key scoped to that service.
+   */
+  service?: { spec: { name: string } };
+  /**
    * A write tool's check when chat proposes its card, before the person types anything (053). Throw
    * a ToolError (code invalid_input) to refuse the card; its message is what the model is told.
    */
