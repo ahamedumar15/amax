@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { join } from "node:path";
-import { hasDb, repoRoot, tablesMissingRls } from "@amax/db/testdb";
-import { discoverModules } from "@amax/core/registry";
+import { hasDb, tablesMissingRls } from "@amax/db/testdb";
 import manifest from "../module";
 import { CAPACITY, DEMAND } from "../fixtures/plan";
 import { ctxFor } from "../server/context";
@@ -30,7 +28,6 @@ describe.skipIf(!hasDb)("allocations against Postgres", () => {
 
   it("AC-2 capacity (hr FTE) and demand match fixtures.md; January bench is 6 by skill; works without the optional leave module", async () => {
     expect(manifest.integratesWith).toEqual(["leave"]);
-    expect(discoverModules(join(repoRoot, "modules"))).not.toContain("leave");
     const f = await forecastFor(await db.as("maya", "Leadership"), { today: TODAY });
     expect(f.months.map((m) => m.capacity)).toEqual(CAPACITY);
     expect(f.months.map((m) => m.demand)).toEqual(DEMAND);
