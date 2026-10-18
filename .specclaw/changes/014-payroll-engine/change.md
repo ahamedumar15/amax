@@ -47,4 +47,26 @@ fictional deductions, so the engine and screen can be shown end to end.
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass — `payroll` schema (pay component, pay group, run, payslip, payslip line). The run moves Draft → Agent check → HR approval → Finance approval → Bank file → Payslips sent, and each step is a `defineService` write tool, so it's audited. Finance approves totals by entity and cost centre. The bank file is an irreversible 006 kind that needs two approvers. Test: `tests/runs.test.ts`.
+- AC-2: pass — the payroll agent explains each change since last period as a 006 suggestion (Accept or Query through Ask amax). "Approve run" stays disabled, with a hint, while any change is open or queried, and HR approval is refused on the server. Tests: `tests/variance.test.ts`, and the module e2e "AC1 AC2".
+- AC-3: pass — Payroll and Admin see pay. Finance sees totals by cost centre only, with cost centres under 3 people folded together. HR sees steps and explanations with amounts masked. Anyone else gets a 404 or a refusal. An employee reads only their own payslip, and only once it's sent. Read tools mark pay fields `sensitive`, so chat redacts them. Tests: `tests/visibility.test.ts`, and the module e2e "AC3" (404).
+- AC-4: pass — `packs.ts` defines `calculate`, `statutory` and `filings`. A second pack plugs in without any engine change. The draft takes hr pay data, leave and (optionally) time through their contracts. The fixture demo pack is labelled fictional on screen. Test: `tests/packs.test.ts`.
+- AC-5: pass — contracts and contract tests, README, fixtures, manifest, CODEOWNERS line, seven-year retention by legal entity. The module can be switched off and still drafts without time. Test: `tests/standard.test.ts`. Outside `modules/payroll`, only `.github/CODEOWNERS` and `pnpm-lock.yaml` changed.
+
+Mock deviations, owned by later changes: the figures come from the demo pack (8 fictional people), not the Sri Lanka figures; the Australia tab and STP belong to 016; the step is labelled "Bank file", not "Bank file and EPF/ETF" (015); the drawer has no "Download PDF" or "Email" (no PDF or send tool yet).
+
+Commands (worktree, Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint` → 0 (25/25, check-graph and check-module-standard included)
+- `pnpm turbo run test --continue` → 0 (24/24)
+- `pnpm --filter @amax/web build` → 0
+- `playwright test --config playwright.auth.config.ts` (apps/web) → 79/79
+- module e2e `pnpm --filter @amax/payroll e2e` → 2/2
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run: it fails on this repo (jq "Argument list too long"), as in 013.
+
 Quality: 8 → 8 duplicated lines (jscpd over modules/payroll; the one clone is the payslip and change tables' shared column list in the migration, left as is. specclaw-quality-scan reported jscpd parse_error, so jscpd was run directly.)
+
+Screenshots: `.specclaw/changes/014-payroll-engine/shots/app.png` (`/payroll` as Maya, Admin, signed in through the module e2e harness), `shots/mock.png` (`#001-amax-foundation-payroll`). Compared: the step bar, the three tiles, the changes table with Accept and Query, where the money goes, the cost line and the payslips table all match the mock's layout.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17); the payroll module review runs after 016.

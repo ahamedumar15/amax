@@ -1,14 +1,14 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 12:25 UTC
+**Last Updated:** 2026-10-18 12:31 UTC
 
 ## Active Changes
 
 
 - 🔀 **008-delivery-ingestion** — pr raised | 7/7 tasks (100%) | 0 failed | PR #70 merged
 - 🔀 **013-onboarding-offboarding** — pr raised | 5/5 tasks (100%) | 0 failed | PR #71 merged
-- 📝 **014-payroll-engine** — tasks done | 6/6 tasks (100%) | 0 failed
+- 🔍 **014-payroll-engine** — verify done | 6/6 tasks (100%) | 0 failed
 - 🔀 **038-navigation-scale** — pr raised | 3/3 tasks (100%) | 0 failed | PR #69 merged
 
 ## Pending Proposals
