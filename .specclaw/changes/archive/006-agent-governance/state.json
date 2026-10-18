@@ -1,10 +1,11 @@
 {
   "change": "006-agent-governance",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T04:35:36Z"},
     "verify": {"status":"done","at":"2026-10-18T05:09:17Z"},
-    "pr": {"status":"raised","at":"2026-10-18T05:14:43Z","url":"https://github.com/chan4lk/amax/pull/60"}
+    "pr": {"status":"raised","at":"2026-10-18T05:14:43Z","url":"https://github.com/chan4lk/amax/pull/60"},
+    "archived": {"status":"done","at":"2026-10-18T07:03:27Z"}
   }
 }

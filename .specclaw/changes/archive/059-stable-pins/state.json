@@ -1,0 +1,11 @@
+{
+  "change": "059-stable-pins",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T03:35:47Z"},
+    "verify": {"status":"done","at":"2026-10-18T04:01:16Z"},
+    "pr": {"status":"raised","at":"2026-10-18T04:01:59Z","url":"https://github.com/chan4lk/amax/pull/55"},
+    "archived": {"status":"done","at":"2026-10-18T07:03:26Z"}
+  }
+}

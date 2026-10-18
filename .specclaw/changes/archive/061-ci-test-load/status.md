@@ -1,6 +1,6 @@
-# Status: 036-compliance-registers
+# Status: 061-ci-test-load
 
-**Change:** 036-compliance-registers
+**Change:** 061-ci-test-load
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -8,13 +8,14 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Proposal | - | - |
+| Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/63 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/64 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

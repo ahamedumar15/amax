@@ -1,6 +1,6 @@
-# Status: 059-stable-pins
+# Status: 024-learning
 
-**Change:** 059-stable-pins
+**Change:** 024-learning
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/55 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/59 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

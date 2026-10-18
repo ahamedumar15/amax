@@ -1,10 +1,11 @@
 {
   "change": "034-backup-restore-and-export",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T05:20:24Z"},
     "verify": {"status":"done","at":"2026-10-18T06:02:40Z"},
-    "pr": {"status":"raised","at":"2026-10-18T06:03:09Z","url":"https://github.com/chan4lk/amax/pull/62"}
+    "pr": {"status":"raised","at":"2026-10-18T06:03:09Z","url":"https://github.com/chan4lk/amax/pull/62"},
+    "archived": {"status":"done","at":"2026-10-18T07:03:27Z"}
   }
 }

@@ -1,6 +1,6 @@
-# Status: 061-ci-test-load
+# Status: 059-stable-pins
 
-**Change:** 061-ci-test-load
+**Change:** 059-stable-pins
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -8,13 +8,14 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Proposal | ✅ Approved |  |
+| Proposal | - | - |
 | Spec | - | - |
 | Design | - | - |
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/64 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/55 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

@@ -1,6 +1,6 @@
-# Status: 030-notifications
+# Status: 036-compliance-registers
 
-**Change:** 030-notifications
+**Change:** 036-compliance-registers
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/58 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/63 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

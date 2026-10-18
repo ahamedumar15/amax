@@ -1,0 +1,11 @@
+{
+  "change": "012-leave",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T04:15:04Z"},
+    "verify": {"status":"done","at":"2026-10-18T04:42:00Z"},
+    "pr": {"status":"raised","at":"2026-10-18T04:42:27Z","url":"https://github.com/chan4lk/amax/pull/57"},
+    "archived": {"status":"done","at":"2026-10-18T07:03:27Z"}
+  }
+}
