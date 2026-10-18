@@ -37,7 +37,7 @@ A new public page with no app navigation: no rail, top bar or chat launcher. Top
 
 - [x] `T1` — Marketing page UI matching the mock: hero, problem, how it works, feature tickets with art, trust band, chat preview, CTA and footer, using `packages/ui` tokens, `Logo`, `Mascot` and the ticket gradients. No app shell, no forms, and the demo link reads from `AMAX_SALES_EMAIL` (AC-3, AC-4, AC-6, AC-9, AC-10, AC-11)
   Files: apps/web/app/welcome/page.tsx, apps/web/app/welcome/welcome.module.css, apps/web/components/marketing/ProductVideo.tsx
-- [ ] `T2` — Product video made with `brag` (`brag-slim`) in brand. Inputs: logo, mascot, mint-to-violet gradient, app font, ticket colours, and screenshots of the demo app with fictional data. Outputs: an MP4 (H.264, ≤ 8 MB), a WebM, a poster and WebVTT captions. `ProductVideo` uses native controls, `preload="none"`, and no autoplay under reduced motion (AC-5, AC-8, AC-12)
+- [x] `T2` — Product video made with `brag` (`brag-slim`) in brand. Inputs: logo, mascot, mint-to-violet gradient, app font, ticket colours, and screenshots of the demo app with fictional data. Outputs: an MP4 (H.264, ≤ 8 MB), a WebM, a poster and WebVTT captions. `ProductVideo` uses native controls, `preload="none"`, and no autoplay under reduced motion (AC-5, AC-8, AC-12)
   Files: apps/web/public/marketing/amax-product.mp4, apps/web/public/marketing/amax-product.webm, apps/web/public/marketing/amax-product-poster.jpg, apps/web/public/marketing/amax-product.en.vtt, apps/web/components/marketing/ProductVideo.tsx
   Depends: T1
 - [x] `T3` — Routing: `/welcome` is a public path, and a signed-out `/` is rewritten (not redirected) to `/welcome`. A signed-in `/` still reaches the app overview. Update the gate unit tests (AC-1, AC-2)

@@ -18,7 +18,6 @@
 .mk-video{position:relative;margin:0;border-radius:var(--r-card);overflow:hidden;background:linear-gradient(135deg,var(--brand-mint),var(--brand-violet));box-shadow:var(--shadow)}
 .mk-video video{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
 .mk-video figcaption{padding:10px 16px;font-size:13px;color:#fff;background:rgba(20,18,40,.55)}
-.mk-face{position:absolute;top:14px;left:14px;width:56px;height:56px;pointer-events:none}
 .mk-problem p{margin:0}
 .mk-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .mk-steps h3{margin:12px 0 6px}
