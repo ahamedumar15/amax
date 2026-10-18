@@ -1,0 +1,12 @@
+.expenses .card{position:relative}
+.expenses .tickets{margin-bottom:28px}
+.expenses .stack{display:grid;gap:28px}
+.expenses .actions{display:flex;align-items:center;gap:10px;margin-left:auto;margin-right:28px}
+.expenses .scroll-x{overflow-x:auto}
+.expenses .tbl td small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px}
+.expenses .tbl td small.over{color:var(--chip-bad);font-weight:600}
+.expenses .what{display:grid;gap:2px;white-space:normal;min-width:220px}
+.expenses .decide{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.expenses .empty-line{color:var(--ink-3);font-size:14px;margin:0}
+.expenses .empty-line.pad{padding:0 28px 24px}
+@media (prefers-reduced-motion:reduce){.expenses *{transition:none!important;animation:none!important}}
