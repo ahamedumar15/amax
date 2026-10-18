@@ -2,7 +2,7 @@
 
 Follow-up work that a change deliberately left out. Each item becomes its own specclaw proposal.
 
-- [ ] **Career tree** (066, proposal and mock merged in #83; wave 5). One view of a person's whole history drawn as a tree: years as the trunk, grade changes as rings, projects as branches, technologies as leaves, certifications as fruit, and department, manager and entity moves as roots, with a "What changed" list and a trace panel. A new `career` module (hr importing allocations would be a cycle). Plan must check whether delivery's ingested data carries languages or dependencies for the technology tags. Proposal: `.specclaw/changes/066-career-tree/change.md`; mock: `.specclaw/mock/index.html#066-career-tree`.
+- [x] **Career tree** (066, proposal and mock merged in #83; wave 5; built in #92). One view of a person's whole history drawn as a tree: years as the trunk, grade changes as rings, projects as branches, technologies as leaves, certifications as fruit, and department, manager and entity moves as roots, with a "What changed" list and a trace panel. A new `career` module (hr importing allocations would be a cycle). Plan must check whether delivery's ingested data carries languages or dependencies for the technology tags. Proposal: `.specclaw/changes/066-career-tree/change.md`; mock: `.specclaw/mock/index.html#066-career-tree`.
 
 - [ ] **Promote an opportunity from chat** (from 043). `promote_opportunity` makes three writes: presales' claim, delivery's create under its own key, then the link. It can't be one keyed chat write, so it declares `service: null` and no longer becomes a confirm card. Before 043 every chat confirm of it ended "unknown". Make promote one service whose `run` calls the claim, the create and the link as nested commands, then declare it.
 
@@ -34,3 +34,9 @@ Follow-up work that a change deliberately left out. Each item becomes its own sp
 
 - [ ] **RFP debriefs, client conversations and close dates in presales' contract** (from 026). Market position, the trends and the 12-month win rate (3 of 8, 38%) are insight records because `OpportunityRef` has no close date and presales publishes no debriefs or logged conversations. Publish them, then compute the win rate and its change live.
 
+
+- [ ] **Repo languages and dependencies in delivery's contract** (from 066). Career's `tag_technology` is chat-only, because delivery's ingestion (008) publishes commit hours and closed tasks, not a repo's languages or packages. Publish them per linked repo, then add the career agent that proposes technology tags from them as 006 suggestions (the faint leaves).
+
+- [ ] **Member skill in allocations' contract** (from 066). The career tree should show a person's skills-matrix entry (`allocations.member.skill`) as a leaf on the trunk, but `contracts.ts` doesn't publish it. Publish it, then draw the leaf.
+
+- [ ] **keyflow's Performance tab on the Person page** (from 066). keyflow serves `/hr/p/<employeeNo>/performance`, but the Person page has no link to it. Add it to hr's `PERSON_SECTIONS` slot, which 066 added for Career.

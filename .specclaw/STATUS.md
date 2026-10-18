@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 19:26 UTC
+**Last Updated:** 2026-10-18 20:17 UTC
 
 ## Active Changes
 
@@ -11,6 +11,7 @@
 - 🔀 **063-public-assets-in-image** — pr raised | 1/1 tasks (100%) | 0 failed | PR #84 merged
 - 🔀 **064-marketing-revamp** — pr raised | 7/7 tasks (100%) | 0 failed | PR #87 merged
 - 🔀 **065-review-pass-cap** — pr raised | 1/1 tasks (100%) | 0 failed | PR #88 merged
+- 🔀 **066-career-tree** — pr raised | 5/5 tasks (100%) | 0 failed | PR #92 open
 
 ## Pending Proposals
 
@@ -19,7 +20,6 @@
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
-- 📋 **066-career-tree** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -84,6 +84,6 @@
 
 ## Stats
 
-- **Total changes:** 62
-- **Active:** 5
+- **Total changes:** 63
+- **Active:** 6
 - **Completed:** 57

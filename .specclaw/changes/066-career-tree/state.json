@@ -1,8 +1,11 @@
 {
   "change": "066-career-tree",
-  "phase": "proposal",
+  "phase": "pr",
   "branch": "",
   "phases": {
-    "proposal": {"status":"approved","at":"2026-10-18T16:46:03Z"}
+    "proposal": {"status":"approved","at":"2026-10-18T16:46:03Z"},
+    "tasks": {"status":"done","at":"2026-10-18T19:41:01Z"},
+    "verify": {"status":"done","at":"2026-10-18T20:15:26Z"},
+    "pr": {"status":"raised","at":"2026-10-18T20:15:38Z","url":"https://github.com/chan4lk/amax/pull/92"}
   }
 }
