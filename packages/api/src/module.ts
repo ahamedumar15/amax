@@ -8,9 +8,8 @@ import { webhookBody } from "./payload";
 // No job of its own deletes them (review 058 B4).
 export const apiRetention: RetentionEntry[] = [
   { table: "api.rate_limited", label: "Rate-limited requests", subject: ["subject"], fields: ["subject"], class: "personal", period: "P90D", start: { at: ["hour"] }, action: "delete" },
-  // The dedupe rows are GitHub's only replay protection (it sends no timestamp), so no tenant period
-  // may delete them sooner (review 058 round 2).
-  { table: "api.inbound", label: "Incoming webhook calls", fields: ["event_id"], class: "personal", period: "P90D", minimum: "P90D", start: { at: ["received_at"] }, action: "delete" },
+  // The log only: replay protection is api.replay_key, which no purge deletes (060 AC-8).
+  { table: "api.inbound", label: "Incoming webhook calls", fields: ["event_id"], class: "personal", period: "P90D", start: { at: ["received_at"] }, action: "delete" },
   { table: "api.delivery", label: "Outgoing webhook deliveries", fields: ["event"], class: "personal", period: "P1Y", start: { at: ["delivered_at"] }, action: "delete" },
 ];
 

@@ -83,12 +83,18 @@ function scanModule(name) {
 // is not an entry. Each entry must name the columns requests and holds find the person by.
 const stripTs = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 
+// Mirrors PERSON_COLUMN in packages/core/src/module.ts (060 AC-2).
+const PERSON_COLUMN = /_by$|_user_id$|_actor$|^person_id$|^(owner|lead|manager|person|by)_name$/;
+
 export function retentionEntries(manifest) {
   const code = stripTs(manifest);
   const hits = [...code.matchAll(/\btable:\s*"([^"]+)"/g)];
   return hits.map((h, i) => {
     const body = code.slice(h.index, hits[i + 1]?.index ?? code.length);
-    return { table: h[1], findable: /\bsubject(Name)?:\s*\[\s*"/.test(body) };
+    const list = (key) => [...(body.match(new RegExp(`\\b${key}:\\s*\\[([^\\]]*)\\]`))?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    const found = [...list("subject"), ...list("subjectName")];
+    const unfound = list("fields").filter((f) => PERSON_COLUMN.test(f) && !found.includes(f));
+    return { table: h[1], findable: /\bsubject(Name)?:\s*\[\s*"/.test(body), unfound };
   });
 }
 
@@ -99,6 +105,7 @@ function unretained(name) {
   return [
     ...problems,
     ...tables.filter((t) => !entries.some((e) => e.table === t)).map((t) => `modules/${name}: personal-data table ${t} has no retention entry (032)`),
+    ...entries.filter((e) => e.unfound.length).map((e) => `modules/${name}: retention entry for ${e.table} changes ${e.unfound.join(", ")} but doesn't list ${e.unfound.length === 1 ? "it" : "them"} in subject or subjectName, so that person's rows are never erased, exported or held (060)`),
     ...[...new Set(entries.filter((e) => !e.findable).map((e) => e.table))].map((t) => `modules/${name}: retention entry for ${t} names no subject or subjectName column, so access and erasure requests can't find its rows (032)`),
   ];
 }

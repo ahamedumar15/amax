@@ -34,7 +34,7 @@ export const apiTools = (d: AdminDeps) => {
       run: async (v, a, s) => (chatOnly(s, KEY_ONCE), rotateCredential(ctxFor(v, s), a)) }),
     tool({ ...write(CRED_MANAGE), name: "revoke_api_credential", description: "Revoke a service credential now; its key and access tokens stop working.", destructive: true,
       input: z.object({ id: z.uuid(), reason: z.enum(["replaced", "compromised", "unused"]) }), run: (v, a, s) => revokeCredential(ctxFor(v, s), a) }),
-    tool({ ...read(HOOK_READ), pin: "view", name: "get_api_overview", description: "This week's API picture: outgoing webhooks and deliveries, incoming webhooks verified and rejected per provider, and requests rate-limited.", input: z.object({ provider: z.enum(PROVIDERS).optional(), channel: z.enum(["page", "rest", "mcp", "chat"]).optional() }),
+    tool({ ...read(HOOK_READ), pin: "view", name: "get_api_overview", description: "This week's API picture: outgoing webhooks and deliveries, incoming webhooks verified and rejected per provider, and requests rate-limited.", input: z.object({ provider: z.enum(PROVIDERS).optional(), channel: z.enum(["page", "prefetch", "rest", "mcp", "chat"]).optional() }),
       run: async (v, a) => {
         const s = await apiStats(d.db(), v.tenantId);
         if (a.provider) return s.inbound.find((i) => i.provider === a.provider);

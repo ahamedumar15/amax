@@ -171,11 +171,20 @@ export type ModuleManifest = {
   fixtures?: FixtureSeed[];
 };
 
+/** A column that records who: an id, actor or name of a person (060 AC-2). */
+export const PERSON_COLUMN = /_by$|_user_id$|_actor$|^person_id$|^(owner|lead|manager|person|by)_name$/;
+
+/** Personal columns a rule changes but can't find the person by, so their rows are never erased, exported or held. */
+export const unfoundColumns = (r: Pick<RetentionEntry, "fields" | "subject" | "subjectName">) =>
+  r.fields.filter((f) => PERSON_COLUMN.test(f) && !r.subject?.includes(f) && !r.subjectName?.includes(f));
+
 export function defineModule(manifest: ModuleManifest): ModuleManifest {
   if (!/^[a-z][a-z0-9-]*$/.test(manifest.id)) throw new Error(`module id "${manifest.id}" must be kebab-case`);
   if (!manifest.routes.some((r) => r.path === "" && !r.mount)) throw new Error(`module "${manifest.id}" needs a root route ("")`);
   for (const r of manifest.retention ?? []) {
     if (!r.start.at.length && !r.start.idle) throw new Error(`module "${manifest.id}": retention for ${r.table} never starts`);
+    const unfound = unfoundColumns(r);
+    if (unfound.length) throw new Error(`module "${manifest.id}": retention for ${r.table} changes ${unfound.join(", ")} but can't find the person by ${unfound.length === 1 ? "it" : "them"}; add ${unfound.length === 1 ? "it" : "them"} to subject or subjectName`);
   }
   return manifest;
 }
