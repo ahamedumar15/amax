@@ -38,7 +38,7 @@ licences and 1 device). No grant, revoke or seat removal ever runs without a per
 - [x] `T4` — Grant, revoke and remove seats are 006 suggestion kinds (sensitive, with undo) that only `it-access:change:approve` (IT Admin, Admin) can accept. The licence agent proposes removing seats unused 60+ days after each sync; a person asks for a grant or revoke through chat. An accepted change is queued for the apply workflow, and undo cancels it or queues the inverse (AC-2)
   Files: modules/it-access/suggestions.ts, modules/it-access/server/changes.ts, modules/it-access/tests/changes.test.ts
   Depends: T3
-- [ ] `T5` — `hr.person.left` proposes revoking all of the person's access on their last day; when onboarding is installed, `onboarding.access.requested` makes the same grant or revoke suggestion, deduplicated (AC-3)
+- [x] `T5` — `hr.person.left` proposes revoking all of the person's access on their last day; when onboarding is installed, `onboarding.access.requested` makes the same grant or revoke suggestion, deduplicated (AC-3)
   Files: modules/it-access/server/leavers.ts, modules/it-access/tests/leavers.test.ts
   Depends: T4
 - [ ] `T6` — Module standard: README, manifest, CODEOWNERS line, contract tests, retention entries, can be switched off and runs without onboarding (AC-4)
