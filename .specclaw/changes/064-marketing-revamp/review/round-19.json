@@ -1,0 +1,80 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 0
+ },
+ "escalated": [
+  "bf2245789156"
+ ],
+ "files": [
+  "apps/web/components/marketing/queues.ts",
+  "apps/web/tests/marketing-queue.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/components/marketing/queues.ts",
+   "fp": "bf2245789156",
+   "in_delta": true,
+   "line": 19,
+   "message": "This is an instance fix. Last round's finding said the gap covers every tool whose service picks a stricter permission per step, but `step` was added only to fi2. hr1 has the same gap. The card shows HR approving Sophie Nguyen's leave as HR, not as her manager. `chainFor` in modules/leave/server/scope.ts:36 grants that HR step only through `leave:admin`. `approve_leave` declares `leave:approve`, and PM, Engineer, Finance, Sales, Payroll and Leadership all hold that through MANAGE (modules/leave/module.ts:10, 27-32). So the hr1 row only proves that some role holds `leave:approve`. It says nothing about HR's step. The cause is that `step` is optional and nothing makes a card set it, so any new card on a step-dependent tool passes silently. Fix: set `step: \"leave:admin\"` on hr1. Then either derive the step permission from the tool's service, or keep a list of tools with step-dependent services (approve_expense, reject_expense, approve_leave and the other leave decide tools) and fail any card on those tools that has no `step`. Also add a rejecting row per step, e.g. Engineer at the HR step of approve_leave.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Remove `leave:admin` from HR's grants in modules/leave/module.ts. HR can no longer approve a non-report's leave, so hr1's 'Approve leave' claim is false. The test `HR card hr1 runs approve_leave` still passes, because `canEver(HR, \"leave:approve\")` is true through MANAGE, or would be for any role given MANAGE.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/tests/marketing-queue.test.ts",
+   "fp": "e8a9b4e91ede",
+   "in_delta": true,
+   "line": 34,
+   "message": "The new rejection test calls `holds(\"Engineer\", \"expenses:approve-finance\")` directly and never goes through the card check that the fix added. It doesn't prove the fix works: delete `...(step ? [step] : [])` from the loop at line 25 and every test stays green. It also has only one row, where B2 asks for the named case plus two others. Fix: pull the per-card check into a function, such as `check(role, card)`, that both the passing rows and a rejecting table use. Feed it at least three cards whose tool permission the role holds but whose step it doesn't: Engineer on `{ tool: \"approve_expense\", step: \"expenses:approve-finance\" }`, PM on `{ tool: \"approve_leave\", step: \"leave:admin\" }`, and a third such as HR on the same expense step. Expect each one to be rejected.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Change line 25 to `for (const p of [permission!])`, which ignores `step`. fi2 still passes, and `rejects a step the role cannot take` still passes, so the suite goes green with the fix removed.",
+   "severity": "major"
+  }
+ ],
+ "head": "1927bfc3c693ac2eb03551dc85bb375166f558cf",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/retention/RetentionTickets.tsx",
+  "apps/web/app/(app)/settings/retention/page.tsx",
+  "apps/web/components/marketing/Queue.tsx",
+  "apps/web/components/marketing/copy.ts",
+  "apps/web/lib/admin/backups.ts",
+  "apps/web/lib/admin/privacy.ts",
+  "apps/web/lib/admin/status.ts",
+  "apps/web/lib/privacy-sources.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/tests/admin/it-admin.test.ts",
+  "apps/web/tests/admin/privacy.test.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/retention.spec.ts",
+  "modules/recruitment/fixtures/data.ts",
+  "modules/recruitment/fixtures/index.ts",
+  "packages/auth/src/index.ts",
+  "packages/auth/src/roles.ts",
+  "packages/chat/src/tools.ts",
+  "packages/mcp/src/admin.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 55147,
+ "round": 19,
+ "since": "676e6a9b7e",
+ "status": "escalate",
+ "system_chars": 39640,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792346838,
+ "ts_start": 1792346721
+}

@@ -16,7 +16,7 @@ export const QUEUES: Record<Role, Card[]> = {
     { id: "fi2", tool: "approve_expense", step: "expenses:approve-finance", tone: "v2", mark: "E", title: "Expense claim: taxi to the client office", detail: "Approved by the manager, Chloe Harris", by: "Claimed by Liam Walsh", action: "Approve", done: "Approved by you · queued for payment · in chat" },
   ],
   HR: [
-    { id: "hr1", tool: "approve_leave", tone: "v5", mark: "L", title: "Sophie Nguyen requested 3 days of leave", detail: "Nov 3–5 · balance after: 11 days", by: "Requested in chat by Sophie Nguyen", action: "Approve leave", done: "Approved by you · team calendar updated · in chat" },
+    { id: "hr1", tool: "approve_leave", step: "leave:admin", tone: "v5", mark: "L", title: "Sophie Nguyen requested 3 days of leave", detail: "Nov 3–5 · balance after: 11 days", by: "Requested in chat by Sophie Nguyen", action: "Approve leave", done: "Approved by you · team calendar updated · in chat" },
     { id: "hr2", tool: "remind_certification", tone: "v2", mark: "C", title: "Liam Walsh's first-aid certificate expires in 30 days", detail: "Recorded in learning · the 60-day reminder has gone out", by: "Recorded by Mia Thompson, HR", action: "Remind Liam", done: "Reminder sent by you · in chat" },
   ],
   Engineer: [

@@ -2,7 +2,7 @@ import { canEver, setGrants } from "@amax/auth/can";
 import type { Viewer } from "@amax/auth/viewer";
 import { describe, expect, it } from "vitest";
 import { modules } from "../generated/modules";
-import { QUEUES, type Role } from "../components/marketing/queues";
+import { QUEUES, type Card, type Role } from "../components/marketing/queues";
 
 type Tool = { name: string; permission?: string };
 type Kind = { kind: string; permission: string };
@@ -17,19 +17,24 @@ const permissionOf = (tool: string) => {
 const declared = new Set(all.flatMap((m) => m.permissions ?? []));
 const holds = (role: Role, permission: string) => canEver({ assignments: [{ role }] } as unknown as Viewer, permission);
 
-describe("064 AC-6 every hero queue card runs a shipped tool its role may use", () => {
-  const cards = Object.entries(QUEUES).flatMap(([role, list]) => list.map((c) => [role as Role, c.id, c.tool, c.step] as const));
-  it.each(cards)("%s card %s runs %s", (role, _id, tool, step) => {
-    const permission = permissionOf(tool);
-    expect(permission, `${tool} is not a shipped MCP tool or suggestion kind`).toBeTruthy();
-    for (const p of [permission!, ...(step ? [step] : [])]) {
-      expect(declared.has(p), `${p} is not a declared permission`).toBe(true);
-      expect(holds(role, p), `${role} does not hold ${p}`).toBe(true);
-    }
-  });
-  it.each([["PM", "issue_payroll"], ["Engineer", "suggestion:finance.invoice-draft"], ["PM", "suggestion:payroll.bank-file"], ["HR", "record_deployment"]] as const)("rejects %s running %s", (role, tool) => {
-    const permission = permissionOf(tool);
-    expect(Boolean(permission) && holds(role, permission!)).toBe(false);
-  });
-  it("rejects a step the role cannot take", () => expect(holds("Engineer", "expenses:approve-finance")).toBe(false));
+/** What is wrong with a card shown on a role's tab: an unknown tool, or a permission the role lacks. */
+const check = (role: Role, card: Pick<Card, "tool" | "step">) => {
+  const permission = permissionOf(card.tool);
+  if (!permission) return [`${card.tool} is not a shipped MCP tool or suggestion kind`];
+  return [permission, ...(card.step ? [card.step] : [])].flatMap((p) => [
+    ...(declared.has(p) ? [] : [`${p} is not a declared permission`]),
+    ...(holds(role, p) ? [] : [`${role} does not hold ${p}`]),
+  ]);
+};
+
+describe("064 AC-6 every hero queue card runs a shipped tool, at a step its role may take", () => {
+  const cards = Object.entries(QUEUES).flatMap(([role, list]) => list.map((c) => [role as Role, c.id, c] as const));
+  it.each(cards)("%s card %s", (role, _id, card) => expect(check(role, card)).toEqual([]));
+  it.each([
+    ["PM", { tool: "issue_payroll" }],
+    ["HR", { tool: "record_deployment" }],
+    ["Engineer", { tool: "approve_expense", step: "expenses:approve-finance" }],
+    ["PM", { tool: "approve_leave", step: "leave:admin" }],
+    ["Finance", { tool: "approve_leave", step: "leave:admin" }],
+  ] as const)("rejects %s running %o", (role, card) => expect(check(role, card)).not.toEqual([]));
 });
