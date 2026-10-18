@@ -1,22 +1,38 @@
-import type { ModuleManifest } from "@amax/core";
+import type { ModuleManifest, NavEntry } from "@amax/core";
 import type { NavItem } from "@amax/ui";
 import { modules } from "../generated/modules";
 import { OPERATIONS } from "./operations";
 
 const GROUPS = ["Work", "People", "Business", "Operations"];
+const rank = (group?: string) => (group ? GROUPS.indexOf(group) : -1);
+const ordered = (mods: readonly ModuleManifest[]) => [...mods].sort((a, b) => rank(a.group) - rank(b.group) || (a.order ?? 50) - (b.order ?? 50) || a.id.localeCompare(b.id));
 
-export const installed: ModuleManifest[] = [...modules].sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group) || (a.order ?? 50) - (b.order ?? 50));
+export const installed: ModuleManifest[] = ordered(modules);
+
+const inRail = (n: NavEntry) => n.parent !== "settings";
 
 // A module's root entry, then its optional nav[] entries (041) right after it. Only the root can be
-// primary (the mobile bar), as in the mock.
+// primary (the mobile bar), as in the mock. 038 AC-1: entries are sorted into one heading per group in
+// a fixed order (an entry may name its own group), whatever order the modules were found in.
+export const moduleNav = (mods: readonly ModuleManifest[]): NavItem[] =>
+  ordered(mods)
+    .flatMap((m) => [
+      ...(m.menu === "profile" ? [] : [{ href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary }]),
+      ...(m.nav ?? []).filter(inRail).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: n.group ?? m.group })),
+    ])
+    .sort((a, b) => rank(a.group) - rank(b.group));
+
+/** 038 AC-2: module screens that live under Settings, as hub cards rather than rail items. */
+export const settingsEntries = (mods: readonly ModuleManifest[]) =>
+  ordered(mods).flatMap((m) => (m.nav ?? []).filter((n) => !inRail(n)).map((n) => ({ module: m.id, moduleTitle: m.title, href: `/${m.id}/${n.path}`, title: n.title, blurb: n.blurb ?? "", status: n.status })));
+
+export const settingsPaths = settingsEntries(installed).map((e) => e.href);
+
 export const navItems: NavItem[] = [
   { href: "/", label: "Overview", icon: "home", primary: true },
   // 006: every agent suggestion a person may decide; "suggestions:read" is granted to every role.
   { href: "/suggestions", label: "Suggestions", icon: "spark" },
-  ...installed.flatMap((m) => [
-    ...(m.menu === "profile" ? [] : [{ href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary }]),
-    ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group })),
-  ]),
+  ...moduleNav(installed),
   // 047, 055: the Operations group: the Settings hub ("settings:read") and the screens still to come
   // ("operations:read"). Admin and IT Admin hold both, so visibleNav shows the group only to them.
   // 038 AC-4: shown to anyone who may open one of its screens (HR: Data retention).

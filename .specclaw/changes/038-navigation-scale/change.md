@@ -27,11 +27,11 @@ Approved by the product owner in Discord, 2026-10-18 ("start with 38, then wave 
 hub, its breadcrumbs and Settings staying current on its screens, and the registry already merges items into one heading
 per group. These tasks close the rest.
 
-- [ ] `T1` — The rail overflows well: it scrolls on its own, keeps the current item and the focused item in view, and fades the edge where items are hidden. Backups and export leaves the rail for the hub. The More sheet lists Settings (AC-3, AC-5)
+- [x] `T1` — The rail overflows well: it scrolls on its own, keeps the current item and the focused item in view, and fades the edge where items are hidden. Backups and export leaves the rail for the hub. The More sheet lists Settings (AC-3, AC-5)
   Files: packages/ui/src/components/Rail.tsx, packages/ui/src/styles/shell.css, apps/web/lib/registry.ts, apps/web/tests/e2e/shell.spec.ts
-- [ ] `T2` — Hub cards and the Settings rail item follow their screens' role checks. Anyone who may open a card sees Settings, and HR sees only Data retention (AC-4)
+- [x] `T2` — Hub cards and the Settings rail item follow their screens' role checks. Anyone who may open a card sees Settings, and HR sees only Data retention (AC-4)
   Files: apps/web/app/(app)/settings/page.tsx, apps/web/lib/admin/status.ts, apps/web/lib/registry.ts, apps/web/tests/e2e/admin.spec.ts
-- [ ] `T3` — A manifest nav entry declares `group` or `parent: 'settings'`. The registry emits one heading per group in fixed order whatever the discovery order. Settings entries become hub cards (title, blurb, the module's status line) with a "Settings /" breadcrumb, and Settings stays current (AC-1, AC-2)
+- [x] `T3` — A manifest nav entry declares `group` or `parent: 'settings'`. The registry emits one heading per group in fixed order whatever the discovery order. Settings entries become hub cards (title, blurb, the module's status line) with a "Settings /" breadcrumb, and Settings stays current (AC-1, AC-2)
   Files: packages/core/src/module.ts, apps/web/lib/registry.ts, apps/web/lib/admin/status.ts, apps/web/components/shell/Shell.tsx, apps/web/tests/registry-038.test.ts
   Depends: T2
 

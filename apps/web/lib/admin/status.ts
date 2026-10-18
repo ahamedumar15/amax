@@ -15,6 +15,7 @@ import { BACKUP_READ, backupOverview } from "@amax/core/backup";
 import { can, canEver, type Viewer } from "@amax/auth";
 import { daysUntil, expiringSoon, pastExpiry } from "./credentials";
 import { ctxFor, type AdminDeps } from "./tool";
+import { installed, settingsEntries } from "../registry";
 
 export type Tone = "good" | "warn" | "bad" | "info";
 export type Area = { id: string; title: string; href: string | null; blurb: string; stat: string; chip: { tone: Tone; text: string }; attention?: string };
@@ -136,6 +137,13 @@ const CARDS: Card[] = [
   { gate: (v) => can(v, BACKUP_READ), load: (_d, v) => backups(v) },
   { gate: (v) => canEver(v, "api:credential:read") && canEver(v, "api:webhook:read"), load: async () => SOON },
 ];
+
+// Module screens declared with parent "settings" (038 AC-2): a card each, behind the module's read.
+const moduleCards: Card[] = settingsEntries(installed).map((e) => ({
+  gate: (v) => can(v, `${e.module}:read`),
+  load: async (_d, v) => ({ id: e.href, title: e.title, href: e.href, blurb: e.blurb, stat: (await e.status?.(v as never)) ?? e.moduleTitle, chip: { tone: "info", text: e.moduleTitle } }),
+}));
+CARDS.push(...moduleCards);
 
 /** Whether the viewer may open any Settings screen: the hub and its rail item show only then. */
 export const seesSettings = (v: Viewer) => CARDS.some((c) => c.gate(v));

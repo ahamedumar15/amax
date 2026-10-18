@@ -22,12 +22,15 @@ type ShellProps = {
   topBar?: ReactNode;
   /** Module screens reached from the profile menu (030's Notifications). */
   menuLinks?: MenuLink[];
+  /** Module screens that live under Settings (038): the rail marks Settings while one is open. */
+  settingsPaths?: string[];
 };
 
-export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false, usage = null, topBar, menuLinks = [] }: ShellProps) {
+export function Shell({ items, children, profile = null, banner, onViewAs, onSignOut, voice = false, usage = null, topBar, menuLinks = [], settingsPaths = [] }: ShellProps) {
   const pathname = useRouteFocus();
+  const under = (h: string) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`));
   // The rail marks the deepest entry the page sits under (/delivery/p/CON → Projects).
-  const current = items.map((i) => i.href).filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`))).sort((a, b) => b.length - a.length)[0] ?? pathname;
+  const current = settingsPaths.some(under) ? "/settings" : (items.map((i) => i.href).filter(under).sort((a, b) => b.length - a.length)[0] ?? pathname);
   const sheet = useRef<HTMLDialogElement>(null);
   const link = Link as unknown as LinkLike;
   const [chatOpen, setChatOpen] = useState(false);
