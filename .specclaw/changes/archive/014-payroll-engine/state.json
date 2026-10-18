@@ -1,10 +1,11 @@
 {
   "change": "014-payroll-engine",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T11:07:51Z"},
     "verify": {"status":"done","at":"2026-10-18T12:31:32Z"},
-    "pr": {"status":"raised","at":"2026-10-18T12:31:54Z","url":"https://github.com/chan4lk/amax/pull/75"}
+    "pr": {"status":"raised","at":"2026-10-18T12:31:54Z","url":"https://github.com/chan4lk/amax/pull/75"},
+    "archived": {"status":"done","at":"2026-10-18T14:11:45Z"}
   }
 }

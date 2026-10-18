@@ -1,6 +1,6 @@
-# Status: 018-expenses
+# Status: 017-finance-contracts-billing
 
-**Change:** 018-expenses
+**Change:** 017-finance-contracts-billing
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/78 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/76 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
