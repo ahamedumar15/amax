@@ -17,7 +17,8 @@ const REGIONS: [string, number, string][] = [
 const MEASURED = [".tickets.four .ticket", ".tickets.four", ".cols > .card.flush", ".stack > .card:first-child", ".stack > .card:last-child"];
 
 async function signIn(page: Page, email: string, to: string) {
-  await page.goto(to);
+  // 062: a signed-out / is the marketing page, so sign in from /signin, which lands on /.
+  await page.goto(to === "/" ? "/signin" : to);
   await page.getByLabel("Demo user (fixtures only)").fill(email);
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
   await expect(page).toHaveURL((u) => u.pathname === to);
