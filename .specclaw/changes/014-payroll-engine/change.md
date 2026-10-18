@@ -35,7 +35,7 @@ fictional deductions, so the engine and screen can be shown end to end.
 - [x] `T3` — The country-pack interface (`calculate`, `statutory`, `filings`). The draft is built from hr pay data, leave and (optionally) time through their contracts. A fixture demo pack covers it until 015 and 016 land (AC-4)
   Files: modules/payroll/packs.ts, modules/payroll/server/draft.ts, modules/payroll/tests/packs.test.ts
   Depends: T2
-- [ ] `T4` — The payroll agent explains every line that changed since last period as a 006 suggestion (Accept or Query). The run can't be approved while one is open or queried. The bank file is an irreversible 006 kind needing two approvers (AC-1, AC-2)
+- [x] `T4` — The payroll agent explains every line that changed since last period as a 006 suggestion (Accept or Query). The run can't be approved while one is open or queried. The bank file is an irreversible 006 kind needing two approvers (AC-1, AC-2)
   Files: modules/payroll/suggestions.ts, modules/payroll/server/variance.ts, modules/payroll/tests/variance.test.ts
   Depends: T3
 - [ ] `T5` — Pay visibility (002): pay values go only to Payroll and Admin, and to an employee for their own payslip. Finance and everyone else get 404 or totals only, across screens, MCP and chat redaction (`sensitive: pay`) (AC-3)
