@@ -176,7 +176,7 @@ export type ModuleManifest = {
    * "time:approve@managed" (projects the viewer manages), "@assigned" (managed or assigned),
    * "@own" (the viewer's own records). Admin holds every permission. Nav needs "<id>:read".
    */
-  grants?: Partial<Record<"Admin" | "Leadership" | "PM" | "Engineer" | "Finance" | "Sales" | "HR" | "Payroll" | "Employee", string[]>>;
+  grants?: Partial<Record<"Admin" | "ITAdmin" | "Leadership" | "PM" | "Engineer" | "Finance" | "Sales" | "HR" | "Payroll" | "Employee", string[]>>;
   routes: ModuleRoute[];
   mcpTools?: McpToolDef[];
   /**

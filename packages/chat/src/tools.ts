@@ -7,7 +7,7 @@ import { ToolError } from "@amax/mcp";
 import { getConversation, listConversations } from "./history";
 
 const ARCHIVE = "chat:conversation:archive";
-const ROLES = ["Leadership", "PM", "Engineer", "Finance", "Sales", "HR", "Payroll", "Employee"] as const;
+const ROLES = ["ITAdmin", "Leadership", "PM", "Engineer", "Finance", "Sales", "HR", "Payroll", "Employee"] as const;
 
 export const archiveConversation = defineService({
   name: "chat.conversation.archive",

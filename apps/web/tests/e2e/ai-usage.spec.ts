@@ -55,3 +55,24 @@ test("048 AC-3 AI usage is Admin only, and the footer shows only your own figure
   await page.goto("/settings/ai/usage");
   await expect(page.getByRole("heading", { level: 1 })).not.toHaveText("AI usage");
 });
+
+test("055 AC-3 AC-5 AI usage as IT Admin: calls and tokens, every money figure hidden with no pin, none in the page", async ({ page }) => {
+  await signIn(page, "ravi@lumenlabs.test", "/settings/ai/usage");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("AI usage");
+  await expect(page.locator(".lede")).toContainText("Prices are hidden for your role.");
+  await expect(page.locator(".tickets .ticket")).toHaveCount(4);
+  const cost = page.locator("[data-pricing-hidden]");
+  await expect(cost).toContainText("Hidden for your role");
+  await expect(cost.locator(".pin")).toHaveCount(0);
+  await expect(page.locator(".tickets > .pinnable > .pin")).toHaveCount(3);
+  await expect(page.getByRole("heading", { name: "Calls per day" })).toBeVisible();
+  const people = page.getByRole("table", { name: "AI usage by person" });
+  await expect(people.getByRole("columnheader", { name: "Cost" })).toHaveCount(0);
+  await expect(people.locator("tr", { hasText: "Maya" }).locator(".pin")).toHaveCount(1);
+  await expect(page.getByRole("table", { name: /most calls/ }).getByRole("columnheader", { name: "Cost" })).toHaveCount(0);
+  expect(await page.locator("main").innerHTML()).not.toMatch(/\$\d|\+ unknown/);
+  expect(await axe(page)).toEqual([]);
+  await page.goto("/settings");
+  await expect(page.locator(".app-card", { hasText: "AI usage" }).locator(".chip")).toHaveText("Hidden for your role");
+  expect(await page.locator("main").innerHTML()).not.toMatch(/\$\d/);
+});

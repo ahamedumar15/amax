@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { applyTheme, readTheme, type ThemeChoice } from "./theme";
 
 const THEMES: ThemeChoice[] = ["system", "light", "dark"];
-export const VIEW_ROLES = ["Admin", "Leadership", "PM", "HR", "Payroll", "Finance", "Engineer", "Employee"] as const;
+export const VIEW_ROLES = ["Admin", "ITAdmin", "Leadership", "PM", "HR", "Payroll", "Finance", "Engineer", "Employee"] as const;
 
 export type Profile = {
   name: string;
@@ -13,7 +13,7 @@ export type Profile = {
   chip: string;
   subtitle: string;
   canViewAs: boolean;
-  /** Admin right now (View as another role turns this off, matching what the settings pages allow). */
+  /** May open Settings right now (Admin or IT Admin; View as another role turns this off, matching what the settings pages allow). */
   isAdmin: boolean;
   viewAs?: string;
 };
@@ -60,7 +60,7 @@ export function ProfileMenu({ profile, onViewAs, onSignOut, links = [] }: Props)
               <div role="group" aria-labelledby="ml-view">
                 {VIEW_ROLES.map((r) => (
                   <button key={r} type="button" role="menuitemradio" aria-checked={viewing === r}
-                    onClick={() => (setOpen(false), start(() => onViewAs(r === "Admin" ? null : r)))}>{r}</button>
+                    onClick={() => (setOpen(false), start(() => onViewAs(r === "Admin" ? null : r)))}>{r === "ITAdmin" ? "IT Admin" : r}</button>
                 ))}
               </div>
               <div className="menu-sep" role="separator" />

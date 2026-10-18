@@ -1,6 +1,7 @@
 import type { ModuleManifest } from "@amax/core";
 import type { NavItem } from "@amax/ui";
 import { modules } from "../generated/modules";
+import { OPERATIONS } from "./operations";
 
 const GROUPS = ["Work", "People", "Business", "Operations"];
 
@@ -14,8 +15,10 @@ export const navItems: NavItem[] = [
     ...(m.menu === "profile" ? [] : [{ href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary }]),
     ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group })),
   ]),
-  // 047: the Settings hub; "settings:read" is Admin's alone, so visibleNav shows it only to Admins.
+  // 047, 055: the Operations group: the Settings hub ("settings:read") and the screens still to come
+  // ("operations:read"). Admin and IT Admin hold both, so visibleNav shows the group only to them.
   { href: "/settings", label: "Settings", icon: "gear", group: "Operations" },
+  ...OPERATIONS.map((o) => ({ href: `/operations/${o.slug}`, label: o.title, icon: o.icon, group: "Operations" })),
 ];
 
 // Module screens reached from the profile menu instead of the rail (030's Notifications).

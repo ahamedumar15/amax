@@ -2,10 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, test, type Page } from "@playwright/test";
+import { ADMINS } from "./admins";
 
 const REDIRECT = "http://127.0.0.1:9/callback";
 
-async function connectClient(page: Page, baseURL: string, scope: string) {
+async function connectClient(page: Page, baseURL: string, scope: string, email = "maya@lumenlabs.test") {
   const reg = await (await fetch(`${baseURL}/oauth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ client_name: "e2e client", redirect_uris: [REDIRECT] }) })).json();
   const verifier = randomBytes(32).toString("base64url");
   const challenge = createHash("sha256").update(verifier).digest("base64url");
@@ -16,7 +17,7 @@ async function connectClient(page: Page, baseURL: string, scope: string) {
   await page.route(`${REDIRECT}**`, (route) => { code = new URL(route.request().url()).searchParams.get("code") ?? ""; return route.fulfill({ body: "ok" }); });
   await page.goto(url.toString());
   if (await page.getByLabel("Demo user (fixtures only)").isVisible().catch(() => false)) {
-    await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
+    await page.getByLabel("Demo user (fixtures only)").fill(email);
     await page.getByRole("button", { name: "Sign in as demo user" }).click();
   }
   await expect(page.getByRole("heading", { name: "Allow e2e client to use amax?" })).toBeVisible();
@@ -81,8 +82,8 @@ test("refresh rotates, revoke ends access", async ({ page, baseURL }) => {
   expect(after.status).toBe(401);
 });
 
-test("AC4 Integrations lists tools by module with who can use them, and connected clients can be revoked through chat", async ({ page, baseURL }) => {
-  await connectClient(page, baseURL!, "read");
+for (const who of ADMINS) test(`AC4 Integrations lists tools by module with who can use them, and connected clients can be revoked through chat, as ${who.role} (055)`, async ({ page, baseURL }) => {
+  await connectClient(page, baseURL!, "read", who.email);
   await page.goto("/settings/integrations");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Integrations");
   const row = page.locator("tr", { hasText: "record_deployment" });

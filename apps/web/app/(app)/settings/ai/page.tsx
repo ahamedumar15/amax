@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { aiConfigured, blockedReason, voiceAllowed } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
-import { rolesOf } from "@amax/auth";
+import { can, canSeePricing } from "@amax/auth";
+import { PRICE_HIDDEN } from "@amax/ai/usage-format";
 import { SENSITIVITY_CLASSES } from "@amax/core/server";
 import { loadEnv } from "@amax/core/env";
 import { PinButton } from "@amax/ui";
@@ -33,7 +34,7 @@ if (missing.length) throw new Error(`AI and data screen has no row for ${missing
 
 export default async function AiSettingsPage() {
   const viewer = await getViewer();
-  if (!viewer || !rolesOf(viewer).includes("Admin")) notFound();
+  if (!viewer || !can(viewer, "ai:policy:manage")) notFound();
   const env = loadEnv();
   const s = await aiStats(getDb()!, viewer.tenantId);
   const p = s.policy;
@@ -56,7 +57,7 @@ export default async function AiSettingsPage() {
       {blocked && <div className="viewbanner" role="alert">AI features are off: {blocked}.</div>}
       <div className="tickets four">
         <Ticket pin={pin("Data region")} tone="info" label="Data region" value={p.dataRegion ?? "Not set"} note={blocked ? "Resolve the warning above" : "Database, files and AI in region"} />
-        <Ticket pin={pin("Calls this month")} tone="good" label="Calls this month" value={s.calls.toLocaleString("en-US")} note={`$${s.costUsd.toFixed(2)} in model cost${s.unpriced ? `, plus ${s.unpriced} call${s.unpriced === 1 ? "" : "s"} at unknown cost` : ""}`} />
+        <Ticket pin={pin("Calls this month")} tone="good" label="Calls this month" value={s.calls.toLocaleString("en-US")} note={`${canSeePricing(viewer) ? `$${s.costUsd.toFixed(2)} in model cost` : `Model cost ${PRICE_HIDDEN.toLowerCase()}`}${s.unpriced ? `, plus ${s.unpriced} call${s.unpriced === 1 ? "" : "s"} at unknown cost` : ""}`} />
         <Ticket pin={pin("Fields redacted")} tone="good" label="Fields redacted" value={redacted.toLocaleString("en-US")} note={Object.entries(s.redactions).map(([k, n]) => `${k[0].toUpperCase()}${k.slice(1)} ${n}`).join(", ") || "None yet"} />
         <Ticket pin={pin("Injection attempts flagged")} tone="attention" label="Injection attempts flagged" value={String(s.injections)} note="Quoted as data, never followed" />
       </div>

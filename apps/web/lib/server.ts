@@ -9,7 +9,7 @@ import { configureAi } from "@amax/ai";
 import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
-import { installAuthorizer, setGrants, setViewerScopeResolvers } from "@amax/auth";
+import { installAuthorizer, itAdminGrants, setGrants, setViewerScopeResolvers } from "@amax/auth";
 import { createRegistry } from "@amax/mcp";
 import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
@@ -39,7 +39,7 @@ export function getDb(): Db | null {
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
-    setGrants([...installed, chatPlatform, privacyGrants]);
+    setGrants([...installed, chatPlatform, privacyGrants, itAdminGrants]);
     setPrivacySources(privacySources(installed));
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
