@@ -23,7 +23,7 @@ export default defineModule({
   integratesWith: [],
   // notify and deliver are the system jobs' own: no role is granted them.
   permissions: [READ, MANAGE, NOTIFY, DELIVER_PERMISSION],
-  grants: { Leadership: OWN, PM: OWN, Engineer: OWN, Finance: OWN, Sales: OWN, HR: OWN, Payroll: OWN, Employee: OWN },
+  grants: { ITAdmin: OWN, Leadership: OWN, PM: OWN, Engineer: OWN, Finance: OWN, Sales: OWN, HR: OWN, Payroll: OWN, Employee: OWN },
   routes: [{ path: "", title: "Notifications", component: NotificationsPage }],
   topBar: Bell,
   mcpTools,
