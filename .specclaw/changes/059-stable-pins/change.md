@@ -22,22 +22,22 @@ None. Pins look the same; a renamed record's pin shows its new name.
 
 ## Tasks
 
-- [ ] `T1` — UI: every record PinRef carries the record's UUID; the chat panel shows a pin that can't be found as "No longer available" and drops the repin merge (AC-1, AC-2, AC-4)
-  Files: packages/ui/src/components/PinButton.tsx, modules/delivery/ui/ProjectsPage.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProjectSections.tsx, modules/delivery/ui/ReleasePage.tsx, modules/hr/ui/PersonPage.tsx, modules/hr/ui/Directory.tsx, modules/hr/ui/DocumentsCard.tsx, modules/presales/ui/parts.tsx, modules/presales/ui/ActivitiesCard.tsx, modules/presales/ui/TasksRisks.tsx, modules/presales/ui/StageFeed.tsx, apps/web/components/chat/Chat.tsx
-- [ ] `T2` — Core and registry: a read tool declares how a pin names what it shows (`pin: { id, of }` for one record, `"view"` otherwise); `createRegistry` refuses a record pin with no UUID id field or on a non-read tool, at startup and in a test (AC-1)
-  Files: packages/core/src/module.ts, packages/mcp/src/registry.ts, packages/mcp/tests/pin-spec.test.ts
+- [x] `T1` — UI: every record PinRef carries the record's UUID; the chat panel shows a pin that can't be found as "No longer available" and drops the repin merge (AC-1, AC-2, AC-4)
+  Files: packages/ui/src/pins.ts, packages/ui/src/index.ts, packages/ui/src/components/PinButton.tsx, modules/delivery/pins.ts, modules/hr/pins.ts, modules/presales/pins.ts, modules/delivery/ui/*.tsx, modules/hr/ui/*.tsx, modules/presales/ui/*.tsx, apps/web/components/chat/Chat.tsx
+- [x] `T2` — Core and registry: a read tool declares how a pin names what it shows (`pin: { id, of }` for one record, `"view"` otherwise); `createRegistry` refuses a record pin with no UUID id field or on a non-read tool, at startup and in a test (AC-1)
+  Files: packages/core/src/module.ts, packages/core/src/index.ts, packages/mcp/src/registry.ts, packages/mcp/src/index.ts, packages/mcp/tests/pin-spec.test.ts
   Depends: T1
-- [ ] `T3` — Record read tools accept an id and return the record's current label: get_project, get_proposal (proposalId; key only narrows), releases, environments, deployments, get_person, get_opportunity, get_opportunity_item, get_suggestion, get_conversation, get_api_credential, get_webhook, get_workflow_run; pinned list and summary tools are marked `view`; delivery environments and proposals get a `created_at` (AC-1, AC-3)
-  Files: modules/delivery/mcp.ts, modules/delivery/pins.ts, modules/delivery/server/queries.ts, modules/delivery/db/migrations/0012_created_at.sql, modules/hr/mcp.ts, modules/hr/server/*, modules/presales/mcp.ts, modules/presales/server/*, modules/time/mcp.ts, modules/allocations/mcp.ts, packages/chat/src/tools.ts, packages/ai/src/usage-tool.ts, packages/mcp/src/audit-tools.ts, apps/web/lib/admin/*.ts
+- [x] `T3` — Record read tools accept an id and return the record's current label: get_project, get_proposal (proposalId; key only narrows), releases, environments, deployments, get_person, get_opportunity, get_opportunity_item, get_suggestion, get_conversation, get_api_credential, get_webhook, get_workflow_run; pinned list and summary tools are marked `view`; delivery environments and proposals get a `created_at` (AC-1, AC-3)
+  Files: modules/delivery/mcp.ts, modules/delivery/server/queries.ts, modules/delivery/db/migrations/0012_created_at.sql, modules/hr/mcp.ts, modules/hr/server/queries.ts, modules/presales/mcp.ts, modules/presales/server/queries.ts, modules/time/mcp.ts, modules/allocations/mcp.ts, packages/chat/src/tools.ts, packages/ai/src/usage-tool.ts, packages/mcp/src/audit-tools.ts, apps/web/lib/admin/*.ts
   Depends: T2
-- [ ] `T4` — Chat resolves pins in one place: id pins read their record and take its current label; a key-based pin is looked up once and rewritten to its id, or marked "No longer available" when it's gone or the record holding its key was made after the pin was saved; on a turn and when a conversation is opened (AC-2, AC-3)
-  Files: packages/chat/src/pins.ts, packages/chat/src/resolve.ts, packages/chat/src/engine.ts, packages/chat/src/history.ts, packages/chat/src/index.ts
+- [x] `T4` — Chat resolves pins in one place: id pins read their record and take its current label; a key-based pin is looked up once and rewritten to its id, or marked "No longer available" when it's gone or the record holding its key was made after the pin was saved; on a turn and when a conversation is opened (AC-2, AC-3)
+  Files: packages/chat/src/pins.ts, packages/chat/src/resolve.ts, packages/chat/src/engine.ts, packages/chat/src/index.ts, apps/web/app/actions/chat-history.ts, apps/web/tests/chat-history-action.test.ts
   Depends: T2
-- [ ] `T5` — Remove the 057 repin: `repin.ts`, `repinAll`/`repinOf`/`relabel`, the services' `repin` results, `doneOutcome`'s repin; the panel refreshes its pins' labels after a confirm instead (AC-3, AC-4)
-  Files: packages/chat/src/repin.ts, packages/chat/tests/repin.test.ts, modules/delivery/server/services.ts, apps/web/lib/chat-outcome.ts, apps/web/app/actions/chat.ts, apps/web/components/chat/Chat.tsx, apps/web/tests/chat-outcome.test.ts, apps/web/tests/chat-move.test.ts, modules/delivery/tests/chat-first.test.ts
+- [x] `T5` — Remove the 057 repin: `repin.ts`, `repinAll`/`repinOf`/`relabel`, the services' `repin` results, `doneOutcome`'s repin; the panel refreshes its pins' labels after a confirm instead (AC-3, AC-4)
+  Files: packages/chat/src/repin.ts, packages/chat/tests/repin.test.ts, modules/delivery/server/services.ts, apps/web/lib/chat-outcome.ts, apps/web/app/actions/chat.ts, apps/web/tests/chat-outcome.test.ts, apps/web/tests/chat-move.test.ts, modules/delivery/tests/chat-first.test.ts
   Depends: T4
-- [ ] `T6` — Tests: every PinRef in the UI names a tool with a pin spec and a record pin carries its id; lazy migration (an old tag reused does not move the pin); a table test renaming a release, an environment and a proposal (sync rekey) by chat confirm, MCP call and job, with saved pins still on the same record under the new label; R3 names the id rule (AC-1, AC-2, AC-3, AC-5, AC-6)
-  Files: apps/web/tests/pin-refs.test.ts, packages/chat/tests/stable-pins.test.ts, modules/delivery/tests/stable-pins.test.ts, .specclaw/review/rules/R3-chat-first-and-pins.md
+- [x] `T6` — Tests: every PinRef in the UI names a tool with a pin spec and a record pin carries its id; lazy migration (an old tag reused does not move the pin); a table test renaming a release, an environment and a proposal (sync rekey) by chat confirm, MCP call and job, with saved pins still on the same record under the new label; R3 names the id rule (AC-1, AC-2, AC-3, AC-5, AC-6)
+  Files: apps/web/tests/pin-refs.test.ts, modules/delivery/tests/stable-pins.test.ts, .specclaw/review/rules/R3-chat-first-and-pins.md
   Depends: T3, T4, T5
 
 ## Verify
