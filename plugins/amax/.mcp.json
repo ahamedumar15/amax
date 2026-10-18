@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "amax": { "type": "http", "url": "${AMAX_MCP_URL:-https://amax.tecbizsolutions.com/api/mcp}" }
+  }
+}

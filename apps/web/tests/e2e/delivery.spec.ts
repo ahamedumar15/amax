@@ -101,3 +101,19 @@ test("039 the AMX board shows amax's own specs in the same phases the queue repo
   if (ready) await expect(page.locator(".tcard", { hasText: `AMX-${ready.number}` })).toContainText("ready");
   expect(await axe(page)).toEqual([]);
 });
+
+test("062 AC-10 the Repo sync card leads with refused pushes, pins every row, and links the repo through chat", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const card = page.locator(".card", { has: page.getByRole("heading", { name: "Repo sync" }) });
+  await expect(card).toContainText("From github.com/example/contoso-portal");
+  await expect(card).toContainText("2 recent pushes were refused.");
+  await expect(card).toContainText("by Kasun Dias: 0 created · 3 updated · 14 unchanged");
+  const rows = card.locator("tbody tr");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText("Refused");
+  await expect(rows.nth(2)).toContainText("Applied");
+  await expect(card.locator("tbody tr button[data-pin]")).toHaveCount(3);
+  await expect(card.locator("input, textarea, select")).toHaveCount(0);
+  if (process.env.SHOTS_DIR) await card.screenshot({ path: `${process.env.SHOTS_DIR}/app.png` });
+  expect(await axe(page)).toEqual([]);
+});

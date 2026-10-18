@@ -24,10 +24,10 @@ export const AREAS: Area[] = [
     { text: "OKRs from Keyflow", module: "keyflow" },
   ] },
   { title: "Finance and sales", tone: "attention", art: "coins", coming: [
-    { text: "Contracts and billing", module: "finance", words: ["contract", "billing", "invoic"] },
     { text: "Expenses", module: "expenses", words: ["expense"] },
     { text: "Xero, QuickBooks and Business Central", module: "accounting", words: ["xero", "quickbooks", "business central"] },
   ], live: [
+    { text: "Contracts, invoicing and receivables, with invoices drafted for Finance to accept", module: "finance" },
     { text: "Presales pipeline", module: "presales" },
   ] },
   { title: "Operations", tone: "sky", art: "key", coming: [

@@ -493,3 +493,7 @@ review:
     - "PRODUCT.md"
     - "docs/module-standard.md"
     - "docs/architecture.md"
+
+# 062: the amax project this repo's specclaw changes sync to (/amax:sync-specclaw).
+amax:
+  project: AMX

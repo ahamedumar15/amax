@@ -26,12 +26,12 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
-  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage"],
+  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push"],
   grants: {
     Leadership: READ,
     Finance: READ,
-    Engineer: [...READ, "delivery:proposal:create@assigned", "delivery:proposal:move@assigned", "delivery:task:done@assigned"],
-    PM: [...READ, "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move@managed", "delivery:release:create@managed", "delivery:deployment:record@managed", "delivery:task:done@managed"],
+    Engineer: [...READ, "delivery:proposal:create@assigned", "delivery:proposal:move@assigned", "delivery:task:done@assigned", "delivery:proposal:push@assigned"],
+    PM: [...READ, "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move@managed", "delivery:release:create@managed", "delivery:deployment:record@managed", "delivery:task:done@managed", "delivery:proposal:push@managed", "delivery:project:link@managed"],
   },
   routes: [
     { path: "", title: "Projects", component: ProjectsPage },
@@ -67,6 +67,8 @@ export default defineModule({
     // 008: who closed a task (a person, or a credential or Git acting for one), kept with the delivery evidence.
     { table: "delivery.task", label: "Who closed a task", subject: ["done_by"], fields: ["done_by"], class: "personal", period: "P7Y", start: { at: ["done_at"] }, action: "anonymise" },
     { table: "delivery.commit_time", label: "Who switched commit time on or off", subject: ["set_by"], entity: "legal_entity_id", fields: ["set_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise" },
+    // 062: who pushed a repo's specclaw state, kept with the delivery evidence it changed.
+    { table: "delivery.sync_push", label: "Who pushed specclaw changes", subject: ["for_user_id", "actor_id"], fields: ["actor_id", "for_user_id"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
     // The Overview feed is recent news, not a record: its lines go after two years.
     { table: "delivery.activity", label: "Agent activity feed", subject: ["for_user_id", "actor_id"], fields: ["actor_id", "for_user_id", "text", "detail"], class: "personal", period: "P2Y", start: { at: ["at"] }, action: "delete" },
   ],

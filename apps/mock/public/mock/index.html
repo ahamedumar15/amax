@@ -2240,7 +2240,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
       <div class="mk-grid">
         <div class="mk-f t-violet"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><h3>Delivery</h3><p class="muted">Projects, specclaw proposals and releases across Dev, QA, UAT and Prod. Time and approvals. Allocations and capacity forecasts.</p></div>
         <div class="mk-f t-mint"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><h3>People</h3><p class="muted">Core HR. Leave. Onboarding and offboarding. Payroll runs and payslips. Learning. OKRs from Keyflow.</p><p class="mk-coming"><span class="chip">Coming</span> Sri Lanka payroll pack, Australia payroll pack</p></div>
-        <div class="mk-f t-yellow"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><h3>Finance and sales</h3><p class="muted">Presales pipeline.</p><p class="mk-coming"><span class="chip">Coming</span> Contracts and billing, Expenses, Xero, QuickBooks and Business Central</p></div>
+        <div class="mk-f t-yellow"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><h3>Finance and sales</h3><p class="muted">Contracts, invoicing and receivables, with invoices drafted for Finance to accept. Presales pipeline.</p><p class="mk-coming"><span class="chip">Coming</span> Expenses, Xero, QuickBooks and Business Central</p></div>
         <div class="mk-f t-sky"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><h3>Operations</h3><p class="muted">Compliance registers and incidents. Notifications.</p><p class="mk-coming"><span class="chip">Coming</span> IT assets and access, Helpdesk, Insights</p></div>
         <div class="mk-f t-pink"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><h3>Platform</h3><p class="muted">An MCP server for every capability. Entra ID sign-in and SCIM. Git identities, API keys and webhooks.</p></div>
       </div>
@@ -2422,6 +2422,34 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     <tr><td>Tue</td><td>Fleet Tracker (fictional)</td><td class="num">7.5</td><td><button class="btn sm">📌</button></td></tr>
     </tbody></table></div></div>
   <div class="card" style="margin-top:20px;max-width:520px"><div class="card-head"><h2>Release v2.4.0</h2><button class="btn sm">📌</button></div><p class="muted">Edit tag, record or void a deployment: ask in chat.</p><button class="btn sm">✦ Ask amax to record a deployment</button></div>
+</section>
+
+<!-- ================= 062 specclaw sync plugin ================= -->
+<section data-change="062-specclaw-sync-plugin" id="062-specclaw-sync-plugin" data-roles="admin leadership pm engineer" data-title="Repo sync" data-nav="no" data-icon="plug">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span>Contoso Portal (fictional)</nav>
+  <h1>Repo sync</h1>
+  <p class="lede">Proposals follow the linked repo's specclaw state. 2 pushes were refused today.</p>
+  <div class="tickets four">
+    <div class="ticket t-yellow"><div class="k">Refused today <span class="chip">📌</span></div><div class="v">2</div><div class="p">Stale sha, repo mismatch</div></div>
+    <div class="ticket t-mint"><div class="k">Last sync <span class="chip">📌</span></div><div class="v">09:42</div><div class="p">Kasun Dias</div></div>
+    <div class="ticket t-violet"><div class="k">Last push <span class="chip">📌</span></div><div class="v">3 updated</div><div class="p">14 unchanged · 0 created</div></div>
+    <div class="ticket t-mint"><div class="k">Linked repo <span class="chip">📌</span></div><div class="v">contoso-portal</div><div class="p">github.com/example/contoso-portal</div></div>
+  </div>
+  <div class="card flush" style="margin-top:20px"><div class="card-head"><h2>Refused pushes</h2><button class="btn sm">✦ Ask amax to change the linked repo</button></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>When</th><th>By</th><th>Key</th><th>Reason</th><th></th></tr></thead><tbody>
+    <tr><td>09:40</td><td>Nimal Silva</td><td>CON-031</td><td>stale: last synced from a newer commit</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>08:15</td><td>Ayesha Rahman</td><td>all</td><td>repo not linked to CON (github.com/example/fleet-tracker)</td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="card" style="margin-top:20px;max-width:620px"><div class="card-head"><h2>Plugin dry run (developer machine)</h2></div>
+<pre style="white-space:pre-wrap;font-size:13px">/amax:sync-specclaw
+repo  github.com/example/contoso-portal @ main 4f2c9a1
+project CON (linked)
+dry run: 0 created · 3 updated · 14 unchanged · 1 refused
+  CON-033  building → verified
+  CON-034  tasks 2/6 → 5/6
+  CON-035  planned → building
+  refused CON-012  released belongs to Prod deployments
+Apply 3 updates? (y/N)</pre></div>
 </section>
 
 <!-- ================= 028 Keyflow sync ================= -->

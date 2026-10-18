@@ -189,11 +189,7 @@ export class KeyTakenError extends Error {
   }
 }
 
-export const syncProposal = defineService({
-  name: "delivery.proposal.sync",
-  action: "delivery:proposal:sync",
-  resource: "delivery.proposal",
-  input: z.object({
+export const SyncInput = z.object({
     projectKey: z.string(),
     project: z.object({ name: z.string(), client: z.string() }),
     key: z.string(),
@@ -207,14 +203,54 @@ export const syncProposal = defineService({
     meta: z.record(z.string(), z.unknown()),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
-  }),
+    // 062: the commit time the spec was read at. Every specclaw write moves the stale mark with it.
+    committedAt: z.string().datetime({ offset: true }),
+  });
+export type SyncInput = z.infer<typeof SyncInput>;
+
+export const syncProposal = defineService({
+  scoped: true,
+  name: "delivery.proposal.sync",
+  action: "delivery:proposal:sync",
+  resource: "delivery.proposal",
+  input: SyncInput,
   async run(tx, input, ctx) {
     let [project] = await tx.execute(sql`select * from delivery.project where key = ${input.projectKey}`);
+    // 062: a person syncs only into a project they're on, and makes one only if they may create projects.
+    const v = viewerOf(ctx);
+    if (!project && v) assertCan(v, "delivery:project:create");
     if (!project) {
       [project] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, color, sprint)
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
+    scoped(ctx, "delivery:proposal:sync", project.id as string);
+    return upsertSpecProposal(tx, input, ctx, project);
+  },
+});
+
+/** 062: moves the stale mark forward (never back) on the matched proposals: the commit their spec was last read at. */
+export const markSyncedRows = (tx: Tx, where: ReturnType<typeof sql>, committedAt: string) =>
+  tx.execute(sql`update delivery.proposal set synced_commit_at = greatest(coalesce(synced_commit_at, ${committedAt}::timestamptz), ${committedAt}::timestamptz) where ${where}`);
+
+// 062: a self-sync that found a proposal unchanged still read it at this commit, so its mark moves too,
+// as one audited write per sync run.
+export const markSynced = defineService({
+  scoped: true,
+  name: "delivery.proposal.mark",
+  action: "delivery:proposal:sync",
+  resource: "delivery.project",
+  input: z.object({ projectKey: z.string(), keys: z.array(z.string()), committedAt: z.string().datetime({ offset: true }) }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:proposal:sync", project.id as string);
+    await markSyncedRows(tx, sql`project_id = ${project.id} and key = any(${textArray(input.keys)})`, input.committedAt);
+    return { result: { marked: input.keys.length }, resourceId: project.id as string, after: { keys: input.keys.length, committedAt: input.committedAt } };
+  },
+});
+
+/** One spec change's proposal row and tasks, in the caller's transaction (syncProposal, and 062's push). */
+export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceContext, project: Record<string, unknown>) {
     // The project row lock serialises this with createProposal's key computation (review round 2).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
@@ -245,6 +281,7 @@ export const syncProposal = defineService({
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
     if (input.tasks) await writeTasks(tx, ctx.tenantId, row.id as string, input.tasks);
+    await markSyncedRows(tx, sql`id = ${row.id}`, input.committedAt);
     // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
     if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {
@@ -254,8 +291,7 @@ export const syncProposal = defineService({
       after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
-  },
-});
+}
 
 // ---- 042 release management -------------------------------------------------------------------
 

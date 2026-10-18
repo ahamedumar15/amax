@@ -39,7 +39,7 @@ describe.skipIf(!hasDb)("008 AC-1 sync_proposal and mark_task_done as a service 
 
   it("syncs tasks by id, closes one from a commit, keeps it closed on the next sync, and feeds the Overview", async () => {
     const sync = (done: boolean[]) => syncProposal(ci, { projectKey: "ING", project: { name: "Ingest", client: "x" }, key: "ING-001", title: "Invoice export", phase: "building",
-      tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "001-invoice-export", releasedAt: null, meta: {}, tasks: done.map((d, i) => ({ ref: `T${i + 1}`, title: `step ${i + 1}`, done: d })) });
+      tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "001-invoice-export", committedAt: "2026-10-01T00:00:00Z", releasedAt: null, meta: {}, tasks: done.map((d, i) => ({ ref: `T${i + 1}`, title: `step ${i + 1}`, done: d })) });
     await sync([true, false, false]);
     expect(await counts("ING-001")).toEqual({ tasks_done: 1, tasks_total: 3 });
     expect(await markTaskDone(ci, { key: "ING-001", task: "T3", commit: "a91f3c2e" })).toMatchObject({ done: true, tasksDone: 2, tasksTotal: 3 });

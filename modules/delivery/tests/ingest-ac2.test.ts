@@ -34,7 +34,7 @@ describe.skipIf(!hasDb)("008 AC-2 pushes attribute commits only through a verifi
     await upsertPasswordUser(app, T, { email: "ayesha@amax.test", name: "Ayesha Rahman", roles: ["Engineer"], password: "dev-password-123" });
     await withTenant(app, T, (tx) => linkGitIdentity(tx, T, { provider: "github", login: "nimal-gh", email: "nimal@amax.test", userId: nimal }));
     await syncProposal(contextFor.job(T, "delivery.ingest"), { projectKey: "ING", project: { name: "Ingest", client: "x" }, key: "ING-001", title: "Invoice export", phase: "building",
-      tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "001", releasedAt: null, meta: {}, tasks: [1, 2, 3, 4].map((n) => ({ ref: `T${n}`, title: `step ${n}`, done: false })) });
+      tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "001", committedAt: "2026-10-01T00:00:00Z", releasedAt: null, meta: {}, tasks: [1, 2, 3, 4].map((n) => ({ ref: `T${n}`, title: `step ${n}`, done: false })) });
   });
   afterAll(() => t?.drop());
 
