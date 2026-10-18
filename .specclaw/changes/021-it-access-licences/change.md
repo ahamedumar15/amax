@@ -46,3 +46,7 @@ licences and 1 device). No grant, revoke or seat removal ever runs without a per
   Depends: T5
 
 ## Verify
+
+Quality: 0 → 0 duplicated lines (jscpd over modules/it-access; specclaw-quality-scan fails on this repo with jq "Argument list too long", so jscpd was run directly).
+
+Ripple: `modules/onboarding/tests/access.test.ts` asserted that nothing handles `onboarding.access.requested` ("021 isn't installed"); it now expects exactly `it-access.onboarding` when it-access is installed, and still that nothing is revoked.
