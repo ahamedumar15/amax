@@ -23,7 +23,7 @@ The Keyflow sister-product card.
 
 - [x] `T1` — Mock: add this change's own sections, the Keyflow sync screen (connection, last sync, what went out and came in, sync errors with Ask amax, recent runs) and a person's Keyflow performance page (goals, review scores masked by `performance`, recognition); a pin on every card, ticket and row (AC-1, AC-2)
   Files: .specclaw/mock/index.html
-- [ ] `T2` — Publish `contracts.ts`: goal, review score, recognition and sync-run types, event names and payloads (`keyflow.sync.completed`, `keyflow.sync.failed`), `keyflowProfile(tx, reader, personId)` (scores masked per `performance`) and `lastSync(tx, reader)` reads, with contract tests (AC-1, AC-3)
+- [x] `T2` — Publish `contracts.ts`: goal, review score, recognition and sync-run types, event names and payloads (`keyflow.sync.completed`, `keyflow.sync.failed`), `keyflowProfile(tx, reader, personId)` (scores masked per `performance`) and `lastSync(tx, reader)` reads, with contract tests (AC-1, AC-3)
   Files: modules/keyflow/contracts.ts, modules/keyflow/package.json, modules/keyflow/tsconfig.json, modules/keyflow/css.d.ts, modules/keyflow/.gitignore, modules/keyflow/tests/contracts.test.ts, pnpm-lock.yaml
 - [ ] `T3` — Screens matching the mock: the Keyflow sync screen at /keyflow (Operations, linked from Settings and Integrations by breadcrumb) leading with errors, and the person's Performance page mounted at /hr/p/:employeeNo/performance (051); Ask amax buttons and pins everywhere, no forms (AC-1, AC-2)
   Files: modules/keyflow/ui/*.tsx, modules/keyflow/ui/keyflow.css
