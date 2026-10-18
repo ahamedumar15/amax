@@ -74,5 +74,20 @@ Brand constraints kept over the skill's house rules (recorded on purpose): the l
 
 ## Verify
 
-Quality: 523 → 523 duplicated lines repo-wide, none in this change's files (refactor skipped).
-Build note on AC-1: on a phone (390 px, Avenir Next) the hero headline sets on three lines; two lines would need about 25 px. The two-line check runs at 1440 and 768.
+**Verdict:** PASS
+
+- AC-1: pass, with one deviation — the sections render in the mock's order (`marketing.spec` AC1), with no sideways scroll at 390 px under a wide fallback font. Headings stay at two lines or fewer at 1440 and 768. **Deviation:** on a phone the hero headline sets on three lines; two would need about 25 px type.
+- AC-2: pass — role tabs work with arrow keys, Home and End. Enter on Accept resolves the card, focus moves to its outcome line, Tab moves on to the next action, and the status region announces the outcome (e2e AC2). Without JavaScript the PM queue renders statically.
+- AC-3: pass — the MP4 is listed first. "Play the 35-second product tour" is at least 64 px at 1440, 768 and 390. Playback advances with no media error, the video stays in the Tab order and Space toggles it both ways, captions are present, and nothing autoplays (`marketing-video.spec`).
+- AC-4: pass — IntersectionObserver switches the pinned stage. With reduced motion (the e2e default) or no script, all three states show.
+- AC-5: pass — the bands are built from `areas.ts` with real switches, and Coming notes are visible on every band (e2e). `marketing-areas.test.ts` passes.
+- AC-6: pass — prose guards run over the rendered page, the description, every queue card, the captions and the whole 064 mock section. `marketing-queue.test.ts` checks that every hero card runs a shipped MCP tool or suggestion kind, at a step its role holds through `@amax/auth` `canEver`. Cards on tools with per-step permissions must name their step.
+- AC-7: pass — axe (wcag2a/aa, 21aa, 22aa) shows no violations in light and dark. Motion uses transform and opacity, with reduced-motion fallbacks.
+- AC-8: pass, with one deviation — Lighthouse 12.8.2 on the mobile production build of `/welcome`: performance 98, accessibility 100, best practices 100, SEO 92. **Deviation:** the SEO audit flags the canonical tag, which points `/welcome` to `/` on purpose (visitors get this page at `/`). LCP 2.3 s, TBT 70 ms, CLS 0, 248 KiB before the video plays.
+- AC-9: pass — no forms. The demo mailto comes from `AMAX_SALES_EMAIL`, and without it the close falls back to Sign in (`marketing-demo.test.ts`).
+- AC-10: pass — the theme switch flips light and dark and persists across a reload (`marketing-theme.spec`). The dark palette is lifted, and surfaces have outlines.
+- AC-11: pass — the video uses the new fictional cast, and `apps/mock` copies `.specclaw/mock/media/` for Pages.
+
+Commands (after merging origin/main, 18 modules): `pnpm lint` → 0; `pnpm turbo run test --continue --concurrency=3` → 0 (31/31 tasks); `node scripts/check-module-standard.mjs` → 0; `pnpm build` → 0; `playwright test` (non-DB config, production build) → 8 passed.
+Review: **stopped by the user** on 2026-10-18 after about 20 rounds. The last completed round (20) raised one major, about cards on per-step tools; commit 4bbca5d addresses it but was not re-reviewed. Earlier final passes had raised the same class of queue-claim finding, and the user set a cap of 5 review passes from now on.
+Screenshots: `.specclaw/changes/064-marketing-revamp/shots/app.png`, `.specclaw/changes/064-marketing-revamp/shots/mock.png`

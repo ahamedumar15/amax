@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 18:13 UTC
+**Last Updated:** 2026-10-18 18:15 UTC
 
 ## Active Changes
 
@@ -9,7 +9,7 @@
 - 🔀 **022-helpdesk** — PR #86 open
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
-- 🔨 **064-marketing-revamp** — build in-progress | 7/7 tasks (100%) | 0 failed
+- 🔍 **064-marketing-revamp** — verify done | 7/7 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
