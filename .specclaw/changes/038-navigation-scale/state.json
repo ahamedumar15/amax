@@ -1,11 +1,12 @@
 {
   "change": "038-navigation-scale",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "proposal": {"status":"done","at":"2026-10-18T10:18:15Z"},
     "tasks": {"status":"done","at":"2026-10-18T10:18:15Z"},
     "build": {"status":"done","at":"2026-10-18T10:31:02Z"},
-    "verify": {"status":"done","at":"2026-10-18T10:31:02Z"}
+    "verify": {"status":"done","at":"2026-10-18T10:31:02Z"},
+    "pr": {"status":"raised","at":"2026-10-18T10:31:18Z","url":"https://github.com/chan4lk/amax/pull/69"}
   }
 }
