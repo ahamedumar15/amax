@@ -1,12 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 05:27 UTC
+**Last Updated:** 2026-10-18 05:35 UTC
 
 ## Active Changes
 
 
-- 🔀 **006-agent-governance** — PR #60 open
+- 🔀 **006-agent-governance** — pr raised | 9/9 tasks (100%) | 0 failed | PR #60 merged
 - 🔀 **012-leave** — pr raised | 7/7 tasks (100%) | 0 failed | PR #57 merged
 - 🔀 **024-learning** — pr raised | 6/6 tasks (100%) | 0 failed | PR #59 open
 - 🔀 **030-notifications** — pr raised | 7/7 tasks (100%) | 0 failed | PR #58 merged

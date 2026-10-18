@@ -11,6 +11,8 @@ export const installed: ModuleManifest[] = [...modules].sort((a, b) => GROUPS.in
 // primary (the mobile bar), as in the mock.
 export const navItems: NavItem[] = [
   { href: "/", label: "Overview", icon: "home", primary: true },
+  // 006: every agent suggestion a person may decide; "suggestions:read" is granted to every role.
+  { href: "/suggestions", label: "Suggestions", icon: "spark" },
   ...installed.flatMap((m) => [
     ...(m.menu === "profile" ? [] : [{ href: `/${m.id}`, label: m.title, icon: m.icon, group: m.group, primary: m.primary }]),
     ...(m.nav ?? []).map((n) => ({ href: `/${m.id}/${n.path}`, label: n.title, icon: n.icon, group: m.group })),

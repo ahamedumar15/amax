@@ -4,6 +4,7 @@ import type { SharedFixtures } from "@amax/core";
 import { createDb, withTenant, type Db } from "@amax/db";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
+import { agentsFixtures } from "../lib/agents-fixtures";
 import { privacyFixtures } from "../lib/privacy-fixtures";
 import { privacySources } from "../lib/privacy-sources";
 
@@ -18,6 +19,8 @@ export async function installedSeeds() {
     { id: "auth", dependsOn: [] as string[], fixtures: [authFixtures] },
     ...modules.map((m) => ({ id: m.id, dependsOn: ["auth", ...(m.dependsOn ?? [])], fixtures: m.fixtures ?? [] })),
     // 032: after every module, so the demo erasure request lists the person's records everywhere.
+    // 006: after every module, so the demo suggestions name real people, projects and plans.
+    { id: "suggestions", dependsOn: ["auth", ...modules.map((m) => m.id)], fixtures: [agentsFixtures] },
     { id: "privacy", dependsOn: ["auth", ...modules.map((m) => m.id)], fixtures: [privacyFixtures(privacySources(modules))] },
   ];
 }
