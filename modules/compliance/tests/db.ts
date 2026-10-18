@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { migrate, migrationScopes, withTenant } from "@amax/db";
-import { freshDatabase, repoRoot } from "@amax/db/testdb";
+import { freshDatabase, migratedDatabase, repoRoot } from "@amax/db/testdb";
 import { configureRuntime } from "@amax/core/server";
 import { applyViewAs, installAuthorizer, setGrants, setViewerScopeResolvers, viewerForUser, type Role, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
@@ -11,8 +11,9 @@ export const T = lumen.tenant.id;
 
 /** A database migrated and seeded with every installed module (less `disabled`), and viewers by demo key. */
 export async function complianceDb(disabled: string[] = []) {
-  const t = await freshDatabase();
-  await migrate(t.owner, migrationScopes(repoRoot, disabled));
+  // A switched-off module's schema isn't migrated, so only the full set copies 061's template.
+  const t = disabled.length ? await freshDatabase() : await migratedDatabase();
+  if (disabled.length) await migrate(t.owner, migrationScopes(repoRoot, disabled));
   const app = t.app();
   const modules = await installedModules(disabled);
   configureRuntime({ db: app, auditKey: "k".repeat(32) });
