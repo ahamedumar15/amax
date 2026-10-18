@@ -46,4 +46,27 @@ from fixtures.md (funnel 63 → 41 → 19 → 5 → 4; board 22, 9, 5, 1, 4; hir
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass, with one deviation. The schema covers role, candidate, application, interview and offer. Candidate fields are `sensitive: 'candidate'` on every read tool, masked for everyone below HR (Admin and Leadership see ••••), and anonymised 12 months after the decision under 032. A signed offer emits `recruitment.hired`, which raises a `recruitment.hr-record` suggestion that only `hr:person:create` holders can accept. **Deviation:** accepting it doesn't create the person by itself. The hired card then offers "Add to HR" (Ask amax → hr's own `add_person`), and recruitment links the person when `hr.person.joined` arrives. `hr/contracts.ts` has no write function, and adding one would change hr (AC-4). The product owner was asked whether to make it one step as a follow-up. Tests: `tests/hire.test.ts`, `tests/pipeline.test.ts`.
+- AC-2: pass — each match score is a `recruitment.screen` suggestion whose evidence is the CV sections that matched. Accepting moves the candidate to screening. No agent path rejects anyone: `reject_application` refuses anything that isn't a person. Test: `tests/match.test.ts`.
+- AC-3: pass — there is a `SignProvider` adapter, with Zoho Sign first (its token from the 031 `zoho-sign` credential) and a demo provider labelled fictional. Sending an offer creates the envelope, and a signed envelope hires. Without a credential, Zoho fails with a clear error. Test: `tests/sign.test.ts`.
+- AC-4: pass — contracts and contract tests, README, fixtures, manifest, retention and a CODEOWNERS line. The module can be switched off. Test: `tests/standard.test.ts`. Outside the module, only `.github/CODEOWNERS` and `pnpm-lock.yaml` changed.
+
+Commands (worktree merged with origin/main at 017, Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint --force` → 0 (27/27)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (26/26)
+- `pnpm --filter @amax/web build` → 0
+- `playwright test --config playwright.auth.config.ts` (apps/web) → 79/79
+- module e2e `pnpm --filter @amax/recruitment e2e` → 3/3 (Admin masked view with pins and axe, HR view, 404 without recruitment)
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
+
+Known limits:
+- Quarter figures use the real clock, so the "this quarter" test numbers will need updating after 2026-12-31, as payroll's do.
+- Zoho calls use plain `fetch` to the fixed `sign.zoho.<dc>` host, because `@amax/api/egress` is POST-only.
+
+Screenshots: `.specclaw/changes/023-recruitment/shots/app.png` (`/recruitment` as Maya, Admin, names masked by design) and `shots/mock.png`. Compared by eye: the lede, filter, New role, four tiles, the pipeline board with "+N more", the hiring funnel and hires per month all match. Tiles show the pin instead of the illustration, and avatars show initials.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
+
 Quality: 15 → 0 duplicated lines (jscpd over modules/recruitment; specclaw-quality-scan fails on this repo with jq "Argument list too long", so jscpd was run directly. The 15 lines were the DB tests' shared setup, moved into `tests/db.ts` `sharedDb`.)

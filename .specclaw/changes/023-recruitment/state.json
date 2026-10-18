@@ -1,8 +1,9 @@
 {
   "change": "023-recruitment",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T13:13:57Z"}
+    "tasks": {"status":"done","at":"2026-10-18T13:13:57Z"},
+    "verify": {"status":"done","at":"2026-10-18T13:41:07Z"}
   }
 }
