@@ -33,7 +33,7 @@ export function sandboxTransport(directory: Pick<OutPerson, "ref" | "employeeNo"
   const refOf = new Map(directory.map((p) => [p.employeeNo, p.ref]));
   const entries = Object.entries(DATA).flatMap(([no, d]) => (refOf.has(no) ? [[refOf.get(no)!, no, d] as const] : []));
   return {
-    push: async (batch) => ({ refused: batch.people.filter((p) => p.status === "joining").map((p) => ({ ref: p.ref, reason: `hasn't started yet: starts ${p.joinedOn ? longDate(p.joinedOn) : "later"}` })) }),
+    push: async (batch) => ({ refused: batch.people.filter((p) => p.status === "joining").map((p) => ({ ref: p.ref, reason: p.joinedOn ? `start date ${longDate(p.joinedOn)} is in the future` : "hasn't started yet" })) }),
     changes: async (cursor) => cursor === CURSOR ? { goals: [], reviews: [], recognition: [], cursor } : {
       goals: [...entries.flatMap(([personRef, , d]) => d.goals.map(([id, title, status, progress, dueOn]) => ({ id, personRef, title, status, progress, dueOn, period: "2026 H2" }))),
         { id: "g-9031-1", personRef: UNMATCHED_REF, title: "Launch the partner portal (fictional)", status: "on-track", progress: 10, dueOn: "2027-01-31", period: "2026 H2" }],

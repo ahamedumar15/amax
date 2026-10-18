@@ -37,7 +37,7 @@ The Keyflow sister-product card.
 - [x] `T6` — Manifest (group Operations, grants, retention for every personal table, events and payloads, workflow and schedule, mounted route), chat intent "connect Keyflow", README, CODEOWNERS line (AC-2, AC-3)
   Files: modules/keyflow/module.ts, modules/keyflow/chat.ts, modules/keyflow/README.md, .github/CODEOWNERS
   Depends: T5
-- [ ] `T7` — Tests: schema, RLS and retention; sync with a fake transport (deltas, unmatched people, Keyflow errors, unreachable host, missing credential); egress refuses private hosts; performance masking; chat-first (writes wait for confirm, pins resolve); module standard (switch-off, only hr installed); screen a11y e2e (AC-1..AC-3)
+- [x] `T7` — Tests: schema, RLS and retention; sync with a fake transport (deltas, unmatched people, Keyflow errors, unreachable host, missing credential); egress refuses private hosts; performance masking; chat-first (writes wait for confirm, pins resolve); module standard (switch-off, only hr installed); screen a11y e2e (AC-1..AC-3)
   Files: modules/keyflow/tests/*.ts, modules/keyflow/tests/e2e/*
   Depends: T6
 

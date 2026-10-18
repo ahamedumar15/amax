@@ -27,7 +27,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...status, pin: { id: "errorId", of: errorOf }, name: "get_keyflow_sync_error", description: "One Keyflow sync error: what failed, for which person or Keyflow record, how many runs hit it.",
     input: z.object({ errorId: z.uuid() }), run: (v, a) => getSyncError(v, a.errorId) }),
   tool({ ...profile, pin: { id: "personId", of: profileOf }, name: "get_keyflow_profile", description: "A person's goals, review scores and recognition from Keyflow. Review scores show only to HR, Leadership, the person and their manager.",
-    input: z.object({ personId: z.string().describe("The person's id or employee number") }), run: (v, a) => personProfile(v, a.personId) }),
+    input: z.object({ personId: z.uuid().describe("The person's id, from get_person or list_people") }), run: (v, a) => personProfile(v, a.personId) }),
   tool({ ...profile, pin: { id: "recordId", of: recordOf }, name: "get_keyflow_record", description: "One goal, review score or recognition from Keyflow, by its id.",
     input: z.object({ recordId: z.uuid() }), run: (v, a) => getRecord(v, a.recordId) }),
   tool({ name: "connect_keyflow", description: "Point amax at the tenant's Keyflow (a public https address). The key itself is the Keyflow credential under Settings, Connections and keys. A new address sends everyone again.",
