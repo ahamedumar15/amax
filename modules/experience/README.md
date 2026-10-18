@@ -1,0 +1,55 @@
+# experience (change 037)
+
+Digital employee experience without a desk agent: device and app health from Intune and Defender, joined with amax's people and helpdesk data, scored by department, site and device model. It is device and app health, never employee monitoring.
+
+- **Owner:** `/modules/experience/` in `.github/CODEOWNERS`
+- **Screen:** `/experience` (Operations), for Admin, Leadership and IT Admin.
+  - The lede names the group that fell most, 1 point or more over four weeks, then the largest fix waiting.
+  - "Send pulse survey" opens chat in `experience.send-pulse`; "Review fixes" opens Ask amax.
+  - Four tiles: the experience score, devices needing attention, pulse responses and fixes waiting.
+  - The group table has a read-only Department / Site / Device model select (`?by=`). Each row shows people, the score with its meter, the top issue and the 4-week trend. Below it are the total row and the formula.
+  - Suggested fixes have "Review", which opens chat with the 006 suggestion pinned. An accepted hardware fix gets "Open ticket" through helpdesk's `helpdesk.new-ticket` when helpdesk is installed.
+  - The latest pulse, and "What we collect" with the date of the staff notice.
+  - Every tile, row and line is pinned; there are no forms.
+- **What is collected (AC-1):**
+  - The daily 029 job `experience.collect` (05:00 UTC) opens 021's read registration, the 031 `msgraph-read` secret (`READ_CONNECTORS` in it-access's contract), with `useSecret`.
+  - It reads Intune Endpoint Analytics: startup score and boot time, app health score, crashes and hangs per app version, and battery capacity. It also reads the Defender risk Intune holds (`partnerReportedThreatState`).
+  - Calls go through the 035 egress guards (`server/wire.ts`): Graph and Entra sign-in hosts only, public https, pinned lookups, no redirects, a 4 MB cap.
+  - Each answer is parsed to a fixed shape, and anything else is dropped, device and user names included.
+  - A device is stored by its Intune id, model, owner (the UPN matched to a signed-in user) and that person's entity and department, read through hr's contract.
+  - `COLLECTED` in `contracts.ts` lists every device column, and `tests/collect.test.ts` fails if the schema gains any column outside its allowed list.
+  - Never collected: keystrokes, screenshots, browsing, window titles or activity timelines.
+  - The demo tenant has `sandbox` on. Its readings are the seeded, fictional Intune data, and Graph is never called.
+- **Notice first (AC-2):** `set_experience_collection` (Admin) switches collection on per legal entity. It needs the date the notice to staff went out, which can't be in the future. The job keeps only devices of people in entities that are on, and with none on it never opens the credential.
+- **Score (AC-3):**
+  - Score = 40% device health + 40% app reliability + 20% pulse, each out of 10. Without 5 pulse answers the score is 50% device health and 50% app reliability.
+  - Groups of fewer than 5 people go into "Other", which is hidden when it too has fewer than 5. Only the five largest groups are listed.
+  - Each viewer sees only the legal entities their `experience:read` reaches. The trend shows only to viewers who see every entity.
+  - No tool takes a person, and none returns one person's score, except `get_my_experience` and `myExperience()`, which are only ever the caller's own.
+- **Pulse (AC-4):**
+  - `send_pulse` goes to the people of the entities that are on, at most one a fortnight.
+  - It emits `experience.pulse.sent` once per person. 030's rule `experience.pulse` delivers it on each person's own channels; Teams once they've switched it on in their 030 preferences.
+  - `answer_pulse` writes a receipt (pulse and user, so a person answers once) apart from the answer (choice, department, entity; no user, no time). Its audit row names only the pulse.
+  - Results show from 5 answers.
+- **Fixes (AC-5):**
+  - Each collection finds issues: an app version whose crashes or hangs show on 2 or more devices, a model that boots in over 4 minutes, and batteries under 60% of their capacity.
+  - An issue on 5 or more devices becomes the 006 suggestion `experience.fix` for IT (`experience:fix`: IT Admin, Admin). Its evidence: devices affected, first seen, and the likely cause. Dismissing it closes the issue.
+  - Accepting an app fix queues an Intune remediation. `experience.remediate` (every 30 min) runs it through the 031 `msgraph-write` secret only once an Admin has switched remediation on with its script (`set_experience_remediation`, off by default). Until then it is recorded as manual.
+  - Accepting a hardware fix emits `experience.fix.accepted` for a helpdesk ticket.
+  - Undo cancels a remediation that hasn't run.
+- **Trends (AC-6):** each collection snapshots the group scores. A group 1 point or more below four weeks earlier emits `experience.score.dropped` once, and `scoreDrops()` returns each drop with its source (026's `InsightSource`). Insights showing it is in BACKLOG.
+- **Contracts** (`contracts.ts`):
+  - Constants: `DIMENSIONS`, `CHOICES`, `MIN_GROUP`, `SHOWN_GROUPS`, `PULSE_EVERY_DAYS`, `FORMULA`, `COLLECTED`, `FIX_KIND`, `JOBS`, `READ_CONNECTOR`, `WRITE_CONNECTOR`.
+  - Reads: `groupScores(tx, reader, dimension)`, `scoreDrops(tx, reader)` and `myExperience(tx, viewer)`.
+  - `EVENTS` and the payload types. Version 1.
+- **Events:** `experience.collection.completed`, `experience.collection.set`, `experience.pulse.sent`, `experience.fix.accepted`, `experience.score.dropped`. Payloads carry only ids, counts and groups. The module handles its own `experience.collection.completed` (to suggest fixes) and 006's `agents.suggestion.decided`.
+- **MCP tools:** read `get_experience`, `get_experience_fix`, `get_my_experience`; write `set_experience_collection`, `set_experience_remediation`, `send_pulse`, `answer_pulse`. Chat intent: `experience.send-pulse`.
+- **Depends on** hr (011) and it-access (021, for its connector), plus the platform (006, 029, 031, 035). **Integrates with** helpdesk (the ticket route), notifications (the pulse) and insights (drops, through the contract). Each is optional.
+- **Retention (032):** devices, daily readings and app readings are deleted 90 days after the reading (a device 90 days after it was last seen). Who switched collection or remediation on, approved a remediation or sent a pulse is anonymised after seven years.
+- **Fixtures** (fictional):
+  - The demo's pinned day is Oct 16, 2026. Collection is on in both entities since the Sep 1 notice.
+  - 231 devices for 184 people; 18 need attention.
+  - The Oct 13 pulse has 118 answers (71%, 23%, 6%).
+  - The mock's department scores: Engineering 8.1, Quality 7.1 (down 1.2), Delivery 7.9, Sales 7.4 (up 0.3), People and Culture 8.3, Other 8.0; all 7.9.
+  - Teams 24.10 crashing on 14 laptops since Tuesday (88% confidence), six slow 2021 laptops in Engineering, a VPN client hanging on 4 devices and 3 worn batteries.
+- **Tests:** `pnpm --filter @amax/experience test` (DB tests need `DATABASE_MIGRATE_URL`; Graph is always a fake wire). The screen: `pnpm --filter @amax/web build && pnpm --filter @amax/experience e2e`, which includes the 2% region diff against the mock.

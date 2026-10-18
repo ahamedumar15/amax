@@ -94,7 +94,7 @@ Ripples outside the module (AC-8, besides CODEOWNERS and BACKLOG):
   - Tests: the allowed-columns list, no read without a notice, fixes, and drops (AC-1, AC-2, AC-5, AC-6)
   Files: modules/experience/workflows.ts, modules/experience/suggestions.ts, modules/experience/server/collect.ts, modules/experience/server/graph.ts, modules/experience/server/wire.ts, modules/experience/server/record.ts, modules/experience/server/snapshot.ts, modules/experience/server/remediate.ts, modules/experience/tests/collect.test.ts, modules/experience/tests/fixes.test.ts
   Depends: T2
-- [ ] `T4` — Module standard:
+- [x] `T4` — Module standard:
   - README, package.json, a CODEOWNERS line, retention (device data 90 days; pulses, notices and remediations with who set them), and switch-off
   - degrading without helpdesk, notifications and insights; the Operations slug fix and the admin e2e example
   - BACKLOG: insights shows experience drops, helpdesk handles `experience.fix.accepted`, and hr's profile shows the person's own experience (AC-6, AC-8)
