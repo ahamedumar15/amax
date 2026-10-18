@@ -21,6 +21,11 @@ test("064 AC3 the tour plays when asked, with captions, and never on its own", a
   }
   await page.getByRole("tabpanel").getByRole("button").last().focus();
   await page.keyboard.press("Tab");
-  await page.keyboard.press("Space");
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+  await expect(video).toBeFocused();
+  const paused = () => video.evaluate((v: HTMLVideoElement) => v.paused);
+  await expect.poll(paused).toBe(false);
+  for (const want of [true, false]) {
+    await page.keyboard.press("Space");
+    await expect.poll(paused).toBe(want);
+  }
 });

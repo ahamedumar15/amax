@@ -1,0 +1,62 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/tests/e2e/marketing-video.spec.ts",
+  "apps/web/tests/e2e/marketing.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/marketing-video.spec.ts",
+   "fp": "746c235702e5",
+   "in_delta": true,
+   "line": 24,
+   "message": "This fixes the named case only. The round-3 finding asked for a round trip: press Space and assert `paused` flips, then press it again and assert it flips back. The new row checks only the first half, playing \u2192 paused. It also never checks the state right before the key press. It does not assert `paused === false` or `toBeFocused()` after the Tab on line 23. So `paused === true` only shows that playback stopped. It does not show that the key press operated the control. Fix: (1) After the Tab on line 23, assert `toBeFocused()` and `paused === false`. (2) Press Space and assert `paused === true`. (3) Press Space again and assert `paused` returns to `false` (or `currentTime` advances). Put these steps in the keyboard table so the operation check sits with the two focus rows.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Playback stops without the key press doing it, for example a page-level keydown handler pauses the video or focus leaves the video. Or keyboard resume breaks, for example the first Space moves focus to an inner shadow-tree control that the second Space doesn't toggle. Either way the test stays green, because it only waits for `paused === true` once and never tries to resume by keyboard.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/tests/e2e/marketing-video.spec.ts",
+   "fp": "290e57b481dc",
+   "in_delta": true,
+   "line": 21,
+   "message": "The keyboard-operation check is a separate block after the focus-variant table, and its Tab-from-last-queue-button setup repeats row 1 of that table. Fold it into the table, or reuse that row's focus step, so there is one copy of the setup. Also, the commit doesn't show that the new check fails with `tabIndex={-1}` or with `controls` removed, which the previous finding asked for. Record that run in the change's verify notes.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "9c52e103b7e3b08a64bf212fcb0bbae3db8c88e2",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/mock/scripts/copy-mock.mjs",
+  "apps/web/app/(public)/welcome/welcome.css",
+  "apps/web/components/marketing/ProductVideo.tsx"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 46416,
+ "round": 4,
+ "since": "cfccdaae50",
+ "status": "open",
+ "system_chars": 39573,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792343945,
+ "ts_start": 1792343897
+}
