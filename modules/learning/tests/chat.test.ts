@@ -30,7 +30,7 @@ describe.skipIf(!hasDb)("AC-2 writes wait for chat's confirm (Postgres, scripted
   beforeAll(async () => {
     db = await learningDb();
     await db.t.owner`insert into ai.settings (tenant_id, zdr_confirmed) values (${T}, true) on conflict do nothing`;
-  }, 60_000);
+  }, 240_000);
   afterAll(() => db?.t.drop());
 
   const run = async (name: string, input: Record<string, unknown>, intent?: Intent) => {

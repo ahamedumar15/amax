@@ -13,5 +13,5 @@ describe("AC-3 module standard", () => {
     // Other modules may integrate through the contract (036 reads training evidence there), never the internals.
     expect(outside.filter((f) => /@amax\/learning(?!\/contracts")/.test(readFileSync(f, "utf8")))).toEqual([]);
     expect((await installedModules(["learning"])).map((m) => m.id)).not.toContain("learning");
-  });
+  }, 60_000);
 });

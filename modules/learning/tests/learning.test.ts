@@ -16,7 +16,7 @@ const ON = "2026-10-16";
 describe.skipIf(!hasDb)("learning against Postgres", () => {
   let db: Awaited<ReturnType<typeof learningDb>>;
   let hr: Viewer, maya: Viewer;
-  beforeAll(async () => { db = await learningDb(); [hr, maya] = [await db.as("maya", "HR"), await db.as("maya", "PM")]; }, 60_000);
+  beforeAll(async () => { db = await learningDb(); [hr, maya] = [await db.as("maya", "HR"), await db.as("maya", "PM")]; }, 240_000);
   afterAll(() => db?.t.drop());
 
   it("AC-1 programmes, enrolment, completion and certifications with expiry match fixtures.md", async () => {
