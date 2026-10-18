@@ -27,20 +27,20 @@ is the 002 `candidate` class, so only HR reads names, contact details, CVs and m
 and Leadership see the pipeline's counts, stages and dates with names masked. The demo figures come
 from fixtures.md (funnel 63 → 41 → 19 → 5 → 4; board 22, 9, 5, 1, 4; hires per month 4, 4, 6, 4, 3, 3).
 
-- [ ] `T1` — Recruitment screen, as in the mock: the lede, a role filter, "New role" through Ask amax, the four tiles (open roles, candidates, time to hire, offers accepted), the pipeline board with one or two cards per stage and "+N more", the hiring funnel and hires per month. Every tile, card, stage and funnel row is pinned; there are no forms; names are masked for anyone without the candidate class (AC-1, AC-2)
+- [x] `T1` — Recruitment screen, as in the mock: the lede, a role filter, "New role" through Ask amax, the four tiles (open roles, candidates, time to hire, offers accepted), the pipeline board with one or two cards per stage and "+N more", the hiring funnel and hires per month. Every tile, card, stage and funnel row is pinned; there are no forms; names are masked for anyone without the candidate class (AC-1, AC-2)
   Files: modules/recruitment/ui/*.tsx, modules/recruitment/ui/recruitment.css, modules/recruitment/module.ts, modules/recruitment/tests/e2e/recruitment.spec.ts
-- [ ] `T2` — Contracts first, then the `recruitment` schema (role, candidate, application, interview, offer), each write an audited service and MCP write tool, and the read tools. Candidate fields are `sensitive: 'candidate'` on every read tool and masked below HR; retention per 032 (candidates not hired: 12 months from the decision) (AC-1)
+- [x] `T2` — Contracts first, then the `recruitment` schema (role, candidate, application, interview, offer), each write an audited service and MCP write tool, and the read tools. Candidate fields are `sensitive: 'candidate'` on every read tool and masked below HR; retention per 032 (candidates not hired: 12 months from the decision) (AC-1)
   Files: modules/recruitment/contracts.ts, modules/recruitment/db/migrations/0001_recruitment.sql, modules/recruitment/server/*.ts, modules/recruitment/mcp.ts, modules/recruitment/pins.ts, modules/recruitment/fixtures/, modules/recruitment/tests/pipeline.test.ts, modules/recruitment/tests/contracts.test.ts
-- [ ] `T3` — The screening agent: each new application gets a match score with its evidence (the CV sections that matched) as a 006 suggestion. Accepting moves it to screening; no agent path rejects anyone, and rejection is refused for anything but a person (AC-2)
+- [x] `T3` — The screening agent: each new application gets a match score with its evidence (the CV sections that matched) as a 006 suggestion. Accepting moves it to screening; no agent path rejects anyone, and rejection is refused for anything but a person (AC-2)
   Files: modules/recruitment/suggestions.ts, modules/recruitment/server/match.ts, modules/recruitment/tests/match.test.ts
   Depends: T2
-- [ ] `T4` — E-signature through a provider adapter: the `SignProvider` interface, Zoho Sign first (its token from the 031 `zoho-sign` credential), and a demo provider labelled fictional. Sending an offer creates the envelope; a signed envelope hires (AC-3)
+- [x] `T4` — E-signature through a provider adapter: the `SignProvider` interface, Zoho Sign first (its token from the 031 `zoho-sign` credential), and a demo provider labelled fictional. Sending an offer creates the envelope; a signed envelope hires (AC-3)
   Files: modules/recruitment/sign.ts, modules/recruitment/server/offers.ts, modules/recruitment/tests/sign.test.ts
   Depends: T2
-- [ ] `T5` — Hiring emits `recruitment.hired`; the hire agent proposes the HR record as a 006 suggestion only HR (`hr:person:create`) can accept, and the hire links to the HR person once hr reports them joined (`hr.person.joined`, read through the HR contract) (AC-1)
+- [x] `T5` — Hiring emits `recruitment.hired`; the hire agent proposes the HR record as a 006 suggestion only HR (`hr:person:create`) can accept, and the hire links to the HR person once hr reports them joined (`hr.person.joined`, read through the HR contract) (AC-1)
   Files: modules/recruitment/suggestions.ts, modules/recruitment/server/hire.ts, modules/recruitment/tests/hire.test.ts
   Depends: T3, T4
-- [ ] `T6` — Module standard: README, manifest, CODEOWNERS line, contract tests, retention entries, can be switched off (AC-4)
+- [x] `T6` — Module standard: README, manifest, CODEOWNERS line, contract tests, retention entries, can be switched off (AC-4)
   Files: modules/recruitment/README.md, modules/recruitment/package.json, .github/CODEOWNERS, modules/recruitment/tests/standard.test.ts
   Depends: T5
 
