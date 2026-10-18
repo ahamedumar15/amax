@@ -66,14 +66,14 @@ A new public page with no app navigation: no rail, top bar or chat launcher. Top
 - AC-12: pass — `brag-slim` video in brand: logo, mascot, gradient, Avenir Next, ticket colours, and real amax screens with fictional data (Lumen Labs, Contoso Portal, Fleet Tracker, Kasun Dias, Nimali Perera).
 
 Commands (in the worktree):
-- After merging origin/main (008, 013, 038): `pnpm turbo run test --continue --concurrency=3` → 0 (23/23 tasks, 11 modules), lint 0, build 0, `marketing.spec` 4 passed. 013 ships the onboarding module, so the page now lists it as live.
+- After merging origin/main (008, 013, 038): `pnpm turbo run test --continue --concurrency=3` → 0 (23/23 tasks, 11 modules), lint 0, build 0, `marketing.spec` 4 passed. 013 ships the onboarding module and 014 the payroll engine, so the page lists both as live. The Sri Lanka and Australia packs stay Coming. Re-run on 12 modules: 24/24 test tasks, lint, build and `marketing.spec` all pass.
 - `pnpm turbo run test --continue --concurrency=3` → 0 (22/22 tasks; DB tests are skipped without DATABASE_MIGRATE_URL). A plain `pnpm test` hit a 5 s timeout in `@amax/testing` ac3-boundaries under full parallel load; it passes on its own and at lower concurrency, the same as CI's `--concurrency=2`.
 - `pnpm lint` → 0 (tsc + graph check ok). `pnpm build` → 0. `node scripts/check-module-standard.mjs` → 0.
 - `E2E_PORT=3510 npx playwright test tests/e2e/marketing.spec.ts` (production build, AMAX_BASE_URL set) → 4 passed.
 - `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes. Nothing in this change breaks a non-comment rule.
 - `specclaw-quality-scan . --gate` → 1: three high-complexity functions, all outside this change (`delivery/sync/specclaw.ts` parse, `AiSettingsPage`, `BackupTickets`). This change adds no new high functions or duplicates.
 - Decision (the user, 2026-10-18, after review escalation in rounds 10–13): the automated time-claim guard was dropped. A regex test cannot cover every way of saying "hours get logged". Code review checks the marketing copy's time claims instead. The copy itself says commits draft hours that the person accepts, and the week is submitted before approval (`modules/time/suggestions.ts`, `modules/time/server/decide.ts`).
-- Review: CLEAN — 14 rounds, final pass 1fb4954d0b (opus/opus), 0/0/0 b/M/m. Rounds 9–13 corrected the time-logging and submit-before-approve claims across the page, video and mock.
+- Review: CLEAN — 16 rounds, final pass d48c6cab27 (opus/opus), 0/0/2 b/M/m. Rounds 9–13 corrected the time-logging and submit-before-approve claims across the page, video and mock.
 
 Quality: 360 → 354 duplicated lines
 
