@@ -2,15 +2,17 @@ import { sql } from "drizzle-orm";
 import type { z } from "zod";
 import { type Db, textArray, withTenant } from "@amax/db";
 import { appendTrace, currentTrace, logError, type Sensitivity, type Source } from "@amax/core/server";
+import { configureEndpoint, type AiEndpoint } from "./endpoint";
 import { blockedReason, loadPolicy, type AiPolicy } from "./policy";
 import { DATA_RULES, looksLikeInjection, quoteData } from "./prompt";
 import { redactDeep, type Redactions } from "./redact";
 import { costOf, type Message, type Provider, type ProviderCall, type ProviderResult, type ToolSpec, type Usage } from "./types";
 
-export type AiConfig = { provider: Provider; db: Db; model: string; fallbackModel?: string };
+export type AiConfig = { provider: Provider; db: Db; model: string; fallbackModel?: string; endpoint?: Partial<AiEndpoint> };
 let config: AiConfig | undefined;
 export const configureAi = (c: AiConfig) => {
   config = c;
+  configureEndpoint(c.endpoint ?? {});
 };
 export const aiConfigured = () => Boolean(config);
 const cfg = () => {

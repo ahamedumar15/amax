@@ -28,9 +28,9 @@ synced proposal's phase up to Verified, so a board move of a specclaw row is ref
 Released, so a sync never moves a Released row back; it may set Released itself for an archived change.
 Voiding the Prod deployment restores the recorded phase (AC-1), and the next sync then follows the repo again.
 
-- [ ] `T1` — AI settings screen shows the configured provider endpoint and its region beside the data-region gate (AC-3)
+- [x] `T1` — AI settings screen shows the configured provider endpoint and its region beside the data-region gate (AC-3)
   Files: apps/web/app/(app)/settings/ai/page.tsx, apps/web/lib/admin/status.ts
-- [ ] `T2` — Provider endpoint and region from configuration; the gate blocks AI under a data region when the endpoint region is unknown or differs (AC-3)
+- [x] `T2` — Provider endpoint and region from configuration; the gate blocks AI under a data region when the endpoint region is unknown or differs (AC-3)
   Files: packages/core/src/env.ts, packages/ai/src/anthropic.ts, packages/ai/src/gateway.ts, packages/ai/src/policy.ts, apps/web/lib/server.ts, packages/ai/tests/region-044.test.ts
   Depends: T1
 - [ ] `T3` — A releasing deployment records each proposal's prior phase; voiding it restores exactly that phase with matching phase_changed events (AC-1)

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
+import { aiEndpoint, type AiEndpoint } from "./endpoint";
 
 export type AiPolicy = {
   enabled: boolean;
@@ -54,9 +55,11 @@ export function normalizeRegion(input: string | null | undefined): RegionCode | 
 
 /**
  * Why AI is off for this tenant, or null when it may run (AC-4). With a data region set, every
- * place data goes must be known and inside it: an unknown region blocks, it doesn't pass.
+ * place data goes must be known and inside it: an unknown region blocks, it doesn't pass. That
+ * includes the endpoint calls really go to (044 AC-3), checked against the configuration, not the
+ * Admin's declaration.
  */
-export function blockedReason(p: AiPolicy): string | null {
+export function blockedReason(p: AiPolicy, endpoint: AiEndpoint = aiEndpoint()): string | null {
   if (!p.enabled) return "AI is switched off for this organisation";
   if (p.zdrRequired && !p.zdrConfirmed) return "zero data retention is required but an Admin hasn't confirmed it with the provider";
   if (p.dataRegion) {
@@ -71,6 +74,9 @@ export function blockedReason(p: AiPolicy): string | null {
     if (unrecognised.length) return `the region for ${unrecognised.join(", ")} isn't recognised; choose one from the list`;
     const outside = entries.filter(([, r]) => parseRegion(r) !== data).map(([k]) => k);
     if (outside.length) return `${outside.join(", ")} ${outside.length > 1 ? "are" : "is"} outside the data region (${data})`;
+    const served = parseRegion(endpoint.region);
+    if (!served) return `the AI endpoint's region isn't configured on the server (AMAX_AI_ENDPOINT_REGION), so calls may leave ${data}`;
+    if (served !== data) return `the AI endpoint is configured in ${served}, outside the data region (${data})`;
   }
   return null;
 }

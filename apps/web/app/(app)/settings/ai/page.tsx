@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { aiConfigured, blockedReason, voiceAllowed } from "@amax/ai";
+import { aiConfigured, aiEndpoint, blockedReason, PROVIDER_DEFAULT, voiceAllowed } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
 import { can, canSeePricing } from "@amax/auth";
 import { PRICE_HIDDEN } from "@amax/ai/usage-format";
@@ -82,6 +82,8 @@ export default async function AiSettingsPage() {
             <div className="card-head"><h2>Provider</h2><PinButton inline pin={pin("AI provider")} /><span className="muted" style={{ fontSize: 13 }}>Set per tenant</span></div>
             <div className="row line"><span>Model</span><b>{env.AMAX_AI_MODEL}, then {env.AMAX_AI_FALLBACK_MODEL}</b></div>
             <div className="row line"><span>Region</span><b>{p.providerRegion ?? "Provider default"}</b></div>
+            <div className="row line"><span>Endpoint</span><b>{aiEndpoint().url ?? `${PROVIDER_DEFAULT} (provider default)`}</b></div>
+            <div className="row line"><span>Endpoint region</span><b>{aiEndpoint().region ?? "Not configured on the server"}</b></div>
             <div className="row line"><span>Provider keeps data</span><b>{p.zdrRequired ? (p.zdrConfirmed ? "No (confirmed)" : "Must be confirmed") : "Provider default"}</b></div>
             <div className="row line"><span>Prompt logging</span><b>Off</b></div>
             <div className="row line"><span>Voice input</span><b>{(() => { const v = voiceAllowed(p); return v.ok ? "On, sent to your browser's speech service" : p.voiceEnabled ? `Off: ${v.reason}` : "Off"; })()}</b></div>
