@@ -1,14 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 17:00 UTC
+**Last Updated:** 2026-10-18 17:21 UTC
 
 ## Active Changes
 
 
-- 🔀 **021-it-access-licences** — pr raised | 6/6 tasks (100%) | 0 failed | PR #82 open
-- 🔀 **025-inbox-agent** — pr raised | 5/5 tasks (100%) | 0 failed | PR #81 merged
-- 🔀 **027-reports** — pr raised | 3/3 tasks (100%) | 0 failed | PR #80 merged
+- 🔀 **021-it-access-licences** — pr raised | 6/6 tasks (100%) | 0 failed | PR #82 merged
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
@@ -44,6 +42,8 @@
 - ✅ **020-presales**
 - ✅ **023-recruitment**
 - ✅ **024-learning**
+- ✅ **025-inbox-agent**
+- ✅ **027-reports**
 - ✅ **028-keyflow-sync**
 - ✅ **029-workflows-scheduler**
 - ✅ **030-notifications**
@@ -81,5 +81,5 @@
 ## Stats
 
 - **Total changes:** 57
-- **Active:** 5
-- **Completed:** 52
+- **Active:** 3
+- **Completed:** 54
