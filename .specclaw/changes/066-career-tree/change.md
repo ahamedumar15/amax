@@ -234,6 +234,25 @@ Two differences from the mock, on purpose:
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass — the `career` module reads hr, allocations, delivery and learning only through their contracts, and who-and-when through `searchAudit`. It writes only `career.*`, and `check:graph` passes.
+- AC-2: pass — `layoutTree()` is pure and unit-tested with no DOM. It covers months-linear y, merged branches, stroke width, greedy lanes alternating sides, crossing halos, leaves, fruit, rings and roots, plus compact mode above 4 lanes per side, tested with 10 concurrent projects. The fixture tree matches the mock's SVG exactly.
+- AC-3: pass, with two gaps.
+  - Technologies are career's own records with a source. `tag_technology` confirms them through chat. Colours are consistent per technology, there's no inline edit, and "Ask amax" opens chat with the person pinned.
+  - **Gap:** delivery's contract publishes no languages or dependencies, so there's no agent proposal yet. The fixture's two proposed leaves are seeded (BACKLOG).
+  - **Gap:** allocations publishes no member skill, so there's no skills leaf (BACKLOG).
+- AC-4: pass — every node and list row is focusable and pinned through `get_career_event`. The trace shows before → after, effective date, recorded by (person or agent for a person), approved by, and the source link. Selecting in the tree or the list highlights both. The list has 13 rows where the mock has 11, so each row pins one event.
+- AC-5: pass — `get_career(personId)` returns the screen's nodes, and `tag_technology` is the only write tool.
+- AC-6: pass — only the person, their manager chain, HR and leadership see a career; Sahan (Admin, outside the chain) gets 404. Pay is never a node, and health documents don't appear. The person's own tree is at `/career`, because the person route is gated by `hr:read`.
+- AC-7: pass — the list carries the tree's information in date order, and the SVG has `role="group"` with labelled nodes. Arrow keys and Enter work, there's no animation under reduced motion, and light and dark both work. The list comes first below 720px with no horizontal scroll, and axe is clean.
+- AC-8: pass — contracts and contract tests, README, fixtures, manifest and switch-off. Missing optional modules leave their part out with a note, and the trunk and rings need only hr. Outside the module: CODEOWNERS and the Person page's Sections slot (`PERSON_SECTIONS` in hr's contracts, the Career tab in `PersonPage.tsx`).
+- AC-9: pass — Kasun Dias has 3 grade changes, 5 projects (3 at once in Apr–May 2025), 9 technologies, 2 certifications (1 expired) and 2 manager moves.
+  - **Note:** hr's own fixtures start Kasun in Mar 2022, and AC-8 bars editing them. So the history before that is career's own fictional import (`career.history`, with a cutover per person in `career.import`). His Person page says he joined Mar 3, 2022, while the Career page says Jun 7, 2021.
+
+Screenshots: `.specclaw/changes/066-career-tree/shots/app.png` (`/hr/p/LL-0417/career` as Maya), `.specclaw/changes/066-career-tree/shots/mock.png`.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
+
 Gates, run on 2026-10-18 in the worktree:
 - `pnpm turbo run lint --force`: 34/34 tasks. `check:graph` ok (21 modules, 11 packages). `check-module-standard` ok.
 - `pnpm turbo run test --force --continue --concurrency=2`: 34/34 tasks, 1342 tests passed, 6 skipped. career has 8 tests: AC1, AC2, AC3, AC4, AC5, AC6, AC8 and AC9.
