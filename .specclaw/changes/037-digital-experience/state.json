@@ -1,8 +1,9 @@
 {
   "change": "037-digital-experience",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T19:39:37Z"}
+    "tasks": {"status":"done","at":"2026-10-18T19:39:37Z"},
+    "verify": {"status":"done","at":"2026-10-18T20:20:05Z"}
   }
 }

@@ -103,6 +103,47 @@ Ripples outside the module (AC-8, besides CODEOWNERS and BACKLOG):
 
 ## Verify
 
+**Verdict:** PASS, with gaps on AC-4, AC-5 and AC-6 recorded below and in BACKLOG
+
+- AC-1: pass.
+  - A daily 029 job reads Intune Endpoint Analytics and Intune's Defender risk (`partnerReportedThreatState`) through 021's `msgraph-read` connector (`READ_CONNECTORS`, `useSecret`) and the 035 egress guards.
+  - Answers are parsed to a fixed shape. A test fails if the schema gains a column outside the allowed list, and one checks that device and user names, window titles and browsing are dropped.
+  - The demo tenant's `sandbox` setting means Graph is never called.
+- AC-2: pass — collection is switched on per entity by an Admin, only with a notice date that isn't in the future. Tests show nothing is stored for an entity that's off, and the credential is never opened when no entity is on.
+- AC-3: pass, with a gap.
+  - The 0–10 score combines device health, app reliability and pulse, and the formula is shown under the table. Scores are by department, site and model only, and groups under 5 are hidden.
+  - No `get_experience` output names a person, and no tool takes a person as input. The person's own score is `get_my_experience`.
+  - **Gap:** hr's profile page doesn't show the own score yet (BACKLOG).
+- AC-4: partial.
+  - At most one pulse a fortnight. 030's rule sends it, tested end to end.
+  - Answers are anonymous: receipts are stored apart from answers, and an answer has no user and no time. Results show only for groups of 5 or more.
+  - **Gap:** Teams delivery reaches only people who have switched Teams on in their 030 preferences.
+  - **Gap:** answers come back through chat (`answer_pulse`), not a Teams card.
+- AC-5: partial.
+  - Issues on 5 or more devices become `experience.fix` suggestions with their evidence (devices affected, first seen, likely cause). Nothing runs without approval, and an Engineer can't accept one.
+  - **Remediation:** an accepted fix runs through `msgraph-write` only after an Admin switches on experience's own remediation setting with a script id; it is off by default and recorded as "manual" until then. 021's write consent is internal to 021, and its scopes don't cover device management.
+  - **Ticket:** experience can't write helpdesk's schema. Accepting a hardware fix emits `experience.fix.accepted` and offers "Open ticket", which opens chat in `helpdesk.new-ticket` with the fix pinned. Helpdesk opening the ticket on its own is in BACKLOG.
+- AC-6: partial.
+  - Daily snapshots are kept, and a drop of 1 point or more emits `experience.score.dropped` once (Quality, 8.3 → 7.1). `scoreDrops()` returns each drop in 026's `InsightSource` shape. Device data is kept 90 days (032).
+  - **Gap:** insights has no hook for another module's insight, so Insights doesn't show the drop yet (BACKLOG).
+- AC-7: pass, with one deviation.
+  - Every gated region (four tile labels and four card titles) measures 0.0000 against the mock, as does the whole tile row.
+  - Where the fixture data can't produce the mock's wording, the screen says what the data shows: "Slow boots" for "Slow builds", "VPN client keeps hanging" for "VPN drops on office Wi-Fi", and "over the last 4 weeks" for "this fortnight".
+  - **Deviation:** IT Admin can also read the screen, beyond Admin and Leadership, because IT decides the fixes and the Operations nav lists it for IT Admin. It shows only group scores, never a named person. If the product owner wants it Admin and Leadership only, it's a one-line change.
+  - **Mock-level issue:** at 1440 wide the "Devices needing attention" label runs under the tile illustration in the mock too. The mock's `max-width:62%` label rule applies only below 600px. The app matches the mock, which AC-7 gates, so this is left for a design fix in the shared `Ticket`.
+- AC-8: pass — contracts and contract tests, README, fixtures, manifest, switch-off, and the module still works without helpdesk, notifications and insights (tested). `check:graph` and `check-module-standard` pass.
+
+Re-run on HEAD 26cd1ed after the build agent's last commit (E2E ports 3637/3638, `amax_e2e_037`):
+- `pnpm turbo run lint --force` → 0 (34/34)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (34/34)
+- `pnpm --filter @amax/web build` → 0
+- `npx playwright test` (apps/web, public) → 8/8
+- `npx playwright test --config playwright.auth.config.ts` → 81/81
+- `pnpm --filter @amax/experience e2e` → 3/3
+
+Screenshots: `.specclaw/changes/037-digital-experience/shots/app.png`, `.specclaw/changes/037-digital-experience/shots/mock.png`.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
+
 Quality: 0 → 0 duplicated lines (`npx jscpd@4 modules/experience`, default thresholds; `specclaw-quality-scan .` hit jq's "Argument list too long"). Nothing to refactor.
 
 Commands (Postgres 16 at `DATABASE_MIGRATE_URL`):
