@@ -6,6 +6,8 @@ test("062 AC1 signed out, / is the marketing page; signed in, / is the app", asy
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Agents keep the records. People decide.");
   await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Ask amax|Search|profile menu/ })).toHaveCount(0);
+  await expect(page.getByRole("search")).toHaveCount(0);
   await page.goto("/delivery");
   await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
