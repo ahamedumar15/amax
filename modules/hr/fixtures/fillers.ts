@@ -70,5 +70,7 @@ export function fillers(): Filler[] {
   LEAVERS.forEach((count, m) => { for (let i = 0; i < count; i++) out.push(leaver(out.length, m, i)); });
   const n = out.length;
   out.push({ key: `f${n}`, no: `LL-${1001 + n}`, name: lkName(n), title: "Sales executive", entity: "lk", department: "Sales", status: "joining", joined: "2026-11-02", manager: "lead:Sales" });
-  return out;
+  // 055: Ravi Perera (named) takes the last IT seat. Dropping it after numbering keeps every other filler's name and number.
+  const seat = out.filter((f) => f.department === "IT").at(-1);
+  return out.filter((f) => f !== seat);
 }

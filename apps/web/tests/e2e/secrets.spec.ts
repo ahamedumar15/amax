@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { diffRatio, type Region } from "./diff";
+import { ADMINS } from "./admins";
 
 const mock = `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#031-secrets-and-keys`;
 // 047 changed the header to an Ask amax chip (its own mock section); the tickets still match 031.
@@ -25,8 +26,8 @@ const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wca
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
-test("031 AC4 Connections and keys matches the mock within 2%", async ({ page, context }) => {
-  await signIn(page, "maya@lumenlabs.test");
+for (const who of ADMINS) test(`031 AC4 Connections and keys matches the mock within 2%, as ${who.role} (055)`, async ({ page, context }) => {
+  await signIn(page, who.email);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Connections and keys");
   await expect(page.locator("table.tbl tbody tr")).toHaveCount(6);
   await expect(page.locator("tr", { hasText: "Azure DevOps" })).toContainText("Expires in 12 days");

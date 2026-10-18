@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { ADMINS } from "./admins";
 
 async function signIn(page: Page, email: string, to: string) {
   await page.goto(to);
@@ -14,13 +15,13 @@ const chat = (page: Page) => page.getByRole("complementary", { name: "amax chat"
 const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
 const unpinned = (page: Page) => page.locator("main").evaluate((root) =>
   [...root.querySelectorAll(".card, .app-card, .ticket, tbody tr")]
-    .filter((el) => !el.closest("table.sr") && !el.querySelector(":scope > td[colspan]") && !el.querySelector(".pin[data-pin]"))
+    .filter((el) => !el.closest("table.sr, [data-pricing-hidden]") && !el.querySelector(":scope > td[colspan]") && !el.querySelector(".pin[data-pin]"))
     .map((el) => (el.textContent ?? "").trim().slice(0, 60)));
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
-test("047 AC1 the Settings hub lists every admin screen with a live status; the nav and profile menu link to it", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", "/settings");
+for (const who of ADMINS) test(`047 AC1 the Settings hub lists every admin screen with a live status; the nav and profile menu link to it, as ${who.role} (055)`, async ({ page }) => {
+  await signIn(page, who.email, "/settings");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Settings");
   const cards = page.locator(".app-card h2");
   await expect(cards).toHaveCount(9);
@@ -28,6 +29,7 @@ test("047 AC1 the Settings hub lists every admin screen with a live status; the 
   await expect(cards.first()).toHaveText("Connections and keys");
   await expect(page.locator(".app-card", { hasText: "Connections and keys" }).locator(".chip")).toHaveText("1 expiring");
   await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon"]);
+  await expect(page.locator(".app-card", { hasText: "AI usage" }).locator(".chip")).toHaveText(who.pricing ? /this month$/ : "Hidden for your role");
   await expect(page.getByRole("link", { name: "Audit and trace" })).toHaveAttribute("href", "/settings/audit");
   await expect(page.getByRole("link", { name: "AI usage" })).toHaveAttribute("href", "/settings/ai/usage");
   await expect(page.locator(".lede")).toContainText("2 things need you: the Azure DevOps credential expires in 12 days; 1 privacy request needs a second approver");
@@ -38,8 +40,8 @@ test("047 AC1 the Settings hub lists every admin screen with a live status; the 
   expect(await axe(page)).toEqual([]);
 });
 
-test("047 AC2 AC5 no form on the hub or the four screens, and every ticket, card and row has a pin", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", "/settings");
+for (const who of ADMINS) test(`047 AC2 AC5 no form on the hub or the four screens, and every ticket, card and row has a pin, as ${who.role} (055)`, async ({ page }) => {
+  await signIn(page, who.email, "/settings");
   for (const path of SCREENS) {
     await page.goto(path);
     await expect(page.locator("main h1")).toBeVisible();
@@ -48,9 +50,9 @@ test("047 AC2 AC5 no form on the hub or the four screens, and every ticket, card
   }
 });
 
-test("047 AC4 AC7 pin a credential, ask to rotate it, confirm with the masked field: Rotated today, and the value is nowhere on the page", async ({ page }) => {
+for (const who of ADMINS) test(`047 AC4 AC7 pin a credential, ask to rotate it, confirm with the masked field: Rotated today, and the value is nowhere on the page, as ${who.role} (055)`, async ({ page }) => {
   const VALUE = `test-e2e-${randomBytes(12).toString("hex")}`;
-  await signIn(page, "maya@lumenlabs.test", "/settings/keys");
+  await signIn(page, who.email, "/settings/keys");
   const row = page.locator("tr", { hasText: "Azure DevOps" });
   // The Ask chip pins the credential (get_secret_meta) and fills in the prompt.
   await row.getByRole("button", { name: "Ask to rotate Azure DevOps" }).click();
@@ -85,6 +87,43 @@ test("047 AC7 pin a schedule, ask to pause it, confirm: it shows Paused", async 
   await page.reload();
   await expect(row).toContainText("Paused");
   await expect(row.getByRole("button", { name: "Ask to resume Audit chain check" })).toBeVisible();
+});
+
+test("047 AC7 as IT Admin (055): ask to resume the paused schedule, confirm: it shows On", async ({ page }) => {
+  await signIn(page, "ravi@lumenlabs.test", "/settings/workflows");
+  const row = page.locator("tr", { hasText: "Audit chain check" });
+  await row.getByRole("button", { name: "Ask to resume Audit chain check" }).click();
+  await expect(page.getByLabel("Message amax")).toHaveValue("Resume the Audit chain check schedule");
+  await page.getByRole("button", { name: "Send" }).click();
+  const card = page.getByRole("group", { name: /^Confirm:/ });
+  await card.getByRole("button", { name: "Add it" }).click();
+  await expect(card).toContainText("Done");
+  await page.reload();
+  await expect(row).toContainText("On");
+});
+
+const OPERATIONS = ["Settings", "Access and licences", "Helpdesk", "Compliance", "Digital experience", "Backups and export"];
+
+test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are Coming soon and name their change; other roles see none of it", async ({ page }) => {
+  for (const who of ADMINS) {
+    await page.context().clearCookies();
+    await signIn(page, who.email, "/");
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav.locator(".grp", { hasText: "Operations" })).toHaveCount(1);
+    for (const label of OPERATIONS) await expect(nav.getByRole("link", { name: label, exact: true }), `${who.role} ${label}`).toBeVisible();
+    await nav.getByRole("link", { name: "Helpdesk", exact: true }).click();
+    await expect(page).toHaveURL(/\/operations\/helpdesk$/);
+    await expect(page.locator("main h1")).toHaveText("Helpdesk");
+    await expect(page.locator("main .lede")).toHaveText("Coming soon. Helpdesk arrives with change 022, Helpdesk: IT, HR and facilities queues.");
+    // A settled page for axe: the rail's labels fade in on hover, and the click left the pointer there.
+    await page.mouse.move(900, 500);
+    await page.reload();
+    expect(await axe(page)).toEqual([]);
+  }
+  await page.context().clearCookies();
+  await signIn(page, "nimal@lumenlabs.test", "/");
+  for (const label of OPERATIONS) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label, exact: true })).toHaveCount(0);
+  expect((await page.goto("/operations/helpdesk"))?.status()).toBe(404);
 });
 
 test("047 AC6 non-Admins get the 404 page on every admin screen, and chat refuses the admin writes", async ({ page }) => {

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
-import { canSee, rolesOf } from "@amax/auth";
-import { LATEST_RUNS, listRuns, listSchedules } from "@amax/workflows/server";
+import { can, canSee, canSeePricing } from "@amax/auth";
+import { PRICE_HIDDEN } from "@amax/ai/usage-format";
+import { LATEST_RUNS, listRuns, listSchedules, WORKFLOWS_ADMIN } from "@amax/workflows/server";
+import { Ticket as PlainTicket } from "@amax/ui";
 import { PinnedTicket as Ticket } from "../../../../components/settings/PinnedTicket";
 import { RunsCard } from "../../../../components/workflows/RunsCard";
 import { SchedulesCard } from "../../../../components/workflows/SchedulesCard";
@@ -16,7 +18,7 @@ const ownerOf = (actsFor: string | null) => (actsFor?.startsWith("user:") ? acts
 
 export default async function WorkflowsSettingsPage() {
   const viewer = await getViewer();
-  if (!viewer || !rolesOf(viewer).includes("Admin")) notFound();
+  if (!viewer || !can(viewer, WORKFLOWS_ADMIN)) notFound();
   const db = getDb()!;
   const registry = workflowsRegistry();
   const [schedules, runs] = await Promise.all([
@@ -27,6 +29,7 @@ export default async function WorkflowsSettingsPage() {
   const waiting = runs.filter((r) => r.status === "waiting").length;
   const failed = runs.filter((r) => r.status === "failed").length;
   const cost = runs.reduce((sum, r) => sum + r.costUsd, 0);
+  const priced = canSeePricing(viewer);
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><a href="/settings">Settings</a><span>/</span>Workflows</nav>
@@ -43,10 +46,12 @@ export default async function WorkflowsSettingsPage() {
         <Ticket pin={pin("Recurring jobs on", "list_schedules")} tone="info" label="Recurring jobs on" value={`${schedules.filter((s) => s.enabled).length} of ${schedules.length}`} note="Times are in each entity's zone" />
         <Ticket pin={pin("Runs in progress", "list_workflow_runs", { status: ["running", "sleeping", "waiting"], withinLatest: true })} tone="good" label="Runs in progress" value={String(active.length)} note={`${waiting} waiting for a person`} />
         <Ticket pin={pin("Failed runs", "list_workflow_runs", { status: "failed", withinLatest: true })} tone={failed ? "problem" : "good"} label="Failed runs" value={String(failed)} note={failed ? "Retry re-runs only the failed step" : "None in the latest runs"} />
-        <Ticket pin={pin("Model and API cost", "list_workflow_runs")} tone="attention" label="Model and API cost" value={`$${cost.toFixed(2)}`} note={`Across the latest ${runs.length} run${runs.length === 1 ? "" : "s"}`} />
+        {priced
+          ? <Ticket pin={pin("Model and API cost", "list_workflow_runs")} tone="attention" label="Model and API cost" value={`$${cost.toFixed(2)}`} note={`Across the latest ${runs.length} run${runs.length === 1 ? "" : "s"}`} />
+          : <div data-pricing-hidden=""><PlainTicket tone="attention" label="Model and API cost" value="Hidden" note={PRICE_HIDDEN} /></div>}
       </div>
       <SchedulesCard schedules={schedules} />
-      <RunsCard runs={runs} />
+      <RunsCard runs={runs} priced={priced} />
     </>
   );
 }

@@ -12,7 +12,8 @@ const MAYA = "a1a1a1a1-0000-4000-8000-0000000000c2";
 const NIMAL = "a1a1a1a1-0000-4000-8000-0000000000c3";
 const C1 = "a1a1a1a1-0000-4000-8000-0000000000c4";
 const viewer = (userId: string, role: string) => ({ tenantId: T, userId, name: "x", email: "x", assignments: [{ role, legalEntityIds: null, departments: null }], actualRoles: [role] }) as unknown as Viewer;
-const admin = { tenantId: T, userId: MAYA, roles: ["Admin"] };
+const admin = { tenantId: T, userId: MAYA, tenant: true, pricing: true };
+const engineer = (userId: string) => ({ tenantId: T, userId, tenant: false, pricing: false });
 
 describe.skipIf(!hasDb)("048 AI usage", () => {
   let t: Awaited<ReturnType<typeof migratedDatabase>>;
@@ -33,12 +34,12 @@ describe.skipIf(!hasDb)("048 AI usage", () => {
   afterAll(() => t?.drop());
 
   it("AC-3 self shows only your own figures; only an Admin sees the tenant", async () => {
-    const mine = await aiUsage(app, { tenantId: T, userId: NIMAL, roles: ["Engineer"] }, { scope: "self", month: "2026-10" });
+    const mine = await aiUsage(app, engineer(NIMAL), { scope: "self", month: "2026-10" });
     expect(mine.totals).toMatchObject({ calls: 1, people: 1 });
     expect(mine.byPerson.map((p) => p.name)).toEqual(["Nimal Example"]);
     const { people: _, ...footer } = mine.totals;
-    expect(await aiUsageTotals(app, { tenantId: T, userId: NIMAL, roles: ["Engineer"] }, { scope: "self", month: "2026-10" })).toEqual(footer);
-    await expect(aiUsage(app, { tenantId: T, userId: NIMAL, roles: ["Engineer", "PM"] }, { scope: "tenant", month: "2026-10" })).rejects.toBeInstanceOf(ForbiddenError);
+    expect(await aiUsageTotals(app, engineer(NIMAL), { scope: "self", month: "2026-10" })).toEqual(footer);
+    await expect(aiUsage(app, engineer(NIMAL), { scope: "tenant", month: "2026-10" })).rejects.toBeInstanceOf(ForbiddenError);
     await expect(getAiUsageTool.run(viewer(NIMAL, "Engineer"), { scope: "tenant" })).rejects.toBeInstanceOf(ForbiddenError);
   });
 

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import postgres from "postgres";
+import { ADMINS, DOLLARS } from "./admins";
 
 async function signIn(page: Page, email: string, to: string) {
   await page.goto(to);
@@ -12,8 +13,8 @@ const owner = () => postgres(Object.assign(new URL(process.env.DATABASE_MIGRATE_
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
-test("050 AC-4 Audit and trace: chain status, events with pins, a trace timeline, and no write controls", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", "/settings/audit");
+for (const who of ADMINS) test(`050 AC-4 Audit and trace: chain status, events with pins, a trace timeline, and no write controls, as ${who.role} (055)`, async ({ page }) => {
+  await signIn(page, who.email, "/settings/audit");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Audit and trace");
   for (const label of ["Audit chain", "Trace chain"]) await expect(page.locator(".ticket", { hasText: label })).toContainText("Verified");
   await expect(page.getByRole("button", { name: "Add Audit and trace status to chat" })).toHaveCount(4);
@@ -29,6 +30,7 @@ test("050 AC-4 Audit and trace: chain status, events with pins, a trace timeline
   await expect(timeline).toContainText("Pending write");
   await expect(timeline).toContainText("Confirmed by Maya");
   await expect(timeline).toContainText(/Service write .*audited as delivery\.proposal\.create/);
+  if (!who.pricing) expect(await page.locator("main").innerHTML()).not.toMatch(DOLLARS);
   await expect(page.locator("main form[method=post], main input:not([type=search]), main textarea")).toHaveCount(0);
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
