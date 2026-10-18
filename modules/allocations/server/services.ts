@@ -40,22 +40,27 @@ export const allocate = defineService({
     .refine((i) => Boolean(i.projectKey) !== Boolean(i.work), "name a project key or other work, not both")
     .refine((i) => !i.through || i.through >= i.month, { message: "through can't be before month", path: ["through"] })
     .refine((i) => !i.through || span(i.month, i.through) <= MAX_MONTHS, { message: `at most ${MAX_MONTHS} months at a time`, path: ["through"] }),
-  async run(tx, input, ctx) {
-    const person = await personOf(tx, ctx, input.person);
-    const project = input.projectKey ? await getProjectRef(tx, input.projectKey) : null;
-    if (input.projectKey && !project) throw new Error(`no project ${input.projectKey}`);
-    if (!mayAllocate(ctx, project?.id ?? null)) throw new ScopeError("allocations:allocate");
-    const months = monthsBetween(input.month, input.through ?? input.month);
-    const slot = project ? sql`project_id = ${project.id}` : sql`work = ${input.work}`;
-    const before = (await tx.execute(sql`select month::text as month, percent from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date order by month`));
-    await tx.execute(sql`delete from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date`);
-    if (input.percent > 0) for (const m of months) {
-      await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, work, month, percent, updated_by) values (${ctx.tenantId}, ${person.id}, ${project?.id ?? null}, ${project ? null : input.work}, ${m}, ${input.percent}, ${by(ctx)})`);
-    }
-    const payload: AllocationSet = { personId: person.id, projectId: project?.id ?? null, work: project ? null : input.work!, months, percent: input.percent, by: by(ctx) };
-    return { result: { person: person.name, months, percent: input.percent }, resourceId: person.id, before: { rows: before }, after: { months, percent: input.percent, project: input.projectKey ?? input.work }, events: [{ name: EVENTS.allocationSet, payload }] };
-  },
+  run: (tx, input, ctx) => setAllocation(tx, input, ctx),
 });
+
+type AllocateInput = { person: string; projectKey?: string; work?: string; month: string; through?: string; percent: number };
+
+/** The allocate write inside the caller's transaction: the service, and an accepted agent suggestion (006). */
+export async function setAllocation(tx: Tx, input: AllocateInput, ctx: ServiceContext) {
+  const person = await personOf(tx, ctx, input.person);
+  const project = input.projectKey ? await getProjectRef(tx, input.projectKey) : null;
+  if (input.projectKey && !project) throw new Error(`no project ${input.projectKey}`);
+  if (!mayAllocate(ctx, project?.id ?? null)) throw new ScopeError("allocations:allocate");
+  const months = monthsBetween(input.month, input.through ?? input.month);
+  const slot = project ? sql`project_id = ${project.id}` : sql`work = ${input.work}`;
+  const before = (await tx.execute(sql`select month::text as month, percent from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date order by month`));
+  await tx.execute(sql`delete from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date`);
+  if (input.percent > 0) for (const m of months) {
+    await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, work, month, percent, updated_by) values (${ctx.tenantId}, ${person.id}, ${project?.id ?? null}, ${project ? null : input.work}, ${m}, ${input.percent}, ${by(ctx)})`);
+  }
+  const payload: AllocationSet = { personId: person.id, projectId: project?.id ?? null, work: project ? null : input.work!, months, percent: input.percent, by: by(ctx) };
+  return { result: { person: person.name, months, percent: input.percent }, resourceId: person.id, before: { rows: before }, after: { months, percent: input.percent, project: input.projectKey ?? input.work }, events: [{ name: EVENTS.allocationSet, payload }] };
+}
 
 /** Copy to next month: each person/project row of `from` the viewer may allocate is copied into the month after, unless that slot is already planned. */
 export const copyMonth = defineService({

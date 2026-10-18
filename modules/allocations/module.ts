@@ -5,6 +5,7 @@ import { allocationsFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { assignedProjectIds } from "./server/scopes";
 import { AllocationsEveryonePage, AllocationsPage } from "./ui/AllocationsPage";
+import { agentCheck, agentCheckSchedule, rebalance } from "./suggestions";
 import { ProjectTeamPage } from "./ui/ProjectTeamPage";
 
 const READ = ["allocations:read"];
@@ -37,6 +38,10 @@ export default defineModule({
   viewerScopes: async (tx, user) => ({ assignedProjects: await assignedProjectIds(tx, user) }),
   chatIntents,
   jobs: [],
+  // 006: agent-suggested allocation changes, and the recurring check that makes them (off until switched on).
+  suggestions: [rebalance],
+  workflows: [agentCheck],
+  schedules: [agentCheckSchedule],
   // 035: outgoing webhooks send only declared fields (review 058).
   events: { emits: Object.values(EVENTS), payloads: {
     [EVENTS.allocationSet]: declarePayload<AllocationSet>({ personId: "plain", projectId: "plain", work: "plain", months: "plain", percent: "plain", by: "plain" }),

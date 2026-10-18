@@ -1,16 +1,16 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 05:20 UTC
+**Last Updated:** 2026-10-18 05:34 UTC
 
 ## Active Changes
 
 
-- 🔀 **006-agent-governance** — PR #60 open
+- 🔀 **006-agent-governance** — pr raised | 9/9 tasks (100%) | 0 failed | PR #60 merged
 - 🔀 **012-leave** — pr raised | 7/7 tasks (100%) | 0 failed | PR #57 merged
 - 🔀 **024-learning** — PR #59 open
 - 🔀 **030-notifications** — pr raised | 7/7 tasks (100%) | 0 failed | PR #58 merged
-- 📝 **034-backup-restore-and-export** — tasks done | 0/8 tasks (0%) | 0 failed
+- 📝 **034-backup-restore-and-export** — tasks done | 1/8 tasks (12%) | 0 failed
 - 🔍 **055-it-admin-role** — verify done | 5/5 tasks (100%) | 0 failed | PR #56 merged
 - 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
 
