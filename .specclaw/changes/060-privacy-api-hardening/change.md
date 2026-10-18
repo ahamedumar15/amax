@@ -27,7 +27,7 @@ None. Fixes only.
 
 - [x] `T1` — One hold predicate for purge, erasure and name rows; person holds re-resolve the user id on read (AC-1, AC-9)
   Files: packages/core/src/privacy/holds.ts, packages/core/src/privacy/match.ts, packages/core/src/privacy/complete.ts, packages/core/src/privacy/purge.ts, packages/core/src/privacy/name-rows.ts, packages/core/tests/privacy-060-holds.test.ts
-- [ ] `T2` — Every personal column is a subject; erasure anonymises only the matched columns; check fails a rule that breaks this (AC-2, AC-9)
+- [x] `T2` — Every personal column is a subject; erasure anonymises only the matched columns; check fails a rule that breaks this (AC-2, AC-9)
   Files: modules/time/module.ts, modules/allocations/module.ts, modules/presales/module.ts, modules/delivery/module.ts, packages/core/src/module.ts, packages/core/src/privacy/apply.ts, scripts/check-module-standard.mjs, packages/core/tests/privacy-060-columns.test.ts
   Depends: T1
 - [ ] `T3` — Name-only rows and access packages count first, and page or refuse above the limit with the reason shown (AC-3, AC-9)

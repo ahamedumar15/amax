@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { textArray, type Tx } from "@amax/db";
 import { defineService } from "../service";
-import { applyRule, countRule } from "./apply";
+import { countRule, eraseRule } from "./apply";
 import { secondApproval } from "./approval";
 import { PRIVACY_MANAGE, privacyRules } from "./catalog";
 import { held as heldNow } from "./holds";
@@ -34,7 +34,7 @@ async function erase(tx: Tx, req: RequestRow, who: Match, found: Item[], approve
     for (const target of targets) {
       const kept = await countRule(tx, rule, sql`${target} and not ${notHeld(rule, held)}`);
       if (kept) items.push({ source: rule.table, rule: rule.id, label: rule.label ?? rule.table, class: rule.class, action: rule.action, n: kept, kept: HOLD_KEPT });
-      n += await applyRule(tx, rule, sql`${target} and ${notHeld(rule, held)}`);
+      n += await eraseRule(tx, rule, who, sql`${target} and ${notHeld(rule, held)}`);
     }
   }
   // erase_request erases the audit and trace chains for the stored ids, so store every id the
