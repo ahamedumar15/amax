@@ -57,7 +57,7 @@ The "Next 90 days" and "Next 12 months" tabs are read-only horizons. "Board pack
   - audited write tools: `record_insight` (refuses an insight with no source) and `dismiss_insight`
   - fictional fixtures matching the mock's numbers (AC-1, AC-2)
   Files: modules/insights/contracts.ts, modules/insights/db/migrations/0001_insights.sql, modules/insights/server/*.ts, modules/insights/mcp.ts, modules/insights/pins.ts, modules/insights/chat.ts, modules/insights/fixtures/*, modules/insights/tests/db.ts, modules/insights/tests/installed.ts, modules/insights/tests/contracts.test.ts, modules/insights/tests/insights.test.ts
-- [ ] `T3` — Agents as 029 schedules, each switchable:
+- [x] `T3` — Agents as 029 schedules, each switchable:
   - the weekly strategy briefing, which writes the week's briefing from the current insights in 006's untrusted-input mode and keeps each point's sources
   - the daily project risk scan (allocations, leave and time through contracts)
   - the weekly skills-to-opportunity match (learning, allocations bench, presales pipeline)
