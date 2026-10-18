@@ -11,7 +11,7 @@ export type Leaf = { name: string; proposed: boolean; colour: string; cx: number
 export type Branch = Laned & { x: number; y0: number; y1: number; width: number; d: string; leaves: Leaf[]; open: boolean; label: { x: number; anchor: "start" | "end" } | null; crosses: string[] };
 export type Fruit = { eventId: string; name: string; x: number; y: number; expired: boolean; on: string | null };
 export type Tree = {
-  start: string; now: number; width: number; height: number; viewBox: string; compact: boolean; y: (m: number) => number;
+  start: string; now: number; width: number; height: number; viewBox: string; compact: boolean; todayY: number;
   ticks: Tick[]; trunk: string; rings: Ring[]; branches: Branch[]; fruit: Fruit[]; ground: number; roots: Root[];
 };
 
@@ -48,7 +48,7 @@ export function layoutTree(events: CareerEvent[], today: string): Tree {
   const { trunk, rings } = ringsAndTrunk(events, start, now, y);
   const { ground, roots } = groundAndRoots(events, y(0));
   const height = Math.floor(ground + 120);
-  return { start, now, width: W, height, viewBox: `0 18 ${W} ${height - 18}`, compact, y, ticks: ticksOf(start, now, y), trunk, rings, branches, fruit, ground, roots };
+  return { start, now, width: W, height, viewBox: `0 18 ${W} ${height - 18}`, compact, todayY: y(now), ticks: ticksOf(start, now, y), trunk, rings, branches, fruit, ground, roots };
 }
 
 export const spanLabel = (t: Tree, b: Branch) => `${monthLabel(t.start, b.start)} – ${b.open ? "today" : monthLabel(t.start, b.end)}`;

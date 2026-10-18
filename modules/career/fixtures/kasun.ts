@@ -25,7 +25,7 @@ const tech = (...names: string[]): Technology[] => names.map((name) => ({ name, 
 export const HISTORY: CareerEvent[] = [
   { id: id(1), kind: "joined", on: "2021-06-07", grade: "Associate Engineer", department: "Engineering", entity: "Lumen Labs Lanka", trace: hr("2021-06-01T09:12:00Z") },
   { id: id(2), kind: "move", field: "manager", on: "2021-06-07", before: null, after: "Nimal Silva", trace: hr("2021-06-01T09:12:00Z") },
-  { id: id(3), kind: "project", on: "2021-06-01", project: "CON", name: "Contoso Portal", client: "Contoso", months: months("2021-06", 15, 100), technologies: tech("React", "TypeScript", ".NET"), trace: plan("2021-05-28T10:00:00Z") },
+  { id: id(3), kind: "project", on: "2021-06-07", project: "CON", name: "Contoso Portal", client: "Contoso", months: months("2021-06", 15, 100), technologies: tech("React", "TypeScript", ".NET"), trace: plan("2021-05-28T10:00:00Z") },
   { id: id(4), kind: "certification", on: "2022-05-12", name: "Azure Developer AZ-204", issuer: "Microsoft", expiresOn: "2024-05-12", trace: cert("2022-05-13T08:30:00Z") },
   { id: id(5), kind: "grade", on: "2022-07-01", before: "Associate Engineer", after: "Engineer", trace: hr("2022-06-20T11:05:00Z", "Nimal Silva", "2022-06-24T15:40:00Z", "7c2e5b18") },
   { id: id(6), kind: "project", on: "2022-09-01", project: "Northwind Claims", name: "Northwind Claims", client: "Northwind Traders", months: months("2022-09", 14, 100), technologies: tech("Python", "Azure Functions", "PostgreSQL"), trace: plan("2022-08-25T10:00:00Z") },
@@ -38,4 +38,4 @@ export const HISTORY: CareerEvent[] = [
 ];
 
 /** The agent's two unconfirmed tags on Fleet Tracker, from the linked repo (the faint leaves). */
-export const PROPOSED = { id: id(13), project: "FLT", names: ["AWS", "PostgreSQL"], on: "2026-10-16", by: "Delivery agent", for: "Maya Fernando", source: "linked repo" };
+export const PROPOSED = { ids: [id(13), id(14)], project: "FLT", names: ["AWS", "PostgreSQL"], on: "2026-10-16", by: "Delivery agent", for: "Maya Fernando", source: "linked repo" };

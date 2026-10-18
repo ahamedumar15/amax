@@ -206,7 +206,7 @@ Two differences from the mock, on purpose:
   - One test: the fixture's counts and lanes, 10 projects at once with no shared lane, and compact
     mode (AC-2)
   Files: modules/career/layout/*.ts, modules/career/tests/layout.test.ts, modules/career/package.json, modules/career/tsconfig.json
-- [ ] `T3` — Contracts first, then the rest:
+- [x] `T3` — Contracts first, then the rest:
   - The `career` schema (history, import, technology, settings), with RLS.
   - Reads through the hr, allocations, delivery and learning contracts and core's audit trail after
     the cutover, merged with the imported history.
