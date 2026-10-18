@@ -77,7 +77,7 @@ describe.skipIf(!hasDb)("059 stable pins (Postgres)", () => {
   }, 60_000);
 
   const sync = (key: string) => syncProposal(contextForViewer(sahan, "job"), { projectKey: "CON", project: { name: "Contoso Portal", client: "Contoso" }, key, title: "From the spec",
-    phase: "planned", tasksDone: 0, tasksTotal: 1, source: "specclaw", sourceRef: `changes/${key}`, releasedAt: null, meta: {} });
+    phase: "planned", tasksDone: 0, tasksTotal: 1, source: "specclaw", sourceRef: `changes/${key}`, committedAt: "2026-10-01T00:00:00Z", releasedAt: null, meta: {} });
 
   it("AC5 a proposal rekeyed by the specclaw sync (job): its saved pin stays on it and shows the new key", async () => {
     const before = (await getProposal(sahan, { key: "CON-014" }))!;

@@ -1,0 +1,16 @@
+{
+  "name": "amax",
+  "owner": {
+    "name": "amax"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for amax, the agent-native ERP."
+  },
+  "plugins": [
+    {
+      "name": "amax",
+      "source": "./plugins/amax",
+      "description": "Keep amax in step with your repo: push specclaw change status to the project's proposals."
+    }
+  ]
+}

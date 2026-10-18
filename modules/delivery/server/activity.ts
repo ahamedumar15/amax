@@ -9,8 +9,11 @@ import { ForbiddenError, getRuntime, type ServiceContext } from "@amax/core/serv
 
 const userOf = (id: string | undefined) => (id?.startsWith("user:") ? id.slice(5) : null);
 
+/** The person an agent or credential acted for, as a user id; null when a person acted themselves. */
+export const forUserOf = (ctx: ServiceContext) => (ctx.actor.kind === "user" ? null : userOf(ctx.onBehalfOf));
+
 export async function recordActivity(tx: Tx, ctx: ServiceContext, line: { projectId?: string | null; text: string; detail?: string | null }) {
-  const forUser = ctx.actor.kind === "user" ? null : userOf(ctx.onBehalfOf);
+  const forUser = forUserOf(ctx);
   await tx.execute(sql`insert into delivery.activity (tenant_id, actor_id, actor_kind, for_user_id, project_id, text, detail)
     values (${ctx.tenantId}, ${ctx.actor.id}, ${ctx.actor.kind}, ${forUser}, ${line.projectId ?? null}, ${line.text}, ${line.detail ?? null})`);
 }
@@ -42,11 +45,13 @@ const item = (r: Record<string, unknown>): ActivityItem => {
   };
 };
 
-const select = (where: ReturnType<typeof sql>, limit: number) => sql`select a.*, au.name as actor_name, sp.name as principal_name, fu.name as for_name
-  from delivery.activity a
-  left join auth.user au on a.actor_kind = 'user' and au.id::text = substr(a.actor_id, 6)
+/** The names byLine() needs, joined onto a table with actor_id, actor_kind and for_user_id (alias a). */
+export const whoJoins = sql`left join auth.user au on a.actor_kind = 'user' and au.id::text = substr(a.actor_id, 6)
   left join auth.service_principal sp on a.actor_kind = 'service' and sp.id::text = substr(a.actor_id, 4)
-  left join auth.user fu on fu.id = a.for_user_id
+  left join auth.user fu on fu.id = a.for_user_id`;
+
+const select = (where: ReturnType<typeof sql>, limit: number) => sql`select a.*, au.name as actor_name, sp.name as principal_name, fu.name as for_name
+  from delivery.activity a ${whoJoins}
   where ${where} order by a.at desc limit ${limit}`;
 
 const read = <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
