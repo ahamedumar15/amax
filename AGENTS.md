@@ -24,6 +24,11 @@ a proposal.
 The change directory under `.specclaw/changes/<NNN>-<slug>/` is the paper trail, and it exists only if
 propose created it. A small change still gets a proposal; it's just a short one.
 
+**Review passes: five at most.** Run the specclaw-review loop for at most five passes per change. That
+counts rounds and final passes; a round that returns not_run doesn't count. After the fifth pass, stop:
+record the open findings and the stop under `## Verify`, then go to the PR. If a blocker is still open,
+ask the product owner first.
+
 ## Core rules
 
 1. **Chat does the writes.** No CRUD forms, write dialogs or inline edit fields in pages. Every
