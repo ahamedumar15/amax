@@ -1,0 +1,10 @@
+{
+  "change": "036-compliance-registers",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T05:38:05Z"},
+    "verify": {"status":"done","at":"2026-10-18T06:07:35Z"},
+    "pr": {"status":"raised","at":"2026-10-18T06:08:15Z","url":"https://github.com/chan4lk/amax/pull/63"}
+  }
+}

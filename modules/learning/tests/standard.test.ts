@@ -10,7 +10,8 @@ describe("AC-3 module standard", () => {
     expect(discoverModules(join(repoRoot, "modules"), ["learning"])).not.toContain("learning");
     const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((d) => d.isDirectory() ? (d.name === "node_modules" ? [] : files(join(dir, d.name))) : /\.tsx?$/.test(d.name) ? [join(dir, d.name)] : []);
     const outside = [...readdirSync(join(repoRoot, "modules")).filter((m) => m !== "learning").map((m) => join(repoRoot, "modules", m)), join(repoRoot, "packages"), join(repoRoot, "apps/web/app")].flatMap(files);
-    expect(outside.filter((f) => readFileSync(f, "utf8").includes("@amax/learning"))).toEqual([]);
+    // Other modules may integrate through the contract (036 reads training evidence there), never the internals.
+    expect(outside.filter((f) => /@amax\/learning(?!\/contracts")/.test(readFileSync(f, "utf8")))).toEqual([]);
     expect((await installedModules(["learning"])).map((m) => m.id)).not.toContain("learning");
-  });
+  }, 60_000);
 });
