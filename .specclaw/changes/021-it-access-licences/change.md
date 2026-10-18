@@ -41,7 +41,7 @@ licences and 1 device). No grant, revoke or seat removal ever runs without a per
 - [x] `T5` — `hr.person.left` proposes revoking all of the person's access on their last day; when onboarding is installed, `onboarding.access.requested` makes the same grant or revoke suggestion, deduplicated (AC-3)
   Files: modules/it-access/server/leavers.ts, modules/it-access/tests/leavers.test.ts
   Depends: T4
-- [ ] `T6` — Module standard: README, manifest, CODEOWNERS line, contract tests, retention entries, can be switched off and runs without onboarding (AC-4)
+- [x] `T6` — Module standard: README, manifest, CODEOWNERS line, contract tests, retention entries, can be switched off and runs without onboarding (AC-4)
   Files: modules/it-access/README.md, modules/it-access/package.json, .github/CODEOWNERS, modules/it-access/tests/standard.test.ts
   Depends: T5
 
