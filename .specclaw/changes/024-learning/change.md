@@ -35,7 +35,7 @@ Learning: stats, programmes, participation per month, expiring certifications.
 - [x] `T5` — MCP tools (reads with pin specs, writes behind the confirm), the "new programme" chat intent, search, and the certification-expiry workflow on a daily schedule (AC-2, AC-3)
   Files: modules/learning/{mcp.ts,chat.ts,pins.ts,workflows.ts}
   Depends: T4
-- [ ] `T6` — Tests: fixture counts, services and audit, permissions, RLS leak, switch-off, chat intent and write tools through chat's confirm, the reminder workflow, and the module e2e (screen against the mock, pins, axe) (AC-1, AC-2, AC-3)
+- [x] `T6` — Tests: fixture counts, services and audit, permissions, RLS leak, switch-off, chat intent and write tools through chat's confirm, the reminder workflow, and the module e2e (screen against the mock, pins, axe) (AC-1, AC-2, AC-3)
   Files: modules/learning/tests/*
   Depends: T5
 
