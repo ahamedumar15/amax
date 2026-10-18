@@ -3,7 +3,7 @@ import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { canSee, pricedFor, type Viewer } from "@amax/auth";
 import { ToolError } from "@amax/mcp";
-import { getRun, LATEST_RUNS, listRuns, listSchedules, setEntityZone, setScheduleEnabled, WORKFLOWS_ADMIN, type ScheduleView } from "@amax/workflows/server";
+import { getRun, LATEST_RUNS, runServices, listRuns, listSchedules, setEntityZone, setScheduleEnabled, WORKFLOWS_ADMIN, type ScheduleView } from "@amax/workflows/server";
 import { ctxFor, notFound, read, tool, write, type AdminDeps } from "./tool";
 
 const ownerOf = (actsFor: string | null) => (actsFor?.startsWith("user:") ? actsFor.slice(5) : null);
@@ -60,11 +60,11 @@ export const workflowTools = (d: AdminDeps) => [
     run: async (v, a) => pricedFor(v, (await getRun(d.db(), d.workflows(), v.tenantId, a.runId, see(v))) ?? await Promise.reject(notFound(`run ${a.runId}`))) }),
   tool({ ...write(WORKFLOWS_ADMIN), name: "control_workflow_run", description: "Pause, resume, cancel or retry a workflow run. Retry re-runs only the failed step.",
     input: z.object({ runId: z.uuid(), action: z.enum(["pause", "resume", "cancel", "retry"]) }),
-    run: async (v, a, s) => { await (await d.engine()).control(ctxFor(v, s), a.runId, a.action); return { runId: a.runId, action: a.action }; } }),
+    service: Object.values(runServices), run: async (v, a, s) => { await (await d.engine()).control(ctxFor(v, s), a.runId, a.action); return { runId: a.runId, action: a.action }; } }),
   tool({ ...write(WORKFLOWS_ADMIN), name: "set_schedule_enabled", description: "Pause (enabled false) or resume (enabled true) a recurring schedule. Resuming starts from the next slot.",
-    input: z.object({ schedule, enabled: z.boolean() }),
+    input: z.object({ schedule, enabled: z.boolean() }), service: setScheduleEnabled,
     run: async (v, a, s) => { const hit = await findSchedule(d, v, a.schedule); await setScheduleEnabled(ctxFor(v, s), hit.id, a.enabled); return { scheduleId: hit.id, enabled: a.enabled }; } }),
   tool({ ...write(WORKFLOWS_ADMIN), name: "set_entity_zone", description: "Set a legal entity's time zone (IANA, e.g. Australia/Sydney), so its per-entity schedules run in it.",
     input: z.object({ entity: z.string().min(1).describe("The legal entity's id or name"), timezone: z.string().min(1) }),
-    run: async (v, a, s) => setEntityZone(ctxFor(v, s), await entityId(d, v, a.entity), a.timezone) }),
+    service: setEntityZone, run: async (v, a, s) => setEntityZone(ctxFor(v, s), await entityId(d, v, a.entity), a.timezone) }),
 ];

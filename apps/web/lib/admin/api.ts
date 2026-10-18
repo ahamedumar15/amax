@@ -29,11 +29,11 @@ export const apiTools = (d: AdminDeps) => {
         actsFor: z.array(z.email()).default([]).describe("Emails of the people it may act for; empty for no one"),
         days: z.number().int().min(1).max(MAX_CREDENTIAL_DAYS).describe(`Days until it expires, at most ${MAX_CREDENTIAL_DAYS}`),
       }),
-      run: async (v, a, s) => (chatOnly(s, KEY_ONCE), createCredential(ctxFor(v, s), { ...a, ownerUserId: v.userId })) }),
+      service: createCredential, run: async (v, a, s) => (chatOnly(s, KEY_ONCE), createCredential(ctxFor(v, s), { ...a, ownerUserId: v.userId })) }),
     tool({ ...write(CRED_MANAGE), name: "rotate_api_credential", description: "Rotate a service credential's API key. The new key is shown once, on the confirm card; the old one stops working at once.", input: id,
-      run: async (v, a, s) => (chatOnly(s, KEY_ONCE), rotateCredential(ctxFor(v, s), a)) }),
+      service: rotateCredential, run: async (v, a, s) => (chatOnly(s, KEY_ONCE), rotateCredential(ctxFor(v, s), a)) }),
     tool({ ...write(CRED_MANAGE), name: "revoke_api_credential", description: "Revoke a service credential now; its key and access tokens stop working.", destructive: true,
-      input: z.object({ id: z.uuid(), reason: z.enum(["replaced", "compromised", "unused"]) }), run: (v, a, s) => revokeCredential(ctxFor(v, s), a) }),
+      input: z.object({ id: z.uuid(), reason: z.enum(["replaced", "compromised", "unused"]) }), service: revokeCredential, run: (v, a, s) => revokeCredential(ctxFor(v, s), a) }),
     tool({ ...read(HOOK_READ), pin: "view", name: "get_api_overview", description: "This week's API picture: outgoing webhooks and deliveries, incoming webhooks verified and rejected per provider, and requests rate-limited.", input: z.object({ provider: z.enum(PROVIDERS).optional(), channel: z.enum(["page", "prefetch", "rest", "mcp", "chat"]).optional() }),
       run: async (v, a) => {
         const s = await apiStats(d.db(), v.tenantId);
@@ -46,8 +46,8 @@ export const apiTools = (d: AdminDeps) => {
       run: async (v, a) => (await hooks(v)).find((h) => h.id === a.id) ?? Promise.reject(notFound(`webhook ${a.id}`)) }),
     tool({ ...write(HOOK_MANAGE), name: "subscribe_webhook", description: "Send amax events to an https URL, signed with the amax webhook signing secret.",
       input: z.object({ name: z.string().trim().min(2).max(80), url: z.string().max(2000), events: z.array(z.string()).min(1).describe("Event names, e.g. delivery.release.deployed") }),
-      run: (v, a, s) => subscribeWebhook(ctxFor(v, s), a) }),
-    tool({ ...write(HOOK_MANAGE), name: "unsubscribe_webhook", description: "Stop sending events to an outgoing webhook.", destructive: true, input: id, run: (v, a, s) => unsubscribeWebhook(ctxFor(v, s), a) }),
-    tool({ ...write(HOOK_MANAGE), name: "resume_webhook", description: "Switch an outgoing webhook back on after it was switched off for failing.", input: id, run: (v, a, s) => resumeWebhook(ctxFor(v, s), a) }),
+      service: subscribeWebhook, run: (v, a, s) => subscribeWebhook(ctxFor(v, s), a) }),
+    tool({ ...write(HOOK_MANAGE), name: "unsubscribe_webhook", description: "Stop sending events to an outgoing webhook.", destructive: true, input: id, service: unsubscribeWebhook, run: (v, a, s) => unsubscribeWebhook(ctxFor(v, s), a) }),
+    tool({ ...write(HOOK_MANAGE), name: "resume_webhook", description: "Switch an outgoing webhook back on after it was switched off for failing.", input: id, service: resumeWebhook, run: (v, a, s) => resumeWebhook(ctxFor(v, s), a) }),
   ];
 };

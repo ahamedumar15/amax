@@ -17,7 +17,7 @@ export async function runHarness(steps: Canned[]) {
   const writes: unknown[] = [];
   const tools = [
     { name: "get_limit", description: "Read the limit.", input: z.object({}), permission: "", scope: "read", readOnly: true, run: async () => ({ limit: await db.setting("limit") }) },
-    { name: "set_limit", description: "Set the limit.", input: z.object({ value: z.number() }), permission: "", scope: "write", run: async (_v: unknown, a: unknown) => writes.push(a) },
+    { name: "set_limit", description: "Set the limit.", input: z.object({ value: z.number() }), permission: "", scope: "write", service: null, run: async (_v: unknown, a: unknown) => writes.push(a) },
   ] as unknown as McpToolDef[];
   const registry = createRegistry([{ id: "demo", mcpTools: tools }]);
   const provider = fakeProvider(steps.map((r) => () => r));

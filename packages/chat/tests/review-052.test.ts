@@ -27,7 +27,7 @@ describe("052 history restores only undecided cards", () => {
 });
 
 // A write tool whose value is typed on the card, so needs_secret has a real proposal too.
-const vault = { id: "vault", mcpTools: [{ name: "set_code", description: "Set the door code.", input: z.object({}).strict(), scope: "write", permission: "", secretInput: { label: "Code" },
+const vault = { id: "vault", mcpTools: [{ name: "set_code", description: "Set the door code.", input: z.object({}).strict(), scope: "write", permission: "", secretInput: { label: "Code" }, service: { spec: { name: "vault.code.set" } },
   run: async () => ({ ok: true }) } as unknown as McpToolDef] };
 const withVault = createRegistry([chatPlatform, vault]);
 

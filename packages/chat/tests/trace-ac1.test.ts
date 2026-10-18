@@ -18,7 +18,7 @@ const addThing = defineService({ name: "sample.thing.create", action: "sample.th
 const ctx = (v: Viewer, source: "chat" | "mcp") => ({ tenantId: v.tenantId, actor: { id: `user:${v.userId}`, kind: "user" as const }, source, viewer: v });
 const tools = [
   { name: "get_thing", description: "Get a thing.", input: z.object({}).strict(), permission: "sample.thing.read", scope: "read", run: async () => ({ name: "thing" }) },
-  { name: "add_thing", description: "Add a thing.", input: z.object({ name: z.string() }).strict(), permission: "sample.thing.create", scope: "write",
+  { name: "add_thing", description: "Add a thing.", input: z.object({ name: z.string() }).strict(), permission: "sample.thing.create", scope: "write", service: addThing,
     run: async (v: Viewer, input: { name: string }, source: "chat" | "mcp") => addThing(ctx(v, source), input) },
 ] as unknown as McpToolDef[];
 

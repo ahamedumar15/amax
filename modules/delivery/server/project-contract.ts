@@ -1,4 +1,4 @@
-import type { Replay, ServiceContext } from "@amax/core/server";
+import { ReplayedError, type ServiceContext } from "@amax/core/server";
 import { createSourcedProject, type CreatedProject, type ProjectInput } from "./project-create";
 
 export const PROJECT_CREATE_PERMISSION = createSourcedProject.spec.action;
@@ -11,9 +11,13 @@ export type CreateProjectResult = CreatedProject & { replayed?: true };
  * replay comes back as the same project's id and key with `replayed: true`. A taken key, or a
  * sourceRef that already made a project under another key, throws ProjectConflictError.
  */
-export async function createProject(ctx: ServiceContext, input: CreateProjectInput): Promise<CreateProjectResult> {
-  const r = (await createSourcedProject(ctx, input)) as CreatedProject | Replay;
-  if (!("replayed" in r)) return r;
-  if (!r.resourceId || !r.key) throw new Error("delivery: the replayed project create names no project");
-  return { id: r.resourceId, key: r.key, replayed: true };
-}
+export const createProject = Object.assign(async (ctx: ServiceContext, input: CreateProjectInput): Promise<CreateProjectResult> => {
+  try {
+    return await createSourcedProject(ctx, input);
+  } catch (e) {
+    if (!(e instanceof ReplayedError)) throw e;
+    const { resourceId, key } = e.replay;
+    if (!resourceId || !key) throw new Error("delivery: the replayed project create names no project");
+    return { id: resourceId, key, replayed: true };
+  }
+}, { spec: createSourcedProject.spec });

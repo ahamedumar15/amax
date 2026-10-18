@@ -10,7 +10,7 @@ import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer, 
 import { authFixtures } from "@amax/auth/fixtures";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
-import { createRegistry } from "@amax/mcp";
+import { createRegistry, ToolError } from "@amax/mcp";
 import { CARD_DAYS, cancelAction, chatTurn, confirmAction, NotPendingError, type Intent } from "@amax/chat";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
@@ -180,7 +180,7 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       },
     });
     const tool = (name: string, run: (viewer: Viewer, input: { title: string }) => Promise<unknown>) =>
-      ({ name, description: `${name}.`, input: z.object({ title: z.string() }), permission: "", scope: "write" as const, run });
+      ({ name, description: `${name}.`, input: z.object({ title: z.string() }), permission: "", scope: "write" as const, service: testWrite, run });
     const testModule = { id: "t", mcpTools: [
       tool("test_write", (v, i) => testWrite(ctxFor(v, "chat"), i)),
       tool("raw_write", (v, i) => withTenant(app, T, (tx) => insertProposal(tx, v.tenantId, i.title))),
@@ -209,8 +209,7 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
     });
 
     it("a retry after a committed write returns it first, even where a fresh attempt would be refused", async () => {
-      const { ForbiddenError } = await import("@amax/core/server");
-      const refusing = { ...reg, call: async () => { throw new ForbiddenError("x", "y"); } } as unknown as typeof reg;
+      const refusing = { ...reg, call: async () => { throw new ToolError("forbidden: test_write", "forbidden"); } } as unknown as typeof reg;
       const b = await card("test_write", "Settle lost");
       const r1 = await confirmAction(app, reg, maya, b.convo, b.id);
       await withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending = pending || ${JSON.stringify([{ id: b.id, tool: "test_write", title: "Settle lost", input: { title: "Settle lost" }, fields: ["title"] }])}::jsonb, decided = decided - ${b.id}::text where id = ${b.convo}`));
@@ -219,16 +218,15 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
       expect(await rows("Settle lost")).toHaveLength(1);
     });
 
-    it("a keyed service call returns the stored outcome before authorize and validation run (round 8)", async () => {
-      const { withIdempotency } = await import("@amax/core/server");
+    it("a keyed service call never returns a replay as its result: it throws it, and the caller's lookup answers retries (043 AC-4)", async () => {
+      const { lookupKey, ReplayedError, withIdempotency } = await import("@amax/core/server");
       const key = `test:${Math.random()}`;
       const first = await withIdempotency(key, () => testWrite(ctxFor(maya, "chat"), { title: "Keyed first" }));
       expect(first).toMatchObject({ ok: true, writes: 1 });
-      const nobody = { tenantId: T, actor: { id: "user:nobody", kind: "user" as const, roles: [] }, source: "chat" as const };
-      const again = await withIdempotency(key, () => testWrite(nobody, { title: 42 } as never));
-      expect(again).toMatchObject({ ok: true, value: { replayed: true, key: (first as { value: { key: string } }).value.key } });
-      // Without the key the same call is refused.
-      await expect(testWrite(nobody, { title: "x" })).rejects.toThrow(/forbidden/);
+      const again = await withIdempotency(key, () => testWrite(ctxFor(maya, "chat"), { title: "Keyed first" }));
+      expect(again).toMatchObject({ ok: false, writes: 1 });
+      expect((again as { error: InstanceType<typeof ReplayedError> }).error).toBeInstanceOf(ReplayedError);
+      expect(await lookupKey(app, T, key)).toMatchObject({ done: { replayed: true, key: (first as { value: { key: string } }).value.key } });
       expect(await rows("Keyed first")).toHaveLength(1);
     });
 
@@ -272,8 +270,7 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
 
     it("refused can't succeed later: closed as failed; unknown ids are errors; cancelling twice is fine", async () => {
       const a = await card("test_write", "Refused");
-      const { ForbiddenError } = await import("@amax/core/server");
-      const refusing = { ...reg, call: async () => { throw new ForbiddenError("x", "y"); } } as unknown as typeof reg;
+      const refusing = { ...reg, call: async () => { throw new ToolError("forbidden: test_write", "forbidden"); } } as unknown as typeof reg;
       await expect(confirmAction(app, refusing, maya, a.convo, a.id)).rejects.toMatchObject({ kind: "failed" });
       await expect(confirmAction(app, reg, maya, a.convo, a.id)).rejects.toMatchObject({ decision: "failed" });
       await expect(cancelAction(app, maya, a.convo, "not-an-action")).rejects.toMatchObject({ decision: null });
@@ -341,7 +338,9 @@ describe.skipIf(!hasDb)("races (review round 1)", () => {
 
     it("a failed confirm's note carries the failure kind, never the message (final review)", async () => {
       const a = await card("test_write", "Fails with detail");
-      const leaky = { ...reg, call: async () => { throw Object.assign(new Error("duplicate gross 285000"), { code: "23505" }); } } as unknown as typeof reg;
+      // The declared service itself fails for good, after taking the key: closed as failed.
+      const failing = defineService({ ...testWrite.spec, run: async () => { throw Object.assign(new Error("duplicate gross 285000"), { code: "23505" }); } });
+      const leaky = { ...reg, call: async (v: Viewer) => failing(ctxFor(v, "chat"), { title: "x" }) } as unknown as typeof reg;
       await expect(confirmAction(app, leaky, maya, a.convo, a.id)).rejects.toMatchObject({ kind: "failed" });
       const [c] = await withTenant(app, T, (tx) => tx.execute(sql`select messages->-1 as last from chat.conversation where id = ${a.convo}`));
       expect(JSON.stringify(c.last)).toMatch(/test_write failed \(reference/);

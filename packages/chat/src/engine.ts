@@ -4,7 +4,7 @@ import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
 import type { Pin } from "./pins";
 import { resolvePins } from "./resolve";
-import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, logError, lookupKey, retryable, traceStep, traceStepOrFail, withIdempotency, withTrace } from "@amax/core/server";
+import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, keyedOutcome, logError, lookupKey, ReplayedError, retryable, traceStep, traceStepOrFail, UndeclaredWriteError, withIdempotency, withTrace, type KeyedRun } from "@amax/core/server";
 import { ToolError, type Registry, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
@@ -79,6 +79,10 @@ function scrub(e: unknown, secret: string | undefined): unknown {
 }
 
 const NOT_PROPOSED = { status: "not_proposed", note: "No confirm card was made: amax couldn't record the request. Tell the user it didn't go through and to try again shortly." };
+// 043 AC-1: a card's write runs keyed to the tool's declared service, so a tool without one can't be
+// made safe to confirm and never becomes a card.
+const serviceNames = (t: RegisteredTool | undefined) => [t?.service ?? []].flat().map((s) => s.spec.name);
+const UNDECLARED = { status: "not_proposed", note: "No confirm card was made: this change can't be confirmed in chat yet. Tell the user." };
 
 // A write tool's own check at proposal time (053): its ToolError message goes to the model, and no
 // card is made, so the person never types a value for a write that is bound to be refused.
@@ -107,6 +111,7 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
+      if (!serviceNames(t).length) return UNDECLARED;
       const refused = await proposeCheck(t, viewer, input);
       if (refused) return refused;
       // The step comes first (053): a card is shown only once its pending step is in the trace, so a
@@ -180,10 +185,13 @@ async function card(db: Db, viewer: Viewer, conversationId: string, actionId: st
 }
 
 // Records the decision once: takes the card out of pending (if it's still there) and adds a note.
+// An unknown outcome also replaces a cancel that lost the race: a card that may have been written
+// never reads "Cancelled. Nothing was changed." (043 AC-3).
 async function settle(tx: Tx, viewer: Viewer, conversationId: string, action: PendingAction, decision: Decision, text: string) {
-  const [row] = await tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
+  const [row] = await tx.execute(sql`select pending, decided from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
   const pending = (row?.pending ?? []) as PendingAction[];
-  if (!pending.some((p) => p.id === action.id)) return;
+  const overCancel = decision === "unknown" && (row?.decided as Record<string, Decision> | undefined)?.[action.id] === "cancelled";
+  if (!pending.some((p) => p.id === action.id) && !overCancel) return;
   await tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(pending.filter((p) => p.id !== action.id))}::jsonb,
     decided = decided || ${JSON.stringify({ [action.id]: decision })}::jsonb,
     messages = messages || ${JSON.stringify([{ role: "user", content: [{ type: "text", text }] }])}::jsonb, updated_at = now() where id = ${conversationId}`);
@@ -238,6 +246,7 @@ export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, 
 async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string }) {
   const actionId = action.id;
   const key = keyOf(actionId);
+  const by = viewer.userId;
   const done = async (result: unknown) => {
     await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, result));
     return { action, result };
@@ -246,8 +255,13 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
     await settleNow(db, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
     return new NotPendingError("cancelled");
   };
-  // 1. An earlier attempt's outcome comes first (its reply may have been lost).
-  const known = await lookupKey(db, viewer.tenantId, key);
+  const unknown = async (why: string) => {
+    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but ${why}; check before trying again.)`);
+    return new ActionFailedError(UNKNOWN, "unknown");
+  };
+  // 1. An earlier attempt's outcome comes first (its reply may have been lost). The one lookup: the
+  // service itself only meets a record a concurrent attempt settled, and throws it (043 AC-4).
+  const known = await lookupKey(db, viewer.tenantId, key, by);
   const decide = (outcome: ConfirmOutcome) => decidedStep(action, "confirmed", outcome);
   if (known && "cancelled" in known) {
     await decide("already_cancelled");
@@ -261,30 +275,48 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
     await decide("expired");
     throw await expire(db, viewer, conversationId, action);
   }
-  // 2. Run the tool; it must make exactly one service write.
+  // 2. Run the tool, keyed to its declared service: it makes exactly that one write or none (043 AC-1).
   if (action.secret && !opts.secret) {
     await decide("needs_secret");
     throw new ActionFailedError(`type the ${action.secret.label.toLowerCase()} first`, "retry");
   }
+  const service = serviceNames(registry.all.find((t) => t.name === action.tool));
+  if (!service.length) {
+    await settleNow(db, viewer, conversationId, action, "failed", `(I couldn't run "${action.title}": it can't be confirmed in chat.)`);
+    throw new ActionFailedError("this change can't be confirmed in chat", "failed");
+  }
   await decide("run");
-  const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }));
+  const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }), { service, by });
   const run = raw.ok ? raw : { ...raw, error: scrub(raw.error, opts.secret) };
-  if (!run.ok && run.error instanceof CancelledByKeyError) throw await cancelled();
-  if (run.writes > 1) {
-    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but it made more than one change; check before trying again.)`);
-    throw new ActionFailedError(UNKNOWN, "unknown");
-  }
+  if (run.writes > 1) throw await unknown("it made more than one change");
   if (run.ok) {
-    if (run.writes === 1) return done(run.value);
-    // No service write: it went around the pipeline (or did nothing), so it can't be made safe.
-    await settleNow(db, viewer, conversationId, action, "unknown", `(I tried "${action.title}" but couldn't confirm what it changed.)`);
-    throw new ActionFailedError(UNKNOWN, "unknown");
+    if (run.writes === 1 && run.nested === 0) return done(run.value);
+    throw await unknown(run.writes === 1 ? "part of it may not have finished" : "couldn't confirm what it changed");
   }
-  // 3. It threw. Read the key back: a write that committed before the error is done, not retried.
-  const after = await lookupKey(db, viewer.tenantId, key);
-  if (after && "done" in after) return done(after.done);
+  return failedRun(db, viewer, conversationId, action, run, { done, cancelled, unknown });
+}
+
+type Endings = { done: (result: unknown) => Promise<{ action: PendingAction; result: unknown }>; cancelled: () => Promise<NotPendingError>; unknown: (why: string) => Promise<ActionFailedError> };
+
+// 3. It threw. Fail closed (043 AC-3): a stored outcome decides first; a retry is offered only when the
+// declared service was reached once, wrote nothing nested, and its key holds no outcome; a refusal
+// before anything ran (the registry's check, an undeclared service) is failed; anything else is unknown.
+async function failedRun(db: Db, viewer: Viewer, conversationId: string, action: PendingAction, run: Extract<KeyedRun<unknown>, { ok: false }>, end: Endings) {
+  const key = keyOf(action.id);
+  const thrown = keyedOutcome(run.error);
+  if (thrown instanceof CancelledByKeyError) throw await end.cancelled();
+  if (thrown instanceof ReplayedError) {
+    if (thrown.key === key) return end.done(thrown.replay);
+    throw await end.unknown("part of it had already been done");
+  }
+  const after = await lookupKey(db, viewer.tenantId, key, viewer.userId);
+  if (after && "done" in after) return end.done(after.done);
+  if (after) throw await end.cancelled();
+  if (run.nested > 0) throw await end.unknown("part of it may have been done");
   const message = run.error instanceof Error ? run.error.message : String(run.error);
-  if (retryable(run.error)) throw new ActionFailedError(message, "retry");
+  const refusedBeforeRun = run.writes === 0 && (run.error instanceof ToolError || run.error instanceof UndeclaredWriteError);
+  if (run.writes === 0 && !refusedBeforeRun) throw await end.unknown("couldn't confirm what it changed");
+  if (run.writes === 1 && retryable(run.error)) throw new ActionFailedError(message, "retry");
   // The note is read back by the model: the failure kind and a reference, never the message (final review).
   await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but ${toolFailure(action.tool, run.error, logError(`chat.confirm ${action.tool}`, run.error))})`);
   throw new ActionFailedError(message, "failed");
@@ -308,7 +340,7 @@ async function cancelCard(db: Db, viewer: Viewer, conversationId: string, action
   // The same expiry rule as confirm: past it, the key may have been pruned, so claiming it as
   // cancelled could hide a write that happened (review round 10).
   if (isExpired(action)) {
-    const known = await lookupKey(db, viewer.tenantId, keyOf(actionId));
+    const known = await lookupKey(db, viewer.tenantId, keyOf(actionId), viewer.userId);
     if (known && "done" in known) {
       await settleNow(db, viewer, conversationId, action, "confirmed", doneNote(action.title, known.done));
       throw new NotPendingError("confirmed");
@@ -316,7 +348,7 @@ async function cancelCard(db: Db, viewer: Viewer, conversationId: string, action
     throw await expire(db, viewer, conversationId, action);
   }
   const prior = await withTenant(db, viewer.tenantId, async (tx) => {
-    const prior = await claimKey(tx, viewer.tenantId, keyOf(actionId), { cancelled: true });
+    const prior = await claimKey(tx, viewer.tenantId, keyOf(actionId), { cancelled: true }, viewer.userId);
     if (!prior || "cancelled" in prior) await settle(tx, viewer, conversationId, action, "cancelled", `(I cancelled "${action.title}".)`);
     return prior;
   });

@@ -81,6 +81,9 @@ export type SharedFixtures = {
 export type FixtureSeed = (ctx: { tx: Tx; tenantId: string; shared: SharedFixtures }) => Promise<void>;
 
 /** An MCP tool (004). `run` gets the signed-in viewer from @amax/auth (opaque here) and validated input. */
+/** What a write tool names as its service: a defineService result. */
+export type ToolService = { spec: { name: string } };
+
 export type McpToolDef = {
   name: string;
   description: string;
@@ -98,6 +101,14 @@ export type McpToolDef = {
    */
   secretInput?: { label: string };
   run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
+  /**
+   * A write tool's one service, the defineService result it calls (043 AC-1); a list when the input
+   * picks one of several, still one write per call. Chat makes a confirm card only for a write tool
+   * that names one and runs it with the key scoped to it. Every write tool says: `null` is a write
+   * that can't be one keyed call, so it is never confirmed in chat. The registry refuses a write tool
+   * that leaves it out.
+   */
+  service?: ToolService | readonly ToolService[] | null;
   /**
    * A write tool's check when chat proposes its card, before the person types anything (053). Throw
    * a ToolError (code invalid_input) to refuse the card; its message is what the model is told.

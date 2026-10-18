@@ -26,7 +26,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "allocate", description: "Allocate a person (employee number or full name) to a project key, or to other work, for a month or a range of months (YYYY-MM). Percent 0 removes it.",
     scope: "write", permission: "allocations:allocate",
     input: z.object({ person: z.string(), projectKey: z.string().optional(), work: z.string().optional(), month: z.string(), through: z.string().optional(), percent: z.number().int() }),
-    run: (v, a, s = "mcp") => allocate(ctxFor(v, s), a) }),
+    service: allocate, run: (v, a, s = "mcp") => allocate(ctxFor(v, s), a) }),
   tool({ name: "copy_allocations_to_next_month", description: "Copy a month's allocations into the month after, leaving anything already planned there.", scope: "write", permission: "allocations:copy",
-    input: z.object({ from: z.string(), team: z.string().optional() }), run: (v, a, s = "mcp") => copyMonth(ctxFor(v, s), a) }),
+    input: z.object({ from: z.string(), team: z.string().optional() }), service: copyMonth, run: (v, a, s = "mcp") => copyMonth(ctxFor(v, s), a) }),
 ];

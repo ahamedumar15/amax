@@ -21,7 +21,7 @@ const { ForbiddenError } = await import("@amax/core/server");
 
 const viewer = { tenantId: "t", userId: "u", name: "Maya (fictional)", email: "m@x.test", assignments: [{ role: "Admin", legalEntityIds: null, departments: null }], actualRoles: ["Admin"], managedProjects: [], assignedProjects: [], reports: [] } as unknown as Viewer;
 const runner = { fn: async (): Promise<unknown> => ({ key: "TH-1" }) };
-const registry = createRegistry([{ id: "sample", mcpTools: [{ name: "add_thing", description: "Add.", input: z.object({}), scope: "write", run: () => runner.fn() } as unknown as McpToolDef] }]);
+const registry = createRegistry([{ id: "sample", mcpTools: [{ name: "add_thing", description: "Add.", input: z.object({}), scope: "write", service: null, run: () => runner.fn() } as unknown as McpToolDef] }]);
 
 describe("registry.call trace step (052)", () => {
   it.each([

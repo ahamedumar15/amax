@@ -41,7 +41,7 @@ export const chatTools: McpToolDef[] = [
     run: async (v, a) => (await getConversation(db(), v, a.id)) ?? Promise.reject(new ToolError("conversation not found", "not_found")) }),
   tool({ name: "archive_conversation", description: "Archive one of your own past amax chats so it leaves your history.", scope: "write", permission: ARCHIVE,
     input: conversationId,
-    run: (v, a, s = "mcp") => archiveConversation(ctxFor(v, s), a) }),
+    service: archiveConversation, run: (v, a, s = "mcp") => archiveConversation(ctxFor(v, s), a) }),
 ];
 
 export const chatPlatform: Pick<ModuleManifest, "id" | "mcpTools" | "grants" | "retention"> = {

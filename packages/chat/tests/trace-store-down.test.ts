@@ -11,7 +11,7 @@ import { handleMcp } from "@amax/mcp/server";
 import { cancelAction, chatPlatform, chatTurn, confirmAction } from "../src";
 import { chatWorld, registry, scripted, T } from "./world";
 
-const vault = createRegistry([chatPlatform, { id: "vault", mcpTools: [{ name: "set_code", description: "Set the door code.", input: z.object({}).strict(), scope: "write", permission: "", secretInput: { label: "Code" }, run: async () => ({ ok: true }) } as unknown as McpToolDef] }]);
+const vault = createRegistry([chatPlatform, { id: "vault", mcpTools: [{ name: "set_code", description: "Set the door code.", input: z.object({}).strict(), scope: "write", permission: "", secretInput: { label: "Code" }, service: { spec: { name: "vault.code.set" } }, run: async () => ({ ok: true }) } as unknown as McpToolDef] }]);
 const jobs = registryFrom([{ id: "sample", jobs: [{ name: "sample.nightly", run: async () => undefined }] }]);
 
 describe.skipIf(!hasDb)("053 AC-4 every trace call site against a failing trace store (Postgres)", () => {
