@@ -3,6 +3,8 @@ import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
 import { listActivity } from "./server/activity";
+import { ingestPush } from "./server/ingest";
+import { linkIdentity } from "./suggestions";
 import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed, type TaskDone } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
@@ -24,7 +26,7 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
-  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done"],
+  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link"],
   grants: {
     Leadership: READ,
     Finance: READ,
@@ -49,6 +51,9 @@ export default defineModule({
   mcpTools,
   search: search as never,
   activity: listActivity as never,
+  // 008 AC-2: verified pushes close the tasks their commits name.
+  inbound: { providers: ["github", "azure-devops"], handle: ingestPush },
+  suggestions: [linkIdentity],
   retention: [
     // Delivery evidence is kept seven years, then names are anonymised. A proposal's clock starts
     // when it's released (released_at, cleared again if the release is voided) or after a year with

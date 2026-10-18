@@ -174,6 +174,9 @@ export type StatutoryMinimum = { country: string; class: Sensitivity | "personal
  */
 export type ActivityItem = { id: string; at: string; by: string; agent: boolean; text: string; detail: string | null; pin: { label: string; tool: string; args: Record<string, unknown> } };
 
+/** A webhook 035 verified and deduplicated (008), handed to every module that takes its provider. */
+export type InboundEvent = { tenantId: string; provider: string; eventId: string; headers: Headers; payload: unknown };
+
 /** A search hit for the built-in `search` tool and the chat. */
 export type SearchHit = { type: string; id: string; title: string; url?: string; summary?: string };
 
@@ -225,6 +228,8 @@ export type ModuleManifest = {
   subjectIds?: (tx: Tx, userId: string) => Promise<string[]>;
   /** Contributes the newest lines to the Overview's Agent activity feed (008 AC-4). */
   activity?: (viewer: never, limit: number) => Promise<ActivityItem[]>;
+  /** Verified inbound webhooks this module acts on (008: GitHub and Azure DevOps pushes). */
+  inbound?: { providers: readonly string[]; handle: (e: InboundEvent) => Promise<void> };
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];

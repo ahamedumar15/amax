@@ -30,7 +30,7 @@ export function byLine(r: { actor_kind: string; actor_id: string; actor_name: un
   const suffix = forWhom ? ` for ${forWhom}` : "";
   if (r.actor_kind === "agent") return `${agentName(r.actor_id)}${suffix}`;
   if (r.actor_kind === "service") return `${(r.principal_name as string | null) ?? "A service credential"}${suffix}`;
-  if (r.actor_kind === "system") return `amax${suffix}`;
+  if (r.actor_kind === "system") return `${r.actor_id.startsWith("job:delivery.ingest") ? "Git" : "amax"}${suffix}`;
   return first(r.actor_name) ?? "Someone";
 }
 
