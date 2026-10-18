@@ -19,7 +19,10 @@ export type ProposalPhaseChanged = { proposalId: string; key: string; projectId:
 /** A proposal made by hand moved to the hand-made series because a spec change owns its old key. */
 export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed" } as const;
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", taskDone: "delivery.task.done" } as const;
+
+/** 008: a proposal task was closed (by a commit, CI or a person). `by` is the actor, "… for user:…" when acting for someone. */
+export type TaskDone = { proposalId: string; key: string; task: string; projectId: string; by: string };
 
 const toRef = (r: Record<string, unknown>): ProjectRef => ({
   id: r.id as string, key: r.key as string, name: r.name as string, client: r.client as string,
