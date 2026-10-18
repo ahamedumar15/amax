@@ -1,8 +1,9 @@
 {
   "change": "027-reports",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T14:19:05Z"}
+    "tasks": {"status":"done","at":"2026-10-18T14:19:05Z"},
+    "verify": {"status":"done","at":"2026-10-18T16:11:00Z"}
   }
 }
