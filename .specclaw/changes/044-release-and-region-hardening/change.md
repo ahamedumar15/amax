@@ -35,7 +35,7 @@ Voiding the Prod deployment restores the recorded phase (AC-1), and the next syn
   Depends: T1
 - [x] `T3` — A releasing deployment records each proposal's prior phase; voiding it restores exactly that phase with matching phase_changed events (AC-1)
   Files: modules/delivery/db/migrations/0013_release_prior_phase.sql, modules/delivery/server/services.ts, modules/delivery/tests/releases.test.ts
-- [ ] `T4` — One owner per phase for synced proposals: board moves refuse specclaw rows, the sync never reverts a Released set by a Prod deployment, documented and tested (AC-2)
+- [x] `T4` — One owner per phase for synced proposals: board moves refuse specclaw rows, the sync never reverts a Released set by a Prod deployment, documented and tested (AC-2)
   Files: modules/delivery/server/services.ts, modules/delivery/README.md, modules/delivery/tests/sync-import.test.ts
   Depends: T3
 

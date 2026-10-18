@@ -106,6 +106,26 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
   });
   afterAll(() => t?.drop());
 
+  it("044 AC-2 one owner per phase: moves refuse synced rows, and a sync after a Prod release keeps it Released", async () => {
+    const { contextForViewer } = await import("@amax/auth");
+    const { createRelease, moveProposal, recordDeployment, voidDeployment } = await import("../server/services");
+    const pm = contextForViewer(ops!, "ui");
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved" } });
+    const sync = (sha: string) => syncSpecclaw(app, ctx, { projectKey: "OWN", projectName: "own", client: "x", records: readSpecclaw(repo), sha });
+    await sync("1");
+    await expect(moveProposal(pm, { key: "OWN-001", to: "building" })).rejects.toThrow(/comes from specclaw; its phase follows the repo/);
+    await createRelease(pm, { projectKey: "OWN", version: "v1", proposalKeys: ["OWN-001"] });
+    await recordDeployment(pm, { projectKey: "OWN", version: "v1", environment: "Prod" });
+    const phase = async () => (await withTenant(app, T, (tx) => tx.execute(sql`select phase from delivery.proposal where key = 'OWN-001'`)))[0].phase;
+    const backwards = async () => Number((await t.owner`select count(*)::int as n from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'key' = 'OWN-001' and payload->>'from' = 'released'`)[0].n);
+    expect(await sync("2")).toMatchObject({ updated: 0, unchanged: 1 });
+    expect(await phase()).toBe("released");
+    expect(await backwards()).toBe(0);
+    await voidDeployment(pm, { projectKey: "OWN", version: "v1", environment: "Prod", reason: "recorded by mistake" });
+    expect(await phase()).toBe("planned");
+    expect(await backwards()).toBe(1);
+  });
+
   it("in a synced project, hand-made proposals get their own series, so every spec change still syncs (review rounds 4 and 5)", async () => {
     const repo = fakeRepo({ "001-a": { status: "✅ Approved" } });
     await syncSpecclaw(app, ctx, { projectKey: "RB", projectName: "rb", client: "x", records: readSpecclaw(repo), sha: "1" });

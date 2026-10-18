@@ -39,7 +39,8 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const cur = byKey.get(d.key);
     byKey.delete(d.key);
     if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
-    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase as string, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
+    // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
+    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
       continue;
     }

@@ -89,7 +89,8 @@ export const createProposal = defineService({
   },
 });
 
-// The board's explicit Move action. Released is reached only through a Prod deployment.
+// The board's explicit Move action. Released is reached only through a Prod deployment. A proposal
+// synced from a repo takes its phase from the repo, its one owner before Released (044 AC-2).
 export const moveProposal = defineService({
   scoped: true,
   name: "delivery.proposal.move",
@@ -101,6 +102,7 @@ export const moveProposal = defineService({
     if (!p) throw new Error(`no proposal ${input.key}`);
     scoped(ctx, "delivery:proposal:move", p.project_id as string);
     if (p.phase === "released") throw new Error(`${input.key} is in Prod; it can't move back on the board`);
+    if (p.source !== null) throw new Error(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
     if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
     await tx.execute(sql`update delivery.proposal set phase = ${input.to}, updated_at = now() where id = ${p.id}`);
     return {
@@ -233,17 +235,19 @@ export const syncProposal = defineService({
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, now())
-      on conflict (tenant_id, key) do update set title = excluded.title, phase = excluded.phase, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
+      on conflict (tenant_id, key) do update set title = excluded.title,
+        phase = case when delivery.proposal.phase = 'released' then 'released' else excluded.phase end, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
         source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
         where delivery.proposal.source = excluded.source
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
-    if (before && before.phase !== input.phase) events.push(phaseEvent(before, input.phase, ctx));
+    // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
+    if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {
       result: { key: input.key, created: !before, phaseChanged: events.some((e) => e.name === EVENTS.proposalPhaseChanged) },
       resourceId: row.id as string,
       before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title } : null,
-      after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
+      after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
   },
