@@ -16,6 +16,7 @@ describe.skipIf(!hasDb)("006 AC-1 agents.suggestion", () => {
     expect(s).toMatchObject({ kind: "demo.setting", target: { type: "demo.setting", id: "limit", label: "Limit" }, proposed: { key: "limit", value: 5 }, confidence: 0.8, status: "open",
       evidence: [{ type: "record", label: "Usage last month", ref: "demo:usage" }], source: { channel: "email", label: "Email from a.lee@harbour.test", ref: "msg-1", external: true },
       agent: { id: "job:agents.test", name: "Demo agent" }, actsFor: { id: `user:${ANA}` } });
+    expect(await createSuggestion(agentFor(ANA), proposal())).toMatchObject({ id: made.id, existing: true });
     expect(new Date(s.expiresAt).getTime() - Date.now()).toBeGreaterThan(2.9 * 86_400_000);
     await expect(createSuggestion(agentFor(ANA), proposal({ proposed: { key: "limit", value: "five" } }))).rejects.toThrow(/proposed\.value/);
     await expect(createSuggestion(agentFor(ANA), proposal({ source: { channel: "email" } }))).rejects.toThrow(/external source needs a label/);
