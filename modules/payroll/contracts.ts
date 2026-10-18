@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { can, canSee, type Viewer } from "@amax/auth";
 import { ForbiddenError, isSystemContext, type ServiceContext } from "@amax/core/server";
-import { totalsByCostCentre, type CostCentreTotal } from "./server/totals";
+import { MIN_COST_CENTRE, totalsByCostCentre, type CostCentreTotal } from "./server/totals";
 
 export { definePack, installedPacks, packFor, registerPack, type CountryPack, type Filing, type PayInput, type PayLine, type PayLineKind, type RunForPack, type StatutoryDue } from "./packs";
 export type { CostCentreTotal };
@@ -23,7 +23,7 @@ export const STEP_LABELS: Record<RunStatus, string> = {
 };
 
 /** Cost centres with fewer people than this are folded together for totals-only readers, so a total is never one person's pay. */
-export const MIN_COST_CENTRE = 3;
+export { MIN_COST_CENTRE };
 
 export const EVENTS = {
   runDrafted: "payroll.run.drafted",
@@ -74,6 +74,6 @@ export async function runTotals(tx: Tx, reader: Reader, runId: string): Promise<
   if (!r) return null;
   if (!mayRead(reader, r.legal_entity_id as string, true)) throw new ForbiddenError("payroll:totals", "payroll.run");
   const ref = toRef(r);
-  const t = await totalsByCostCentre(tx, runId, ref.currency, true);
+  const t = await totalsByCostCentre(tx, runId, true);
   return { ...ref, ...t.total, costCentres: t.costCentres };
 }

@@ -19,7 +19,7 @@ const CHECK = new Set(["no-pay", "unpaid-leave"]);
 /** Lines that only follow from others (tax and contributions): named once, at the end. */
 const FOLLOW = /tax|pension|welfare|epf|etf|apit|payg|super/i;
 
-const cents = (v: string) => BigInt(String(v).replace(/^(-?\d+)(?:\.(\d{0,2})\d*)?$/, (_m, w: string, f = "") => `${w}${f.padEnd(2, "0")}`));
+export const cents = (v: string) => BigInt(String(v).replace(/^(-?\d+)(?:\.(\d{0,2})\d*)?$/, (_m, w: string, f = "") => `${w}${f.padEnd(2, "0")}`));
 const fromCents = (c: bigint) => {
   const neg = c < 0n, a = neg ? -c : c;
   return `${neg ? "-" : ""}${a / 100n}.${String(a % 100n).padStart(2, "0")}`;

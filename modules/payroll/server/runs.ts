@@ -8,7 +8,7 @@ import { EVENTS, STEP_LABELS, type PayslipsSent, type RunChecked, type RunStatus
 import { buildDraft, groupOf, type DraftSlip, type Group, type Sources } from "./draft";
 import { actorOf, dayOf, periodOf } from "./read";
 import { totalsByCostCentre } from "./totals";
-import { varianceOf } from "./variance";
+import { cents, varianceOf } from "./variance";
 
 // 014 AC-1: each step of a run is its own audited service. A run moves only forward, one step at a
 // time, and each step records who took it and when. No result or event carries a person's pay.
@@ -39,7 +39,6 @@ export async function writeDraft(tx: Tx, tenantId: string, g: Group, month: stri
     values (${tenantId}, ${g.id}, ${g.legal_entity_id}, ${p.from}, ${p.to}, ${g.currency}, ${g.pack}, 'draft', ${JSON.stringify(sources)}::jsonb, ${by})
     on conflict (pay_group_id, period) do update set status = 'draft', sources = excluded.sources, drafted_by = excluded.drafted_by, drafted_at = now(), checked_by = null, checked_at = null
     returning id`);
-  await tx.execute(sql`delete from payroll.change where run_id = ${run.id}`);
   await tx.execute(sql`delete from payroll.payslip where run_id = ${run.id}`);
   for (const s of slips) {
     const [slip] = await tx.execute(sql`insert into payroll.payslip (tenant_id, run_id, legal_entity_id, person_id, user_id, person_name, employee_no, cost_centre, currency, working_days, days_paid,
@@ -54,14 +53,17 @@ export async function writeDraft(tx: Tx, tenantId: string, g: Group, month: stri
   return run.id as string;
 }
 
-/** The agent check: records every change since the last paid run. An accepted change whose amount is the same is kept; the rest are explained afresh. */
+/**
+ * The agent check: records every change since the last paid run. A change whose amount is the same as
+ * last check keeps its row (and its decision and suggestion); the rest are explained afresh.
+ */
 export async function recordChanges(tx: Tx, ctx: ServiceContext, run: RunRow, by: string) {
-  const people = new Map((await listPeople(tx, ctx, { ids: (await tx.execute(sql`select person_id from payroll.payslip where run_id = ${run.id}
-      union select person_id from payroll.payslip where run_id = (select id from payroll.run where pay_group_id = ${run.pay_group_id} and period < ${run.period} and status = 'payslips_sent' order by period desc limit 1)`)).map((r) => r.person_id as string) }))
-    .map((p) => [p.id, { joinedOn: p.joinedOn, leftOn: p.leftOn }]));
+  const ids = await tx.execute(sql`select person_id from payroll.payslip where run_id = ${run.id}
+    union select person_id from payroll.payslip where run_id = (select id from payroll.run where pay_group_id = ${run.pay_group_id} and period < ${run.period} and status = 'payslips_sent' order by period desc limit 1)`);
+  const people = new Map((await listPeople(tx, ctx, { ids: ids.map((r) => r.person_id as string) })).map((p) => [p.id, { joinedOn: p.joinedOn, leftOn: p.leftOn }]));
   const { changes } = await varianceOf(tx, run, people);
-  const kept = await tx.execute(sql`select person_id, amount from payroll.change where run_id = ${run.id} and decision = 'accepted'`);
-  const keep = new Set(kept.filter((k) => changes.some((c) => c.personId === k.person_id && Number(c.amount) === Number(k.amount))).map((k) => k.person_id as string));
+  const had = await tx.execute(sql`select person_id, amount from payroll.change where run_id = ${run.id}`);
+  const keep = new Set(had.filter((k) => changes.some((c) => c.personId === k.person_id && cents(c.amount) === cents(String(k.amount)))).map((k) => k.person_id as string));
   await tx.execute(sql`delete from payroll.change where run_id = ${run.id} ${keep.size ? sql`and person_id::text not in (${sql.join([...keep].map((k) => sql`${k}`), sql`, `)})` : sql``}`);
   for (const c of changes.filter((x) => !keep.has(x.personId))) {
     await tx.execute(sql`insert into payroll.change (tenant_id, run_id, legal_entity_id, person_id, user_id, person_name, kind, was_net, now_net, amount, currency, explanation, needs_check, confidence)
@@ -149,7 +151,7 @@ export const approveRunFinance = defineService({
     const by = actorOf(ctx);
     await tx.execute(sql`update payroll.run set status = 'finance_approved', finance_approved_by = ${by}, finance_approved_at = now() where id = ${runId}`);
     // Finance approves totals by entity and cost centre: that is all the result says.
-    const t = await totalsByCostCentre(tx, runId, run.currency, true);
+    const t = await totalsByCostCentre(tx, runId, true);
     return { result: { runId, status: "finance_approved" as RunStatus, currency: run.currency, totals: t.total, costCentres: t.costCentres }, resourceId: runId,
       before: { status: run.status }, after: { status: "finance_approved" }, events: [{ name: EVENTS.runFinanceApproved, payload: stepped(run, "finance_approved", by) }] };
   },

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, canEver, canSee, contextForViewer, type Viewer } from "@amax/auth";
 import { ForbiddenError, getRuntime, type ServiceContext, type Source } from "@amax/core/server";
@@ -56,3 +57,9 @@ export function workingDays(from: string, to: string) {
   }
   return n;
 }
+
+export const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+/** The display name of a "user:<id>" actor (or "user:<id> for <id>"), from the sign-in directory. */
+export const named = (col: string) => sql.raw(`(select u.name from auth.user u where 'user:' || u.id::text = split_part(${col}, ' for ', 1))`);
+/** Who took a step: their name, "amax" for a job, or the raw actor. */
+export const who = (id: unknown, name: unknown) => (id ? ((name as string | null) ?? (String(id).startsWith("job:") ? "amax" : String(id))) : null);
