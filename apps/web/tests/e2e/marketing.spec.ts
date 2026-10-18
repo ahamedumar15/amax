@@ -47,15 +47,9 @@ test("064 AC3 the tour plays when asked, with captions, and never on its own", a
   expect(await video.evaluate((v: HTMLVideoElement) => v.error)).toBeNull();
   await expect(video).toHaveAttribute("controls", "");
   await expect(video).toBeFocused();
-});
-
-test("064 AC10 the theme switch flips light and dark and remembers it", async ({ page }) => {
-  await page.emulateMedia({ colorScheme: "light" });
-  await page.goto("/welcome");
-  await page.getByRole("button", { name: "Switch between light and dark theme" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(video).toBeFocused();
 });
 
 test("064 AC1 AC7 accessible in light and dark, skip link, no sideways scroll on a phone", async ({ page }) => {

@@ -17,7 +17,7 @@ export function ProductVideo() {
       <div className="wrap">
         <h2 id="tour-title" className="sr">Product tour</h2>
         <div className="stage" data-ui>
-          <video ref={video} tabIndex={-1} controls={started} preload="none" playsInline poster={`${SRC}-poster.jpg`} aria-label="amax product tour, 35 seconds">
+          <video ref={video} tabIndex={0} controls={started} preload="none" playsInline poster={`${SRC}-poster.jpg`} aria-label="amax product tour, 35 seconds">
             <source src={`${SRC}.mp4`} type="video/mp4" />
             <source src={`${SRC}.webm`} type="video/webm" />
             <track kind="captions" srcLang="en" label="English" src={`${SRC}.en.vtt`} />
