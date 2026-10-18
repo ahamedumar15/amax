@@ -43,6 +43,29 @@ GST, VAT/SSCL and credit notes are proven on contracts made through the tools.
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass — the `finance` schema holds contracts (fixed, T&M with a cap, retainer), invoices (credit notes included), payments and stored FX rates. Every amount carries its currency. Headline totals convert to USD at stored rates, and each invoice keeps its base-currency amount at the rate on its issue day. Tests: `tests/billing.test.ts`, `tests/contracts.test.ts`.
+- AC-2: pass — `time.week.approved` turns approved billable hours into a T&M draft, kept within the cap. `delivery.release.deployed` to Prod turns the matching milestone into a draft. Each draft is a 006 `finance.invoice-draft` suggestion: accepting it issues the invoice, and undoing it issues a credit note. Test: `tests/drafts.test.ts`, plus the module e2e (Accept draft through Ask amax).
+- AC-3: pass — AU GST is 10%. For SL, SSCL is 2.5%, then VAT 18% on the value including SSCL. Export contracts are zero-rated. Credit notes reduce both invoiced and open amounts. The fixture totals match fixtures.md: $774,000 contract value, $418,200 invoiced, $18,315 overdue. Test: `tests/tax.test.ts`.
+- AC-4: pass — contracts and contract tests, README, fixtures, manifest, retention entries and a CODEOWNERS line. The module can be switched off, and it still works without time. Test: `tests/standard.test.ts`. `check-graph` and `check-module-standard` are ok.
+
+Commands (worktree up to date with origin/main, Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint --force` → 0 (26/26, none cached)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (25/25)
+- `pnpm --filter @amax/web build` → 0
+- `playwright test --config playwright.auth.config.ts` (apps/web) → 79/79. The first run failed once, on `auth.spec` "AC5 nav shows only screens their roles allow", and 41 tests didn't run after it. That test passed alone and in the full rerun.
+- module e2e `pnpm --filter @amax/finance e2e` → 2/2 (axe, nothing unpinned, no forms, 404 without finance)
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
+
+Follow-ups:
+- The billing agent reads time's aggregate hours as a fixed Finance-role reader (`server/agent.ts`), because event handlers have no viewer. It sees only project totals, and its drafts take effect only once a person accepts them. It should move to a proper 006 agent identity once one exists.
+- Delivery's Contract tab is still a placeholder.
+
+Screenshots: `.specclaw/changes/017-finance-contracts-billing/shots/app.png` (`/financials` as Maya, Admin, taken through the module's e2e harness) and `shots/mock.png` (`#001-amax-foundation-financials`). Compared by eye: the lede, the three tiles, invoiced per month with October hatched, receivables by age and the contracts table all match. The deviations are listed below.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17); the finance module review runs after 019.
+
 Quality: 10 → 10 duplicated lines (jscpd over modules/finance, tests included; 0 outside tests. The two clones are the DB tests' shared describe/beforeAll/afterAll setup, left as is. specclaw-quality-scan failed with jq "Argument list too long", so jscpd was run directly.)
 
 Outside `modules/finance`: one CODEOWNERS line and `pnpm-lock.yaml` (the new workspace package). No other module's standard test needed relaxing: time's switch-off test already allows `@amax/time/contracts`, and delivery has none. Delivery's project Contract tab still shows "Arrives with finance, 017"; wiring it to finance is a delivery change, left for a follow-up.
