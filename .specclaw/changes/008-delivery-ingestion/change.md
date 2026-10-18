@@ -44,7 +44,7 @@ Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
 - [x] `T5` — Commit time becomes a draft suggestion on the person's timesheet through a new `time` contract command, never approved automatically. An Admin switches it on per legal entity (`set_commit_time_logging`, which also records that people were notified). It is never used for ratings (AC-3, AC-6)
   Files: modules/delivery/contracts.ts, modules/delivery/db/migrations/0016_commit_time.sql, modules/delivery/server/commit-time.ts, modules/delivery/mcp.ts, modules/time/server/log.ts, modules/time/suggestions.ts, modules/time/module.ts, modules/delivery/tests/ingest-ac2.test.ts, modules/time/tests/commit-draft-008.test.ts
   Depends: T4
-- [ ] `T6` — The 039 importer becomes a caller of `sync_proposal`. Keys and history are kept (AC-7)
+- [x] `T6` — The 039 importer becomes a caller of `sync_proposal`. Keys and history are kept (AC-7)
   Files: modules/delivery/sync/import.ts, modules/delivery/sync/bin.ts, modules/delivery/tests/sync-import.test.ts
   Depends: T2
 - [ ] `T7` — Module standard: contracts first with contract tests, README, fixtures and manifest. Switching delivery's ingestion off degrades gracefully, as does running without `time` or `agents` (AC-5)
