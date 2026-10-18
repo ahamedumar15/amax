@@ -6,3 +6,5 @@ export { getSuggestion, listSuggestions, type Bucket, type ListFilter, type Pers
 export { agentRun, configureAgents, RunInput, type AgentDeps } from "./run";
 export { agentsPlatform, agentsRetention } from "./module";
 export { platformKinds, revokeCredentialKind } from "./kinds/credential";
+export { agentJobs, suggestionRun } from "./runs";
+export { agentsTools } from "./mcp";

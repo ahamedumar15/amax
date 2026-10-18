@@ -1,4 +1,5 @@
 import type { RetentionEntry } from "@amax/core";
+import { agentsTools } from "./mcp";
 import { agentRun } from "./run";
 import { DECIDE, READ, SUGGEST } from "./store";
 
@@ -19,5 +20,6 @@ export const agentsPlatform = {
   id: "suggestions",
   grants: { ITAdmin: EVERYONE, Leadership: EVERYONE, PM: EVERYONE, Engineer: EVERYONE, Finance: EVERYONE, Sales: EVERYONE, HR: EVERYONE, Payroll: EVERYONE, Employee: EVERYONE },
   workflows: [agentRun],
+  mcpTools: agentsTools,
   retention: agentsRetention,
 };

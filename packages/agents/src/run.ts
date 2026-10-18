@@ -2,18 +2,19 @@ import { z } from "zod";
 import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import type { Registry } from "@amax/mcp";
+import type { WorkflowRegistry } from "@amax/workflows/server";
 import { defineWorkflow, NonRetryableError, step, waitForEvent, type Json } from "@amax/workflows";
 import { suggestionKinds } from "./kinds";
 import { createSuggestion, Source } from "./store";
 import { think, type ThinkInput } from "./think";
 
 /** What runs need from the host: the tool registry, and the person a run acts for. */
-export type AgentDeps = { tools: () => Registry; viewerFor: (tenantId: string, userId: string) => Promise<Viewer | null> };
+export type AgentDeps = { tools: () => Registry; viewerFor: (tenantId: string, userId: string) => Promise<Viewer | null>; workflows?: () => WorkflowRegistry };
 let deps: AgentDeps | undefined;
 export const configureAgents = (d: AgentDeps) => {
   deps = d;
 };
-const host = () => {
+export const host = () => {
   if (!deps) throw new NonRetryableError("amax: configureAgents({ tools, viewerFor }) before agent runs");
   return deps;
 };

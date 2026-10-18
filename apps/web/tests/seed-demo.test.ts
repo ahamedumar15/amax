@@ -10,9 +10,9 @@ import { modules } from "../generated/modules";
 const COUNTED = ["auth.user", "hr.person", "hr.employment", "delivery.project", "allocations.allocation", "allocations.member"];
 
 describe("demo seed", () => {
-  it("seeds auth first, then every module in the registry, then the 032 privacy demo", async () => {
+  it("seeds auth first, then every module in the registry, then the 006 suggestions and 032 privacy demos", async () => {
     const seeds = await installedSeeds();
-    expect(seeds.map((s) => s.id)).toEqual(["auth", ...modules.map((m) => m.id), "privacy"]);
+    expect(seeds.map((s) => s.id)).toEqual(["auth", ...modules.map((m) => m.id), "suggestions", "privacy"]);
     expect(seeds.slice(1).every((s) => s.dependsOn.includes("auth"))).toBe(true);
   });
 });
