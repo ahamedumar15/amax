@@ -1,8 +1,10 @@
 {
   "change": "008-delivery-ingestion",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T10:33:50Z"}
+    "tasks": {"status":"done","at":"2026-10-18T10:33:50Z"},
+    "build": {"status":"done","at":"2026-10-18T10:54:59Z"},
+    "verify": {"status":"done","at":"2026-10-18T10:54:59Z"}
   }
 }

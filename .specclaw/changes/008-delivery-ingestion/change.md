@@ -52,3 +52,24 @@ Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
   Depends: T5, T6
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — the MCP tools `sync_proposal` and `mark_task_done` (with task records in `delivery.task`) sit beside `record_deployment`. A service credential acting for a person calls them, and a credential can be limited to named tools (`auth.service_principal.tools`, checked in the REST caller with acts-for still applied). Tests: `modules/delivery/tests/ingest-ac1.test.ts`; `packages/api/tests/principal-tools.test.ts` (allowed tool 200; other tool 403 by key and by client-credentials token; person not in acts-for 403; refusals audited).
+- AC-2: pass — `/api/webhooks/<tenant>/<provider>` runs 035's `receiveWebhook` (signature, replay window, dedupe) and dispatches to `inbound` handlers. Delivery attributes a commit only when it is provider-verified or its email is the verified email of an `auth.git_identity`. An unknown author with a person's work email becomes one `delivery.git-identity` suggestion. Tests: `ingest-ac2.test.ts` (four commits: verified email → closes T1; unverified email → nothing; unknown author → suggestion, made once; provider-verified → closes T4).
+- AC-3: pass — a `Time: 1.5h` trailer emits `delivery.commit.time`. Time's handler creates a `time.commit-draft` suggestion on the person's own timesheet. Accepting it logs agent time in a draft week, and undo removes it; nothing is approved automatically. Tests: `modules/time/tests/commit-draft-008.test.ts`, `ingest-ac2.test.ts` "AC-3, AC-6".
+- AC-4: pass — the manifest's `activity` slot feeds the Overview's Agent activity card ("Claude for Nimal", "specclaw", "<credential> for <person>", "Git for <person>"), with every line pinned through `get_activity`. Tests: e2e `overview.spec.ts` (attribution, pins, axe) and `ingest-ac1.test.ts` (a credential for a person).
+- AC-5: pass — contracts carry the new events and payload types; the contract shape test is updated. README, fixtures (the mock's three feed lines) and manifest are updated, and retention entries cover `task`, `commit_time` and `activity`. `check-module-standard` and `check-graph` pass. Time reads only `@amax/delivery/contracts`. With delivery off, the route has no handler and the Overview shows no feed. With time off, the commit-time event has no reader.
+  - Platform ripples, each a slot any module can use and named in the Tasks preamble: `ModuleManifest.activity` and `ModuleManifest.inbound`, the webhook route, the principal `tools` allow-list, and `@amax/auth/git-identity`. Time also gained the `logEntry` extraction.
+- AC-6: pass — `set_commit_time_logging` (Admin, per legal entity) refuses to switch on without `peopleNotified: true` and records `notified_at`. No drafts are made for entities that are off. The README states that commit data only drafts timesheets and is never used for ratings. Test: `ingest-ac2.test.ts` "AC-3, AC-6".
+- AC-7: pass — the 039 importer writes through `sync_proposal`'s service with task ids and titles. Keys and history are kept, and a task a commit closed stays closed without making every sync a change. Tests: `sync-import.test.ts` (existing 039 cases plus "008 AC-7").
+
+Commands (worktree, Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint` → 0 (23/23); `check-graph` → 0; `check-module-standard` → 0
+- `pnpm turbo run test --continue` → one failing contract-shape test fixed, then `vitest run modules/delivery` → 238/238. The other 21 packages passed in the full run.
+- `pnpm --filter @amax/web build` → 0; `playwright test` (shell) → 1/1; `playwright test --config playwright.auth.config.ts` → 79/79
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run: it fails with "jq: Argument list too long" on this repo.
+
+Screenshots: `.specclaw/changes/008-delivery-ingestion/shots/app.png` (the Overview Agent activity card) and `.specclaw/changes/008-delivery-ingestion/shots/mock.png` (`#001-amax-foundation`). Compared: the feed's three lines, attribution colours and detail lines match the mock's Agent activity card. The rest of the mock Overview (stat tiles, hours chart, insights, Waiting on you) is out of scope for 008.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
