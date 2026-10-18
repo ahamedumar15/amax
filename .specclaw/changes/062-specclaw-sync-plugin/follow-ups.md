@@ -1,6 +1,13 @@
 # Follow-ups
 
-Deferred by the review loop: minors and pre-existing findings.
+## Open: review round 6 escalated; the product owner stopped the loop here (2026-10-18)
+
+- [major B4] `modules/delivery/server/services.ts:207` Only `PushInput` bounds `committedAt` against the future (`SKEW_MS`). `SyncInput`, `markSynced` and the `sync_proposal` tool accept any date, and `greatest()` means a future mark can never be lowered, so one skewed self-sync or CI call blocks every later push. Fix: one exported bounded `committedAt` schema used by all four, with a future-date test per path.
+- [major B1] `modules/delivery/sync/import.ts:77` Proposals the self-sync already withdrew are skipped on later runs, so their stale mark stays at the first withdrawal. A default-branch push dated between that and a newer self-sync passes the gate and brings the proposal back. Fix: add still-missing withdrawn keys to the `markSynced` list; test withdraw at T1, re-sync at T3, push at T2 → stale.
+
+## Earlier minors
+
+Every minor below was fixed in a later round (see the round commits); kept as the loop's record.
 
 - [minor B1] `plugins/amax/skills/sync-specclaw/SKILL.md:44` With `--apply`, a run applies nothing if the preview has any skipped lines. An archived change waiting for a Prod deployment, or a branch behind on one proposal, gives a skipped line on every run. So the scheduled routine stops syncing all other changes until a person steps in, and keeps doing so on every run. Fix: let --apply go ahead when the only skips are the documented, expected kinds (Released pending, would move back). Or apply the clean records and report the skips. (round 1) <!-- fp:f61e50c8ef1a -->
 - [minor B4] `modules/delivery/sync/import.ts:57` The dry run's `held` query writes out syncProposal's KeyTakenError rule again (services.ts:234). The copies already differ in scope: the dry run filters by project, while syncProposal looks the key up across the whole tenant. A preview can therefore count as created a row that the apply then skips. Fix: share one predicate. (round 1) <!-- fp:e3e34067ffcf -->
