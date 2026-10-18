@@ -26,11 +26,14 @@ describe.skipIf(!hasDb)("061 tests copy one migrated template", () => {
   }, 180_000);
 
   it("AC2 keeps only the newest templates", async () => {
-    for (const old of ["amax_tpl_old0000000000a", "amax_tpl_old0000000000b", "amax_tpl_old0000000000c"]) await admin.unsafe(`create database ${old}`);
+    const tag = Math.random().toString(16).slice(2, 10);
+    const olds = ["a", "b", "c"].map((x) => `amax_tpl_old${tag}${x}`);
+    for (const old of olds) await admin.unsafe(`create database ${old}`);
     const current = await (await fresh()).migratedTemplate();
     const left = await templates();
     expect(left).toContain(current);
     expect(left.length).toBeLessThanOrEqual(3);
-    expect(left).not.toContain("amax_tpl_old0000000000a");
+    expect(left).not.toContain(olds[0]);
+    for (const old of olds) await admin.unsafe(`drop database if exists ${old}`);
   }, 180_000);
 });
