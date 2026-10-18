@@ -1268,14 +1268,14 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 <!-- ================= Leave ================= -->
 <section data-change="012-leave" id="001-amax-foundation-leave" data-roles="all" data-title="Leave" data-icon="calendar">
   <div class="row head">
-    <div><h1>Leave</h1><p class="lede">Nimal asked for Oct 27–30 off, the same week as the Fleet Tracker UAT retry. Next public holiday: Vap Full Moon Poya Day, Oct 26.</p></div>
-    <div class="actions"><button class="btn">Holiday calendar</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
+    <div><h1>Leave</h1><p class="lede">Nimal asked for Oct 27–30 off, the same week as the Fleet Tracker v1.8.0 UAT retry. Next public holiday: Vap Full Moon Poya Day, Oct 26. Requests, approvals and cancellations happen in chat.</p></div>
+    <div class="actions"><a class="btn" href="#leaveCal">Holiday calendar</a><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
   </div>
   <div class="tickets four">
     <div class="ticket t-violet"><div class="k">On leave today</div><div class="v">6</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 annual, 2 casual, 1 medical</div></div>
     <div class="ticket t-yellow"><div class="k">Waiting for approval</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">1 clashes with a release</div></div>
     <div class="ticket t-violet"><div class="k">Booked this month</div><div class="v">41 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Across 19 people</div></div>
-    <div class="ticket t-yellow"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">LKR 9.4M liability, Sri Lankan entity only</div></div>
+    <div class="ticket t-yellow"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">Sri Lankan entity only; payroll values the liability</div></div>
   </div>
   <div class="card" style="margin-bottom:28px">
     <div class="card-head"><h2>Team calendar, October 2026</h2><div class="legend" style="padding:0;margin:0;gap:16px"><span><i style="width:12px;height:12px;border-radius:4px;background:#B3A1FF"></i>Annual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#7FD8F5"></i>Casual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#F48B9B"></i>Medical</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #7B61FF"></i>Pending</span><span><i style="width:12px;height:12px;border-radius:4px;background:#FFF1D6"></i>Holiday</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 2px var(--ink)"></i>Today, Oct 16</span></div></div>
@@ -1284,7 +1284,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
       <div class="card-head"><h2>Leave taken by type</h2><span class="muted" style="font-size:13px">2026, in days</span></div>
-      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Annual:412:#B3A1FF;Casual:186:#7FD8F5;Medical:97:#F48B9B;Lieu:21:#2FCB8C" data-center="716" data-sub="days taken" data-legend="lgLeave" viewBox="0 0 170 170" role="img" aria-label="Leave taken by type"></svg><ul class="donut-legend" id="lgLeave"></ul></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Annual:357:#B3A1FF;Casual:161:#7FD8F5;Medical:84:#F48B9B;Lieu:18:#2FCB8C" data-center="620" data-sub="days taken" data-legend="lgLeave" viewBox="0 0 170 170" role="img" aria-label="Leave taken by type"></svg><ul class="donut-legend" id="lgLeave"></ul></div>
     </div>
     <div class="card">
       <div class="card-head"><h2>Leave days per month</h2><span class="muted" style="font-size:13px">Everyone</span></div>
@@ -1292,12 +1292,12 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary" id="leaveApproveAll" type="button">Approve all</button></div>
+    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary" type="button" title="Prompt: Approve the leave requests with no clash">✦ Approve 1 with no clash</button></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Person</th><th>Type</th><th>Dates</th><th class="num">Days</th><th>Clash check</th><th class="num">Action</th></tr></thead>
       <tbody>
-      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Annual</td><td>Oct 27 – Oct 30</td><td class="num">4</td><td><span class="chip warn">Overlaps Fleet UAT retry</span></td><td class="num"><button class="btn sm">Decide</button></td></tr>
-      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td>Casual</td><td>Nov 2</td><td class="num">1</td><td><span class="chip good">No clash</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Annual</td><td>Oct 27 – Oct 30</td><td class="num">4</td><td><span class="chip warn">Overlaps Fleet Tracker v1.8.0 UAT retry</span></td><td class="num"><button class="btn sm" title="Prompt: Decide on Nimal Silva's annual leave, Oct 27 – Oct 30">✦ Ask amax</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td>Casual</td><td>Nov 2</td><td class="num">1</td><td><span class="chip good">No clash</span></td><td class="num"><button class="btn sm ghost" title="Prompt: Approve Tharushi Wijesinghe's casual leave, Nov 2">✦ Approve</button></td></tr>
       </tbody></table></div>
   </div>
 </section>
