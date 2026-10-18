@@ -21,6 +21,8 @@ const schema = z.object({
   AMAX_AUTH_DEMO_TENANT: z.uuid().optional(),
   // Email + password sign-in for one tenant, for deployments without Entra (allowed in production).
   AMAX_AUTH_PASSWORD_TENANT: z.uuid().optional(),
+  // 062: the "Book a demo" mailto on the public marketing page; the button hides when unset.
+  AMAX_SALES_EMAIL: z.email().optional(),
   // S3-compatible object storage (S3, R2, MinIO). The audit export bucket needs object lock.
   S3_ENDPOINT: z.url().optional(),
   S3_BUCKET: z.string().optional(),

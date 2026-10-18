@@ -17,6 +17,9 @@ describe("baseUrl", { timeout: 30_000 }, () => {
   it("accepts loopback in development", async () => {
     expect((await load())(req({ host: "localhost:3501", "x-forwarded-host": "evil.example" }))).toBe("http://localhost:3501");
   });
+  it("062: the marketing page and OAuth share one rule, not a copy", async () => {
+    expect((await import("../lib/site")).baseUrl).toBe(await load());
+  });
   it("requires AMAX_BASE_URL in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
     await expect((async () => (await load())(req({ host: "localhost:3000" })))()).rejects.toThrow(/production/);

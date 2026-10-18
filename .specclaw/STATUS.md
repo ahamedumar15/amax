@@ -1,14 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 14:11 UTC
-
-_1 unnumbered change · run `/specclaw-extras:renumber` to order them_
+**Last Updated:** 2026-10-18 14:31 UTC
 
 ## Active Changes
 
 
-- 🔨 **021-it-access-licences** — build in-progress
+- 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 open
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
 ## Pending Proposals
@@ -17,6 +15,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
+- 📋 **021-it-access-licences** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
 - 📋 **025-inbox-agent** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
