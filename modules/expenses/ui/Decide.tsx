@@ -2,7 +2,7 @@ import { PinButton } from "@amax/ui";
 import { claimPin, viewPin } from "../pins";
 import type { ClaimView } from "../server/rows";
 import { AskButton } from "./AskButton";
-import { Amount, What, Who } from "./parts";
+import { ClaimCells } from "./parts";
 
 function Decision({ c }: { c: ClaimView }) {
   const pin = claimPin(c);
@@ -24,10 +24,7 @@ export function Decide({ rows }: { rows: ClaimView[] }) {
           <thead><tr><th>Person</th><th>Expense</th><th>Spent</th><th className="num">Amount</th><th>Step</th><th className="num">Decision</th><th className="num"><span className="sr">Pin</span></th></tr></thead>
           <tbody>{rows.map((c) => (
             <tr key={c.id} className="pinnable" data-claim={c.number}>
-              <td data-label="Person"><Who c={c} /></td>
-              <td data-label="Expense"><What c={c} /></td>
-              <td data-label="Spent">{c.spentText}</td>
-              <td data-label="Amount" className="num"><Amount c={c} /></td>
+              <ClaimCells c={c} />
               <td data-label="Step"><span className={`chip ${c.overLimit ? "warn" : "info"}`}>{c.step === "manager" ? "You, as manager" : "You, as Finance"}</span></td>
               <td data-label="Decision" className="num"><Decision c={c} /></td>
               <td className="num"><PinButton inline pin={claimPin(c)} /></td>

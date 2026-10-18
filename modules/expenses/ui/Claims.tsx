@@ -1,7 +1,7 @@
 import { IntentButton, PinButton } from "@amax/ui";
 import { claimPin, viewPin } from "../pins";
 import type { ClaimView } from "../server/rows";
-import { Amount, What, Who } from "./parts";
+import { ClaimCells } from "./parts";
 
 export function Claims({ rows }: { rows: ClaimView[] }) {
   return (
@@ -13,10 +13,7 @@ export function Claims({ rows }: { rows: ClaimView[] }) {
           <tbody>{rows.map((c) => (
             <tr key={c.id} className="pinnable" data-claim={c.number}>
               <td data-label="Number">{c.number}</td>
-              <td data-label="Person"><Who c={c} /></td>
-              <td data-label="Expense"><What c={c} /></td>
-              <td data-label="Spent">{c.spentText}</td>
-              <td data-label="Amount" className="num"><Amount c={c} /></td>
+              <ClaimCells c={c} />
               <td data-label="Status"><span className={`chip ${c.tone}`}>{c.statusLabel}</span></td>
               <td data-label="Payment">{c.payText}</td>
               <td className="num"><PinButton inline pin={claimPin(c)} /></td>

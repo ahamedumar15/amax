@@ -8,11 +8,11 @@ export const initials = (name: string) => name.split(" ").map((w) => w[0]).slice
 
 export const Text = ({ v }: { v: string | MaskedValue }) => (isMasked(v) ? <Masked masked /> : <>{v}</>);
 
-export function Who({ c }: { c: ClaimView }) {
+function Who({ c }: { c: ClaimView }) {
   return <div className="who"><span className={`av sm ${tint(c.id)}`} aria-hidden="true">{initials(c.personName)}</span>{c.personName}</div>;
 }
 
-export function What({ c }: { c: ClaimView }) {
+function What({ c }: { c: ClaimView }) {
   return (
     <div className="what">
       <span>{c.categoryName}: <Text v={c.merchant} /></span>
@@ -21,6 +21,13 @@ export function What({ c }: { c: ClaimView }) {
   );
 }
 
-export function Amount({ c }: { c: ClaimView }) {
-  return <>{c.amountText}{c.overLimit && <small className="over">Over the {c.limitText} limit</small>}</>;
+export function ClaimCells({ c }: { c: ClaimView }) {
+  return (
+    <>
+      <td data-label="Person"><Who c={c} /></td>
+      <td data-label="Expense"><What c={c} /></td>
+      <td data-label="Spent">{c.spentText}</td>
+      <td data-label="Amount" className="num">{c.amountText}{c.overLimit && <small className="over">Over the {c.limitText} limit</small>}</td>
+    </>
+  );
 }

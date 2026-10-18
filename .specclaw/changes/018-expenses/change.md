@@ -44,3 +44,5 @@ platform change.
   Depends: T4
 
 ## Verify
+
+Quality: 15 → 10 duplicated lines (jscpd over modules/expenses, tests included; specclaw-quality-scan failed with jq "Argument list too long", so jscpd was run directly). The claim row cells shared by "Needs your decision" and "Claims" moved into `ui/parts.tsx`; the two left are the DB tests' shared describe/beforeAll/afterAll setup, as in finance.
