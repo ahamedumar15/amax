@@ -1,15 +1,14 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 14:02 UTC
+**Last Updated:** 2026-10-18 14:11 UTC
+
+_1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
-- 🔀 **014-payroll-engine** — pr raised | 6/6 tasks (100%) | 0 failed | PR #75 merged
-- 🔀 **017-finance-contracts-billing** — pr raised | 5/5 tasks (100%) | 0 failed | PR #76 merged
-- 🔀 **018-expenses** — pr raised | 5/5 tasks (100%) | 0 failed | PR #78 open
-- 🔀 **023-recruitment** — pr raised | 6/6 tasks (100%) | 0 failed | PR #77 merged
+- 🔨 **021-it-access-licences** — build in-progress
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
 ## Pending Proposals
@@ -18,7 +17,6 @@
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
-- 📋 **021-it-access-licences** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
 - 📋 **025-inbox-agent** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
@@ -41,7 +39,11 @@
 - ✅ **011-hr-core**
 - ✅ **012-leave**
 - ✅ **013-onboarding-offboarding**
+- ✅ **014-payroll-engine**
+- ✅ **017-finance-contracts-billing**
+- ✅ **018-expenses**
 - ✅ **020-presales**
+- ✅ **023-recruitment**
 - ✅ **024-learning**
 - ✅ **028-keyflow-sync**
 - ✅ **029-workflows-scheduler**
@@ -79,6 +81,6 @@
 
 ## Stats
 
-- **Total changes:** 53
-- **Active:** 5
-- **Completed:** 48
+- **Total changes:** 54
+- **Active:** 2
+- **Completed:** 52
