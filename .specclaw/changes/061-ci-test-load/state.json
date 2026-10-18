@@ -1,10 +1,11 @@
 {
   "change": "061-ci-test-load",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-18T06:15:43Z"},
     "tasks": {"status":"done","at":"2026-10-18T06:15:59Z"},
-    "verify": {"status":"done","at":"2026-10-18T06:22:52Z"}
+    "verify": {"status":"done","at":"2026-10-18T06:22:52Z"},
+    "pr": {"status":"raised","at":"2026-10-18T06:23:16Z","url":"https://github.com/chan4lk/amax/pull/64"}
   }
 }
