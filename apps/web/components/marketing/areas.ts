@@ -1,17 +1,17 @@
 export type Claim = { text: string; module?: string };
 export type Planned = { text: string; module: string; words: string[] };
-export type Area = { title: string; pitch: string; tone: string; live: Claim[]; coming: Planned[] };
+export type Area = { title: string; pitch: string; tone: string; open?: boolean; live: Claim[]; coming: Planned[] };
 
 const PLATFORM = "platform";
 
 export const AREAS: Area[] = [
-  { title: "Delivery", pitch: "Delivery that updates itself.", tone: "v1", coming: [], live: [
+  { title: "Delivery", pitch: "Delivery that updates itself.", tone: "v1", open: true, coming: [], live: [
     { text: "Projects, specclaw proposals and releases across Dev, QA, UAT and Prod", module: "delivery" },
     { text: "Time and approvals", module: "time" },
     { text: "Allocations and capacity forecasts", module: "allocations" },
     { text: "Utilisation and availability reports", module: "reports" },
   ] },
-  { title: "People and payroll", pitch: "People records, kept current.", tone: "v2", coming: [
+  { title: "People and payroll", pitch: "People records, kept current.", tone: "v2", open: true, coming: [
     { text: "Sri Lanka payroll pack", module: "payroll-lk", words: ["sri lanka"] },
     { text: "Australia payroll pack", module: "payroll-au", words: ["australia"] },
   ], live: [
@@ -30,7 +30,7 @@ export const AREAS: Area[] = [
     { text: "Expense claims, approved by the manager and then Finance", module: "expenses" },
     { text: "Presales pipeline", module: "presales" },
   ] },
-  { title: "Operations", pitch: "Operations with nothing left out.", tone: "v4", coming: [
+  { title: "Operations", pitch: "Compliance and incidents, on the record.", tone: "v4", coming: [
     { text: "IT assets and access", module: "it-access", words: ["it asset", "licence"] },
     { text: "Helpdesk", module: "helpdesk", words: ["helpdesk"] },
     { text: "Insights", module: "insights", words: ["insights"] },

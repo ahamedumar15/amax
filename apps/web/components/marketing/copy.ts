@@ -1,4 +1,4 @@
-export const HERO_LEDE = "amax is the agent-native ERP for software and services firms. Commits, deployments and chat become your delivery, people and finance records, and nothing counts until a person accepts it.";
+export const HERO_LEDE = "amax is the agent-native ERP for software and services firms. Commits, deployments and chat become your delivery, people and finance records, and hours, invoices and payroll changes wait for a person to accept them.";
 
 export const DESCRIPTION = "amax is the agent-native ERP for software and professional-services firms. Agents close tasks, draft time for people to accept, move releases and keep people, leave and allocations current through MCP. People review and decide.";
 
@@ -18,7 +18,7 @@ export const TILES = [
 ];
 
 export const FAQ = [
-  ["Will an agent change our data on its own?", "No. Agents draft: hours from commits, invoices from approved time, payroll changes. A person accepts or approves each one, and in chat amax asks before it changes anything."],
+  ["Will an agent change our data on its own?", "Agents record what happened, like a commit closing its task or a pipeline recording a deployment. Hours, invoices and payroll changes are only drafted: a person accepts or approves each one, and in chat amax asks before it changes anything."],
   ["Which agents can connect?", "Any MCP client, such as Claude Code, a CI pipeline or your own agent, using a credential scoped to a person's role."],
   ["Where does our data live?", "In the region you pin for each legal entity, with retention rules and legal holds per record type."],
   ["Do we have to stop using our other tools?", "No. amax reads commits, pipelines and your directory, and planned integrations cover accounting."],

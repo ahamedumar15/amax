@@ -25,6 +25,7 @@
 .m2 .band h3{font-size:clamp(26px,3vw,46px);font-weight:800}
 .m2 .band .more{grid-column:1/-1;margin-top:14px;font-size:17px;max-width:90ch;display:grid;gap:6px}
 .m2 .band .more[hidden]{display:none}
+.m2 .band .mk-coming{grid-column:1/-1;margin-top:10px;font-size:15px}
 .m2 .band .soon{display:inline-block;margin-right:4px;background:rgba(29,27,46,.14);border-radius:8px;padding:1px 8px;font-weight:700;font-size:14px}
 .m2 .band.off{background:var(--g);color:var(--ink);border-top:1px solid var(--line)}
 .m2 .sw{width:64px;height:36px;border-radius:18px;background:var(--g3);border:1px solid var(--line);position:relative;cursor:pointer}

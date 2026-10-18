@@ -15,7 +15,9 @@ test("064 AC1 AC6 AC9 the sections in order, no app shell, no forms, fictional a
   await expect(page.locator("form")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Book a demo" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(3);
-  await expect(page.getByText("Coming", { exact: true })).toHaveCount(3);
+  const coming = page.getByText("Coming", { exact: true });
+  await expect(coming).toHaveCount(3);
+  for (const c of await coming.all()) await expect(c).toBeVisible();
 });
 
 test("064 AC2 the queue switches roles by keyboard and records who decided", async ({ page }) => {
@@ -31,7 +33,9 @@ test("064 AC2 the queue switches roles by keyboard and records who decided", asy
   await expect(page.getByRole("status")).toHaveText("Accepted by you, Liam Walsh · drafted by Git ingestion");
 });
 
-test("064 AC3 the tour plays when asked, with captions, and never on its own", async ({ page }) => {
+test("064 AC3 the tour plays when asked, with captions, and never on its own", async ({ page, request }) => {
+  for (const f of ["mp4", "webm", "en.vtt"]) expect((await request.get(`/marketing/amax-product.${f}`)).status()).toBe(200);
+  expect((await request.get("/marketing/amax-product-poster.jpg")).status()).toBe(200);
   await page.goto("/welcome");
   const video = page.locator("#tour video");
   await expect(video).not.toHaveAttribute("autoplay");
@@ -42,6 +46,7 @@ test("064 AC3 the tour plays when asked, with captions, and never on its own", a
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 15_000 }).toBeGreaterThan(0.5);
   expect(await video.evaluate((v: HTMLVideoElement) => v.error)).toBeNull();
   await expect(video).toHaveAttribute("controls", "");
+  await expect(video).toBeFocused();
 });
 
 test("064 AC10 the theme switch flips light and dark and remembers it", async ({ page }) => {
