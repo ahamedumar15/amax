@@ -1,5 +1,5 @@
 import { PinButton } from "@amax/ui";
-import { pushPin } from "../pins";
+import { pushPin, repoSyncPin } from "../pins";
 import type { PushRow } from "../server/repo-sync";
 import { AskButton } from "./AskButton";
 
@@ -7,12 +7,11 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "sh
 const result = (p: PushRow) => p.outcome === "refused" ? p.reason ?? "refused"
   : [`${p.created} created`, `${p.updated} updated`, `${p.unchanged} unchanged`, p.skipped.length ? `${p.skipped.length} skipped` : ""].filter(Boolean).join(" · ");
 
-type Props = { projectKey: string; projectId: string; repoUrl: string | null; recent: PushRow[]; canLink: boolean };
+type Props = { projectKey: string; projectId: string; repoUrl: string | null; last: PushRow | null; recent: PushRow[]; canLink: boolean };
 
 // 062 AC-10: refused pushes first, since they need someone to act; linking happens in chat.
-export function RepoSyncCard({ projectKey, projectId, repoUrl, recent, canLink }: Props) {
-  const pin = { label: `${projectKey} repo sync`, tool: "get_repo_sync", args: { projectId } };
-  const last = recent.find((p) => p.outcome === "applied");
+export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, canLink }: Props) {
+  const pin = repoSyncPin({ id: projectId, key: projectKey });
   const rows = [...recent.filter((p) => p.outcome === "refused"), ...recent.filter((p) => p.outcome === "applied")].slice(0, 8);
   const refused = recent.filter((p) => p.outcome === "refused").length;
   return (

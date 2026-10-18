@@ -41,9 +41,9 @@ same section.
    A push whose normalised `repoUrl` doesn't match the linked repo is refused with "repo not linked to
    <KEY>", and the refusal is audited.
 5. **AC-5** **Who:** the caller must be allowed on that project. A person needs project-scoped
-   `delivery:proposal:sync`, meaning they are on the project team or are its PM. A service principal
-   needs that permission plus the project in its scope. Every write is attributed "Claude for
-   <person>" or to the principal (rule 4).
+   `delivery:proposal:push`, meaning they are on the project team or are its PM. That permission doesn't
+   open 008's unguarded `sync_proposal`. Every write is attributed to the person, or to the credential
+   acting for them (rule 4).
 6. **AC-6** **What:** a push never sets `released`, never moves a proposal out of `released`, and never
    touches proposals from another source or proposals made by hand. Keys stay `<KEY>-<NNN>`. A record
    that breaks a rule is skipped and reported per key; the rest of the batch still applies.
@@ -51,9 +51,10 @@ same section.
    not written. Re-running the same push gives 0 writes and no audit noise. A call is capped at 200
    records and goes through the 035 per-caller rate limit. Each push stores `sha` and `ref` on the
    proposal's `source_ref`.
-8. **AC-8** **Ordering:** a push with an older `sha` for the same `ref` than the one stored for a
-   proposal is skipped as `stale`. The plugin sends commit time with the sha so the server can check
-   this without the repo.
+8. **AC-8** **Ordering:** a proposal last synced from a newer commit, on any branch, is skipped as
+   `stale`. The plugin sends the commit time with the sha so the server can check this without the
+   repo. A commit time in the future is refused. One push is one transaction under the project's row
+   lock, so concurrent pushes serialise and a failed push applies nothing.
 9. **AC-9** The plugin README documents a Claude Desktop routine that runs `/amax:sync-specclaw --apply`
    on a schedule from the developer's machine. With `--apply` and no TTY, the plugin applies only after
    a dry run that has no refusals. If the dry run has refusals, it applies nothing and reports.

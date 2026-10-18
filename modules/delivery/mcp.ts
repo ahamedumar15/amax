@@ -8,7 +8,8 @@ import { getActivity, listActivity } from "./server/activity";
 import { markTaskDone, TaskInput } from "./server/tasks";
 import { COMMIT_TIME_MANAGE, commitTimeSettings, setCommitTimeLogging } from "./server/commit-time";
 import { syncProposal } from "./server/services";
-import { getRepoSync, getSyncPush, linkProjectRepo, PushInput, pushSpecclaw } from "./server/repo-sync";
+import { getRepoSync, getSyncPush, linkProjectRepo } from "./server/repo-sync";
+import { PushInput, pushSpecclaw } from "./server/push";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -79,9 +80,9 @@ export const mcpTools: McpToolDef[] = [
       tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks }) }),
   // 062: the amax plugin's push of a whole repo's specclaw state. Many keyed writes, so never a chat
   // confirm card (service: null); the plugin previews with dryRun and the developer confirms there.
-  tool({ name: "sync_specclaw", description: "Push a repo's specclaw changes to its linked project. dryRun (the default) previews created, updated, unchanged and skipped; dryRun false applies. Refused when the repo isn't the project's linked repo, the commit is older than the last one applied from the same branch, or you're not on the project. Never releases, never creates a project.",
-    scope: "write", permission: "delivery:proposal:sync", input: PushInput, service: null, run: (v, a, s = "mcp") => pushSpecclaw(v, a, s) }),
-  tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_repo_sync", description: "A project's linked repo and its recent specclaw pushes (applied and refused, with who and why), by projectId or project key.",
+  tool({ name: "sync_specclaw", description: "Push a repo's specclaw changes to its linked project. dryRun (the default) previews created, updated, unchanged and skipped; dryRun false applies. Refused when the repo isn't the project's linked repo or you're not on the project. Per proposal it skips Released, a step back a phase, and anything older than the commit it was last synced from. Never creates a project.",
+    scope: "write", permission: "delivery:proposal:push", input: PushInput, service: null, run: (v, a, s = "mcp") => pushSpecclaw(v, a, s) }),
+  tool({ ...read, pin: { id: "projectId", of: pinOf.repoSync }, name: "get_repo_sync", description: "A project's linked repo and its recent specclaw pushes (applied and refused, with who and why), by projectId or project key.",
     input: z.object({ projectId: z.string().uuid().optional(), projectKey: z.string().optional() }), run: (v, a) => getRepoSync(v, a) }),
   tool({ ...read, pin: { id: "pushId", of: pinOf.push }, name: "get_sync_push", description: "One specclaw push to a project by pushId: who, branch and commit, counts, and what was skipped or why it was refused.",
     input: z.object({ pushId: z.string().uuid() }), run: (v, a) => getSyncPush(v, a.pushId) }),

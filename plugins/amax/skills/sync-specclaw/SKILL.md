@@ -6,10 +6,10 @@ argument-hint: "[--apply] [--project KEY]"
 
 # Sync specclaw to amax
 
-amax decides what it accepts. It refuses a push from a repo that isn't the project's linked repo, from
-someone not on the project, or from a commit older than the last one applied from the same branch. It
-skips any change that would be Released or would move back a phase. Report what amax says. Never work
-around a refusal.
+amax decides what it accepts. It refuses a push from a repo that isn't the project's linked repo, or
+from someone not on the project. For each proposal, it skips anything that would be Released, would
+move back a phase, or is older than the commit the proposal was last synced from. Report what amax says.
+Never work around a refusal.
 
 `--apply` means an unattended run, such as a scheduled routine: apply without asking, but only when the
 preview is clean (step 4). `--project KEY` overrides `amax.project` in `.specclaw/config.yaml`.
@@ -41,7 +41,10 @@ preview is clean (step 4). `--project KEY` overrides `amax.project` in `.speccla
 4. **Apply.**
    - **Interactive (no `--apply`):** ask "Apply <n> changes to <projectKey>?". On yes, call
      `sync_specclaw` again with the same fields and `dryRun: false`, then show the applied counts.
-   - **`--apply`:** apply as above only when the preview has no `skipped` lines. If it has any, apply
+   - **`--apply`:** apply as above when every `skipped` line is one of the expected kinds, which say
+     `released comes from Prod deployments`, `would move back from`, or `stale: last synced from a newer
+     commit`. These come back on every run until main or a Prod deployment catches up. If any other
+     skipped line appears, such as an unreadable `state.json` or a key held by another proposal, apply
      nothing and report the preview, so a person looks at it first.
 
 5. Delete `${TMPDIR:-/tmp}/amax-sync.json`.

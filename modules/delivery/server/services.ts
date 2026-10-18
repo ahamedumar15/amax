@@ -189,12 +189,7 @@ export class KeyTakenError extends Error {
   }
 }
 
-export const syncProposal = defineService({
-  scoped: true,
-  name: "delivery.proposal.sync",
-  action: "delivery:proposal:sync",
-  resource: "delivery.proposal",
-  input: z.object({
+export const SyncInput = z.object({
     projectKey: z.string(),
     project: z.object({ name: z.string(), client: z.string() }),
     key: z.string(),
@@ -208,7 +203,15 @@ export const syncProposal = defineService({
     meta: z.record(z.string(), z.unknown()),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
-  }),
+  });
+export type SyncInput = z.infer<typeof SyncInput>;
+
+export const syncProposal = defineService({
+  scoped: true,
+  name: "delivery.proposal.sync",
+  action: "delivery:proposal:sync",
+  resource: "delivery.proposal",
+  input: SyncInput,
   async run(tx, input, ctx) {
     let [project] = await tx.execute(sql`select * from delivery.project where key = ${input.projectKey}`);
     // 062: a person syncs only into a project they're on, and makes one only if they may create projects.
@@ -220,6 +223,12 @@ export const syncProposal = defineService({
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
     scoped(ctx, "delivery:proposal:sync", project.id as string);
+    return upsertSpecProposal(tx, input, ctx, project);
+  },
+});
+
+/** One spec change's proposal row and tasks, in the caller's transaction (syncProposal, and 062's push). */
+export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceContext, project: Record<string, unknown>) {
     // The project row lock serialises this with createProposal's key computation (review round 2).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
@@ -259,8 +268,7 @@ export const syncProposal = defineService({
       after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
-  },
-});
+}
 
 // ---- 042 release management -------------------------------------------------------------------
 

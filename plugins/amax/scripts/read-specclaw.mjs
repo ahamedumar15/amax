@@ -92,6 +92,7 @@ function readSpecclaw(root, overlays = []) {
 }
 
 // plugins/amax/scripts/src/read-specclaw.ts
+var withoutCredentials = (url) => url.replace(/^([a-z+]+:\/\/)[^@/]+@/i, "$1");
 var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 var projectOf = (root, flag) => {
   if (flag) return flag;
@@ -108,7 +109,7 @@ function payload(cwd, flag) {
   const sha = git(root, "rev-parse", "HEAD");
   return {
     projectKey,
-    repoUrl: git(root, "remote", "get-url", "origin"),
+    repoUrl: withoutCredentials(git(root, "remote", "get-url", "origin")),
     ref,
     sha,
     committedAt: git(root, "show", "-s", "--format=%cI", "HEAD"),
@@ -128,5 +129,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 export {
   payload,
   projectOf,
-  readSpecclaw
+  readSpecclaw,
+  withoutCredentials
 };

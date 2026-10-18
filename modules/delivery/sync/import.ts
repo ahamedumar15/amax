@@ -1,17 +1,16 @@
 import { sql } from "drizzle-orm";
-import { withTenant, type Db } from "@amax/db";
+import { withTenant, type Db, type Tx } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
 import { KeyTakenError, syncProposal } from "../server/services";
-import { PHASES, type Phase } from "../contracts";
 import type { SpecRecord } from "./specclaw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
-type Task = SpecRecord["tasks"][number];
+export type Task = SpecRecord["tasks"][number];
 
 // 008: a task a commit closed stays closed, so the repo's open task is merged with the stored one;
 // otherwise every sync would see a "change" it can't make.
-const desired = (projectKey: string, r: SpecRecord, sha: string, stored: Task[] = []) => {
+export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: Task[] = []) => {
   const tasks = r.tasks.map((t) => ({ ...t, done: t.done || stored.some((s) => s.ref === t.ref && s.done) }));
   return {
   key: `${projectKey}-${r.number}`,
@@ -26,38 +25,26 @@ const desired = (projectKey: string, r: SpecRecord, sha: string, stored: Task[] 
 };
 
 // The meta fields that matter for "changed?". The commit sha alone doesn't count as a change, neither
-// as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2).
+// as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2). Nor does
+// the commit time a push records (062).
 const refOf = (s: unknown) => (typeof s === "string" ? s.replace(/@[0-9a-f]{7,40}$/i, "") : s);
-const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, d.tasks, { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
+export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, d.tasks, { ...d.meta, sha: null, committedAt: null, source: refOf(d.meta.source) }]);
+
+/** A project's specclaw proposals as stored, with their tasks, for the "changed?" comparison. */
+export const storedSpecRows = (tx: Tx, projectKey: string) =>
+  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref,
+                   (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
+                 from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+                 where pr.key = ${projectKey} and p.source = 'specclaw'`);
 
 /**
  * One-way import of a repo's specclaw changes into a delivery project, as a caller of sync_proposal's
  * service (008 AC-7): audited as `ctx`, the sync's service principal, and only for changed rows.
  */
-// 062: a push from a developer's machine (sync_specclaw) previews with dryRun, never withdraws (its
-// checkout may lack folders) and never releases: Released comes from Prod deployments.
-export type PushOptions = { dryRun?: boolean; push?: boolean };
-
-// What a push may not do to one record; null when it may go ahead. `held` names keys another source holds.
-function pushRefusal(d: { key: string; phase: Phase }, cur: Record<string, unknown> | undefined, held: Map<string, string>) {
-  if (d.phase === "released" && cur?.phase !== "released") return "released comes from Prod deployments";
-  // A branch that lags main must not undo what main already moved forward.
-  if (cur && cur.phase !== "released" && PHASES.indexOf(d.phase) < PHASES.indexOf(cur.phase as Phase)) return `would move back from ${String(cur.phase)} to ${d.phase}`;
-  return (!cur && held.get(d.key)) || null;
-}
-
-export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string } & PushOptions): Promise<SyncResult> {
-  const existing = await withTenant(db, ctx.tenantId, (tx) =>
-    tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref,
-                     (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
-                   from delivery.proposal p join delivery.project pr on pr.id = p.project_id
-                   where pr.key = ${opts.projectKey} and p.source = 'specclaw'`));
+export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string }): Promise<SyncResult> {
+  const existing = await withTenant(db, ctx.tenantId, (tx) => storedSpecRows(tx, opts.projectKey));
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
-  // A dry run writes nothing, so it names the keys syncProposal would refuse (KeyTakenError) itself.
-  const held = new Map(opts.dryRun ? (await withTenant(db, ctx.tenantId, (tx) => tx.execute(sql`select p.key, p.source from delivery.proposal p
-    join delivery.project pr on pr.id = p.project_id where pr.key = ${opts.projectKey} and (p.source <> 'specclaw' or (p.source is null and p.phase = 'released'))`)))
-    .map((e) => [e.key as string, e.source === null ? "it was released by hand" : `it comes from ${e.source as string}`]) : []);
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
   const project = { name: opts.projectName, client: opts.client };
 
@@ -66,15 +53,13 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? []);
     byKey.delete(d.key);
     if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
-    const refused = opts.push ? pushRefusal(d, cur, held) : null;
-    if (refused) { result.skipped.push(`${d.key}: ${refused}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
       continue;
     }
     try {
-      if (!opts.dryRun) await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
+      await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
     } catch (e) {
       // A released hand-made proposal or another source holds the key: left alone and reported.
       if (!(e instanceof KeyTakenError)) throw e;
@@ -85,7 +70,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     else result.created++;
   }
   // Folders that disappeared are marked withdrawn, never deleted.
-  for (const [key, cur] of opts.push ? [] : byKey) {
+  for (const [key, cur] of byKey) {
     const meta = cur.meta as Record<string, unknown>;
     if (meta.withdrawn) continue;
     await syncProposal(ctx, {

@@ -103,7 +103,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           );
         })}
       </div>
-      {sync && <RepoSyncCard projectKey={project.key} projectId={project.id} repoUrl={sync.repoUrl} recent={sync.recent} canLink={can(viewer, "delivery:project:link", { projectId: project.id })} />}
+      {sync && <RepoSyncCard projectKey={project.key} projectId={project.id} repoUrl={sync.repoUrl} last={sync.lastApplied} recent={sync.recent} canLink={can(viewer, "delivery:project:link", { projectId: project.id })} />}
       <EnvironmentsCard projectKey={project.key} envs={envs} canEdit={can(viewer, "delivery:release:create", { projectId: project.id })} />
     </>
   );

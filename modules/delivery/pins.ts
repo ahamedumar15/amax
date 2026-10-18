@@ -22,6 +22,7 @@ export const deploymentPin = (d: Deployment): PinRef =>
   ({ label: `${d.projectKey} ${d.version} on ${d.environment}, ${day(d.at)}`, tool: "get_deployment", args: { deploymentId: d.id } });
 
 type Push = { id: string; projectKey: string; sha: string; outcome: string; at: string };
+export const repoSyncPin = (p: { id: string; key: string }): PinRef => ({ label: `${p.key} repo sync`, tool: "get_repo_sync", args: { projectId: p.id } });
 export const pushPin = (p: Push): PinRef => ({ label: `${p.projectKey} push ${p.sha.slice(0, 7)} ${p.outcome}, ${day(p.at)}`, tool: "get_sync_push", args: { pushId: p.id } });
 
 // The record a read tool's result is, for its pin: its id, label now and, where the name it was once
@@ -37,4 +38,5 @@ export const pinOf = {
   environment: pinned(environmentPin),
   deployment: pinned(deploymentPin),
   push: pinned(pushPin),
+  repoSync: (r: { project: { id: string; key: string } } | null) => pinned(repoSyncPin)(r?.project),
 };

@@ -13,4 +13,13 @@ describe("062 AC-2 the plugin reads specclaw exactly as amax's importer does", (
     expect(bundle.projectOf(repoRoot)).toBe("AMX");
     expect(bundle.projectOf(repoRoot, "CON")).toBe("CON");
   });
+
+  it.each([
+    ["https://x-access-token:ghp_secret@github.com/example/portal.git", "https://github.com/example/portal.git"],
+    ["https://user@dev.azure.com/org/p/_git/portal", "https://dev.azure.com/org/p/_git/portal"],
+    ["ssh://git:pw@host.example:2222/example/portal", "ssh://host.example:2222/example/portal"],
+    ["git@github.com:example/portal.git", "git@github.com:example/portal.git"],
+  ])("AC-2 a remote's credentials never leave the machine: %s", (remote, sent) => {
+    expect(bundle.withoutCredentials(remote)).toBe(sent);
+  });
 });

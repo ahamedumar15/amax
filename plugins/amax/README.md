@@ -41,11 +41,14 @@ confirm. `.specclaw` must have no uncommitted changes, so the commit sent descri
 
 What amax accepts:
 
-- **Who:** you're on the project (Engineer) or manage it (PM). Every write is recorded as "Claude for <you>".
+- **Who:** you're on the project (Engineer) or manage it (PM). Every write is recorded under your name.
 - **Where:** only the project's linked repo. An unknown project is refused: amax never creates one from a push.
 - **What:** never Released, which comes from Prod deployments. Never a step back to an earlier phase.
-  Never a proposal made by hand or from another source.
-- **When:** never a commit older than the last one applied from the same branch.
+  Never a proposal made by hand or from another source. A branch that lacks main's PR link or verdict
+  doesn't clear them.
+- **When:** never a proposal from a commit older than the one it was last synced from, on any branch.
+  A commit time in the future is refused. Pushes to one project run one at a time, and each push
+  applies all of its changes or none of them.
 - **How much:** at most 200 changes per call, inside amax's per-caller rate limit. A push with nothing
   new writes nothing.
 
@@ -64,8 +67,11 @@ a cloud routine.
    /amax:sync-specclaw --apply
    ```
 
-With `--apply`, the skill applies only a clean preview. If amax would skip anything, the run applies
-nothing and reports the preview in the task's history for you to review.
+With `--apply`, the skill applies the preview when the only skips are expected ones: Released changes
+waiting for a Prod deployment, or a branch behind main. Any other skip stops the run, and the preview
+stays in the task's history for you to review.
+
+The plugin never sends credentials from your `origin` URL.
 
 ## Develop
 

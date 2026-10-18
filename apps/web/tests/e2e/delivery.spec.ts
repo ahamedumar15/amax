@@ -107,7 +107,7 @@ test("062 AC-10 the Repo sync card leads with refused pushes, pins every row, an
   const card = page.locator(".card", { has: page.getByRole("heading", { name: "Repo sync" }) });
   await expect(card).toContainText("From github.com/example/contoso-portal");
   await expect(card).toContainText("2 recent pushes were refused.");
-  await expect(card).toContainText("by Claude for Kasun Dias: 0 created · 3 updated · 14 unchanged");
+  await expect(card).toContainText("by Kasun Dias: 0 created · 3 updated · 14 unchanged");
   const rows = card.locator("tbody tr");
   await expect(rows).toHaveCount(3);
   await expect(rows.nth(0)).toContainText("Refused");

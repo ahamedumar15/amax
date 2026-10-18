@@ -9,6 +9,10 @@ import { readSpecclaw } from "../../../../modules/delivery/sync/specclaw";
 
 export { readSpecclaw };
 
+// A remote URL can carry a token (https://x-access-token:ghp_…@github.com/…); amax never needs it,
+// and every MCP call's arguments are traced, so it is dropped before anything is sent.
+export const withoutCredentials = (url: string) => url.replace(/^([a-z+]+:\/\/)[^@/]+@/i, "$1");
+
 const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
 /** `amax:\n  project: AMX` in .specclaw/config.yaml, unless --project names it. */
@@ -28,7 +32,7 @@ export function payload(cwd: string, flag?: string) {
   const ref = git(root, "rev-parse", "--abbrev-ref", "HEAD");
   const sha = git(root, "rev-parse", "HEAD");
   return {
-    projectKey, repoUrl: git(root, "remote", "get-url", "origin"), ref, sha,
+    projectKey, repoUrl: withoutCredentials(git(root, "remote", "get-url", "origin")), ref, sha,
     committedAt: git(root, "show", "-s", "--format=%cI", "HEAD"),
     records: readSpecclaw({ dir: root, ref: `${ref}@${sha}` }),
   };

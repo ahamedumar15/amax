@@ -24,4 +24,5 @@ create table delivery.sync_push (
 );
 create index sync_push_recent on delivery.sync_push (tenant_id, project_id, at desc);
 select core.enable_tenant_rls('delivery.sync_push');
-grant select, insert, delete on delivery.sync_push to amax_app;
+-- update: erasure anonymises who pushed (retention rule in module.ts).
+grant select, insert, update, delete on delivery.sync_push to amax_app;

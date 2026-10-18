@@ -11,7 +11,9 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { ctxFor } from "../server/context";
-import { getRepoSync, linkProjectRepo, normaliseRepo, pushSpecclaw } from "../server/repo-sync";
+import { syncProposal } from "../server/services";
+import { getRepoSync, linkProjectRepo, normaliseRepo } from "../server/repo-sync";
+import { pushSpecclaw } from "../server/push";
 import { readSpecclaw } from "../sync/specclaw";
 
 const T = lumen.tenant.id;
@@ -37,7 +39,7 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
   const audits = () => count(sql`select count(*)::int as n from core.audit_event`);
   const records = readSpecclaw(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" }, "102-import": {}, "103-old": { archived: true } }));
   const push = (o: Partial<Parameters<typeof pushSpecclaw>[1]> = {}) =>
-    pushSpecclaw(nimal, { projectKey: "FLT", repoUrl: REPO, ref: "main", sha: "a1b2c3d", committedAt: "2026-10-18T09:00:00Z", records, ...o });
+    pushSpecclaw(nimal, { projectKey: "FLT", repoUrl: REPO, ref: "main", sha: "a1b2c3d", committedAt: "2026-10-08T09:00:00Z", records, ...o });
 
   beforeAll(async () => {
     t = await migratedDatabase();
@@ -62,36 +64,52 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
     expect((await getRepoSync(nimal, { projectKey: "FLT" }))!.recent.map((p) => p.outcome)).toEqual(["refused", "refused"]);
   });
 
-  it("AC-3/AC-5 refuses an unknown project and a project the person isn't on", async () => {
+  it("AC-3/AC-5 refuses an unknown project and a project the person isn't on; the push grant doesn't open sync_proposal", async () => {
     await expect(push({ projectKey: "NOPE" })).rejects.toThrow(/no project NOPE/);
     await expect(push({ projectKey: "CON" })).rejects.toThrow(/forbidden/);
+    // sync_proposal has none of the push's guards, so a PM's push grant must not reach it (review round 1).
+    await expect(syncProposal(ctxFor(nimal), { projectKey: "FLT", project: { name: "x", client: "x" }, key: "FLT-901", title: "x", phase: "released", tasksDone: 0, tasksTotal: 0,
+      source: "specclaw", sourceRef: "901-x", releasedAt: null, meta: {} })).rejects.toThrow(/forbidden/);
   });
 
-  it("AC-2/AC-6 a dry run writes nothing; applying never releases", async () => {
+  it("AC-2/AC-6/AC-7 a dry run writes nothing; an apply never releases; re-pushing the same state writes and audits nothing", async () => {
     const before = await audits();
     const preview = await push();
     expect(preview).toMatchObject({ outcome: "preview", created: 2, updated: 0, skipped: ["FLT-103: released comes from Prod deployments"] });
     expect(await audits()).toBe(before);
     expect(await push({ dryRun: false })).toMatchObject({ outcome: "applied", created: 2, skipped: preview.skipped });
     expect(await count(sql`select count(*)::int as n from delivery.proposal where key = 'FLT-103'`)).toBe(0);
-    expect((await getRepoSync(nimal, { projectKey: "FLT" }))!.lastApplied).toMatchObject({ by: expect.stringMatching(/^Claude for Nimal/), created: 2 });
+    expect((await getRepoSync(nimal, { projectKey: "FLT" }))!.lastApplied).toMatchObject({ by: "Nimal Silva", created: 2 });
+    const settled = await audits(), rows = await count(sql`select count(*)::int as n from delivery.sync_push`);
+    // The archived change is skipped every time; that alone isn't a write (review round 1).
+    expect(await push({ sha: "b2c3d4e", committedAt: "2026-10-08T10:00:00Z", dryRun: false })).toMatchObject({ outcome: "applied", created: 0, updated: 0, unchanged: 2, skipped: preview.skipped });
+    expect([await audits(), await count(sql`select count(*)::int as n from delivery.sync_push`)]).toEqual([settled, rows]);
+    await expect(push({ records: Array(201).fill(records[0]) })).rejects.toThrow(/200/);
   });
 
-  it("AC-7 re-pushing the same state writes and audits nothing; over 200 records is refused", async () => {
-    const r = readSpecclaw(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" }, "102-import": {} }));
-    const before = await audits();
-    expect(await push({ records: r, sha: "b2c3d4e", committedAt: "2026-10-18T10:00:00Z", dryRun: false })).toMatchObject({ outcome: "applied", created: 0, updated: 0, unchanged: 2 });
-    expect(await audits()).toBe(before);
-    await expect(push({ records: Array(201).fill(r[0]) })).rejects.toThrow(/200/);
+  it.each([
+    ["an older commit, from any branch", { ref: "specclaw/101-export", sha: "01dc0de", committedAt: "2026-10-07T09:00:00Z", repo: { "101-export": { tasks: "- [x] `T1` — one\n- [x] `T2` — two" } } }, /^FLT-101: stale: last synced from a newer commit/],
+    ["a lagging branch's earlier phase", { ref: "specclaw/x", sha: "c0ffee1", committedAt: "2026-10-08T11:00:00Z", repo: { "101-export": {} } }, /^FLT-101: would move back from building to planned$/],
+    ["an archived change on a branch", { ref: "specclaw/y", sha: "c0ffee2", committedAt: "2026-10-08T11:00:00Z", repo: { "102-import": { archived: true } } }, /^FLT-102: released comes from Prod deployments$/],
+  ])("AC-6/AC-8 a push skips %s and writes nothing for it", async (_name, o, why) => {
+    const { repo, ...rest } = o;
+    const r = await push({ ...rest, records: readSpecclaw(fakeRepo(repo)), dryRun: false });
+    expect(r).toMatchObject({ created: 0, updated: 0 });
+    expect(r.skipped).toEqual([expect.stringMatching(why)]);
   });
 
-  it("AC-6 a push never moves a proposal back to an earlier phase", async () => {
-    const behind = readSpecclaw(fakeRepo({ "101-export": {} }));
-    expect(await push({ records: behind })).toMatchObject({ skipped: ["FLT-101: would move back from building to planned"] });
+  it("AC-8 refuses a commit time in the future, and two concurrent pushes keep the newer one", async () => {
+    await expect(push({ committedAt: new Date(Date.now() + 3_600_000).toISOString() })).rejects.toThrow(/future/);
+    const at = (h: number, done: boolean) => ({ sha: `abc${h}def`, committedAt: `2026-10-08T${h}:00:00Z`, dryRun: false,
+      records: readSpecclaw(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [x] `T2` — two" }, "102-import": { tasks: `- [${done ? "x" : " "}] \`T1\` — one` } })) });
+    await Promise.all([push(at(13, false)), push(at(14, true))]);
+    const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select meta->>'committedAt' as at, tasks_done from delivery.proposal where key = 'FLT-102'`));
+    expect(row).toEqual({ at: "2026-10-08T14:00:00Z", tasks_done: 1 });
   });
 
-  it("AC-8 a commit older than the last one applied from the same branch is stale", async () => {
-    expect(await push({ sha: "01dc0de", committedAt: "2026-10-17T09:00:00Z", dryRun: false })).toMatchObject({ outcome: "refused", reason: expect.stringMatching(/^stale/) });
-    expect(await push({ ref: "specclaw/101-export", sha: "01dc0de", committedAt: "2026-10-17T09:00:00Z" })).toMatchObject({ outcome: "preview" });
+  it("AC-11 erasure can anonymise who pushed (the app role may update sync_push)", async () => {
+    await withTenant(app, T, (tx) => tx.execute(sql`update delivery.sync_push set for_user_id = null where false`));
+    const [g] = await withTenant(app, T, (tx) => tx.execute(sql`select has_table_privilege('delivery.sync_push', 'update') as ok`));
+    expect(g.ok).toBe(true);
   });
 });
