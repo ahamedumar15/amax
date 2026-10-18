@@ -38,7 +38,7 @@ fictional deductions, so the engine and screen can be shown end to end.
 - [x] `T4` — The payroll agent explains every line that changed since last period as a 006 suggestion (Accept or Query). The run can't be approved while one is open or queried. The bank file is an irreversible 006 kind needing two approvers (AC-1, AC-2)
   Files: modules/payroll/suggestions.ts, modules/payroll/server/variance.ts, modules/payroll/tests/variance.test.ts
   Depends: T3
-- [ ] `T5` — Pay visibility (002): pay values go only to Payroll and Admin, and to an employee for their own payslip. Finance and everyone else get 404 or totals only, across screens, MCP and chat redaction (`sensitive: pay`) (AC-3)
+- [x] `T5` — Pay visibility (002): pay values go only to Payroll and Admin, and to an employee for their own payslip. Finance and everyone else get 404 or totals only, across screens, MCP and chat redaction (`sensitive: pay`) (AC-3)
   Files: modules/payroll/server/read.ts, modules/payroll/tests/visibility.test.ts
   Depends: T2
 - [ ] `T6` — Module standard: README, manifest, CODEOWNERS line, retention with statutory periods, can be switched off, and degrades without time (AC-5)

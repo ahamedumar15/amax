@@ -34,7 +34,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...write("payroll:run:approve-hr"), name: "approve_payroll_run_hr", description: "HR approves a checked run. Refused while any change since last period is open, queried or dismissed.",
     input: z.object({ runId }), service: approveRunHr, run: (v, a, s = "mcp") => approveRunHr(ctxFor(v, s), a) }),
   tool({ ...write("payroll:run:approve-finance"), name: "approve_payroll_run_finance", description: "Finance approves an HR-approved run's totals by entity and cost centre. Then the payroll agent proposes the bank file for two approvers.",
-    input: z.object({ runId }), service: approveRunFinance, run: (v, a, s = "mcp") => approveRunFinance(ctxFor(v, s), a) }),
+    input: z.object({ runId }), sensitive: PAY_FIELDS, service: approveRunFinance, run: (v, a, s = "mcp") => approveRunFinance(ctxFor(v, s), a) }),
   tool({ ...write("payroll:payslips:send"), name: "send_payslips", description: "Send a run's payslips once its bank file is made: each person can then read their own.",
     input: z.object({ runId }), service: sendPayslips, run: (v, a, s = "mcp") => sendPayslips(ctxFor(v, s), a) }),
 ];
