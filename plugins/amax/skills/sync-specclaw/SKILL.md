@@ -7,9 +7,10 @@ argument-hint: "[--apply] [--project KEY]"
 # Sync specclaw to amax
 
 amax decides what it accepts. It refuses a push from a repo that isn't the project's linked repo, or
-from someone not on the project. For each proposal, it skips anything that would be Released, would
-move back a phase, or is older than the commit the proposal was last synced from. Report what amax says.
-Never work around a refusal.
+from someone not on the project. A push from the default branch covers every change. A push from any
+other branch covers only its own change (`specclaw/<NNN-slug>`). For each proposal, amax skips anything
+that would be Released, would move back a phase, or is older than the commit the proposal was last
+pushed from. Report what amax says. Never work around a refusal.
 
 `--apply` means an unattended run, such as a scheduled routine: apply without asking, but only when the
 preview is clean (step 4). `--project KEY` overrides `amax.project` in `.specclaw/config.yaml`.
@@ -21,7 +22,8 @@ preview is clean (step 4). `--project KEY` overrides `amax.project` in `.speccla
    ```
 
    If it fails, show its one-line error and stop. The usual cause is uncommitted `.specclaw` edits or
-   no project key. The file holds `projectKey`, `repoUrl`, `ref`, `sha`, `committedAt` and `records`.
+   no project key. The file holds `projectKey`, `repoUrl` (the normalised name, never credentials), `ref`,
+   `defaultRef`, `sha`, `committedAt` and `records`.
 
 2. **Preview.** Call the amax MCP tool `sync_specclaw` with every field from the file and
    `dryRun: true`. If `records` has more than 200 entries, send it in batches of 200, in order.
@@ -36,15 +38,15 @@ preview is clean (step 4). `--project KEY` overrides `amax.project` in `.speccla
 
    If `outcome` is `refused`, show the `reason` and stop. A missing or wrong repo link is fixed by the
    project's PM in amax ("link <KEY> to <repoUrl>"), not here.
-   If `created` and `updated` are both 0, say "amax is up to date" and stop.
+   If `created` and `updated` are both 0 and `needsReview` is false, say "amax is up to date" and stop.
 
 4. **Apply.**
    - **Interactive (no `--apply`):** ask "Apply <n> changes to <projectKey>?". On yes, call
-     `sync_specclaw` again with the same fields and `dryRun: false`, then show the applied counts.
-   - **`--apply`:** apply as above when every `skipped` line is one of the expected kinds, which say
-     `released comes from Prod deployments`, `would move back from`, or `stale: last synced from a newer
-     commit`. These come back on every run until main or a Prod deployment catches up. If any other
-     skipped line appears, such as an unreadable `state.json` or a key held by another proposal, apply
-     nothing and report the preview, so a person looks at it first.
+     `sync_specclaw` again with the same fields and `dryRun: false`, then show the counts. The
+     outcome is `applied`, or `unchanged` when there was nothing new.
+   - **`--apply`:** apply as above when `needsReview` is false. amax sets it true only for skips a
+     person should look at, such as an unreadable `state.json` or a key held by another proposal. It is
+     false for the standing ones that come back on every run until main or a Prod deployment catches up.
+     If it is true, apply nothing and report the preview.
 
 5. Delete `${TMPDIR:-/tmp}/amax-sync.json`.

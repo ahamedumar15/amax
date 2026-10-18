@@ -3,28 +3,25 @@ import { z } from "zod";
 import { withTenant, type Tx } from "@amax/db";
 import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { defineService, ForbiddenError, getRuntime } from "@amax/core/server";
+import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { byLine, whoJoins } from "./activity";
 
 // 062: the one repo a project's specclaw pushes are accepted from (push.ts), and the project's
 // Repo sync card: the linked repo and its recent pushes.
 
-/** "https://user@GitHub.com/Example/Portal.git" and "git@github.com:example/portal" are both "github.com/example/portal". */
-export const normaliseRepo = (url: string) =>
-  url.trim().toLowerCase().replace(/^[a-z+]+:\/\//, "").replace(/^[^@/]+@/, "").replace(/^([^/:]+):(?!\d+\/)/, "$1/").replace(/^([^/:]+):\d+\//, "$1/").replace(/\.git$/, "").replace(/\/+$/, "");
 
 export const linkProjectRepo = defineService({
   scoped: true,
   name: "delivery.project.repo",
   action: "delivery:project:link",
   resource: "delivery.project",
-  input: z.object({ projectKey: z.string(), repoUrl: z.string().min(3).max(300).nullable() }),
+  input: z.object({ projectKey: z.string(), repoUrl: RepoUrl.nullable() }),
   async run(tx, input, ctx) {
     const [p] = await tx.execute(sql`select id, repo_url from delivery.project where key = ${input.projectKey}`);
     if (!p) throw new Error(`no project ${input.projectKey}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:project:link", { projectId: p.id as string });
     const repoUrl = input.repoUrl ? normaliseRepo(input.repoUrl) : null;
-    if (repoUrl !== null && !/^[a-z0-9.-]+\/[^\s]+$/.test(repoUrl)) throw new Error(`${input.repoUrl} isn't a repo URL`);
     await tx.execute(sql`update delivery.project set repo_url = ${repoUrl} where id = ${p.id}`);
     return { result: { projectKey: input.projectKey, repoUrl }, resourceId: p.id as string, before: { repoUrl: p.repo_url }, after: { repoUrl } };
   },

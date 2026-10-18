@@ -2,6 +2,9 @@
 -- every push the amax plugin made, applied or refused, for the project's Repo sync card. Who pushed
 -- stays an id, as in delivery.activity.
 alter table delivery.project add column repo_url text check (repo_url is null or length(repo_url) between 3 and 300);
+-- The commit time a proposal was last pushed from, kept apart from meta (which every sync replaces), so
+-- a push from an older commit is refused whatever synced in between.
+alter table delivery.proposal add column synced_commit_at timestamptz;
 
 create table delivery.sync_push (
   id uuid primary key default gen_random_uuid(),

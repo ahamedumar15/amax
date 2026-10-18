@@ -25,15 +25,14 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
 };
 
 // The meta fields that matter for "changed?". The commit sha alone doesn't count as a change, neither
-// as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2). Nor does
-// the commit time a push records (062).
+// as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2).
 const refOf = (s: unknown) => (typeof s === "string" ? s.replace(/@[0-9a-f]{7,40}$/i, "") : s);
 export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, d.tasks, { ...d.meta, sha: null, committedAt: null, source: refOf(d.meta.source) }]);
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, d.tasks, { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
 
 /** A project's specclaw proposals as stored, with their tasks, for the "changed?" comparison. */
 export const storedSpecRows = (tx: Tx, projectKey: string) =>
-  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref,
+  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at,
                    (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
                  from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                  where pr.key = ${projectKey} and p.source = 'specclaw'`);

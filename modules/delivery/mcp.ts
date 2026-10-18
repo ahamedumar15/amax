@@ -10,6 +10,7 @@ import { COMMIT_TIME_MANAGE, commitTimeSettings, setCommitTimeLogging } from "./
 import { syncProposal } from "./server/services";
 import { getRepoSync, getSyncPush, linkProjectRepo } from "./server/repo-sync";
 import { PushInput, pushSpecclaw } from "./server/push";
+import { RepoUrl } from "./sync/repo-url";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -87,7 +88,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: { id: "pushId", of: pinOf.push }, name: "get_sync_push", description: "One specclaw push to a project by pushId: who, branch and commit, counts, and what was skipped or why it was refused.",
     input: z.object({ pushId: z.string().uuid() }), run: (v, a) => getSyncPush(v, a.pushId) }),
   tool({ name: "link_project_repo", description: "Link the one repo a project's specclaw proposals sync from, e.g. https://github.com/example/portal. Pushes from any other repo are refused. PM or Admin.", scope: "write",
-    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: z.string().min(3).max(300) }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: RepoUrl }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
   tool({ name: "unlink_project_repo", description: "Unlink a project's repo, so no specclaw push is accepted until one is linked again. PM or Admin.", scope: "write", destructive: true,
     permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null }) }),
   tool({ name: "mark_task_done", description: "Mark one task of a proposal done by its id, e.g. CON-014 T3, optionally naming the commit that finished it.", scope: "write", permission: "delivery:task:done",

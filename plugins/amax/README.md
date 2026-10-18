@@ -43,14 +43,15 @@ What amax accepts:
 
 - **Who:** you're on the project (Engineer) or manage it (PM). Every write is recorded under your name.
 - **Where:** only the project's linked repo. An unknown project is refused: amax never creates one from a push.
-- **What:** never Released, which comes from Prod deployments. Never a step back to an earlier phase.
-  Never a proposal made by hand or from another source. A branch that lacks main's PR link or verdict
-  doesn't clear them.
-- **When:** never a proposal from a commit older than the one it was last synced from, on any branch.
-  A commit time in the future is refused. Pushes to one project run one at a time, and each push
-  applies all of its changes or none of them.
+- **What:** a push from the default branch covers every change. A push from any other branch covers
+  only its own change (`specclaw/<NNN-slug>`), since it may have been cut from an older main. Never
+  Released, which comes from Prod deployments. Never a step back to an earlier phase. Never a proposal
+  made by hand or from another source.
+- **When:** never a proposal from a commit older than the one it was last pushed from. A commit time in
+  the future is refused. Pushes to one project run one at a time, and each push applies all of its
+  changes or none of them.
 - **How much:** at most 200 changes per call, inside amax's per-caller rate limit. A push with nothing
-  new writes nothing.
+  new returns `unchanged` and records nothing.
 
 Each project's page in amax shows a **Repo sync** card: the linked repo, the last sync, and refused pushes with their reasons.
 
@@ -67,11 +68,12 @@ a cloud routine.
    /amax:sync-specclaw --apply
    ```
 
-With `--apply`, the skill applies the preview when the only skips are expected ones: Released changes
-waiting for a Prod deployment, or a branch behind main. Any other skip stops the run, and the preview
-stays in the task's history for you to review.
+With `--apply`, the skill applies the preview unless amax flags it with `needsReview`. Standing skips
+don't set the flag: Released changes waiting for a Prod deployment, or a branch behind main. Anything
+else sets it, so the run stops and the preview stays in the task's history for you to review.
 
-The plugin never sends credentials from your `origin` URL.
+The plugin sends only the repo's normalised name (`github.com/example/portal`), never credentials from
+your `origin` URL. amax refuses a repo URL that contains a user name or token.
 
 ## Develop
 

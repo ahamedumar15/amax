@@ -1,21 +1,23 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { setTenant, type Tx } from "@amax/db";
+import { setTenant, textArray, type Tx } from "@amax/db";
 import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, defineService, ForbiddenError, getRuntime, type Emitted, type ServiceContext, type Source } from "@amax/core/server";
 import { PHASES, type Phase } from "../contracts";
 import { desired, fingerprint, storedSpecRows, type Task } from "../sync/import";
+import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { forUserOf } from "./activity";
 import { ctxFor } from "./context";
-import { normaliseRepo } from "./repo-sync";
 import { KeyTakenError, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
-// unguarded delivery:proposal:sync), and per proposal nothing Released, no step back a phase and
-// nothing older than the commit it was last synced from. One push is one transaction under the
-// project's row lock, so concurrent pushes serialise and a failure leaves nothing half applied.
+// unguarded delivery:proposal:sync), and only the default branch updates every change; another branch
+// updates only its own change (specclaw/<NNN-slug>), since it may have been cut from an older main.
+// Per proposal: nothing Released, no step back a phase, nothing older than the commit it was last
+// pushed from. One push is one transaction under the project's row lock, so concurrent pushes and a
+// relink serialise with it, and a failure leaves nothing half applied.
 
 const text = (n: number) => z.string().max(n);
 const SpecRecordInput = z.object({
@@ -30,46 +32,60 @@ export const MAX_PUSH = 200;
 // A commit time from a skewed clock or a hand-written payload must not make every later push "stale".
 const SKEW_MS = 5 * 60_000;
 export const PushInput = z.object({
-  projectKey: z.string(), repoUrl: z.string().min(3).max(300), ref: z.string().min(1).max(200), sha: z.string().regex(/^[0-9a-f]{7,40}$/i),
+  projectKey: z.string(), repoUrl: RepoUrl, ref: z.string().min(1).max(200), defaultRef: z.string().min(1).max(200).default("main"), sha: z.string().regex(/^[0-9a-f]{7,40}$/i),
   committedAt: z.string().datetime({ offset: true }).refine((t) => Date.parse(t) <= Date.now() + SKEW_MS, "committedAt is in the future"),
   dryRun: z.boolean().default(true), records: z.array(SpecRecordInput).max(MAX_PUSH),
 });
-export type PushResult = { outcome: "preview" | "applied" | "refused"; projectKey: string; reason: string | null; created: number; updated: number; unchanged: number; skipped: string[] };
 
-const Plan = PushInput.omit({ projectKey: true, dryRun: true }).extend({ projectId: z.string().uuid(), projectKey: z.string() });
-type Plan = z.infer<typeof Plan>;
 type Counts = { created: number; updated: number; unchanged: number; skipped: string[] };
+/** `needsReview`: a skip a person should look at (not one of the standing ones below); --apply then holds off. */
+export type PushResult = Counts & { outcome: "preview" | "applied" | "unchanged" | "refused"; projectKey: string; reason: string | null; needsReview: boolean };
+
+// Skips that come back on every push until main or a Prod deployment catches up: expected, not a problem.
+const STANDING = [/: released comes from Prod deployments$/, /: would move back from \w+ to \w+$/, /: stale: last pushed from a newer commit/];
+const needsReview = (skipped: string[]) => skipped.some((s) => !STANDING.some((re) => re.test(s)));
+
+const Plan = PushInput.omit({ dryRun: true }).extend({ projectId: z.string().uuid() });
+type Plan = z.infer<typeof Plan>;
 type Stored = Record<string, unknown>;
+
+class RepoRefused extends Error {}
 
 /** What a push may not do to one proposal; null when it may go ahead. */
 function refusal(d: { phase: Phase }, cur: Stored | undefined, committedAt: string) {
   if (d.phase === "released" && cur?.phase !== "released") return "released comes from Prod deployments";
   if (!cur) return null;
-  const at = (cur.meta as Stored | null)?.committedAt;
-  if (typeof at === "string" && Date.parse(at) > Date.parse(committedAt)) return `stale: last synced from a newer commit (${at})`;
+  const mark = cur.synced_commit_at ? new Date(cur.synced_commit_at as string) : null;
+  if (mark && mark > new Date(committedAt)) return `stale: last pushed from a newer commit (${mark.toISOString()})`;
   if (cur.phase !== "released" && PHASES.indexOf(d.phase) < PHASES.indexOf(cur.phase as Phase)) return `would move back from ${String(cur.phase)} to ${d.phase}`;
   return null;
 }
 
-const unchanged = (cur: Stored, d: Parameters<typeof fingerprint>[0] & { phase: Phase }) =>
+const same = (cur: Stored, d: Parameters<typeof fingerprint>[0] & { phase: Phase }) =>
   fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Stored }) === fingerprint(d);
 
-/** The push's writes in `tx`; the caller commits them (apply) or rolls them back (preview). */
+/** The push in `tx`: its writes, and the stale mark moved for every proposal it covered. */
 async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   const [project] = await tx.execute(sql`select * from delivery.project where id = ${p.projectId} for update`);
+  // Checked on the locked row, so a relink can't slip between this check and the writes.
+  if (!project.repo_url) throw new RepoRefused(`${p.projectKey} has no linked repo: ask its PM to link ${p.repoUrl}`);
+  if (project.repo_url !== p.repoUrl) throw new RepoRefused(`repo not linked to ${p.projectKey} (${p.repoUrl})`);
+  const onDefault = p.ref === p.defaultRef;
+  const own = p.ref.split("/").at(-1);
   const byKey = new Map((await storedSpecRows(tx, p.projectKey)).map((e) => [e.key as string, e as Stored]));
   const counts: Counts = { created: 0, updated: 0, unchanged: 0, skipped: [] };
   const events: Emitted[] = [];
-  for (const r of p.records) {
+  const covered: string[] = [];
+  for (const r of p.records.filter((x) => onDefault || x.dir === own)) {
     const key = `${p.projectKey}-${r.number}`;
     const cur = byKey.get(key);
     const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
-    // A branch without main's PR link or verdict doesn't clear them.
-    const d = { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null, committedAt: p.committedAt } };
+    // A change's branch may not have its PR link or verdict yet; main's word on them stands.
+    const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
     const why = r.unreadable ? "state.json unreadable" : refusal(d, cur, p.committedAt);
     if (why) { counts.skipped.push(`${key}: ${why}`); continue; }
-    if (cur && unchanged(cur, d)) { counts.unchanged++; continue; }
+    if (cur && same(cur, d)) { counts.unchanged++; covered.push(key); continue; }
     try {
       const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, source: "specclaw", sourceRef: r.dir, ...d }, ctx, project);
       await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });
@@ -79,9 +95,12 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
       counts.skipped.push(`${key}: ${e.message}`);
       continue;
     }
+    covered.push(key);
     if (cur) counts.updated++;
     else counts.created++;
   }
+  await tx.execute(sql`update delivery.proposal set synced_commit_at = greatest(coalesce(synced_commit_at, ${p.committedAt}::timestamptz), ${p.committedAt}::timestamptz)
+    where project_id = ${p.projectId} and key = any(${textArray(covered)})`);
   return { counts, events };
 }
 
@@ -123,34 +142,43 @@ const refused = defineService({
   },
 });
 
-class Preview extends Error {
-  constructor(readonly counts: Counts) { super("preview"); }
+class Undo extends Error {
+  constructor(readonly counts: Counts) { super("rolled back"); }
 }
 
-// The same writes as an apply, rolled back: the preview can't disagree with what an apply would do.
-const preview = (p: Plan, ctx: ServiceContext) =>
+/**
+ * The push in its own transaction, kept only when `keep` says so; otherwise rolled back and its counts
+ * returned with `kept: false`. The preview keeps nothing; a push with nothing new keeps only the marks.
+ */
+const attempt = (ctx: ServiceContext, p: Plan, keep: (c: Counts) => boolean) =>
   getRuntime().db.transaction(async (tx) => {
     await setTenant(tx, ctx.tenantId);
-    throw new Preview((await applyPush(tx, p, ctx)).counts);
-  }).then(() => { throw new Error("unreachable"); }, (e: unknown) => { if (e instanceof Preview) return e.counts; throw e; });
+    const { counts } = await applyPush(tx, p, ctx);
+    if (!keep(counts)) throw new Undo(counts);
+    return { counts, kept: true };
+  }).catch((e: unknown) => { if (e instanceof Undo) return { counts: e.counts, kept: false }; throw e; });
 
 /** sync_specclaw: preview (dryRun, the default) or apply a push, after amax's checks. */
 export async function pushSpecclaw(viewer: Viewer, raw: z.input<typeof PushInput>, source: Source = "mcp"): Promise<PushResult> {
   const input = PushInput.parse(raw);
-  const [p] = await getRuntime().db.transaction(async (tx) => { await setTenant(tx, viewer.tenantId); return tx.execute(sql`select id, repo_url from delivery.project where key = ${input.projectKey}`); });
+  const [p] = await getRuntime().db.transaction(async (tx) => { await setTenant(tx, viewer.tenantId); return tx.execute(sql`select id from delivery.project where key = ${input.projectKey}`); });
   if (!p) throw new Error(`no project ${input.projectKey}: a PM creates it and links its repo first`);
   if (!can(viewer, "delivery:proposal:push", { projectId: p.id as string })) throw new ForbiddenError("delivery:proposal:push", `project ${input.projectKey}`);
   const ctx = ctxFor(viewer, source);
-  const plan: Plan = { projectId: p.id as string, projectKey: input.projectKey, repoUrl: normaliseRepo(input.repoUrl), ref: input.ref, sha: input.sha, committedAt: input.committedAt, records: input.records };
-  const reason = !p.repo_url ? `${input.projectKey} has no linked repo: ask its PM to link ${plan.repoUrl}` : p.repo_url !== plan.repoUrl ? `repo not linked to ${input.projectKey} (${plan.repoUrl})` : null;
-  const none = { created: 0, updated: 0, unchanged: 0, skipped: [] as string[] };
-  if (reason) {
+  const { dryRun, ...rest } = input;
+  const plan: Plan = { ...rest, projectId: p.id as string, repoUrl: normaliseRepo(input.repoUrl) };
+  const result = (outcome: PushResult["outcome"], c: Counts, reason: string | null = null): PushResult => ({ outcome, projectKey: input.projectKey, reason, needsReview: needsReview(c.skipped), ...c });
+  // Nothing to change and nothing for a person to see: keep only the marks, with no row and no audit.
+  const quiet = (c: Counts) => !dryRun && !c.created && !c.updated && !needsReview(c.skipped);
+  try {
+    const first = await attempt(ctx, plan, quiet);
+    if (dryRun) return result("preview", first.counts);
+    if (first.kept) return result("unchanged", first.counts);
+    return result("applied", await applied(ctx, plan));
+  } catch (e) {
+    if (!(e instanceof RepoRefused)) throw e;
     const { records: _, ...where } = plan;
-    if (!input.dryRun) await refused(ctx, { ...where, reason });
-    return { outcome: "refused", projectKey: input.projectKey, reason, ...none };
+    if (!dryRun) await refused(ctx, { ...where, reason: e.message });
+    return result("refused", { created: 0, updated: 0, unchanged: 0, skipped: [] }, e.message);
   }
-  const counts = await preview(plan, ctx);
-  // Nothing to write: no transaction, row or audit, so a scheduled push that finds nothing new leaves no trace.
-  if (input.dryRun || !(counts.created || counts.updated)) return { outcome: input.dryRun ? "preview" : "applied", projectKey: input.projectKey, reason: null, ...counts };
-  return { outcome: "applied", projectKey: input.projectKey, reason: null, ...(await applied(ctx, plan)) };
 }
