@@ -17,7 +17,7 @@ No screen change.
 
 ## Tasks
 
-- [ ] `T1` — Add the five-pass rule to the "Every change goes through specclaw" section of AGENTS.md (AC-1)
+- [x] `T1` — Add the five-pass rule to the "Every change goes through specclaw" section of AGENTS.md (AC-1)
   Files: AGENTS.md
 
 ## Verify
