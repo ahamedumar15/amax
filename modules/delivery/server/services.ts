@@ -167,6 +167,8 @@ export const recordDeployment = defineService({
       const done = await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now()
         where id = any(${uuidArray(moved.map((p) => p.id as string))}) returning id`);
       if (done.length !== moved.length) throw new Error("proposals changed while being released");
+      const prior = Object.fromEntries(moved.map((p) => [p.id as string, p.phase as Phase]));
+      await tx.execute(sql`update delivery.deployment set prior_phases = ${JSON.stringify(prior)}::jsonb where id = ${d.id}`);
       events.push(...moved.map((p) => phaseEvent(p, "released", ctx)));
     }
     return { result: { id: d.id as string, released }, resourceId: d.id as string, after: input, events };
@@ -369,9 +371,17 @@ export const voidDeployment = defineService({
     // stopped being Prod, leaves Released alone.
     const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${release.id} and released and voided_at is null`);
     if (d.released && Number(live) === 0) {
+      // Each proposal goes back to the phase it had when a record of this release released it (044
+      // AC-1); one released before that phase was recorded goes back to Verified.
       await lockProposals(tx, sql`release_id = ${release.id}`);
-      const back = await tx.execute(sql`update delivery.proposal set phase = 'verified', released_at = null, updated_at = now() where release_id = ${release.id} and phase = 'released' returning *`);
-      events.push(...back.map((p) => phaseEvent({ ...p, phase: "released" }, "verified", ctx)));
+      const records = await tx.execute(sql`select prior_phases from delivery.deployment where release_id = ${release.id} and released order by at`);
+      const prior: Record<string, Phase> = Object.assign({}, ...records.map((r) => r.prior_phases as Record<string, Phase>));
+      const shipped = await tx.execute(sql`select id from delivery.proposal where release_id = ${release.id} and phase = 'released'`);
+      for (const p of shipped) {
+        const to = prior[p.id as string] ?? "verified";
+        const [back] = await tx.execute(sql`update delivery.proposal set phase = ${to}, released_at = null, updated_at = now() where id = ${p.id} returning *`);
+        events.push(phaseEvent({ ...back, phase: "released" }, to, ctx));
+      }
     }
     return { result: { voided: d.id as string, unreleased: events.length }, resourceId: d.id as string, after: input, events };
   },
