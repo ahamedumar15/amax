@@ -109,7 +109,8 @@ test("047 AC7 as IT Admin (055): ask to resume the paused schedule, confirm: it 
 
 const OPERATIONS = ["Settings", "Access and licences", "Helpdesk", "Compliance", "Digital experience"];
 
-test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are Coming soon and name their change; other roles see none of it", async ({ page }) => {
+// 037 built the last Coming-soon screen, so the Operations links now open their modules.
+test("055 AC4 Admin and IT Admin get the Operations group, each link opening its built screen; other roles see none of it", async ({ page }) => {
   for (const who of ADMINS) {
     await page.context().clearCookies();
     await signIn(page, who.email, "/");
@@ -119,9 +120,8 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
     // 038: Backups and export is a Settings hub card now, not a rail item.
     await expect(nav.getByRole("link", { name: "Backups and export", exact: true })).toHaveCount(0);
     await nav.getByRole("link", { name: "Digital experience", exact: true }).click();
-    await expect(page).toHaveURL(/\/operations\/dex$/);
+    await expect(page).toHaveURL(/\/experience$/);
     await expect(page.locator("main h1")).toHaveText("Digital experience");
-    await expect(page.locator("main .lede")).toHaveText("Coming soon. Digital experience arrives with change 037, Digital employee experience, without a desk agent.");
     // A settled page for axe: the rail's labels fade in on hover, and the click left the pointer there.
     await page.mouse.move(900, 500);
     await page.reload();
@@ -130,7 +130,7 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
   await page.context().clearCookies();
   await signIn(page, "nimal@lumenlabs.test", "/");
   for (const label of OPERATIONS) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label, exact: true })).toHaveCount(0);
-  expect((await page.goto("/operations/dex"))?.status()).toBe(404);
+  expect((await page.goto("/operations/experience"))?.status()).toBe(404);
 });
 
 test("038 AC-3, AC-5 a rail taller than the window keeps the current and focused item in view and fades its hidden edge", async ({ page }) => {

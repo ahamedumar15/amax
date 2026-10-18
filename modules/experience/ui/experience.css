@@ -1,0 +1,53 @@
+/* Digital experience: rules lifted from .specclaw/mock/index.html (module standard: shared UI starts in the module). */
+.experience .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.experience .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.experience .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.experience .row.head .lede{margin:0}
+.experience .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.experience .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.experience .tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.experience .ticket svg.art{position:absolute;right:12px;top:10px;width:clamp(70px,5.6vw,100px);height:auto;opacity:.95}
+.experience .tickets .p{z-index:1}
+.experience .ticket .pin{top:auto;bottom:10px}
+.experience .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start;margin-bottom:28px}
+.experience .stack{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;min-width:0}
+.experience .card{position:relative}
+.experience .card-head{min-height:38px}
+.experience .card-head h2{margin-right:0}
+.experience .card-head .pin{position:static;margin-left:auto}
+.experience .muted{color:var(--ink-3)}
+.experience .scroll-x{overflow-x:auto}
+.experience .select{appearance:none;height:38px;padding:0 34px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line-2);color:var(--ink);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236A6681' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:13.5px;font-weight:600;cursor:pointer}
+.experience .meter{height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;min-width:72px}
+.experience .meter i{display:block;height:100%;border-radius:8px}
+.experience .tbl td small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px;font-weight:400}
+.experience .tbl tr.total td{background:var(--sunken);font-weight:600}
+.experience .tbl td:last-child{padding-right:52px}
+.experience .tbl tr.pinnable{position:relative}
+.experience .chip.info{background:#DFF3FB;color:#17648A}
+.experience .list{list-style:none;margin:0;padding:0}
+.experience .list li{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line);font-size:14px}
+.experience .list li:first-child{border-top:0;padding-top:0}
+.experience .list li small{display:block;color:var(--ink-3);font-size:12.5px}
+.experience .list .l{display:flex;align-items:center;gap:12px;min-width:0}
+.experience .list .acts{display:flex;gap:6px;flex:none}
+.experience .logo-sq{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:12px;color:#fff;flex:none}
+.experience .row.line{position:relative;font-size:14px;padding:11px 0;border-top:1px solid var(--line)}
+.experience .row.line:first-of-type{border-top:0}
+.experience .row.line>.pin,.experience .list li>.pin{top:50%;margin-top:-15px;right:-8px}
+.experience .warn-t{color:#8A5200}
+.experience .formula{color:var(--ink-3);font-size:12.5px;margin:0;padding:12px 28px 20px}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .experience .warn-t{color:#F2C26B}
+  :root:not([data-theme="light"]) .experience .chip.info{background:#16384A;color:#8FD3F2}
+}
+:root[data-theme="dark"] .experience .warn-t{color:#F2C26B}
+:root[data-theme="dark"] .experience .chip.info{background:#16384A;color:#8FD3F2}
+@media (max-width:900px){.experience .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.experience .cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .experience .row.head>.actions{width:100%}
+  .experience .tickets.four{gap:12px}
+  .experience .tickets.four .v{font-size:20px;margin-top:4px}
+  .experience .ticket svg.art{width:58px;right:6px;top:8px}
+}
+@media (prefers-reduced-motion:reduce){.experience *{transition:none!important;animation:none!important}}

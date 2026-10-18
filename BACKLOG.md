@@ -34,6 +34,11 @@ Follow-up work that a change deliberately left out. Each item becomes its own sp
 
 - [ ] **RFP debriefs, client conversations and close dates in presales' contract** (from 026). Market position, the trends and the 12-month win rate (3 of 8, 38%) are insight records because `OpportunityRef` has no close date and presales publishes no debriefs or logged conversations. Publish them, then compute the win rate and its change live.
 
+- [ ] **Insights shows experience drops** (from 037). When a group's experience score falls 1 point or more on four weeks earlier, experience emits `experience.score.dropped` and `scoreDrops()` in `modules/experience/contracts.ts` returns each drop with its source, in 026's `InsightSource` shape. Insights only shows insights it computes or records itself. Have insights read `scoreDrops` as one of its live figures (or handle the event), so the trend shows as a sourced insight.
+
+- [ ] **Helpdesk opens the ticket for an accepted hardware fix** (from 037). Accepting the experience agent's hardware fix emits `experience.fix.accepted` (fix `ticket`). Today the person then raises the ticket through "Open ticket", which opens chat in `helpdesk.new-ticket` with the fix pinned. Have helpdesk handle the event and open the Hardware ticket itself, as it does for onboarding's joiner laptop.
+
+- [ ] **A person's own experience on their profile** (from 037). `get_my_experience` and `myExperience()` give a person their own devices and score, the only person-level read. hr's profile page doesn't show it yet. Add a profile slot that experience fills, for the signed-in person only.
 
 - [ ] **Repo languages and dependencies in delivery's contract** (from 066). Career's `tag_technology` is chat-only, because delivery's ingestion (008) publishes commit hours and closed tasks, not a repo's languages or packages. Publish them per linked repo, then add the career agent that proposes technology tags from them as 006 suggestions (the faint leaves).
 
