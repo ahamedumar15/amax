@@ -47,13 +47,11 @@ async function guardLock(tx: Tx, ctx: ServiceContext, week: WeekRow, after: obje
   return true;
 }
 
-export const logTime = defineService({
-  scoped: true,
-  name: "time.entry.log",
-  action: "time:log",
-  resource: "time.entry",
-  input,
-  async run(tx, a, ctx) {
+export type LogInput = z.infer<typeof input>;
+
+/** The entry write inside the caller's transaction: logTime, and an accepted commit-time draft (008). */
+export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext) {
+  {
     const v = viewerOf(ctx);
     const userId = a.userId ?? v?.userId;
     if (!userId) throw new Error("say whose time this is");
@@ -69,5 +67,14 @@ export const logTime = defineService({
       values (${ctx.tenantId}, ${week.id}, ${userId}, ${project.id}, ${day}, ${a.hours}, ${a.billable}, ${a.source}, ${a.agent ?? null}, ${a.note ?? null}, ${by(ctx)}) returning id`);
     const payload: EntryLogged = { entryId: e.id as string, weekId: week.id, userId, projectId: project.id, day, hours: a.hours, billable: a.billable, source: a.source, lockedChange };
     return { result: { id: e.id as string, week: keyOf(week), day, hours: a.hours }, resourceId: e.id as string, after: { ...a, day }, events: [{ name: EVENTS.entryLogged, payload }] };
-  },
+  }
+}
+
+export const logTime = defineService({
+  scoped: true,
+  name: "time.entry.log",
+  action: "time:log",
+  resource: "time.entry",
+  input,
+  run: (tx, a, ctx) => logEntry(tx, a, ctx),
 });

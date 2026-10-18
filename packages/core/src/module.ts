@@ -167,6 +167,16 @@ export const declarePayload = <T>(fields: Record<keyof T & string, Sensitivity |
 /** A country pack's statutory minimum (032 AC-2): no tenant may keep this class for less. */
 export type StatutoryMinimum = { country: string; class: Sensitivity | "personal"; period: `P${string}`; reason: string };
 
+/**
+ * One line of the Overview's Agent activity feed (008 AC-4). `by` names who did it, e.g. "Claude for
+ * Nimal" or "specclaw"; `agent` marks an agent or service acting (shown in the agent colour). `pin`
+ * resolves through the module's read tool to this line.
+ */
+export type ActivityItem = { id: string; at: string; by: string; agent: boolean; text: string; detail: string | null; pin: { label: string; tool: string; args: Record<string, unknown> } };
+
+/** A webhook 035 verified and deduplicated (008), handed to every module that takes its provider. */
+export type InboundEvent = { tenantId: string; provider: string; eventId: string; headers: Headers; payload: unknown };
+
 /** A search hit for the built-in `search` tool and the chat. */
 export type SearchHit = { type: string; id: string; title: string; url?: string; summary?: string };
 
@@ -216,6 +226,10 @@ export type ModuleManifest = {
   statutory?: StatutoryMinimum[];
   /** Ids this module knows a signed-in person by (an hr.person id, say), for access and erasure (032 AC-4). */
   subjectIds?: (tx: Tx, userId: string) => Promise<string[]>;
+  /** Contributes the newest lines to the Overview's Agent activity feed (008 AC-4). */
+  activity?: (viewer: never, limit: number) => Promise<ActivityItem[]>;
+  /** Verified inbound webhooks this module acts on (008: GitHub and Azure DevOps pushes). */
+  inbound?: { providers: readonly string[]; handle: (e: InboundEvent) => Promise<void> };
   /** Contributes results to the built-in `search` tool. */
   search?: (viewer: never, query: string) => Promise<SearchHit[]>;
   chatIntents?: unknown[];

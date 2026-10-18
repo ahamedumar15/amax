@@ -271,3 +271,37 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     expect((await getProject(ops!, "SR"))!.proposals.map((p) => p.key)).toEqual(["SR-001"]);
   });
 });
+
+describe.skipIf(!hasDb)("008 AC-7 the importer is a caller of sync_proposal", () => {
+  let t: Awaited<ReturnType<typeof migratedDatabase>>;
+  let app: Db;
+  let ctx: ServiceContext;
+
+  beforeAll(async () => {
+    t = await migratedDatabase();
+    app = t.app();
+    configureRuntime({ db: app, auditKey: "k".repeat(32) });
+    setGrants([manifest]);
+    installAuthorizer();
+    await t.owner`insert into core.tenant (id, name) values (${T}, 'amax')`;
+    const adminId = await upsertPasswordUser(app, T, { email: "ops@amax.test", name: "Ops", roles: ["Admin"], password: "ops-password-123" });
+    const ops = (await withTenant(app, T, (tx) => viewerForUser(tx, T, adminId)))!;
+    const { token } = await createPrincipal(app, ops, { name: "specclaw-sync", scopes: ["delivery:proposal:sync"], actsFor: [], days: 30 });
+    const id = await authenticateToken(app, token);
+    if (id?.kind !== "principal") throw new Error("no principal");
+    ctx = await principalContext(app, id.principal, "delivery:proposal:sync");
+  });
+  afterAll(() => t?.drop());
+
+  it("writes each task by id, keeps keys, and a task closed by a commit stays closed without making every sync a change", async () => {
+    const repo = fakeRepo({ "001-a": { status: "✅ Approved", tasks: "- [x] `T1` — first step\n- [ ] `T2` — second step" } });
+    const sync = (sha: string) => syncSpecclaw(app, ctx, { projectKey: "TSK", projectName: "tasks", client: "x", records: readSpecclaw(repo), sha });
+    expect(await sync("1")).toMatchObject({ created: 1 });
+    const tasks = () => withTenant(app, T, (tx) => tx.execute(sql`select t.ref, t.title, t.done from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.key = 'TSK-001' order by t.ref`));
+    expect(await tasks()).toEqual([{ ref: "T1", title: "first step", done: true }, { ref: "T2", title: "second step", done: false }]);
+    await t.owner`update delivery.task set done = true where ref = 'T2'`;
+    await t.owner`update delivery.proposal set tasks_done = 2 where key = 'TSK-001'`;
+    expect(await sync("2")).toMatchObject({ created: 0, updated: 0, unchanged: 1 });
+    expect((await tasks()).map((r) => r.done)).toEqual([true, true]);
+  });
+});
