@@ -1,19 +1,19 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 11:06 UTC
+**Last Updated:** 2026-10-18 11:25 UTC
 
 ## Active Changes
 
 
 - 🔀 **008-delivery-ingestion** — PR #70 merged
+- 🔀 **013-onboarding-offboarding** — PR #71 open
 - 🔀 **038-navigation-scale** — pr raised | 3/3 tasks (100%) | 0 failed | PR #69 merged
-- 🔨 **062-marketing-site** — build in-progress | 0/5 tasks (0%) | 0 failed
+- 🔨 **062-marketing-site** — build in-progress | 5/5 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
 
-- 📋 **013-onboarding-offboarding** — proposal ready, awaiting planning
 - 📋 **014-payroll-engine** — proposal ready, awaiting planning
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
@@ -79,6 +79,6 @@
 
 ## Stats
 
-- **Total changes:** 48
-- **Active:** 3
+- **Total changes:** 49
+- **Active:** 4
 - **Completed:** 45

@@ -49,3 +49,5 @@ A new public page with no app navigation: no rail, top bar or chat launcher. Top
   Depends: T1, T2, T3, T4
 
 ## Verify
+
+Quality: 360 → 360 duplicated lines (none in this change's files; refactor skipped)
