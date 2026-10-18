@@ -50,3 +50,10 @@ licences and 1 device). No grant, revoke or seat removal ever runs without a per
 Quality: 0 → 0 duplicated lines (jscpd over modules/it-access; specclaw-quality-scan fails on this repo with jq "Argument list too long", so jscpd was run directly).
 
 Ripple: `modules/onboarding/tests/access.test.ts` asserted that nothing handles `onboarding.access.requested` ("021 isn't installed"); it now expects exactly `it-access.onboarding` when it-access is installed, and still that nothing is revoked.
+
+Review fix (before verify): a change left to IT by hand (`manual`) no longer changes amax's records, because a leaver could show "revoked" while their account was still live. It stays pending: the screen leads with "Waiting for IT" (pinned, with "Confirm done" through Ask amax), and a leaver past their last day counts in "Leavers with access". The new `confirm_access_change` (a `defineService`, `it-access:change:approve`, people only, `manual` changes only) records "Made by hand, confirmed by …", makes the change in the records, and emits `it-access.change.applied`. A sync doesn't confirm a change automatically. Undo cancels a change while it is queued or manual. Test: `tests/changes.test.ts` ("a revoke left to IT by hand changes nothing until a person confirms it").
+
+Ripple: `apps/web/lib/operations.ts`'s "Coming soon" slug for Access and licences was `access`; it is now `it-access`, so the installed module replaces it in the rail (as compliance's does) instead of showing both. The web e2e (`admin.spec.ts` 055 AC4) caught the duplicate.
+
+Commands after the fix: `pnpm turbo run lint --force` → 0 (28/28); `pnpm turbo run test --force --continue --concurrency=2` → 0 (28/28); `pnpm --filter @amax/web build` → 0; module e2e → 3/3; `playwright test --config playwright.auth.config.ts` (apps/web) → 80/80 on the last run. Two earlier runs each had an unrelated failure: `auth.spec.ts` AC5 (sign-out redirect; passes 24/24 alone with `--repeat-each=4`), and chat History's Escape.
+

@@ -32,13 +32,13 @@ export async function queueChange(tx: Tx, tenantId: string, t: Target & { action
 
 const INVERSE: Record<Action, Action> = { grant: "remove-seat", "remove-seat": "restore", revoke: "restore", restore: "revoke" };
 
-/** 006 undo: a change not yet made is cancelled; one already made gets its inverse queued for today. */
+/** 006 undo: a change not yet made (queued, or waiting for IT by hand) is cancelled; one already made gets its inverse queued for today. */
 export async function undoChanges(tx: Tx, tenantId: string, ids: string[], by: string, on: string) {
   const events: Emitted[] = [];
   for (const id of ids) {
     const [c] = await tx.execute(sql`select * from it_access.change where id = ${id} for update`);
     if (!c || c.status === "cancelled" || c.status === "failed") continue;
-    if (c.status === "queued") {
+    if (c.status === "queued" || c.status === "manual") {
       await tx.execute(sql`update it_access.change set status = 'cancelled', outcome = ${`Undone by ${by} before it was made`} where id = ${id}`);
       continue;
     }

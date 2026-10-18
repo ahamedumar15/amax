@@ -44,9 +44,11 @@ export const recordOutcome = defineService({
   async run(tx, a, ctx) {
     const [c] = await tx.execute(sql`select * from it_access.change where id = ${a.changeId} and status = 'queued' for update`);
     if (!c) return { result: null, resourceId: a.changeId };
-    const detail = a.status === "failed" ? c.detail : await effect(tx, c as never, actorOf(ctx), today());
+    // Only a change the write registration made changes the records here. A manual one stays pending,
+    // showing the access as it still is, until a person confirms it was done (confirm_access_change).
+    const detail = a.status === "applied" ? await effect(tx, c as never, actorOf(ctx), today()) : c.detail;
     await tx.execute(sql`update it_access.change set status = ${a.status}, outcome = ${a.outcome}, detail = ${JSON.stringify(detail)}::jsonb,
-      applied_at = case when ${a.status} = 'failed' then null else now() end where id = ${a.changeId}`);
+      applied_at = case when ${a.status} = 'applied' then now() else null end where id = ${a.changeId}`);
     const payload: ChangeApplied = { changeId: a.changeId, action: c.action as ChangeApplied["action"], status: a.status };
     return { result: payload, resourceId: a.changeId, after: { status: a.status }, events: [{ name: EVENTS.changeApplied, payload }] };
   },

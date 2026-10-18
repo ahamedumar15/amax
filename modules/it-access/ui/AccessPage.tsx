@@ -8,6 +8,7 @@ import { needViewer, plural, SignInFirst } from "./parts";
 import { People } from "./People";
 import { Devices, Savings, Spend } from "./Side";
 import { Tiles } from "./Tiles";
+import { Waiting } from "./Waiting";
 
 const lede = (v: AccessView) => `What everyone can sign in to, from Microsoft Entra ID, Azure DevOps, Intune and your SaaS tools. ${
   v.totals.unused ? `${plural(v.totals.unused, "seat has", "seats have")} gone unused for 60 days.` : "Every seat was used in the last 60 days."}`;
@@ -31,6 +32,7 @@ export async function AccessPage({ viewer: raw, searchParams }: ScreenProps) {
         </div>
       </div>
       <Tiles v={v} />
+      <Waiting v={v} />
       <div className="cols">
         <Licences v={v} />
         <div className="stack"><Spend v={v} /><Savings v={v} /><Devices v={v} /></div>

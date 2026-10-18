@@ -32,6 +32,7 @@ export const leaverAgent: EventHandlerDef = {
   event: HR.personLeft,
   async handle({ tx, tenantId, event }) {
     const e = event.payload as PersonLeft;
+    await tx.execute(sql`update it_access.account set left_on = ${e.leftOn.slice(0, 10)} where person_id = ${e.personId}`);
     await proposeRevoke(tx, tenantId, e.personId, e.leftOn.slice(0, 10), "HR recorded that they leave.");
   },
 };

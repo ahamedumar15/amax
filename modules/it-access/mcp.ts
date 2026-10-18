@@ -3,10 +3,11 @@ import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { createSuggestion } from "@amax/agents/server";
 import { WRITE_SCOPES } from "./contracts";
-import { accountOf, productOf } from "./pins";
+import { accountOf, changeOf, productOf } from "./pins";
+import { confirmChange } from "./server/confirm";
 import { setWriteConsent } from "./server/consent";
-import { getAccount, getProduct, syncStatus } from "./server/queries";
-import { CONSENT, ctxFor, READ, REQUEST, REVIEW } from "./server/read";
+import { getAccount, getChange, getProduct, syncStatus } from "./server/queries";
+import { APPROVE, CONSENT, ctxFor, READ, REQUEST, REVIEW } from "./server/read";
 import { requestFor } from "./server/requests";
 import { extendAccess, recordReview } from "./server/reviews";
 import { FILTERS, filterOf } from "./server/filters";
@@ -30,11 +31,15 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ productId }), run: (v, a) => getProduct(v, a.productId) }),
   tool({ ...read, pin: { id: "accountId", of: accountOf as never }, name: "get_account", description: "One person's or contractor's access: Entra groups, admin roles, licence seats, devices, last review, and the access changes IT approved.",
     input: z.object({ accountId }), run: (v, a) => getAccount(v, a.accountId) }),
+  tool({ ...read, pin: { id: "changeId", of: changeOf as never }, name: "get_access_change", description: "One access change IT approved: grant, revoke, seat removal or restore, for whom, its day, and whether it was made, is waiting for IT to make it by hand, or was cancelled.",
+    input: z.object({ changeId: z.uuid() }), run: (v, a) => getChange(v, a.changeId) }),
   tool({ ...read, name: "get_access_sync", description: "The sync runs (Microsoft Graph, Azure DevOps, GitHub; read-only credentials) and whether the write registration is consented, with its scopes.",
     input: z.object({}), run: (v) => syncStatus(v) }),
   tool({ ...write(REQUEST), name: "request_access_change", description: "Ask IT to grant a licence, revoke all of someone's access (on a last day), or remove seats of a product. It becomes a suggestion that someone else in IT approves; nothing changes until then.",
     input: z.object({ action: z.enum(["grant", "revoke", "remove-seats"]), accountId: accountId.optional(), productId: productId.optional(), lastDay: z.iso.date().optional(), seatIds: z.array(z.uuid()).max(200).optional() }),
     service: createSuggestion, run: async (v, a, s = "mcp") => createSuggestion(ctxFor(v, s), await requestFor(v, a)) }),
+  tool({ ...write(APPROVE), name: "confirm_access_change", description: "Confirm you made an approved access change by hand (one waiting for IT because the write registration couldn't make it). Only then do amax's records show it as done.",
+    input: z.object({ changeId: z.uuid() }), service: confirmChange, run: (v, a, s = "mcp") => confirmChange(ctxFor(v, s), a) }),
   tool({ ...write(REVIEW), name: "record_access_review", description: "Record that you reviewed someone's access and kept it as it is. To change access, use request_access_change.",
     input: z.object({ accountId }), service: recordReview, run: (v, a, s = "mcp") => recordReview(ctxFor(v, s), a) }),
   tool({ ...write(REVIEW), name: "extend_access", description: "Extend a contractor's access to a new last day, up to a year ahead.",

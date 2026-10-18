@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
-import { day, daysAgo } from "./read";
+import { day, daysAgo, today } from "./read";
 
 /** A seat unused this long is the licence agent's to propose removing (fixtures.md: "unused for 60 days"). */
 export const IDLE_DAYS = 60;
@@ -40,7 +40,7 @@ export async function personRows(tx: Tx, accountId?: string): Promise<PersonRow[
   return rows.map((r) => ({
     accountId: r.id as string, personId: (r.person_id as string | null) ?? null, name: r.display_name as string, kind: r.kind as PersonRow["kind"],
     entraGroups: Number(r.entra_groups), licences: Number(r.licences), devices: Number(r.devices), adminRoles: (r.admin_roles as string[]) ?? [],
-    status: r.status as PersonRow["status"], leftOn: day(r.left_on), expiresOn: day(r.expires_on), reviewedOn: day(r.reviewed_on),
+    status: r.status === "left" || (r.left_on && day(r.left_on)! <= today()) ? "left" : "active", leftOn: day(r.left_on), expiresOn: day(r.expires_on), reviewedOn: day(r.reviewed_on),
   }));
 }
 

@@ -3,6 +3,7 @@ import { canSeePricing } from "@amax/auth";
 import { deviceStats, personRows, productRows, type PersonRow, type ProductRow } from "./rows";
 import type { FilterId } from "./filters";
 import { priced, read, today } from "./read";
+import { waitingRows } from "./waiting";
 
 /** The licence agent proposes a removal once a product has this many idle seats. */
 export const SAVING_MIN_SEATS = 5;
@@ -40,7 +41,7 @@ export const accessView = (v: Viewer, filter: FilterId = "everyone") => read(v, 
   const people = peopleFor(await personRows(tx), filter);
   return priced(v, {
     pricing: canSeePricing(v), filter, products, totals: totalsOf(products), savings: savingsOf(products), devices: await deviceStats(tx),
-    people: people.rows, leaversWithAccess: people.leaversWithAccess,
+    people: people.rows, leaversWithAccess: people.leaversWithAccess, waiting: await waitingRows(tx),
   });
 });
 export type AccessView = Awaited<ReturnType<typeof accessView>>;

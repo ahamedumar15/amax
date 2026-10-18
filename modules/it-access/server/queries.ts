@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { Viewer } from "@amax/auth";
 import { day, daysAgo, iso, priced, read } from "./read";
 import { IDLE_DAYS, personRows, productRows } from "./rows";
+import { waitingRows } from "./waiting";
 
 /** One product: seats, use, spend (Admin only), and the idle seats the licence agent would remove. */
 export const getProduct = (v: Viewer, productId: string) => read(v, async (tx) => {
@@ -36,4 +37,12 @@ export const syncStatus = (v: Viewer) => read(v, async (tx) => {
     runs: runs.map((r) => ({ source: r.source as string, status: r.status as string, summary: r.summary as string, finishedAt: iso(r.finished_at) })),
     write: { enabled: Boolean(c?.enabled), scopes: (c?.scopes as string[]) ?? [], by: (c?.consented_by as string | null) ?? null, at: iso(c?.consented_at) },
   };
+});
+
+/** One approved change: what, for whom, its day, its status and what IT was told. */
+export const getChange = (v: Viewer, changeId: string) => read(v, async (tx) => {
+  const [w] = await waitingRows(tx, changeId);
+  if (!w) return null;
+  const [c] = await tx.execute(sql`select status, applied_at from it_access.change where id = ${changeId}`);
+  return { ...w, status: c.status as string, appliedAt: iso(c.applied_at) };
 });
