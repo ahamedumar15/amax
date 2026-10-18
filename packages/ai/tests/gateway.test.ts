@@ -124,7 +124,8 @@ describe("AC-4 region rules (review round 1)", async () => {
     ["a stored legacy data region (review round 2)", p({ dataRegion: "Down Under", database: "AU", storage: "AU", ai: "AU" }), /"Down Under" isn't recognised/],
     ["a stored legacy resource region (review round 2)", p({ dataRegion: "AU", database: "Sydney", storage: "AU", ai: "AU" }), /database \("Sydney"\) isn't recognised/],
   ])("%s", (_n, policy, expected) => {
-    const r = blockedReason(policy as never);
+    // 044: the endpoint is configured in AU, so these cases test the declared regions alone.
+    const r = blockedReason(policy as never, { url: null, region: "AU" });
     if (expected) expect(r).toMatch(expected); else expect(r).toBeNull();
   });
   it("refuses free-text regions it doesn't know", () => expect(() => normalizeRegion("Mars")).toThrow(/unknown region/));

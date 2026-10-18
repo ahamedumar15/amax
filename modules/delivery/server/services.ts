@@ -89,7 +89,8 @@ export const createProposal = defineService({
   },
 });
 
-// The board's explicit Move action. Released is reached only through a Prod deployment.
+// The board's explicit Move action. Released is reached only through a Prod deployment. A proposal
+// synced from a repo takes its phase from the repo, its one owner before Released (044 AC-2).
 export const moveProposal = defineService({
   scoped: true,
   name: "delivery.proposal.move",
@@ -101,6 +102,7 @@ export const moveProposal = defineService({
     if (!p) throw new Error(`no proposal ${input.key}`);
     scoped(ctx, "delivery:proposal:move", p.project_id as string);
     if (p.phase === "released") throw new Error(`${input.key} is in Prod; it can't move back on the board`);
+    if (p.source !== null) throw new Error(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
     if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
     await tx.execute(sql`update delivery.proposal set phase = ${input.to}, updated_at = now() where id = ${p.id}`);
     return {
@@ -167,6 +169,8 @@ export const recordDeployment = defineService({
       const done = await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now()
         where id = any(${uuidArray(moved.map((p) => p.id as string))}) returning id`);
       if (done.length !== moved.length) throw new Error("proposals changed while being released");
+      const prior = Object.fromEntries(moved.map((p) => [p.id as string, p.phase as Phase]));
+      await tx.execute(sql`update delivery.deployment set prior_phases = ${JSON.stringify(prior)}::jsonb where id = ${d.id}`);
       events.push(...moved.map((p) => phaseEvent(p, "released", ctx)));
     }
     return { result: { id: d.id as string, released }, resourceId: d.id as string, after: input, events };
@@ -231,17 +235,19 @@ export const syncProposal = defineService({
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, now())
-      on conflict (tenant_id, key) do update set title = excluded.title, phase = excluded.phase, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
+      on conflict (tenant_id, key) do update set title = excluded.title,
+        phase = case when delivery.proposal.phase = 'released' then 'released' else excluded.phase end, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
         source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
         where delivery.proposal.source = excluded.source
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
-    if (before && before.phase !== input.phase) events.push(phaseEvent(before, input.phase, ctx));
+    // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
+    if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {
       result: { key: input.key, created: !before, phaseChanged: events.some((e) => e.name === EVENTS.proposalPhaseChanged) },
       resourceId: row.id as string,
       before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title } : null,
-      after: { phase: input.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
+      after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
   },
@@ -369,9 +375,17 @@ export const voidDeployment = defineService({
     // stopped being Prod, leaves Released alone.
     const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${release.id} and released and voided_at is null`);
     if (d.released && Number(live) === 0) {
+      // Each proposal goes back to the phase it had when a record of this release released it (044
+      // AC-1); one released before that phase was recorded goes back to Verified.
       await lockProposals(tx, sql`release_id = ${release.id}`);
-      const back = await tx.execute(sql`update delivery.proposal set phase = 'verified', released_at = null, updated_at = now() where release_id = ${release.id} and phase = 'released' returning *`);
-      events.push(...back.map((p) => phaseEvent({ ...p, phase: "released" }, "verified", ctx)));
+      const records = await tx.execute(sql`select prior_phases from delivery.deployment where release_id = ${release.id} and released order by at`);
+      const prior: Record<string, Phase> = Object.assign({}, ...records.map((r) => r.prior_phases as Record<string, Phase>));
+      const shipped = await tx.execute(sql`select id from delivery.proposal where release_id = ${release.id} and phase = 'released'`);
+      for (const p of shipped) {
+        const to = prior[p.id as string] ?? "verified";
+        const [back] = await tx.execute(sql`update delivery.proposal set phase = ${to}, released_at = null, updated_at = now() where id = ${p.id} returning *`);
+        events.push(phaseEvent({ ...back, phase: "released" }, to, ctx));
+      }
     }
     return { result: { voided: d.id as string, unreleased: events.length }, resourceId: d.id as string, after: input, events };
   },

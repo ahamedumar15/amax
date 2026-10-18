@@ -58,7 +58,8 @@ export function getDb(): Db | null {
     // 034: tenant snapshots and exports in the tenant's data region; builds and offboarding run as 029 workflows.
     configureBackups({ storageFor: backupStorageFromEnv(env), files: () => storageFromEnv(), pitr: pitrFromEnv(env), linkKey: env.AUTH_SECRET ?? env.AUDIT_HASH_KEY!, start: (t, w, i, o) => startWorkflow(t, w, i, o) });
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
-    else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
+    else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider({ baseURL: env.AMAX_AI_ENDPOINT }), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL,
+      endpoint: { url: env.AMAX_AI_ENDPOINT ?? null, region: env.AMAX_AI_ENDPOINT_REGION ?? null } });
     wired = true;
   }
   return cache.amaxDb;

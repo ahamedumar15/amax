@@ -229,6 +229,23 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     expect(await removeEnvironment(ctx(), { projectKey: "REN", name: "QA" })).toEqual({ removed: "qa" });
   });
 
+  it("044 AC-1 voiding the deployment that released restores each proposal's own phase, with matching events", async () => {
+    const { createProposal, moveProposal } = await import("../server/services");
+    await createProject(ctx(), { key: "PRI", name: "Prior", client: "x", billing: "internal" });
+    const building = await createProposal(ctx(), { projectKey: "PRI", title: "half built" });
+    const planned = await createProposal(ctx(), { projectKey: "PRI", title: "only planned" });
+    await moveProposal(ctx(), { key: building.key, to: "building" });
+    await moveProposal(ctx(), { key: planned.key, to: "planned" });
+    await createRelease(ctx(), { projectKey: "PRI", version: "v1", proposalKeys: [building.key, planned.key] });
+    await recordDeployment(ctx(), { projectKey: "PRI", version: "v1", environment: "Prod" });
+    await voidDeployment(ctx(), { projectKey: "PRI", version: "v1", environment: "Prod", reason: "wrong pipeline" });
+    const phases = await t.owner`select key, phase, released_at from delivery.proposal where key in (${building.key}, ${planned.key}) order by key`;
+    expect(Object.fromEntries(phases.map((p) => [p.key, p.phase]))).toEqual({ [building.key]: "building", [planned.key]: "planned" });
+    expect(phases.every((p) => p.released_at === null)).toBe(true);
+    const back = await t.owner`select payload from core.event where name = 'delivery.proposal.phase_changed' and payload->>'from' = 'released' and payload->>'key' in (${building.key}, ${planned.key})`;
+    expect(Object.fromEntries(back.map((e) => [e.payload.key, e.payload.to]))).toEqual({ [building.key]: "building", [planned.key]: "planned" });
+  });
+
   it.each([["recordDeployment"], ["setReleaseProposals"]])("%s locks the release row (rounds 13 and 14)", async (which) => {
     const key = `LK${which.length}`;
     await createProject(ctx(), { key, name: key, client: "x", billing: "internal" });

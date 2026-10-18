@@ -4,8 +4,9 @@ import { z } from "zod";
 import type { Message, Provider, ProviderCall, ProviderResult, ToolUseBlock } from "./types";
 
 // The only place in the repo that talks to a model provider SDK (check-graph R7).
-export function anthropicProvider(opts: { apiKey?: string } = {}): Provider {
-  const client = new Anthropic(opts.apiKey ? { apiKey: opts.apiKey } : {});
+// `baseURL`: the configured endpoint (044), the same one the region gate checks.
+export function anthropicProvider(opts: { apiKey?: string; baseURL?: string } = {}): Provider {
+  const client = new Anthropic({ ...(opts.apiKey ? { apiKey: opts.apiKey } : {}), ...(opts.baseURL ? { baseURL: opts.baseURL } : {}) });
 
   const toParams = (messages: Message[]): Anthropic.MessageParam[] =>
     messages.map((m) => {

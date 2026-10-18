@@ -2,7 +2,7 @@
 
 **Change:** 044-release-and-region-hardening
 **Started:** -
-**Last Updated:** 2026-10-17
+**Last Updated:** 2026-10-18
 
 ## Progress
 
@@ -11,10 +11,10 @@
 | Proposal | ✅ Approved | Deferred from the 042 final review by the product owner, 2026-10-17 (option 1) |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
-| Build | - | - |
-| Verify | - | - |
-| PR | - | - |
+| Tasks | ✅ Done |  |
+| Build | ✅ Done |  |
+| Verify | ✅ Done |  |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/67 |
 | Archived | - | - |
 
 ## Issues

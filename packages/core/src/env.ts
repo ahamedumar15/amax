@@ -31,6 +31,10 @@ const schema = z.object({
   // (ANTHROPIC_API_KEY) is read by the provider SDK; loadEnv checks it but keeps only that it is set.
   AMAX_AI_MODEL: z.string().default("claude-haiku-5-5"),
   AMAX_AI_FALLBACK_MODEL: z.string().default("claude-sonnet-5-5"),
+  // 044: where AI calls go and the region it serves from (AU, LK, …). Under a data region the gate
+  // blocks AI unless this region is set and matches.
+  AMAX_AI_ENDPOINT: z.url().optional(),
+  AMAX_AI_ENDPOINT_REGION: z.string().optional(),
   AUDIT_RETENTION_DAYS: z.coerce.number().int().positive().default(2555),
   ANTHROPIC_API_KEY: z.string().min(20, "at least 20 characters").optional().transform((v) => (v ? ("set" as const) : undefined)),
   // 031 key service that wraps each tenant's data key. Tenant credentials themselves never come from here.
