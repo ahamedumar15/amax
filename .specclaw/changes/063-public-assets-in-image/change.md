@@ -20,7 +20,7 @@ No screen change. The marketing page's video, poster and share image load in pro
 ## Tasks
 
 - [x] `T1` — Copy `apps/web/public` into the web image, and have CI's docker smoke check fetch the marketing media and the OG image from the running container (AC-1, AC-2, AC-3)
-  Files: Dockerfile, .github/workflows/ci.yml
+  Files: Dockerfile, .github/workflows/ci.yml, apps/web/tests/proxy-matcher.test.ts
 
 ## Verify
 
