@@ -17,10 +17,21 @@ const permissionOf = (tool: string) => {
 const declared = new Set(all.flatMap((m) => m.permissions ?? []));
 const holds = (role: Role, permission: string) => canEver({ assignments: [{ role }] } as unknown as Viewer, permission);
 
-/** What is wrong with a card shown on a role's tab: an unknown tool, or a permission the role lacks. */
+// Tools whose service checks a stricter permission per step (expenses/server/decide.ts, leave/server/scope.ts).
+// A card on one of them must name its step, and the step must be one the tool really has.
+const STEPPED: Record<string, string[]> = {
+  approve_expense: ["expenses:approve", "expenses:approve-finance"],
+  reject_expense: ["expenses:approve", "expenses:approve-finance"],
+  approve_leave: ["leave:approve", "leave:admin"],
+  reject_leave: ["leave:approve", "leave:admin"],
+};
+
+/** What is wrong with a card shown on a role's tab: an unknown tool, a missing step, or a permission the role lacks. */
 const check = (role: Role, card: Pick<Card, "tool" | "step">) => {
   const permission = permissionOf(card.tool);
   if (!permission) return [`${card.tool} is not a shipped MCP tool or suggestion kind`];
+  const steps = STEPPED[card.tool];
+  if (steps && !(card.step && steps.includes(card.step))) return [`${card.tool} needs a step, one of ${steps.join(", ")}`];
   return [permission, ...(card.step ? [card.step] : [])].flatMap((p) => [
     ...(declared.has(p) ? [] : [`${p} is not a declared permission`]),
     ...(holds(role, p) ? [] : [`${role} does not hold ${p}`]),
@@ -36,5 +47,8 @@ describe("064 AC-6 every hero queue card runs a shipped tool, at a step its role
     ["Engineer", { tool: "approve_expense", step: "expenses:approve-finance" }],
     ["PM", { tool: "approve_leave", step: "leave:admin" }],
     ["Finance", { tool: "approve_leave", step: "leave:admin" }],
+    ["HR", { tool: "approve_leave" }],
+    ["Finance", { tool: "approve_expense" }],
+    ["HR", { tool: "reject_leave", step: "leave:read" }],
   ] as const)("rejects %s running %o", (role, card) => expect(check(role, card)).not.toEqual([]));
 });
