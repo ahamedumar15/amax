@@ -60,6 +60,8 @@ Fixture hours are fictional and give fixtures.md's October table (222 ÷ 264 = 8
 
 Scope: the mock's third tab, Estimate vs actual, is left out because no contract publishes estimates (see Tasks). Reports keeps its own read model of logged hours, fed by `time.entry.logged`, and its own holiday calendar, because today's contracts give neither (see Tasks).
 
+Ripple: CI failed `modules/notifications/tests/rules.test.ts` ("events or runs never settled"). It fails on main too, from 15:30 to 01:30 UTC. Maya's fixture quiet hours, 21:00 to 07:00 Colombo, keep her `notifications.deliver` runs asleep on the real clock, so `drain` never settles. The suite now clears quiet hours in `beforeAll`; `channels.test.ts` covers them. `pnpm turbo run test lint --filter=@amax/notifications --force` → 0 (7/7) at 16:23 UTC.
+
 Mock: `shots/app.png` (`/reports` as Maya, Admin) matches `shots/mock.png` region by region: the lede, the 12-month trend with the target line, the tabs and the Utilisation table with its Team row. Two differences: Estimate vs actual is missing (above), and a "Change target" Ask amax button sits next to "Target 80%", because chat does the writes.
 
 Commands (worktree merged with origin/main at 2e305de, Postgres 16 at `DATABASE_MIGRATE_URL`, HEAD 6c24865):
