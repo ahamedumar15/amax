@@ -19,6 +19,7 @@ export const setRetentionPeriod = defineService({
     const entity = input.entityId ? p.entities.find((e) => e.id === input.entityId) : null;
     if (input.entityId && !entity) throw new PrivacyError(`no legal entity ${input.entityId}`);
     const floors = (entity ? [entity.country] : p.entities.map((e) => e.country)).map((c) => statutoryFor(rule, c)).filter((s) => s !== null);
+    if (rule.minimum && days(input.period) < days(rule.minimum)) throw new PrivacyError(`${rule.label ?? rule.id} can't be kept for less than ${rule.minimum}: it is kept for security, not for a person`);
     const floor = floors.find((s) => days(input.period) < days(s.period));
     if (floor) throw new PrivacyError(`${rule.label ?? rule.id} can't be kept for less than ${floor.period}: ${floor.reason}`);
     const before = { period: effective(p, rule, input.entityId).period };

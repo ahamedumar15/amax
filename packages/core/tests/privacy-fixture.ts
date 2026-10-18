@@ -4,7 +4,7 @@ import { migratedDatabase } from "@amax/db/testdb";
 import { GENESIS } from "../src/chain-key";
 import { chainHash } from "../src/audit";
 import { configureRuntime, setAuthorizer, type ServiceContext } from "../src/server";
-import { setPrivacySources } from "../src/privacy";
+import { setPrivacySources, type PrivacySource } from "../src/privacy";
 
 export const T = "00000000-0000-4000-8000-0000000003a2";
 export const LK = "00000000-0000-4000-8000-0000000003e1";
@@ -20,17 +20,20 @@ create table pt.note (id uuid primary key default gen_random_uuid(), tenant_id u
 select core.enable_tenant_rls('pt.person'); select core.enable_tenant_rls('pt.payslip'); select core.enable_tenant_rls('pt.note');
 grant usage on schema pt to amax_app; grant select, insert, update, delete on all tables in schema pt to amax_app;`;
 
-export function useTestSources() {
-  setPrivacySources([{
+export function useTestSources(extra: NonNullable<PrivacySource["retention"]> = []) {
+  setPrivacySources(testSources(extra));
+}
+
+export const testSources = (extra: NonNullable<PrivacySource["retention"]> = []): PrivacySource[] => [{
     id: "pt",
     subjectIds: async (tx, userId) => (await tx.execute(sql`select id::text from pt.person where user_id = ${userId}`)).map((r) => r.id as string),
     retention: [
       { table: "pt.person", label: "Leavers (fictional)", subject: ["id", "user_id"], entity: "legal_entity_id", fields: ["name"], class: "personal", period: "P1Y", start: { at: ["left_on"] }, action: "anonymise" },
       { table: "pt.payslip", label: "Payslips (fictional)", subject: ["person_id"], fields: ["amount"], class: "pay", period: "P1Y", start: { at: ["pay_year_end"] }, action: "delete" },
       { table: "pt.note", label: "Notes (fictional)", fields: ["body"], class: "personal", period: "P30D", start: { at: ["created_at"] }, action: "delete" },
+      ...extra,
     ],
-  }]);
-}
+  }];
 
 export const as = (user: keyof typeof USERS, roles: string[]): ServiceContext => ({ tenantId: T, actor: { id: `user:${USERS[user]}`, kind: "user", roles }, source: "chat" });
 

@@ -1,6 +1,6 @@
-# Status: 056-ci-flakes
+# Status: 032-data-retention-and-erasure
 
-**Change:** 056-ci-flakes
+**Change:** 032-data-retention-and-erasure
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -11,9 +11,11 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
+| Tasks | ✅ Done |  |
 | Build | - | - |
-| Verify | - | - |
+| Verify | ✅ Done |  |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/49 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

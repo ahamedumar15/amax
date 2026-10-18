@@ -2,19 +2,13 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { textArray } from "@amax/db";
 import { defineService } from "@amax/core/server";
+import { publicHttps } from "./egress";
 
 export const WEBHOOK_MANAGE = "api:webhook:manage";
 export const MAX_FAILURES = 5;
 
-const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?$|\[?f[cd])/i;
-export const publicHttps = (url: string) => {
-  try {
-    const u = new URL(url);
-    return u.protocol === "https:" && !PRIVATE_HOST.test(u.hostname) && !u.username && !u.password;
-  } catch {
-    return false;
-  }
-};
+// The subscribe-time filter; delivery checks the resolved address again (egress.ts).
+export { publicHttps };
 
 const missing = (id: string) => Object.assign(new Error(`no webhook ${id}`), { retryable: false, code: "not_found" });
 

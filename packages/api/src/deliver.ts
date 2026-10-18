@@ -4,6 +4,7 @@ import { withTenant } from "@amax/db";
 import { contextFor, defineService, getRuntime } from "@amax/core/server";
 import { useSecret } from "@amax/core/secrets";
 import { defineWorkflow, NonRetryableError, step, StepFailedError } from "@amax/workflows";
+import { EgressError, safePost } from "./egress";
 import { signPayload } from "./verify";
 import { MAX_FAILURES } from "./webhooks";
 
@@ -35,12 +36,15 @@ async function post(tenantId: string, input: DeliverInput, signal: AbortSignal) 
   const t = Math.floor(Date.now() / 1000);
   const ctx = contextFor.job(tenantId, DELIVER);
   const signature = await useSecret(ctx, { connector: "amax-webhook", purpose: "sign outgoing webhook" }, async (s) => signPayload(s.reveal(), t, input.body));
-  const res = await fetch(String(w.url), {
-    method: "POST", body: input.body, redirect: "manual", signal,
+  // Checked again here on the resolved address and pinned to it (review 058 B8); never a redirect.
+  const status = await safePost(String(w.url), {
+    body: input.body, signal,
     headers: { "content-type": "application/json", "x-amax-event": input.event, "x-amax-delivery": input.eventId, "x-amax-signature": signature },
+  }).catch((e: unknown) => {
+    throw e instanceof EgressError ? new NonRetryableError(e.message) : e;
   });
-  if (!res.ok) throw new Error(`the receiver answered HTTP ${res.status}`);
-  return res.status;
+  if (status < 200 || status > 299) throw new Error(`the receiver answered HTTP ${status}`);
+  return status;
 }
 
 export const deliverWebhook = defineWorkflow<DeliverInput>({

@@ -7,7 +7,7 @@ export async function signIn(page: Page, email: string, to: string) {
   await expect(page).toHaveURL((u) => u.pathname === to);
 }
 
-export async function askAndConfirm(page: Page, chip: Locator, want: { pin: string; prompt: string; type?: string; replace?: string }) {
+export async function askAndConfirm(page: Page, chip: Locator, want: { pin: string | RegExp; prompt: string | RegExp; type?: string; replace?: string; reload?: boolean }) {
   await chip.click();
   await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText(want.pin);
   const input = page.getByLabel("Message amax");
@@ -18,5 +18,5 @@ export async function askAndConfirm(page: Page, chip: Locator, want: { pin: stri
   const card = page.getByRole("group", { name: /^Confirm:/ }).last();
   await card.getByRole("button", { name: "Add it" }).click();
   await expect(card).toContainText("Done:");
-  await page.reload();
+  if (want.reload !== false) await page.reload();
 }

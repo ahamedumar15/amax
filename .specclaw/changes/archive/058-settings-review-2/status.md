@@ -1,6 +1,6 @@
-# Status: 054-chat-first-everywhere
+# Status: 058-settings-review-2
 
-**Change:** 054-chat-first-everywhere
+**Change:** 058-settings-review-2
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -11,10 +11,10 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | ✅ Done |  |
+| Tasks | - | - |
 | Build | - | - |
-| Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/47 |
+| Verify | - | - |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

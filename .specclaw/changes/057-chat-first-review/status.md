@@ -1,6 +1,6 @@
-# Status: 032-data-retention-and-erasure
+# Status: 057-chat-first-review
 
-**Change:** 032-data-retention-and-erasure
+**Change:** 057-chat-first-review
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -11,10 +11,9 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | ✅ Done |  |
+| Tasks | - | - |
 | Build | - | - |
-| Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/49 |
+| Verify | - | - |
 
 ## Task Progress
 

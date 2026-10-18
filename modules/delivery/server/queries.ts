@@ -190,24 +190,78 @@ export function stageColumns(releases: ReleaseRow[]): string[] {
   return out;
 }
 
-export type EnvironmentRow = { name: string; position: number; isProd: boolean; deployments: number };
+export type EnvironmentRow = { id: string; name: string; position: number; isProd: boolean; deployments: number };
 
 export const listEnvironments = (v: Viewer, projectKey: string) =>
-  read(v, async (tx) => (await tx.execute(sql`select e.name, e.position, e.is_prod, (select count(*)::int from delivery.deployment d where d.environment_id = e.id) as deployments
+  read(v, async (tx) => (await tx.execute(sql`select e.id, e.name, e.position, e.is_prod, (select count(*)::int from delivery.deployment d where d.environment_id = e.id) as deployments
     from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = ${projectKey} order by e.position`))
-    .map((e): EnvironmentRow => ({ name: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), deployments: Number(e.deployments) })));
+    .map((e): EnvironmentRow => ({ id: e.id as string, name: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), deployments: Number(e.deployments) })));
 
 export type DeploymentRow = { id: string; environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
 
+/**
+ * Which record a read names (057), one rule for releases, environments and deployments: its id, or its
+ * natural key in full. Anything less is refused ("say which ..."), never read as "not found". With an
+ * id, any key part also given only narrows: a mismatch reads as not found.
+ */
+export type ReleaseRef = { releaseId?: string; projectKey?: string; version?: string };
+export function checkReleaseRef(ref: ReleaseRef) {
+  if (!ref.releaseId && !(ref.projectKey && ref.version)) throw new Error("say which release: a releaseId, or a projectKey and version");
+}
+export function releaseWhere(ref: ReleaseRef) {
+  checkReleaseRef(ref);
+  const parts = [ref.releaseId ? sql`r.id = ${ref.releaseId}` : undefined, ref.projectKey ? sql`p.key = ${ref.projectKey}` : undefined, ref.version ? sql`r.version = ${ref.version}` : undefined];
+  return sql.join(parts.filter((x) => x !== undefined), sql` and `);
+}
+/** True when a release row is the one the ref names (the same rule as releaseWhere). */
+export function isRelease(r: { id: string; projectKey: string; version: string }, ref: ReleaseRef) {
+  checkReleaseRef(ref);
+  return (!ref.releaseId || r.id === ref.releaseId) && (!ref.projectKey || r.projectKey === ref.projectKey) && (!ref.version || r.version === ref.version);
+}
+
 /** One release with its proposals and full deployment history, voided ones included. */
-export const getRelease = (v: Viewer, projectKey: string, version: string) =>
+export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
-    const [r] = await tx.execute(sql`select r.*, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where p.key = ${projectKey} and r.version = ${version}`);
+    // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
+    const where = releaseWhere({ releaseId, projectKey, version });
+    const [r] = await tx.execute(sql`select r.*, p.key as project_key, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where ${where}`);
     if (!r) return null;
     const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
       .map((d): DeploymentRow => ({ id: d.id as string, environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
         recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
     const proposals = (await tx.execute(sql`select key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
       .map((p) => ({ key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
-    return { id: r.id as string, version: r.version as string, projectKey, projectName: r.project_name as string, history, proposals };
+    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, history, proposals };
   });
+
+// One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.
+/** One proposal by key (CON-12), or null. */
+export const getProposal = async (v: Viewer, key: string) => (await listProposals(v)).find((p) => p.key === key) ?? null;
+
+/**
+ * One environment by id, or by project key and name, or null (057). The id survives a rename, so row
+ * pins use it; a project key, when given with an id, only narrows.
+ */
+export const getEnvironment = async (v: Viewer, ref: { environmentId?: string; projectKey?: string; name?: string }) => {
+  if (!ref.environmentId && !(ref.projectKey && ref.name)) throw new Error("say which environment: an environmentId, or a projectKey and name");
+  const [hit] = await read(v, (tx) => tx.execute(ref.environmentId
+    ? sql`select p.key from delivery.environment e join delivery.project p on p.id = e.project_id where e.id = ${ref.environmentId}`
+    : sql`select p.key from delivery.project p where p.key = ${ref.projectKey!}`));
+  if (!hit || (ref.projectKey && ref.projectKey !== hit.key)) return null;
+  const e = (await listEnvironments(v, hit.key as string)).find((x) => (ref.environmentId ? x.id === ref.environmentId : x.name === ref.name));
+  // An id and a name that point at different environments is a confused call: refuse it, don't pick one (057).
+  if (e && ref.environmentId && ref.name !== undefined && ref.name !== e.name) throw new Error(`say which environment: ${ref.environmentId} is ${e.name}, not ${ref.name}`);
+  return e ? { projectKey: hit.key as string, ...e } : null;
+};
+
+/**
+ * One deployment by its id, voided or not, or null (057). The id is the key: a re-tag doesn't move it.
+ * A project key or version, when given, only narrows: a mismatch reads as not found.
+ */
+export const getDeployment = async (v: Viewer, deploymentId: string, scope: { projectKey?: string; version?: string } = {}) => {
+  const [hit] = await read(v, (tx) => tx.execute(sql`select r.id as release_id, r.version, p.key as project_key from delivery.deployment d
+    join delivery.release r on r.id = d.release_id join delivery.project p on p.id = r.project_id where d.id = ${deploymentId}`));
+  if (!hit || (scope.projectKey && scope.projectKey !== hit.project_key) || (scope.version && scope.version !== hit.version)) return null;
+  const d = (await getRelease(v, undefined, undefined, hit.release_id as string))?.history.find((x) => x.id === deploymentId);
+  return d ? { projectKey: hit.project_key as string, version: hit.version as string, ...d } : null;
+};

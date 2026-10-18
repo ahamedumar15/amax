@@ -1,6 +1,7 @@
 import { PinButton } from "@amax/ui";
 import type { TeamRow } from "../server/team";
 import { AskButton } from "./AskButton";
+import { decidePrompt, remindAllPrompt } from "./prompts";
 import { avatar, DAY_NAMES, hrs, initials, STATUS } from "./parts";
 
 // Quote every text cell, double embedded quotes, and defuse leading formula characters (CSV injection).
@@ -16,7 +17,7 @@ function Action({ row, weekKey }: { row: TeamRow; weekKey: string }) {
   if (!row.canApprove) return null;
   const verb = row.status === "submitted" ? "Approve" : "Remind";
   return <AskButton className={`btn sm${verb === "Approve" ? " ghost" : ""}`} spark={false} label={verb} name={`${verb} ${row.personName}`}
-    prompt={`${verb} ${row.personName}'s timesheet for ${weekKey}`} pin={sheetPin(row, weekKey)} />;
+    prompt={decidePrompt(verb, row, weekKey)} pin={sheetPin(row, weekKey)} />;
 }
 
 export function Timesheets({ rows, weekKey }: { rows: TeamRow[]; weekKey: string }) {
@@ -26,7 +27,7 @@ export function Timesheets({ rows, weekKey }: { rows: TeamRow[]; weekKey: string
       <div className="card-head">
         <h2>Timesheets</h2><PinButton inline pin={{ label: `Timesheets ${weekKey}`, tool: "get_team_week", args: { week: weekKey } }} />
         <div className="actions">
-          {late.length > 0 && <AskButton className="btn" spark={false} label={`Remind ${late.length} ${late.length === 1 ? "person" : "people"}`} prompt={`Remind ${late.map((r) => r.personName).join(", ")} to submit their timesheets for ${weekKey}`} pin={{ label: `Timesheets ${weekKey}`, tool: "get_team_week", args: { week: weekKey } }} />}
+          {late.length > 0 && <AskButton className="btn" spark={false} label={`Remind ${late.length} ${late.length === 1 ? "person" : "people"}`} prompt={remindAllPrompt(late, weekKey)} pin={{ label: `Timesheets ${weekKey}`, tool: "get_team_week", args: { week: weekKey } }} />}
           <a className="btn" download={`timesheets-${weekKey}.csv`} href={`data:text/csv;charset=utf-8,${csv(rows)}`}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export</a>
         </div>
       </div>

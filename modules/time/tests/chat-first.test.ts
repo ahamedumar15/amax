@@ -59,4 +59,15 @@ describe.skipIf(!hasDb)("054 time writes wait for chat's confirm; row pins read 
     const one = (await registry.call(kasun, "get_timesheet", { week: "2026-W42", project }, { source: "chat" })) as { rows: { projectName: string }[] };
     expect(one.rows.map((r) => r.projectName)).toEqual([project]);
   }, 60_000);
+
+  it.each([
+    ["a teammate, another person's week they can't see", "kasun", "nimal", {}],
+    ["a person, a project not on their week", "kasun", "kasun", { project: "No such project" }],
+    ["a person, a week id that doesn't exist", "kasun", null, {}],
+  ] as const)("057 get_timesheet returns null for %s", async (_n, who, whose, extra) => {
+    const viewer = await db.as(who);
+    const [{ id }] = whose ? await db.q(sql`select w.id from time.week w join auth.user u on u.id = w.user_id where u.email = ${`${whose}@lumenlabs.test`} and w.iso_week = 42`)
+      : [{ id: "00000000-0000-4000-8000-000000000000" }];
+    expect(await registry.call(viewer, "get_timesheet", { weekId: id, ...extra }, { source: "chat" })).toBeNull();
+  }, 60_000);
 });

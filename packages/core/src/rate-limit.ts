@@ -17,15 +17,26 @@ export class RateLimitedError extends Error {
 }
 
 type State = { limits: { page: Limits; call: Limits }; window: number; counts: Map<string, number>; sink: (l: Limited) => void; now: () => number };
-const state: State = { limits: { page: PAGES, call: CALLS }, window: -1, counts: new Map(), sink: () => {}, now: Date.now };
 
-export function configureRateLimits(opts: { page?: Partial<Limits>; call?: Partial<Limits>; sink?: (l: Limited) => void; now?: () => number }) {
+// One limiter per process. Next compiles the proxy and the app as separate bundles, each with its own
+// copy of this module; where they share a process (k3s, standalone) the state on globalThis is one.
+// Where the host runs the proxy apart (Vercel, Cloudflare), the proxy wires its own (review 058).
+const KEY = Symbol.for("amax.rate-limit");
+const shared = globalThis as unknown as { [KEY]?: State };
+const state: State = (shared[KEY] ??= { limits: { page: PAGES, call: CALLS }, window: -1, counts: new Map(), sink: () => {}, now: Date.now });
+
+type Options = { page?: Partial<Limits>; call?: Partial<Limits>; sink?: (l: Limited) => void; now?: () => number };
+
+export function configureRateLimits(opts: Options) {
   state.limits = { page: { ...PAGES, ...opts.page }, call: { ...CALLS, ...opts.call } };
   if (opts.sink) state.sink = opts.sink;
   if (opts.now) state.now = opts.now;
   state.counts.clear();
   state.window = -1;
 }
+
+/** The limits in force, for screens that show them. */
+export const rateLimits = () => ({ page: { ...state.limits.page }, call: { ...state.limits.call } });
 
 function subjects(k: RateKey): [Bucket, string][] {
   const out: [Bucket, string][] = [["tenant", k.tenantId]];

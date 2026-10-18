@@ -1,6 +1,6 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
-import { EVENTS } from "./contracts";
+import { EVENTS, type EntryLogged, type WeekDecided, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
 import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { MyPage } from "./ui/MyPage";
@@ -42,6 +42,14 @@ export default defineModule({
   ],
   chatIntents,
   jobs: [],
-  events: { emits: Object.values(EVENTS) },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: { emits: Object.values(EVENTS), payloads: {
+    [EVENTS.entryLogged]: declarePayload<EntryLogged>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", billable: "plain", source: "plain", lockedChange: "plain" }),
+    [EVENTS.weekSubmitted]: declarePayload<WeekSubmitted>({ weekId: "plain", userId: "plain", week: "plain", hours: "plain" }),
+    [EVENTS.weekApproved]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
+    [EVENTS.weekRejected]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
+    [EVENTS.weekReopened]: declarePayload<WeekReopened>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", reason: "plain" }),
+    [EVENTS.weekReminded]: declarePayload<WeekReminded>({ weekId: "plain", userId: "plain", week: "plain", by: "plain" }),
+  } },
   fixtures: [timeFixtures],
 });

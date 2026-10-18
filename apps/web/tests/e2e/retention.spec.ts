@@ -23,7 +23,7 @@ test("032 AC-6 Data retention: what needs attention first, every rule, request a
   await signIn(page, "maya@lumenlabs.test", "/settings/retention");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Data retention");
   await expect(page.locator(".lede")).toContainText("One erasure request is waiting for a second approver.");
-  await expect(page.locator(".ticket .k")).toHaveText(["Data classes covered", "Due tonight", "Open requests", "Legal holds"]);
+  await expect(page.locator(".ticket .k")).toHaveText(["Rules checked tonight", "Due tonight", "Open requests", "Legal holds"]);
   await expect(page.locator(".list li").first()).toContainText("Erasure, Rizwan Farook");
   await expect(page.locator(".list li").first()).toContainText("Salary and EPF number kept by law");
   await expect(page.getByRole("button", { name: "Ask to approve the erasure request for Rizwan Farook" })).toBeVisible();

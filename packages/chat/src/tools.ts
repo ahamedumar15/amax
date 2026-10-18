@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { McpToolDef, ModuleManifest } from "@amax/core";
 import { defineService, getRuntime, type ServiceContext, type Source } from "@amax/core/server";
-import { viewerOf, type Viewer } from "@amax/auth";
+import { contextForViewer, viewerOf, type Viewer } from "@amax/auth";
 import { ToolError } from "@amax/mcp";
 import { getConversation, listConversations } from "./history";
 
@@ -24,12 +24,7 @@ export const archiveConversation = defineService({
   },
 });
 
-const ctxFor = (viewer: Viewer, source: Source): ServiceContext => ({
-  tenantId: viewer.tenantId,
-  actor: { id: `user:${viewer.userId}`, kind: "user", roles: viewer.actualRoles },
-  source,
-  viewer,
-});
+const ctxFor = (viewer: Viewer, source: Source): ServiceContext => contextForViewer(viewer, source);
 
 type Run<I extends z.ZodType> = (v: Viewer, input: z.infer<I>, source: "mcp" | "chat") => Promise<unknown>;
 const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run"> & { input: I; run: Run<I> }) => t as unknown as McpToolDef;
@@ -53,6 +48,7 @@ export const chatPlatform: Pick<ModuleManifest, "id" | "mcpTools" | "grants" | "
   id: "chat",
   mcpTools: chatTools,
   grants: Object.fromEntries(ROLES.map((r) => [r, [`${ARCHIVE}@own`]])),
-  // 032 AC-2: chat is kept 90 days after its last message, then deleted.
-  retention: [{ table: "chat.conversation", label: "amax chat conversations", subject: ["user_id"], fields: ["messages", "pending", "title", "pins"], class: "personal", period: "P90D", start: { at: [], idle: "P90D" }, action: "delete" }],
+  // 032 AC-2: chat is kept 90 days after its last message (updated_at), then deleted. Not `idle`,
+  // which counts the period from the end of the idle time and so kept it 180 days (review 058 B1).
+  retention: [{ table: "chat.conversation", label: "amax chat conversations", subject: ["user_id"], fields: ["messages", "pending", "title", "pins"], class: "personal", period: "P90D", start: { at: ["updated_at"] }, action: "delete" }],
 };
