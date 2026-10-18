@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { rolesOf } from "@amax/auth";
+import { can, roleLabel } from "@amax/auth";
 import { connectedClients, toolCatalogue } from "@amax/mcp/admin";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "../../../../components/settings/AskButton";
@@ -15,7 +15,7 @@ const CLIENTS = { label: "Connected clients", tool: "list_mcp_clients", args: {}
 // Chat-first (047): revoking a client is an "Ask amax" chip; chat confirms revoke_mcp_client.
 export default async function IntegrationsPage() {
   const viewer = await getViewer();
-  if (!viewer || !rolesOf(viewer).includes("Admin")) notFound();
+  if (!viewer || !can(viewer, "mcp:client:read")) notFound();
   const tools = toolCatalogue(toolRegistry(), viewer.tenantId);
   const clients = await connectedClients(getDb()!, viewer.tenantId);
   const modules = [...new Set(tools.map((t) => t.module))];
@@ -51,7 +51,7 @@ export default async function IntegrationsPage() {
               {tools.filter((t) => t.module === m).map((t) => (
                 <tr key={t.name} className="pinnable"><td data-label="Tool"><b><code>{t.name}</code></b><small>{t.description}</small></td>
                   <td data-label="Scope"><span className={`chip ${t.scope === "write" ? "warn" : t.scope === "sensitive" ? "bad" : "good"}`}>{t.scope}</span>{t.destructive && <span className="chip bad">destructive</span>}</td>
-                  <td data-label="Who can use it">{t.roles.join(", ")}<PinButton pin={{ label: t.name, tool: "get_mcp_tool", args: { name: t.name } }} /></td></tr>
+                  <td data-label="Who can use it">{t.roles.map(roleLabel).join(", ")}<PinButton pin={{ label: t.name, tool: "get_mcp_tool", args: { name: t.name } }} /></td></tr>
               ))}
             </tbody>
           </table></div>

@@ -3,7 +3,8 @@ import { withTenant } from "@amax/db";
 import { aiConfigured, blockedReason, REGIONS } from "@amax/ai";
 import { aiStats } from "@amax/ai/admin";
 import { aiUsageTotals } from "@amax/ai/usage";
-import { costLabel } from "@amax/ai/usage-format";
+import { costLabel, PRICE_HIDDEN } from "@amax/ai/usage-format";
+import { usageViewer } from "@amax/ai/usage-tool";
 import { auditStatus, logError, type AuditStatus } from "@amax/core/server";
 import { CONNECTORS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
@@ -38,13 +39,13 @@ async function keys(v: Viewer): Promise<Area> {
 
 async function ai(d: AdminDeps, v: Viewer): Promise<Area[]> {
   // The usage screen's totals and label (048 AC-5, 053): calls with no price show as unknown, never $0.
-  const [s, usage] = await Promise.all([aiStats(d.db(), v.tenantId), aiUsageTotals(d.db(), { tenantId: v.tenantId, userId: v.userId, roles: v.actualRoles }, { scope: "tenant" })]);
+  const [s, usage] = await Promise.all([aiStats(d.db(), v.tenantId), aiUsageTotals(d.db(), usageViewer(v), { scope: "tenant" })]);
   const blocked = blockedReason(s.policy) ?? (aiConfigured() ? null : "no API key is configured on the server");
   const region = s.policy.dataRegion ? (REGIONS as Record<string, string>)[s.policy.dataRegion] ?? s.policy.dataRegion : "No data region";
   return [
     { id: "ai", title: "AI and data", href: "/settings/ai", blurb: "Where your data lives, which AI provider and region, and what may be sent to it.", stat: region,
       chip: blocked ? { tone: "bad", text: "AI off" } : s.policy.dataRegion ? { tone: "good", text: "In region" } : { tone: "warn", text: "No region set" }, ...(blocked ? { attention: `AI is off: ${blocked}` } : {}) },
-    { id: "ai-usage", title: "AI usage", href: "/settings/ai/usage", blurb: "What chat and agents cost this month, by person, feature and model.", stat: plural(usage.calls, "call"), chip: { tone: "info", text: `${costLabel(usage)} this month` } },
+    { id: "ai-usage", title: "AI usage", href: "/settings/ai/usage", blurb: "What chat and agents cost this month, by person, feature and model.", stat: plural(usage.calls, "call"), chip: { tone: "info", text: usage.costUsd === undefined ? PRICE_HIDDEN : `${costLabel(usage)} this month` } },
   ];
 }
 
