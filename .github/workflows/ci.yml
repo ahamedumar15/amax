@@ -35,7 +35,9 @@ jobs:
         run: psql "$DATABASE_MIGRATE_URL" -c "create role amax_app login password 'amax_app'"
       - run: pnpm db:migrate
       - run: pnpm lint
-      - run: pnpm test
+      # 061: one Postgres serves every package's tests; more packages at once than the runner has cores
+      # starves them past their setup timeouts.
+      - run: pnpm turbo run test --concurrency=2
       - run: node scripts/check-module-standard.mjs
       - run: pnpm build
       - run: pnpm --filter @amax/web exec playwright install --with-deps chromium
