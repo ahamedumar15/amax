@@ -16,7 +16,7 @@ describe("AC-2 expiry reminders are a scheduled workflow", () => {
 
 describe.skipIf(!hasDb)("AC-2 the daily sweep (Postgres)", () => {
   let db: Awaited<ReturnType<typeof learningDb>>;
-  beforeAll(async () => { db = await learningDb(); }, 240_000);
+  beforeAll(async () => { db = await learningDb(); }, 60_000);
   afterAll(() => db?.t.drop());
   const sweep = (on: string) => remindDue(contextFor.job(T, "learning.certification-expiry"), { on });
 

@@ -1,4 +1,5 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
@@ -20,10 +21,10 @@ const withDb = (url: string, name: string) => {
 
 // A throwaway database. `owner` runs migrations; `app()` connects as owner but switches to amax_app,
 // so row-level security applies exactly as it does for the running app.
-export async function freshDatabase() {
+export async function freshDatabase(template?: string) {
   const name = `amax_test_${randomBytes(4).toString("hex")}`;
   const admin = postgres(adminUrl!, { max: 1, onnotice: () => {} });
-  await admin.unsafe(`create database ${name}`);
+  await admin.unsafe(template ? `create database ${name} template ${template}` : `create database ${name}`);
   const url = withDb(adminUrl!, name);
   const owner = postgres(url, { max: 4, onnotice: () => {} });
   const apps: postgres.Sql[] = [];
@@ -44,13 +45,57 @@ export async function freshDatabase() {
   };
 }
 
-// A throwaway database with core and every installed module migrated.
-export async function migratedDatabase() {
-  const t = await freshDatabase();
-  await migrate(t.owner, migrationScopes(repoRoot));
-  return t;
+// Migrating core and every module per test file outgrew CI's setup timeout once the modules multiplied
+// (061). So the schema is migrated once into a template database named by a hash of the migration
+// files, and each test gets a copy: `create database … template` takes well under a second.
+const TEMPLATE_PREFIX = "amax_tpl_";
+const KEEP_TEMPLATES = 3;
+
+export function migrationHash(root = repoRoot) {
+  const h = createHash("sha256");
+  for (const scope of migrationScopes(root)) {
+    for (const file of readdirSync(scope.dir).filter((f) => f.endsWith(".sql")).sort()) h.update(`${scope.name}/${file}\0`).update(readFileSync(join(scope.dir, file))).update("\0");
+  }
+  return h.digest("hex").slice(0, 16);
 }
 
+// One build per migration set across every worker and package sharing this Postgres: the first holds
+// an advisory lock while it builds under a temporary name and renames it when done, so a template that
+// exists is complete. Templates beyond the newest few (other branches, older migrations) are dropped.
+async function buildTemplate(name: string) {
+  const admin = postgres(adminUrl!, { max: 1, onnotice: () => {} });
+  try {
+    await admin`select pg_advisory_lock(hashtext('amax_test_template'))`;
+    const [found] = await admin`select 1 from pg_database where datname = ${name}`;
+    if (!found) {
+      const building = `${name}_building`;
+      await admin.unsafe(`drop database if exists ${building} with (force)`);
+      await admin.unsafe(`create database ${building}`);
+      const owner = postgres(withDb(adminUrl!, building), { max: 1, onnotice: () => {} });
+      try {
+        await migrate(owner, migrationScopes(repoRoot));
+      } finally {
+        await owner.end();
+      }
+      await admin.unsafe(`alter database ${building} rename to ${name}`);
+    }
+    const stale = await admin`select datname from pg_database where datname like ${`${TEMPLATE_PREFIX}%`} and datname not like '%_building' and datname <> ${name}
+      order by oid desc offset ${KEEP_TEMPLATES - 1}`;
+    for (const r of stale) await admin.unsafe(`drop database if exists ${r.datname} with (force)`);
+  } finally {
+    await admin`select pg_advisory_unlock(hashtext('amax_test_template'))`.catch(() => {});
+    await admin.end();
+  }
+  return name;
+}
+
+let template: Promise<string> | undefined;
+export const migratedTemplate = () => (template ??= buildTemplate(`${TEMPLATE_PREFIX}${migrationHash()}`));
+
+// A throwaway database with core and every installed module migrated: a copy of the template.
+export async function migratedDatabase() {
+  return freshDatabase(await migratedTemplate());
+}
 
 // Tables the app role can reach without tenant isolation: any table with a tenant_id column
 // (plus core.tenant) that lacks enabled + forced RLS or a policy. Modules assert this is empty.

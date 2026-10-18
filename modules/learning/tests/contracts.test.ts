@@ -20,7 +20,7 @@ describe("AC-3 contract shape", () => {
 
 describe.skipIf(!hasDb)("AC-3 contract reads and event payloads (Postgres)", () => {
   let db: Awaited<ReturnType<typeof learningDb>>;
-  beforeAll(async () => { db = await learningDb(); }, 240_000);
+  beforeAll(async () => { db = await learningDb(); }, 60_000);
   afterAll(() => db?.t.drop());
 
   it("reads programmes and certifications, and recording one emits the published payload", async () => {

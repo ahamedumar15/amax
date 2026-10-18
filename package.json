@@ -6,7 +6,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev --filter=@amax/web",
     "lint": "turbo run lint && node scripts/check-graph.mjs",
-    "test": "turbo run test --concurrency=4",
+    "test": "turbo run test",
     "db:migrate": "pnpm --filter @amax/db migrate",
     "check:graph": "node scripts/check-graph.mjs",
     "graph": "node scripts/check-graph.mjs --graph"
