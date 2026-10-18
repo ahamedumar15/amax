@@ -1,9 +1,10 @@
 {
   "change": "043-chat-write-tool-contract",
-  "phase": "build",
+  "phase": "verify",
   "branch": "specclaw/043-chat-write-tool-contract",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T09:08:47Z"},
-    "build": {"status":"in-progress","at":"2026-10-18T09:09:09Z"}
+    "build": {"status":"done","at":"2026-10-18T09:24:51Z"},
+    "verify": {"status":"done","at":"2026-10-18T09:24:51Z"}
   }
 }
