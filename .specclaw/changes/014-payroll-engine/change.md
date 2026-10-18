@@ -23,4 +23,26 @@ Payroll: steps, totals, where the money goes, cost line, changes with Accept/Que
 
 ## Tasks
 
+Approved by the product owner in Discord, 2026-10-18 ("start with 38, then wave 4"). This is the
+country-agnostic engine. The Sri Lanka (EPF/ETF/APIT) and Australia (PAYG/super/STP) figures in the
+mock come from 015 and 016. Until they land, a fixture "demo" country pack computes simple, clearly
+fictional deductions, so the engine and screen can be shown end to end.
+
+- [ ] `T1` — Payroll screen, as in the mock: the run's step bar, the totals tiles, "Where the money goes", the cost line, "Changes since last period" with Accept/Query through Ask amax, and the payslip list and drawer. "Approve run" stays disabled while any change is open. Every row and tile is pinned. Finance sees totals by entity and cost centre only (AC-1, AC-2, AC-3)
+  Files: modules/payroll/ui/*.tsx, modules/payroll/ui/payroll.css, modules/payroll/module.ts, modules/payroll/tests/e2e/payroll.spec.ts
+- [ ] `T2` — Contracts first, then the `payroll` schema (pay component, pay group, run, payslip line). Runs step Draft → Agent check → HR approval → Finance approval → Bank file → Payslips sent, each step an audited service and MCP write tool. Finance approval reads totals by entity and cost centre only (AC-1)
+  Files: modules/payroll/contracts.ts, modules/payroll/db/migrations/0001_payroll.sql, modules/payroll/server/*.ts, modules/payroll/mcp.ts, modules/payroll/fixtures/, modules/payroll/tests/runs.test.ts, modules/payroll/tests/contracts.test.ts
+- [ ] `T3` — The country-pack interface (`calculate`, `statutory`, `filings`). The draft is built from hr pay data, leave and (optionally) time through their contracts. A fixture demo pack covers it until 015 and 016 land (AC-4)
+  Files: modules/payroll/packs.ts, modules/payroll/server/draft.ts, modules/payroll/tests/packs.test.ts
+  Depends: T2
+- [ ] `T4` — The payroll agent explains every line that changed since last period as a 006 suggestion (Accept or Query). The run can't be approved while one is open or queried. The bank file is an irreversible 006 kind needing two approvers (AC-1, AC-2)
+  Files: modules/payroll/suggestions.ts, modules/payroll/server/variance.ts, modules/payroll/tests/variance.test.ts
+  Depends: T3
+- [ ] `T5` — Pay visibility (002): pay values go only to Payroll and Admin, and to an employee for their own payslip. Finance and everyone else get 404 or totals only, across screens, MCP and chat redaction (`sensitive: pay`) (AC-3)
+  Files: modules/payroll/server/read.ts, modules/payroll/tests/visibility.test.ts
+  Depends: T2
+- [ ] `T6` — Module standard: README, manifest, CODEOWNERS line, retention with statutory periods, can be switched off, and degrades without time (AC-5)
+  Files: modules/payroll/README.md, modules/payroll/package.json, .github/CODEOWNERS, modules/payroll/tests/standard.test.ts
+  Depends: T4, T5
+
 ## Verify
