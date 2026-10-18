@@ -57,3 +57,44 @@ workflows:
           memory: 256Mi
         limits:
           memory: 768Mi
+
+# 034 point-in-time recovery on k3s: a CloudNativePG cluster (install the CNPG operator first) that
+# archives WAL to object storage at least every `archiveTimeout`, so the recovery point is 5 minutes
+# (target 15). Base backups run nightly and are kept `retention`; the bucket must be in the data region
+# and encrypted (SSE or a KMS key). `objectStore.secret` holds ACCESS_KEY_ID and ACCESS_SECRET_KEY.
+# Point DATABASE_URL at <release>-pg-rw. See docs/operations.md.
+postgres:
+  cnpg:
+    enabled: false
+    instances: 2
+    imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+    storage: 20Gi
+    archiveTimeout: 5min
+    retention: 14d
+    backupSchedule: "0 0 2 * * *"
+    objectStore:
+      destinationPath: s3://amax-backups/cnpg
+      endpointURL: ""
+      secret: amax-backup-s3
+      encryption: AES256
+
+# 034 tenant snapshots and the weekly restore drill. Snapshots are a 029 workflow in the app; the drill
+# restores the latest one into a scratch database (AMAX_DRILL_DATABASE_URL in envFromSecret, the owner
+# of a database it may wipe), checks row counts and the audit chain, and records the result. It runs
+# every 15 minutes but only drills a tenant that is due (Sunday) or asked for one. It uses the image
+# built with `docker build --target ops` (tagged <tag>-ops).
+backups:
+  # A PVC for AMAX_BACKUP_DIR when snapshots go to a volume rather than S3_BACKUP_BUCKET.
+  volumeClaim: ""
+  # A Secret with `kms.key` when AMAX_KMS=local: mounted as AMAX_KMS_KEY_FILE.
+  kmsKeySecret: ""
+  drill:
+    enabled: false
+    schedule: "*/15 * * * *"
+    tag: ""
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi

@@ -41,7 +41,7 @@ New admin screen, Backups and export: the recovery window, last backup and last 
 - [x] `T6` — Leaving tenant: offboarding offers an export, waits 30 days (a 029 workflow, paused while a legal hold is active), then destroys the tenant's data key through a gated database function so snapshots can't be read; every step audited (AC-5)
   Files: packages/core/src/backup/offboard.ts, packages/core/src/secrets/runtime.ts, packages/db/migrations/0030_backup.sql, apps/web/lib/platform-workflows.ts, apps/web/lib/admin/backups.ts, packages/core/tests/backup-offboard.test.ts
   Depends: T5
-- [ ] `T7` — Deploy: point-in-time recovery per host in docs/operations.md (managed Postgres for Vercel and Cloudflare, CloudNativePG with WAL archiving on k3s), the chart's CNPG Cluster, ScheduledBackup and restore-drill CronJob, a Dockerfile ops target, podman timer notes (AC-1, AC-3)
+- [x] `T7` — Deploy: point-in-time recovery per host in docs/operations.md (managed Postgres for Vercel and Cloudflare, CloudNativePG with WAL archiving on k3s), the chart's CNPG Cluster, ScheduledBackup and restore-drill CronJob, a Dockerfile ops target, podman timer notes (AC-1, AC-3)
   Files: docs/operations.md, docs/architecture.md, deploy/helm/amax/values.yaml, deploy/helm/amax/templates/postgres-cnpg.yaml, deploy/helm/amax/templates/restore-drill.yaml, deploy/podman/*, Dockerfile
   Depends: T4
 - [ ] `T8` — Tests and CI: CI runs the drill on k3d (Postgres in the cluster, a snapshot, then the drill job); e2e for the screen, Admin-only visibility and the chat-confirmed export request; the 2% visual diff against the mock (AC-3, AC-4, AC-6)
