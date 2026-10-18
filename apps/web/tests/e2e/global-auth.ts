@@ -63,7 +63,7 @@ export async function importAmx(admin: string) {
   const id = await authenticateToken(db, token);
   if (id?.kind !== "principal") throw new Error("no principal");
   const ctx = await principalContext(db, id.principal, "delivery:proposal:sync");
-  await syncSpecclaw(db, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(join(import.meta.dirname, "../../../..")), sha: "e2e" });
+  await syncSpecclaw(db, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records: readSpecclaw(join(import.meta.dirname, "../../../..")), sha: "e2e", committedAt: new Date().toISOString() });
   await client.end();
 }
 

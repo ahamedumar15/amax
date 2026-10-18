@@ -1,0 +1,91 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 0
+ },
+ "escalated": [
+  "0f8145c6625d"
+ ],
+ "files": [
+  "apps/web/tests/e2e/global-auth.ts",
+  "modules/delivery/chat.ts",
+  "modules/delivery/server/push.ts",
+  "modules/delivery/server/repo-sync.ts",
+  "modules/delivery/server/services.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/sync/repo-name.ts",
+  "modules/delivery/tests/ingest-ac1.test.ts",
+  "modules/delivery/tests/ingest-ac2.test.ts",
+  "modules/delivery/tests/stable-pins.test.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/tests/sync-push.test.ts",
+  "plugins/amax/skills/sync-specclaw/SKILL.md"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "modules/delivery/server/services.ts",
+   "fp": "1217225c904c",
+   "in_delta": true,
+   "line": 207,
+   "message": "This round makes `committedAt` required on `SyncInput` and on `markSynced` (line 243), and now every `sync_proposal` and self-sync write moves the stale mark with it. Neither schema has the future-date bound that `PushInput` has (push.ts:36, `SKEW_MS`). The `sync_proposal` MCP tool schema (mcp.ts:79) doesn't have it either. The rule \"a commit time from a skewed clock must not make every later push stale\" therefore exists only in push.ts. `markSyncedRows` uses `greatest()`, so a future mark can never be lowered. Fix: define the bounded `committedAt` schema once, export it, and use it in `PushInput`, `SyncInput`, `markSynced` and the `sync_proposal` tool. Add a variant test for a future `committedAt` on each path: push, `sync_proposal` and self-sync.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "CI's clock reads 2027, or a payload is written by hand. CI calls `sync_proposal` for FLT-102 with committedAt 2027-03-01, or the self-sync CLI runs with a skewed commit date. FLT-102's `synced_commit_at` becomes 2027-03-01. Until March 2027, every correct `sync_specclaw` push for FLT-102 on any branch is skipped as 'stale: last synced from a newer commit'.",
+   "severity": "major"
+  },
+  {
+   "file": "modules/delivery/sync/import.ts",
+   "fp": "0f8145c6625d",
+   "in_delta": true,
+   "line": 77,
+   "message": "The withdraw fix only covers the run that first withdraws a proposal. On every later self-sync, line 77 skips rows that already have `meta.withdrawn` set. Those rows are left out of `same` and get no `syncProposal`, so their stale mark stays at the commit that first withdrew them. That is the same unchanged-row hole that round 4 fixed for present proposals, now in the withdrawn variant: main at a newer commit still says the change is gone, but the mark doesn't move. `applyPush` then accepts any default-branch push dated after the first withdrawal, and `desired()` builds `meta` without `withdrawn`, so the push brings the proposal back. Fix: put already-withdrawn keys that are still missing into the `markSynced` key list (`same`), so the mark moves for every proposal the self-sync read, absent ones included. Add a table row to the AC-8 test: withdraw at T1, self-sync again at T3 with the folder still gone, then a default-branch push at T2 (T1 < T2 < T3) must be skipped as stale.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "12:40: the self-sync withdraws FLT-102, so its mark is 12:40. 13:00: the self-sync runs again with 102 still absent; the row is skipped and the mark stays 12:40. A developer whose local main is at a 12:50 commit, which still has 102, then runs sync_specclaw on main with committedAt 12:50. The stale check passes (12:40 < 12:50), and upsertSpecProposal writes meta without `withdrawn`. FLT-102 is back in lists and counts, although main at 13:00 says it was removed.",
+   "severity": "major"
+  }
+ ],
+ "head": "82fadd1182aacad655f2e0cc6e9d61064dc66f2e",
+ "impact": [
+  "apps/web/app/actions/chat.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/tests/e2e/amx.setup.ts",
+  "modules/allocations/chat.ts",
+  "modules/allocations/module.ts",
+  "modules/allocations/tests/allocations.test.ts",
+  "modules/compliance/chat.ts",
+  "modules/compliance/module.ts",
+  "modules/compliance/tests/chat-first.test.ts",
+  "modules/compliance/tests/contracts.test.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/delivery.test.ts",
+  "modules/hr/chat.ts",
+  "modules/hr/module.ts",
+  "modules/hr/tests/hr.test.ts",
+  "modules/keyflow/chat.ts",
+  "modules/keyflow/module.ts",
+  "modules/keyflow/tests/chat-first.test.ts",
+  "modules/learning/chat.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 88498,
+ "round": 6,
+ "since": "b99d5c5faf",
+ "status": "escalate",
+ "system_chars": 38741,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792329460,
+ "ts_start": 1792329376
+}
