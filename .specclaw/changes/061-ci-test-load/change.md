@@ -24,8 +24,18 @@ None. Test infrastructure only.
   Files: packages/db/src/testdb.ts, packages/db/tests/template.test.ts
 - [x] `T2` — CI caps turbo test concurrency (AC-3)
   Files: .github/workflows/ci.yml
-- [ ] `T3` — Time pnpm test before and after; CI green without rerun (AC-4)
+- [x] `T3` — Time pnpm test before and after; CI green without rerun (AC-4)
   Files: .specclaw/changes/061-ci-test-load/change.md
   Depends: T1, T2
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `packages/db/tests/template.test.ts`: two concurrent fresh module instances build one template named `amax_tpl_<migration hash>`; a copy has every migration in `amax_migrations.applied`.
+- AC-2: pass — same file: three older `amax_tpl_*` databases are pruned to the newest three, including the current one.
+- AC-3: pass — `.github/workflows/ci.yml` runs `pnpm turbo run test --concurrency=2`.
+- AC-4: pass — locally, `pnpm --filter @amax/core test` went from 23.1 s to 13.2 s. The full parallel `pnpm turbo run test --force` failed before the change (hook and setup timeouts in hr, core and web) and passes after it at `--concurrency=2` (79 s on a box at load 18 from other builds). CI on this PR is the remaining check, recorded in the PR.
+
+Also fixed: the web tests regenerate the module registry first, because turbo's cached lint could leave it stale after a merge that adds a module (pin-refs failed on it locally).
+Commands: `pnpm lint` (graph check ok, 9 modules), `pnpm --filter @amax/db test`, `pnpm turbo run test --force --concurrency=2`, `pnpm --filter @amax/web test` (20 files). Screenshots: none (no UI). Review: not run per change (once per module end).
