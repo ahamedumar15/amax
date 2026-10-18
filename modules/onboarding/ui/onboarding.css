@@ -1,0 +1,43 @@
+/* Onboarding screen: the mock's card, list and ticket rules (module standard: shared UI starts in the module). */
+.onboarding{--o-late:#B4232F;--o-done:#0F7A50}
+:root[data-theme="dark"] .onboarding{--o-late:#FF8A94;--o-done:#5FE0A6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .onboarding{--o-late:#FF8A94;--o-done:#5FE0A6}}
+.onboarding .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.onboarding .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.onboarding .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.onboarding .row.head .lede{margin:0}
+.onboarding .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.onboarding .tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.onboarding .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+.onboarding .stack{display:grid;gap:28px;min-width:0}
+.onboarding .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;min-height:38px;padding-right:36px}
+.onboarding .card-head h2{margin:0}
+.onboarding .card-head small,.onboarding .list small{display:block;color:var(--ink-3);font-size:12.5px}
+.onboarding .who{display:flex;align-items:center;gap:12px;min-width:0}
+.onboarding .meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.onboarding h3{font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--ink-3);margin:18px 0 6px}
+.onboarding .group:first-of-type h3{margin-top:0}
+.onboarding .muted{color:var(--ink-3);font-size:13px}
+.onboarding .hr{height:1px;background:var(--line-2);margin:20px 0}
+.onboarding .list{list-style:none;margin:0;padding:0}
+.onboarding .list li{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+.onboarding .list li:first-child{border-top:0}
+.onboarding .list .l{display:flex;align-items:center;gap:12px;min-width:0}
+.onboarding .list .r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.onboarding .list li.done .l>div{color:var(--ink-3)}
+.onboarding .list .chip{margin-left:8px}
+.onboarding .tick{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-2);display:grid;place-items:center;font-size:12px;flex:none;color:#fff}
+.onboarding .tick.on{background:var(--o-done);border-color:var(--o-done)}
+.onboarding .late{color:var(--o-late);font-weight:600}
+.onboarding .av{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;flex:none}
+.onboarding .av.sm{width:30px;height:30px;border-radius:10px;font-size:11px}
+.onboarding .a1{background:linear-gradient(135deg,#FFB86B,#F48B9B)}
+.onboarding .a2{background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
+.onboarding .a3{background:linear-gradient(135deg,#7BE3B4,#2FB5A0)}
+.onboarding .a4{background:linear-gradient(135deg,#C3B5FF,#8E6CF0)}
+.onboarding .btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:10px}
+.onboarding .empty-line{color:var(--ink-3);font-size:14px;margin:0}
+.onboarding .exit textarea{width:100%;min-height:88px;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:inherit}
+.onboarding .exit label{display:block;font-weight:600;margin:16px 0 6px}
+@media (max-width:1100px){.onboarding .cols{grid-template-columns:minmax(0,1fr)}.onboarding .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.onboarding .tickets.four{grid-template-columns:minmax(0,1fr)}}
