@@ -1,4 +1,4 @@
-# 063 career tree: deterministic layout. y is linear in months from Jun 2021 (m=0) to today (m=64).
+# 066 career tree: deterministic layout. y is linear in months from Jun 2021 (m=0) to today (m=64).
 import math
 W,TX,R=820,410,10          # width, trunk x, elbow radius
 Y=lambda m:470-6.4*m

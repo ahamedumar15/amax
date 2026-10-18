@@ -1,6 +1,6 @@
 # Career tree: one person's whole history in one view
 
-**Change:** 063-career-tree · **Created:** 2026-10-18
+**Change:** 066-career-tree · **Created:** 2026-10-18
 **Lane:** People · **Module:** `modules/career` (new) · **Depends on:** [011](../archive/011-hr-core/change.md), [010](../archive/010-allocations-forecast/change.md), [024](../archive/024-learning/change.md), [007](../archive/007-delivery-projects/change.md), [050](../archive/050-immutable-trace/change.md)
 
 ## Problem
@@ -13,7 +13,7 @@ and staffing.
 
 ## Mock Delta
 
-What changes on screen, and where to see it: [`063-career-tree`](../../mock/index.html#063-career-tree)
+What changes on screen, and where to see it: [`066-career-tree`](../../mock/index.html#066-career-tree)
 
 New "Career" view under the Person page (Kasun Dias). The career tree is drawn to scale, not
 freehand:
