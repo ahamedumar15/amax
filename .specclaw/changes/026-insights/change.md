@@ -38,7 +38,7 @@ The mock's "Recurring agent work" lists 029 schedules (`listSchedules`, `agentJo
 
 The "Next 90 days" and "Next 12 months" tabs are read-only horizons. "Board pack" exports the screen's insights as CSV.
 
-- [ ] `T1` — Insights screen, as in the mock:
+- [x] `T1` — Insights screen, as in the mock:
   - the lede and horizon tabs
   - "This week's briefing", each point with its source, confidence and date, "Show evidence" and "Discuss with amax"
   - Projects at risk (Delivery, Commercial and People tabs)
