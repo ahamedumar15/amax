@@ -1,0 +1,10 @@
+{
+  "change": "026-insights",
+  "phase": "pr",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T17:33:43Z"},
+    "verify": {"status":"done","at":"2026-10-18T18:34:36Z"},
+    "pr": {"status":"raised","at":"2026-10-18T18:34:47Z","url":"https://github.com/chan4lk/amax/pull/89"}
+  }
+}

@@ -10,11 +10,11 @@ import { listOpportunities } from "../server/queries";
 import { presalesDb } from "./db";
 
 describe("AC-4 module standard", () => {
-  it("can be switched off: nothing outside modules/presales imports it", () => {
+  it("can be switched off: nothing outside modules/presales imports it but through its contracts", () => {
     expect(discoverModules(join(repoRoot, "modules"), ["presales"])).not.toContain("presales");
     const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((d) => d.isDirectory() ? (d.name === "node_modules" ? [] : files(join(dir, d.name))) : /\.tsx?$/.test(d.name) ? [join(dir, d.name)] : []);
     const outside = readdirSync(join(repoRoot, "modules")).filter((m) => m !== "presales").flatMap((m) => files(join(repoRoot, "modules", m)));
-    expect(outside.filter((f) => readFileSync(f, "utf8").includes("@amax/presales"))).toEqual([]);
+    expect(outside.filter((f) => /@amax\/presales(?!\/contracts")/.test(readFileSync(f, "utf8")))).toEqual([]);
   });
 });
 

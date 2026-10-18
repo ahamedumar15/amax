@@ -30,12 +30,11 @@ export const AREAS: Area[] = [
     { text: "Expense claims, approved by the manager and then Finance", module: "expenses" },
     { text: "Presales pipeline", module: "presales" },
   ] },
-  { title: "Operations", pitch: "Compliance and incidents, on the record.", tone: "v4", coming: [
-    { text: "Insights", module: "insights", words: ["insights"] },
-  ], live: [
+  { title: "Operations", pitch: "Compliance and incidents, on the record.", tone: "v4", coming: [], live: [
     { text: "IT access and licences, with every grant and revoke decided by a person", module: "it-access" },
     { text: "Compliance registers and incidents", module: "compliance" },
     { text: "Helpdesk queues with SLAs, and a support agent that acts only on approved requests", module: "helpdesk" },
+    { text: "Insights: a weekly agent briefing, projects at risk and market position, every point with its evidence", module: "insights" },
     { text: "Notifications", module: "notifications" },
   ] },
   { title: "Platform", pitch: "Every capability is an MCP tool.", tone: "v5", coming: [], live: [
