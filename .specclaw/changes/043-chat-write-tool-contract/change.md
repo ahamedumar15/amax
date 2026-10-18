@@ -46,3 +46,5 @@ seen at run time, so `check:modules` closes that gap statically: every `scope: "
   Depends: T3, T4
 
 ## Verify
+
+Quality: not_run (`specclaw-quality-scan` fails with "jq: Argument list too long" on this repo).
