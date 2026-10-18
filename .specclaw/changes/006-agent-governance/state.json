@@ -1,9 +1,10 @@
 {
   "change": "006-agent-governance",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T04:35:36Z"},
-    "verify": {"status":"done","at":"2026-10-18T05:09:17Z"}
+    "verify": {"status":"done","at":"2026-10-18T05:09:17Z"},
+    "pr": {"status":"raised","at":"2026-10-18T05:14:43Z","url":"https://github.com/chan4lk/amax/pull/60"}
   }
 }
