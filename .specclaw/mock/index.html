@@ -2309,6 +2309,34 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   <div class="card" style="margin-top:20px;max-width:520px"><div class="card-head"><h2>Release v2.4.0</h2><button class="btn sm">📌</button></div><p class="muted">Edit tag, record or void a deployment: ask in chat.</p><button class="btn sm">✦ Ask amax to record a deployment</button></div>
 </section>
 
+<!-- ================= 062 specclaw sync plugin ================= -->
+<section data-change="062-specclaw-sync-plugin" id="062-specclaw-sync-plugin" data-roles="admin leadership pm engineer" data-title="Repo sync" data-nav="no" data-icon="plug">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span>Contoso Portal (fictional)</nav>
+  <h1>Repo sync</h1>
+  <p class="lede">Proposals follow the linked repo's specclaw state. 2 pushes were refused today.</p>
+  <div class="tickets four">
+    <div class="ticket t-yellow"><div class="k">Refused today <span class="chip">📌</span></div><div class="v">2</div><div class="p">Stale sha, repo mismatch</div></div>
+    <div class="ticket t-mint"><div class="k">Last sync <span class="chip">📌</span></div><div class="v">09:42</div><div class="p">Claude for Kasun Dias</div></div>
+    <div class="ticket t-violet"><div class="k">Last push <span class="chip">📌</span></div><div class="v">3 updated</div><div class="p">14 unchanged · 0 created</div></div>
+    <div class="ticket t-mint"><div class="k">Linked repo <span class="chip">📌</span></div><div class="v">contoso-portal</div><div class="p">github.com/example/contoso-portal</div></div>
+  </div>
+  <div class="card flush" style="margin-top:20px"><div class="card-head"><h2>Refused pushes</h2><button class="btn sm">✦ Ask amax to change the linked repo</button></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>When</th><th>By</th><th>Key</th><th>Reason</th><th></th></tr></thead><tbody>
+    <tr><td>09:40</td><td>Claude for Nimal Silva</td><td>CON-031</td><td>stale: older sha than stored for main</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>08:15</td><td>Claude for Ayesha Rahman</td><td>all</td><td>repo not linked to CON (github.com/example/fleet-tracker)</td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="card" style="margin-top:20px;max-width:620px"><div class="card-head"><h2>Plugin dry run (developer machine)</h2></div>
+<pre style="white-space:pre-wrap;font-size:13px">/amax:sync-specclaw
+repo  github.com/example/contoso-portal @ main 4f2c9a1
+project CON (linked)
+dry run: 0 created · 3 updated · 14 unchanged · 1 refused
+  CON-033  building → verified
+  CON-034  tasks 2/6 → 5/6
+  CON-035  planned → building
+  refused CON-012  released belongs to Prod deployments
+Apply 3 updates? (y/N)</pre></div>
+</section>
+
 <!-- ================= 028 Keyflow sync ================= -->
 <section data-change="028-keyflow-sync" id="028-keyflow-sync" data-roles="admin hr" data-title="Keyflow" data-nav="no" data-parent="038-settings" data-icon="plug">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span><a href="#001-amax-foundation-integrations">Integrations</a><span>/</span>Keyflow</nav>

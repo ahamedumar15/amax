@@ -1,13 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 10:07 UTC
-
-_1 unnumbered change · run `/specclaw-extras:renumber` to order them_
+**Last Updated:** 2026-10-18 10:44 UTC
 
 ## Active Changes
 
-_No active changes._
+
+- 🔀 **038-navigation-scale** — PR #69 merged
+- 📝 **062-specclaw-sync-plugin** — tasks done | 0/6 tasks (0%) | 0 failed
 
 ## Pending Proposals
 
@@ -27,7 +27,6 @@ _No active changes._
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **027-reports** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
-- 📋 **038-navigation-scale** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -80,6 +79,6 @@ _No active changes._
 
 ## Stats
 
-- **Total changes:** 45
-- **Active:** 0
+- **Total changes:** 47
+- **Active:** 2
 - **Completed:** 45

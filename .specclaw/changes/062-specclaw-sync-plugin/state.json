@@ -1,0 +1,9 @@
+{
+  "change": "062-specclaw-sync-plugin",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-18T10:42:14Z"},
+    "tasks": {"status":"done","at":"2026-10-18T10:43:35Z"}
+  }
+}

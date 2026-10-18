@@ -5,7 +5,7 @@
 
 ## Problem
 
-Agents keep the records: specclaw syncs proposal phases and tasks, commits close tasks and log time, and pipelines record deployments.
+Agents keep the records: commits close tasks and log time, and pipelines record deployments.
 
 ## Mock Delta
 
@@ -15,13 +15,13 @@ The Overview activity feed and the "Claude for <person>" attribution.
 
 ## Acceptance Criteria
 
-1. **AC-1** MCP tools `sync_proposal`, `mark_task_done` and `record_deployment` accept calls from specclaw and CI, authenticated as the person or as a 002 service principal limited to these tools and the people it may act for.
+1. **AC-1** MCP tools `mark_task_done` and `record_deployment` accept calls from CI, authenticated as the person or as a 002 service principal limited to these tools and the people it may act for. specclaw proposal sync moved to [062](../062-specclaw-sync-plugin/change.md): the `amax` Claude plugin (`plugins/amax/`) pushes a repo's specclaw state through the `sync_specclaw` MCP tool.
 2. **AC-2** An Azure DevOps and GitHub webhook adapter, verified through 035 (signature, replay window, dedupe), maps commit authors to people through GitIdentity. A commit is attributed only when the provider verified its signature or the author email is verified for that GitIdentity; unverified and unmatched authors become a suggestion to link.
 3. **AC-3** Time logged from commits is a draft suggestion on the person's timesheet (through the `time` contract), never approved automatically.
 4. **AC-4** Each ingested event shows on the Overview feed with agent and person attribution.
 5. **AC-5** The module meets `docs/module-standard.md`: it changes nothing outside `modules/<name>/` (apart from its CODEOWNERS line); its `contracts.ts` is published first and has contract tests; it has a README, fixtures and a manifest; it can be switched off; and every optional integration degrades gracefully when the other module isn't installed.
 6. **AC-6** Logging time from commits is switched on per legal entity by an Admin, after people are notified. Commit data is used only to draft timesheets, never for performance ratings.
-7. **AC-7** `sync_proposal` supersedes the 039 specclaw self-sync importer: proposals 039 imported keep their keys and history, and 039's importer is removed or reduced to a caller of `sync_proposal`.
+7. **AC-7** Moved to [062](../062-specclaw-sync-plugin/change.md) (its AC-3 and AC-11): `sync_specclaw` and the 039 CLI share one write path, and 039's proposals keep their keys and history.
 
 ## Tasks
 
