@@ -25,4 +25,26 @@ None. Fixes only.
 
 ## Tasks
 
+- [ ] `T1` — One hold predicate for purge, erasure and name rows; person holds re-resolve the user id on read (AC-1, AC-9)
+  Files: packages/core/src/privacy/holds.ts, packages/core/src/privacy/match.ts, packages/core/src/privacy/complete.ts, packages/core/src/privacy/purge.ts, packages/core/src/privacy/name-rows.ts, packages/core/tests/privacy-060-holds.test.ts
+- [ ] `T2` — Every personal column is a subject; erasure anonymises only the matched columns; check fails a rule that breaks this (AC-2, AC-9)
+  Files: modules/time/module.ts, modules/allocations/module.ts, modules/presales/module.ts, modules/delivery/module.ts, packages/core/src/module.ts, packages/core/src/privacy/apply.ts, scripts/check-module-standard.mjs, packages/core/tests/privacy-060-columns.test.ts
+  Depends: T1
+- [ ] `T3` — Name-only rows and access packages count first, and page or refuse above the limit with the reason shown (AC-3, AC-9)
+  Files: packages/core/src/privacy/name-rows.ts, packages/core/src/privacy/package.ts, packages/core/src/privacy/inventory.ts, packages/core/tests/privacy-060-limits.test.ts
+  Depends: T1
+- [ ] `T4` — Page rate limit: `next-action` exempt only on POST, prefetches in their own budget (AC-4, AC-9)
+  Files: packages/core/src/rate-limit.ts, packages/core/tests/rate-limit-060.test.ts
+- [ ] `T5` — 429 counts written on the request path or flushed on a 429, not only by timer (AC-5, AC-9)
+  Files: packages/api/src/limits.ts, packages/api/tests/ac5-rate-limits.test.ts
+- [ ] `T6` — REST maps non-retryable domain refusals to 400/409 with their message (AC-6, AC-9)
+  Files: packages/api/src/rest.ts, packages/api/tests/ac1-rest.test.ts
+- [ ] `T7` — Subscribing without a signing secret is refused; a missing secret at delivery doesn't count toward switch-off (AC-7, AC-9)
+  Files: packages/api/src/webhooks.ts, packages/api/src/deliver.ts, packages/api/tests/ac4-outgoing.test.ts
+- [ ] `T8` — Durable replay keys for GitHub and Graph webhooks, outside the retention purge (AC-8, AC-9)
+  Files: packages/db/migrations/0026_api_replay.sql, packages/api/src/module.ts, packages/api/src/inbound.ts, packages/api/tests/ac3-incoming.test.ts
+- [ ] `T9` — Full gates: typecheck, unit tests, lint, module-standard check, guest and signed-in e2e (AC-9)
+  Files: .specclaw/changes/060-privacy-api-hardening/change.md
+  Depends: T1, T2, T3, T4, T5, T6, T7, T8
+
 ## Verify
