@@ -1,17 +1,16 @@
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { acceptSuggestion } from "@amax/agents/server";
 import { getApplication } from "../server/queries";
 import { ctxFor } from "../server/read";
-import { recruitmentDb } from "./db";
+import { sharedDb } from "./db";
 
 describe.skipIf(!hasDb)("hire to HR (Postgres)", () => {
-  let db: Awaited<ReturnType<typeof recruitmentDb>>;
-  beforeAll(async () => { db = await recruitmentDb(); }, 240_000);
-  afterAll(() => db?.t.drop());
+  const use = sharedDb();
 
   it("AC1 recruitment.hired asks HR to confirm the HR record as a suggestion; HR's add_person then links the hire through the HR contract", async () => {
+    const db = use();
     const [hr, leadership] = [await db.as("maya", "HR"), await db.as("maya", "Leadership")];
     const [o] = await db.q(sql`select o.id, a.id as application_id from recruitment.offer o join recruitment.application a on a.id = o.application_id join recruitment.candidate c on c.id = a.candidate_id where c.name = 'Hasini Gunawardena'`);
     await db.registry.call(hr, "check_offer_signature", { offerId: o.id }, { source: "mcp" });

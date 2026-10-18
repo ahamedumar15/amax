@@ -1,19 +1,18 @@
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { contextFor } from "@amax/core/server";
 import { acceptSuggestion } from "@amax/agents/server";
 import { rejectApplication } from "../server/applications";
 import { getApplication } from "../server/queries";
 import { ctxFor } from "../server/read";
-import { recruitmentDb, T } from "./db";
+import { sharedDb, T } from "./db";
 
 describe.skipIf(!hasDb)("screening agent (Postgres)", () => {
-  let db: Awaited<ReturnType<typeof recruitmentDb>>;
-  beforeAll(async () => { db = await recruitmentDb(); await db.tick(); }, 240_000);
-  afterAll(() => db?.t.drop());
+  const use = sharedDb(true);
 
   it("AC2 match scores are suggestions with CV-section evidence; accepting screens, and no agent can reject", async () => {
+    const db = use();
     const hr = await db.as("maya", "HR");
     const open = await db.q(sql`select s.target_id, s.proposed, s.evidence from agents.suggestion s where s.kind = 'recruitment.screen' and s.status = 'open'`);
     expect(open).toHaveLength(22);

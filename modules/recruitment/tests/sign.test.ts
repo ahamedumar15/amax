@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { setSignTransport, zohoSend, zohoStatus } from "../sign";
-import { recruitmentDb } from "./db";
+import { sharedDb } from "./db";
 
 describe("AC-3 Zoho Sign adapter", () => {
   afterEach(() => setSignTransport(null));
@@ -23,11 +23,10 @@ describe("AC-3 Zoho Sign adapter", () => {
 });
 
 describe.skipIf(!hasDb)("AC-3 offers through the adapter (Postgres)", () => {
-  let db: Awaited<ReturnType<typeof recruitmentDb>>;
-  beforeAll(async () => { db = await recruitmentDb(); }, 240_000);
-  afterAll(() => db?.t.drop());
+  const use = sharedDb();
 
   it("AC3 send_offer creates the envelope and a signed one hires; Zoho needs its 031 credential", async () => {
+    const db = use();
     const hr = await db.as("maya", "HR");
     const [a] = await db.q(sql`select a.id from recruitment.application a join recruitment.candidate c on c.id = a.candidate_id where c.name = 'Ravindu Jayasuriya'`);
     await expect(db.registry.call(hr, "send_offer", { applicationId: a.id, startsOn: "2026-11-16" }, { source: "mcp" })).rejects.toThrow(/zoho-sign/);

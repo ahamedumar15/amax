@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { afterAll, beforeAll } from "vitest";
 import { migrate, migrationScopes, withTenant, type Tx } from "@amax/db";
 import { freshDatabase, migratedDatabase, repoRoot } from "@amax/db/testdb";
 import { configureRuntime, registryFrom, runDueJobs } from "@amax/core/server";
@@ -33,4 +34,12 @@ export async function recruitmentDb(disabled: string[] = []) {
   const registry = createRegistry(modules);
   const tick = () => runDueJobs(app, registryFrom(modules));
   return { t, app, modules, as, q, registry, tick, tx: <R>(fn: (tx: Tx) => Promise<R>) => withTenant(app, T, fn) };
+}
+
+/** One seeded database for a describe block (ticked once when `tick`), dropped after it. */
+export function sharedDb(tick = false) {
+  const box: { db?: Awaited<ReturnType<typeof recruitmentDb>> } = {};
+  beforeAll(async () => { box.db = await recruitmentDb(); if (tick) await box.db.tick(); }, 240_000);
+  afterAll(() => box.db?.t.drop());
+  return () => box.db!;
 }

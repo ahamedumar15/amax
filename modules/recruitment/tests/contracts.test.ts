@@ -1,9 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { contextFor } from "@amax/core/server";
 import manifest from "../module";
 import { CANDIDATE_FIELDS, EVENTS, listOpenRoles, registerSignProvider, signProviders, STAGE_LABELS, STAGES } from "../contracts";
-import { recruitmentDb, T } from "./db";
+import { sharedDb, T } from "./db";
 
 describe("AC-4 contract shape", () => {
   it("publishes the stages, candidate fields, sign providers and the events the manifest emits, each with a declared payload and no candidate data", () => {
@@ -20,11 +20,10 @@ describe("AC-4 contract shape", () => {
 });
 
 describe.skipIf(!hasDb)("AC-4 contract reads (Postgres)", () => {
-  let db: Awaited<ReturnType<typeof recruitmentDb>>;
-  beforeAll(async () => { db = await recruitmentDb(); }, 240_000);
-  afterAll(() => db?.t.drop());
+  const use = sharedDb();
 
   it("lists open roles for a job and for Leadership, never a candidate, and none for someone without recruitment", async () => {
+    const db = use();
     const roles = await db.tx((tx) => listOpenRoles(tx, contextFor.job(T, "test")));
     expect(roles.map((r) => [r.title, r.openings, r.raisedByAgent])).toEqual([["AI engineer", 1, false], ["QA engineer", 1, false], ["Senior .NET engineer", 2, true]]);
     expect(await db.tx(async (tx) => listOpenRoles(tx, await db.as("maya", "Leadership")))).toEqual(roles);

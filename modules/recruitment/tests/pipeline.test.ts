@@ -1,16 +1,15 @@
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { isMasked } from "@amax/auth";
 import { getApplication, pipelineView } from "../server/queries";
-import { recruitmentDb } from "./db";
+import { sharedDb } from "./db";
 
 describe.skipIf(!hasDb)("recruitment pipeline (Postgres)", () => {
-  let db: Awaited<ReturnType<typeof recruitmentDb>>;
-  beforeAll(async () => { db = await recruitmentDb(); await db.tick(); }, 240_000);
-  afterAll(() => db?.t.drop());
+  const use = sharedDb(true);
 
   it("AC1 roles, candidates, applications, interviews and offers give fixtures.md's numbers; candidate fields are HR's alone; writes are audited tools", async () => {
+    const db = use();
     const [hr, admin, leadership, nimal] = [await db.as("maya", "HR"), await db.as("sahan"), await db.as("maya", "Leadership"), await db.as("nimal")];
     const p = await pipelineView(hr);
     expect(p.roles.map((r) => [r.title, r.openings])).toEqual([["AI engineer", 1], ["QA engineer", 1], ["Senior .NET engineer", 2]]);
