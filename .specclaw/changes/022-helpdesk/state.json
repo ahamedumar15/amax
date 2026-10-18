@@ -1,8 +1,9 @@
 {
   "change": "022-helpdesk",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T17:31:11Z"}
+    "tasks": {"status":"done","at":"2026-10-18T17:31:11Z"},
+    "verify": {"status":"done","at":"2026-10-18T18:12:28Z"}
   }
 }
