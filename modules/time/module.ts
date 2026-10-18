@@ -3,6 +3,7 @@ import { chatIntents } from "./chat";
 import { EVENTS, type EntryLogged, type WeekDecided, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
 import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
+import { commitDraft, commitTimeHandler } from "./suggestions";
 import { MyPage } from "./ui/MyPage";
 import { TeamPage } from "./ui/TeamPage";
 
@@ -61,6 +62,9 @@ export default defineModule({
     [EVENTS.weekRejected]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
     [EVENTS.weekReopened]: declarePayload<WeekReopened>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", reason: "plain" }),
     [EVENTS.weekReminded]: declarePayload<WeekReminded>({ weekId: "plain", userId: "plain", week: "plain", by: "plain" }),
-  } },
+  },
+  // 008 AC-3: a commit's hours become a draft suggestion on the person's own timesheet.
+  handles: [commitTimeHandler] },
+  suggestions: [commitDraft],
   fixtures: [timeFixtures],
 });

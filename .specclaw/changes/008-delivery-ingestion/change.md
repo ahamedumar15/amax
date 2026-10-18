@@ -41,8 +41,8 @@ Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
 - [x] `T4` — Inbound webhooks: the `/api/webhooks/[provider]` route verifies through 035 and dispatches to each module's `inbound`. Delivery maps GitHub and Azure DevOps pushes to people through `auth.git_identity`. A commit is attributed only when it is signature-verified or the author's email is verified. Anyone else becomes a "link this Git identity" suggestion. A "T<n> done" commit closes that task (AC-2)
   Files: packages/core/src/module.ts, apps/web/app/api/webhooks/[tenant]/[provider]/route.ts, packages/auth/src/git-identity.ts, modules/delivery/server/ingest.ts, modules/delivery/suggestions.ts, modules/delivery/tests/ingest-ac2.test.ts
   Depends: T2
-- [ ] `T5` — Commit time becomes a draft suggestion on the person's timesheet through a new `time` contract command, never approved automatically. An Admin switches it on per legal entity (`set_commit_time_logging`, which also records that people were notified). It is never used for ratings (AC-3, AC-6)
-  Files: modules/time/contracts.ts, modules/time/suggestions.ts, modules/delivery/server/commit-time.ts, modules/delivery/mcp.ts, modules/delivery/tests/ingest-ac3.test.ts
+- [x] `T5` — Commit time becomes a draft suggestion on the person's timesheet through a new `time` contract command, never approved automatically. An Admin switches it on per legal entity (`set_commit_time_logging`, which also records that people were notified). It is never used for ratings (AC-3, AC-6)
+  Files: modules/delivery/contracts.ts, modules/delivery/db/migrations/0016_commit_time.sql, modules/delivery/server/commit-time.ts, modules/delivery/mcp.ts, modules/time/server/log.ts, modules/time/suggestions.ts, modules/time/module.ts, modules/delivery/tests/ingest-ac2.test.ts, modules/time/tests/commit-draft-008.test.ts
   Depends: T4
 - [ ] `T6` — The 039 importer becomes a caller of `sync_proposal`. Keys and history are kept (AC-7)
   Files: modules/delivery/sync/import.ts, modules/delivery/sync/bin.ts, modules/delivery/tests/sync-import.test.ts

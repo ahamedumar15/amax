@@ -19,7 +19,13 @@ export type ProposalPhaseChanged = { proposalId: string; key: string; projectId:
 /** A proposal made by hand moved to the hand-made series because a spec change owns its old key. */
 export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", taskDone: "delivery.task.done" } as const;
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", taskDone: "delivery.task.done", commitTime: "delivery.commit.time" } as const;
+
+/**
+ * 008 AC-3: hours a person's commit says they spent, for the time module to draft on their timesheet as a
+ * suggestion they accept. Never a logged entry, never a rating. `day` is the commit's date (UTC).
+ */
+export type CommitTime = { userId: string; projectId: string; projectKey: string; proposalKey: string; day: string; hours: number; commit: string };
 
 /** 008: a proposal task was closed (by a commit, CI or a person). `by` is the actor, "… for user:…" when acting for someone. */
 export type TaskDone = { proposalId: string; key: string; task: string; projectId: string; by: string };

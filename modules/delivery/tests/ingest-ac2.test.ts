@@ -10,6 +10,8 @@ import manifest from "../module";
 import { closedTasks, ingestPush } from "../server/ingest";
 import { syncProposal } from "../server/services";
 import { linkIdentity } from "../suggestions";
+import { setCommitTimeLogging } from "../server/commit-time";
+import { contextForViewer, viewerForUser } from "@amax/auth";
 
 const T = "abababab-0000-4000-8000-0000000000a2";
 const push = (commits: object[]) => ingestPush({ tenantId: T, provider: "github", eventId: "e", headers: new Headers({ "x-github-event": "push" }), payload: { commits } });
@@ -52,5 +54,22 @@ describe.skipIf(!hasDb)("008 AC-2 pushes attribute commits only through a verifi
     expect(s.map((r) => [r.kind, r.title])).toEqual([["delivery.git-identity", "Link ayesha-gh to Ayesha Rahman"]]);
     await push([commit("a3", "ING-001 T3 done", { username: "ayesha-gh", email: "ayesha@amax.test" })]);
     expect((await withTenant(app, T, (tx) => tx.execute(sql`select 1 from agents.suggestion`))).length).toBe(1);
+  });
+
+  it("008 AC-3, AC-6 a commit's 'Time:' hours go to the time module as a draft only once an Admin switched it on for the person's entity, after telling them", async () => {
+    const [{ id: entity }] = await t.owner`insert into core.legal_entity (tenant_id, name, country, base_currency) values (${T}, 'Lumen Lanka (fictional)', 'LK', 'LKR') returning id`;
+    await t.owner`update auth.user set legal_entity_id = ${entity} where email = 'nimal@amax.test'`;
+    const admin = await upsertPasswordUser(app, T, { email: "ops@amax.test", name: "Ops Admin", roles: ["Admin"], password: "ops-password-123" });
+    const ops = contextForViewer((await withTenant(app, T, (tx) => viewerForUser(tx, T, admin)))!, "chat");
+    const drafts = async () => (await t.owner`select payload from core.event where name = 'delivery.commit.time'`).map((e) => e.payload);
+    const timed = (id: string) => commit(id, "ING-001 T2 done\n\nTime: 1.5h", { username: "nimal-gh", email: "nimal@amax.test" });
+    await push([timed("b1c0ffee1")]);
+    expect(await drafts()).toEqual([]);
+    await expect(setCommitTimeLogging(ops, { legalEntityId: entity, enabled: true })).rejects.toThrow(/tell the entity's people first/);
+    await setCommitTimeLogging(ops, { legalEntityId: entity, enabled: true, peopleNotified: true });
+    await push([timed("b2c0ffee2")]);
+    expect(await drafts()).toEqual([expect.objectContaining({ proposalKey: "ING-001", projectKey: "ING", day: "2026-10-18", hours: 1.5, commit: "b2c0ffee2" })]);
+    const [line] = await withTenant(app, T, (tx) => tx.execute(sql`select text from delivery.activity order by at desc limit 1`));
+    expect(line.text).toBe("drafted 1.5 h on ING-001 for the timesheet");
   });
 });

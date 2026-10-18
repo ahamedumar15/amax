@@ -4,6 +4,7 @@ import type { InboundEvent } from "@amax/core";
 import { contextFor, getRuntime, logError } from "@amax/core/server";
 import { suggestLink } from "../suggestions";
 import { markTaskDone } from "./tasks";
+import { draftCommitTime, hoursOf } from "./commit-time";
 
 // 008 AC-2: GitHub and Azure DevOps pushes, already verified and deduplicated by 035.
 
@@ -54,6 +55,13 @@ export async function ingestPush(e: InboundEvent) {
       continue;
     }
     const ctx = contextFor.job(e.tenantId, "delivery.ingest", `user:${who.userId}`);
-    for (const t of closedTasks(c.message)) await markTaskDone(ctx, { ...t, commit: c.id }).catch((err: unknown) => logError(`delivery.ingest ${t.key} ${t.task}`, err));
+    const tasks = closedTasks(c.message);
+    for (const t of tasks) await markTaskDone(ctx, { ...t, commit: c.id }).catch((err: unknown) => logError(`delivery.ingest ${t.key} ${t.task}`, err));
+    // 008 AC-3: "Time: 1.5h" drafts hours for the first proposal the commit names, if the person's entity allows it.
+    const hours = hoursOf(c.message);
+    const day = c.at.slice(0, 10);
+    if (hours && tasks[0] && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
+      await draftCommitTime(ctx, { userId: who.userId, key: tasks[0].key, day, hours, commit: c.id }).catch((err: unknown) => logError(`delivery.ingest time ${c.id}`, err));
+    }
   }
 }
