@@ -1,0 +1,30 @@
+/* Inbox agent screen: rules lifted from .specclaw/mock/index.html (module standard: shared UI starts in the module). */
+.inbox-agent .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.inbox-agent .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.inbox-agent .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.inbox-agent .row.head .lede{margin:0}
+.inbox-agent .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inbox-agent .muted{color:var(--ink-3)}
+.inbox-agent .small{font-size:13px}
+.inbox-agent .block{display:block}
+.inbox-agent .scroll-x{overflow-x:auto}
+.inbox-agent .section{margin:24px 0}
+.inbox-agent .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.inbox-agent .tickets .v{font-size:clamp(21px,1.75vw,28px)}
+.inbox-agent .ticket .pin{top:auto;bottom:10px}
+.inbox-agent .found{background:linear-gradient(135deg,var(--violet-soft),var(--card));border-radius:var(--r-card);padding:20px 22px;margin:24px 0;display:grid;grid-template-columns:minmax(220px,.9fr) 1fr 1fr;gap:18px;align-items:stretch}
+.inbox-agent .found-head{display:flex;gap:14px;align-items:flex-start}
+.inbox-agent .found-head .stk{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;color:#fff;background:#7B61FF;font-size:15px}
+.inbox-agent .found-head b{display:block;font-size:15px;margin-bottom:4px}
+.inbox-agent .found-head small{color:var(--ink-2);font-size:12.5px;line-height:1.45}
+.inbox-agent .found-item{position:relative;background:var(--card);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 2px rgba(40,30,110,.05)}
+.inbox-agent .found-item p{margin:0;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere}
+.inbox-agent .found-item small{font-size:12.5px}
+.inbox-agent .found-item .src{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);font-weight:600;padding-right:32px}
+.inbox-agent .found-item .actions{margin-top:auto}
+.inbox-agent .logo-sq{display:grid;place-items:center;font-weight:700;color:#fff;flex:none;width:28px;height:28px;border-radius:9px;font-size:11px}
+.inbox-agent .tbl td{white-space:normal}
+.inbox-agent .tbl td.num{white-space:nowrap}
+@media (max-width:1180px){.inbox-agent .found{grid-template-columns:1fr}}
+@media (max-width:900px){.inbox-agent .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.inbox-agent .found-item small a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
