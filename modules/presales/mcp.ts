@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { STAGES } from "./contracts";
+import { itemOf as itemPinOf, opportunityOf } from "./pins";
 import { ctxFor } from "./server/context";
 import { openSuggestions, recordsOf } from "./server/detail";
 import { promoteInput, promoteToDelivery } from "./server/promote";
@@ -21,15 +22,17 @@ const today = () => new Date().toISOString().slice(0, 10);
 const number = z.string().describe("Opportunity number, e.g. PS-0142");
 
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, name: "list_opportunities", description: "Presales opportunities with stage, win chance, value (original currency and USD) and calculated health.", input: z.object({ open: z.boolean().optional() }),
+  tool({ ...read, pin: "view", name: "list_opportunities", description: "Presales opportunities with stage, win chance, value (original currency and USD) and calculated health.", input: z.object({ open: z.boolean().optional() }),
     run: async (v, a) => (await listOpportunities(v, today())).filter((o) => !a.open || (o.stage !== "won" && o.stage !== "lost")) }),
-  tool({ ...read, name: "get_opportunity", description: "One opportunity with its stage history, activities, tasks and risks.", input: z.object({ number }),
-    run: async (v, a) => { const o = await getOpportunity(v, a.number, today()); return o && { ...o, history: await historyOf(v, o.id), ...(await recordsOf(v, o.id)) }; } }),
-  tool({ ...read, name: "get_opportunity_item", description: "One activity, task or risk on an opportunity, by its id.", input: z.object({ number, id: z.string().uuid() }),
-    run: async (v, a) => { const o = await getOpportunity(v, a.number, today()); return o && itemOf(await recordsOf(v, o.id), a.id); } }),
-  tool({ ...read, name: "get_suggestion", description: "One opportunity the inbox agent found (client, summary, value, source); its text came from email or Teams.", input: z.object({ id: z.string().uuid() }),
+  tool({ ...read, pin: { id: "opportunityId", of: opportunityOf }, name: "get_opportunity", description: "One opportunity, by opportunityId or number, with its stage history, activities, tasks and risks.",
+    input: z.object({ opportunityId: z.string().uuid().optional(), number: number.optional() }),
+    run: async (v, a) => { const o = await getOpportunity(v, a, today()); return o && { ...o, history: await historyOf(v, o.id), ...(await recordsOf(v, o.id)) }; } }),
+  tool({ ...read, pin: { id: "id", of: itemPinOf }, name: "get_opportunity_item", description: "One activity, task or risk on an opportunity, by its id.", input: z.object({ number, id: z.string().uuid() }),
+    run: async (v, a) => { const o = await getOpportunity(v, a.number, today()); return o && itemOf(await recordsOf(v, o.id), a.id, o.number); } }),
+  tool({ ...read, pin: { id: "id", of: (s: { id: string; client: string } | null) => (s ? { id: s.id, label: `Inbox find: ${s.client}` } : null) }, name: "get_suggestion",
+    description: "One opportunity the inbox agent found (client, summary, value, source); its text came from email or Teams.", input: z.object({ id: z.string().uuid() }),
     run: async (v, a) => (await openSuggestions(v)).find((s) => s.id === a.id) ?? null }),
-  tool({ ...read, name: "pipeline_summary", description: "Open pipeline in USD, weighted by win chance, 12-month win rate and average days to close.", input: z.object({}), run: (v) => pipelineStats(v, today()) }),
+  tool({ ...read, pin: "view", name: "pipeline_summary", description: "Open pipeline in USD, weighted by win chance, 12-month win rate and average days to close.", input: z.object({}), run: (v) => pipelineStats(v, today()) }),
   tool({ ...write("presales:opportunity:create"), name: "create_opportunity", description: "Add an opportunity. Value is in its own currency (USD by default); the pipeline converts it to USD.", input: newOpportunity,
     run: (v, a, s = "mcp") => createOpportunity(ctxFor(v, s), a) }),
   tool({ ...write("presales:opportunity:edit"), name: "move_opportunity", description: `Move an opportunity to a stage (${STAGES.join(", ")}) or change its win chance. Lost needs a reason.`,
@@ -56,8 +59,8 @@ export const mcpTools: McpToolDef[] = [
     run: (v, a, s = "mcp") => promoteToDelivery(v, a, { source: s }) }),
 ];
 
-function itemOf(r: Awaited<ReturnType<typeof recordsOf>>, id: string) {
-  const found = ([["activity", r.activities], ["task", r.tasks], ["risk", r.risks]] as const).flatMap(([kind, rows]) => rows.filter((x) => x.id === id).map((x) => ({ kind, ...x })));
+function itemOf(r: Awaited<ReturnType<typeof recordsOf>>, id: string, number: string) {
+  const found = ([["activity", r.activities], ["task", r.tasks], ["risk", r.risks]] as const).flatMap(([kind, rows]) => rows.filter((x) => x.id === id).map((x) => ({ kind, number, ...x })));
   return found[0] ?? null;
 }
 

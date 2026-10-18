@@ -30,9 +30,13 @@ export const listDirectory = (v: Viewer, opts: { entityId?: string; q?: string; 
   });
 
 /** One person's page: pay and bank masked per 002, each document masked by its own class. */
-export const getPersonView = (v: Viewer, employeeNo: string, on = today()) =>
+/** `ref`: an employee number, or the person's id (059: pins use the id; a number given with it only narrows). */
+export const getPersonView = (v: Viewer, ref: string | { personId?: string; employeeNo?: string }, on = today()) =>
   readHr(v, async (tx): Promise<PersonView | null> => {
-    const [r] = await tx.execute(sql`${directory(on)} where p.employee_no = ${employeeNo}`);
+    const { personId, employeeNo } = typeof ref === "string" ? { personId: undefined, employeeNo: ref } : ref;
+    if (!personId && !employeeNo) throw new Error("say which person: a personId or an employeeNo");
+    const where = sql.join([personId ? sql`p.id = ${personId}` : undefined, employeeNo ? sql`p.employee_no = ${employeeNo}` : undefined].filter((x) => x !== undefined), sql` and `);
+    const [r] = await tx.execute(sql`${directory(on)} where ${where}`);
     if (!r) return null;
     const subject = { ownerUserId: (r.user_id as string | null) ?? null, legalEntityId: r.legal_entity_id as string };
     const docs = await tx.execute(sql`select * from hr.document where person_id = ${r.id} order by dated_on desc nulls last, title`);

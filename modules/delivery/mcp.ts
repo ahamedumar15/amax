@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { PHASES } from "./contracts";
+import { pinOf } from "./pins";
 import { ctxFor } from "./server/context";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
@@ -13,17 +14,20 @@ const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run"> & { inpu
 const read = { scope: "read" as const, readOnly: true, permission: "delivery:read" };
 // One input for every read that names a release: its id, or its project key and version (057).
 const releaseRef = z.object({ releaseId: z.string().uuid().optional(), projectKey: z.string().optional(), version: z.string().optional() });
+// 059: a pin names one record by its id; a list or a project's environments is a view.
+const view = "view" as const;
 
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, name: "list_projects", description: "Active projects with health, sprint progress and next release.", input: z.object({}), run: (v) => listProjects(v) }),
-  tool({ ...read, name: "get_project", description: "One project and its proposals, by project key such as CON or AMX.", input: z.object({ key: z.string() }), run: (v, a) => getProject(v, a.key) }),
-  tool({ ...read, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),
+  tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release.", input: z.object({}), run: (v) => listProjects(v) }),
+  tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_project", description: "One project and its proposals, by projectId or by project key such as CON or AMX.",
+    input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
+  tool({ ...read, pin: view, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),
     run: (v, a) => listProposals(v, a) }),
-  tool({ ...read, name: "get_proposal", description: "One proposal by key, such as CON-12: phase, owner, tasks, hours and release.", input: z.object({ key: z.string() }),
-    run: (v, a) => getProposal(v, a.key) }),
-  tool({ ...read, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
+  tool({ ...read, pin: { id: "proposalId", of: pinOf.proposal }, name: "get_proposal", description: "One proposal by proposalId, or by key such as CON-12 (a key given with an id only narrows): phase, owner, tasks, hours and release.",
+    input: z.object({ proposalId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProposal(v, a) }),
+  tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => listReleases(v, a) }),
-  tool({ ...read, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",
+  tool({ ...read, pin: { id: "releaseId", of: pinOf.release }, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",
     // The ref is checked before the read, so a malformed call is refused whatever the viewer can see.
     input: releaseRef, run: async (v, a) => { checkReleaseRef(a); return (await listReleases(v)).find((r) => isRelease(r, a)) ?? null; } }),
   tool({ name: "create_project", description: "Create a project. Key: 2-10 capitals, e.g. CON.", scope: "write", permission: "delivery:project:create",
@@ -38,13 +42,13 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "create_release", description: "Create a release (version tag) for a project, optionally with proposal keys.", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()).optional() }),
     run: (v, a, s = "mcp") => createRelease(ctxFor(v, s), { ...a, proposalKeys: a.proposalKeys ?? [] }) }),
-  tool({ ...read, name: "list_environments", description: "A project's environments in order, which one is Prod, and how many deployments each has.", input: z.object({ projectKey: z.string() }),
+  tool({ ...read, pin: view, name: "list_environments", description: "A project's environments in order, which one is Prod, and how many deployments each has.", input: z.object({ projectKey: z.string() }),
     run: (v, a) => listEnvironments(v, a.projectKey) }),
-  tool({ ...read, name: "get_environment", description: "One environment, by environmentId or by project key and name: its position, whether it is Prod, and how many deployments it has.",
+  tool({ ...read, pin: { id: "environmentId", of: pinOf.environment }, name: "get_environment", description: "One environment, by environmentId or by project key and name: its position, whether it is Prod, and how many deployments it has.",
     input: z.object({ environmentId: z.string().uuid().optional(), projectKey: z.string().optional(), name: z.string().optional() }), run: (v, a) => getEnvironment(v, a) }),
-  tool({ ...read, name: "get_deployment", description: "One deployment by id (a row of a release's deployment history), including a voided one. A project key or version only narrows.",
+  tool({ ...read, pin: { id: "deploymentId", of: pinOf.deployment }, name: "get_deployment", description: "One deployment by id (a row of a release's deployment history), including a voided one. A project key or version only narrows.",
     input: z.object({ deploymentId: z.string().uuid(), projectKey: z.string().optional(), version: z.string().optional() }), run: (v, a) => getDeployment(v, a.deploymentId, a) }),
-  tool({ ...read, name: "get_release_history", description: "A release's proposals and full deployment history, including voided records: by releaseId, or by project key and version.",
+  tool({ ...read, pin: { id: "releaseId", of: pinOf.history }, name: "get_release_history", description: "A release's proposals and full deployment history, including voided records: by releaseId, or by project key and version.",
     input: releaseRef, run: (v, a) => getRelease(v, a.projectKey, a.version, a.releaseId) }),
   tool({ name: "upsert_environment", description: "Add, rename, reorder or mark an environment as Prod for a project (marking one Prod unmarks the rest).", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), name: z.string(), rename: z.string().optional(), position: z.number().int().min(1).optional(), isProd: z.boolean().optional() }),
