@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { AREAS } from "../../components/marketing/areas";
 
 const SECTIONS = ["Agents keep the records. People decide.", "Your tools were built for people typing updates", "How it works", "One system for delivery, people and money", "Trust and security", "Ask amax", "Stop typing updates. Start deciding."];
 
@@ -12,7 +13,7 @@ test("062 AC3 AC4 AC10 the public page sells amax with no app shell and no forms
   await expect(page.locator("form")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Book a demo" })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Marketing" }).getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
-  await expect(page.getByText("Coming", { exact: true })).toHaveCount(3);
+  await expect(page.getByText("Coming", { exact: true })).toHaveCount(AREAS.filter((a) => a.coming.length > 0).length);
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(3);
   await expect(page.getByRole("search")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /profile menu/ })).toHaveCount(0);
