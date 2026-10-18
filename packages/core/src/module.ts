@@ -165,6 +165,8 @@ export type ModuleManifest = {
   workflows?: readonly unknown[];
   /** Cron schedules (029): cron() results from @amax/workflows, opaque to core. */
   schedules?: readonly unknown[];
+  /** Agent suggestion kinds (006): defineSuggestionKind() results from @amax/agents, opaque to core. */
+  suggestions?: readonly unknown[];
   /** `payloads`: each emitted event's fields with their 002 class or "plain" (declarePayload). Outgoing
    * webhooks send a declared plain field, mask a classified one and mask any field not declared (035, review 058). */
   events?: { emits?: string[]; handles?: EventHandlerDef[]; payloads?: Record<string, PayloadFields> };

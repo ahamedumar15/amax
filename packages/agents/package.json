@@ -4,10 +4,18 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./server": "./src/server.ts",
     "./*": "./src/*"
   },
   "scripts": {
     "lint": "tsc --noEmit",
     "test": "vitest run --config ../../vitest.config.ts --dir . --passWithNoTests"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.4",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "postgres": "3.4.9"
   }
 }
