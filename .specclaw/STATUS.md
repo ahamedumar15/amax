@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 05:51 UTC
+**Last Updated:** 2026-10-18 06:02 UTC
 
 ## Active Changes
 
@@ -11,7 +11,7 @@
 - 🔀 **024-learning** — pr raised | 6/6 tasks (100%) | 0 failed | PR #59 merged
 - 🔀 **028-keyflow-sync** — PR #61 open
 - 🔀 **030-notifications** — pr raised | 7/7 tasks (100%) | 0 failed | PR #58 merged
-- 📝 **034-backup-restore-and-export** — tasks done | 8/8 tasks (100%) | 0 failed
+- 🔍 **034-backup-restore-and-export** — verify done | 8/8 tasks (100%) | 0 failed
 - 🔍 **055-it-admin-role** — verify done | 5/5 tasks (100%) | 0 failed | PR #56 merged
 - 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
 

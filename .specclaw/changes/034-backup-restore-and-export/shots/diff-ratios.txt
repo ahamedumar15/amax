@@ -1,0 +1,9 @@
+.crumb 0.0000 (≤ 0.02: same breadcrumb) [{"x":156,"y":126,"width":1224,"height":20.25},{"x":156,"y":126,"width":1224,"height":20.25}]
+.row.head h1 0.0000 (≤ 0.02: same title) [{"x":156,"y":156.25,"width":668.03125,"height":34.5},{"x":156,"y":156.25,"width":668.03125,"height":34.5}]
+.card.flush .card-head h2 0.0000 (≤ 0.02: same card title) [{"x":184,"y":489,"width":127.34375,"height":25.5},{"x":184,"y":489,"width":127.34375,"height":25.5}]
+.card:not(.flush) > .card-head h2 0.0000 (≤ 0.02: same card title) [{"x":184,"y":779.25,"width":72.46875,"height":25.5},{"x":184,"y":807.25,"width":72.46875,"height":25.5}]
+.tickets.four .ticket 0.0000 (measured; data differs from the mock)
+.tickets.four 0.0031 (measured; data differs from the mock)
+.card.flush thead 0.0368 (measured; data differs from the mock)
+.card.flush 0.0151 (measured; data differs from the mock)
+.card:not(.flush) 0.0201 (measured; data differs from the mock)
