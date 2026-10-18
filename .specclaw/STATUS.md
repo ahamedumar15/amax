@@ -1,17 +1,17 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 04:22 UTC
+**Last Updated:** 2026-10-18 04:35 UTC
 
 ## Active Changes
 
 
-- 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 open
+- 📝 **006-agent-governance** — tasks done | 0/9 tasks (0%) | 0 failed
+- 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
 
 ## Pending Proposals
 
 
-- 📋 **006-agent-governance** — proposal ready, awaiting planning
 - 📋 **008-delivery-ingestion** — proposal ready, awaiting planning
 - 📋 **012-leave** — proposal ready, awaiting planning
 - 📋 **013-onboarding-offboarding** — proposal ready, awaiting planning
@@ -76,6 +76,6 @@
 
 ## Stats
 
-- **Total changes:** 34
-- **Active:** 1
+- **Total changes:** 35
+- **Active:** 2
 - **Completed:** 33
