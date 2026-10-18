@@ -1,4 +1,4 @@
-import { PinButton } from "@amax/ui";
+import { facet, PinButton } from "@amax/ui";
 import type { Stage } from "../contracts";
 import type { OpportunityRow, StageChangeRow } from "../server/queries";
 import { day, oppPin, STAGE_UI } from "./parts";
@@ -20,7 +20,7 @@ export function StageSteps({ o, history }: { o: OpportunityRow; history: StageCh
           const cls = s === stage ? (s === "won" || s === "lost" ? "done" : "now") : i < furthest ? "done" : "";
           return (
             <li key={s} className={`${cls} pinnable`.trim()} aria-current={s === stage ? "step" : undefined}>{STAGE_UI[s].label}{hit && <small>{s === stage && cls === "now" ? `since ${day(hit.at)}` : day(hit.at)}</small>}
-              <PinButton pin={{ ...oppPin(o), label: `${o.number} ${STAGE_UI[s].label} stage` }} /></li>
+              <PinButton pin={facet(oppPin(o), `, ${STAGE_UI[s].label} stage`)} /></li>
           );
         })}
       </ol>

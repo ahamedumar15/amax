@@ -1,4 +1,5 @@
 import { PinButton } from "@amax/ui";
+import { personPin } from "../pins";
 import type { DirectoryRow } from "../server/queries";
 import { avClass, countryName, statusChip, todayLabel } from "./parts";
 
@@ -26,7 +27,7 @@ export function Directory({ rows, total, today, allHref }: { rows: DirectoryRow[
                   <td data-label="Manager">{p.managerName ?? "–"}</td>
                   <td data-label="Status"><span className={`chip ${tone}`}>{label}</span></td>
                   <td data-label="Today" className={now === "Working" ? "muted" : undefined}>{now}</td>
-                  <td data-label="" className="num"><PinButton pin={{ label: p.name, tool: "get_person", args: { employeeNo: p.employeeNo } }} /></td>
+                  <td data-label="" className="num"><PinButton pin={personPin(p)} /></td>
                 </tr>
               );
             })}

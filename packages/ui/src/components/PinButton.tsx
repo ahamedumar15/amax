@@ -1,8 +1,10 @@
 "use client";
 
+import type { PinRef } from "../pins";
+
 // "Add <name> to chat" (005 AC-4). Shown on hover, focus and touch; the chat fetches the record
 // with the user's permissions through the named read tool.
-export type PinRef = { label: string; tool: string; args: Record<string, unknown> };
+export type { PinRef };
 
 export const openChat = (detail: { pin?: PinRef; intent?: string; prompt?: string }) => window.dispatchEvent(new CustomEvent("amax:chat", { detail }));
 

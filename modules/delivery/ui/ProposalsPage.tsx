@@ -1,6 +1,7 @@
 import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { PHASES, type Phase } from "../contracts";
+import { proposalPin } from "../pins";
 import { listProjects, listProposals, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
 import { BarChart } from "./charts";
 import { csvHref } from "./csv";
@@ -83,7 +84,7 @@ export function ProposalsTable({ rows, phase, root, project, page: asked, projec
                   <td data-label="Time" className="num">{p.hours.toFixed(1)} h</td>
                   <td data-label="Release">{p.release ?? <span className="muted">None</span>}</td>
                   <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
-                  <td data-label="Owner">{p.ownerName ?? "–"}<PinButton pin={{ label: `${p.key} ${p.title}`, tool: "get_project", args: { key: p.projectKey } }} /></td>
+                  <td data-label="Owner">{p.ownerName ?? "–"}<PinButton pin={proposalPin(p)} /></td>
                 </tr>
               );
             })}

@@ -1,13 +1,14 @@
-import { PinButton } from "@amax/ui";
+import { facet, PinButton } from "@amax/ui";
 import type { ActivityRow } from "../server/detail";
-import { day, first, initials, itemPin } from "./parts";
+import { day, first, initials, itemPin, oppPin } from "./parts";
 
 const KIND: Record<string, [string, string]> = { demo: ["info", "Demo"], proposal: ["agent", "Proposal"], workshop: ["", "Workshop"], call: ["", "Call"], meeting: ["", "Meeting"], email: ["", "Email"] };
 
-export function ActivitiesCard({ number, rows }: { number: string; rows: ActivityRow[] }) {
+export function ActivitiesCard({ opp, rows }: { opp: { id: string; number: string; title: string }; rows: ActivityRow[] }) {
+  const { number } = opp;
   return (
     <div className="card flush pinnable" id="activities">
-      <div className="card-head"><h2>Activities</h2><PinButton inline pin={{ label: `${number} activities`, tool: "get_opportunity", args: { number } }} /><span className="muted">Log one in chat</span></div>
+      <div className="card-head"><h2>Activities</h2><PinButton inline pin={facet(oppPin(opp), ", activities")} /><span className="muted">Log one in chat</span></div>
       <div className="scroll-x"><table className="tbl">
         <caption className="sr">Activities</caption>
         <thead><tr><th>Activity</th><th>Type</th><th>Owner</th><th>Date</th><th style={{ minWidth: 140 }}>Progress</th></tr></thead>

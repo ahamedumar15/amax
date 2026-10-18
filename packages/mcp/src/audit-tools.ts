@@ -14,8 +14,9 @@ const read = <T>(viewer: Viewer, fn: (tx: Parameters<Parameters<typeof withTenan
   return withTenant(getRuntime().db, viewer.tenantId, fn);
 };
 
+// The audit chains are append-only, so a pin on them is a view (059): nothing in it is renamed.
 const tool = (name: string, description: string, input: z.ZodType, run: (viewer: Viewer, input: never) => Promise<unknown>) =>
-  ({ module: "core", name, description, input, permission: AUDIT_READ, scope: "read", readOnly: true, run }) as unknown as RegisteredTool;
+  ({ module: "core", name, description, input, permission: AUDIT_READ, scope: "read", readOnly: true, pin: "view", run }) as unknown as RegisteredTool;
 
 export const auditTools = (): RegisteredTool[] => [
   tool("audit_status", "Audit and trace chain status, the last write-once export and refused tool calls today. verify: true checks both chains again now.",

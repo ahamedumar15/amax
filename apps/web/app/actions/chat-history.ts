@@ -3,8 +3,8 @@
 import { z } from "zod";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
-import { getConversation, listConversations, type Conversation, type ConversationSummary } from "@amax/chat";
-import { getDb } from "../../lib/server";
+import { listConversations, openConversation, type Conversation, type ConversationSummary } from "@amax/chat";
+import { getDb, toolRegistry } from "../../lib/server";
 
 export type HistoryResult = { ok: true; items: ConversationSummary[] } | { ok: false; error: string };
 export type OpenResult = { ok: true; conversation: Conversation } | { ok: false; error: string };
@@ -25,7 +25,8 @@ export async function openChat(id: unknown): Promise<OpenResult> {
   try {
     const conversationId = z.uuid().parse(id);
     const viewer = await currentViewer();
-    const conversation = await getConversation(getDb()!, viewer, conversationId);
+    // Its pins are read now (059): renamed records show their new names, old pins move onto ids.
+    const conversation = await openConversation(getDb()!, toolRegistry(), viewer, conversationId);
     return conversation ? { ok: true, conversation } : { ok: false, error: "That chat isn't in your history." };
   } catch (e) {
     return failed("chat.history.open", e);

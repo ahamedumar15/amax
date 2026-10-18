@@ -29,23 +29,23 @@ async function request(v: Viewer, reqId: string) {
 }
 
 export const privacyTools = [
-  tool({ ...read(PRIVACY_READ), name: "retention_overview", description: "The Data retention screen: rules with each entity's period, what tonight's purge removes, open requests, legal holds and the last 30 days' purges by class.",
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "retention_overview", description: "The Data retention screen: rules with each entity's period, what tonight's purge removes, open requests, legal holds and the last 30 days' purges by class.",
     input: z.object({ entity: entity.optional() }), run: async (v, a) => privacyOverview(ctx(v), { entityId: await entityId(v, a.entity) }) }),
-  tool({ ...read(PRIVACY_READ), name: "list_retention_rules", description: "Every retention rule: data, class, how long it is kept for an entity (statutory minimum or changed by your organisation), what starts the clock and what happens then.",
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "list_retention_rules", description: "Every retention rule: data, class, how long it is kept for an entity (statutory minimum or changed by your organisation), what starts the clock and what happens then.",
     input: z.object({ entity: entity.optional() }), run: async (v, a) => look(v, async (tx) => listRules(tx, await entityId(v, a.entity))) }),
-  tool({ ...read(PRIVACY_READ), name: "get_retention_rule", description: "One retention rule by its id or label, with its period for an entity.",
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "get_retention_rule", description: "One retention rule by its id or label, with its period for an entity.",
     input: z.object({ rule: z.string().min(1).max(200), entity: entity.optional() }),
     run: async (v, a) => {
       const all = await look(v, async (tx) => listRules(tx, await entityId(v, a.entity)));
       const named = (x: { label: string }) => x.label.toLowerCase() === a.rule.trim().toLowerCase();
       return all.rules.find((r) => r.id === a.rule || named(r)) ?? all.defaults.find(named) ?? all.appendOnly.find(named) ?? Promise.reject(notFound(`retention rule "${a.rule}"`));
     } }),
-  tool({ ...read(PRIVACY_READ), name: "list_privacy_requests", description: "Access and erasure requests, open ones first, with what is kept and why.", input: z.object({ status: z.enum(["open", "completed"]).optional() }),
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "list_privacy_requests", description: "Access and erasure requests, open ones first, with what is kept and why.", input: z.object({ status: z.enum(["open", "completed"]).optional() }),
     run: async (v, a) => (await look(v, listRequests)).filter((r) => !a.status || r.status === a.status) }),
-  tool({ ...read(PRIVACY_READ), name: "get_privacy_request", description: "One access or erasure request: the person's records in every module, what is kept and why, who opened and approved it, and (open requests) each row that names the person only by name, for the approver to decide on.", input: z.object({ id }),
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "get_privacy_request", description: "One access or erasure request: the person's records in every module, what is kept and why, who opened and approved it, and (open requests) each row that names the person only by name, for the approver to decide on.", input: z.object({ id }),
     run: async (v, a) => ({ ...(await request(v, a.id)), nameRows: await look(v, (tx) => requestNameRows(tx, a.id)) }) }),
-  tool({ ...read(PRIVACY_READ), name: "list_legal_holds", description: "Active legal holds: whose records the purge and erasure must keep, and why.", input: z.object({}), run: (v) => look(v, listHolds) }),
-  tool({ ...read(PRIVACY_READ), name: "retention_purge_history", description: "What the daily purge removed, by data class and count (never values); label narrows it to one kind of data.",
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "list_legal_holds", description: "Active legal holds: whose records the purge and erasure must keep, and why.", input: z.object({}), run: (v) => look(v, listHolds) }),
+  tool({ ...read(PRIVACY_READ), pin: "view", name: "retention_purge_history", description: "What the daily purge removed, by data class and count (never values); label narrows it to one kind of data.",
     input: z.object({ days: z.number().int().min(1).max(365).optional(), label: z.string().max(200).optional() }),
     run: async (v, a) => (await look(v, (tx) => purgedSince(tx, a.days ?? 30))).filter((p) => !a.label || p.label === a.label) }),
   tool({ scope: "sensitive", permission: PRIVACY_MANAGE, readOnly: true, name: "get_access_package", description: "The data package of a completed access request, to send to the person.", input: z.object({ id }),

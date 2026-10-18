@@ -1,11 +1,10 @@
 import { ActionFailedError, NotPendingError } from "@amax/chat";
-import { repinOf, type Repin } from "@amax/chat/pins";
 import { movedOf, type Moved } from "./chat-move";
 
 export { movedOf } from "./chat-move";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; reveal?: Reveal; moved?: Moved; repin?: Repin };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; reveal?: Reveal; moved?: Moved };
 
 /** 035: a value shown once on the card (a new API key). It goes nowhere else: not the model, the conversation or the logs. */
 export type Reveal = { label: string; value: string };
@@ -35,18 +34,13 @@ export function outcomeOf(e: unknown): CardOutcome {
 }
 
 /**
- * The card after a write that has committed (057 follow-up). The repin of saved pins is best-effort:
- * if it fails it is logged and the card still says done, with `moved` and `repin` so the page follows
- * the record and the panel rewrites its own pins.
+ * The card after a write that has committed, with `moved` so the page follows a renamed record (057).
+ * Pins need nothing: they name records by id and their labels are read fresh (059).
  */
-export async function doneOutcome(title: string, result: unknown, repinSaved: (r: Repin) => Promise<unknown>, log: (e: unknown) => void): Promise<CardOutcome> {
-  const repin = repinOf(result);
-  if (repin) {
-    try { await repinSaved(repin); } catch (e) { log(e); }
-  }
+export function doneOutcome(title: string, result: unknown): CardOutcome {
   const reveal = revealOf(result);
   if (reveal) return { state: "done", note: `Done. Copy the ${reveal.label.toLowerCase()} now: it is shown only this once.`, reveal };
   const key = (result as { key?: string } | null)?.key;
   const moved = movedOf(result);
-  return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${title}.`, ...(moved ? { moved } : {}), ...(repin ? { repin } : {}) };
+  return { state: "done", note: key ? `Done: ${key} added.` : `Done: ${title}.`, ...(moved ? { moved } : {}) };
 }

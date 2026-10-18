@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ActionFailedError, NotPendingError } from "@amax/chat";
 import { doneOutcome, outcomeOf } from "../lib/chat-outcome";
 
@@ -18,22 +18,16 @@ describe("chat card outcomes", () => {
   ])("%s", (_n, e, state) => expect(outcomeOf(e).state).toBe(state));
 });
 
-// 057 follow-up: once the write has committed, a failed repin of saved pins never turns the card into an error.
-describe("057 doneOutcome after a committed write", () => {
-  const repin = { tools: ["get_release"], match: { projectKey: "CON", version: "v2.4.0" }, set: { version: "v2.4.1" } };
+// 057: a committed write's card is done, and carries `moved` so the page follows a re-tag. 059 AC4:
+// nothing about pins; a result that still says `repin` is ignored.
+describe("059 doneOutcome after a committed write", () => {
   const moved = { from: "/delivery/releases/CON/v2.4.0", to: "/delivery/releases/CON/v2.4.1" };
-  const tag = { version: "v2.4.1", moved, repin };
   it.each([
-    ["the repin throws", tag, async () => { throw new Error("db down"); }, 1, true],
-    ["the repin times out (rejects later)", tag, () => new Promise((_r, no) => setTimeout(() => no(new Error("timeout")), 5)), 1, true],
-    ["the repin works", tag, async () => [], 0, true],
-    ["there is nothing to repin", { key: "CON-1" }, async () => { throw new Error("must not run"); }, 0, false],
-  ])("%s: the card is done", async (_n, result, repinSaved, logged, carries) => {
-    const log = vi.fn();
-    const o = await doneOutcome("Rename a release's version tag", result, repinSaved, log);
-    expect(o.state).toBe("done");
-    expect(log).toHaveBeenCalledTimes(logged);
-    expect(o.repin).toEqual(carries ? repin : undefined);
-    expect(o.moved).toEqual(carries ? moved : undefined);
+    ["a re-tag", { version: "v2.4.1", moved }, moved],
+    ["an old result with a repin", { version: "v2.4.1", moved, repin: { tools: ["get_release"] } }, moved],
+    ["a new record", { key: "CON-1" }, undefined],
+  ])("%s: the card is done", (_n, result, want) => {
+    const o = doneOutcome("Rename a release's version tag", result);
+    expect(o).toEqual({ state: "done", note: expect.any(String), ...(want ? { moved: want } : {}) });
   });
 });

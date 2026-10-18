@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { ScreenProps } from "@amax/core";
 import { Card, EmptyState, type IconName } from "@amax/ui";
 import { PROJECT_SECTIONS, projectHref, type ProjectSection } from "../contracts";
+import { projectPin } from "../pins";
 import { getProject } from "../server/queries";
 import { AskButton } from "./AskButton";
 import { needViewer, SignInFirst } from "./parts";
@@ -39,7 +40,7 @@ const pending = (section: ProjectSection, title: string, icon: IconName, arrives
         {(p) => (
           <Card title={title}>
             <EmptyState icon={icon} title={arrives} hint="This section fills in when that change lands. Until then, amax can answer from what it knows."
-              action={<AskButton label={`Ask amax about ${p.name}'s ${ask}`} prompt={`What do we know about the ${ask} on ${p.name} (${p.key})?`} pin={{ label: p.name, tool: "get_project", args: { key: p.key } }} />} />
+              action={<AskButton label={`Ask amax about ${p.name}'s ${ask}`} prompt={`What do we know about the ${ask} on ${p.name} (${p.key})?`} pin={projectPin(p)} />} />
           </Card>
         )}
       </ProjectSectionPage>
