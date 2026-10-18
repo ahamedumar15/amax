@@ -1,18 +1,17 @@
-import type { ArtName } from "./Art";
-
 export type Claim = { text: string; module?: string };
 export type Planned = { text: string; module: string; words: string[] };
-export type Area = { title: string; tone: string; art: ArtName; live: Claim[]; coming: Planned[] };
+export type Area = { title: string; pitch: string; tone: string; open?: boolean; live: Claim[]; coming: Planned[] };
 
 const PLATFORM = "platform";
 
 export const AREAS: Area[] = [
-  { title: "Delivery", tone: "info", art: "rocket", coming: [], live: [
+  { title: "Delivery", pitch: "Delivery that updates itself.", tone: "v1", open: true, coming: [], live: [
     { text: "Projects, specclaw proposals and releases across Dev, QA, UAT and Prod", module: "delivery" },
     { text: "Time and approvals", module: "time" },
     { text: "Allocations and capacity forecasts", module: "allocations" },
+    { text: "Utilisation and availability reports", module: "reports" },
   ] },
-  { title: "People", tone: "good", art: "people", coming: [
+  { title: "People and payroll", pitch: "People records, kept current.", tone: "v2", open: true, coming: [
     { text: "Sri Lanka payroll pack", module: "payroll-lk", words: ["sri lanka"] },
     { text: "Australia payroll pack", module: "payroll-au", words: ["australia"] },
   ], live: [
@@ -24,22 +23,22 @@ export const AREAS: Area[] = [
     { text: "Learning", module: "learning" },
     { text: "OKRs from Keyflow", module: "keyflow" },
   ] },
-  { title: "Finance and sales", tone: "attention", art: "coins", coming: [
+  { title: "Finance and sales", pitch: "Invoices drafted from approved time.", tone: "v3", coming: [
     { text: "Xero, QuickBooks and Business Central", module: "accounting", words: ["xero", "quickbooks", "business central"] },
   ], live: [
     { text: "Contracts, invoicing and receivables, with invoices drafted for Finance to accept", module: "finance" },
     { text: "Expense claims, approved by the manager and then Finance", module: "expenses" },
     { text: "Presales pipeline", module: "presales" },
   ] },
-  { title: "Operations", tone: "sky", art: "key", coming: [], live: [
+  { title: "Operations", pitch: "Compliance and incidents, on the record.", tone: "v4", coming: [], live: [
     { text: "IT access and licences, with every grant and revoke decided by a person", module: "it-access" },
     { text: "Compliance registers and incidents", module: "compliance" },
     { text: "Helpdesk queues with SLAs, and a support agent that acts only on approved requests", module: "helpdesk" },
     { text: "Insights: a weekly agent briefing, projects at risk and market position, every point with its evidence", module: "insights" },
     { text: "Notifications", module: "notifications" },
   ] },
-  { title: "Platform", tone: "problem", art: "shield", coming: [], live: [
-    { text: "An MCP server for every capability", module: PLATFORM },
+  { title: "Platform", pitch: "Every capability is an MCP tool.", tone: "v5", coming: [], live: [
+    { text: "Claude Code, CI and your own agents use the same tools and permissions as the UI", module: PLATFORM },
     { text: "Entra ID sign-in and SCIM", module: PLATFORM },
     { text: "Git identities, API keys and webhooks", module: PLATFORM },
   ] },

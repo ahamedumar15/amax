@@ -1,20 +1,19 @@
 import { HERO_LEDE } from "./copy";
 import { DemoLink } from "./DemoLink";
-import { ProductVideo } from "./ProductVideo";
+import { Queue } from "./Queue";
 
 export function Hero({ salesEmail }: { salesEmail?: string }) {
   return (
-    <section className="mk-hero" aria-labelledby="mk-title">
+    <section className="wrap hero" aria-labelledby="mk-title">
       <div>
-        <span className="chip">Agent-native ERP for software and services firms</span>
         <h1 id="mk-title">Agents keep the records. People decide.</h1>
-        <p>{HERO_LEDE}</p>
-        <div className="mk-actions">
+        <p className="sub">{HERO_LEDE}</p>
+        <div className="acts">
           <DemoLink email={salesEmail} primary />
-          <a className="btn" href="#how">See how it works</a>
+          <a className="btn2 b-soft" href="#tour"><span aria-hidden="true">▶</span> Watch the 35-second tour</a>
         </div>
       </div>
-      <ProductVideo />
+      <Queue />
     </section>
   );
 }

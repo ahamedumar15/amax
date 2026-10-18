@@ -1,0 +1,104 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/components/marketing/queues.ts",
+  "apps/web/tests/marketing-queue.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/marketing-queue.test.ts",
+   "fp": "1aad1d0bccb8",
+   "in_delta": true,
+   "line": 14,
+   "message": "`holds()` writes its own copy of the grant matcher from packages/auth/src/can.ts:26-29 and :56-58. The two can disagree. The copy skips the `perm:*` wildcard that `matches()` accepts. It also adds every role's Employee grants on its own assumption, which is not what canEver does. So this test can disagree with the permission model it is meant to check, in both directions. Fix: drop the copy. Call `setGrants(modules)` and check `canEver({ assignments: [{ role }, { role: \"Employee\" }], ... }, permission)` from @amax/auth, the way apps/web/tests/admin/it-admin.test.ts already does.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "Give PM `\"payroll:*\"` in a manifest. canEver(PM, \"payroll:bank-file:approve\") is now true, but `holds(\"PM\", ...)` stays false, so the 'rejects PM running suggestion:payroll.bank-file' row still passes and hides the change. The reverse also happens: a role whose only grant is `\"time:*\"` fails the positive check for approve_week, even though the product lets it approve.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/tests/marketing-queue.test.ts",
+   "fp": "22c76e710b90",
+   "in_delta": true,
+   "line": 24,
+   "message": "The negative row `[\"PM\", \"issue_payroll\"]` proves nothing about permissions. No module ships a tool named `issue_payroll`, so `permissionOf` returns undefined and the row passes before any role is checked. Use a real tool that PM lacks, for example a payroll write tool from modules/payroll/mcp.ts. Also assert that `permission` is truthy in the negative rows, so a typo can't pass on its own.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Grant PM every payroll permission \u2192 the 'rejects PM running issue_payroll' row still passes.",
+   "severity": "minor"
+  },
+  {
+   "file": "apps/web/components/marketing/queues.ts",
+   "fp": "fa327883ffc8",
+   "in_delta": false,
+   "line": 19,
+   "message": "hr2 says the certificate expires in 30 days and that 'the scheduled reminders have gone out'. The schedule sends reminders 60 and 14 days before expiry (`modules/learning/server/certifications.ts:11` `WINDOWS = [60, 14]`, `modules/learning/workflows.ts:20`). At 30 days only the 60-day reminder has gone out, and the 14-day one is still to come. Fix the copy, e.g. 'the 60-day reminder has gone out'.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "A certificate expires in 30 days. learning.reminder has fired once (the 60-day window), but the card says the reminders, plural, have gone out.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/tests/marketing-queue.test.ts",
+   "fp": "d55ee9250f5c",
+   "in_delta": true,
+   "line": 19,
+   "message": "The test only checks that the role holds the permission the tool declares. It does not check the permission for the step the card shows. fi2 shows Finance approving a claim the manager already approved. In `modules/expenses/server/decide.ts:17`, that step needs `expenses:approve-finance`. But `approve_expense` declares `expenses:approve`, and every role holds that through OWN (`modules/expenses/module.ts:9`). So the fi2 row passes no matter what Finance can do. The same gap applies to any tool whose service picks a stricter permission per step. Fix: let a card name the permission for its step, e.g. `{ tool: \"approve_expense\", permission: \"expenses:approve-finance\" }`, check that permission, and add a rejecting row such as Engineer at the Finance step of approve_expense.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Remove \"expenses:approve-finance\" from FINANCE in modules/expenses/module.ts. Finance can no longer approve the card's manager-approved claim, but the fi2 row stays green because Finance still holds expenses:approve.",
+   "severity": "major"
+  }
+ ],
+ "head": "676e6a9b7e0016671f4240682adfce36094500aa",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/retention/RetentionTickets.tsx",
+  "apps/web/app/(app)/settings/retention/page.tsx",
+  "apps/web/components/marketing/Queue.tsx",
+  "apps/web/components/marketing/copy.ts",
+  "apps/web/lib/admin/backups.ts",
+  "apps/web/lib/admin/privacy.ts",
+  "apps/web/lib/admin/status.ts",
+  "apps/web/lib/privacy-sources.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/tests/admin/it-admin.test.ts",
+  "apps/web/tests/admin/privacy.test.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/retention.spec.ts",
+  "modules/recruitment/fixtures/data.ts",
+  "modules/recruitment/fixtures/index.ts",
+  "packages/auth/src/index.ts",
+  "packages/auth/src/roles.ts",
+  "packages/chat/src/tools.ts",
+  "packages/mcp/src/admin.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 55074,
+ "round": 18,
+ "since": "2c39d5fba9",
+ "status": "open",
+ "system_chars": 39641,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792346681,
+ "ts_start": 1792346555
+}
