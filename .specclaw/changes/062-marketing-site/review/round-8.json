@@ -1,0 +1,18 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 0
+ },
+ "files": [],
+ "final": false,
+ "findings": [],
+ "head": "9843b010ed3fcbcdebfb9daa77055ffd0276c7e4",
+ "model": "opus",
+ "round": 8,
+ "since": "a6b62fb681",
+ "status": "skipped",
+ "tier": "skip",
+ "ts_end": 1792326282,
+ "ts_start": 1792326282
+}

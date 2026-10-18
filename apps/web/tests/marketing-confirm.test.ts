@@ -1,24 +1,24 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { AREAS } from "../components/marketing/areas";
-import { DESCRIPTION, HERO_LEDE, STEPS } from "../components/marketing/copy";
+import { sentences, surfaces } from "./marketing-prose";
 
-const mock = readFileSync(new URL("../../../.specclaw/mock/index.html", import.meta.url), "utf8");
-const section = mock.slice(mock.indexOf('data-change="062-marketing-site"'), mock.indexOf("</section>", mock.indexOf('data-change="062-marketing-site"'))).replace(/<[^>]+>/g, " ");
 const CONFIRM = /confirm|asks before|waits for|approval before/i;
-const sentences = (text: string) => text.split(/(?<=[.!?])\s+/).filter((s) => CONFIRM.test(s) && !/^Confirm\b/.test(s.trim()));
+const TIME = /\blog(s|ged)?\b[^.]*\b(time|hours)\b|\b(time|hours)\b[^.]*\blogged\b/i;
+const confirmClaims = (body: string) => sentences(body, CONFIRM).filter((s) => !/^\s*Confirm\b/.test(s));
+const chatOnly = (s: string) => /\bin chat\b/i.test(s) && !/\b(MCP|over the API)\b[^.]*\b(asks|waits|confirm)/i.test(s);
+const accepted = (s: string) => /\b(accept|accepts|accepted|draft|drafts|suggest|suggests|suggested)\b/i.test(s);
 
-describe("062 AC-3 a confirm is claimed only for chat, never for every write or MCP", () => {
-  const surfaces = [
-    ["hero", HERO_LEDE], ["description", DESCRIPTION],
-    ["how it works", STEPS.map((s) => `${s.title}. ${s.body}`).join(" ")],
-    ["features", AREAS.flatMap((a) => a.live.map((c) => `${c.text}.`)).join(" ")],
-    ["mock 062 section", section],
-  ] as const;
-  it.each(surfaces)("%s scopes every confirm sentence to chat", (_where, text) => {
-    for (const s of sentences(text)) expect(s).toMatch(/\bin chat\b/i);
+describe("062 AC-3 the page claims only how amax really behaves", () => {
+  it.each(surfaces())("%s: every confirm is scoped to chat", (_where, body) => {
+    expect(body.length).toBeGreaterThan(40);
+    for (const s of confirmClaims(body)) expect([s, chatOnly(s)]).toEqual([s, true]);
   });
-  it.each([["Each write waits for a confirm, then is audited."], ["amax asks before it changes anything."], ["Every MCP write waits for approval before it runs."]])("rejects the unscoped claim %s", (claim) => {
-    expect(sentences(claim).every((s) => /\bin chat\b/i.test(s))).toBe(false);
+  it.each(surfaces())("%s: commit hours are drafted and accepted, never logged on their own", (_where, body) => {
+    for (const s of sentences(body, TIME)) expect([s, accepted(s)]).toEqual([s, true]);
+  });
+  it.each([["Each write waits for a confirm, then is audited."], ["amax asks before it changes anything."], ["In chat and over MCP, amax asks before it changes anything."]])("rejects the confirm claim %s", (claim) => {
+    expect(confirmClaims(claim).every(chatOnly)).toBe(false);
+  });
+  it.each([["Commits close tasks and log time."], ["Agents log time for you."], ["Wednesday's hours are logged by the agent."]])("rejects the time claim %s", (claim) => {
+    expect(sentences(claim, TIME).every(accepted)).toBe(false);
   });
 });

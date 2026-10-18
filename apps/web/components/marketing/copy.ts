@@ -1,6 +1,6 @@
-export const HERO_LEDE = "Commits close tasks and log time. Deployments move releases. Leave, people records and allocations stay up to date through chat. Your team opens amax to review and approve, not to type.";
+export const HERO_LEDE = "Commits close tasks and draft your time for you to accept. Deployments move releases. Leave, people records and allocations stay up to date through chat. Your team opens amax to review and approve, not to type.";
 
-export const DESCRIPTION = "amax is the agent-native ERP for software and professional-services firms. Agents log time, move releases and keep people, leave and allocations current through MCP. People review and decide.";
+export const DESCRIPTION = "amax is the agent-native ERP for software and professional-services firms. Agents close tasks, draft time for people to accept, move releases and keep people, leave and allocations current through MCP. People review and decide.";
 
 export const STEPS = [
   { title: "Agents write through MCP", body: "Every capability is an MCP tool with role-scoped permissions. Claude Code, CI and your own agents use the same tools as the UI." },
