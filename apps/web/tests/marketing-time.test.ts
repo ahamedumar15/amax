@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { surfaces } from "./marketing-prose";
 
+// Any clause that mentions hours must say they are drafted or accepted, unless it is a listed neutral
+// label. A closed list, so a new wording fails by default whatever verb it uses (review rounds 10–12).
 const HOURS = /\b\d+(?:\.\d+)?\s*(?:h|hours?)\b|\bhours\b|\btimes?(?:heets?)?\b|\bbookkeeping\b/i;
-const WRITES = /\b(log\w*|add\w*|book\w*|record\w*|fill\w*|track\w*|enter\w*|writ\w*|updat\w*|put\w*|lands?|goes from|do(?:es)? that)\b/i;
-const OWNED = /\b(accept|accepts|accepted|draft|drafts|drafted|suggest|suggests|suggested|suggestion)\b/i;
+const OWNED = /\b(accept\w*|draft\w*|suggest\w*)\b/i;
+const NEUTRAL = new Set(["Time and approvals."]);
 
-const claims = (body: string) => body.split(/(?<=[!?]|[^\d]\.)\s+|\n+/).flatMap((s) => s.split(/[,;:]/)).filter((c) => HOURS.test(c) && WRITES.test(c));
+const clauses = (body: string) => body.split(/(?<=[!?]|[^\d]\.)\s+|\n+/).flatMap((s) => s.split(/[,;:]/)).map((c) => c.trim());
+const unowned = (body: string) => clauses(body).filter((c) => HOURS.test(c) && !OWNED.test(c) && !NEUTRAL.has(c));
 
 describe("062 AC-3 commit hours are drafted and accepted, never written on their own", () => {
   it.each(surfaces())("%s", (_where, body) => {
-    for (const c of claims(body)) expect([c.trim(), OWNED.test(c)]).toEqual([c.trim(), true]);
+    expect(unowned(body)).toEqual([]);
   });
   it.each([
     ["Commits close tasks and log time."],
@@ -19,10 +22,10 @@ describe("062 AC-3 commit hours are drafted and accepted, never written on their
     ["In amax, agents do that bookkeeping over MCP."],
     ["Agents log 2.5 h, and the draft is reviewed later."],
     ["amax is logging 2.5 h for Kasun on Wednesday."],
-    ["The agent enters the hours on the timesheet."],
-    ["Agents are tracking time and updating the timesheet for you."],
+    ["The 2.5 h landed on Kasun's timesheet."],
+    ["Wednesday went from 5.0 to 7.5 h."],
+    ["The agent submits Kasun's hours."],
   ])("rejects %s", (claim) => {
-    expect(claims(claim).length).toBeGreaterThan(0);
-    expect(claims(claim).every((c) => OWNED.test(c))).toBe(false);
+    expect(unowned(claim).length).toBeGreaterThan(0);
   });
 });
