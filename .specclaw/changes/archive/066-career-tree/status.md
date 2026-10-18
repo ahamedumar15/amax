@@ -15,6 +15,7 @@
 | Build | - | - |
 | Verify | ✅ Done |  |
 | PR | ✅ Raised | https://github.com/chan4lk/amax/pull/92 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

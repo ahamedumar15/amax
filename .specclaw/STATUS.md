@@ -1,18 +1,16 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 20:30 UTC
+**Last Updated:** 2026-10-18 21:02 UTC
 
 ## Active Changes
 
 
-- 🔀 **037-digital-experience** — pr raised | 4/4 tasks (100%) | 0 failed | PR #93 open
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 - 🔀 **063-public-assets-in-image** — pr raised | 1/1 tasks (100%) | 0 failed | PR #84 merged
 - 🔀 **064-marketing-revamp** — pr raised | 7/7 tasks (100%) | 0 failed | PR #87 merged
 - 🔀 **065-review-pass-cap** — pr raised | 1/1 tasks (100%) | 0 failed | PR #88 merged
-- 🔀 **066-career-tree** — pr raised | 5/5 tasks (100%) | 0 failed | PR #92 merged
 
 ## Pending Proposals
 
@@ -57,6 +55,7 @@
 - ✅ **034-backup-restore-and-export**
 - ✅ **035-api-webhooks-and-rate-limits**
 - ✅ **036-compliance-registers**
+- ✅ **037-digital-experience**
 - ✅ **038-navigation-scale**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
@@ -81,9 +80,10 @@
 - ✅ **059-stable-pins**
 - ✅ **060-privacy-api-hardening**
 - ✅ **061-ci-test-load**
+- ✅ **066-career-tree**
 
 ## Stats
 
 - **Total changes:** 64
-- **Active:** 7
-- **Completed:** 57
+- **Active:** 5
+- **Completed:** 59
