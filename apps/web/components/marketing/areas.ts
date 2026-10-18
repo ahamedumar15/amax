@@ -33,10 +33,10 @@ export const AREAS: Area[] = [
   ] },
   { title: "Operations", tone: "sky", art: "key", coming: [
     { text: "Helpdesk", module: "helpdesk", words: ["helpdesk"] },
-    { text: "Insights", module: "insights", words: ["insights"] },
   ], live: [
     { text: "IT access and licences, with every grant and revoke decided by a person", module: "it-access" },
     { text: "Compliance registers and incidents", module: "compliance" },
+    { text: "Insights: a weekly agent briefing, projects at risk and market position, every point with its evidence", module: "insights" },
     { text: "Notifications", module: "notifications" },
   ] },
   { title: "Platform", tone: "problem", art: "shield", coming: [], live: [
