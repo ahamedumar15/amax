@@ -61,3 +61,4 @@ HR tickets and the HR queue are visible only to HR (and Admin).
   Depends: T3, T4
 
 ## Verify
+Quality: 0 → 0 duplicated lines (`npx jscpd modules/helpdesk`: 0 clones in 42 files across 6 formats; `specclaw-quality-scan .` failed with jq "Argument list too long"). No refactor commit: there was nothing to remove.
