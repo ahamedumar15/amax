@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { getRuntime } from "@amax/core/server";
-import { rolesOf, type Viewer } from "@amax/auth";
-import { aiUsage, USAGE_SOURCES, type AiUsage, type UsageSource } from "./usage";
+import { can, canSeePricing, type Viewer } from "@amax/auth";
+import { aiUsage, USAGE_SOURCES, type AiUsage, type UsageSource, type UsageViewer } from "./usage";
+
+/** 055: everyone's usage is ai:usage:read (Admin, IT Admin); everyone's cost is the pricing class (Admin). */
+export const AI_USAGE_READ = "ai:usage:read";
+export const usageViewer = (v: Viewer): UsageViewer => ({ tenantId: v.tenantId, userId: v.userId, tenant: can(v, AI_USAGE_READ), pricing: canSeePricing(v) });
 
 type Group = "person" | "day" | "conversation";
 /** Each row's pin key: the person ("none" for jobs), the UTC day, or the conversation. */
@@ -21,7 +25,7 @@ export type UsageInput = z.infer<typeof usageInput>;
 
 /** The tool's answer: totals, plus one grouping (or all three), optionally narrowed to one row by `key`. */
 export function shapeUsage(u: AiUsage, input: Pick<UsageInput, "groupBy" | "key">) {
-  const base = { scope: u.scope, month: u.month, source: u.source, totals: u.totals, bySource: u.bySource };
+  const base = { scope: u.scope, month: u.month, source: u.source, totals: u.totals, bySource: u.bySource, ...(u.pricing ? {} : { costHidden: "Prices are hidden for your role" }) };
   if (!input.groupBy) return { ...base, byDay: u.byDay, byPerson: u.byPerson, byConversation: u.byConversation };
   const rows = rowsOf(u, input.groupBy);
   return { ...base, groupBy: input.groupBy, rows: input.key ? rows.filter((r) => r.key === input.key) : rows };
@@ -29,13 +33,12 @@ export function shapeUsage(u: AiUsage, input: Pick<UsageInput, "groupBy" | "key"
 
 export const getAiUsageTool = {
   name: "get_ai_usage",
-  description: "AI cost, tokens and calls for a month. scope self is your own usage; tenant (Admin only) is everyone's. Group by person, day or conversation. A call with no known price is counted as unknown cost, never as $0.",
+  description: "AI cost, tokens and calls for a month. scope self is your own usage; tenant (Admin and IT Admin) is everyone's. Group by person, day or conversation. A call with no known price is counted as unknown cost, never as $0. For IT Admin, tenant usage has no cost fields: prices are hidden for the role.",
   input: usageInput,
   permission: "",
   scope: "read" as const,
   readOnly: true,
-  run: async (viewer: Viewer, input: UsageInput) =>
-    shapeUsage(await aiUsage(getRuntime().db, { tenantId: viewer.tenantId, userId: viewer.userId, roles: rolesOf(viewer) }, input), input),
+  run: async (viewer: Viewer, input: UsageInput) => shapeUsage(await aiUsage(getRuntime().db, usageViewer(viewer), input), input),
 };
 
 /** Registers get_ai_usage with the tool registry beside the modules' tools. */

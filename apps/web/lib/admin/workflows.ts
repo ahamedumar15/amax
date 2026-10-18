@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { withTenant } from "@amax/db";
-import { canSee, type Viewer } from "@amax/auth";
+import { canSee, pricedFor, type Viewer } from "@amax/auth";
 import { ToolError } from "@amax/mcp";
 import { getRun, LATEST_RUNS, listRuns, listSchedules, setEntityZone, setScheduleEnabled, WORKFLOWS_ADMIN, type ScheduleView } from "@amax/workflows/server";
 import { ctxFor, notFound, read, tool, write, type AdminDeps } from "./tool";
@@ -55,9 +55,9 @@ export const workflowTools = (d: AdminDeps) => [
     run: (v, a) => findSchedule(d, v, a.schedule) }),
   tool({ ...read(WORKFLOWS_ADMIN), name: "list_workflow_runs", description: `Up to ${LATEST} workflow runs, newest first, with their steps, cost and status; classified fields masked. status filters by one or more statuses. withinLatest: true filters only the latest ${LATEST} runs, as the Scheduler screen's tickets count them.`,
     input: z.object({ status: z.union([RUN_STATUS, z.array(RUN_STATUS).min(1)]).optional(), withinLatest: z.boolean().optional() }),
-    run: (v, a) => runsFor(d, v, a.status, a.withinLatest ?? false) }),
+    run: async (v, a) => pricedFor(v, await runsFor(d, v, a.status, a.withinLatest ?? false)) }),
   tool({ ...read(WORKFLOWS_ADMIN), name: "get_workflow_run", description: "One workflow run with its steps, cost and status; classified fields masked.", input: z.object({ runId: z.uuid() }),
-    run: async (v, a) => (await getRun(d.db(), d.workflows(), v.tenantId, a.runId, see(v))) ?? Promise.reject(notFound(`run ${a.runId}`)) }),
+    run: async (v, a) => pricedFor(v, (await getRun(d.db(), d.workflows(), v.tenantId, a.runId, see(v))) ?? await Promise.reject(notFound(`run ${a.runId}`))) }),
   tool({ ...write(WORKFLOWS_ADMIN), name: "control_workflow_run", description: "Pause, resume, cancel or retry a workflow run. Retry re-runs only the failed step.",
     input: z.object({ runId: z.uuid(), action: z.enum(["pause", "resume", "cancel", "retry"]) }),
     run: async (v, a, s) => { await (await d.engine()).control(ctxFor(v, s), a.runId, a.action); return { runId: a.runId, action: a.action }; } }),
