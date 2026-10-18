@@ -46,3 +46,5 @@ fictional deductions, so the engine and screen can be shown end to end.
   Depends: T4, T5
 
 ## Verify
+
+Quality: 8 → 8 duplicated lines (jscpd over modules/payroll; the one clone is the payslip and change tables' shared column list in the migration, left as is. specclaw-quality-scan reported jscpd parse_error, so jscpd was run directly.)
