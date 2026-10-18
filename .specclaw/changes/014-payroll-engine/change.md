@@ -41,7 +41,7 @@ fictional deductions, so the engine and screen can be shown end to end.
 - [x] `T5` — Pay visibility (002): pay values go only to Payroll and Admin, and to an employee for their own payslip. Finance and everyone else get 404 or totals only, across screens, MCP and chat redaction (`sensitive: pay`) (AC-3)
   Files: modules/payroll/server/read.ts, modules/payroll/tests/visibility.test.ts
   Depends: T2
-- [ ] `T6` — Module standard: README, manifest, CODEOWNERS line, retention with statutory periods, can be switched off, and degrades without time (AC-5)
+- [x] `T6` — Module standard: README, manifest, CODEOWNERS line, retention with statutory periods, can be switched off, and degrades without time (AC-5)
   Files: modules/payroll/README.md, modules/payroll/package.json, .github/CODEOWNERS, modules/payroll/tests/standard.test.ts
   Depends: T4, T5
 
