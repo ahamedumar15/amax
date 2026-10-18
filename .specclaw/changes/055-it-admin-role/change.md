@@ -24,4 +24,18 @@ What changes on screen, and where to see it: [`055-it-admin-role`](../../mock/in
 
 ## Tasks
 
+- [ ] `T1` — Operations nav group and "Coming soon" screens that name their change (AC-4)
+  Files: apps/web/lib/registry.ts, apps/web/lib/operations.ts, apps/web/app/(app)/operations/[screen]/page.tsx
+- [ ] `T2` — Settings screens open for IT Admin by permission; every money figure reads "Hidden for your role" with no pin (usage, hub, AI and data, scheduler, trace); View as and the profile menu know IT Admin (AC-1, AC-3)
+  Files: apps/web/app/(app)/settings/**, apps/web/components/settings/**, apps/web/components/workflows/RunsCard.tsx, apps/web/components/shell/ProfileMenu.tsx, apps/web/lib/profile.ts, apps/web/lib/admin/status.ts, apps/web/lib/chat-usage.ts
+  Depends: T3, T4
+- [ ] `T3` — `ITAdmin` role, its explicit grants (every Admin-only permission, never `pricing`), role-assignment and View as, and Ravi Perera (fictional) in the Lumen Labs fixtures (AC-1, AC-2)
+  Files: packages/auth/src/roles.ts, packages/auth/src/it-admin.ts, packages/auth/src/index.ts, packages/auth/src/principals.ts, packages/core/src/module.ts, packages/chat/src/tools.ts, packages/testing/src/fixtures/shared.ts, modules/hr/fixtures/*, apps/web/lib/server.ts, .specclaw/changes/archive/001-amax-foundation/fixtures.md
+- [ ] `T4` — The `pricing` class: `canSeePricing`, cost fields left out (not null) of `aiUsage`, `aiUsageTotals`, `get_ai_usage`, `get_ai_policy`, workflow run and trace tools for roles without it; the chat footer keeps your own cost (AC-3)
+  Files: packages/auth/src/sensitivity.ts, packages/ai/src/usage.ts, packages/ai/src/usage-tool.ts, packages/ai/src/usage-format.ts, apps/web/lib/admin/ai.ts, apps/web/lib/admin/workflows.ts, packages/mcp/src/audit-tools.ts
+  Depends: T3
+- [ ] `T5` — Tests: the Admin-only tool table for IT Admin, pricing on screen, tool and page HTML, and each Admin-only e2e spec run as IT Admin (AC-2, AC-3, AC-5)
+  Files: packages/auth/tests/*, packages/ai/tests/usage.test.ts, apps/web/tests/admin/*, apps/web/tests/e2e/*
+  Depends: T1, T2, T3, T4
+
 ## Verify
