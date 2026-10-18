@@ -20,8 +20,10 @@ export default defineModule({
   integratesWith: ["delivery"],
   permissions: ["leave:read", "leave:request", "leave:cancel", "leave:approve", "leave:team", "leave:admin"],
   // Anyone may approve their own reports' leave (the check is the hr reporting line); HR decides and
-  // cancels anyone's in its entities and sees medical details (002 health).
+  // cancels anyone's in its entities and sees medical details (002 health). ITAdmin gets only its
+  // own leave, as an employee: no one else's.
   grants: {
+    ITAdmin: OWN,
     Leadership: [...MANAGE, "leave:team"],
     PM: MANAGE,
     Engineer: MANAGE,
