@@ -94,3 +94,8 @@ jobs:
           kubectl port-forward svc/smoke 8080:80 &
           for i in $(seq 1 30); do curl -sf localhost:8080/healthz && exit 0; sleep 1; done
           kubectl describe pods; kubectl logs deploy/smoke; exit 1
+      # 034 AC-3: the weekly restore drill, run here on k3d exactly as the chart's CronJob runs it.
+      - run: docker build --target ops -t amax:ci-ops .
+      - run: k3d image import amax:ci-ops -c smoke
+      - name: Restore drill on k3d
+        run: deploy/ci/k3d-drill.sh

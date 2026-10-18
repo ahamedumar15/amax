@@ -31,7 +31,7 @@ export default async function BackupsPage() {
       <Sprite />
       <nav className="crumb" aria-label="Breadcrumb"><a href="/settings">Settings</a><span>/</span>Backups and export</nav>
       <div className="row head">
-        <div><h1>Backups and export</h1><p className="lede">{lede(s)} Changes happen in chat. Pin anything, then ask.</p></div>
+        <div><h1>Backups and export</h1><p className="lede">{lede(s)}</p></div>
         <div className="actions">
           <AskButton label="Run drill now" prompt="Run a restore drill now" pin={DRILLS} tool="request_restore_drill" name="Ask amax to run a restore drill now" />
           <AskButton primary label="Export all data" prompt="Export all our data. Reason: " pin={OVERVIEW} tool="request_tenant_export" name="Ask amax to export all data" />

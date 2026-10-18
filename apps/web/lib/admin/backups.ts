@@ -9,8 +9,10 @@ const reason = z.string().min(3).max(500);
 const CONFIRM_CARD = "tenant exports and offboarding are asked for and approved only on amax chat's confirm card";
 const look = <T>(v: Viewer, fn: Parameters<typeof readBackups<T>>[1]) => readBackups(ctx(v), fn);
 
-const drillLabel = (d: { id: string; startedAt: string | null; requestedAt: string }) => `Restore drill ${(d.startedAt ?? d.requestedAt).slice(0, 10)}`;
-const exportLabel = (e: { id: string; requestedAt: string }) => `Tenant export ${e.requestedAt.slice(0, 10)}`;
+// The same labels the screen pins with ("Tenant export Oct 17"), so a pin keeps its name in chat.
+const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const drillLabel = (d: { id: string; startedAt: string | null; requestedAt: string }) => `Restore drill ${day.format(new Date(d.startedAt ?? d.requestedAt))}`;
+const exportLabel = (e: { id: string; requestedAt: string }) => `Tenant export ${day.format(new Date(e.requestedAt))}`;
 
 /** 034: the Backups and export screen's tools. Admin only: the export holds pay and money (055). */
 export const backupTools = [

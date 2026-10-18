@@ -14,6 +14,11 @@ export function duration(ms: number) {
   return m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
 }
 
+const words = (ms: number) => {
+  const m = Math.max(1, Math.round(ms / 60_000));
+  return m < 60 ? `${m} minute${m === 1 ? "" : "s"}` : duration(ms);
+};
+
 export const rows = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} M` : n.toLocaleString("en"));
 export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en")} ${n === 1 ? one : many}`;
 export const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
@@ -26,7 +31,7 @@ export const lastDrill = (drills: DrillView[]) => drills.find((d) => d.status !=
 function drillSentence(d: DrillView | null) {
   if (!d?.startedAt) return "No restore drill has run yet.";
   const chain = d.chainOk ? "the audit chain checked out" : d.chainOk === false ? "the audit chain didn't verify" : "the audit chain wasn't checked";
-  const how = d.status === "failed" ? `failed${d.note ? ` (${d.note})` : ""}` : d.status === "slow" ? `was slow, ${duration(d.durationMs ?? 0)}` : `passed in ${duration(d.durationMs ?? 0)}`;
+  const how = d.status === "failed" ? `failed${d.note ? ` (${d.note})` : ""}` : d.status === "slow" ? `was slow, ${words(d.durationMs ?? 0)}` : `passed in ${words(d.durationMs ?? 0)}`;
   return `${weekday.format(new Date(d.startedAt))}'s restore drill ${how}, and ${chain}.`;
 }
 

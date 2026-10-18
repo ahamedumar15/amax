@@ -44,7 +44,7 @@ New admin screen, Backups and export: the recovery window, last backup and last 
 - [x] `T7` — Deploy: point-in-time recovery per host in docs/operations.md (managed Postgres for Vercel and Cloudflare, CloudNativePG with WAL archiving on k3s), the chart's CNPG Cluster, ScheduledBackup and restore-drill CronJob, a Dockerfile ops target, podman timer notes (AC-1, AC-3)
   Files: docs/operations.md, docs/architecture.md, deploy/helm/amax/values.yaml, deploy/helm/amax/templates/postgres-cnpg.yaml, deploy/helm/amax/templates/restore-drill.yaml, deploy/podman/*, Dockerfile
   Depends: T4
-- [ ] `T8` — Tests and CI: CI runs the drill on k3d (Postgres in the cluster, a snapshot, then the drill job); e2e for the screen, Admin-only visibility and the chat-confirmed export request; the 2% visual diff against the mock (AC-3, AC-4, AC-6)
+- [x] `T8` — Tests and CI: CI runs the drill on k3d (Postgres in the cluster, a snapshot, then the drill job); e2e for the screen, Admin-only visibility and the chat-confirmed export request; the 2% visual diff against the mock (AC-3, AC-4, AC-6)
   Files: .github/workflows/ci.yml, deploy/ci/*, apps/web/tests/e2e/backups.spec.ts, apps/web/tests/e2e/backups-visual.spec.ts, apps/web/playwright.config.ts, apps/web/playwright.auth.config.ts, apps/web/lib/backup-fixtures.ts, apps/web/scripts/seed-demo.ts
   Depends: T2, T4, T5, T6
 
