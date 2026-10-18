@@ -1,0 +1,47 @@
+/* Helpdesk: the mock's tiles, line chart, donut and queue table (module standard: shared UI starts in the module). */
+.helpdesk .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.helpdesk .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.helpdesk .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.helpdesk .row.head .lede{margin:0}
+.helpdesk .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.helpdesk .muted{color:var(--ink-3)}
+.helpdesk .small{font-size:13px}
+.helpdesk .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.helpdesk .ticket .pin{top:auto;bottom:10px}
+.helpdesk .cols.even{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin:28px 0}
+.helpdesk .card{position:relative}
+.helpdesk .card-head .pin{position:static;margin-left:auto}
+.helpdesk .seg a{flex:1;white-space:nowrap;padding:0 14px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;font-size:13.5px;font-weight:500;color:var(--ink-2);text-decoration:none}
+.helpdesk .seg a[aria-current="page"]{background:var(--card);color:var(--chip-agent);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
+.helpdesk .chart{width:100%;height:auto;display:block;overflow:visible}
+.helpdesk .chart .ax{fill:var(--ink-3);font-size:12px}
+.helpdesk .legend{display:flex;gap:28px;font-size:12.5px;color:var(--ink-2);margin-top:6px;flex-wrap:wrap;row-gap:6px}
+.helpdesk .legend span{display:inline-flex;align-items:center;gap:10px}
+.helpdesk .legend i{display:inline-block;width:28px;height:4px;border-radius:3px}
+.helpdesk .legend i.agent{background:var(--violet)}
+.helpdesk .legend i.people{background:repeating-linear-gradient(90deg,var(--mint) 0 5px,transparent 5px 9px)}
+.helpdesk .donut-wrap{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center}
+.helpdesk .donut-legend{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.helpdesk .donut-legend li{position:relative;display:flex;align-items:center;gap:10px;padding:8px 40px 8px 10px;border-radius:10px;font-size:13px}
+.helpdesk .donut-legend li:hover{background:var(--sunken)}
+.helpdesk .donut-legend i{width:14px;height:14px;border-radius:4px;flex:none}
+.helpdesk .donut-legend b{margin-left:auto;font-weight:500;color:var(--ink-3);font-size:12px}
+.helpdesk .donut-legend li>.pin{top:50%;margin-top:-15px;right:4px}
+.helpdesk .scroll-x{overflow-x:auto}
+.helpdesk .tbl td{white-space:normal}
+.helpdesk .tbl td small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.helpdesk .tbl td small a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
+.helpdesk .tbl td:last-child{padding-right:52px}
+.helpdesk .who{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.helpdesk .av{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.helpdesk .a1{background:linear-gradient(135deg,#B85A00,#B3364A)}
+.helpdesk .a2{background:linear-gradient(135deg,#1F6FB2,#5B44D6)}
+.helpdesk .a3{background:linear-gradient(135deg,#1E7A57,#16695E)}
+.helpdesk .a4{background:linear-gradient(135deg,#6A4FD0,#4B32B0)}
+.helpdesk .down{color:var(--chip-bad);font-weight:600}
+.helpdesk .foot-note{color:var(--ink-3);font-size:13px;margin:0;padding:14px 28px 20px}
+.helpdesk .foot-note a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.helpdesk .queue .empty{padding:40px 24px}
+@media (max-width:1180px){.helpdesk .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.helpdesk .cols.even{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.helpdesk .tickets.four{grid-template-columns:minmax(0,1fr)}.helpdesk .donut-wrap{grid-template-columns:120px 1fr}}
+@media (prefers-reduced-motion:reduce){.helpdesk *{transition:none!important;animation:none!important}}

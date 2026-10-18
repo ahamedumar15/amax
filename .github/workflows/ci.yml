@@ -82,6 +82,14 @@ jobs:
           docker run -d --name amax -p 3000:3000 amax:ci
           for i in $(seq 1 30); do curl -sf localhost:3000/healthz && exit 0; sleep 1; done
           docker logs amax; exit 1
+      # 063: public/ must ship in the image; signed-out visitors fetch these from the marketing page.
+      - name: Image serves the marketing media
+        run: |
+          check() { got=$(curl -s -o /dev/null -w '%{http_code}' "$@"); [ "$got" = "$want" ] || { echo "expected $want, got $got: $*"; docker logs amax; exit 1; }; }
+          want=200; for f in amax-product.mp4 amax-product.webm amax-product-poster.jpg amax-product.en.vtt amax-og.jpg; do check "localhost:3000/marketing/$f"; done
+          want=206; check -H 'Range: bytes=0-1023' localhost:3000/marketing/amax-product.mp4
+          type=$(curl -sI localhost:3000/marketing/amax-product.mp4 | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type"{print $2}')
+          [ "$type" = "video/mp4" ] || { echo "expected video/mp4, got '$type'"; docker logs amax; exit 1; }
       - run: helm lint deploy/helm/amax
       - name: Chart renders the worker Deployment
         run: helm template t deploy/helm/amax --set worker.enabled=true --set envFromSecret=amax | grep -q 'node", "apps/web/worker.mjs'
