@@ -14,4 +14,4 @@ create table delivery.activity (
 );
 create index activity_recent on delivery.activity (tenant_id, at desc);
 select core.enable_tenant_rls('delivery.activity');
-grant select, insert on delivery.activity to amax_app;
+grant select, insert, delete on delivery.activity to amax_app;

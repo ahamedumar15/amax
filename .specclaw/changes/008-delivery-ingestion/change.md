@@ -47,8 +47,8 @@ Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
 - [x] `T6` — The 039 importer becomes a caller of `sync_proposal`. Keys and history are kept (AC-7)
   Files: modules/delivery/sync/import.ts, modules/delivery/sync/bin.ts, modules/delivery/tests/sync-import.test.ts
   Depends: T2
-- [ ] `T7` — Module standard: contracts first with contract tests, README, fixtures and manifest. Switching delivery's ingestion off degrades gracefully, as does running without `time` or `agents` (AC-5)
-  Files: modules/delivery/contracts.ts, modules/delivery/README.md, modules/delivery/fixtures/, modules/delivery/tests/ingest-ac5.test.ts
+- [x] `T7` — Module standard: contracts first with contract tests, README, fixtures and manifest. Switching delivery's ingestion off degrades gracefully, as does running without `time` or `agents` (AC-5)
+  Files: modules/delivery/module.ts, modules/delivery/db/migrations/0014_activity.sql, modules/delivery/README.md, modules/delivery/tests/delivery.test.ts
   Depends: T5, T6
 
 ## Verify
