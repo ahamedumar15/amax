@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 19:41 UTC
+**Last Updated:** 2026-10-18 20:14 UTC
 
 ## Active Changes
 
@@ -13,7 +13,7 @@
 - 🔀 **063-public-assets-in-image** — pr raised | 1/1 tasks (100%) | 0 failed | PR #84 merged
 - 🔀 **064-marketing-revamp** — pr raised | 7/7 tasks (100%) | 0 failed | PR #87 merged
 - 🔀 **065-review-pass-cap** — pr raised | 1/1 tasks (100%) | 0 failed | PR #88 merged
-- 📝 **066-career-tree** — tasks done | 0/5 tasks (0%) | 0 failed
+- 📝 **066-career-tree** — tasks done | 5/5 tasks (100%) | 0 failed
 
 ## Pending Proposals
 

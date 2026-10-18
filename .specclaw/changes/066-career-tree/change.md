@@ -234,4 +234,33 @@ Two differences from the mock, on purpose:
 
 ## Verify
 
-<!-- Filled by verify. -->
+Gates, run on 2026-10-18 in the worktree:
+- `pnpm turbo run lint --force`: 34/34 tasks. `check:graph` ok (21 modules, 11 packages). `check-module-standard` ok.
+- `pnpm turbo run test --force --continue --concurrency=2`: 34/34 tasks, 1342 tests passed, 6 skipped. career has 8 tests: AC1, AC2, AC3, AC4, AC5, AC6, AC8 and AC9.
+- `pnpm --filter @amax/web build`: ok.
+- `apps/web` Playwright: public 8 passed, signed-in (`playwright.auth.config.ts`) 81 passed.
+- `pnpm --filter @amax/career e2e`: 3 passed.
+  - AC4: reached through the Person page's Career tab; tree and list in step; 14 node pins; no forms.
+  - AC7: axe clean in light and dark; arrow keys, End and Enter; animation off under reduced motion; list first at 700px with no horizontal scroll.
+  - AC6: Sahan (Admin, outside the chain) gets 404.
+
+Fixture tree against the mock: the layout test reads the mock's SVG and matches it exactly. That
+covers the viewBox, all 5 branch paths and stroke widths, the lanes, 13 leaves (2 proposed), the
+trunk polygon, 3 rings, 2 fruit (1 expired) and 4 roots. On purpose, the list has 13 rows where the
+mock has 11: the mock merges the Nov 2023 project start and manager move into one row, and the
+first manager is its own event. Each row now pins exactly one event.
+
+Mock screenshot: the 066 section sits inside an unclosed earlier section (048-chat-cost on this
+branch, the issue 062 fixes upstream) and renders blank at its anchor. `shots/mock.png` was taken
+after moving the section into `main` with a scratch Playwright `page.evaluate`. The mock itself is
+unchanged.
+
+Quality: 0 → 0 duplicated lines (`npx jscpd modules/career`, default thresholds;
+`specclaw-quality-scan` fails with jq "Argument list too long"). No refactor commit.
+
+Ripples outside `modules/career/`:
+- `.github/CODEOWNERS` (one line).
+- `modules/hr/contracts.ts`: `PERSON_SECTIONS`.
+- `modules/hr/ui/PersonPage.tsx`: the Sections nav links installed sections.
+- `BACKLOG.md`: 3 follow-ups.
+- `pnpm-lock.yaml`: the new package.
