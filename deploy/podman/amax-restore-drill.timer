@@ -1,0 +1,10 @@
+# Every 15 minutes; the runner drills only a tenant that is due (each Sunday) or asked for one in chat.
+[Unit]
+Description=amax restore drill, every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

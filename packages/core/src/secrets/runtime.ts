@@ -21,6 +21,9 @@ export function configureSecrets(opts: { kms: Kms | null }) {
 
 export const kmsLabel = () => kms?.label ?? null;
 
+/** 034 AC-5: after the data key is destroyed, no cached copy may outlive it. */
+export const forgetDataKey = (tenantId: string) => cache.delete(tenantId);
+
 export function requireKms(): Kms {
   if (!kms) throw new SecretsUnavailableError();
   return kms;
@@ -32,6 +35,7 @@ export async function dataKeyFor(tx: Tx, tenantId: string): Promise<Uint8Array> 
   if (hit && hit.until > Date.now()) return hit.key;
   const [row] = await tx.execute(sql`select kms, key_ref, wrapped from secrets.data_key where tenant_id = ${tenantId}`);
   if (!row) throw new SecretsUnavailableError("this tenant has no data key yet");
+  if (row.wrapped === null) throw new SecretsUnavailableError("this tenant's data key was destroyed when it left amax (034)");
   if (row.kms !== k.id) throw new SecretsUnavailableError(`this tenant's data key is held by the ${row.kms} key service, but AMAX_KMS is ${k.id}`);
   const key = await k.unwrap(tenantId, { keyRef: row.key_ref as string, wrapped: row.wrapped as string });
   cache.set(tenantId, { key, until: Date.now() + CACHE_MS });

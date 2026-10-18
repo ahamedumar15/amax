@@ -47,6 +47,18 @@ const schema = z.object({
   AZURE_TENANT_ID: z.string().optional(),
   AZURE_CLIENT_ID: z.string().optional(),
   AZURE_CLIENT_SECRET: z.string().optional(),
+  // 034 backups. Point-in-time recovery is the host's (CloudNativePG, Neon, Supabase, RDS): these say
+  // what it is set to, so the Backups screen can show it. Tenant snapshots go to AMAX_BACKUP_DIR (a
+  // volume in AMAX_BACKUP_REGION) or to S3_BACKUP_BUCKET, with S3_BACKUP_BUCKETS mapping regions to buckets.
+  AMAX_PITR: z.string().regex(/^[a-z0-9-]+$/).optional(),
+  AMAX_PITR_RPO_MINUTES: z.coerce.number().int().positive().optional(),
+  AMAX_PITR_WINDOW_DAYS: z.coerce.number().int().positive().optional(),
+  AMAX_BACKUP_DIR: z.string().min(1).optional(),
+  AMAX_BACKUP_REGION: z.string().optional(),
+  S3_BACKUP_BUCKET: z.string().optional(),
+  // The restore drill's scratch database (its owner): wiped, restored into and wiped again each drill.
+  AMAX_DRILL_DATABASE_URL: postgresUrl.optional(),
+  S3_BACKUP_BUCKETS: z.string().regex(/^([A-Za-z]{2}=[\w.-]+)(,[A-Za-z]{2}=[\w.-]+)*$/, "REGION=bucket pairs, comma-separated").optional(),
   // 035 rate limits per one-minute window. Unset keeps the defaults in rate-limit.ts.
   AMAX_RATE_PAGE_USER: z.coerce.number().int().positive().optional(),
   AMAX_RATE_PAGE_TENANT: z.coerce.number().int().positive().optional(),

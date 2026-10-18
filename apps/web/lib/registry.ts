@@ -22,6 +22,8 @@ export const navItems: NavItem[] = [
   { href: "/settings", label: "Settings", icon: "gear", group: "Operations" },
   // A screen that has shipped as a module (036's Compliance) replaces its "Coming soon" entry; switching the module off brings it back.
   ...OPERATIONS.filter((o) => !installed.some((m) => m.id === o.slug)).map((o) => ({ href: `/operations/${o.slug}`, label: o.title, icon: o.icon, group: "Operations" })),
+  // 034: Admin only (the export holds pay and money, which IT Admin never sees).
+  { href: "/settings/backups", label: "Backups and export", icon: "grid", group: "Operations", permission: "backup:read" },
 ];
 
 // Module screens reached from the profile menu instead of the rail (030's Notifications).

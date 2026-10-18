@@ -1,0 +1,77 @@
+# 034 AC-3 in CI: a Postgres in the k3d cluster, the backup volume, and a Job that migrates, seeds the
+# demo tenant (fictional) and takes its first snapshot. k3d-drill.sh then runs the chart's restore drill.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drill-pg-init
+data:
+  init.sql: |
+    create role amax_app login password 'amax_app';
+    create database amax_drill;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - { name: POSTGRES_USER, value: amax }
+            - { name: POSTGRES_PASSWORD, value: amax }
+            - { name: POSTGRES_DB, value: amax }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "amax", "-d", "amax"] }
+            periodSeconds: 3
+          volumeMounts: [{ name: init, mountPath: /docker-entrypoint-initdb.d }]
+      volumes: [{ name: init, configMap: { name: drill-pg-init } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432 }]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: amax-backups
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 1Gi } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: drill-prepare
+spec:
+  # Applied together with Postgres, so its first try can beat the server's init restart: retry, don't fail.
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext: { runAsUser: 1000, fsGroup: 1000 }
+      containers:
+        - name: prepare
+          image: amax:ci-ops
+          imagePullPolicy: Never
+          command: ["sh", "-c", "node --import tsx ../../packages/db/bin/migrate.ts && node --import tsx --import ./scripts/ignore-css.mjs scripts/seed-demo.ts && node --import tsx --import ./scripts/ignore-css.mjs scripts/backups.ts snapshot --tenant 11111111-1111-4111-8111-111111111111"]
+          env:
+            - { name: AMAX_BACKUP_DIR, value: /backups }
+            - { name: AMAX_KMS_KEY_FILE, value: /etc/amax/kms/kms.key }
+          envFrom: [{ secretRef: { name: amax-drill } }]
+          volumeMounts:
+            - { name: backups, mountPath: /backups }
+            - { name: kms, mountPath: /etc/amax/kms, readOnly: true }
+      volumes:
+        - { name: backups, persistentVolumeClaim: { claimName: amax-backups } }
+        - { name: kms, secret: { secretName: amax-kms } }

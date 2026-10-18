@@ -82,8 +82,9 @@ describe("AC-5 cache adapter", () => {
 describe("AC-5 no host-specific code outside the adapters", () => {
   const HOST = /^(@vercel\/|cloudflare:|@cloudflare\/|@opennextjs\/|@aws-sdk\/|ioredis|redis$|@upstash\/|@netlify\/)/;
   const ADAPTERS = "packages/core/src/adapters/";
-  // node:fs is allowed only in build-time and test tooling, never in request-path code.
-  const FS_OK = ["packages/core/src/registry.ts", "packages/db/src/migrate.ts", "packages/db/src/testdb.ts", "packages/db/bin/", "modules/delivery/sync/"];
+  // node:fs is allowed only in build-time and test tooling, never in request-path code, and in the one
+  // storage adapter for a volume (034), which only AMAX_BACKUP_DIR selects (Podman, a k3s PVC, CI).
+  const FS_OK = ["packages/core/src/adapters/storage-fs.ts", "packages/core/src/registry.ts", "packages/db/src/migrate.ts", "packages/db/src/testdb.ts", "packages/db/bin/", "modules/delivery/sync/"];
 
   it("packages and modules import host APIs only through packages/core/src/adapters", () => {
     const problems: string[] = [];

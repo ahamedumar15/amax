@@ -15,6 +15,8 @@ export type Storage = {
   delete(key: string): Promise<void>;
   /** A time-limited URL a browser can GET (or PUT) directly. */
   presign(key: string, opts?: { expiresIn?: number; method?: "GET" | "PUT" }): Promise<string>;
+  /** 034: whether the bucket keeps earlier versions of every object; null when it can't tell. */
+  versioned?(): Promise<boolean | null>;
 };
 
 export class ObjectLockedError extends Error {
@@ -65,6 +67,11 @@ export function s3Storage(cfg: S3Config, fetchImpl: typeof fetch = fetch): Stora
       u.searchParams.set("X-Amz-Expires", String(expiresIn));
       const signed = await aws.sign(new Request(u, { method }), { aws: { signQuery: true } });
       return signed.url;
+    },
+    async versioned() {
+      const res = await send(new Request(`${cfg.endpoint.replace(/\/$/, "")}/${cfg.bucket}?versioning`));
+      if (!res.ok) return null;
+      return /<Status>\s*Enabled\s*<\/Status>/.test(await res.text());
     },
   };
 }

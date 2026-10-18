@@ -24,15 +24,19 @@ for (const who of ADMINS) test(`047 AC1 the Settings hub lists every admin scree
   await signIn(page, who.email, "/settings");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Settings");
   const cards = page.locator(".app-card h2");
-  await expect(cards).toHaveCount(9);
-  expect((await cards.allTextContents()).sort()).toEqual(["AI and data", "AI usage", "API and webhooks", "Audit and trace", "Backups and export", "Connections and keys", "Data retention", "Integrations", "Scheduler"]);
+  // 034 AC-6: Backups and export is Admin only; IT Admin never sees the whole-tenant export.
+  const backups = who.pricing ? ["Backups and export"] : [];
+  await expect(cards).toHaveCount(8 + backups.length);
+  expect((await cards.allTextContents()).sort()).toEqual(["AI and data", "AI usage", "API and webhooks", "Audit and trace", ...backups, "Connections and keys", "Data retention", "Integrations", "Scheduler"]);
   await expect(cards.first()).toHaveText("Connections and keys");
   await expect(page.locator(".app-card", { hasText: "Connections and keys" }).locator(".chip")).toHaveText("1 expiring");
-  await expect(page.locator(".app-card.soon .chip")).toHaveText(["Coming soon"]);
+  await expect(page.locator(".app-card.soon")).toHaveCount(0);
   await expect(page.locator(".app-card", { hasText: "AI usage" }).locator(".chip")).toHaveText(who.pricing ? /this month$/ : "Hidden for your role");
   await expect(page.getByRole("link", { name: "Audit and trace" })).toHaveAttribute("href", "/settings/audit");
   await expect(page.getByRole("link", { name: "AI usage" })).toHaveAttribute("href", "/settings/ai/usage");
-  await expect(page.locator(".lede")).toContainText("2 things need you: the Azure DevOps credential expires in 12 days; 1 privacy request needs a second approver");
+  await expect(page.locator(".lede")).toContainText(who.pricing
+    ? "3 things need you: the Azure DevOps credential expires in 12 days; 1 privacy request needs a second approver; 1 tenant export needs a second Admin"
+    : "2 things need you: the Azure DevOps credential expires in 12 days; 1 privacy request needs a second approver.");
   await expect(page.getByRole("navigation").getByRole("link", { name: "Settings" }).first()).toHaveAttribute("href", "/settings");
   await page.getByRole("button", { name: /profile menu/ }).click();
   await expect(page.getByRole("menuitem", { name: "Settings", exact: true })).toHaveAttribute("href", "/settings");
@@ -102,7 +106,7 @@ test("047 AC7 as IT Admin (055): ask to resume the paused schedule, confirm: it 
   await expect(row).toContainText("On");
 });
 
-const OPERATIONS = ["Settings", "Access and licences", "Helpdesk", "Compliance", "Digital experience", "Backups and export"];
+const OPERATIONS = ["Settings", "Access and licences", "Helpdesk", "Compliance", "Digital experience"];
 
 test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are Coming soon and name their change; other roles see none of it", async ({ page }) => {
   for (const who of ADMINS) {
@@ -111,6 +115,8 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
     const nav = page.getByRole("navigation", { name: "Main" });
     await expect(nav.locator(".grp", { hasText: "Operations" })).toHaveCount(1);
     for (const label of OPERATIONS) await expect(nav.getByRole("link", { name: label, exact: true }), `${who.role} ${label}`).toBeVisible();
+    // 034 AC-6: the real Backups and export screen replaced its Coming soon entry, for Admin only.
+    await expect(nav.getByRole("link", { name: "Backups and export", exact: true })).toHaveCount(who.pricing ? 1 : 0);
     await nav.getByRole("link", { name: "Helpdesk", exact: true }).click();
     await expect(page).toHaveURL(/\/operations\/helpdesk$/);
     await expect(page.locator("main h1")).toHaveText("Helpdesk");
