@@ -1,21 +1,22 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 05:04 UTC
+**Last Updated:** 2026-10-18 05:33 UTC
 
 ## Active Changes
 
 
+- 🔀 **006-agent-governance** — PR #60 merged
 - 🔀 **012-leave** — pr raised | 7/7 tasks (100%) | 0 failed | PR #57 merged
-- 📝 **028-keyflow-sync** — tasks done | 0/7 tasks (0%) | 0 failed
-- 🔀 **030-notifications** — PR #58 open
+- 🔀 **024-learning** — PR #59 open
+- 🔍 **028-keyflow-sync** — verify done | 7/7 tasks (100%) | 0 failed
+- 🔀 **030-notifications** — PR #58 merged
 - 🔍 **055-it-admin-role** — verify done | 5/5 tasks (100%) | 0 failed | PR #56 merged
 - 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
 
 ## Pending Proposals
 
 
-- 📋 **006-agent-governance** — proposal ready, awaiting planning
 - 📋 **008-delivery-ingestion** — proposal ready, awaiting planning
 - 📋 **013-onboarding-offboarding** — proposal ready, awaiting planning
 - 📋 **014-payroll-engine** — proposal ready, awaiting planning
@@ -27,7 +28,6 @@
 - 📋 **021-it-access-licences** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
 - 📋 **023-recruitment** — proposal ready, awaiting planning
-- 📋 **024-learning** — proposal ready, awaiting planning
 - 📋 **025-inbox-agent** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **027-reports** — proposal ready, awaiting planning
@@ -77,6 +77,6 @@
 
 ## Stats
 
-- **Total changes:** 38
-- **Active:** 5
+- **Total changes:** 40
+- **Active:** 7
 - **Completed:** 33
