@@ -5,7 +5,7 @@ import type { IconName } from "@amax/ui";
  * ships it; the nav shows them to Admin and IT Admin ("operations:read").
  */
 export const OPERATIONS: { slug: string; title: string; icon: IconName; change: string; changeTitle: string }[] = [
-  { slug: "access", title: "Access and licences", icon: "key", change: "021", changeTitle: "IT: access, licences and devices" },
+  { slug: "it-access", title: "Access and licences", icon: "key", change: "021", changeTitle: "IT: access, licences and devices" },
   { slug: "helpdesk", title: "Helpdesk", icon: "help", change: "022", changeTitle: "Helpdesk: IT, HR and facilities queues" },
   { slug: "compliance", title: "Compliance", icon: "doc", change: "036", changeTitle: "Compliance: policies, registers, audit integrity and evidence" },
   { slug: "dex", title: "Digital experience", icon: "chart", change: "037", changeTitle: "Digital employee experience, without a desk agent" },

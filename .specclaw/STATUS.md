@@ -1,14 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 16:54 UTC
+**Last Updated:** 2026-10-18 18:13 UTC
 
 ## Active Changes
 
 
-- 🔀 **021-it-access-licences** — PR #82 open
-- 🔀 **025-inbox-agent** — PR #81 open
-- 🔀 **027-reports** — pr raised | 3/3 tasks (100%) | 0 failed | PR #80 merged
+- 🔀 **022-helpdesk** — PR #86 open
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 - 🔨 **064-marketing-revamp** — build in-progress | 7/7 tasks (100%) | 0 failed
@@ -19,7 +17,6 @@
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
-- 📋 **022-helpdesk** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
 
@@ -43,8 +40,11 @@
 - ✅ **017-finance-contracts-billing**
 - ✅ **018-expenses**
 - ✅ **020-presales**
+- ✅ **021-it-access-licences**
 - ✅ **023-recruitment**
 - ✅ **024-learning**
+- ✅ **025-inbox-agent**
+- ✅ **027-reports**
 - ✅ **028-keyflow-sync**
 - ✅ **029-workflows-scheduler**
 - ✅ **030-notifications**
@@ -81,6 +81,6 @@
 
 ## Stats
 
-- **Total changes:** 58
-- **Active:** 6
-- **Completed:** 52
+- **Total changes:** 59
+- **Active:** 4
+- **Completed:** 55
