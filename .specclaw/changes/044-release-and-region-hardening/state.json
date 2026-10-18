@@ -1,9 +1,10 @@
 {
   "change": "044-release-and-region-hardening",
-  "phase": "build",
+  "phase": "verify",
   "branch": "specclaw/044-release-and-region-hardening",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T09:33:50Z"},
-    "build": {"status":"in-progress","at":"2026-10-18T09:33:58Z"}
+    "build": {"status":"done","at":"2026-10-18T09:43:12Z"},
+    "verify": {"status":"done","at":"2026-10-18T09:43:12Z"}
   }
 }
