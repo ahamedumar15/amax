@@ -223,7 +223,7 @@ Two differences from the mock, on purpose:
     note. hr alone gives the trunk and rings (AC-6, AC-8)
   Files: modules/career/server/access.ts, modules/career/tests/access.test.ts
   Depends: T3
-- [ ] `T5` — Module standard and the Person page slot:
+- [x] `T5` — Module standard and the Person page slot:
   - README, a CODEOWNERS line, retention entries, and a switch-off test.
   - hr's `PERSON_SECTIONS` and the Career tab.
   - BACKLOG gets three follow-ups: delivery publishes repo languages and dependencies, so the agent

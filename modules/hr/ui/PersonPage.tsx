@@ -1,12 +1,18 @@
 import { notFound } from "next/navigation";
+import { sql } from "drizzle-orm";
 import type { ScreenProps } from "@amax/core";
 import { Card, EmptyState, facet, PinButton } from "@amax/ui";
+import { PERSON_SECTIONS } from "../contracts";
 import { personPin } from "../pins";
 import { today } from "../server/inforce";
 import { getPersonView } from "../server/queries";
+import { readHr } from "../server/read";
 import { DocumentsCard } from "./DocumentsCard";
 import { EmploymentCard } from "./EmploymentCard";
 import { avClass, countryName, longDate, needViewer, SignInFirst, statusChip } from "./parts";
+
+const installedSections = (viewer: Parameters<typeof readHr>[0]) => readHr(viewer, async (tx) =>
+  (await Promise.all(PERSON_SECTIONS.map(async (s) => ((await tx.execute(sql`select to_regnamespace(${s.schema}) is not null as on`))[0]?.on ? [s] : [])))).flat());
 
 export async function PersonPage({ params, viewer: raw }: ScreenProps) {
   const viewer = needViewer(raw);
@@ -15,6 +21,7 @@ export async function PersonPage({ params, viewer: raw }: ScreenProps) {
   const view = await getPersonView(viewer, params.employeeNo, on);
   if (!view) notFound();
   const { person: p } = view;
+  const sections = await installedSections(viewer);
   const [tone, label] = statusChip(p, on);
   return (
     <>
@@ -37,6 +44,7 @@ export async function PersonPage({ params, viewer: raw }: ScreenProps) {
           <nav className="tabs" aria-label="Sections">
             <a className="btn sm" href="#employment" aria-current="true">Employment</a>
             <a className="btn sm" href="#documents">Documents</a><a className="btn sm" href="#leave">Leave</a>
+            {sections.map((s) => <a key={s.path} className="btn sm" href={`/hr/p/${encodeURIComponent(p.employeeNo)}/${s.path}`}>{s.label}</a>)}
           </nav>
           <div className="cols even">
             <EmploymentCard e={view.employment} probationEnds={p.probationEnds} person={p} />

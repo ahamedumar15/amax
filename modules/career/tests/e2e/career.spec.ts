@@ -21,7 +21,9 @@ const selected = (page: Page) => page.locator("section[aria-labelledby='career-s
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
 test("AC4 the tree and the list show the same events: selecting one highlights both and shows its trace, everything is pinned, nothing is a form", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", URL);
+  await signIn(page, "maya@lumenlabs.test", "/hr/p/LL-0417");
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Career" }).click();
+  await expect(page).toHaveURL((url) => url.pathname === URL);
   await expect(page.locator(".lede")).toHaveText("2 technologies proposed by the agent wait for confirmation, and the Azure Developer AZ-204 certification expired in May 2024. Everything below is read from HR, allocations, learning and delivery; nothing is typed in here.");
   await expect(page.locator(".ticket .v")).toHaveText(["5 yrs 4 mo", "2", "5", "2"]);
   await expect(page.locator(".ticket .p")).toHaveText(["Joined Jun 7, 2021", "Senior Engineer since Apr 2024", "9 technologies · 3 at once in Apr 2025", "1 expired"]);
