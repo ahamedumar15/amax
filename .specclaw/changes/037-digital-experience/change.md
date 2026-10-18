@@ -102,3 +102,24 @@ Ripples outside the module (AC-8, besides CODEOWNERS and BACKLOG):
   Depends: T3
 
 ## Verify
+
+Quality: 0 → 0 duplicated lines (`npx jscpd@4 modules/experience`, default thresholds; `specclaw-quality-scan .` hit jq's "Argument list too long"). Nothing to refactor.
+
+Commands (Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint --force` → 34/34
+- `pnpm turbo run test --force --continue --concurrency=2` → 34/34 tasks, 1348 tests passed, 6 skipped. `@amax/experience` has 10 tests in 6 files.
+- `pnpm --filter @amax/web build` → 0
+- `npx playwright test` (apps/web, public) → 8/8
+- `npx playwright test --config playwright.auth.config.ts` → 81/81
+- `pnpm --filter @amax/experience e2e` → 3/3. All eight gated regions (the four tile labels and the four card titles) are 0.0000 against the mock, and the whole tile row is 0.0000 too.
+
+Gaps:
+- AC-4: the pulse goes out through 030's rule on each person's own channels. Teams applies only to people who have switched it on in their 030 preferences, which is opt-in, and answers come back through chat (`answer_pulse`), not a Teams card.
+- AC-5: a hardware fix opens its ticket through helpdesk's `helpdesk.new-ticket` intent ("Open ticket"), not on its own. Remediation has its own switch, off by default, plus the script to run, because 021's write consent doesn't cover device management. Both are in BACKLOG.
+- AC-6: insights doesn't show the drop yet. `experience.score.dropped` and `scoreDrops()` are published for it (BACKLOG).
+- AC-3: the person's own view is a tool and a contract read. hr's profile page doesn't show it yet (BACKLOG).
+- Mock text differs where the data can't say it: "Slow boots on 2021 laptops" for "Slow builds", "VPN client keeps hanging" for "VPN drops on office Wi-Fi", "2.3× the fleet's median" for "builds 2.3× slower", and "over the last 4 weeks" for "this fortnight". The formula line sits under the table (AC-3).
+
+Ripples outside the module: `.github/CODEOWNERS`, `BACKLOG.md`, `pnpm-lock.yaml`, `apps/web/lib/operations.ts` (slug `dex` becomes `experience`) and `apps/web/tests/e2e/admin.spec.ts` (Digital experience opens `/experience`).
+
+Shots: `shots/app.png` (`/experience` as Maya, Admin, 1440 wide) and `shots/mock.png`.
