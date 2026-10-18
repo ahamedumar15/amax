@@ -45,4 +45,38 @@ platform change.
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass, with a payroll gap.
+  - Claims carry receipts stored through core's S3 adapter, categories with per-entity limits and receipt thresholds, and approval by the manager (hr's reporting line), then Finance.
+  - Nobody decides their own claim, and the Finance approver can't be the person who approved as manager.
+  - Payment is by bank, or by payroll when Finance asks for it.
+  - **Gap:** payroll doesn't add `reimbursementsDue` to payslips yet. Bank is the default, payroll is an explicit choice, and the "mark paid" suggestion asks Finance to check the payslips first (BACKLOG: "Payroll pays approved reimbursements").
+  - Tests: `tests/claims.test.ts`, `tests/payroll.test.ts`.
+- AC-2: pass, with a photo gap.
+  - The chat intent `expenses.claim` ("Claim an expense") opens chat.
+  - A receipt arrives through the `add_receipt` write tool. The receipt agent suggests its fields as a 006 suggestion, and only the person who added the receipt can accept it.
+  - **Gap:** chat has no file picker, and the AI gateway takes text only, so a receipt that is only a photo gets no suggestion (BACKLOG: "Receipt photos in chat").
+  - Test: `tests/receipts.test.ts`, plus the module e2e.
+- AC-3: pass — contracts and contract tests, README, fixtures, manifest, retention and a CODEOWNERS line. The module can be switched off, and without payroll it pays by bank and refuses payroll. Test: `tests/standard.test.ts`.
+
+Mock: 018's Mock Delta says "No screen of its own", but the rail links every installed module's root, so a missing page would 404. A read-only `/expenses` screen was built from the mock's tile and decision-table patterns. It leads with what needs a decision, every row is pinned, there are no forms, and medical merchant and note are masked (002 health class). There's no mock section to compare `shots/app.png` with, so it was checked by eye against those patterns.
+
+Commands (worktree merged with origin/main at 062, Postgres 16 at `DATABASE_MIGRATE_URL`):
+- `pnpm turbo run lint --force` → 0 (27/27)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (27/27)
+- `pnpm --filter @amax/web build` → 0
+- `playwright test --config playwright.auth.config.ts` (apps/web) → 80/80
+- module e2e `pnpm --filter @amax/expenses e2e` → 2/2 (axe, nothing unpinned, no forms, intent opens chat)
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
+- `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
+
+Known limits:
+- `add_receipt` writes to S3 inside the DB transaction, so a rollback can leave an orphaned file.
+- The payroll period is the calendar month at Finance approval.
+- Approval records show user ids, not names.
+
+Screenshots: `.specclaw/changes/018-expenses/shots/app.png` (`/expenses` as Maya, Admin). There is no `shots/mock.png` because no mock section exists.
+Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
+
 Quality: 15 → 10 duplicated lines (jscpd over modules/expenses, tests included; specclaw-quality-scan failed with jq "Argument list too long", so jscpd was run directly). The claim row cells shared by "Needs your decision" and "Claims" moved into `ui/parts.tsx`; the two left are the DB tests' shared describe/beforeAll/afterAll setup, as in finance.

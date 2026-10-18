@@ -1,8 +1,9 @@
 {
   "change": "018-expenses",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T13:38:18Z"}
+    "tasks": {"status":"done","at":"2026-10-18T13:38:18Z"},
+    "verify": {"status":"done","at":"2026-10-18T14:01:42Z"}
   }
 }
