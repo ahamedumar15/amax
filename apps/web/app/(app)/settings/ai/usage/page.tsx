@@ -54,7 +54,7 @@ export default async function AiUsagePage({ searchParams }: { searchParams: Prom
     u.pricing ? { tone: "good", label: "Cost", value: costLabel(t), note: bySource(u) } : { tone: "good", label: "Cost", value: "Hidden", note: PRICE_HIDDEN, hidden: true },
     { tone: "good", label: "Calls", value: t.calls.toLocaleString("en-US"), note: plural(t.people, "person", "people") },
     { tone: "info", label: "Tokens", value: compact(t.inputTokens + t.outputTokens), note: `${compact(t.inputTokens)} in, ${compact(t.outputTokens)} out` },
-    { tone: "attention", label: "Unknown cost", value: plural(t.unknownCostCalls, "call"), note: "Model without a price" },
+    { tone: "attention", label: u.pricing ? "Unknown cost" : "Unknown price", value: plural(t.unknownCostCalls, "call"), note: "Model without a price" },
   ];
   const perDay = u.pricing ? "Cost per day" : "Calls per day";
   return (
