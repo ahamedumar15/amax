@@ -134,6 +134,19 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
   if (!fed.length) for (const f of FEED) {
     await tx.execute(sql`insert into delivery.activity (tenant_id, at, actor_id, actor_kind, for_user_id, project_id, text, detail) values (${tenantId}, ${f.at}, ${f.actor}, ${f.kind}, ${f.for}, ${ids[f.project]}, ${f.text}, ${f.detail})`);
   }
+  // 062: Contoso syncs from its (fictional) repo; the mock's Repo sync card, one push applied and two refused.
+  await tx.execute(sql`update delivery.project set repo_url = 'github.com/example/contoso-portal' where id = ${ids.CON} and repo_url is null`);
+  const kasun = await userId(tx, "kasun");
+  const PUSHES = [
+    { at: "2026-10-16T09:42:00Z", who: kasun, repo: "github.com/example/contoso-portal", sha: "4f2c9a1e", outcome: "applied", updated: 3, unchanged: 14, reason: null },
+    { at: "2026-10-16T09:40:00Z", who: nimal, repo: "github.com/example/contoso-portal", sha: "1b7d0c3f", outcome: "refused", updated: 0, unchanged: 0, reason: "stale: 1b7d0c3 is older than 4f2c9a1, already synced from main" },
+    { at: "2026-10-16T08:15:00Z", who: ayesha, repo: "github.com/example/fleet-tracker", sha: "9e8d7c6b", outcome: "refused", updated: 0, unchanged: 0, reason: "repo not linked to CON (github.com/example/fleet-tracker)" },
+  ];
+  const pushed = await tx.execute(sql`select 1 from delivery.sync_push limit 1`);
+  if (!pushed.length) for (const p of PUSHES) {
+    await tx.execute(sql`insert into delivery.sync_push (tenant_id, project_id, at, actor_id, actor_kind, repo_url, ref, sha, committed_at, outcome, updated, unchanged, reason)
+      values (${tenantId}, ${ids.CON}, ${p.at}, ${p.who ? `user:${p.who}` : "user:fixture"}, 'user', ${p.repo}, 'main', ${p.sha}, ${p.at}, ${p.outcome}, ${p.updated}, ${p.unchanged}, ${p.reason})`);
+  }
   for (let i = 0; i < 8; i++) {
     const week = new Date(Date.UTC(2026, 7, 24 + i * 7)).toISOString().slice(0, 10);
     await tx.execute(sql`insert into delivery.weekly_stat (tenant_id, project_id, week, planned, done) values (${tenantId}, null, ${week}, ${WEEKLY.planned[i]}, ${WEEKLY.done[i]}) on conflict do nothing`);

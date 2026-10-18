@@ -39,6 +39,14 @@ const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasks
 // checkout may lack folders) and never releases: Released comes from Prod deployments.
 export type PushOptions = { dryRun?: boolean; push?: boolean };
 
+// What a push may not do to one record; null when it may go ahead. `held` names keys another source holds.
+function pushRefusal(d: { key: string; phase: Phase }, cur: Record<string, unknown> | undefined, held: Map<string, string>) {
+  if (d.phase === "released" && cur?.phase !== "released") return "released comes from Prod deployments";
+  // A branch that lags main must not undo what main already moved forward.
+  if (cur && cur.phase !== "released" && PHASES.indexOf(d.phase) < PHASES.indexOf(cur.phase as Phase)) return `would move back from ${String(cur.phase)} to ${d.phase}`;
+  return (!cur && held.get(d.key)) || null;
+}
+
 export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string } & PushOptions): Promise<SyncResult> {
   const existing = await withTenant(db, ctx.tenantId, (tx) =>
     tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref,
@@ -58,16 +66,13 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? []);
     byKey.delete(d.key);
     if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
-    if (opts.push && d.phase === "released" && cur?.phase !== "released") { result.skipped.push(`${d.key}: released comes from Prod deployments`); continue; }
-    // A branch that lags main must not undo what main already moved forward.
-    if (opts.push && cur && cur.phase !== "released" && PHASES.indexOf(d.phase) < PHASES.indexOf(cur.phase as Phase)) { result.skipped.push(`${d.key}: would move back from ${String(cur.phase)} to ${d.phase}`); continue; }
+    const refused = opts.push ? pushRefusal(d, cur, held) : null;
+    if (refused) { result.skipped.push(`${d.key}: ${refused}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
       continue;
     }
-    const taken = opts.dryRun && !cur && held.get(d.key);
-    if (taken) { result.skipped.push(`${d.key}: ${taken}`); continue; }
     try {
       if (!opts.dryRun) await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, ...d });
     } catch (e) {
