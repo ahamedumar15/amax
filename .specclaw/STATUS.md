@@ -1,13 +1,14 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 16:16 UTC
+**Last Updated:** 2026-10-18 16:34 UTC
 
 ## Active Changes
 
 
-- 🔍 **025-inbox-agent** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔀 **027-reports** — PR #80 open
+- 🔀 **021-it-access-licences** — PR #82 open
+- 🔀 **025-inbox-agent** — pr raised | 5/5 tasks (100%) | 0 failed | PR #81 open
+- 🔀 **027-reports** — pr raised | 3/3 tasks (100%) | 0 failed | PR #80 merged
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
@@ -17,7 +18,6 @@
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
-- 📋 **021-it-access-licences** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
@@ -80,6 +80,6 @@
 
 ## Stats
 
-- **Total changes:** 56
-- **Active:** 4
+- **Total changes:** 57
+- **Active:** 5
 - **Completed:** 52
