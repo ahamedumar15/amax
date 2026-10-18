@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpToolDef } from "@amax/core";
 import type { Viewer } from "@amax/auth";
-import { CATEGORIES } from "./contracts";
+import { CATEGORIES, type InboxItem } from "./contracts";
 import { ctxFor, MANAGE, READ } from "./server/context";
 import { markRead, setPreference, setQuietHours } from "./server/prefs";
 import { inbox, notification, preferences } from "./server/read";
@@ -13,12 +13,15 @@ const write = { scope: "write" as const, permission: MANAGE };
 const category = z.enum(CATEGORIES.map((c) => c.id) as [string, ...string[]]).describe(`One of ${CATEGORIES.map((c) => c.id).join(", ")}`);
 const clock = z.string().describe("24-hour HH:MM, in your legal entity's time zone");
 
+// A bell item is pinned by its id (059); its label is its title.
+const notificationOf = (r: InboxItem | null) => (r ? { id: r.id, label: r.title, createdAt: r.createdAt } : null);
+
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, name: "get_notifications", description: "Your notifications: the latest 20, unread first, grouped by module, each with a link to its record.", input: z.object({}),
+  tool({ ...read, pin: "view", name: "get_notifications", description: "Your notifications: the latest 20, unread first, grouped by module, each with a link to its record.", input: z.object({}),
     run: (v) => inbox(v) }),
-  tool({ ...read, name: "get_notification", description: "One of your notifications by id (an item in the bell).", input: z.object({ id: z.uuid() }),
+  tool({ ...read, pin: { id: "id", of: notificationOf }, name: "get_notification", description: "One of your notifications by id (an item in the bell).", input: z.object({ id: z.uuid() }),
     run: (v, a) => notification(v, a.id) }),
-  tool({ ...read, name: "get_notification_preferences", description: "Your notification channels per category (email, Teams, daily digest) and your quiet hours, or one category's row.",
+  tool({ ...read, pin: "view", name: "get_notification_preferences", description: "Your notification channels per category (email, Teams, daily digest) and your quiet hours, or one category's row.",
     input: z.object({ category: category.optional() }),
     run: async (v, a) => {
       const p = await preferences(v);
