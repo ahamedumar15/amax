@@ -4,7 +4,7 @@ export { KmsError, localKms, parseKeyFile, type Kms, type Wrapped } from "./adap
 export { kmsFromEnv } from "./adapters/kms-env";
 export { configureSecrets, kmsLabel, SecretsUnavailableError } from "./secrets/runtime";
 export { putSecret, revokeSecret } from "./secrets/manage";
-export { SecretNotConfiguredError, useSecret, useValidSecrets, type SecretUse } from "./secrets/use";
+export { hasSecret, SecretNotConfiguredError, useSecret, useValidSecrets, type SecretUse } from "./secrets/use";
 export { Secret, SecretLeakError, SecretResultError } from "./secrets/secret";
 export { listCredentials, type CredentialRow } from "./secrets/list";
 export { EXPIRING_EVENT, EXPIRY_WARNING_DAYS, EXPIRY_WINDOW_DAYS, secretsSweepJob } from "./secrets/jobs";

@@ -20,6 +20,14 @@ export class SecretNotConfiguredError extends Error {
   }
 }
 
+/** Whether the tenant has a usable credential for the connector, without opening it (060 AC-7). */
+export async function hasSecret(tx: Tx, connector: ConnectorId): Promise<boolean> {
+  const [r] = await tx.execute(sql`select exists (select 1 from secrets.credential c join secrets.version v on v.credential_id = c.id
+    where c.connector = ${connector} and c.revoked_at is null and v.revoked_at is null and (v.valid_until is null or v.valid_until > now())
+      and (c.expires_at is null or c.expires_at > now())) as ok`);
+  return r?.ok === true;
+}
+
 async function openVersions(tx: Tx, tenantId: string, connector: ConnectorId, all: boolean) {
   const rows = await tx.execute(sql`select c.id as credential_id, c.expires_at, v.version, v.ciphertext from secrets.credential c
     join secrets.version v on v.credential_id = c.id

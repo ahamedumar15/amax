@@ -10,7 +10,11 @@ const addNote = defineService({
   action: "demo:note:add",
   resource: "demo.note",
   input: z.object({ text: z.string().min(1) }),
-  run: async (_tx, input) => ({ result: { saved: input.text }, resourceId: "note-1", after: input }),
+  run: async (_tx, input) => {
+    if (input.text === "refuse") throw Object.assign(new Error("notes about this are refused (fictional rule)"), { retryable: false });
+    if (input.text === "crash") throw new Error("internal detail that must not leak");
+    return { result: { saved: input.text }, resourceId: "note-1", after: input };
+  },
 });
 
 const tools = [

@@ -1,4 +1,4 @@
-export type RateChannel = "page" | "rest" | "mcp" | "chat";
+export type RateChannel = "page" | "prefetch" | "rest" | "mcp" | "chat";
 export type RateKey = { tenantId: string; channel: RateChannel; userId?: string | null; token?: string | null };
 export type Bucket = "token" | "user" | "tenant";
 export type Limits = Record<Bucket, number> & { windowSeconds: number };
@@ -38,6 +38,14 @@ export function configureRateLimits(opts: Options) {
 /** The limits in force, for screens that show them. */
 export const rateLimits = () => ({ page: { ...state.limits.page }, call: { ...state.limits.call } });
 
+/** Prefetches have a budget of their own, PREFETCH_SHARE times the page budget: the router speculates on
+ * every visible link, so it would spend a person's navigations, but it can't run unmetered (060 AC-4). */
+export const PREFETCH_SHARE = 10;
+const prefetchLimits = (): Limits => {
+  const p = state.limits.page;
+  return { token: p.token * PREFETCH_SHARE, user: p.user * PREFETCH_SHARE, tenant: p.tenant * PREFETCH_SHARE, windowSeconds: p.windowSeconds };
+};
+
 function subjects(k: RateKey): [Bucket, string][] {
   const out: [Bucket, string][] = [["tenant", k.tenantId]];
   if (k.userId) out.push(["user", k.userId]);
@@ -46,14 +54,15 @@ function subjects(k: RateKey): [Bucket, string][] {
 }
 
 export function takeRate(k: RateKey): { ok: true } | { ok: false; retryAfter: number; bucket: Bucket } {
-  const limits = k.channel === "page" ? state.limits.page : state.limits.call;
+  const paged = k.channel === "page" || k.channel === "prefetch";
+  const limits = k.channel === "prefetch" ? prefetchLimits() : paged ? state.limits.page : state.limits.call;
   const ms = limits.windowSeconds * 1000;
   const window = Math.floor(state.now() / ms);
   if (window !== state.window) {
     state.window = window;
     state.counts.clear();
   }
-  const group = k.channel === "page" ? "page" : "call";
+  const group = paged ? k.channel : "call";
   const keys = subjects(k).map(([b, id]) => [b, id, `${group}:${k.tenantId}:${b}:${id}`] as const);
   const over = keys.find(([b, , key]) => (state.counts.get(key) ?? 0) >= limits[b]);
   if (over) {
@@ -71,9 +80,13 @@ export const limitsFromEnv = (e: RateEnv) => ({
   call: { ...(e.AMAX_RATE_CALL_TOKEN && { token: e.AMAX_RATE_CALL_TOKEN }), ...(e.AMAX_RATE_CALL_USER && { user: e.AMAX_RATE_CALL_USER }), ...(e.AMAX_RATE_CALL_TENANT && { tenant: e.AMAX_RATE_CALL_TENANT }) },
 });
 
-export function countsAsPage(h: Headers) {
-  if (h.get("next-router-prefetch") || h.get("purpose") === "prefetch" || h.get("sec-purpose")?.includes("prefetch")) return false;
-  return !h.get("next-action");
+/** Which page budget a request draws on (060 AC-4). Clients set these headers freely, so none skips
+ * the limit: a server action is exempt only as a POST (it is counted per tool call in the registry),
+ * and a prefetch is counted in a budget of its own instead of the person's navigations. */
+export function pageChannel(method: string, h: Headers): "page" | "prefetch" | null {
+  if (method === "POST" && h.get("next-action")) return null;
+  if (h.get("next-router-prefetch") || h.get("purpose") === "prefetch" || h.get("sec-purpose")?.includes("prefetch")) return "prefetch";
+  return "page";
 }
 
 export function enforceRate(k: RateKey) {

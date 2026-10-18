@@ -19,9 +19,11 @@ export async function nameRows(tx: Tx, who: Match, items: Item[]): Promise<NameR
   for (const item of items.filter((i) => i.review && i.rule)) {
     const rule = privacyRules().find((r) => r.id === item.rule);
     if (!rule) continue;
+    // Counted first (060 AC-3): rows past the limit would never be listed or decided, so refuse instead.
+    if (item.n > LIMIT) throw new PrivacyError(`${item.label} has ${item.n} rows recorded by name only, more than the ${LIMIT} one request can list for review. Correct the names in that module first, so fewer rows match`);
     const cols = [...new Set([...(rule.subjectName ?? []), ...rule.fields, ...rule.start.at])].filter((c) => c !== "id").map((c) => sql.identifier(c));
     const rows = await tx.execute(sql`select id::text as id, ${sql.join(cols, sql`, `)} from ${tableOf(rule)}
-      where ${byName(rule, who)} and not coalesce(${about(rule, who)}, false) order by id limit ${LIMIT}`);
+      where ${byName(rule, who)} and not coalesce(${about(rule, who)}, false) order by id`);
     out.push({ rule: rule.id, label: item.label, rows: rows.map(({ id, ...values }) => ({ id: id as string, values })) });
   }
   return out;
