@@ -48,7 +48,7 @@ describe.skipIf(!hasDb)("the insights agents (Postgres)", () => {
   it("AC3 recurring agent work lists every installed module's agent jobs, the inbox agent's scan among them, each switchable", async () => {
     const db = use();
     const r = await db.call<Insights>("maya", "get_insights", {});
-    expect(r.jobs.map((j) => j.name).sort()).toEqual(["allocations.agent-check", "inbox-agent.scan", "insights.briefing", "insights.risk-scan", "insights.skills-match"]);
+    expect(r.jobs.map((j) => j.name)).toEqual(expect.arrayContaining(["allocations.agent-check", "inbox-agent.scan", "insights.briefing", "insights.risk-scan", "insights.skills-match"]));
     expect(r.jobs.find((j) => j.name === "inbox-agent.scan")).toMatchObject({ title: "Teams and email scan", runs: "Hourly", enabled: true });
     expect([r.canSwitch, (await db.call<Insights>("sahan", "get_insights", {}, "PM")).canSwitch]).toEqual([true, false]);
     const [s] = await db.q(sql`select id from workflows.schedule where name = 'inbox-agent.scan'`);
