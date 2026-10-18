@@ -70,4 +70,14 @@ describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
     const [d] = await db.t.owner`select count(*) filter (where ok)::int as ok, count(*)::int as total from api.delivery where webhook_id = ${ok.id}`;
     expect(d).toEqual({ ok: MAX_FAILURES + 1, total: MAX_FAILURES + 1 });
   }, 120_000);
+
+  it("060 AC7 no signing secret: subscribing is refused, and a delivery isn't counted as the receiver's failure", async () => {
+    const hook = await subscribeWebhook(job(), { name: "Setup check", url: "https://hooks.example.test/setup", events: [EVENT] });
+    await db.t.owner`update secrets.credential set revoked_at = now() where connector = 'amax-webhook' and revoked_at is null`;
+    await expect(subscribeWebhook(job(), { name: "No secret", url: "https://hooks.example.test/none", events: [EVENT] })).rejects.toThrow(/signing secret/);
+    for (let i = 0; i <= MAX_FAILURES; i++) await emit({ name: `No secret ${i}` });
+    await drain();
+    expect((await db.t.owner`select status, failures from api.webhook where id = ${hook.id}`)[0]).toEqual({ status: "active", failures: 0 });
+    expect(sent.filter((s) => s.url.endsWith("/setup"))).toHaveLength(0);
+  }, 120_000);
 });
