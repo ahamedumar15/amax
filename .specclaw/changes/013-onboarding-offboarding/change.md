@@ -39,7 +39,7 @@ automatically. With 021 installed, its own handler takes over the suggestion.
 - [x] `T4` — Exit questionnaire: a single-use link token that expires after 14 days. The public page records the answers once, and the token is stored hashed (AC-3)
   Files: modules/onboarding/server/exit.ts, modules/onboarding/ui/ExitPage.tsx, modules/onboarding/tests/exit.test.ts
   Depends: T2
-- [ ] `T5` — Module standard: README, manifest, CODEOWNERS line, retention entries, can be switched off, standard test (AC-4)
+- [x] `T5` — Module standard: README, manifest, CODEOWNERS line, retention entries, can be switched off, standard test (AC-4)
   Files: modules/onboarding/README.md, modules/onboarding/package.json, .github/CODEOWNERS, modules/onboarding/tests/standard.test.ts
   Depends: T3, T4
 
