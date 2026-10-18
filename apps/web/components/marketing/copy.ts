@@ -20,7 +20,7 @@ export const TILES = [
 export const FAQ = [
   ["Will an agent change our data on its own?", "Agents record what happened, like a commit closing its task or a pipeline recording a deployment. Hours, invoices and payroll changes are only drafted: a person accepts or approves each one, and in chat amax asks before it changes anything."],
   ["Which agents can connect?", "Any MCP client, such as Claude Code, a CI pipeline or your own agent, using a credential scoped to a person's role."],
-  ["Where does our data live?", "In the data region you choose for your workspace, with retention rules and legal holds per record type."],
+  ["Where does our data live?", "In the data region you choose for your workspace, with retention rules per record type and legal holds per person or matter."],
   ["Do we have to stop using our other tools?", "No. amax reads commits, pipelines and your directory, and planned integrations cover accounting."],
   ["Is it accessible?", "Every screen meets WCAG 2.2 AA, works from the keyboard, and respects light, dark and reduced-motion settings."],
   ["How do we start?", "Book a demo. We'll walk through amax on fictional data like the records on this page."],
