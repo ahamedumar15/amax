@@ -1,0 +1,11 @@
+{
+  "change": "017-finance-contracts-billing",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T12:54:06Z"},
+    "verify": {"status":"done","at":"2026-10-18T13:22:44Z"},
+    "pr": {"status":"raised","at":"2026-10-18T13:23:06Z","url":"https://github.com/chan4lk/amax/pull/76"},
+    "archived": {"status":"done","at":"2026-10-18T14:11:45Z"}
+  }
+}

@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test("008 AC-4 the Overview's Agent activity feed names the agent and the person it acted for", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/signin");
   await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
   const feed = page.locator(".card", { has: page.getByRole("heading", { name: "Agent activity" }) });

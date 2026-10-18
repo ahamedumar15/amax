@@ -2158,7 +2158,122 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   </div>
 </section>
 
+<!-- ================= 062 Marketing site ================= -->
+<section data-change="062-marketing-site" id="062-marketing-site" data-roles="all" data-title="Marketing site (public, signed out)" data-nav="no" data-icon="spark">
+  <style>
+    [id="062-marketing-site"] .mk{max-width:1120px;margin:0 auto;display:grid;gap:56px}
+    [id="062-marketing-site"] .mk-bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    [id="062-marketing-site"] .mk-bar nav{display:flex;gap:18px;margin-left:auto;flex-wrap:wrap}
+    [id="062-marketing-site"] .mk-bar a{color:var(--ink-2);text-decoration:none;font-weight:600}
+    [id="062-marketing-site"] .mk-hero{display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center}
+    [id="062-marketing-site"] .mk-hero h1{font-size:clamp(34px,5vw,56px);line-height:1.05;margin:0 0 16px;letter-spacing:-.02em}
+    [id="062-marketing-site"] .mk-hero p{font-size:18px;color:var(--ink-2);max-width:46ch}
+    [id="062-marketing-site"] .mk-video{position:relative;aspect-ratio:16/9;border-radius:var(--r-card);background:linear-gradient(135deg,var(--violet-soft),var(--mint-soft));box-shadow:var(--shadow);display:grid;place-items:center;overflow:hidden}
+    [id="062-marketing-site"] .mk-video .play{width:76px;height:76px;border-radius:50%;background:var(--violet);color:#fff;font-size:28px;border:0}
+    [id="062-marketing-site"] .mk-video small{position:absolute;bottom:12px;left:16px;right:16px;background:rgba(20,18,40,.72);color:#fff;padding:6px 10px;border-radius:10px;font-size:13px}
+    [id="062-marketing-site"] .mk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px}
+    [id="062-marketing-site"] .mk-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    [id="062-marketing-site"] .mk-n{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--violet-soft);color:var(--violet);font-weight:700}
+    [id="062-marketing-site"] .mk-band{background:var(--ink);color:var(--frame);border-radius:var(--r-card);padding:32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+    [id="062-marketing-site"] .mk-band b{display:block;font-size:17px;margin-bottom:4px}
+    [id="062-marketing-site"] .mk-band span{opacity:.75;font-size:14px}
+    [id="062-marketing-site"] .mk-cta{text-align:center;padding:48px 24px}
+    [id="062-marketing-site"] .mk-cta h2{font-size:clamp(26px,4vw,38px);margin:0 0 12px}
+    [id="062-marketing-site"] .bubble{padding:10px 14px;border-radius:16px;background:var(--sunken);max-width:80%;margin:8px 0}
+    [id="062-marketing-site"] .bubble.me{background:var(--violet-soft);margin-left:auto}
+    @media (max-width:820px){[id="062-marketing-site"] .mk-hero,[id="062-marketing-site"] .mk-steps{grid-template-columns:1fr}}
+    /* public page: no app shell (rail, top bar, chat launcher) */
+    body:has([id="062-marketing-site"].on) .rail, body:has([id="062-marketing-site"].on) .content > .top{display:none}
+    body:has([id="062-marketing-site"].on) .app{grid-template-columns:1fr}
+    [id="062-marketing-site"] .mk-heroband{border-radius:var(--r-card);padding:40px;background:radial-gradient(circle at 85% 20%,#A792FF55,transparent 55%),radial-gradient(circle at 10% 90%,#53D6A155,transparent 50%),var(--card);box-shadow:var(--shadow)}
+    [id="062-marketing-site"] .mk-video{background:linear-gradient(135deg,#53D6A1,#7B61FF)}
+    [id="062-marketing-site"] .mk-video svg.face{position:absolute;width:96px;height:96px;top:18px;left:18px;opacity:.9}
+    [id="062-marketing-site"] .mk-f{position:relative;border-radius:26px;padding:24px;min-height:200px;color:#1D1B2E;overflow:hidden}
+    [id="062-marketing-site"] .mk-f p{color:#1D1B2E;opacity:.78;max-width:24ch}
+    [id="062-marketing-site"] .mk-f .art{position:absolute;right:-6px;bottom:-6px;width:110px;height:100px}
+    [id="062-marketing-site"] .mk-coming{font-size:13px;font-weight:600}
+    [id="062-marketing-site"] .mk-f .chip{background:rgba(29,27,46,.12);color:#1D1B2E}
+    [id="062-marketing-site"] .t-sky{background:linear-gradient(135deg,#C4ECFB,#5CC8F0)}
+    [id="062-marketing-site"] .t-pink{background:linear-gradient(135deg,#FCD3DA,#F48B9B)}
+    [id="062-marketing-site"] .mk-steps .card:nth-child(2) .mk-n{background:var(--mint-soft);color:#138A5C}
+    [id="062-marketing-site"] .mk-steps .card:nth-child(3) .mk-n{background:#FBEA9C;color:var(--yellow-ink)}
+    [id="062-marketing-site"] .mk-cta{background:linear-gradient(135deg,#D9CFFF,#A6F0CF);color:#1D1B2E}
+    [id="062-marketing-site"] .mk-cta .muted{color:#1D1B2E;opacity:.75}
+  </style>
+  <div class="mk">
+    <header class="mk-bar">
+      <b style="font-size:22px">amax</b>
+      <nav aria-label="Marketing"><a href="javascript:void 0" onclick="document.getElementById('mk-features').scrollIntoView({behavior:'smooth'})">Features</a><a href="javascript:void 0" onclick="document.getElementById('mk-how').scrollIntoView({behavior:'smooth'})">How it works</a><a href="javascript:void 0" onclick="document.getElementById('mk-trust').scrollIntoView({behavior:'smooth'})">Security</a><a href="#001-amax-foundation">Sign in</a></nav>
+      <a class="btn" href="javascript:void 0" onclick="document.getElementById('mk-cta').scrollIntoView({behavior:'smooth'})">Book a demo</a>
+    </header>
+
+    <div class="mk-hero mk-heroband">
+      <div>
+        <span class="chip">Agent-native ERP for software and services firms</span>
+        <h1>Agents keep the records. People decide.</h1>
+        <p>Commits close tasks and draft your time for you to accept. Deployments move releases. Leave, people records and allocations stay up to date through chat. Your team opens amax to review and approve, not to type.</p>
+        <div class="row" style="gap:12px;margin-top:20px"><a class="btn" href="javascript:void 0" onclick="document.getElementById('mk-cta').scrollIntoView({behavior:'smooth'})">Book a demo</a><a class="btn sm" href="javascript:void 0" onclick="document.getElementById('mk-how').scrollIntoView({behavior:'smooth'})">See how it works</a></div>
+      </div>
+      <figure class="mk-video" aria-label="Product video, 35 seconds">
+        <svg class="face" viewBox="0 0 64 64" aria-hidden="true"><use href="#mascot"/></svg><button class="play" aria-label="Play the 35-second product video">▶</button>
+        <small>Captions: "Kasun pushes a commit. amax closes AMX-142 and suggests 2.5 h on Contoso Portal (fictional). Kasun accepts it."</small>
+      </figure>
+    </div>
+    <p class="muted" style="margin-top:-40px;font-size:13px">Video storyboard, 35 s: a commit closes a task (0–9 s), amax drafts 2.5 h and Kasun accepts it (9–15 s), Kasun submits the week and the PM approves it in chat (15–23 s), a release moves from UAT to Prod (23–29 s), then the end card (29–35 s). All data is fictional.</p>
+
+    <div class="card">
+      <h2>Your tools were built for people typing updates</h2>
+      <p class="muted">Jira, Monday and Kantata wait for someone to type every update. In amax, agents close tasks, draft the hours for people to accept and record releases over MCP, and every change shows who it was done for.</p>
+    </div>
+
+    <div id="mk-how">
+      <h2>How it works</h2>
+      <div class="mk-steps">
+        <div class="card"><span class="mk-n">1</span><h3>Agents write through MCP</h3><p class="muted">Every capability is an MCP tool with role-scoped permissions. Claude Code, CI and your own agents use the same tools as the UI.</p></div>
+        <div class="card"><span class="mk-n">2</span><h3>Every write is checked and attributed</h3><p class="muted">In chat, amax asks before it changes anything. Every write, from chat, MCP or the UI, is permission-checked, audited and attributed to the person or the agent acting for them.</p></div>
+        <div class="card"><span class="mk-n">3</span><h3>People review and decide</h3><p class="muted">Screens lead with what needs you: approvals, blocked releases and over-allocation. Pin anything into chat and ask.</p></div>
+      </div>
+    </div>
+
+    <div id="mk-features">
+      <h2>One system for delivery, people and money</h2>
+      <div class="mk-grid">
+        <div class="mk-f t-violet"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><h3>Delivery</h3><p class="muted">Projects, specclaw proposals and releases across Dev, QA, UAT and Prod. Time and approvals. Allocations and capacity forecasts.</p></div>
+        <div class="mk-f t-mint"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><h3>People</h3><p class="muted">Core HR. Leave. Onboarding and offboarding. Payroll runs and payslips. Recruitment, from open role to hire. Learning. OKRs from Keyflow.</p><p class="mk-coming"><span class="chip">Coming</span> Sri Lanka payroll pack, Australia payroll pack</p></div>
+        <div class="mk-f t-yellow"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><h3>Finance and sales</h3><p class="muted">Contracts, invoicing and receivables, with invoices drafted for Finance to accept. Expense claims, approved by the manager and then Finance. Presales pipeline.</p><p class="mk-coming"><span class="chip">Coming</span> Xero, QuickBooks and Business Central</p></div>
+        <div class="mk-f t-sky"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><h3>Operations</h3><p class="muted">Compliance registers and incidents. Notifications.</p><p class="mk-coming"><span class="chip">Coming</span> IT assets and access, Helpdesk, Insights</p></div>
+        <div class="mk-f t-pink"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><h3>Platform</h3><p class="muted">An MCP server for every capability. Entra ID sign-in and SCIM. Git identities, API keys and webhooks.</p></div>
+      </div>
+    </div>
+
+    <div id="mk-trust" class="mk-band" aria-label="Trust and security">
+      <div><b>Every write attributed</b><span>A person, or an agent acting for them</span></div>
+      <div><b>Tamper-evident audit</b><span>Hash-chained trail with evidence export</span></div>
+      <div><b>Role-scoped MCP</b><span>Same permissions in chat, UI and API</span></div>
+      <div><b>Your region, your data</b><span>Region pinning, retention and legal holds</span></div>
+      <div><b>Accessible</b><span>WCAG 2.2 AA, light and dark</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Ask amax</h2><span class="chip">Preview, fictional data</span></div>
+      <div class="bubble me">Who is over-allocated next month?</div>
+      <div class="bubble">Two people are over 100% in November: Nimali Perera (120%, Contoso Portal and Fleet Tracker) and Kasun Dias (110%). Should I move 20% of Nimali to December?</div>
+      <div class="bubble me">Yes, move it.</div>
+      <div class="bubble"><b>Confirm:</b> move 20% of Nimali Perera from Fleet Tracker to December. <button class="btn sm">Confirm</button></div>
+    </div>
+
+    <div id="mk-cta" class="card mk-cta">
+      <h2>Stop typing updates. Start deciding.</h2>
+      <p class="muted">See amax on your own delivery data in 30 minutes.</p>
+      <a class="btn" href="javascript:void 0" onclick="document.getElementById('mk-cta').scrollIntoView({behavior:'smooth'})">Book a demo</a>
+    </div>
+
+    <footer class="row muted" style="font-size:13px;justify-content:space-between;flex-wrap:wrap;gap:12px"><span>© 2026 amax</span><span>Privacy · Security · Status</span></footer>
+  </div>
+</section>
+
 <!-- ================= 047 Admin end to end ================= -->
+
 <section data-change="047-admin-end-to-end" id="047-admin-end-to-end" data-roles="admin" data-title="Connections and keys (chat-first)" data-nav="no" data-parent="038-settings" data-icon="key">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Connections and keys</nav>
   <div class="row head">
@@ -2474,6 +2589,7 @@ Apply 3 updates? (y/N)</pre></div>
     </div>
   </div>
 </section>
+
 
     </main>
   </div>

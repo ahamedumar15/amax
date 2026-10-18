@@ -11,7 +11,8 @@ const SECTIONS: [tab: string, path: string, heading: string][] = [
 ];
 
 async function signIn(page: Page, to: string) {
-  await page.goto(to);
+  // 062: a signed-out / is the marketing page, so sign in from /signin, which lands on /.
+  await page.goto(to === "/" ? "/signin" : to);
   await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
   await expect(page).toHaveURL((url) => url.pathname === to);
