@@ -1,6 +1,6 @@
-# Status: 062-marketing-site
+# Status: 064-marketing-revamp
 
-**Change:** 062-marketing-site
+**Change:** 064-marketing-revamp
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | 🔨 In-progress |  |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/74 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/87 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

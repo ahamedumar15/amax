@@ -1,6 +1,6 @@
-# Status: 063-public-assets-in-image
+# Status: 062-marketing-site
 
-**Change:** 063-public-assets-in-image
+**Change:** 062-marketing-site
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | 🔨 In-progress |  |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/84 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/74 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

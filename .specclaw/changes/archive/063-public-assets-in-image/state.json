@@ -1,12 +1,13 @@
 {
   "change": "063-public-assets-in-image",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "specclaw/063-public-assets-in-image",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-18T16:34:25Z"},
     "tasks": {"status":"done","at":"2026-10-18T16:35:04Z"},
     "build": {"status":"in-progress","at":"2026-10-18T16:36:58Z"},
     "verify": {"status":"done","at":"2026-10-18T17:00:52Z"},
-    "pr": {"status":"raised","at":"2026-10-18T17:01:31Z","url":"https://github.com/chan4lk/amax/pull/84"}
+    "pr": {"status":"raised","at":"2026-10-18T17:01:31Z","url":"https://github.com/chan4lk/amax/pull/84"},
+    "archived": {"status":"done","at":"2026-10-18T22:08:06Z"}
   }
 }

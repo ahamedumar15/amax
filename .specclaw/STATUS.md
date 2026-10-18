@@ -1,16 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 21:02 UTC
+**Last Updated:** 2026-10-18 22:08 UTC
+
+_1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
-
-- 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
-- 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
-- 🔀 **063-public-assets-in-image** — pr raised | 1/1 tasks (100%) | 0 failed | PR #84 merged
-- 🔀 **064-marketing-revamp** — pr raised | 7/7 tasks (100%) | 0 failed | PR #87 merged
-- 🔀 **065-review-pass-cap** — pr raised | 1/1 tasks (100%) | 0 failed | PR #88 merged
+_No active changes._
 
 ## Pending Proposals
 
@@ -80,10 +77,15 @@
 - ✅ **059-stable-pins**
 - ✅ **060-privacy-api-hardening**
 - ✅ **061-ci-test-load**
+- ✅ **062-marketing-site**
+- ✅ **062-specclaw-sync-plugin**
+- ✅ **063-public-assets-in-image**
+- ✅ **064-marketing-revamp**
+- ✅ **065-review-pass-cap**
 - ✅ **066-career-tree**
 
 ## Stats
 
 - **Total changes:** 64
-- **Active:** 5
-- **Completed:** 59
+- **Active:** 0
+- **Completed:** 64

@@ -1,12 +1,13 @@
 {
   "change": "064-marketing-revamp",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "specclaw/064-marketing-revamp",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-18T16:34:25Z"},
     "tasks": {"status":"done","at":"2026-10-18T16:35:36Z"},
     "build": {"status":"in-progress","at":"2026-10-18T16:39:09Z"},
     "verify": {"status":"done","at":"2026-10-18T18:14:49Z"},
-    "pr": {"status":"raised","at":"2026-10-18T18:15:27Z","url":"https://github.com/chan4lk/amax/pull/87"}
+    "pr": {"status":"raised","at":"2026-10-18T18:15:27Z","url":"https://github.com/chan4lk/amax/pull/87"},
+    "archived": {"status":"done","at":"2026-10-18T22:08:06Z"}
   }
 }

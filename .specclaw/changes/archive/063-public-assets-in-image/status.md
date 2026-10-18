@@ -1,6 +1,6 @@
-# Status: 064-marketing-revamp
+# Status: 063-public-assets-in-image
 
-**Change:** 064-marketing-revamp
+**Change:** 063-public-assets-in-image
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | 🔨 In-progress |  |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/87 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/84 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
