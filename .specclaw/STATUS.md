@@ -1,17 +1,17 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 16:37 UTC
+**Last Updated:** 2026-10-18 17:01 UTC
 
 ## Active Changes
 
 
 - 🔀 **021-it-access-licences** — PR #82 open
-- 🔀 **025-inbox-agent** — PR #81 open
+- 🔀 **025-inbox-agent** — PR #81 merged
 - 🔀 **027-reports** — pr raised | 3/3 tasks (100%) | 0 failed | PR #80 merged
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
-- 🔨 **063-public-assets-in-image** — build in-progress | 0/1 tasks (0%) | 0 failed
+- 🔍 **063-public-assets-in-image** — verify done | 1/1 tasks (100%) | 0 failed
 
 ## Pending Proposals
 

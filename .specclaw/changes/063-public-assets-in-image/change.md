@@ -24,4 +24,14 @@ No screen change. The marketing page's video, poster and share image load in pro
 
 ## Verify
 
-Quality: not_run (Dockerfile and CI workflow only, no app code)
+**Verdict:** PASS
+
+- AC-1: pass — I rebuilt the image layout locally (`.next/standalone` + `.next/static` + `apps/web/public`, as the Dockerfile copies them) and ran `node apps/web/server.js`. All five files returned 200, `Range: bytes=0-1023` returned 206, and the content type was `video/mp4`. With `public/` removed, the same request failed. Docker isn't running locally; CI builds the real image.
+- AC-2: pass — the `docker-k3s` job's "Image serves the marketing media" step asserts the exact status for each file (200, or 206 for the range request) and the exact content type, and prints what came back plus `docker logs amax` on failure. `apps/web/tests/proxy-matcher.test.ts` pins that the proxy skips these five paths but still gates `/`, `/welcome` and other paths. With the exclusion removed, 3 cases fail.
+- AC-3: pass — the Dockerfile change only adds a `COPY`. `/healthz`, the k3d smoke and the restore drill are unchanged and run in CI.
+
+Commands: `pnpm lint` → 0 (graph check ok, 16 modules). `vitest run` (apps/web) → 218 passed. Review: CLEAN — 3 rounds, final pass f0de3e17ab (opus/opus).
+
+Quality: not_run (Dockerfile, CI and one test only)
+
+Screenshots: none (no screen change).
