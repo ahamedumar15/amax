@@ -50,4 +50,29 @@ A new public page with no app navigation: no rail, top bar or chat launcher. Top
 
 ## Verify
 
-Quality: 360 → 360 duplicated lines (none in this change's files; refactor skipped)
+**Verdict:** PASS
+
+- AC-1: pass — `packages/auth/tests/062-ac1-landing.test.ts` (signed-out `/` rewrites to `/welcome`; signed-in and other paths are untouched), wired in `apps/web/proxy.ts`. `tests/e2e/landing.spec.ts` (both cases in the browser) needs Postgres and runs in CI `e2e:auth`; it was not run locally because Docker was down. The guest preview (no DATABASE_URL) keeps the app at `/` on purpose, since there is no sign-in and so no signed-out visitor.
+- AC-2: pass — `/welcome`, `/robots.txt` and `/sitemap.xml` are in `isPublicPath` (unit test). The page renders with no database or session (production server with no DATABASE_URL returned 200). It loads no shell, chat or tenant data.
+- AC-3: pass — sections in order (`marketing.spec` AC3). `marketing-areas.test.ts`: every live claim maps to an installed module, every Coming entry to a missing one, and no page prose names a Coming feature. `marketing-confirm.test.ts`: the confirm is claimed only for chat (fails on the old step 2). No testimonials, logos or metrics.
+- AC-4: pass — no forms, "Sign in" goes to `/signin` (e2e). With `AMAX_SALES_EMAIL=sales@amax.example` the page renders `mailto:sales@amax.example?subject=amax%20demo`; unset, there is no demo link (e2e).
+- AC-5: pass — 35 s MP4 (H.264, 1920×1080, 1.4 MB) and WebM (VP9, 1.6 MB), a poster, and English WebVTT captions, made with `brag`. Native controls, `preload="none"`, no autoplay; the files are served signed out (e2e AC5).
+- AC-6: pass — axe (wcag2a/aa, 21aa, 22aa) shows no violations in light and dark. The skip link takes first focus, and there is no horizontal scroll at 390 px (e2e AC6). Lighthouse accessibility: 100.
+- AC-7: pass — canonical, Open Graph and Twitter tags with a 1200×630 image; `robots.txt` and `sitemap.xml` (e2e AC7). The `(app)` layout is `noindex`. With no AMAX_BASE_URL the page leaves out absolute URLs and warns once (`site-origin.test.ts`).
+- AC-8: pass — Lighthouse 12.8.2 on the mobile production build: performance 98, accessibility 100, best practices 100, SEO 100. LCP 2.5 s, TBT 10 ms, CLS 0, 253 KiB before the video plays.
+- AC-9: pass — the page uses `packages/ui` tokens, `Logo` and `Mascot`. Some ticket gradient stops are hard-coded, as in `components.css` itself (follow-up minor).
+- AC-10: pass — no Main nav, search, chat launcher or profile menu, signed out (`marketing.spec` AC10, `landing.spec`).
+- AC-11: pass — feature tiles use the five ticket gradients with 3D art, and the hero, video and CTA use the mint-to-violet gradient (screenshots).
+- AC-12: pass — `brag-slim` video in brand: logo, mascot, gradient, Avenir Next, ticket colours, and real amax screens with fictional data (Lumen Labs, Contoso Portal, Fleet Tracker, Kasun Dias, Nimali Perera).
+
+Commands (in the worktree):
+- `pnpm turbo run test --continue --concurrency=3` → 0 (22/22 tasks; DB tests are skipped without DATABASE_MIGRATE_URL). A plain `pnpm test` hit a 5 s timeout in `@amax/testing` ac3-boundaries under full parallel load; it passes on its own and at lower concurrency, the same as CI's `--concurrency=2`.
+- `pnpm lint` → 0 (tsc + graph check ok). `pnpm build` → 0. `node scripts/check-module-standard.mjs` → 0.
+- `E2E_PORT=3510 npx playwright test tests/e2e/marketing.spec.ts` (production build, AMAX_BASE_URL set) → 4 passed.
+- `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes. Nothing in this change breaks a non-comment rule.
+- `specclaw-quality-scan . --gate` → 1: three high-complexity functions, all outside this change (`delivery/sync/specclaw.ts` parse, `AiSettingsPage`, `BackupTickets`). This change adds no new high functions or duplicates.
+- Review: CLEAN — 7 rounds, final pass c8fe5d8ebe, models opus/opus; last round 0/0/3 b/M/m.
+
+Quality: 360 → 354 duplicated lines
+
+Screenshots: `.specclaw/changes/062-marketing-site/shots/app.png`, `.specclaw/changes/062-marketing-site/shots/mock.png`
