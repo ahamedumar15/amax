@@ -69,7 +69,7 @@ Brand constraints kept over the skill's house rules (recorded on purpose): the l
 - [x] `T6` — The mock copy script ships `.specclaw/mock/media/` with `index.html` (AC-11)
   Files: apps/mock/scripts/copy-mock.mjs
 - [x] `T7` — Tests and gates. e2e: section order, queue Accept with its attribution, the video plays (`currentTime` advances, no error), the theme switch, no overflow at 390 px with a wide fallback font, and axe in light and dark. The copy guards also read the 064 mock section. Lighthouse on the mobile production build (AC-1, AC-2, AC-3, AC-7, AC-8, AC-10)
-  Files: apps/web/tests/e2e/marketing.spec.ts, apps/web/tests/marketing-prose.ts, apps/web/tests/marketing-demo.test.ts
+  Files: apps/web/tests/e2e/marketing.spec.ts, apps/web/tests/e2e/marketing-video.spec.ts, apps/web/tests/e2e/marketing-theme.spec.ts, apps/web/tests/e2e/marketing-seo.spec.ts, apps/web/tests/marketing-prose.ts, apps/web/tests/marketing-queue.test.ts
   Depends: T2, T3, T4, T5
 
 ## Verify
