@@ -2,6 +2,7 @@ import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
 import { PHASES, type Phase } from "../contracts";
+import { proposalPin } from "../pins";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
 import { AskButton } from "./AskButton";
 import { Avatar } from "./Avatar";
@@ -36,7 +37,7 @@ function SpecFacts({ p }: { p: ProposalRow }) {
 function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
-  const pin = { label: `${p.key} ${p.title}`, tool: "get_proposal", args: { key: p.key } };
+  const pin = proposalPin(p);
   return (
     <div className="tcard pinnable">
       <PinButton pin={pin} />

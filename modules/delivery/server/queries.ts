@@ -10,6 +10,9 @@ const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
 };
 const isoDate = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : v ? String(v).slice(0, 10) : null);
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+// When a row was made (059), so a pin saved under a name before a rename can't land on a newer row
+// that took the name. Null for an environment or proposal made before migration 0012.
+const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
 
 export type ProjectRow = {
   id: string; key: string; name: string; client: string; billing: string; managerName: string | null; color: string;
@@ -32,7 +35,7 @@ export const listProjects = (v: Viewer, status: "active" | "closed" = "active") 
 export type ProposalRow = {
   id: string; key: string; title: string; phase: Phase; tasksDone: number; tasksTotal: number; hours: number; estimateHours: number | null;
   ownerName: string | null; agent: string | null; projectKey: string; projectName: string; projectColor: string;
-  release: string | null; shippedTo: string | null; shippedStatus: string | null; source: string | null; meta: Record<string, unknown>;
+  release: string | null; shippedTo: string | null; shippedStatus: string | null; source: string | null; meta: Record<string, unknown>; createdAt: string | null;
 };
 
 const proposal = (r: Record<string, unknown>): ProposalRow => ({
@@ -40,7 +43,7 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
   hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: (r.owner_name as string | null) ?? null, agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
   release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
-  source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {},
+  source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {}, createdAt: iso(r.created_at),
 });
 
 // The furthest environment each release reached, for "Shipped to".
@@ -63,11 +66,14 @@ export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: str
     return (await tx.execute(sql`${PROPOSALS} ${filter} order by p.updated_at desc, p.key desc`)).map(proposal);
   });
 
-export const getProject = (v: Viewer, key: string) =>
+/** One project by key, or by id (059: pins use the id; a key given with it only narrows). */
+export const getProject = (v: Viewer, key: string | undefined, projectId?: string) =>
   read(v, async (tx) => {
-    const [r] = await tx.execute(sql`select * from delivery.project where key = ${key}`);
+    if (!key && !projectId) throw new Error("say which project: a projectId or a key");
+    const where = sql.join([projectId ? sql`id = ${projectId}` : undefined, key ? sql`key = ${key}` : undefined].filter((x) => x !== undefined), sql` and `);
+    const [r] = await tx.execute(sql`select * from delivery.project where ${where}`);
     if (!r) return null;
-    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.key = ${key} and ${ACTIVE} order by p.updated_at desc, p.key desc`)).map(proposal);
+    const proposals = (await tx.execute(sql`${PROPOSALS} where pr.id = ${r.id} and ${ACTIVE} order by p.updated_at desc, p.key desc`)).map(proposal);
     return { project: project(r), proposals };
   });
 
@@ -135,7 +141,7 @@ export const phaseCounts = (v: Viewer, at?: Date) =>
   });
 
 export type ReleaseRow = {
-  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number;
+  id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt?: string | null;
   stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
@@ -148,7 +154,7 @@ export const listReleases = (v: Viewer, opts: { projectKey?: string } = {}) =>
     const deps = await tx.execute(sql`select distinct on (release_id, environment_id) * from delivery.deployment where voided_at is null order by release_id, environment_id, at desc`);
     return releases.map((r): ReleaseRow => ({
       id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
-      projectColor: r.project_color as string, proposals: Number(r.proposals),
+      projectColor: r.project_color as string, proposals: Number(r.proposals), createdAt: iso(r.created_at),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
         return { environment: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,
@@ -190,12 +196,12 @@ export function stageColumns(releases: ReleaseRow[]): string[] {
   return out;
 }
 
-export type EnvironmentRow = { id: string; name: string; position: number; isProd: boolean; deployments: number };
+export type EnvironmentRow = { id: string; name: string; position: number; isProd: boolean; deployments: number; createdAt: string | null };
 
 export const listEnvironments = (v: Viewer, projectKey: string) =>
-  read(v, async (tx) => (await tx.execute(sql`select e.id, e.name, e.position, e.is_prod, (select count(*)::int from delivery.deployment d where d.environment_id = e.id) as deployments
+  read(v, async (tx) => (await tx.execute(sql`select e.id, e.name, e.position, e.is_prod, e.created_at, (select count(*)::int from delivery.deployment d where d.environment_id = e.id) as deployments
     from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = ${projectKey} order by e.position`))
-    .map((e): EnvironmentRow => ({ id: e.id as string, name: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), deployments: Number(e.deployments) })));
+    .map((e): EnvironmentRow => ({ id: e.id as string, name: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), deployments: Number(e.deployments), createdAt: iso(e.created_at) })));
 
 export type DeploymentRow = { id: string; environment: string; status: string; at: string; note: string | null; run: string | null; recordedBy: string; voidedAt: string | null; voidReason: string | null };
 
@@ -229,14 +235,20 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
     const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
       .map((d): DeploymentRow => ({ id: d.id as string, environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
         recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
-    const proposals = (await tx.execute(sql`select key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
-      .map((p) => ({ key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
-    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, history, proposals };
+    const proposals = (await tx.execute(sql`select id, key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
+      .map((p) => ({ id: p.id as string, key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
+    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), history, proposals };
   });
 
 // One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.
-/** One proposal by key (CON-12), or null. */
-export const getProposal = async (v: Viewer, key: string) => (await listProposals(v)).find((p) => p.key === key) ?? null;
+/**
+ * One proposal by id, or by key (CON-12), or null. The specclaw sync can move a key to another
+ * proposal (ProposalRekeyed), so pins use the id (059); a key given with it only narrows.
+ */
+export const getProposal = async (v: Viewer, ref: { proposalId?: string; key?: string }) => {
+  if (!ref.proposalId && !ref.key) throw new Error("say which proposal: a proposalId or a key");
+  return (await listProposals(v)).find((p) => (!ref.proposalId || p.id === ref.proposalId) && (!ref.key || p.key === ref.key)) ?? null;
+};
 
 /**
  * One environment by id, or by project key and name, or null (057). The id survives a rename, so row

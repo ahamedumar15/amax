@@ -30,9 +30,9 @@ export function keptExpiry(connector: string, expiresAt: Date | null, now = new 
 }
 
 export const secretTools = [
-  tool({ ...read(READ), name: "list_secrets", description: "Connector credentials' status, expiry, rotation and last use. Never the values. filter: all (default), expiring (active, expiring within the warning window, not yet past it) or rotated (active, rotated in the last 90 days), as the Keys screen's tickets count them.",
+  tool({ ...read(READ), pin: "view", name: "list_secrets", description: "Connector credentials' status, expiry, rotation and last use. Never the values. filter: all (default), expiring (active, expiring within the warning window, not yet past it) or rotated (active, rotated in the last 90 days), as the Keys screen's tickets count them.",
     input: z.object({ filter: z.enum(SECRET_FILTERS).optional() }), run: async (v, a) => filterCredentials(await rows(v), a.filter ?? "all", new Date()).map(meta) }),
-  tool({ ...read(READ), name: "get_secret_meta", description: "One connector credential's status, expiry, rotation and last use. Never the value.", input: z.object({ connector }),
+  tool({ ...read(READ), pin: "view", name: "get_secret_meta", description: "One connector credential's status, expiry, rotation and last use. Never the value.", input: z.object({ connector }),
     run: async (v, a) => { const r = (await rows(v)).find((x) => x.connector === a.connector); if (!r) throw notFound(`credential ${a.connector}`); return meta(r); } }),
   tool({ ...write(MANAGE), name: "put_secret", description: "Add a connector credential. The person types the value on the confirm card.", secretInput: { label: "Value" },
     input: z.object({ connector, expiresAt: day.optional() }),

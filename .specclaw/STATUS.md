@@ -1,14 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 04:13 UTC
+**Last Updated:** 2026-10-18 04:31 UTC
 
 ## Active Changes
 
 
 - 📝 **030-notifications** — tasks done | 0/7 tasks (0%) | 0 failed
-- 🔀 **057-chat-first-review** — PR #50 merged
-- 🔀 **060-privacy-api-hardening** — pr raised | 9/9 tasks (100%) | 0 failed | PR #53 merged
+- 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
 
 ## Pending Proposals
 
@@ -71,10 +70,12 @@
 - ✅ **053-trace-and-settings-hardening**
 - ✅ **054-chat-first-everywhere**
 - ✅ **056-ci-flakes**
+- ✅ **057-chat-first-review**
 - ✅ **058-settings-review-2**
+- ✅ **060-privacy-api-hardening**
 
 ## Stats
 
-- **Total changes:** 34
-- **Active:** 3
-- **Completed:** 31
+- **Total changes:** 35
+- **Active:** 2
+- **Completed:** 33

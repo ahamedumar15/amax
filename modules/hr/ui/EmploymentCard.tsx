@@ -1,5 +1,6 @@
 import { isMasked } from "@amax/auth";
-import { Masked, PinButton } from "@amax/ui";
+import { facet, Masked, PinButton } from "@amax/ui";
+import { personPin } from "../pins";
 import type { Employment } from "../contracts";
 import { monthYear, shortDate } from "./parts";
 import { Reveal } from "./Reveal";
@@ -8,8 +9,8 @@ const CONTRACT: Record<string, string> = { permanent: "Permanent", "fixed-term":
 const last4 = (s: string) => `•••• ${s.replace(/\D/g, "").slice(-4)}`;
 const hidden = (v: unknown): v is { masked: true } => isMasked(v);
 
-export function EmploymentCard({ e, probationEnds, employeeNo, name }: { e: Employment | null; probationEnds: string | null; employeeNo: string; name: string }) {
-  const pin = <PinButton pin={{ label: `${name}, employment`, tool: "get_person", args: { employeeNo } }} />;
+export function EmploymentCard({ e, probationEnds, person }: { e: Employment | null; probationEnds: string | null; person: { id: string; name: string } }) {
+  const pin = <PinButton pin={facet(personPin(person), ", employment")} />;
   if (!e) return <div className="card pinnable" id="employment">{pin}<h2>Employment</h2><p className="muted">No employment record yet.</p></div>;
   const hours = e.fte >= 1 ? "full time" : `part time, ${Math.round(e.fte * 100)}%`;
   return (

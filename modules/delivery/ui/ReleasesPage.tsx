@@ -4,6 +4,7 @@ import { IntentButton, PinButton } from "@amax/ui";
 import { releaseHref } from "../contracts";
 import { AskButton } from "./AskButton";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
+import { releasePin } from "../pins";
 import { day, needViewer, SignInFirst } from "./parts";
 
 const HEX: Record<string, string> = { violet: "#7B61FF", amber: "#F2A93B", pink: "#F48B9B", mint: "#2FCB8C" };
@@ -216,9 +217,9 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: 
                     <td data-label="" className="num">
                       {act.kind === "text" ? <span className="muted">{act.text}</span> : act.kind === "link" ? <span className="muted"><a className="rowlink" href={act.href} title={act.title}>{act.text}</a></span> : (
                         <AskButton className={`btn sm${act.primary ? " primary" : ""}`} label={act.label} prompt={`Record a deployment of ${r.projectKey} ${r.version} to ${act.environment}`}
-                          pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } }} />
+                          pin={releasePin(r)} />
                       )}
-                      <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } }} />
+                      <PinButton pin={releasePin(r)} />
                     </td>
                   </tr>
                 );

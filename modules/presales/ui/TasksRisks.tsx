@@ -1,7 +1,7 @@
-import { PinButton } from "@amax/ui";
+import { facet, PinButton } from "@amax/ui";
 import type { RiskRow, TaskRow } from "../server/detail";
 import { AskButton } from "./AskButton";
-import { day, itemPin } from "./parts";
+import { day, itemPin, oppPin } from "./parts";
 
 const TASK: Record<string, [string, string]> = { "in-progress": ["agent", "In progress"], "on-hold": ["warn", "On hold"], "to-start": ["draft", "To start"], done: ["good", "Done"] };
 const KIND: Record<string, [string, string]> = { risk: ["bad", "Risk"], issue: ["bad", "Issue"], assumption: ["info", "Assumption"], decision: ["agent", "Decision"] };
@@ -15,14 +15,16 @@ function riskNote(r: RiskRow) {
 }
 
 const taskNote = (t: TaskRow) => [t.ownerName?.split(" ")[0], t.due && `due ${day(t.due)}`].filter(Boolean).join(", ");
-const head = (number: string, title: string) => (
-  <div className="card-head"><h2>{title}</h2><PinButton inline pin={{ label: `${number} ${title.toLowerCase()}`, tool: "get_opportunity", args: { number } }} /></div>
+type Opp = { id: string; number: string; title: string };
+const head = (o: Opp, title: string) => (
+  <div className="card-head"><h2>{title}</h2><PinButton inline pin={facet(oppPin(o), `, ${title.toLowerCase()}`)} /></div>
 );
 
-export function TasksCard({ number, rows }: { number: string; rows: TaskRow[] }) {
+export function TasksCard({ opp, rows }: { opp: Opp; rows: TaskRow[] }) {
+  const { number } = opp;
   return (
     <div className="card flush pinnable" id="tasks">
-      {head(number, "Tasks")}
+      {head(opp, "Tasks")}
       <div className="scroll-x"><table className="tbl"><caption className="sr">Tasks</caption><tbody>
         {rows.map((t) => (
           <tr key={t.id} className="pinnable"><td><b>{t.title}</b>{taskNote(t) && <small>{taskNote(t)}</small>}</td>
@@ -34,10 +36,11 @@ export function TasksCard({ number, rows }: { number: string; rows: TaskRow[] })
   );
 }
 
-export function RisksCard({ number, rows, canEdit }: { number: string; rows: RiskRow[]; canEdit: boolean }) {
+export function RisksCard({ opp, rows, canEdit }: { opp: Opp; rows: RiskRow[]; canEdit: boolean }) {
+  const { number } = opp;
   return (
     <div className="card flush pinnable" id="risks">
-      {head(number, "Risks and issues")}
+      {head(opp, "Risks and issues")}
       <div className="scroll-x"><table className="tbl"><caption className="sr">Risks and issues</caption><tbody>
         {rows.map((r) => {
           const pin = itemPin(number, `${r.kind}: ${r.title}`, r.id);

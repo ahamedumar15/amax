@@ -1,6 +1,6 @@
 import { PinButton } from "@amax/ui";
 import type { StageChangeRow } from "../server/queries";
-import { day, first, initials, lowerFirst, StageChip } from "./parts";
+import { day, first, initials, lowerFirst, oppPin, StageChip } from "./parts";
 
 function Line({ c }: { c: StageChangeRow }) {
   const what = `${c.client} ${lowerFirst(c.title)}`;
@@ -18,7 +18,7 @@ export function StageFeed({ changes }: { changes: StageChangeRow[] }) {
       <div className="card-head"><h2>Recent stage changes</h2><PinButton inline pin={{ label: "Recent stage changes", tool: "list_opportunities", args: {} }} /><span className="chip agent">Tracked automatically</span></div>
       <ul className="feed">
         {changes.map((c) => (
-          <li key={`${c.number}-${c.at}`} className="pinnable"><span className="av" aria-hidden="true">{initials(c.byName)}</span><div><Line c={c} /><small>{detail(c)}</small></div><time dateTime={c.at}>{day(c.at)}</time><PinButton pin={{ label: `${c.number} ${c.title}`, tool: "get_opportunity", args: { number: c.number } }} /></li>
+          <li key={`${c.number}-${c.at}`} className="pinnable"><span className="av" aria-hidden="true">{initials(c.byName)}</span><div><Line c={c} /><small>{detail(c)}</small></div><time dateTime={c.at}>{day(c.at)}</time><PinButton pin={oppPin({ ...c, id: c.opportunityId })} /></li>
         ))}
         {!changes.length && <li><span /><div><p>No stage changes yet.</p></div></li>}
       </ul>

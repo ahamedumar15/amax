@@ -106,3 +106,21 @@ test("049 AC6 History: start a new chat, reopen the first from History by keyboa
   await expect(chats).toHaveCount(0);
   await expect(log).toContainText("and the releases?");
 });
+
+// 059 AC-7: a prompt an Ask amax chip fills is finished by what the person types next. Focus can leave
+// the input before they type (the route focus after chat follows a re-tagged release), and a
+// programmatic focus puts the caret back at 0; a fill (select all, then type) still replaces it.
+test("059 AC7 a filled prompt is finished by typing, even after focus left the input; a fill replaces it", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const input = page.getByLabel("Message amax");
+  const ask = (prompt: string) => page.evaluate((p) => window.dispatchEvent(new CustomEvent("amax:chat", { detail: { prompt: p } })), prompt);
+  await ask("Tag CON v2.4.0 as ");
+  await expect(input).toHaveValue("Tag CON v2.4.0 as ");
+  await page.locator("main h1").evaluate((h) => { h.tabIndex = -1; h.focus(); });
+  await input.pressSequentially("v2.4.1");
+  await expect(input).toHaveValue("Tag CON v2.4.0 as v2.4.1");
+  await ask("Copy Delivery team allocations from October (2026-10) to the next month");
+  await expect(input).toHaveValue("Copy Delivery team allocations from October (2026-10) to the next month");
+  await input.fill("Copy Delivery team allocations from December (2026-12) to the next month");
+  await expect(input).toHaveValue("Copy Delivery team allocations from December (2026-12) to the next month");
+});

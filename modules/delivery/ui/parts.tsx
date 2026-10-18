@@ -31,7 +31,7 @@ export const Stk = ({ phase }: { phase: Phase }) => (
 export const PhaseChip = ({ phase }: { phase: Phase }) => <span className={`chip ${PHASE_UI[phase].chip}`}>{PHASE_UI[phase].label}</span>;
 
 export const usd = (n: number | null) => (n === null ? "–" : `$${Math.round(n).toLocaleString("en-US")}`);
-export const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "–");
+export { day } from "../pins";
 export const initials = (name: string | null) => (name ?? "?").split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 export const shortName = (name: string | null) => (name ? `${name.split(" ")[0]} ${name.split(" ")[1]?.[0] ?? ""}.` : "–");
 
