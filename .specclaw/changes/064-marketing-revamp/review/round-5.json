@@ -1,0 +1,50 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/tests/e2e/marketing-video.spec.ts"
+ ],
+ "final": false,
+ "findings": [],
+ "head": "7f33c77903245bfd5611a417fca4b911a9d1e90c",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/retention/RetentionTable.tsx",
+  "apps/web/app/(app)/settings/retention/RetentionTickets.tsx",
+  "apps/web/app/(app)/settings/retention/page.tsx",
+  "apps/web/components/workflows/RunsCard.tsx",
+  "apps/web/lib/admin/status.ts",
+  "apps/web/lib/admin/workflows.ts",
+  "apps/web/lib/agents-fixtures.ts",
+  "apps/web/lib/backup-workflows.ts",
+  "apps/web/lib/platform-workflows.ts",
+  "apps/web/tests/admin/review-052.test.ts",
+  "apps/web/tests/admin/tools.test.ts",
+  "apps/web/tests/e2e/admin.spec.ts",
+  "packages/core/src/backup/prune.ts",
+  "packages/core/src/privacy/match.ts",
+  "packages/core/src/privacy/purge.ts",
+  "packages/core/src/privacy/view.ts",
+  "packages/core/tests/backup-ac2-snapshot.test.ts",
+  "packages/core/tests/privacy-058-review.test.ts",
+  "packages/core/tests/privacy-ac3-purge.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 47703,
+ "round": 5,
+ "since": "9c52e103b7",
+ "status": "clean",
+ "system_chars": 39580,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792343981,
+ "ts_start": 1792343962
+}
