@@ -44,6 +44,7 @@ test("034 AC-3 AC-6 Backups and export: recovery first, the drill history, expor
 
 test("034 AC-6 Backups and export is for Admin only: not IT Admin, not anyone else", async ({ page }) => {
   for (const email of ["ravi@lumenlabs.test", "nimal@lumenlabs.test"]) {
+    await page.goto("about:blank");
     await page.context().clearCookies();
     await signIn(page, email, "/");
     await expect(nav(page).getByRole("link", { name: "Backups and export", exact: true })).toHaveCount(0);
@@ -64,6 +65,8 @@ test("034 AC-4 whoever asked for the export can't approve it; a second Admin app
   };
   await signIn(page, "sahan@lumenlabs.test", "/settings/backups");
   await expect(await approve()).toContainText(/a second Admin must approve/);
+  // Leave the page first: a request still in flight from chat could set the session cookie again.
+  await page.goto("about:blank");
   await page.context().clearCookies();
   await signIn(page, "maya@lumenlabs.test", "/settings/backups");
   await expect(await approve()).toContainText("Done");
