@@ -1,14 +1,16 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 13:54 UTC
+**Last Updated:** 2026-10-18 14:11 UTC
 
 ## Active Changes
 
 
 - 🔀 **014-payroll-engine** — pr raised | 6/6 tasks (100%) | 0 failed | PR #75 merged
 - 🔀 **017-finance-contracts-billing** — pr raised | 5/5 tasks (100%) | 0 failed | PR #76 merged
-- 🔀 **023-recruitment** — pr raised | 6/6 tasks (100%) | 0 failed | PR #77 open
+- 🔀 **018-expenses** — PR #78 merged
+- 🔀 **023-recruitment** — pr raised | 6/6 tasks (100%) | 0 failed | PR #77 merged
+- 📝 **025-inbox-agent** — tasks done | 0/5 tasks (0%) | 0 failed
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
 ## Pending Proposals
@@ -16,11 +18,9 @@
 
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
-- 📋 **018-expenses** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
 - 📋 **021-it-access-licences** — proposal ready, awaiting planning
 - 📋 **022-helpdesk** — proposal ready, awaiting planning
-- 📋 **025-inbox-agent** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **027-reports** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
@@ -79,6 +79,6 @@
 
 ## Stats
 
-- **Total changes:** 52
-- **Active:** 4
+- **Total changes:** 54
+- **Active:** 6
 - **Completed:** 48
