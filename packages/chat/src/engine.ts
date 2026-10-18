@@ -2,17 +2,20 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
+import type { Pin } from "./pins";
+import { resolvePins } from "./resolve";
 import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, logError, lookupKey, retryable, traceStep, traceStepOrFail, withIdempotency, withTrace } from "@amax/core/server";
 import { ToolError, type Registry, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
-export type Pin = { label: string; tool: string; args: Record<string, unknown> };
+export type { Pin };
 /** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
 /** `traceId` (050): the turn that proposed it, so its confirm or cancel joins the same trace. */
 export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string };
 export type Highlight = { text: string; field: string; index: number };
-export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[] };
+/** `pins`: the turn's pins as read (059), in the order sent: labels refreshed, old ones moved onto ids. */
+export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[]; pins: Pin[] };
 
 const INSTRUCTIONS = `You are amax, the assistant inside an ERP for software and professional-services companies.
 Answer briefly and concretely. Use the read tools to look things up instead of guessing.
@@ -30,7 +33,7 @@ async function load(db: Db, viewer: Viewer, id?: string) {
       ? await tx.execute(sql`select * from chat.conversation where id = ${id} and user_id = ${viewer.userId}`)
       : await tx.execute(sql`insert into chat.conversation (tenant_id, user_id) values (${viewer.tenantId}, ${viewer.userId}) returning *`);
     if (!row) throw new Error("conversation not found");
-    return { id: row.id as string, messages: row.messages as Message[], pending: row.pending as PendingAction[] };
+    return { id: row.id as string, messages: row.messages as Message[], pending: row.pending as PendingAction[], savedAt: id ? new Date(row.updated_at as string) : undefined };
   });
 }
 
@@ -115,18 +118,12 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     },
   }) as Tool);
 
-  // Pinned records are fetched with the user's own permissions and sent as quoted data (AC-4).
-  const data: DataItem[] = [];
-  for (const pin of opts.pins ?? []) {
-    // A pin that can't be read is still sent, as a fixed marker: the model must not answer as if it
-    // had the record, and an error message never reaches it (it can echo values; final review).
-    const tool = registry.toolsFor(viewer, ["read"]).find((t) => t.name === pin.tool);
-    if (!tool) { data.push({ label: pin.label, record: { unavailable: "not available to this user" } }); continue; }
-    const record = await registry.call(viewer, pin.tool, pin.args, { scopes: ["read"], source: "chat" })
-      .catch((e: unknown) => ({ unavailable: toolFailure(pin.tool, e, logError(`chat.pin ${pin.tool}`, e)) }));
-    // A record, not text, so the gateway redacts its classified fields like any other record.
-    data.push({ label: pin.label, record, sensitive: tool.sensitive });
-  }
+  // Pinned records are fetched with the user's own permissions and sent as quoted data (AC-4), each
+  // under its label as it is now (059). A record, not text, so the gateway redacts its classified
+  // fields like any other record.
+  const resolved = await resolvePins(registry, viewer, opts.pins ?? [], convo.savedAt);
+  const data: DataItem[] = resolved.map((r) => ({ label: r.pin.label, record: r.record, ...(r.tool ? { sensitive: r.tool.sensitive } : {}) }));
+  const pins = resolved.map((r) => r.pin);
 
   const intentNote = opts.intent
     ? `\n\nThe user started "${opts.intent.label}". Fill the ${opts.intent.tool} tool; required: ${opts.intent.required.join(", ")}. Questions to use when something is missing: ${opts.intent.fields.map((f) => `${f.name}: ${f.ask}`).join(" | ")}.`
@@ -138,8 +135,8 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     tools,
     data,
   });
-  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending, title: titleFrom(opts.text), pins: opts.pins ?? [] });
-  return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending) };
+  await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending, title: titleFrom(opts.text), pins });
+  return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending), pins };
 }
 
 /** What happened to a card: confirmed (the write ran), cancelled, failed for good, or unknown. */
