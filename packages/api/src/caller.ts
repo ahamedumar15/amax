@@ -21,7 +21,8 @@ async function refuse(db: Db, p: Principal, tool: string, reason: string, onBeha
 }
 
 async function asPrincipal(db: Db, p: Principal, tool: RegisteredTool, actFor: string | null): Promise<Viewer> {
-  if (!principalAllowsTool(p, tool.module, tool.scope)) return refuse(db, p, tool.name, `outside its scopes (needs ${tool.module}:${tool.scope})`);
+  if (p.tools && !p.tools.includes(tool.name)) return refuse(db, p, tool.name, `limited to ${p.tools.join(", ")}`);
+  if (!principalAllowsTool(p, tool.module, tool.scope, tool.name)) return refuse(db, p, tool.name, `outside its scopes (needs ${tool.module}:${tool.scope})`);
   if (!actFor || !UUID.test(actFor)) return refuse(db, p, tool.name, "name the person it acts for in the amax-act-for header");
   if (!p.actsFor.includes(actFor)) return refuse(db, p, tool.name, "not allowed to act for this person", actFor);
   const person = await withTenant(db, p.tenantId, (tx) => viewerForUser(tx, p.tenantId, actFor));

@@ -17,7 +17,7 @@ test("048 AC-3 AC-5 the chat footer shows my own month; an unpriced model shows 
   await page.getByRole("button", { name: "Ask amax" }).click();
   const before = await calls(page);
   await page.getByLabel("Message amax").fill("what projects are there?");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(page.getByTestId("chat-usage")).toContainText(`${before + 1} call`);
   await expect(page.getByTestId("chat-usage")).toContainText("This month: Unknown");
   await expect(page.getByTestId("chat-usage").getByRole("button", { name: "Add My AI usage this month to chat" })).toBeAttached();

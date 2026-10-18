@@ -1,15 +1,12 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 12:21 UTC
+**Last Updated:** 2026-10-18 12:23 UTC
 
 ## Active Changes
 
 
-- 🔀 **008-delivery-ingestion** — PR #70 merged
-- 🔀 **013-onboarding-offboarding** — PR #71 merged
-- 🔀 **038-navigation-scale** — pr raised | 3/3 tasks (100%) | 0 failed | PR #69 merged
-- 🔍 **062-marketing-site** — verify done | 5/5 tasks (100%) | 0 failed
+- 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 open
 
 ## Pending Proposals
 
@@ -38,10 +35,12 @@
 - ✅ **005-amax-chat**
 - ✅ **006-agent-governance**
 - ✅ **007-delivery-projects**
+- ✅ **008-delivery-ingestion**
 - ✅ **009-time-and-approvals**
 - ✅ **010-allocations-forecast**
 - ✅ **011-hr-core**
 - ✅ **012-leave**
+- ✅ **013-onboarding-offboarding**
 - ✅ **020-presales**
 - ✅ **024-learning**
 - ✅ **028-keyflow-sync**
@@ -53,6 +52,7 @@
 - ✅ **034-backup-restore-and-export**
 - ✅ **035-api-webhooks-and-rate-limits**
 - ✅ **036-compliance-registers**
+- ✅ **038-navigation-scale**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
 - ✅ **041-delivery-mock-parity**
@@ -80,5 +80,5 @@
 ## Stats
 
 - **Total changes:** 49
-- **Active:** 4
-- **Completed:** 45
+- **Active:** 1
+- **Completed:** 48

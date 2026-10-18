@@ -53,3 +53,14 @@
 :root[data-theme="dark"] .ticket.good{background:linear-gradient(135deg,#1E7A57,#145C41)}
 :root[data-theme="dark"] .ticket.attention{background:linear-gradient(135deg,#8A6A12,#6B500B)}
 :root[data-theme="dark"] .ticket.problem{background:linear-gradient(135deg,#A33A55,#7E2740)}
+
+/* 008: the Overview's Agent activity feed, as in the 001 mock. */
+.feed{list-style:none;margin:0;padding:0}
+.feed li{display:grid;grid-template-columns:38px 1fr auto;gap:14px;align-items:start;padding:14px 0;border-top:1px solid var(--line)}
+.feed li:first-child{border-top:0;padding-top:0}
+.feed p{margin:0;font-size:14px}
+.feed small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.feed .when{display:flex;align-items:center;gap:6px}
+.feed time{font-size:12.5px;color:var(--ink-3);white-space:nowrap}
+.feed .av.ai{background:linear-gradient(135deg,#7B61FF,#2FCB8C)}
+.by{color:var(--chip-agent);font-weight:600}

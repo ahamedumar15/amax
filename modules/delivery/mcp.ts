@@ -4,6 +4,10 @@ import type { Viewer } from "@amax/auth";
 import { PHASES } from "./contracts";
 import { pinOf } from "./pins";
 import { ctxFor } from "./server/context";
+import { getActivity, listActivity } from "./server/activity";
+import { markTaskDone, TaskInput } from "./server/tasks";
+import { COMMIT_TIME_MANAGE, commitTimeSettings, setCommitTimeLogging } from "./server/commit-time";
+import { syncProposal } from "./server/services";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -19,6 +23,11 @@ const view = "view" as const;
 
 export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release.", input: z.object({}), run: (v) => listProjects(v) }),
+  // 008 AC-4: the Overview's Agent activity feed, and one line of it for its pin.
+  tool({ ...read, pin: view, name: "list_activity", description: "What agents, pipelines and people did lately through ingestion, newest first, with who acted for whom.",
+    input: z.object({ limit: z.number().int().min(1).max(50).optional() }), run: (v, a) => listActivity(v, a.limit) }),
+  tool({ ...read, pin: { id: "id", of: (r: { id: string; pin: { label: string } } | null) => (r ? { id: r.id, label: r.pin.label } : null) }, name: "get_activity", description: "One line of the agent activity feed by id.",
+    input: z.object({ id: z.string().uuid() }), run: (v, a) => getActivity(v, a.id) }),
   tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_project", description: "One project and its proposals, by projectId or by project key such as CON or AMX.",
     input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
   tool({ ...read, pin: view, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),
@@ -62,6 +71,17 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "void_deployment", description: "Void a deployment of a release, with a reason: the one given by deploymentId, or else the latest live one to the environment. Voiding the only Prod deployment un-releases its proposals.", scope: "write", destructive: true,
     permission: "delivery:deployment:record", input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), deploymentId: z.string().uuid().optional(), reason: z.string() }),
     service: voidDeployment, run: (v, a, s = "mcp") => voidDeployment(ctxFor(v, s), a) }),
+  // 008 AC-1: what specclaw and CI call, as a person or as a service credential acting for one.
+  tool({ name: "sync_proposal", description: "Create or update a specclaw proposal from its spec: title, phase, and tasks by id (T1, T2, …). A task once done stays done.", scope: "write", permission: "delivery:proposal:sync",
+    input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional() }),
+    service: syncProposal, run: (v, a, s = "mcp") => syncProposal(ctxFor(v, s), { projectKey: a.projectKey, project: { name: a.projectName, client: a.client }, key: a.key, title: a.title, phase: a.phase,
+      tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks }) }),
+  tool({ name: "mark_task_done", description: "Mark one task of a proposal done by its id, e.g. CON-014 T3, optionally naming the commit that finished it.", scope: "write", permission: "delivery:task:done",
+    input: z.object({ key: z.string(), task: z.string(), commit: z.string().optional() }), service: markTaskDone, run: (v, a, s = "mcp") => markTaskDone(ctxFor(v, s), a) }),
+  // 008 AC-6: drafting timesheets from commits, per legal entity, Admin only.
+  tool({ ...read, permission: COMMIT_TIME_MANAGE, pin: view, name: "get_commit_time_logging", description: "Which legal entities draft timesheet hours from commits, and when their people were told.", input: z.object({}), run: (v) => commitTimeSettings(v) }),
+  tool({ name: "set_commit_time_logging", description: "Switch drafting timesheet hours from commits on or off for a legal entity. Switching it on needs peopleNotified: true, after the entity's people were told. Commit data only drafts timesheets, never ratings.", scope: "write", permission: COMMIT_TIME_MANAGE,
+    input: z.object({ legalEntityId: z.string().uuid(), enabled: z.boolean(), peopleNotified: z.boolean().optional() }), service: setCommitTimeLogging, run: (v, a, s = "mcp") => setCommitTimeLogging(ctxFor(v, s), a) }),
   tool({ name: "record_deployment", description: "Record that a release reached any environment of its project (by name, as a pipeline reports it). The project's Prod environment releases its proposals. PM or Admin.", scope: "write", destructive: false,
     permission: "delivery:deployment:record",
     input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), status: z.enum(["deployed", "testing", "rolled-back"]).optional(), note: z.string().optional() }),

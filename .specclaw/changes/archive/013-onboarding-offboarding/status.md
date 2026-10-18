@@ -1,6 +1,6 @@
-# Status: 038-navigation-scale
+# Status: 013-onboarding-offboarding
 
-**Change:** 038-navigation-scale
+**Change:** 013-onboarding-offboarding
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -8,13 +8,14 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Proposal | ✅ Done |  |
+| Proposal | - | - |
 | Spec | - | - |
 | Design | - | - |
 | Tasks | ✅ Done |  |
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/69 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/71 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
