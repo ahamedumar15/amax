@@ -1,8 +1,9 @@
 {
   "change": "012-leave",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T04:15:04Z"}
+    "tasks": {"status":"done","at":"2026-10-18T04:15:04Z"},
+    "verify": {"status":"done","at":"2026-10-18T04:42:00Z"}
   }
 }

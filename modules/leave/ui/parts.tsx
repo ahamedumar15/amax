@@ -7,8 +7,8 @@ import "./leave.css";
 
 /** A leave type's colour and calendar class, as in the mock's legend. */
 export const TYPE_STYLE: Record<string, { color: string; cls: string }> = {
-  annual: { color: "#B3A1FF", cls: "an" }, casual: { color: "#7FD8F5", cls: "ca" }, medical: { color: "#F48B9B", cls: "me" }, lieu: { color: "#2FCB8C", cls: "li" },
-  personal: { color: "#F48B9B", cls: "me" }, "long-service": { color: "#B3A1FF", cls: "an" }, unpaid: { color: "#C9C6D6", cls: "up" },
+  annual: { color: "#B3A1FF", cls: "lv-an" }, casual: { color: "#7FD8F5", cls: "lv-ca" }, medical: { color: "#F48B9B", cls: "lv-me" }, lieu: { color: "#2FCB8C", cls: "lv-li" },
+  personal: { color: "#F48B9B", cls: "lv-me" }, "long-service": { color: "#B3A1FF", cls: "lv-an" }, unpaid: { color: "#C9C6D6", cls: "lv-up" },
 };
 export const styleOf = (type: string) => TYPE_STYLE[type] ?? TYPE_STYLE.unpaid;
 

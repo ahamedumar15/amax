@@ -37,7 +37,7 @@
 .leave .cal .hd{background:none;height:20px;font-weight:600}
 .leave .cal .we{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--line) 4px 6px)}
 .leave .cal .ph{background:#FFF1D6;color:#9A5B00}
-.leave .cal .an{background:#B3A1FF} .leave .cal .ca{background:#7FD8F5} .leave .cal .me{background:#F48B9B} .leave .cal .li{background:#2FCB8C} .leave .cal .up{background:#C9C6D6}
+.leave .cal .lv-an{background:#B3A1FF} .leave .cal .lv-ca{background:#7FD8F5} .leave .cal .lv-me{background:#F48B9B} .leave .cal .lv-li{background:#2FCB8C} .leave .cal .lv-up{background:#C9C6D6}
 .leave .cal .pend{background:transparent;box-shadow:inset 0 0 0 1.5px #7B61FF}
 .leave .cal .today{box-shadow:inset 0 0 0 2px var(--ink)}
 .leave .cal .hd.today{box-shadow:none;background:var(--ink);color:var(--frame)}

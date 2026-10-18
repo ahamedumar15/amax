@@ -43,3 +43,18 @@ Leave: stats, leave by type, days per month, team calendar with today and holida
   Depends: T6
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `leave` schema (policy, balance, request, holiday, plus release_window and clock_pin) with RLS; Sri Lanka pack (annual 14, casual 7, medical 7, lieu, no-pay; Poya and public holidays) and Australia pack (annual 20, personal/carer's 10, long service, unpaid); medical reason and certificate are `health`: the person and HR see them, the manager gets them masked (tests/schema.test.ts, tests/chat-first.test.ts AC1, tests/contracts.test.ts AC1). Screen numbers match fixtures.md (6 on leave, 2 waiting with 1 clash, 41 days by 19 people, 812 unused).
+- AC-2: pass — half days (0.5), working days less Poya, balance and overlap checks; approve/reject by the manager or HR, never the person; reject needs a comment; cancel own pending or approved, balance restored; clash checks from delivery releases via the delivery contract's `delivery.release.deployed` event (tests/requests.test.ts AC2, tests/standard.test.ts AC4).
+- AC-3: pass — "request leave" chat intent (`request_leave`) becomes a confirm card and writes only once confirmed, audited as chat; `leave.approved` (with `paid`) emitted for payroll and time, and `approvedLeave()` in the contract (tests/chat-first.test.ts AC3, tests/standard.test.ts AC3). Payroll and time don't consume it yet (014 and a time change).
+- AC-4: pass — only `modules/leave/` changed plus its CODEOWNERS line, the lockfile entry, and one stale assertion in modules/allocations/tests (it asserted the leave folder didn't exist); contracts.ts first with contract tests; README, fixtures, manifest; switch-off and with/without delivery tests (tests/standard.test.ts); `node scripts/check-module-standard.mjs` ok.
+
+Commands (all exit 0): `pnpm lint`; `pnpm turbo run test --concurrency=1` (17 packages, leave 13/13); `node scripts/check-module-standard.mjs`; `pnpm build`; `env -u DATABASE_URL -u DATABASE_MIGRATE_URL pnpm --filter @amax/web e2e` (1 passed); `pnpm --filter @amax/web e2e:auth` (58 passed); `pnpm --filter @amax/leave e2e` (1 passed: fixtures.md numbers, pins on every card/ticket/row, axe WCAG 2.2 AA light and dark, no form or dialog, 390 px with no page scroll, Ask amax prompt carries the request id).
+
+Preset check: exit 1 repo-wide on pre-existing convention (970 violations); in the new files only the comment rule (61 doc comments, matching the repo's comment style). No line-limit violations in new files.
+Quality: not_run (specclaw-quality-scan: "Argument list too long").
+Review: not run here (the operator runs specclaw-review once per module end).
+
+Screenshots: `.specclaw/changes/012-leave/shots/app.png` (signed in as Maya, from the leave e2e) and `.specclaw/changes/012-leave/shots/mock.png` (mock section `#001-amax-foundation-leave`). Compared: same layout, tickets, calendar, charts and requests; the app shows both releases Nimal's request overlaps.

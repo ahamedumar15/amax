@@ -27,6 +27,7 @@ test("AC1 AC2 AC3 the Leave screen leads with what waits, matches fixtures.md, i
   await expect(page.locator("main form, main dialog")).toHaveCount(0);
   expect(await unpinned(page)).toEqual([]);
   expect(await axe(page)).toEqual([]);
+  if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/app.png`, fullPage: true });
   await page.getByRole("button", { name: "Approve Tharushi Wijesinghe's request" }).click();
   await expect(page.getByLabel("Message amax")).toHaveValue(/^Approve Tharushi Wijesinghe's casual leave, Nov 2 \(request id [0-9a-f-]{36}\)$/);
   await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText("Tharushi Wijesinghe, casual leave Nov 2");
