@@ -21,7 +21,7 @@ Learning: stats, programmes, participation per month, expiring certifications.
 
 ## Tasks
 
-- [ ] `T1` — Contract first: `contracts.ts` (programme, enrolment and certification refs, expiring-certification read, completion target, events and payloads) with contract tests; manifest (People group, grants, routes, retention, workflow and schedule slots); README; package; CODEOWNERS line (AC-3)
+- [x] `T1` — Contract first: `contracts.ts` (programme, enrolment and certification refs, expiring-certification read, completion target, events and payloads) with contract tests; manifest (People group, grants, routes, retention, workflow and schedule slots); README; package; CODEOWNERS line (AC-3)
   Files: modules/learning/{module.ts,contracts.ts,package.json,tsconfig.json,css.d.ts,README.md}, modules/learning/tests/contracts.test.ts, .github/CODEOWNERS, pnpm-lock.yaml
 - [ ] `T2` — The Learning screen matching the mock: lede, four tickets (programmes, people in optional programmes, completion rate against the target, certifications), Programmes table with the All/Running/Done filter, People taking part per month chart, Expiring soon list with Remind; "New programme" opens chat in its intent, Remind is an Ask amax chip; every ticket, card, row and item pinned (AC-1, AC-2)
   Files: modules/learning/ui/*
