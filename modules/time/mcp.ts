@@ -34,7 +34,7 @@ export const mcpTools: McpToolDef[] = [
     run: (v, a, s = "mcp") => approveWeek(ctxFor(v, s), a) }),
   tool({ name: "reject_week", description: "Send a submitted timesheet back with a comment saying what to fix.", scope: "write", permission: "time:approve", input: ref.extend({ comment: z.string() }),
     run: (v, a, s = "mcp") => rejectWeek(ctxFor(v, s), a) }),
-  tool({ name: "remind_week", description: "Record a reminder for someone to submit their timesheet. It is an event only: nothing delivers it until notifications (030) is installed, so tell the person yourself if it is urgent.", scope: "write", permission: "time:approve", input: ref,
+  tool({ name: "remind_week", description: "Remind someone to submit their timesheet. Notifications (030) delivers it through their bell and chosen channels; if notifications is switched off it is only recorded, so tell the person yourself if it is urgent.", scope: "write", permission: "time:approve", input: ref,
     run: (v, a, s = "mcp") => remindWeek(ctxFor(v, s), a) }),
   tool({ name: "reopen_week", description: "Unlock an approved timesheet so it can change. Admin only; give a reason.", scope: "write", permission: "time:admin", input: ref.extend({ reason: z.string() }),
     run: (v, a, s = "mcp") => reopenWeek(ctxFor(v, s), a) }),

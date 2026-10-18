@@ -70,5 +70,11 @@ export default defineModule({
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
     },
   },
+  // 030: a rollback is urgent for the PMs who manage that project (their data scope).
+  notifications: [
+    { id: "delivery.release-rolled-back", event: EVENTS.releaseDeployed, when: { status: "rolled-back" }, category: "releases", urgency: "urgent",
+      to: [{ role: "PM" }], permission: "delivery:deployment:record", scope: { projectId: "projectId" },
+      title: "Release {version} rolled back in {environment}", href: "/delivery/releases" },
+  ],
   fixtures: [deliveryFixtures],
 });
