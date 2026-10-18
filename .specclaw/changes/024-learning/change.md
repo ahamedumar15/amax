@@ -29,7 +29,7 @@ Learning: stats, programmes, participation per month, expiring certifications.
 - [x] `T3` — `learning` schema and fixtures: programme, enrolment (with completion), attendance, certification (with expiry), reminder; RLS on tenant_id; fixtures.md counts (18 programmes, 11 internal and 7 external; 184 people completed ISO 27001; 126 people in optional programmes; 74% completion; 41 certifications, 6 expiring before January) (AC-1, AC-3)
   Files: modules/learning/db/migrations/0001_learning.sql, modules/learning/fixtures/*
   Depends: T1
-- [ ] `T4` — Services and queries: create programme, enrol people (from hr through its contract), record completion, record certification with expiry, remind about an expiring certification, the daily due-reminder sweep; stats and the monthly participation series (AC-1, AC-2)
+- [x] `T4` — Services and queries: create programme, enrol people (from hr through its contract), record completion, record certification with expiry, remind about an expiring certification, the daily due-reminder sweep; stats and the monthly participation series (AC-1, AC-2)
   Files: modules/learning/server/*
   Depends: T3
 - [ ] `T5` — MCP tools (reads with pin specs, writes behind the confirm), the "new programme" chat intent, search, and the certification-expiry workflow on a daily schedule (AC-2, AC-3)
