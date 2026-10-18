@@ -12,6 +12,9 @@ import { Sprite } from "../../../components/marketing/Art";
 import { siteUrl } from "../../../lib/site";
 import "./welcome.css";
 
+// 062: AMAX_SALES_EMAIL and AMAX_BASE_URL are runtime settings (one image, many deployments), so render per request.
+export const dynamic = "force-dynamic";
+
 const TITLE = "amax · Agents keep the records. People decide.";
 const DESCRIPTION = "amax is the agent-native ERP for software and professional-services firms. Agents log time, move releases and keep HR, payroll and billing current through MCP. People review and decide.";
 const IMAGE = { url: "/marketing/amax-og.jpg", width: 1200, height: 630, alt: "amax: Agents keep the records. People decide." };
