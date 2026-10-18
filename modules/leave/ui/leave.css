@@ -1,0 +1,46 @@
+/* Leave screen: rules lifted from .specclaw/mock/index.html (module standard: shared UI starts in the module). */
+.leave .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.leave .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.leave .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.leave .row.head .lede{margin:0}
+.leave .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.leave .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.leave .tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.leave .ticket svg.art{position:absolute;right:12px;top:10px;width:clamp(70px,5.6vw,100px);height:auto;opacity:.95}
+.leave .ticket .pin{top:auto;bottom:10px}
+.leave .cols.even{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+.leave .muted{color:var(--ink-3)}
+.leave .scroll-x{overflow-x:auto}
+.leave .legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap;row-gap:6px}
+.leave .legend span{display:inline-flex;align-items:center;gap:10px}
+.leave .legend i{display:inline-block;width:12px;height:12px;border-radius:4px}
+.leave .chart{width:100%;height:auto;display:block;overflow:visible}
+.leave .chart .ax{fill:var(--ink-3);font-size:12px}
+.leave .donut-wrap{display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center}
+.leave .donut-legend{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.leave .donut-legend li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;font-size:13px}
+.leave .donut-legend i{width:14px;height:14px;border-radius:4px}
+.leave .donut-legend b{margin-left:auto;font-weight:500;color:var(--ink-3);font-size:12px}
+.leave .tbl .who{display:flex;align-items:center;gap:12px}
+.leave .av{display:grid;place-items:center;font-weight:700;color:#fff;flex:none;background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
+.leave .av.sm{width:30px;height:30px;border-radius:10px;font-size:11px}
+.leave .a1{background:linear-gradient(135deg,#FFB86B,#F48B9B)}
+.leave .a2{background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
+.leave .a3{background:linear-gradient(135deg,#7BE3B4,#2FB5A0)}
+.leave .a4{background:linear-gradient(135deg,#C3B5FF,#8E6CF0)}
+.leave .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.leave .btn.ghost{border-color:transparent;color:var(--ink-2)}
+.leave .cal{border-collapse:separate;border-spacing:3px;font-size:11px;width:100%;table-layout:fixed;min-width:1040px}
+.leave .cal th.nm,.leave .cal td.nm{width:190px;font-size:13px;font-weight:500;white-space:nowrap;text-align:left;padding-right:10px}
+.leave .cal .nm .who{display:flex;align-items:center;gap:10px}
+.leave .cal .d{height:30px;border-radius:7px;background:var(--sunken);text-align:center;color:var(--ink-3);padding:0}
+.leave .cal .hd{background:none;height:20px;font-weight:600}
+.leave .cal .we{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--line) 4px 6px)}
+.leave .cal .ph{background:#FFF1D6;color:#9A5B00}
+.leave .cal .an{background:#B3A1FF} .leave .cal .ca{background:#7FD8F5} .leave .cal .me{background:#F48B9B} .leave .cal .li{background:#2FCB8C} .leave .cal .up{background:#C9C6D6}
+.leave .cal .pend{background:transparent;box-shadow:inset 0 0 0 1.5px #7B61FF}
+.leave .cal .today{box-shadow:inset 0 0 0 2px var(--ink)}
+.leave .cal .hd.today{box-shadow:none;background:var(--ink);color:var(--frame)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leave .cal .ph{background:#3A2E17;color:#F5CF4E}}
+:root[data-theme="dark"] .leave .cal .ph{background:#3A2E17;color:#F5CF4E}
+@media (max-width:900px){.leave .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}.leave .cols.even{grid-template-columns:minmax(0,1fr)}.leave .donut-wrap{grid-template-columns:140px 1fr}}
