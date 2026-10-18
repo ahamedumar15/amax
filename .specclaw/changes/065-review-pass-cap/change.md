@@ -21,3 +21,10 @@ No screen change.
   Files: AGENTS.md
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `AGENTS.md`, under "Every change goes through specclaw", states the five-pass cap, what counts as a pass, and what to do after the fifth.
+
+Commands: none needed for a docs-only change. Review: docs-only, so the review tool skips it.
+Screenshots: none (no screen change).

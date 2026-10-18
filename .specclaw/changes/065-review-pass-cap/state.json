@@ -1,10 +1,11 @@
 {
   "change": "065-review-pass-cap",
-  "phase": "build",
+  "phase": "verify",
   "branch": "specclaw/065-review-pass-cap",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-18T18:16:00Z"},
     "tasks": {"status":"done","at":"2026-10-18T18:16:00Z"},
-    "build": {"status":"in-progress","at":"2026-10-18T18:16:02Z"}
+    "build": {"status":"in-progress","at":"2026-10-18T18:16:02Z"},
+    "verify": {"status":"done","at":"2026-10-18T18:16:46Z"}
   }
 }
