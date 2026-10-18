@@ -85,6 +85,11 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
     await expect(push({ records: Array(201).fill(r[0]) })).rejects.toThrow(/200/);
   });
 
+  it("AC-6 a push never moves a proposal back to an earlier phase", async () => {
+    const behind = readSpecclaw(fakeRepo({ "101-export": {} }));
+    expect(await push({ records: behind })).toMatchObject({ skipped: ["FLT-101: would move back from building to planned"] });
+  });
+
   it("AC-8 a commit older than the last one applied from the same branch is stale", async () => {
     expect(await push({ sha: "01dc0de", committedAt: "2026-10-17T09:00:00Z", dryRun: false })).toMatchObject({ outcome: "refused", reason: expect.stringMatching(/^stale/) });
     expect(await push({ ref: "specclaw/101-export", sha: "01dc0de", committedAt: "2026-10-17T09:00:00Z" })).toMatchObject({ outcome: "preview" });

@@ -1,0 +1,7 @@
+{
+  "name": "amax",
+  "version": "0.1.0",
+  "description": "amax for developers: push a repo's specclaw change status to its amax project's proposals over MCP.",
+  "author": { "name": "amax" },
+  "keywords": ["amax", "specclaw", "mcp"]
+}

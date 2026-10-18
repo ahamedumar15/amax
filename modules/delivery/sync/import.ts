@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { withTenant, type Db } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
 import { KeyTakenError, syncProposal } from "../server/services";
+import { PHASES, type Phase } from "../contracts";
 import type { SpecRecord } from "./specclaw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
@@ -58,6 +59,8 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     byKey.delete(d.key);
     if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
     if (opts.push && d.phase === "released" && cur?.phase !== "released") { result.skipped.push(`${d.key}: released comes from Prod deployments`); continue; }
+    // A branch that lags main must not undo what main already moved forward.
+    if (opts.push && cur && cur.phase !== "released" && PHASES.indexOf(d.phase) < PHASES.indexOf(cur.phase as Phase)) { result.skipped.push(`${d.key}: would move back from ${String(cur.phase)} to ${d.phase}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;

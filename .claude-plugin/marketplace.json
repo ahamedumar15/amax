@@ -1,0 +1,7 @@
+{
+  "name": "amax",
+  "owner": { "name": "amax" },
+  "plugins": [
+    { "name": "amax", "source": "./plugins/amax", "description": "Keep amax in step with your repo: push specclaw change status to the project's proposals." }
+  ]
+}

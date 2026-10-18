@@ -79,8 +79,8 @@ same section.
 - [x] `T5` — Tests: each refusal, dry run writes nothing, idempotent re-push, rate limit applies, 039 CLI still syncs (AC-11)
   Files: modules/delivery/tests/sync-push.test.ts, modules/delivery/tests/mcp-registry.test.ts
   Depends: T4
-- [ ] `T6` — Plugin `plugins/amax/`: plugin.json, `.mcp.json`, repo `.claude-plugin/marketplace.json`, `read-specclaw.mjs` bundled from `modules/delivery/sync/specclaw.ts` (with a drift test), skill `sync-specclaw` (dry run, confirm, `--apply` unattended rule), README with the Claude Desktop routine (AC-1, AC-2, AC-9)
-  Files: .claude-plugin/marketplace.json, plugins/amax/.claude-plugin/plugin.json, plugins/amax/.mcp.json, plugins/amax/skills/sync-specclaw/SKILL.md, plugins/amax/scripts/read-specclaw.mjs, plugins/amax/README.md, modules/delivery/package.json, modules/delivery/tests/plugin-reader.test.ts
+- [x] `T6` — Plugin `plugins/amax/`: plugin.json, `.mcp.json`, repo `.claude-plugin/marketplace.json`, `read-specclaw.mjs` bundled from `modules/delivery/sync/specclaw.ts` (with a drift test), skill `sync-specclaw` (dry run, confirm, `--apply` unattended rule), README with the Claude Desktop routine (AC-1, AC-2, AC-9)
+  Files: .claude-plugin/marketplace.json, plugins/amax/.claude-plugin/plugin.json, plugins/amax/.mcp.json, plugins/amax/skills/sync-specclaw/SKILL.md, plugins/amax/scripts/read-specclaw.mjs, plugins/amax/README.md, package.json, pnpm-workspace.yaml, plugins/amax/package.json, plugins/amax/tests/reader.test.ts
   Depends: T4
 
 ## Verify
