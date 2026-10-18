@@ -1,6 +1,6 @@
-# Status: 013-onboarding-offboarding
+# Status: 008-delivery-ingestion
 
-**Change:** 013-onboarding-offboarding
+**Change:** 008-delivery-ingestion
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/71 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/70 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
