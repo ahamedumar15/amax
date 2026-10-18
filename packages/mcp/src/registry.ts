@@ -43,12 +43,27 @@ function builtins(modules: Registrable[]): RegisteredTool[] {
   ];
 }
 
+// 059: a pin on a record tool resolves by the record's UUID, so a rename can't strand it. Checked
+// when the registry is built (startup), so a tool without an id path never ships.
+const uuidField = (input: z.ZodType, field: string) => {
+  let f = (input as { shape?: Record<string, z.ZodType> }).shape?.[field] as (z.ZodType & { unwrap?: () => z.ZodType; format?: string | null }) | undefined;
+  while (f && f._zod.def.type === "optional") f = f.unwrap!() as typeof f;
+  return f?.format === "uuid";
+};
+export function checkPinSpec(t: Pick<RegisteredTool, "name" | "scope" | "input" | "pin">) {
+  if (!t.pin) return;
+  if (t.scope !== "read") throw new Error(`MCP tool "${t.name}" resolves pins but isn't a read tool`);
+  if (t.pin === "view") return;
+  if (!uuidField(t.input, t.pin.id)) throw new Error(`MCP tool "${t.name}" resolves pins but has no id path: its input "${t.pin.id}" must be a UUID`);
+}
+
 export function createRegistry(modules: Registrable[]) {
   const tools: RegisteredTool[] = [...builtins(modules), ...modules.flatMap((m) => (m.mcpTools ?? []).map((t) => ({ ...t, module: m.id })))];
   const seen = new Set<string>();
   for (const t of tools) {
     if (seen.has(t.name)) throw new Error(`MCP tool "${t.name}" is declared twice`);
     seen.add(t.name);
+    checkPinSpec(t);
   }
   const allowed = (viewer: Viewer, t: RegisteredTool, scopes: Scope[]) => scopes.includes(t.scope) && (!t.permission || canEver(viewer, t.permission));
 
