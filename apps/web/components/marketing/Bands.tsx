@@ -6,7 +6,7 @@ import { AREAS } from "./areas";
 export function Bands() {
   const [on, setOn] = useState<Record<string, boolean>>(Object.fromEntries(AREAS.map((a) => [a.title, Boolean(a.open)])));
   return (
-    <section id="product" className="bands" aria-label="What amax covers" data-ui>
+    <section id="product" className="wrap bands" aria-label="What amax covers" data-ui>
       {AREAS.map((a) => (
         <div key={a.title} className={on[a.title] ? `band ${a.tone}` : "band off"}>
           <h3>{a.pitch}</h3>
