@@ -1,0 +1,57 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  ".github/workflows/ci.yml",
+  "Dockerfile"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": ".github/workflows/ci.yml",
+   "fp": "a91e9b6a8a14",
+   "in_delta": true,
+   "line": 89,
+   "message": "The new smoke check can pass when a file is not actually served. `curl -sf` without `-w '%{http_code}'` only fails on 4xx/5xx, so a 3xx counts as success. That breaks AC-2, which says the job must fail on anything other than 200. The container is also started without DATABASE_URL, which leaves `guarded` null in apps/web/proxy.ts:11. So the check runs in guest-preview mode, where the signed-out gate never runs. The deployed image is gated, and that gate is exactly what a signed-out visitor goes through. The step therefore does not test what the marketing page's visitors get: a proxy matcher change that stops excluding one of these files would redirect it to /signin in production, and CI would stay green. Fix: assert the exact status code for each file (`test \"$(curl -s -o /dev/null -w '%{http_code}' \u2026)\" = 200`). Also run the smoke container with a DATABASE_URL/auth config so the gate is live, for example a throwaway postgres service container. A unit test of the matcher against these five paths would also work.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "apps/web/proxy.ts matcher drops `vtt` from the marketing exclusion. In production (DATABASE_URL set), GET /marketing/amax-product.en.vtt gets a 307 to /signin and the captions never load. In CI the container has no DATABASE_URL, so the gate is off and the file returns 200; even with the gate on, `curl -sf` accepts the 307. The step passes either way.",
+   "severity": "major"
+  },
+  {
+   "file": ".github/workflows/ci.yml",
+   "fp": "519be87ff34c",
+   "in_delta": true,
+   "line": 91,
+   "message": "When the range request or the content-type check fails, the step exits with no message and no `docker logs amax`. The `/healthz` step above does print the logs. The two checks are also bare `test` and `grep -q` lines, so the log does not say which assertion failed or what status or header came back. Print the actual code and headers, and dump `docker logs amax` on failure, as the health step does.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B3",
+   "scenario": "The image returns 200 instead of 206 for `Range: bytes=0-1023` \u2192 the job fails with exit 1 and no output naming the range check or the status it got.",
+   "severity": "minor"
+  }
+ ],
+ "head": "d43b7262a13994c711d0e15e4d862a92d150d7e4",
+ "impact": [],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 42267,
+ "round": 1,
+ "since": null,
+ "status": "open",
+ "system_chars": 39603,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792342623,
+ "ts_start": 1792342549
+}
