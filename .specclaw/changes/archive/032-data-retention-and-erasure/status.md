@@ -1,6 +1,6 @@
-# Status: 058-settings-review-2
+# Status: 032-data-retention-and-erasure
 
-**Change:** 058-settings-review-2
+**Change:** 032-data-retention-and-erasure
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -11,9 +11,11 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
+| Tasks | ✅ Done |  |
 | Build | - | - |
-| Verify | - | - |
+| Verify | ✅ Done |  |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/49 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

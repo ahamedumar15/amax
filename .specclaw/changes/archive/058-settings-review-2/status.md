@@ -1,6 +1,6 @@
-# Status: 035-api-webhooks-and-rate-limits
+# Status: 058-settings-review-2
 
-**Change:** 035-api-webhooks-and-rate-limits
+**Change:** 058-settings-review-2
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -11,10 +11,10 @@
 | Proposal | ✅ Approved |  |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | ✅ Done |  |
+| Tasks | - | - |
 | Build | - | - |
-| Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/48 |
+| Verify | - | - |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

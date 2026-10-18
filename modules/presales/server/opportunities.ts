@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { numberOf, OPEN_STAGES, STAGES, type Stage } from "../contracts";
-import { actorOf, lockOpportunity, logChange, nameOf, NUMBER, toUsd } from "./common";
+import { actorOf, lockOpportunity, logChange, nameOf, NUMBER, ownerLink, toUsd } from "./common";
 
 /** The win chance a stage starts at when the mover doesn't give one. */
 export const STAGE_CHANCE: Record<Stage, number> = { "new-idea": 10, lead: 20, qualified: 30, proposal: 50, negotiation: 80, won: 100, lost: 0 };
@@ -30,11 +30,10 @@ export async function insertOpportunity(tx: Tx, input: NewOpportunity, ctx: Serv
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('presales.number'), hashtext(${ctx.tenantId}))`);
     const [{ next }] = await tx.execute(sql`select coalesce(max(number), 0) + 1 as next from presales.opportunity`);
     const chance = input.winChance ?? STAGE_CHANCE[input.stage];
-    const viewer = ctx.viewer as { userId?: string } | undefined;
     const [o] = await tx.execute(sql`insert into presales.opportunity (tenant_id, number, client_id, title, stage, win_chance, value_amount, value_currency, usd_rate, value_usd,
         owner_user_id, owner_name, lead_name, service, cost_centre, estimate_days, expected_close, lead_source, competing, next_step)
       values (${ctx.tenantId}, ${next}, ${client.id}, ${input.title}, ${input.stage}, ${chance}, ${input.value}, ${input.currency}, ${rate}, ${usd},
-        ${input.ownerName ? null : (viewer?.userId ?? null)}, ${input.ownerName ?? nameOf(ctx)}, ${input.leadName ?? null}, ${input.service ?? null}, ${input.costCentre ?? null},
+        ${ownerLink(ctx, input.ownerName)}, ${input.ownerName ?? nameOf(ctx)}, ${input.leadName ?? null}, ${input.service ?? null}, ${input.costCentre ?? null},
         ${input.estimateDays ?? null}, ${input.expectedClose ?? null}, ${input.leadSource ?? null}, ${input.competing ?? null}, ${input.nextStep ?? null}) returning *`);
     const event = await logChange(tx, ctx, { ...o, stage: null, win_chance: null }, input.stage, chance, input.note ?? null);
     const number = numberOf(Number(next));

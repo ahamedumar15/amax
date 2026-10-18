@@ -3,15 +3,23 @@ type Rule = [RegExp, (m: RegExpMatchArray) => Call[]];
 
 const KEY = "([A-Z][A-Z0-9]{1,9})";
 const WEEK = "(\\d{4}-W\\d{2})";
+const UUID = "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})";
+// "Nimal Silva (week id <uuid>), Kasun Dias (week id <uuid>)": every id, or none when any item lacks one.
+const weekIds = (list: string) => {
+  const item = new RegExp(`\\s*[^,(]+? \\(week id ${UUID}\\)\\s*(?:,|$)`, "iy");
+  const ids: string[] = [];
+  for (let m = item.exec(list); m; m = item.lastIndex < list.length ? item.exec(list) : null) ids.push(m[1]);
+  return ids.length && item.lastIndex === list.length ? ids : [];
+};
 const names = (list: string) => list.split(/\s*,\s*|\s+and\s+/).filter(Boolean);
 const env = (projectKey: string, name: string, more: Record<string, unknown> = {}): Call[] => [["upsert_environment", { projectKey, name, ...more }]];
 const DETAIL: Record<string, string> = { title: "title", "next step": "nextStep", competing: "competing", "lead source": "leadSource", service: "service", "cost centre": "costCentre" };
 
 const RULES: Rule[] = [
   [new RegExp(`^submit my timesheet for ${WEEK}`, "i"), (m) => [["submit_week", { week: m[1] }]]],
-  [new RegExp(`^(approve|remind) (.+?)'s timesheet for ${WEEK}`, "i"), (m) => [[`${m[1].toLowerCase()}_week`, { person: m[2], week: m[3] }]]],
-  [new RegExp(`^approve the submitted timesheets for ${WEEK}: (.+)$`, "i"), (m) => names(m[2]).map((p) => ["approve_week", { person: p, week: m[1] }])],
-  [new RegExp(`^remind (.+) to submit their timesheets for ${WEEK}`, "i"), (m) => names(m[1]).map((p) => ["remind_week", { person: p, week: m[2] }])],
+  [new RegExp(`^(approve|remind) .+?'s timesheet for ${WEEK} \\(week id ${UUID}\\)\\s*$`, "i"), (m) => [[`${m[1].toLowerCase()}_week`, { weekId: m[3] }]]],
+  [new RegExp(`^approve the submitted timesheets for ${WEEK}: (.+)$`, "i"), (m) => weekIds(m[2]).map((weekId) => ["approve_week", { weekId }])],
+  [new RegExp(`^remind these people to submit their timesheets for ${WEEK}: (.+)$`, "i"), (m) => weekIds(m[2]).map((weekId) => ["remind_week", { weekId }])],
   [new RegExp(`^log time on ${WEEK}: ([\\d.]+) h(?:ours)? on ${KEY} on (\\d{4}-\\d{2}-\\d{2})`, "i"), (m) => [["log_time", { hours: Number(m[2]), projectKey: m[3], day: m[4] }]]],
   [/^copy (.+?) allocations from .*?\((\d{4}-\d{2})\) to the next month/i, (m) => [["copy_allocations_to_next_month", { team: m[1], from: m[2] }]]],
   [new RegExp(`^record a deployment of ${KEY} (\\S+) to (\\S+)\\s*$`, "i"), (m) => [["record_deployment", { projectKey: m[1], version: m[2], environment: m[3] }]]],

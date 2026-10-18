@@ -1,6 +1,7 @@
 import { can, type Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
+import { releaseHref } from "../contracts";
 import { AskButton } from "./AskButton";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
 import { day, needViewer, SignInFirst } from "./parts";
@@ -40,7 +41,7 @@ export function nextStep(r: ReleaseRow): { label: string; environment: string | 
   return { label: "No Prod stage", environment: null, primary: false };
 }
 
-export const releaseHref = (r: Pick<ReleaseRow, "projectKey" | "version">) => `/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`;
+export { releaseHref };
 
 export type Action =
   | { kind: "text"; text: string }
@@ -215,9 +216,9 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: 
                     <td data-label="" className="num">
                       {act.kind === "text" ? <span className="muted">{act.text}</span> : act.kind === "link" ? <span className="muted"><a className="rowlink" href={act.href} title={act.title}>{act.text}</a></span> : (
                         <AskButton className={`btn sm${act.primary ? " primary" : ""}`} label={act.label} prompt={`Record a deployment of ${r.projectKey} ${r.version} to ${act.environment}`}
-                          pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
+                          pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } }} />
                       )}
-                      <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { projectKey: r.projectKey, version: r.version } }} />
+                      <PinButton pin={{ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } }} />
                     </td>
                   </tr>
                 );

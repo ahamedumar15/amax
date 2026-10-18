@@ -1,16 +1,11 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-17 19:50 UTC
+**Last Updated:** 2026-10-17 22:08 UTC
 
 ## Active Changes
 
-
-- 🔀 **032-data-retention-and-erasure** — pr raised | 5/5 tasks (100%) | 0 failed | PR #49 open
-- 🔀 **035-api-webhooks-and-rate-limits** — pr raised | 7/7 tasks (100%) | 0 failed | PR #48 open
-- 🔀 **053-trace-and-settings-hardening** — pr raised | 6/6 tasks (100%) | 0 failed | PR #46 merged
-- 🔀 **054-chat-first-everywhere** — pr raised | 8/8 tasks (100%) | 0 failed | PR #47 merged
-- ✅ **056-ci-flakes** — 1/1 tasks (100%) | 0 failed | PR #45 merged
+_No active changes._
 
 ## Pending Proposals
 
@@ -56,7 +51,9 @@
 - ✅ **020-presales**
 - ✅ **029-workflows-scheduler**
 - ✅ **031-secrets-and-keys**
+- ✅ **032-data-retention-and-erasure**
 - ✅ **033-ai-gateway-and-residency**
+- ✅ **035-api-webhooks-and-rate-limits**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
 - ✅ **041-delivery-mock-parity**
@@ -69,9 +66,13 @@
 - ✅ **050-immutable-trace**
 - ✅ **051-project-sections**
 - ✅ **052-settings-review**
+- ✅ **053-trace-and-settings-hardening**
+- ✅ **054-chat-first-everywhere**
+- ✅ **056-ci-flakes**
+- ✅ **058-settings-review-2**
 
 ## Stats
 
-- **Total changes:** 30
-- **Active:** 5
-- **Completed:** 25
+- **Total changes:** 31
+- **Active:** 0
+- **Completed:** 31
