@@ -177,6 +177,21 @@ export type ActivityItem = { id: string; at: string; by: string; agent: boolean;
 /** A search hit for the built-in `search` tool and the chat. */
 export type SearchHit = { type: string; id: string; title: string; url?: string; summary?: string };
 
+/**
+ * An extra screen of a module (041). It sits in the rail under its module's group, or under its own
+ * `group`. With `parent: "settings"` it is a Settings hub card instead (038): `blurb` is the card's
+ * one line, and `status` returns its status line for the viewer.
+ */
+export type NavEntry = {
+  path: string;
+  title: string;
+  icon: IconName;
+  group?: "Work" | "People" | "Business" | "Operations";
+  parent?: "settings";
+  blurb?: string;
+  status?: (viewer: never) => Promise<string>;
+};
+
 export type ModuleManifest = {
   id: string;
   title: string;
@@ -185,7 +200,7 @@ export type ModuleManifest = {
   order?: number;
   primary?: boolean;
   /** Extra rail entries beyond the module's root (041): e.g. Proposals and Releases under delivery. */
-  nav?: { path: string; title: string; icon: IconName }[];
+  nav?: NavEntry[];
   dependsOn?: string[];
   integratesWith?: string[];
   permissions?: string[];
