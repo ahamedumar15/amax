@@ -33,7 +33,7 @@ None. Fixes only.
 - [x] `T3` — Name-only rows and access packages count first, and page or refuse above the limit with the reason shown (AC-3, AC-9)
   Files: packages/core/src/privacy/name-rows.ts, packages/core/src/privacy/package.ts, packages/core/src/privacy/inventory.ts, packages/core/tests/privacy-060-limits.test.ts
   Depends: T1
-- [ ] `T4` — Page rate limit: `next-action` exempt only on POST, prefetches in their own budget (AC-4, AC-9)
+- [x] `T4` — Page rate limit: `next-action` exempt only on POST, prefetches in their own budget (AC-4, AC-9)
   Files: packages/core/src/rate-limit.ts, packages/core/tests/rate-limit-060.test.ts
 - [ ] `T5` — 429 counts written on the request path or flushed on a 429, not only by timer (AC-5, AC-9)
   Files: packages/api/src/limits.ts, packages/api/tests/ac5-rate-limits.test.ts
