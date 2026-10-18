@@ -64,7 +64,7 @@ The "Next 90 days" and "Next 12 months" tabs are read-only horizons. "Board pack
   - Each writes through `record_insight` and keeps its sources; an output with no source is dropped. The Recurring agent work list reads every installed module's agent jobs (AC-1, AC-2, AC-3)
   Files: modules/insights/workflows.ts, modules/insights/server/agents.ts, modules/insights/tests/agents.test.ts
   Depends: T2
-- [ ] `T4` — Module standard: README, package.json, a CODEOWNERS line, retention (insights and sources two years after as_of), switch-off, and degrading without each optional module (allocations, leave, finance, it-access, recruitment, learning, reports). BACKLOG gets the missing-contract follow-ups (delivery velocity, due dates and margin; learning skills matrix; hr promotions; presales debriefs and conversations) (AC-2, AC-4)
+- [x] `T4` — Module standard: README, package.json, a CODEOWNERS line, retention (insights and sources two years after as_of), switch-off, and degrading without each optional module (allocations, leave, finance, it-access, recruitment, learning, reports). BACKLOG gets the missing-contract follow-ups (delivery velocity, due dates and margin; learning skills matrix; hr promotions; presales debriefs and conversations) (AC-2, AC-4)
   Files: modules/insights/README.md, modules/insights/package.json, modules/insights/tsconfig.json, modules/insights/css.d.ts, .github/CODEOWNERS, modules/insights/tests/standard.test.ts, pnpm-lock.yaml, BACKLOG.md
   Depends: T3
 
