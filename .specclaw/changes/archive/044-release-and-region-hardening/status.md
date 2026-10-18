@@ -15,7 +15,7 @@
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
 | PR | ✅ Raised | https://github.com/chan4lk/amax/pull/67 |
-| Archived | - | - |
+| Archived | ✅ Done |  |
 
 ## Issues
 

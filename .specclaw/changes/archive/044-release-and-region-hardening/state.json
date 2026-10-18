@@ -1,11 +1,12 @@
 {
   "change": "044-release-and-region-hardening",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "specclaw/044-release-and-region-hardening",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T09:33:50Z"},
     "build": {"status":"done","at":"2026-10-18T09:43:12Z"},
     "verify": {"status":"done","at":"2026-10-18T09:43:12Z"},
-    "pr": {"status":"raised","at":"2026-10-18T09:43:31Z","url":"https://github.com/chan4lk/amax/pull/67"}
+    "pr": {"status":"raised","at":"2026-10-18T09:43:31Z","url":"https://github.com/chan4lk/amax/pull/67"},
+    "archived": {"status":"done","at":"2026-10-18T10:07:42Z"}
   }
 }

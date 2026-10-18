@@ -1,11 +1,12 @@
 {
   "change": "043-chat-write-tool-contract",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "specclaw/043-chat-write-tool-contract",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T09:08:47Z"},
     "build": {"status":"done","at":"2026-10-18T09:24:51Z"},
     "verify": {"status":"done","at":"2026-10-18T09:24:51Z"},
-    "pr": {"status":"raised","at":"2026-10-18T09:25:11Z","url":"https://github.com/chan4lk/amax/pull/66"}
+    "pr": {"status":"raised","at":"2026-10-18T09:25:11Z","url":"https://github.com/chan4lk/amax/pull/66"},
+    "archived": {"status":"done","at":"2026-10-18T10:07:42Z"}
   }
 }
