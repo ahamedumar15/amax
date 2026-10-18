@@ -32,10 +32,10 @@ export const AREAS: Area[] = [
     { text: "Presales pipeline", module: "presales" },
   ] },
   { title: "Operations", tone: "sky", art: "key", coming: [
-    { text: "IT assets and access", module: "it-access", words: ["it asset", "licence"] },
     { text: "Helpdesk", module: "helpdesk", words: ["helpdesk"] },
     { text: "Insights", module: "insights", words: ["insights"] },
   ], live: [
+    { text: "IT access and licences, with every grant and revoke decided by a person", module: "it-access" },
     { text: "Compliance registers and incidents", module: "compliance" },
     { text: "Notifications", module: "notifications" },
   ] },
