@@ -28,7 +28,8 @@ export default async function RetentionPage({ searchParams }: { searchParams: Pr
   const s = await privacyOverview(ctxFor(viewer, "ui"), { entityId: q.entity });
   const open = s.requests.filter((r) => r.status === "open");
   const waiting = open.filter((r) => r.kind === "erasure").length;
-  const lede = `Tonight's purge removes ${plural(s.due.delete, "record")} and anonymises ${plural(s.due.anonymise, "record")}. ${waiting ? `${waiting === 1 ? "One erasure request is" : `${waiting} erasure requests are`} waiting for a second approver.` : "No erasure request is waiting."}`;
+  const unknown = s.unchecked.length ? ` ${plural(s.unchecked.length, "rule")} could not be checked: ${s.unchecked.join(", ")}.` : "";
+  const lede = `Tonight's purge removes ${plural(s.due.delete, "record")} and anonymises ${plural(s.due.anonymise, "record")}.${unknown} ${waiting ? `${waiting === 1 ? "One erasure request is" : `${waiting} erasure requests are`} waiting for a second approver.` : "No erasure request is waiting."}`;
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><a href="/settings">Settings</a><span>/</span>Data retention</nav>
@@ -39,7 +40,7 @@ export default async function RetentionPage({ searchParams }: { searchParams: Pr
           <AskButton primary label="Ask for a new request" prompt="Open an erasure request for " pin={OVERVIEW} tool="open_privacy_request" />
         </div>
       </div>
-      <RetentionTickets rules={s.rules.length} due={s.due} open={{ access: open.filter((r) => r.kind === "access").length, erasure: open.filter((r) => r.kind === "erasure").length }} holds={s.holds.length} pausedRules={s.rules.filter((r) => r.paused).length} />
+      <RetentionTickets rules={s.rules.length} unchecked={s.unchecked} due={s.due} open={{ access: open.filter((r) => r.kind === "access").length, erasure: open.filter((r) => r.kind === "erasure").length }} holds={s.holds.length} pausedRules={s.rules.filter((r) => r.paused).length} />
       <div className="cols">
         <div className="card flush pinnable">
           <div className="card-head">

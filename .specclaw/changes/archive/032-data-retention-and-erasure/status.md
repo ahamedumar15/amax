@@ -1,6 +1,6 @@
-# Status: 053-trace-and-settings-hardening
+# Status: 032-data-retention-and-erasure
 
-**Change:** 053-trace-and-settings-hardening
+**Change:** 032-data-retention-and-erasure
 **Started:** 2026-10-17
 **Last Updated:** 2026-10-17
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/46 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/49 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

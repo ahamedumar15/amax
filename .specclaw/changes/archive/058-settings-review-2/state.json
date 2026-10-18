@@ -1,0 +1,9 @@
+{
+  "change": "058-settings-review-2",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-17T20:12:23Z"},
+    "archived": {"status":"done","at":"2026-10-17T22:08:00Z"}
+  }
+}

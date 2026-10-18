@@ -14,6 +14,7 @@
 | Tasks | - | - |
 | Build | - | - |
 | Verify | - | - |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

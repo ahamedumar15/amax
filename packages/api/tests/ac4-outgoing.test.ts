@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant } from "@amax/db";
 import { hasDb } from "@amax/db/testdb";
 import { createPostgresEngine, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
-import { apiPlatform, MAX_FAILURES, RETRY, subscribeWebhook, verifyWebhook } from "../src";
+import { apiPlatform, MAX_FAILURES, RETRY, setEgress, subscribeWebhook, verifyWebhook } from "../src";
 import { apiDb, job, T } from "./setup";
 
 const SECRET = "test-amax-webhook-signing-secret";
@@ -12,7 +12,7 @@ const EVENT = "hr.person.updated";
 describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
   let db: Awaited<ReturnType<typeof apiDb>>;
   let engine: WorkflowEngine;
-  const platform = apiPlatform([EVENT], async () => engine);
+  const platform = apiPlatform([{ events: { emits: [EVENT], payloads: { [EVENT]: { name: "plain", salary: "pay" } } } }], async () => engine);
   const sent: { url: string; headers: Headers; body: string }[] = [];
 
   const emit = (payload: Record<string, unknown>) =>
@@ -31,13 +31,18 @@ describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
     db = await apiDb();
     await db.secret("amax-webhook", SECRET);
     engine = createPostgresEngine({ db: db.app, registry: workflowRegistry([platform]) });
-    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
-      sent.push({ url, headers: new Headers(init.headers), body: String(init.body) });
-      return new Response(null, { status: url.includes("/broken") ? 500 : 204 });
+    // The wire is faked; the address checks in safePost still run on the fake resolver's answer.
+    setEgress({
+      resolve: async () => [{ address: "1.1.1.1", family: 4 }],
+      send: (url, init, lookup) => new Promise((ok, fail) => lookup(url.hostname, { all: true }, (e) => {
+        if (e) return fail(e);
+        sent.push({ url: url.href, headers: new Headers(init.headers), body: init.body });
+        ok(url.pathname.includes("/broken") ? 500 : 204);
+      })),
     });
   });
   afterAll(async () => {
-    vi.unstubAllGlobals();
+    setEgress({});
     await db?.t.drop();
   });
 
@@ -51,7 +56,7 @@ describe.skipIf(!hasDb)("035 AC-4 outgoing webhooks (Postgres)", () => {
     expect(good).toHaveLength(1);
     expect(verifyWebhook({ provider: "amax", headers: good[0].headers, body: good[0].body, secrets: [SECRET] }).ok).toBe(true);
     expect(verifyWebhook({ provider: "amax", headers: good[0].headers, body: good[0].body, secrets: ["wrong"] }).ok).toBe(false);
-    expect(JSON.parse(good[0].body).data).toEqual({ name: "Test Person", salary: { masked: true, class: "pay" }, bankAccount: { masked: true, class: "bank" } });
+    expect(JSON.parse(good[0].body).data).toEqual({ name: "Test Person", salary: { masked: true, class: "pay" }, bankAccount: { masked: true, class: "undeclared" } });
     expect(sent.filter((s) => s.url.endsWith("/broken"))).toHaveLength(RETRY.maxAttempts);
 
     for (let i = 1; i < MAX_FAILURES; i++) await emit({ name: `Person ${i}` });

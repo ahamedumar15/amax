@@ -25,7 +25,8 @@ async function asPrincipal(db: Db, p: Principal, tool: RegisteredTool, actFor: s
   if (!actFor || !UUID.test(actFor)) return refuse(db, p, tool.name, "name the person it acts for in the amax-act-for header");
   if (!p.actsFor.includes(actFor)) return refuse(db, p, tool.name, "not allowed to act for this person", actFor);
   const person = await withTenant(db, p.tenantId, (tx) => viewerForUser(tx, p.tenantId, actFor));
-  return person ?? refuse(db, p, tool.name, "the person is not active", actFor);
+  // The tool's context then audits the credential as the actor, for the person (review 058 B10).
+  return person ? { ...person, principal: { id: p.id, name: p.name } } : refuse(db, p, tool.name, "the person is not active", actFor);
 }
 
 export async function resolveCaller(db: Db, token: string | null, tool: RegisteredTool, actFor: string | null): Promise<Caller> {

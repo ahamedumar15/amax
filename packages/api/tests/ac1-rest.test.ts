@@ -59,4 +59,22 @@ describe.skipIf(!hasDb)("035 AC-1 AC-2 REST API from the tool registry (Postgres
     const refusals = await db.t.owner`select after->>'reason' as r from core.audit_event where action = 'auth.principal.refused' order by seq`;
     expect(refusals.map((r) => r.r)).toEqual(["not allowed to act for this person", "name the person it acts for in the amax-act-for header", "outside its scopes (needs demo:write)"]);
   }, 60_000);
+
+  // Review 058 B10: a write made with a service credential is audited as the credential acting for the
+  // person (AGENTS rule 4), never as the person; a person's own token is audited as the person.
+  it.each([
+    ["an API key", "key"],
+    ["a client-credentials access token", "token"],
+    ["a person's own API token", "person"],
+  ] as const)("058 a write over REST with %s names who did it", async (_, how) => {
+    const maya = await person(db.app, T, `maya-${how}`, ["Admin"]);
+    const kasun = await person(db.app, T, `kasun-${how}`, ["Engineer"]);
+    const ci = await createCredential(job(), { name: `CI ${how}`, scopes: ["demo:write"], actsFor: [`kasun-${how}@example.test`], days: 30, ownerUserId: maya.id });
+    const key = ci.reveal.value;
+    const token = how === "key" ? key : how === "token" ? (await exchangeClientCredentials(db.app, new URLSearchParams({ grant_type: "client_credentials", client_id: ci.id, client_secret: key }))).access_token : kasun.token;
+    const text = `058 ${how}`;
+    expect((await call(rest("/tools/add_note", { token, actFor: how === "person" ? undefined : kasun.id, body: { text } }))).status).toBe(200);
+    const [a] = await db.t.owner`select actor, on_behalf_of, source from core.audit_event where action = 'demo.note.add' and after->>'text' = ${text}`;
+    expect(a).toEqual(how === "person" ? { actor: `user:${kasun.id}`, on_behalf_of: null, source: "api" } : { actor: `sp:${ci.id}`, on_behalf_of: `user:${kasun.id}`, source: "api" });
+  }, 60_000);
 });

@@ -18,6 +18,8 @@ export type Viewer = {
   managedProjects: string[];
   assignedProjects: string[];
   reports: string[];
+  /** Set when a service credential acts for this person (035 REST); contextForViewer audits it as the actor. */
+  principal?: { id: string; name: string };
 };
 
 export const rolesOf = (v: Viewer) => [...new Set(v.assignments.map((a) => a.role))];

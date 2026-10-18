@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { accessPackage, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, setRetentionPeriod } from "@amax/core/privacy";
+import { accessPackage, completePrivacyRequest, listHolds, listRequests, listRules, openPrivacyRequest, placeLegalHold, PRIVACY_MANAGE, PRIVACY_READ, privacyOverview, purgedSince, readPrivacy, releaseLegalHold, requestNameRows, setRetentionPeriod } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
-import { ctxFor, notFound, read, tool, write } from "./tool";
+import { chatOnly, ctxFor, notFound, read, tool, write } from "./tool";
 
 const entity = z.string().min(1).max(200).describe("A legal entity's id or name; default the first");
 const id = z.uuid().describe("The request's id");
@@ -9,6 +9,10 @@ const person = z.string().min(1).max(200).describe("The person's email, full nam
 const reason = z.string().min(3).max(500);
 
 const ctx = (v: Viewer) => ctxFor(v, "chat");
+
+// Privacy requests open and complete only on chat's confirm card, with a person at the keyboard: never
+// over MCP or the REST API, where a credential or agent could act with no confirm (review 058 B10).
+const CONFIRM_CARD = "privacy requests are opened and completed only on amax chat's confirm card";
 const look = <T>(v: Viewer, fn: Parameters<typeof readPrivacy<T>>[1]) => readPrivacy(ctx(v), fn);
 
 async function entityId(v: Viewer, ref: string | undefined) {
@@ -38,8 +42,8 @@ export const privacyTools = [
     } }),
   tool({ ...read(PRIVACY_READ), name: "list_privacy_requests", description: "Access and erasure requests, open ones first, with what is kept and why.", input: z.object({ status: z.enum(["open", "completed"]).optional() }),
     run: async (v, a) => (await look(v, listRequests)).filter((r) => !a.status || r.status === a.status) }),
-  tool({ ...read(PRIVACY_READ), name: "get_privacy_request", description: "One access or erasure request: the person's records in every module, what is kept and why, and who opened and approved it.", input: z.object({ id }),
-    run: (v, a) => request(v, a.id) }),
+  tool({ ...read(PRIVACY_READ), name: "get_privacy_request", description: "One access or erasure request: the person's records in every module, what is kept and why, who opened and approved it, and (open requests) each row that names the person only by name, for the approver to decide on.", input: z.object({ id }),
+    run: async (v, a) => ({ ...(await request(v, a.id)), nameRows: await look(v, (tx) => requestNameRows(tx, a.id)) }) }),
   tool({ ...read(PRIVACY_READ), name: "list_legal_holds", description: "Active legal holds: whose records the purge and erasure must keep, and why.", input: z.object({}), run: (v) => look(v, listHolds) }),
   tool({ ...read(PRIVACY_READ), name: "retention_purge_history", description: "What the daily purge removed, by data class and count (never values); label narrows it to one kind of data.",
     input: z.object({ days: z.number().int().min(1).max(365).optional(), label: z.string().max(200).optional() }),
@@ -47,9 +51,11 @@ export const privacyTools = [
   tool({ scope: "sensitive", permission: PRIVACY_MANAGE, readOnly: true, name: "get_access_package", description: "The data package of a completed access request, to send to the person.", input: z.object({ id }),
     run: async (v, a) => (await look(v, (tx) => accessPackage(tx, a.id))) ?? Promise.reject(notFound(`access package ${a.id}`)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "open_privacy_request", description: "Open an access or erasure request for a person. amax lists their records in every module; a second Admin or HR person completes it.",
-    input: z.object({ kind: z.enum(["access", "erasure"]), person }), run: (v, a, s) => openPrivacyRequest(ctxFor(v, s), a) }),
+    input: z.object({ kind: z.enum(["access", "erasure"]), person }), run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), openPrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "complete_privacy_request", destructive: true, description: "Approve and complete an access or erasure request opened by someone else: export the data package, or erase and anonymise. Records the law still requires are kept.",
-    input: z.object({ id }), run: (v, a, s) => completePrivacyRequest(ctxFor(v, s), a) }),
+    input: z.object({ id, nameRows: z.object({ include: z.array(z.string().max(100)).max(500).default([]), exclude: z.array(z.string().max(100)).max(500).default([]) }).optional()
+      .describe("Rows that name the person only by name, listed by get_privacy_request: each row's id, as this person's (include) or someone else's (exclude). Every such row needs a decision") }),
+    run: async (v, a, s) => (chatOnly(s, CONFIRM_CARD), completePrivacyRequest(ctxFor(v, s), a)) }),
   tool({ ...write(PRIVACY_MANAGE), name: "place_legal_hold", description: "Pause the purge and erasure for a person, or for a matter given the ids of its records.",
     input: z.discriminatedUnion("kind", [z.object({ kind: z.literal("person"), person, reason }), z.object({ kind: z.literal("matter"), matter: z.string().min(1).max(200), ids: z.array(z.string().min(1).max(200)).min(1).max(20), reason })]),
     run: (v, a, s) => placeLegalHold(ctxFor(v, s), a) }),

@@ -1,6 +1,6 @@
-import { defineModule } from "@amax/core";
+import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
-import { EVENTS, personIdsForUser, reportUserIds } from "./contracts";
+import { EVENTS, personIdsForUser, reportUserIds, type PersonChanged, type PersonJoined, type PersonLeft } from "./contracts";
 import { hrFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
 import { statusDatesJob } from "./server/jobs";
@@ -47,6 +47,11 @@ export default defineModule({
   subjectIds: personIdsForUser,
   chatIntents,
   jobs: [statusDatesJob],
-  events: { emits: Object.values(EVENTS) },
+  // 035: outgoing webhooks send only declared fields (review 058).
+  events: { emits: Object.values(EVENTS), payloads: {
+    [EVENTS.personJoined]: declarePayload<PersonJoined>({ personId: "plain", userId: "plain", legalEntityId: "plain", department: "plain", joinedOn: "plain", status: "plain" }),
+    [EVENTS.personLeft]: declarePayload<PersonLeft>({ personId: "plain", userId: "plain", leftOn: "plain" }),
+    [EVENTS.personChanged]: declarePayload<PersonChanged>({ personId: "plain", userId: "plain", changed: "plain", effectiveOn: "plain" }),
+  } },
   fixtures: [hrFixtures],
 });

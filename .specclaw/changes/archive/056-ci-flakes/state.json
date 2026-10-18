@@ -1,0 +1,9 @@
+{
+  "change": "056-ci-flakes",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-17T19:17:09Z"},
+    "archived": {"status":"done","at":"2026-10-17T22:08:00Z"}
+  }
+}
