@@ -17,6 +17,8 @@ export type SpecRecord = {
   optional: string[];
   tasksDone: number;
   tasksTotal: number;
+  /** 008: each task by id, as sync_proposal stores it. */
+  tasks: { ref: string; title: string; done: boolean }[];
   acs: number;
   pr: string | null;
   verdict: string | null;
@@ -75,6 +77,7 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     optional: ids(optPart),
     tasksDone,
     tasksTotal: tasks.length,
+    tasks: [...change.matchAll(/^- \[( |x)\] `(T\d+)`\s*[—-]\s*(.+)$/gm)].map((t) => ({ ref: t[2], title: t[3].trim(), done: t[1] === "x" })),
     acs: (change.match(/^\d+\. \*\*AC-\d+\*\*/gm) ?? []).length,
     pr: phases.pr?.url ?? status.match(/\|\s*PR\s*\|[^|]*\|\s*(https:\/\/\S+?)\s*\|/)?.[1] ?? null,
     verdict: change.match(/\*\*Verdict:\*\* (\w+)/)?.[1] ?? null,

@@ -6,41 +6,51 @@ import type { SpecRecord } from "./specclaw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
-const desired = (projectKey: string, r: SpecRecord, sha: string) => ({
+type Task = SpecRecord["tasks"][number];
+
+// 008: a task a commit closed stays closed, so the repo's open task is merged with the stored one;
+// otherwise every sync would see a "change" it can't make.
+const desired = (projectKey: string, r: SpecRecord, sha: string, stored: Task[] = []) => {
+  const tasks = r.tasks.map((t) => ({ ...t, done: t.done || stored.some((s) => s.ref === t.ref && s.done) }));
+  return {
   key: `${projectKey}-${r.number}`,
   title: r.title,
   phase: r.phase,
-  tasksDone: r.tasksDone,
-  tasksTotal: r.tasksTotal,
+  tasksDone: tasks.length ? tasks.filter((t) => t.done).length : r.tasksDone,
+  tasksTotal: tasks.length || r.tasksTotal,
+  tasks,
   releasedAt: r.releasedAt,
   meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source },
-});
+  };
+};
 
 // The meta fields that matter for "changed?". The commit sha alone doesn't count as a change, neither
 // as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2).
 const refOf = (s: unknown) => (typeof s === "string" ? s.replace(/@[0-9a-f]{7,40}$/i, "") : s);
-const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
+const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, d.tasks, { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
 
 /**
- * One-way import of a repo's specclaw changes into a delivery project. Writes go through
- * syncProposal (audited as `ctx`, the sync's service principal) and only for changed rows.
+ * One-way import of a repo's specclaw changes into a delivery project, as a caller of sync_proposal's
+ * service (008 AC-7): audited as `ctx`, the sync's service principal, and only for changed rows.
  */
 export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string }): Promise<SyncResult> {
   const existing = await withTenant(db, ctx.tenantId, (tx) =>
-    tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+    tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref,
+                     (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
+                   from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                    where pr.key = ${opts.projectKey} and p.source = 'specclaw'`));
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
   const project = { name: opts.projectName, client: opts.client };
 
   for (const r of opts.records) {
-    const d = desired(opts.projectKey, r, opts.sha);
-    const cur = byKey.get(d.key);
+    const cur = byKey.get(`${opts.projectKey}-${r.number}`);
+    const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? []);
     byKey.delete(d.key);
     if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
-    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
+    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
       continue;
     }

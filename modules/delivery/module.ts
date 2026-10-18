@@ -2,7 +2,10 @@ import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
-import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "./contracts";
+import { listActivity } from "./server/activity";
+import { ingestPush } from "./server/ingest";
+import { linkIdentity } from "./suggestions";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed, type TaskDone, type CommitTime } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -23,12 +26,12 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
-  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record"],
+  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage"],
   grants: {
     Leadership: READ,
     Finance: READ,
-    Engineer: [...READ, "delivery:proposal:create@assigned", "delivery:proposal:move@assigned"],
-    PM: [...READ, "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move@managed", "delivery:release:create@managed", "delivery:deployment:record@managed"],
+    Engineer: [...READ, "delivery:proposal:create@assigned", "delivery:proposal:move@assigned", "delivery:task:done@assigned"],
+    PM: [...READ, "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move@managed", "delivery:release:create@managed", "delivery:deployment:record@managed", "delivery:task:done@managed"],
   },
   routes: [
     { path: "", title: "Projects", component: ProjectsPage },
@@ -47,6 +50,10 @@ export default defineModule({
   ],
   mcpTools,
   search: search as never,
+  activity: listActivity as never,
+  // 008 AC-2: verified pushes close the tasks their commits name.
+  inbound: { providers: ["github", "azure-devops"], handle: ingestPush },
+  suggestions: [linkIdentity],
   retention: [
     // Delivery evidence is kept seven years, then names are anonymised. A proposal's clock starts
     // when it's released (released_at, cleared again if the release is voided) or after a year with
@@ -57,6 +64,11 @@ export default defineModule({
     { table: "delivery.deployment", label: "Who recorded a deployment", subject: ["recorded_by"], fields: ["recorded_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
     // The voider's clock starts at the void, which can be years after the deployment (final review).
     { table: "delivery.deployment", label: "Who voided a deployment", subject: ["voided_by"], fields: ["voided_by"], class: "personal", period: "P7Y", start: { at: ["voided_at"] }, action: "anonymise" },
+    // 008: who closed a task (a person, or a credential or Git acting for one), kept with the delivery evidence.
+    { table: "delivery.task", label: "Who closed a task", subject: ["done_by"], fields: ["done_by"], class: "personal", period: "P7Y", start: { at: ["done_at"] }, action: "anonymise" },
+    { table: "delivery.commit_time", label: "Who switched commit time on or off", subject: ["set_by"], entity: "legal_entity_id", fields: ["set_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise" },
+    // The Overview feed is recent news, not a record: its lines go after two years.
+    { table: "delivery.activity", label: "Agent activity feed", subject: ["for_user_id", "actor_id"], fields: ["actor_id", "for_user_id", "text", "detail"], class: "personal", period: "P2Y", start: { at: ["at"] }, action: "delete" },
   ],
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
@@ -68,6 +80,8 @@ export default defineModule({
       [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
       [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain" }),
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
+      [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
+      [EVENTS.commitTime]: declarePayload<CommitTime>({ userId: "plain", projectId: "plain", projectKey: "plain", proposalKey: "plain", day: "plain", hours: "plain", commit: "plain" }),
     },
   },
   // 030: a rollback is urgent for the PMs who manage that project (their data scope).

@@ -28,6 +28,7 @@ export const apiTools = (d: AdminDeps) => {
         scopes: z.array(z.string().regex(SCOPE)).min(1).describe("Per module: '<module>:read', '<module>:write' (includes read) or '<module>:sensitive'"),
         actsFor: z.array(z.email()).default([]).describe("Emails of the people it may act for; empty for no one"),
         days: z.number().int().min(1).max(MAX_CREDENTIAL_DAYS).describe(`Days until it expires, at most ${MAX_CREDENTIAL_DAYS}`),
+        tools: z.array(z.string()).min(1).optional().describe("Only these tools, e.g. sync_proposal, mark_task_done, record_deployment for CI; leave out for every tool its scopes allow"),
       }),
       service: createCredential, run: async (v, a, s) => (chatOnly(s, KEY_ONCE), createCredential(ctxFor(v, s), { ...a, ownerUserId: v.userId })) }),
     tool({ ...write(CRED_MANAGE), name: "rotate_api_credential", description: "Rotate a service credential's API key. The new key is shown once, on the confirm card; the old one stops working at once.", input: id,

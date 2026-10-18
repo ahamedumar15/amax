@@ -6,7 +6,7 @@
 ## Active Changes
 
 
-- 🔀 **008-delivery-ingestion** — PR #70 merged
+- 🔀 **008-delivery-ingestion** — pr raised | 7/7 tasks (100%) | 0 failed | PR #70 merged
 - 🔍 **013-onboarding-offboarding** — verify done | 5/5 tasks (100%) | 0 failed
 - 🔀 **038-navigation-scale** — pr raised | 3/3 tasks (100%) | 0 failed | PR #69 merged
 

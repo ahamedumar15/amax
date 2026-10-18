@@ -33,15 +33,17 @@ export const createCredential = defineService({
     actsFor: z.array(z.email()).max(200).default([]),
     days: z.number().int().min(1).max(MAX_CREDENTIAL_DAYS),
     ownerUserId: z.uuid(),
+    // 008: limit it to these tools (CI: sync_proposal, mark_task_done, record_deployment).
+    tools: z.array(z.string().regex(/^[a-z][a-z0-9_]*$/)).min(1).max(40).optional(),
   }),
   async run(tx, input, ctx) {
     const actsFor = await peopleIds(tx, input.actsFor);
     const token = newToken("amx_sp");
-    const [row] = await tx.execute(sql`insert into auth.service_principal (tenant_id, name, owner_user_id, scopes, acts_for, token_hash, expires_at)
+    const [row] = await tx.execute(sql`insert into auth.service_principal (tenant_id, name, owner_user_id, scopes, acts_for, token_hash, expires_at, tools)
       values (${ctx.tenantId}, ${input.name}, ${input.ownerUserId}, ${textArray(input.scopes)}, ${uuidArray(actsFor)}, ${tokenHash(token)},
-              now() + make_interval(days => ${input.days})) returning id, expires_at`);
+              now() + make_interval(days => ${input.days}), ${input.tools ? textArray(input.tools) : null}) returning id, expires_at`);
     const id = row.id as string;
-    const after = { name: input.name, scopes: input.scopes, actsFor, days: input.days };
+    const after = { name: input.name, scopes: input.scopes, actsFor, days: input.days, tools: input.tools ?? null };
     return { result: { id, name: input.name, expiresAt: String(row.expires_at), reveal: reveal(token) }, resourceId: id, after, events: [{ name: "auth.principal.created", payload: { id, ...after } }] };
   },
 });
