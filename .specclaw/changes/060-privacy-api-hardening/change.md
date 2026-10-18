@@ -37,7 +37,7 @@ None. Fixes only.
   Files: packages/core/src/rate-limit.ts, packages/core/tests/rate-limit-060.test.ts
 - [x] `T5` — 429 counts written on the request path or flushed on a 429, not only by timer (AC-5, AC-9)
   Files: packages/api/src/limits.ts, packages/api/tests/ac5-rate-limits.test.ts
-- [ ] `T6` — REST maps non-retryable domain refusals to 400/409 with their message (AC-6, AC-9)
+- [x] `T6` — REST maps non-retryable domain refusals to 400/409 with their message (AC-6, AC-9)
   Files: packages/api/src/rest.ts, packages/api/tests/ac1-rest.test.ts
 - [ ] `T7` — Subscribing without a signing secret is refused; a missing secret at delivery doesn't count toward switch-off (AC-7, AC-9)
   Files: packages/api/src/webhooks.ts, packages/api/src/deliver.ts, packages/api/tests/ac4-outgoing.test.ts
