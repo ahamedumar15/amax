@@ -36,7 +36,7 @@ platform change.
 - [x] `T3` — "Claim expense" chat intent and `add_receipt` (photo or PDF): the receipt agent reads the receipt's text and proposes merchant, day, amount, currency and category as a 006 suggestion the claimant accepts, which files the claim; undo withdraws it while it waits for the manager (AC-2)
   Files: modules/expenses/chat.ts, modules/expenses/suggestions.ts, modules/expenses/server/extract.ts, modules/expenses/tests/receipts.test.ts
   Depends: T2
-- [ ] `T4` — Payment through payroll: Finance approves a claim to be paid in the next pay run when payroll is installed; `reimbursementsDue` in contracts lists them for payroll; when payroll sends that period's payslips, an agent suggests marking them paid, which Finance accepts (AC-1)
+- [x] `T4` — Payment through payroll: Finance approves a claim to be paid in the next pay run when payroll is installed; `reimbursementsDue` in contracts lists them for payroll; when payroll sends that period's payslips, an agent suggests marking them paid, which Finance accepts (AC-1)
   Files: modules/expenses/server/payroll.ts, modules/expenses/suggestions.ts, modules/expenses/tests/payroll.test.ts
   Depends: T2
 - [ ] `T5` — Module standard: README, manifest, CODEOWNERS line, retention entries, can be switched off, and works without payroll (bank payment only) (AC-3)
