@@ -45,3 +45,5 @@ from fixtures.md (funnel 63 → 41 → 19 → 5 → 4; board 22, 9, 5, 1, 4; hir
   Depends: T5
 
 ## Verify
+
+Quality: 15 → 0 duplicated lines (jscpd over modules/recruitment; specclaw-quality-scan fails on this repo with jq "Argument list too long", so jscpd was run directly. The 15 lines were the DB tests' shared setup, moved into `tests/db.ts` `sharedDb`.)
