@@ -36,7 +36,7 @@ automatically. With 021 installed, its own handler takes over the suggestion.
 - [x] `T3` — IT access: a grant on joining, a revoke on leaving, as `onboarding.access.requested` plus an IT Admin task. Nothing is revoked automatically, and it degrades without 021 (AC-2)
   Files: modules/onboarding/server/access.ts, modules/onboarding/tests/access.test.ts
   Depends: T2
-- [ ] `T4` — Exit questionnaire: a single-use link token that expires after 14 days. The public page records the answers once, and the token is stored hashed (AC-3)
+- [x] `T4` — Exit questionnaire: a single-use link token that expires after 14 days. The public page records the answers once, and the token is stored hashed (AC-3)
   Files: modules/onboarding/server/exit.ts, modules/onboarding/ui/ExitPage.tsx, modules/onboarding/tests/exit.test.ts
   Depends: T2
 - [ ] `T5` — Module standard: README, manifest, CODEOWNERS line, retention entries, can be switched off, standard test (AC-4)

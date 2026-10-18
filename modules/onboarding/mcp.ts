@@ -5,6 +5,7 @@ import { KINDS } from "./contracts";
 import { checklistOf, taskOf } from "./pins";
 import { startChecklist } from "./server/checklists";
 import { ctxFor } from "./server/context";
+import { issueExitLink } from "./server/exit";
 import { getChecklist, getTask, listChecklists, onboardingSummary } from "./server/queries";
 import { today } from "./server/read";
 import { completeTask } from "./server/tasks";
@@ -31,6 +32,8 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...write("onboarding:checklist:start"), name: "start_checklist", description: "Start a joiner or leaver checklist for someone by employee number, when HR's joined or left event didn't (they were recorded before onboarding was installed). A second start returns the first checklist.",
     input: z.object({ employeeNo: z.string().describe("Employee number, e.g. LL-0640"), kind: z.enum(KINDS) }), service: startChecklist,
     run: (v, a, s = "mcp") => startChecklist(ctxFor(v, s), { personId: a.employeeNo, kind: a.kind }) }),
+  tool({ ...write("onboarding:exit:send"), name: "send_exit_questionnaire", description: "Make a leaver's exit questionnaire link to send them. It works once, for 14 days; a new link replaces an unanswered one. The link is shown only now, so pass it on.",
+    input: z.object({ checklistId }), service: issueExitLink, run: (v, a, s = "mcp") => issueExitLink(ctxFor(v, s), a) }),
 ];
 
 export async function search(viewer: Viewer, query: string): Promise<SearchHit[]> {

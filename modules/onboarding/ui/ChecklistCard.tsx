@@ -18,6 +18,7 @@ export function ChecklistCard({ c }: { c: ChecklistRow }) {
           <div><h2 id={`cl-${c.id}`}>{c.personName}</h2><small>{[c.jobTitle, c.department, c.employeeNo].filter(Boolean).join(", ")}</small></div></div>
         <div className="meta">
           <span className={c.kind === "joiner" ? "chip good" : "chip"}>{when(c)}</span>
+          {c.exit && <span className="chip">{c.exit.answeredAt ? `Exit answers in ${day(c.exit.answeredAt.slice(0, 10))}` : `Exit link sent, works until ${day(c.exit.expiresAt.slice(0, 10))}`}</span>}
           <span className="muted">{c.completedOn ? `Complete ${day(c.completedOn)}` : `${c.done} of ${c.tasks.length} done`}</span>
         </div>
       </div>
