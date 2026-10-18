@@ -37,7 +37,7 @@ GST, VAT/SSCL and credit notes are proven on contracts made through the tools.
 - [x] `T4` — The billing agent: approved time on a T&M contract's project becomes an invoice draft (hours × rate, within the cap); `delivery.release.deployed` to Prod turns a release's milestone into an invoice draft. Each draft is a 006 suggestion Finance accepts, which issues the invoice (AC-2)
   Files: modules/finance/suggestions.ts, modules/finance/server/drafts.ts, modules/finance/tests/drafts.test.ts
   Depends: T2, T3
-- [ ] `T5` — Module standard: README, manifest, CODEOWNERS line, retention, can be switched off, and degrades without time and without delivery events (AC-4)
+- [x] `T5` — Module standard: README, manifest, CODEOWNERS line, retention, can be switched off, and degrades without time and without delivery events (AC-4)
   Files: modules/finance/README.md, modules/finance/package.json, .github/CODEOWNERS, modules/finance/tests/standard.test.ts
   Depends: T4
 
