@@ -19,11 +19,10 @@ export const navItems: NavItem[] = [
   ]),
   // 047, 055: the Operations group: the Settings hub ("settings:read") and the screens still to come
   // ("operations:read"). Admin and IT Admin hold both, so visibleNav shows the group only to them.
-  { href: "/settings", label: "Settings", icon: "gear", group: "Operations" },
+  // 038 AC-4: shown to anyone who may open one of its screens (HR: Data retention).
+  { href: "/settings", label: "Settings", icon: "gear", group: "Operations", hub: true },
   // A screen that has shipped as a module (036's Compliance) replaces its "Coming soon" entry; switching the module off brings it back.
   ...OPERATIONS.filter((o) => !installed.some((m) => m.id === o.slug)).map((o) => ({ href: `/operations/${o.slug}`, label: o.title, icon: o.icon, group: "Operations" })),
-  // 034: Admin only (the export holds pay and money, which IT Admin never sees).
-  { href: "/settings/backups", label: "Backups and export", icon: "grid", group: "Operations", permission: "backup:read" },
 ];
 
 // Module screens reached from the profile menu instead of the rail (030's Notifications).

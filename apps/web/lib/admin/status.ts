@@ -8,10 +8,11 @@ import { usageViewer } from "@amax/ai/usage-tool";
 import { auditStatus, logError, type AuditStatus } from "@amax/core/server";
 import { CONNECTORS, listCredentials } from "@amax/core/secrets";
 import { connectedClients } from "@amax/mcp/admin";
-import { LATEST_RUNS, listRuns, listSchedules } from "@amax/workflows/server";
-import { listRequests, privacyRules, readPrivacy } from "@amax/core/privacy";
+import { LATEST_RUNS, listRuns, listSchedules, WORKFLOWS_ADMIN } from "@amax/workflows/server";
+import { AUDIT_READ } from "@amax/mcp/audit-tools";
+import { listRequests, PRIVACY_READ, privacyRules, readPrivacy } from "@amax/core/privacy";
 import { BACKUP_READ, backupOverview } from "@amax/core/backup";
-import { can, type Viewer } from "@amax/auth";
+import { can, canEver, type Viewer } from "@amax/auth";
 import { daysUntil, expiringSoon, pastExpiry } from "./credentials";
 import { ctxFor, type AdminDeps } from "./tool";
 
@@ -123,8 +124,23 @@ const SOON: Area[] = [
   { id: "api", title: "API and webhooks", href: "/settings/api", blurb: "Service credentials for CI and tools, signed webhooks, and rate limits.", stat: "REST, MCP and webhooks", chip: { tone: "info", text: "Keys shown once" } },
 ];
 
-/** The Settings hub, attention first: each admin screen with a live status (047 AC-1). */
+// 038 AC-4: a card shows only to someone its screen would let in, with the screen's own check.
+type Card = { gate: (v: Viewer) => boolean; load: (d: AdminDeps, v: Viewer) => Promise<Area | Area[]> };
+const CARDS: Card[] = [
+  { gate: (v) => can(v, "secrets:credential:read"), load: (_d, v) => keys(v) },
+  { gate: (v) => can(v, "mcp:client:read"), load: integrations },
+  { gate: (v) => can(v, "ai:policy:manage"), load: ai },
+  { gate: (v) => can(v, WORKFLOWS_ADMIN), load: scheduler },
+  { gate: (v) => can(v, AUDIT_READ), load: audit },
+  { gate: (v) => can(v, PRIVACY_READ), load: (_d, v) => retention(v) },
+  { gate: (v) => can(v, BACKUP_READ), load: (_d, v) => backups(v) },
+  { gate: (v) => canEver(v, "api:credential:read") && canEver(v, "api:webhook:read"), load: async () => SOON },
+];
+
+/** Whether the viewer may open any Settings screen: the hub and its rail item show only then. */
+export const seesSettings = (v: Viewer) => CARDS.some((c) => c.gate(v));
+
+/** The Settings hub, attention first: each admin screen this viewer may open, with a live status (047 AC-1, 038 AC-4). */
 export async function settingsStatus(d: AdminDeps, v: Viewer): Promise<Area[]> {
-  const [k, i, a, s, t, r, b] = await Promise.all([keys(v), integrations(d, v), ai(d, v), scheduler(d, v), audit(d, v), retention(v), backups(v)]);
-  return [k, i, ...a, s, t, r, ...b, ...SOON];
+  return (await Promise.all(CARDS.filter((c) => c.gate(v)).map((c) => c.load(d, v)))).flat();
 }

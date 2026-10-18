@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { can } from "@amax/auth";
 import { PinButton } from "@amax/ui";
 import { settingsStatus, type Area } from "../../../lib/admin";
 import { adminDeps, getDb } from "../../../lib/server";
@@ -31,8 +30,9 @@ function HubCard({ a }: { a: Area }) {
 // The Settings hub (047 AC-1): every admin screen, what needs attention first.
 export default async function SettingsHub() {
   const viewer = await getViewer();
-  if (!viewer || !getDb() || !can(viewer, "settings:read")) notFound();
+  if (!viewer || !getDb()) notFound();
   const areas = await settingsStatus(adminDeps, viewer);
+  if (!areas.length) notFound();
   const live = areas.filter((a) => a.href).sort((x, y) => RANK[x.chip.tone] - RANK[y.chip.tone]);
   const needs = live.filter((a) => a.attention);
   const lede = needs.length ? `${needs.length === 1 ? "One thing needs" : `${needs.length} things need`} you: ${needs.map((a) => a.attention).join("; ")}.` : "Nothing needs you right now.";

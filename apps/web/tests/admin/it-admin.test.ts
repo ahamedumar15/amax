@@ -21,7 +21,7 @@ const deps = { db: unused, workflows: unused, engine: unused, tools: unused } as
  */
 const ADMIN_ONLY = [
   "audit_status", "search_audit", "get_trace",
-  "settings_overview",
+  // settings_overview is open to every role since 038: it lists only the cards each viewer may open.
   "list_secrets", "get_secret_meta", "put_secret", "rotate_secret", "revoke_secret",
   "list_mcp_clients", "get_mcp_client", "list_mcp_tools", "get_mcp_tool", "revoke_mcp_client",
   "get_ai_policy", "set_ai_policy",

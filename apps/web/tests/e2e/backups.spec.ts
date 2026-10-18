@@ -34,7 +34,8 @@ test("034 AC-3 AC-6 Backups and export: recovery first, the drill history, expor
   await expect(page.locator("main form, main textarea, main input, main select, main dialog")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Ask amax to export all data" })).toHaveAttribute("data-tool", "request_tenant_export");
   await expect(page.getByRole("button", { name: "Ask amax to run a restore drill now" })).toHaveAttribute("data-tool", "request_restore_drill");
-  await expect(nav(page).getByRole("link", { name: "Backups and export", exact: true })).toHaveAttribute("href", "/settings/backups");
+  // 038: reached from the Settings hub, so Settings is the current rail item.
+  await expect(nav(page).getByRole("link", { name: "Settings", exact: true })).toHaveAttribute("aria-current", "page");
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();

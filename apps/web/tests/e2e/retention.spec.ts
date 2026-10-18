@@ -53,6 +53,12 @@ test("032 AC-6 Data retention is for Admin and HR only", async ({ page }) => {
   await page.context().clearCookies();
   await signIn(page, "hira@lumenlabs.test", "/settings/retention");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Data retention");
+  // 038 AC-4: HR gets Settings in the rail (current here), and the hub shows only the card HR may open.
+  const settings = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Settings", exact: true });
+  await expect(settings).toHaveAttribute("aria-current", "page");
+  await settings.click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page.locator("main .app-card h2")).toHaveText(["Data retention"]);
 });
 
 test("032 AC-4 the opener can't approve their own erasure request; a second Admin approves it in chat", async ({ page }) => {
