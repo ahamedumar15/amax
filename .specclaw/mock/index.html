@@ -2222,7 +2222,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     .m2 .film .poster{position:absolute;inset:0 0 22% 0;display:grid;place-items:center;align-content:center;gap:10px;color:#1D1B2E;text-align:center}
     .m2 .film .poster b{font-size:clamp(28px,3.4vw,52px);letter-spacing:-.02em}
     .m2 .film .poster em{font-style:normal;background:linear-gradient(90deg,#2FB58A,#7B61FF);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800;font-size:clamp(28px,3.4vw,52px)}
-    .m2 .play{position:absolute;left:24px;bottom:24px;height:56px;padding:0 24px;border-radius:28px;border:0;background:#7B61FF;color:#fff;font-size:17px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:10px}
+    .m2 .play{position:absolute;left:24px;bottom:24px;min-height:64px;padding:0 24px;border-radius:28px;border:0;background:#7B61FF;color:#fff;font-size:17px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:10px}
     .m2 .play:hover{background:#6A50EE}
     .m2 .film .chip3{position:absolute;left:24px;bottom:24px;background:#1D1B2E;color:#fff;border-radius:10px;padding:6px 12px;font-size:14px;font-weight:600}
     .m2 .film .cap{display:flex;justify-content:space-between;gap:20px;margin-top:22px;color:var(--mut);font-size:16px;flex-wrap:wrap}
@@ -2342,7 +2342,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
           <source src="media/amax-product.mp4" type="video/mp4">
           <track kind="captions" srclang="en" label="English" src="media/amax-product.en.vtt">
         </video>
-        <button class="play" id="m2play" onclick="var v=document.getElementById('m2vid');v.controls=true;v.play();this.hidden=true"><span aria-hidden="true">&#9654;</span> Play the tour · 35 s, captions</button>
+        <button class="play" id="m2play" onclick="var v=document.getElementById('m2vid');v.controls=true;v.play();this.hidden=true"><span aria-hidden="true">&#9654;</span> Play the 35-second product tour</button>
       </div>
       <div class="cap"><span>A commit closes a task, amax drafts the hours, Liam accepts them, and the PM approves the submitted week in chat.</span><span>All data is fictional.</span></div>
     </div></section>
@@ -2354,7 +2354,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
         <h2>How it works</h2>
         <div class="step"><b>First, the work happens.</b><span>A commit names AMX-142. A pipeline deploys Fleet Tracker to UAT. Nobody types an update.</span></div>
         <div class="step dim"><b>Then amax drafts the record.</b><span>Git ingestion closes the task and drafts 2.5 h for Liam. Every draft names the agent and the person it acted for.</span></div>
-        <div class="step dim"><b>You decide in one tap.</b><span>In chat or on the screen, a person accepts, approves or promotes. The decision is permission-checked and written to a hash-chained audit trail.</span></div>
+        <div class="step dim"><b>You decide in one tap.</b><span>In chat, a person accepts, approves or promotes; screens pin the record and open chat. The decision is permission-checked and written to a hash-chained audit trail.</span></div>
       </div>
       <div class="m2pin" data-ui>
         <div class="term"><span class="g">liam@lumen ~/contoso-portal $</span> git commit -m "AMX-142 Export the invoice list to CSV"<br><span class="g">✓ amax:</span> AMX-142 closed · 2.5 h suggested to Liam Walsh</div>
@@ -2398,7 +2398,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
       <div>
         <details name="m2faq" open><summary>Will an agent change our data on its own?</summary><p>Agents record what happened, like a commit closing its task or a pipeline recording a deployment. Hours, invoices and payroll changes are only drafted: a person accepts or approves each one, and in chat amax asks before it changes anything.</p></details>
         <details name="m2faq"><summary>Which agents can connect?</summary><p>Any MCP client, such as Claude Code, a CI pipeline or your own agent, using a credential scoped to a person's role.</p></details>
-        <details name="m2faq"><summary>Where does our data live?</summary><p>In the region you pin for each legal entity, with retention rules and legal holds per record type.</p></details>
+        <details name="m2faq"><summary>Where does our data live?</summary><p>In the data region you choose for your workspace, with retention rules and legal holds per record type.</p></details>
         <details name="m2faq"><summary>Do we have to stop using our other tools?</summary><p>No. amax reads commits, pipelines and your directory, and planned integrations cover accounting.</p></details>
         <details name="m2faq"><summary>Is it accessible?</summary><p>Every screen meets WCAG 2.2 AA, works from the keyboard, and respects light, dark and reduced-motion settings.</p></details>
         <details name="m2faq"><summary>How do we start?</summary><p>Book a demo. We'll walk through amax on fictional data like the records on this page.</p></details>

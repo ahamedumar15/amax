@@ -29,8 +29,8 @@ test("064 AC2 the queue switches roles by keyboard and records who decided", asy
   await page.keyboard.press("End");
   await expect(tabs.getByRole("tab", { name: "Engineer" })).toBeFocused();
   await page.getByRole("tabpanel").getByRole("button", { name: "Accept" }).click();
-  await expect(page.getByRole("tabpanel")).toContainText("✓ Accepted by you, Liam Walsh · drafted by Git ingestion");
-  await expect(page.getByRole("status")).toHaveText("Accepted by you, Liam Walsh · drafted by Git ingestion");
+  await expect(page.getByRole("tabpanel")).toContainText("✓ Accepted by you, Liam Walsh · drafted by Git ingestion · in chat");
+  await expect(page.getByRole("status")).toHaveText("Accepted by you, Liam Walsh · drafted by Git ingestion · in chat");
 });
 
 test("064 AC1 AC7 accessible in light and dark, skip link, no sideways scroll on a phone", async ({ page }) => {

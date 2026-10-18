@@ -22,7 +22,7 @@ export function ProductVideo() {
             <source src={`${SRC}.webm`} type="video/webm" />
             <track kind="captions" srcLang="en" label="English" src={`${SRC}.en.vtt`} />
           </video>
-          {!started && <button type="button" className="play" onClick={play}><span aria-hidden="true">▶</span> Play the tour · 35 s, captions</button>}
+          {!started && <button type="button" className="play" onClick={play}><span aria-hidden="true">▶</span> Play the 35-second product tour</button>}
         </div>
         <div className="cap"><span>A commit closes a task, amax drafts the hours, Liam accepts them, and the PM approves the submitted week in chat.</span><span>All data is fictional.</span></div>
       </div>

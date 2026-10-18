@@ -9,7 +9,9 @@ test("064 AC3 the tour plays when asked, with captions, and never on its own", a
   await expect(video.locator("source").first()).toHaveAttribute("type", "video/mp4");
   await expect(video.locator("track[kind=captions]")).toHaveAttribute("srclang", "en");
   expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
-  await page.getByRole("button", { name: /Play the tour/ }).click();
+  const play = page.getByRole("button", { name: "Play the 35-second product tour" });
+  expect((await play.boundingBox())!.height).toBeGreaterThanOrEqual(64);
+  await play.click();
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 15_000 }).toBeGreaterThan(0.5);
   expect(await video.evaluate((v: HTMLVideoElement) => v.error)).toBeNull();
   await expect(video).toHaveAttribute("controls", "");
