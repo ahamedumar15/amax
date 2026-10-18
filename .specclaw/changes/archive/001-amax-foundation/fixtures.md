@@ -16,7 +16,7 @@ Every number in `.specclaw/mock/index.html` must come from this sheet. Totals ar
 - **Signed-in user:** **Maya Fernando** (initials MF), Delivery manager. Roles PM and Leadership, and Admin for the demo (see "View as").
 - **Maya's team on the Time screen:** Nimal Silva (NS, tech lead), Kasun Dias (KD, senior engineer), Ayesha Rahman (AR, QA lead), Tharushi Wijesinghe (TW, associate engineer, probation ends Oct 31), and Dinesh Wickrama (DW, software engineer, joined Oct 5).
 - **Liam Murphy** (LM) is Account director in Australia, managed by Sarah Chen. He is not on Maya's timesheet list.
-- **Others:** Sahan Kumara (SK, IT, Global admin), Rizwan Farook (RF, left Sep 30), and Mohamed Rifkhan (MR, joins Nov 2).
+- **Others:** Sahan Kumara (SK, IT, Global admin), Ravi Perera (RP, IT administrator, the IT Admin role: everything Admin sees except prices, 055), Rizwan Farook (RF, left Sep 30), and Mohamed Rifkhan (MR, joins Nov 2).
 
 ## Team time, week 42 (Mon to Fri)
 
