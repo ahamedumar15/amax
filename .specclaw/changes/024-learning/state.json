@@ -1,9 +1,10 @@
 {
   "change": "024-learning",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T04:48:32Z"},
-    "verify": {"status":"done","at":"2026-10-18T05:11:47Z"}
+    "verify": {"status":"done","at":"2026-10-18T05:11:47Z"},
+    "pr": {"status":"raised","at":"2026-10-18T05:12:18Z","url":"https://github.com/chan4lk/amax/pull/59"}
   }
 }
