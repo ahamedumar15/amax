@@ -56,6 +56,8 @@ const schema = z.object({
   AMAX_BACKUP_DIR: z.string().min(1).optional(),
   AMAX_BACKUP_REGION: z.string().optional(),
   S3_BACKUP_BUCKET: z.string().optional(),
+  // The restore drill's scratch database (its owner): wiped, restored into and wiped again each drill.
+  AMAX_DRILL_DATABASE_URL: postgresUrl.optional(),
   S3_BACKUP_BUCKETS: z.string().regex(/^([A-Za-z]{2}=[\w.-]+)(,[A-Za-z]{2}=[\w.-]+)*$/, "REGION=bucket pairs, comma-separated").optional(),
   // 035 rate limits per one-minute window. Unset keeps the defaults in rate-limit.ts.
   AMAX_RATE_PAGE_USER: z.coerce.number().int().positive().optional(),
