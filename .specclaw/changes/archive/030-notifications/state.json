@@ -1,10 +1,11 @@
 {
   "change": "030-notifications",
-  "phase": "pr",
+  "phase": "archived",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T04:13:22Z"},
     "verify": {"status":"done","at":"2026-10-18T04:52:26Z"},
-    "pr": {"status":"raised","at":"2026-10-18T04:52:53Z","url":"https://github.com/chan4lk/amax/pull/58"}
+    "pr": {"status":"raised","at":"2026-10-18T04:52:53Z","url":"https://github.com/chan4lk/amax/pull/58"},
+    "archived": {"status":"done","at":"2026-10-18T07:03:27Z"}
   }
 }

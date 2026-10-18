@@ -1,6 +1,6 @@
-# Status: 024-learning
+# Status: 034-backup-restore-and-export
 
-**Change:** 024-learning
+**Change:** 034-backup-restore-and-export
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/59 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/62 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

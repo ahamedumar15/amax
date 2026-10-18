@@ -1,6 +1,6 @@
-# Status: 006-agent-governance
+# Status: 028-keyflow-sync
 
-**Change:** 006-agent-governance
+**Change:** 028-keyflow-sync
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/60 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/61 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 

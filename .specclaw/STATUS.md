@@ -1,21 +1,11 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 06:49 UTC
+**Last Updated:** 2026-10-18 07:03 UTC
 
 ## Active Changes
 
-
-- 🔀 **006-agent-governance** — pr raised | 9/9 tasks (100%) | 0 failed | PR #60 merged
-- 🔀 **012-leave** — pr raised | 7/7 tasks (100%) | 0 failed | PR #57 merged
-- 🔀 **024-learning** — pr raised | 6/6 tasks (100%) | 0 failed | PR #59 merged
-- 🔀 **028-keyflow-sync** — pr raised | 7/7 tasks (100%) | 0 failed | PR #61 merged
-- 🔀 **030-notifications** — pr raised | 7/7 tasks (100%) | 0 failed | PR #58 merged
-- 🔀 **034-backup-restore-and-export** — pr raised | 8/8 tasks (100%) | 0 failed | PR #62 merged
-- 🔀 **036-compliance-registers** — pr raised | 6/6 tasks (100%) | 0 failed | PR #63 open
-- 🔍 **055-it-admin-role** — verify done | 5/5 tasks (100%) | 0 failed | PR #56 merged
-- 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
-- 🔀 **061-ci-test-load** — pr raised | 3/3 tasks (100%) | 0 failed | PR #64 merged
+_No active changes._
 
 ## Pending Proposals
 
@@ -47,16 +37,23 @@
 - ✅ **003-data-core**
 - ✅ **004-mcp-gateway**
 - ✅ **005-amax-chat**
+- ✅ **006-agent-governance**
 - ✅ **007-delivery-projects**
 - ✅ **009-time-and-approvals**
 - ✅ **010-allocations-forecast**
 - ✅ **011-hr-core**
+- ✅ **012-leave**
 - ✅ **020-presales**
+- ✅ **024-learning**
+- ✅ **028-keyflow-sync**
 - ✅ **029-workflows-scheduler**
+- ✅ **030-notifications**
 - ✅ **031-secrets-and-keys**
 - ✅ **032-data-retention-and-erasure**
 - ✅ **033-ai-gateway-and-residency**
+- ✅ **034-backup-restore-and-export**
 - ✅ **035-api-webhooks-and-rate-limits**
+- ✅ **036-compliance-registers**
 - ✅ **039-specclaw-self-sync**
 - ✅ **040-dependency-updates**
 - ✅ **041-delivery-mock-parity**
@@ -71,13 +68,16 @@
 - ✅ **052-settings-review**
 - ✅ **053-trace-and-settings-hardening**
 - ✅ **054-chat-first-everywhere**
+- ✅ **055-it-admin-role**
 - ✅ **056-ci-flakes**
 - ✅ **057-chat-first-review**
 - ✅ **058-settings-review-2**
+- ✅ **059-stable-pins**
 - ✅ **060-privacy-api-hardening**
+- ✅ **061-ci-test-load**
 
 ## Stats
 
 - **Total changes:** 43
-- **Active:** 10
-- **Completed:** 33
+- **Active:** 0
+- **Completed:** 43
