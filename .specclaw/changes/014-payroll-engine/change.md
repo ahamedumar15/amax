@@ -32,7 +32,7 @@ fictional deductions, so the engine and screen can be shown end to end.
   Files: modules/payroll/ui/*.tsx, modules/payroll/ui/payroll.css, modules/payroll/module.ts, modules/payroll/tests/e2e/payroll.spec.ts
 - [x] `T2` — Contracts first, then the `payroll` schema (pay component, pay group, run, payslip line). Runs step Draft → Agent check → HR approval → Finance approval → Bank file → Payslips sent, each step an audited service and MCP write tool. Finance approval reads totals by entity and cost centre only (AC-1)
   Files: modules/payroll/contracts.ts, modules/payroll/db/migrations/0001_payroll.sql, modules/payroll/server/*.ts, modules/payroll/mcp.ts, modules/payroll/fixtures/, modules/payroll/tests/runs.test.ts, modules/payroll/tests/contracts.test.ts
-- [ ] `T3` — The country-pack interface (`calculate`, `statutory`, `filings`). The draft is built from hr pay data, leave and (optionally) time through their contracts. A fixture demo pack covers it until 015 and 016 land (AC-4)
+- [x] `T3` — The country-pack interface (`calculate`, `statutory`, `filings`). The draft is built from hr pay data, leave and (optionally) time through their contracts. A fixture demo pack covers it until 015 and 016 land (AC-4)
   Files: modules/payroll/packs.ts, modules/payroll/server/draft.ts, modules/payroll/tests/packs.test.ts
   Depends: T2
 - [ ] `T4` — The payroll agent explains every line that changed since last period as a 006 suggestion (Accept or Query). The run can't be approved while one is open or queried. The bank file is an irreversible 006 kind needing two approvers (AC-1, AC-2)
