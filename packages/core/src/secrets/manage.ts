@@ -44,10 +44,10 @@ const storeVersion = defineService({
   },
 });
 
-export async function putSecret(ctx: ServiceContext, raw: unknown) {
+export const putSecret = Object.assign(async (ctx: ServiceContext, raw: unknown) => {
   await ensureDataKey(ctx);
   return storeVersion(ctx, raw);
-}
+}, { spec: storeVersion.spec });
 
 export const revokeSecret = defineService({
   name: "secrets.credential.revoke",

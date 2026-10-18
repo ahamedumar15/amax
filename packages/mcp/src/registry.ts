@@ -64,6 +64,8 @@ export function createRegistry(modules: Registrable[]) {
     if (seen.has(t.name)) throw new Error(`MCP tool "${t.name}" is declared twice`);
     seen.add(t.name);
     checkPinSpec(t);
+    // 043 AC-1: every write tool says which service makes its write, or null when chat can't confirm it.
+    if (t.scope === "write" && t.service === undefined) throw new Error(`MCP write tool "${t.name}" declares no service (null if it can't be confirmed in chat)`);
   }
   const allowed = (viewer: Viewer, t: RegisteredTool, scopes: Scope[]) => scopes.includes(t.scope) && (!t.permission || canEver(viewer, t.permission));
 

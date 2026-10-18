@@ -19,5 +19,5 @@ export const mcpTools = (d: AdminDeps) => [
   tool({ ...read(READ), pin: "view", name: "get_mcp_tool", description: "One amax MCP tool: its module, scope and which roles can use it.", input: z.object({ name: z.string().min(1) }),
     run: async (v, a) => toolCatalogue(d.tools(), v.tenantId).find((t) => t.name === a.name) ?? Promise.reject(notFound(`tool ${a.name}`)) }),
   tool({ ...write("mcp:client:revoke"), name: "revoke_mcp_client", description: "Revoke one person's grant to an MCP client; its tokens stop working at once.", destructive: true,
-    input: z.object(client), run: (v, a, s) => revokeMcpClient(ctxFor(v, s), a) }),
+    input: z.object(client), service: revokeMcpClient, run: (v, a, s) => revokeMcpClient(ctxFor(v, s), a) }),
 ];

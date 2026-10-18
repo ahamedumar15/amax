@@ -110,6 +110,29 @@ function unretained(name) {
   ];
 }
 
+// 043 AC-1: every write tool in mcp.ts names the service that makes its write (null: never a chat
+// card). The registry refuses one that doesn't at startup; this catches it before the app runs.
+export function undeclaredWrites(src) {
+  const code = stripTs(src);
+  const out = [];
+  for (const m of code.matchAll(/\btool\(\{/g)) {
+    let depth = 0;
+    let end = m.index + m[0].length - 1;
+    for (; end < code.length; end++) {
+      if ("({[".includes(code[end])) depth++;
+      if (")}]".includes(code[end]) && --depth === 0) break;
+    }
+    const body = code.slice(m.index, end);
+    if (/scope:\s*"write"|\.\.\.write\b/.test(body) && !/\bservice:/.test(body)) out.push(body.match(/\bname:\s*"([^"]+)"/)?.[1] ?? "(unnamed)");
+  }
+  return out;
+}
+
+const undeclared = (name) => {
+  const f = join(modulesDir, name, "mcp.ts");
+  return existsSync(f) ? undeclaredWrites(readFileSync(f, "utf8")).map((t) => `modules/${name}: write tool ${t} declares no service (043)`) : [];
+};
+
 // Run as the CLI unless imported for the parsers. Compare real paths, not URL text: a checkout path with
 // a space or a symlink must never make the check exit 0 without checking (review 058 round 2).
 const real = (p) => {
@@ -127,6 +150,7 @@ const names = existsSync(modulesDir) ? readdirSync(modulesDir).filter((d) => sta
 const problems = names.flatMap((name) => [
   ...REQUIRED.filter((f) => !existsSync(join(modulesDir, name, f))).map((f) => `modules/${name}: missing ${f}`),
   ...unretained(name),
+  ...undeclared(name),
   ...(new RegExp(`^/modules/${name}/\\s+\\S`, "m").test(owners) ? [] : [`modules/${name}: no CODEOWNERS line for /modules/${name}/`]),
 ]);
 

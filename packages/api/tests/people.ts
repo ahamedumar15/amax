@@ -18,7 +18,7 @@ const addNote = defineService({
 });
 
 const tools = [
-  { name: "add_note", description: "Add a note.", input: z.object({ text: z.string().min(1) }).strict(), permission: "demo:note:add", scope: "write",
+  { name: "add_note", description: "Add a note.", input: z.object({ text: z.string().min(1) }).strict(), permission: "demo:note:add", scope: "write", service: addNote,
     run: (v: Viewer, a: { text: string }, source: "api") => addNote(contextForViewer(v, source), a) },
 ] as unknown as McpToolDef[];
 

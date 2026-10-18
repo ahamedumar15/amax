@@ -20,7 +20,7 @@ import type { JobDef } from "./module";
 //      itself. A scope opened with an actor (chat's, for its person) binds the record to that actor,
 //      and a lookup for anyone else is refused. Records are pruned after KEY_DAYS.
 
-type Scope = { key: string; writes: number; nested: number; service?: string; by?: string };
+type Scope = { key: string; writes: number; nested: number; service?: readonly string[]; by?: string };
 const scope = new AsyncLocalStorage<Scope>();
 const nest = new AsyncLocalStorage<{ base: string; n: number }>();
 
@@ -28,9 +28,9 @@ export type KeyedRun<T> = { ok: true; value: T; writes: number; nested: number }
 
 /**
  * Runs `fn` under `key` and reports its top-level and nested service writes, whether it returned or
- * threw. `service`: the one service that may write; `by`: the actor its records are bound to.
+ * threw. `service`: the services that may make its one write; `by`: the actor its records are bound to.
  */
-export async function withIdempotency<T>(key: string, fn: () => Promise<T>, opts: { service?: string; by?: string } = {}): Promise<KeyedRun<T>> {
+export async function withIdempotency<T>(key: string, fn: () => Promise<T>, opts: { service?: readonly string[]; by?: string } = {}): Promise<KeyedRun<T>> {
   const s: Scope = { key, writes: 0, nested: 0, ...opts };
   try {
     return { ok: true, value: await scope.run(s, fn), writes: s.writes, nested: s.nested };
@@ -42,8 +42,8 @@ export async function withIdempotency<T>(key: string, fn: () => Promise<T>, opts
 /** A keyed call that declared its service reached a different one: refused before it wrote. */
 export class UndeclaredWriteError extends Error {
   readonly retryable = false;
-  constructor(declared: string, called: string) {
-    super(`${called} isn't the declared write ${declared}`);
+  constructor(declared: readonly string[], called: string) {
+    super(`${called} isn't the declared write (${declared.join(", ")})`);
     this.name = "UndeclaredWriteError";
   }
 }
@@ -56,7 +56,7 @@ export function takeIdempotencyKey(service: string): KeyTaken | null {
   if (!s) return null;
   const n = nest.getStore();
   if (n) return { key: `${n.base}/${++n.n}`, nested: true, by: s.by };
-  if (s.service && s.service !== service) throw new UndeclaredWriteError(s.service, service);
+  if (s.service && !s.service.includes(service)) throw new UndeclaredWriteError(s.service, service);
   s.writes++;
   return s.writes === 1 ? { key: s.key, nested: false, by: s.by } : null;
 }

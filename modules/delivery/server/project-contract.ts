@@ -11,7 +11,7 @@ export type CreateProjectResult = CreatedProject & { replayed?: true };
  * replay comes back as the same project's id and key with `replayed: true`. A taken key, or a
  * sourceRef that already made a project under another key, throws ProjectConflictError.
  */
-export async function createProject(ctx: ServiceContext, input: CreateProjectInput): Promise<CreateProjectResult> {
+export const createProject = Object.assign(async (ctx: ServiceContext, input: CreateProjectInput): Promise<CreateProjectResult> => {
   try {
     return await createSourcedProject(ctx, input);
   } catch (e) {
@@ -20,4 +20,4 @@ export async function createProject(ctx: ServiceContext, input: CreateProjectInp
     if (!resourceId || !key) throw new Error("delivery: the replayed project create names no project");
     return { id: resourceId, key, replayed: true };
   }
-}
+}, { spec: createSourcedProject.spec });

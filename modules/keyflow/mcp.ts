@@ -31,9 +31,9 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...profile, pin: { id: "recordId", of: recordOf }, name: "get_keyflow_record", description: "One goal, review score or recognition from Keyflow, by its id.",
     input: z.object({ recordId: z.uuid() }), run: (v, a) => getRecord(v, a.recordId) }),
   tool({ name: "connect_keyflow", description: "Point amax at the tenant's Keyflow (a public https address). The key itself is the Keyflow credential under Settings, Connections and keys. A new address sends everyone again.",
-    scope: "write", permission: "keyflow:manage", input: z.object({ endpoint: z.url() }), run: (v, a, s = "mcp") => connectKeyflow(ctxFor(v, s), a) }),
+    scope: "write", permission: "keyflow:manage", input: z.object({ endpoint: z.url() }), service: connectKeyflow, run: (v, a, s = "mcp") => connectKeyflow(ctxFor(v, s), a) }),
   tool({ name: "dismiss_keyflow_sync_error", description: "Dismiss an open Keyflow sync error once it is dealt with. If the record fails again, a new error opens.",
-    scope: "write", permission: "keyflow:manage", input: z.object({ errorId: z.uuid() }), run: (v, a, s = "mcp") => dismissSyncError(ctxFor(v, s), a) }),
+    scope: "write", permission: "keyflow:manage", input: z.object({ errorId: z.uuid() }), service: dismissSyncError, run: (v, a, s = "mcp") => dismissSyncError(ctxFor(v, s), a) }),
 ];
 
 // Contribution to the built-in search tool: a person's Keyflow performance page.

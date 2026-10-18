@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { withTenant } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { ForbiddenError, getRuntime, logError, retryable, withIdempotency, type Source } from "@amax/core/server";
+import { ForbiddenError, getRuntime, keyedOutcome, logError, ReplayedError, retryable, withIdempotency, type Source } from "@amax/core/server";
 import * as delivery from "@amax/delivery/contracts";
 import { getOpportunityRef } from "../contracts";
 import { claimPromotion, createKey, PromotionRefused, recordPromotion, releasePromotion } from "./claim";
@@ -54,9 +54,11 @@ export async function promoteToDelivery(viewer: Viewer, raw: unknown, opts: { so
     const { opp, existing } = await withTenant(db, viewer.tenantId, async (tx) => ({ opp: (await getOpportunityRef(tx, input.number))!, existing: await delivery.getProjectRef(tx, input.key) }));
     if (existing && !claim.resumed) throw new Error(`delivery already has a project ${input.key}; choose another key`);
     const created = await withIdempotency(createKey(claim.series), () => create(ctx, { key: input.key, name: opp.title, client: opp.client, billing: input.billing }));
-    if (!created.ok) throw created.error;
+    // A replay (043) is thrown, not returned: it names the project this series already made.
+    const replayed = created.ok ? null : keyedOutcome(created.error);
+    if (!created.ok && !(replayed instanceof ReplayedError)) throw created.error;
     made = true;
-    const project = projectOf(created.value, input.key);
+    const project = projectOf(created.ok ? created.value : (replayed as ReplayedError).replay, input.key);
     return await recordPromotion(ctx, { number: input.number, token: claim.token, projectId: project.id, projectKey: project.key });
   } catch (e) {
     // Release in one transaction with the check that the series made nothing. A refusal every replay

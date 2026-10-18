@@ -41,11 +41,11 @@ describe.skipIf(!hasDb)("043 idempotency contract", () => {
   it("AC-1 a scope that declares its service refuses any other before it writes", async () => {
     const declared = rename("core.test.declared");
     const other = rename("core.test.other");
-    const run = await withIdempotency("043:declared", () => other(maya, { id, name: "Other" }), { service: declared.spec.name });
+    const run = await withIdempotency("043:declared", () => other(maya, { id, name: "Other" }), { service: [declared.spec.name] });
     expect(run).toMatchObject({ ok: false, writes: 0 });
     expect((run as { error: unknown }).error).toBeInstanceOf(UndeclaredWriteError);
     expect(await keys()).toEqual([]);
-    expect(await withIdempotency("043:declared", () => declared(maya, { id, name: "Declared" }), { service: declared.spec.name })).toMatchObject({ ok: true, writes: 1 });
+    expect(await withIdempotency("043:declared", () => declared(maya, { id, name: "Declared" }), { service: [declared.spec.name] })).toMatchObject({ ok: true, writes: 1 });
   });
 
   it("AC-2 a service called inside another's run gets a derived key and isn't a second top-level write", async () => {

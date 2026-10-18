@@ -35,10 +35,10 @@ seen at run time, so `check:modules` closes that gap statically: every `scope: "
 - [x] `T2` — Replays bound to the actor that wrote them; a different actor's lookup is refused (AC-5)
   Files: packages/core/src/idempotency.ts, packages/core/src/service.ts, packages/core/tests/idempotency-043.test.ts
   Depends: T1
-- [ ] `T3` — Chat engine: no card without a declared service; fail-closed error path; cancel that loses to an unknown write becomes unknown; wrapped or stored cancel both read "cancelled" (AC-1, AC-3, AC-4)
+- [x] `T3` — Chat engine: no card without a declared service; fail-closed error path; cancel that loses to an unknown write becomes unknown; wrapped or stored cancel both read "cancelled" (AC-1, AC-3, AC-4)
   Files: packages/chat/src/engine.ts, packages/mcp/src/registry.ts
   Depends: T1, T2
-- [ ] `T4` — Every write tool declares its service, and `check:modules` fails a write tool that declares none (AC-1)
+- [x] `T4` — Every write tool declares its service, and `check:modules` fails a write tool that declares none (AC-1)
   Files: modules/*/mcp.ts, packages/chat/src/tools.ts, packages/agents/src/mcp.ts, apps/web/lib/admin/*.ts, scripts/check-module-standard.mjs, docs/module-standard.md
   Depends: T1
 - [ ] `T5` — Tests for the real failure paths (settle fails after the service commit, raw write then throw, raw write against cancel), a table of refusal kinds (authorize, validation, registry pre-check), and the idempotency contract documented (AC-2, AC-3, AC-6)

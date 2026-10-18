@@ -34,13 +34,13 @@ export const backupTools = [
       if (!e || e.status !== "ready" || e.expired || !e.expiresAt) throw notFound(`a ready, unexpired export ${a.exportId}`);
       return { url: exportLink(v.tenantId, e.id, new Date(e.expiresAt)), expiresAt: e.expiresAt };
     } }),
-  tool({ ...write(BACKUP_MANAGE), name: "request_restore_drill", description: "Run a restore drill now: the latest backup is restored into a scratch database and checked.", input: z.object({}), run: (v, _a, s) => requestDrill(ctxFor(v, s), {}) }),
+  tool({ ...write(BACKUP_MANAGE), name: "request_restore_drill", description: "Run a restore drill now: the latest backup is restored into a scratch database and checked.", input: z.object({}), service: requestDrill, run: (v, _a, s) => requestDrill(ctxFor(v, s), {}) }),
   tool({ ...write(BACKUP_MANAGE), name: "request_tenant_export", description: "Ask for an export of all this organisation's data (JSON per module plus files). A second Admin approves it before it is built.",
-    input: z.object({ reason }), run: (v, a, s) => (chatOnly(s, CONFIRM_CARD), requestExport(ctxFor(v, s), a)) }),
+    input: z.object({ reason }), service: requestExport, run: (v, a, s) => (chatOnly(s, CONFIRM_CARD), requestExport(ctxFor(v, s), a)) }),
   tool({ ...write(BACKUP_MANAGE), name: "approve_tenant_export", description: "Approve a tenant export someone else asked for; amax builds it and gives a link that works for 24 hours.",
-    input: z.object({ exportId: z.uuid() }), run: (v, a, s) => (chatOnly(s, CONFIRM_CARD), approveExport(ctxFor(v, s), { id: a.exportId })) }),
-  tool({ ...write(BACKUP_MANAGE), name: "cancel_tenant_export", description: "Cancel a tenant export that is still waiting for approval.", input: z.object({ exportId: z.uuid() }), run: (v, a, s) => cancelExport(ctxFor(v, s), { id: a.exportId }) }),
+    input: z.object({ exportId: z.uuid() }), service: approveExport, run: (v, a, s) => (chatOnly(s, CONFIRM_CARD), approveExport(ctxFor(v, s), { id: a.exportId })) }),
+  tool({ ...write(BACKUP_MANAGE), name: "cancel_tenant_export", description: "Cancel a tenant export that is still waiting for approval.", input: z.object({ exportId: z.uuid() }), service: cancelExport, run: (v, a, s) => cancelExport(ctxFor(v, s), { id: a.exportId }) }),
   tool({ ...write(BACKUP_MANAGE), name: "start_tenant_offboarding", destructive: true, description: "This organisation is leaving amax: offer an export, wait 30 days, then destroy its data key so its backups can never be read.",
-    input: z.object({ reason }), run: (v, a, s) => (chatOnly(s, CONFIRM_CARD), startOffboarding(ctxFor(v, s), a)) }),
-  tool({ ...write(BACKUP_MANAGE), name: "cancel_tenant_offboarding", description: "Stop a waiting offboarding before its data key is destroyed.", input: z.object({ id: z.uuid() }), run: (v, a, s) => cancelOffboarding(ctxFor(v, s), a) }),
+    input: z.object({ reason }), service: startOffboarding, run: (v, a, s) => (chatOnly(s, CONFIRM_CARD), startOffboarding(ctxFor(v, s), a)) }),
+  tool({ ...write(BACKUP_MANAGE), name: "cancel_tenant_offboarding", description: "Stop a waiting offboarding before its data key is destroyed.", input: z.object({ id: z.uuid() }), service: cancelOffboarding, run: (v, a, s) => cancelOffboarding(ctxFor(v, s), a) }),
 ];

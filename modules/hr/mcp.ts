@@ -24,11 +24,11 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "add_person", description: "Add a person to HR records. Entity is Sri Lanka or Australia (or the entity's name). A future join date makes them 'joining'.", scope: "write", permission: "hr:person:create",
     input: z.object({ name: z.string(), title: z.string(), department: z.string(), entity: z.string(), joinedOn: z.string(), managerEmployeeNo: z.string().optional(),
       contract: z.enum(CONTRACTS).optional(), fte: z.number().optional(), grade: z.string().optional(), workEmail: z.string().optional() }),
-    run: (v, a, s = "mcp") => addPerson(ctxFor(v, s), a) }),
+    service: addPerson, run: (v, a, s = "mcp") => addPerson(ctxFor(v, s), a) }),
   tool({ name: "change_person", description: "Change a person's department, grade, manager, contract, FTE or review date from an effective date (default today), or their title, location or work email (today only).", scope: "write",
-    permission: "hr:person:update", input: changeInput.omit({ baseSalary: true }), run: (v, a, s = "mcp") => changePerson(ctxFor(v, s), a) }),
+    permission: "hr:person:update", input: changeInput.omit({ baseSalary: true }), service: changePerson, run: (v, a, s = "mcp") => changePerson(ctxFor(v, s), a) }),
   tool({ name: "record_leaver", description: "Record that a person leaves on a date. Their employment ends that day.", scope: "write", destructive: true, permission: "hr:person:leave",
-    input: z.object({ employeeNo: z.string(), leftOn: z.string(), reason: z.string().optional() }), run: (v, a, s = "mcp") => recordLeaver(ctxFor(v, s), a) }),
+    input: z.object({ employeeNo: z.string(), leftOn: z.string(), reason: z.string().optional() }), service: recordLeaver, run: (v, a, s = "mcp") => recordLeaver(ctxFor(v, s), a) }),
 ];
 
 // Contribution to the built-in search tool.

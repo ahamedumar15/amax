@@ -32,17 +32,17 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: { id: "certificationId", of: certificationOf }, name: "get_certification", description: "One certification by id: who holds it, when it was issued, when it expires and the last reminder.",
     input: z.object({ certificationId: z.string().uuid() }), run: async (v, a) => (await listCertifications(v, { on: today(), certificationId: a.certificationId }))[0] ?? null }),
   tool({ ...write("learning:programme:create"), name: "create_programme", description: "Add a learning programme: a certification cohort, workshop, compliance course, leadership programme or course, run internally or externally.",
-    input: newProgramme, run: (v, a, s = "mcp") => createProgramme(ctxFor(v, s), a) }),
+    input: newProgramme, service: createProgramme, run: (v, a, s = "mcp") => createProgramme(ctxFor(v, s), a) }),
   tool({ ...write("learning:enrol"), name: "enrol_in_programme", description: "Enrol people in a programme by employee number, or everyone active (for a mandatory course). People already enrolled are skipped.",
-    input: z.object({ programmeId, employeeNos: z.array(employeeNo).optional(), everyone: z.boolean().optional() }), run: (v, a, s = "mcp") => enrolPeople(ctxFor(v, s), a) }),
+    input: z.object({ programmeId, employeeNos: z.array(employeeNo).optional(), everyone: z.boolean().optional() }), service: enrolPeople, run: (v, a, s = "mcp") => enrolPeople(ctxFor(v, s), a) }),
   tool({ ...write("learning:enrol"), name: "record_completion", description: "Record that someone completed a programme (progress 100, the default), or their progress so far, with any hours they spent that day.",
     input: z.object({ programmeId, employeeNo, progress: z.number().int().min(0).max(100).optional(), on: day.optional(), hours: z.number().positive().max(24).optional() }),
-    run: (v, a, s = "mcp") => recordCompletion(ctxFor(v, s), a) }),
+    service: recordCompletion, run: (v, a, s = "mcp") => recordCompletion(ctxFor(v, s), a) }),
   tool({ ...write("learning:certification:record"), name: "record_certification", description: "Record a certification someone holds, with its issuer, issue date and expiry. Reminders go out 60 and 14 days before it expires.",
     input: z.object({ employeeNo, name: z.string(), issuer: z.string().optional(), issuedOn: day, expiresOn: day.optional(), programmeId: programmeId.optional() }),
-    run: (v, a, s = "mcp") => recordCertification(ctxFor(v, s), a) }),
+    service: recordCertification, run: (v, a, s = "mcp") => recordCertification(ctxFor(v, s), a) }),
   tool({ ...write("learning:remind"), name: "remind_certification", description: "Remind the holder now that their certification expires soon, on top of the scheduled reminders.",
-    input: z.object({ certificationId: z.string().uuid() }), run: (v, a, s = "mcp") => remindCertification(ctxFor(v, s), a) }),
+    input: z.object({ certificationId: z.string().uuid() }), service: remindCertification, run: (v, a, s = "mcp") => remindCertification(ctxFor(v, s), a) }),
 ];
 
 export async function search(viewer: Viewer, query: string): Promise<SearchHit[]> {

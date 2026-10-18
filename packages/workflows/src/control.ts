@@ -29,7 +29,7 @@ export type ControlHook = (run: ControlledRun, action: RunAction) => Promise<voi
 // Each action is a service: authorised, written, audited and announced (workflows.run.paused, …)
 // in one transaction. Retry clears the failed step so it runs again; every completed step keeps
 // its checkpoint and is not re-run.
-const runServices = Object.fromEntries((Object.keys(FROM) as RunAction[]).map((action) => [action, defineService({
+export const runServices = Object.fromEntries((Object.keys(FROM) as RunAction[]).map((action) => [action, defineService({
   name: `workflows.run.${action}`,
   action: WORKFLOWS_ADMIN,
   resource: "workflows.run",
@@ -78,4 +78,4 @@ const scheduleService = defineService({
   },
 });
 
-export const setScheduleEnabled = (ctx: ServiceContext, scheduleId: string, enabled: boolean) => scheduleService(ctx, { scheduleId, enabled });
+export const setScheduleEnabled = Object.assign((ctx: ServiceContext, scheduleId: string, enabled: boolean) => scheduleService(ctx, { scheduleId, enabled }), { spec: scheduleService.spec });

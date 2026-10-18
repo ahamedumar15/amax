@@ -35,13 +35,13 @@ export const secretTools = [
   tool({ ...read(READ), pin: "view", name: "get_secret_meta", description: "One connector credential's status, expiry, rotation and last use. Never the value.", input: z.object({ connector }),
     run: async (v, a) => { const r = (await rows(v)).find((x) => x.connector === a.connector); if (!r) throw notFound(`credential ${a.connector}`); return meta(r); } }),
   tool({ ...write(MANAGE), name: "put_secret", description: "Add a connector credential. The person types the value on the confirm card.", secretInput: { label: "Value" },
-    input: z.object({ connector, expiresAt: day.optional() }),
+    input: z.object({ connector, expiresAt: day.optional() }), service: putSecret,
     run: async (v, a, s, secret) => {
       if (await current(v, a.connector)) throw new ToolError(`${a.connector} already has a credential; use rotate_secret`, "invalid_input");
       return putSecret(ctxFor(v, s), { connector: a.connector, value: typed(secret), expiresAt: endOf(a.expiresAt) ?? null });
     } }),
   tool({ ...write(MANAGE), name: "rotate_secret", description: "Rotate a connector credential to a new value, keeping its expiry unless a new one is given. The person types the value on the confirm card.",
-    secretInput: { label: "New value" },
+    secretInput: { label: "New value" }, service: putSecret,
     input: z.object({ connector, expiresAt: day.optional(), graceHours: z.number().int().min(0).max(720).optional().describe("How long the old value keeps working; default 72") }),
     // Checked when chat proposes the card, so a past expiry is refused before anyone types the value (053).
     propose: async (v, a) => {
@@ -54,5 +54,5 @@ export const secretTools = [
       return putSecret(ctxFor(v, s), { connector: a.connector, value: typed(secret), expiresAt: endOf(a.expiresAt) ?? keptExpiry(a.connector, row.expiresAt), graceHours: a.graceHours ?? 72 });
     } }),
   tool({ ...write(MANAGE), name: "revoke_secret", description: "Revoke a connector credential now; its stored value is destroyed.", destructive: true,
-    input: z.object({ connector, reason: z.enum(REVOKE_REASONS) }), run: (v, a, s) => revokeSecret(ctxFor(v, s), a) }),
+    input: z.object({ connector, reason: z.enum(REVOKE_REASONS) }), service: revokeSecret, run: (v, a, s) => revokeSecret(ctxFor(v, s), a) }),
 ];

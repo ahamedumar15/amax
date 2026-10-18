@@ -22,4 +22,4 @@ const zoneService = defineService({
   },
 });
 
-export const setEntityZone = (ctx: ServiceContext, legalEntityId: string, timezone: string) => zoneService(ctx, { legalEntityId, timezone });
+export const setEntityZone = Object.assign((ctx: ServiceContext, legalEntityId: string, timezone: string) => zoneService(ctx, { legalEntityId, timezone }), { spec: zoneService.spec });
