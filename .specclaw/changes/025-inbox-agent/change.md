@@ -71,9 +71,9 @@ Outside the module: `.github/CODEOWNERS`, `pnpm-lock.yaml` and `BACKLOG.md`, whi
 
 Mock: 025 has no mock section of its own (see Tasks). `/inbox-agent` follows the Presales "Found by agents in Teams and email" strip (`shots/mock.png`, `001-amax-foundation-presales`): the same card with source, excerpt, Add, Open in chat and Dismiss. The tiles, allow-list and scans tables reuse the app's patterns. `shots/app.png` was re-taken on HEAD after the plural fix ("2 new opportunities").
 
-Commands (worktree merged with origin/main at 2e305de, Postgres 16 at `DATABASE_MIGRATE_URL`, HEAD 50ea4a6):
-- `pnpm turbo run lint --force` → 0 (29/29)
-- `pnpm turbo run test --force --continue --concurrency=2` → 0 (29/29)
+Commands (re-run after merging origin/main at 3639408, with 027; Postgres 16 at `DATABASE_MIGRATE_URL`, HEAD 16469f5):
+- `pnpm turbo run lint --force` → 0 (30/30)
+- `pnpm turbo run test --force --continue --concurrency=2` → 0 (30/30)
 - `pnpm --filter @amax/web build` → 0
 - `playwright test --config playwright.auth.config.ts` (apps/web) → 81/81. The first run failed `auth.spec.ts` AC5's sign-out redirect, the same flake 021 recorded, and stopped there. The re-run passed everything.
 - module e2e `pnpm --filter @amax/inbox-agent e2e` → 1/1 (axe, nothing unpinned, no forms, Add opens the owner's intent)
