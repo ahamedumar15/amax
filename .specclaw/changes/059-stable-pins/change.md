@@ -41,3 +41,26 @@ None. Pins look the same; a renamed record's pin shows its new name.
   Depends: T3, T4, T5
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `packages/core/src/module.ts` `PinSpec` (`{ id, of }` or `"view"`); `createRegistry` runs `checkPinSpec` on every tool at startup and refuses a record pin whose id field isn't a UUID or that sits on a non-read tool (`packages/mcp/tests/pin-spec.test.ts`, 6 cases). `apps/web/tests/pin-refs.test.ts` scans every `tool: "…", args` PinRef in `modules/*` and `apps/web/{app,components}` against the real `toolRegistry()`: each names a tool with a pin spec, and each record pin carries its id field. get_project, get_proposal, get_person and get_opportunity gained an id path (a key only narrows).
+- AC-2: pass — `packages/chat/src/resolve.ts` `resolvePins`/`refreshSaved`/`openConversation`: on a turn and on reopen, a name-keyed pin is looked up once and rewritten to its id, or marked `unavailable` ("No longer available") when nothing is found or the record found was made after the pin was saved, and is never read again. `modules/delivery/tests/stable-pins.test.ts` "AC2": a pre-059 row with three key pins; the release is re-tagged and its old tag reused, the sync gives a proposal key to a new row; reopen gives No longer available for both and the environment pin moves onto its id, twice in a row; the next turn's model input carries the environment and the "no longer available" marker, never the new release's id. Negative check: dropping the made-after-save guard fails this test.
+- AC-3: pass — record pins take `of(result).label` (plus their facet) every time they're read: each turn (`ChatTurn.pins`, merged by the panel with `withFresh`), each reopen, and after a confirmed write (`refreshPins` action). Covered by the AC-5 table below and `apps/web/tests/chat-move.test.ts`.
+- AC-4: pass — `packages/chat/src/repin.ts` and its test deleted; `repin` results gone from `tagRelease`/`upsertEnvironment`; `doneOutcome` is synchronous with no repin (`apps/web/tests/chat-outcome.test.ts`); the panel's `repinAll` is replaced by `withFresh`. `grep -rn repin` finds only test names and the 057 follow-ups.
+- AC-5: pass — `modules/delivery/tests/stable-pins.test.ts` "AC5": release (get_release, get_release_history with a facet, get_deployment pins) and environment renamed by chat confirm, MCP call and job (service with a `job` context), plus a proposal rekeyed by the specclaw sync (`syncProposal`, the job path; no chat or MCP tool rekeys a proposal). In all 7 cases the saved pins reopen with the same id args and the new name.
+- AC-6: pass — commands below, all exit 0.
+
+Commands:
+- `pnpm lint` → 0 (tsc in every package + `amax graph check: ok`)
+- `pnpm turbo run test --concurrency=1 --force` → 0 (17/17 tasks; run serially because the shared test Postgres hit "too many clients" under the default parallel run)
+- `node scripts/check-module-standard.mjs` → 0 (`module standard: ok (5 modules)`)
+- `pnpm build` → 0
+- `pnpm --filter @amax/web e2e` (no DATABASE_URL, E2E_PORT=3558) → 0, 1 passed
+- `pnpm --filter @amax/web e2e:auth` (E2E_DB=amax_059_e2e, E2E_AUTH_PORT=3559) → 0, 57 passed. A first run had one failure in `auth.spec.ts` AC5 (sign-out then /delivery not redirected); it passed on the rerun and touches nothing in this change.
+- `specclaw-preset-check .` → 1: 895 repo-wide violations (comments, file length) that predate this change. The new files carry comments too, matching the surrounding code as the operator asked; `stable-pins.test.ts` is over 80 lines.
+- `specclaw-quality-scan . --gate` → not run: the script fails on this repo (jq "Argument list too long").
+
+Screens: Mock Delta is None. Pins look the same; the visual suites compare the screens with the mock and pass (`delivery-visual.spec.ts` at 1440 and 390 px, `api-visual.spec.ts`, `retention-visual.spec.ts`), and `pins.spec.ts` (every card and row has a pin) passes. Opportunity facet pins now read "PS-0142 <title>, details" rather than "PS-0142 details", so a renamed deal's title stays current; this text appears only in the pin's aria-label and chip.
+
+Quality: not_run (specclaw-quality-scan failed: jq "Argument list too long" on this repo)

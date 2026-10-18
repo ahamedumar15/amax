@@ -1,8 +1,9 @@
 {
   "change": "059-stable-pins",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T03:35:47Z"}
+    "tasks": {"status":"done","at":"2026-10-18T03:35:47Z"},
+    "verify": {"status":"done","at":"2026-10-18T04:01:16Z"}
   }
 }
