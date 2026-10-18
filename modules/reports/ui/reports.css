@@ -1,0 +1,31 @@
+.reports .lede{color:var(--ink-2);margin:0 0 24px;max-width:70ch;text-wrap:pretty}
+.reports .note{color:var(--ink-3);font-size:13px;margin:-14px 0 20px}
+.reports .stack{display:flex;flex-direction:column;gap:28px}
+.reports .card-head .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.reports .muted{color:var(--ink-3)}
+.reports .chart{width:100%;height:auto;display:block;overflow:visible}
+.reports .chart .ax{fill:var(--ink-3);font-size:12px}
+.reports .legend{display:flex;gap:28px;font-size:12.5px;color:var(--ink-2);margin-top:6px;padding-left:44px;flex-wrap:wrap;row-gap:6px}
+.reports .legend span{display:inline-flex;align-items:center;gap:10px}
+.reports .legend i{display:inline-block;width:56px;height:3px;border-radius:3px}
+.reports .legend i.target{background:repeating-linear-gradient(90deg,var(--amber) 0 5px,transparent 5px 9px)}
+.reports .seg a{flex:1;white-space:nowrap;padding:0 12px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;font-size:13.5px;font-weight:500;color:var(--ink-2);text-decoration:none}
+.reports .seg a[aria-current="page"]{background:var(--card);color:var(--chip-agent);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
+.reports .scroll-x{overflow-x:auto}
+.reports .tbl .who{display:flex;align-items:center;gap:12px}
+.reports .tbl small{display:block;color:var(--ink-3);font-size:12.5px}
+.reports .tbl tr.total{background:var(--sunken);font-weight:600}
+.reports .av{display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+.reports .av.sm{width:30px;height:30px;border-radius:10px;font-size:11px}
+.reports .a1{background:linear-gradient(135deg,#FFB86B,#F48B9B)}
+.reports .a2{background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
+.reports .a3{background:linear-gradient(135deg,#7BE3B4,#2FB5A0)}
+.reports .a4{background:linear-gradient(135deg,#C3B5FF,#8E6CF0)}
+.reports .bar{display:flex;align-items:center;gap:12px}
+.reports .meter{flex:1;height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;min-width:90px}
+.reports .meter i{display:block;height:100%;border-radius:8px}
+.reports .meter i.good{background:var(--mint)}
+.reports .meter i.under{background:var(--amber)}
+.reports .meter i.team{background:var(--violet)}
+.reports .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.reports .empty-line{padding:0 28px 26px;color:var(--ink-3)}
