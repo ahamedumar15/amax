@@ -16,7 +16,7 @@ describe.skipIf(!hasDb)("exit questionnaire (Postgres)", () => {
   it("AC-3 the exit link is single-use, stored hashed and expires after 14 days; the answers reach HR only", async () => {
     const [hr, ravi, nimal] = [await db.as("maya", "HR"), await db.as("ravi"), await db.as("nimal")];
     const [rizwan] = await db.q(sql`select id from onboarding.checklist where person_name = 'Rizwan Farook'`);
-    const send = (v: typeof hr, checklistId: string) => db.registry.call(v, "send_exit_questionnaire", { checklistId }, { source: "mcp" }) as Promise<{ token: string; path: string; expiresAt: string }>;
+    const send = (v: typeof hr, checklistId: string) => db.registry.call(v, "send_exit_questionnaire", { checklistId }, { source: "mcp" }) .then((r) => { const l = r as { reveal: { value: string }; expiresAt: string }; return { ...l, path: l.reveal.value, token: l.reveal.value.slice("/exit/".length) }; });
     await expect(send(nimal, rizwan.id as string)).rejects.toThrow();
     const link = await send(hr, rizwan.id as string);
     expect(link.path).toBe(`/exit/${link.token}`);

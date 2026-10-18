@@ -34,8 +34,9 @@ export const issueExitLink = defineService({
       returning id, expires_at`);
     const expiresAt = new Date(x.expires_at as string).toISOString();
     const payload: ExitLinkIssued = { checklistId: c.id as string, personId: c.person_id as string, expiresAt, by: actorOf(ctx) };
-    // The token goes back to HR once, never into the audit or the outbox.
-    return { result: { checklistId: c.id as string, personName: c.person_name as string, token, path: `/exit/${token}`, expiresAt }, resourceId: x.id as string,
+    // The link goes back to HR once, as a reveal: chat shows it on the confirm card only, never in the
+    // transcript the model reads, the audit or the outbox (the 035 API-key pattern).
+    return { result: { checklistId: c.id as string, personName: c.person_name as string, expiresAt, reveal: { label: "Exit questionnaire link", value: `/exit/${token}` } }, resourceId: x.id as string,
       after: { checklistId: c.id, expiresAt }, events: [{ name: EVENTS.exitLinkIssued, payload }] };
   },
 });
