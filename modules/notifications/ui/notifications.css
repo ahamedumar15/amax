@@ -1,0 +1,27 @@
+.notif .lede{color:var(--ink-2);margin:0 0 24px;max-width:70ch;text-wrap:pretty}
+.notif .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.notif .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.notif .row.head .lede{margin:0}
+.notif .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.notif .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+.notif .stack{display:grid;gap:20px}
+.n-group{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin:12px 0 4px}
+.n-group:first-of-type{margin-top:4px}
+.n-list{list-style:none;margin:0;padding:0}
+.n-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line);font-size:14px}
+.n-list li:first-child{border-top:0}
+.n-list li small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.n-list a{color:var(--ink);text-decoration:none}
+.n-list a:hover b,.n-list a:focus-visible b{text-decoration:underline}
+.n-list .pin.inline{position:static;opacity:1;transform:none;flex:none}
+.n-list .unread b::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--coral);margin-left:8px;vertical-align:1px}
+.bellwrap{position:relative}
+.bellwrap .iconbtn .count{position:absolute;top:4px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#B42318;color:#fff;font:700 11px/18px var(--font);font-style:normal;border:2px solid var(--card);box-sizing:content-box}
+.bell-panel{position:absolute;right:0;top:calc(100% + 10px);z-index:36;width:min(380px,calc(100vw - 32px));max-height:min(560px,80dvh);overflow-y:auto;background:var(--card);border-radius:20px;box-shadow:0 24px 60px -20px rgba(40,30,110,.45),0 0 0 1px var(--line);padding:18px 20px}
+.bell-panel h2{font-size:16px;margin:0}
+.bell-panel h2:focus{outline:none}
+.bell-panel .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.bell-panel .foot{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px}
+.bell-panel .foot a{color:var(--violet);font-weight:600;text-decoration:none}
+@media (max-width:900px){.notif .cols{grid-template-columns:1fr}}
+@media (max-width:640px){.bell-panel{position:fixed;left:16px;right:16px;top:72px;width:auto}}
