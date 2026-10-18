@@ -12,8 +12,8 @@
 | Spec | - | - |
 | Design | - | - |
 | Tasks | ✅ Done |  |
-| Build | 🔨 In_progress |  |
-| Verify | - | - |
+| Build | ✅ Done |  |
+| Verify | ✅ Done |  |
 
 ## Task Progress
 

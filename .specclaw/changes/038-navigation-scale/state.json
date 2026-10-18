@@ -1,10 +1,11 @@
 {
   "change": "038-navigation-scale",
-  "phase": "build",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"done","at":"2026-10-18T10:18:15Z"},
     "tasks": {"status":"done","at":"2026-10-18T10:18:15Z"},
-    "build": {"status":"in_progress","at":"2026-10-18T10:18:16Z"}
+    "build": {"status":"done","at":"2026-10-18T10:31:02Z"},
+    "verify": {"status":"done","at":"2026-10-18T10:31:02Z"}
   }
 }
