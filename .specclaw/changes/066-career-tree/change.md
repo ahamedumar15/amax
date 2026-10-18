@@ -195,7 +195,7 @@ Two differences from the mock, on purpose:
   - No forms (AC-3, AC-4, AC-7)
   Files: modules/career/ui/*.tsx, modules/career/ui/career.css, modules/career/server/view.ts, modules/career/module.ts, modules/career/tests/e2e/*
   Depends: T2, T3
-- [ ] `T2` — The pure layout `layoutTree()`, a port of `tree-layout.py`: career events plus today in,
+- [x] `T2` — The pure layout `layoutTree()`, a port of `tree-layout.py`: career events plus today in,
   geometry out, with no DOM.
   - Linear months, and consecutive months merged into one branch. Stroke width `1.5 + 4 × allocation`.
   - Greedy lanes: the side with fewer active branches, alternating on a tie, then the innermost free
