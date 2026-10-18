@@ -56,7 +56,7 @@ HR tickets and the HR queue are visible only to HR (and Admin).
   - Each degrades when the other module isn't installed (AC-1, AC-4)
   Files: modules/helpdesk/server/handlers.ts, modules/helpdesk/tests/integrations.test.ts
   Depends: T2
-- [ ] `T5` — Module standard: README, package.json, a CODEOWNERS line, retention entries (tickets and events seven years after closing, ratings with their ticket), and switch-off. With helpdesk installed, the Operations "Coming soon" entry for Helpdesk goes away, as 021's did. BACKLOG gets "021 grants access when helpdesk approves it" (AC-4)
+- [x] `T5` — Module standard: README, package.json, a CODEOWNERS line, retention entries (tickets and events seven years after closing, ratings with their ticket), and switch-off. With helpdesk installed, the Operations "Coming soon" entry for Helpdesk goes away, as 021's did. BACKLOG gets "021 grants access when helpdesk approves it" (AC-4)
   Files: modules/helpdesk/README.md, modules/helpdesk/package.json, modules/helpdesk/tsconfig.json, modules/helpdesk/css.d.ts, .github/CODEOWNERS, modules/helpdesk/tests/standard.test.ts, pnpm-lock.yaml, BACKLOG.md
   Depends: T3, T4
 
