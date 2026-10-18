@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
 import type { Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
@@ -76,8 +76,25 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   const input = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const fields = useRef<string[]>([]);
+  // A prompt an Ask amax chip filled, until the person edits it (059 AC-7): what they type finishes it.
+  const filled = useRef<string | null>(null);
 
   useEffect(() => { if (open) input.current?.focus(); }, [open]);
+  // The caret goes to the end of a filled prompt in the same commit that shows it, so nothing can see
+  // the prompt with the caret elsewhere, and no later frame moves a caret the person already placed.
+  useLayoutEffect(() => {
+    const el = input.current;
+    if (!el || filled.current === null || filled.current !== text) return;
+    el.focus();
+    el.setSelectionRange(text.length, text.length);
+  }, [text]);
+  // Focus can leave and come back before the first key (the route focus after chat follows a record,
+  // then a programmatic focus that puts the caret at 0): while the prompt is untouched, the first key
+  // still lands at its end. A selection (select all, then type) is left alone, so it replaces the prompt.
+  const toEnd = (el: HTMLInputElement) => {
+    if (filled.current === null || el.value !== filled.current || el.selectionStart !== el.selectionEnd) return;
+    el.setSelectionRange(el.value.length, el.value.length);
+  };
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight }); }, [log, busy]);
 
   // Pins and intents arrive from anywhere on the page.
@@ -87,11 +104,8 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       if (d.pin) { setPins((p) => (p.some((x) => pinKey(x) === pinKey(d.pin!)) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
       if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
       else if (d.prompt) {
+        filled.current = d.prompt;
         setText(d.prompt);
-        // Caret at the end, so what the person types finishes the prompt. Without this, a prompt filled
-        // after chat followed a record to a new page kept the caret at 0 and typing went in front.
-        const end = d.prompt.length;
-        requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(end, end); });
       }
     };
     window.addEventListener("amax:chat", onEvent);
@@ -270,7 +284,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
         ))}
       </div>
       <form className="c-input" onSubmit={(e) => { e.preventDefault(); send(text); }}>
-        <input ref={input} value={text} onChange={(e) => setText(e.target.value)} autoComplete="off" aria-label="Message amax" placeholder={signedIn ? "Type, or tap amax and talk" : "Sign in first"} disabled={!signedIn} />
+        <input ref={input} value={text} onChange={(e) => { filled.current = null; setText(e.target.value); }} onKeyDown={(e) => toEnd(e.currentTarget)} onPointerDown={() => { filled.current = null; }} autoComplete="off" aria-label="Message amax" placeholder={signedIn ? "Type, or tap amax and talk" : "Sign in first"} disabled={!signedIn} />
         <button className="c-send" type="submit" aria-label="Send" disabled={!signedIn || busy}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z" /></svg></button>
       </form>
       <div className="c-dock">

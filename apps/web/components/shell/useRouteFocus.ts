@@ -15,7 +15,9 @@ export function useRouteFocus() {
     const heading = document.querySelector<HTMLElement>("main h1");
     if (!heading) return;
     heading.tabIndex = -1;
-    heading.focus({ preventScroll: true });
+    // A person working in chat stays there when chat moves the page (a re-tagged release's new URL):
+    // taking focus would drop what they type next on the page (059 AC-7). The screen is still announced.
+    if (!document.activeElement?.closest("#chat")) heading.focus({ preventScroll: true });
     window.scrollTo(0, 0);
     announce(`${heading.textContent ?? ""} screen`);
   }, [pathname]);

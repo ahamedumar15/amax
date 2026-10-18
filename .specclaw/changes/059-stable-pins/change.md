@@ -19,6 +19,7 @@ None. Pins look the same; a renamed record's pin shows its new name.
 4. **AC-4** The 057 repin step (`packages/chat/src/repin.ts`, `doneOutcome`'s repin, the panel's `repinAll`) is removed.
 5. **AC-5** A table test renames a release, an environment and a proposal (sync rekey) through each path: chat confirm, MCP call and job. Saved pins still resolve to the same record and show the new label.
 6. **AC-6** Typecheck, unit tests, lint and both e2e suites stay green.
+7. **AC-7** (added during PR, operator-approved: the chat-follows-renamed-record path) A prompt an Ask amax chip fills is finished by what the person types next, even when focus left the input in between (the route focus after chat follows a re-tagged release); a select-all-and-type still replaces it. Chat moving the page doesn't take focus out of the chat panel. An e2e test fails without the fix, and `releases.spec.ts` stops flaking.
 
 ## Tasks
 
@@ -39,6 +40,8 @@ None. Pins look the same; a renamed record's pin shows its new name.
 - [x] `T6` — Tests: every PinRef in the UI names a tool with a pin spec and a record pin carries its id; lazy migration (an old tag reused does not move the pin); a table test renaming a release, an environment and a proposal (sync rekey) by chat confirm, MCP call and job, with saved pins still on the same record under the new label; R3 names the id rule (AC-1, AC-2, AC-3, AC-5, AC-6)
   Files: apps/web/tests/pin-refs.test.ts, modules/delivery/tests/stable-pins.test.ts, .specclaw/review/rules/R3-chat-first-and-pins.md
   Depends: T3, T4, T5
+- [x] `T7` — The filled prompt keeps its caret: caret set in a layout effect in the commit that shows the prompt (no rAF), the first key of an untouched prompt lands at its end, the person's first edit or click clears it; route focus leaves focus in the chat panel (AC-7)
+  Files: apps/web/components/chat/Chat.tsx, apps/web/components/shell/useRouteFocus.ts, apps/web/tests/e2e/chat.spec.ts
 
 ## Verify
 
@@ -50,6 +53,7 @@ None. Pins look the same; a renamed record's pin shows its new name.
 - AC-4: pass — `packages/chat/src/repin.ts` and its test deleted; `repin` results gone from `tagRelease`/`upsertEnvironment`; `doneOutcome` is synchronous with no repin (`apps/web/tests/chat-outcome.test.ts`); the panel's `repinAll` is replaced by `withFresh`. `grep -rn repin` finds only test names and the 057 follow-ups.
 - AC-5: pass — `modules/delivery/tests/stable-pins.test.ts` "AC5": release (get_release, get_release_history with a facet, get_deployment pins) and environment renamed by chat confirm, MCP call and job (service with a `job` context), plus a proposal rekeyed by the specclaw sync (`syncProposal`, the job path; no chat or MCP tool rekeys a proposal). In all 7 cases the saved pins reopen with the same id args and the new name.
 - AC-6: pass — commands below, all exit 0.
+- AC-7: pass — root cause of the `releases.spec.ts` flake (and of PR #55's first-run `chat-first.spec.ts` allocations failure): after chat followed the re-tag, `useRouteFocus` moved focus to the new page's h1 whenever its effect ran, which could be after the chip had filled the prompt and focused the input. Playwright then refocused the input, and a programmatic refocus resets the caret to 0, so "Prod" went in front. The 7e40812 rAF caret move could also land between Playwright's select-all and insert, so a `fill` appended to the prompt instead of replacing it (the allocations spec then copied October, not December). Fix: no rAF; the caret moves in a layout effect in the same commit; an untouched prompt's first key moves a collapsed caret to the end; `useRouteFocus` leaves focus in `#chat`. `chat.spec.ts` "059 AC7" failed before the fix (`Received: "v2.4.1Tag CON v2.4.0 as "`) and passes 10/10 with `--repeat-each=10`; the full `e2e:auth` suite passed 3 runs in a row (58 each).
 
 Commands:
 - `pnpm lint` → 0 (tsc in every package + `amax graph check: ok`)
@@ -57,7 +61,7 @@ Commands:
 - `node scripts/check-module-standard.mjs` → 0 (`module standard: ok (5 modules)`)
 - `pnpm build` → 0
 - `pnpm --filter @amax/web e2e` (no DATABASE_URL, E2E_PORT=3558) → 0, 1 passed
-- `pnpm --filter @amax/web e2e:auth` (E2E_DB=amax_059_e2e, E2E_AUTH_PORT=3559) → 0, 57 passed. A first run had one failure in `auth.spec.ts` AC5 (sign-out then /delivery not redirected); it passed on the rerun and touches nothing in this change.
+- `pnpm --filter @amax/web e2e:auth` (E2E_DB=amax_059_e2e, E2E_AUTH_PORT=3559) → 0, 57 passed. A first run had one failure in `auth.spec.ts` AC5 (sign-out then /delivery not redirected); it passed on the rerun and touches nothing in this change. After T7: 58 passed, three runs in a row.
 - `specclaw-preset-check .` → 1: 895 repo-wide violations (comments, file length) that predate this change. The new files carry comments too, matching the surrounding code as the operator asked; `stable-pins.test.ts` is over 80 lines.
 - `specclaw-quality-scan . --gate` → not run: the script fails on this repo (jq "Argument list too long").
 
