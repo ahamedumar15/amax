@@ -6,6 +6,8 @@ export type CredentialView = {
   name: string;
   owner: string;
   scopes: string[];
+  /** 008: the only tools it may call, or null for every tool its scopes allow. */
+  tools: string[] | null;
   actsFor: string[];
   expiresAt: string;
   revokedAt: string | null;
@@ -22,7 +24,7 @@ function statusOf(revokedAt: string | null, expiresAt: string, now: number): Cre
 
 export async function listCredentialViews(db: Db, tenantId: string, now = Date.now()): Promise<CredentialView[]> {
   const rows = await withTenant(db, tenantId, (tx) => tx.execute(sql`
-    select p.id, p.name, o.name as owner, p.scopes, p.expires_at, p.revoked_at,
+    select p.id, p.name, o.name as owner, p.scopes, p.tools, p.expires_at, p.revoked_at,
       coalesce((select array_agg(u.name order by u.name) from auth.user u where u.id = any(p.acts_for)), '{}') as acts_for,
       (select max(t.occurred_at) from core.trace_event t where t.actor = 'sp:' || p.id::text) as last_used_at
     from auth.service_principal p join auth.user o on o.id = p.owner_user_id
@@ -31,7 +33,7 @@ export async function listCredentialViews(db: Db, tenantId: string, now = Date.n
     const expiresAt = iso(r.expires_at)!;
     const revokedAt = iso(r.revoked_at);
     return {
-      id: r.id as string, name: r.name as string, owner: r.owner as string, scopes: r.scopes as string[], actsFor: r.acts_for as string[],
+      id: r.id as string, name: r.name as string, owner: r.owner as string, scopes: r.scopes as string[], tools: (r.tools as string[] | null) ?? null, actsFor: r.acts_for as string[],
       expiresAt, revokedAt, lastUsedAt: iso(r.last_used_at), status: statusOf(revokedAt, expiresAt, now),
     };
   });

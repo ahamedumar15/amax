@@ -36,8 +36,8 @@ Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
   Files: packages/core/src/module.ts, apps/web/app/(app)/page.tsx, apps/web/components/overview/ActivityFeed.tsx, modules/delivery/server/activity.ts, modules/delivery/module.ts, apps/web/tests/e2e/overview.spec.ts
 - [x] `T2` — Proposal tasks as records: a `delivery.task` table that `sync_proposal` writes. `mark_task_done` closes one and keeps `tasks_done` in step. MCP tools `sync_proposal` and `mark_task_done` sit beside `record_deployment`, each declaring its service (AC-1)
   Files: modules/delivery/db/migrations/0013_tasks_ingest.sql, modules/delivery/server/tasks.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/tests/ingest-ac1.test.ts
-- [ ] `T3` — A principal may be limited to named tools (`tools` on the credential). REST and job calls refuse any other tool, and acts-for limits still apply (AC-1)
-  Files: packages/auth/src/credentials.ts, packages/auth/src/principals.ts, packages/api/src/caller.ts, packages/db/migrations/00xx_principal_tools.sql, packages/api/tests/principal-tools.test.ts
+- [x] `T3` — A principal may be limited to named tools (`tools` on the credential). REST and job calls refuse any other tool, and acts-for limits still apply (AC-1)
+  Files: packages/auth/src/credentials.ts, packages/auth/src/principals.ts, packages/api/src/caller.ts, packages/db/migrations/0031_principal_tools.sql, packages/auth/src/credentials-read.ts, apps/web/lib/admin/api.ts, packages/api/tests/principal-tools.test.ts
 - [ ] `T4` — Inbound webhooks: the `/api/webhooks/[provider]` route verifies through 035 and dispatches to each module's `inbound`. Delivery maps GitHub and Azure DevOps pushes to people through `auth.git_identity`. A commit is attributed only when it is signature-verified or the author's email is verified. Anyone else becomes a "link this Git identity" suggestion. A "T<n> done" commit closes that task (AC-2)
   Files: packages/core/src/module.ts, apps/web/app/api/webhooks/[provider]/route.ts, modules/delivery/server/ingest.ts, modules/delivery/suggestions.ts, modules/delivery/tests/ingest-ac2.test.ts
   Depends: T2
