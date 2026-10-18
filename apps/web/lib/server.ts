@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { createDb, type Db } from "@amax/db";
+import { createDb, withTenant, type Db } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
 import { auditExportJob, configureRuntime, pruneKeysJob, registryFrom, storageFromEnv } from "@amax/core/server";
 import { apiPlatform } from "@amax/api/module";
@@ -9,11 +9,12 @@ import { configureAi } from "@amax/ai";
 import { aiTools } from "@amax/ai/usage-tool";
 import { anthropicProvider } from "@amax/ai/anthropic";
 import { scriptedProvider } from "@amax/ai/scripted";
-import { installAuthorizer, itAdminGrants, setGrants, setViewerScopeResolvers } from "@amax/auth";
+import { installAuthorizer, itAdminGrants, setGrants, setViewerScopeResolvers, viewerForUser } from "@amax/auth";
+import { agentsPlatform, configureAgents, platformKinds, setSuggestionKinds } from "@amax/agents/server";
 import { createRegistry } from "@amax/mcp";
 import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
-import { engineFromEnv, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
+import { engineFromEnv, setWorkflowEngine, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
 import { platformWorkflows } from "./platform-workflows";
 import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
@@ -39,12 +40,18 @@ export function getDb(): Db | null {
   if (cache.amaxDb && !wired) {
     configureRuntime({ db: cache.amaxDb, auditKey: loadEnv().AUDIT_HASH_KEY! });
     configureSecrets({ kms: kmsFromEnv(loadEnv(), (path) => readFileSync(path, "utf8")) });
-    setGrants([...installed, chatPlatform, privacyGrants, itAdminGrants]);
+    setGrants([...installed, chatPlatform, privacyGrants, itAdminGrants, agentsPlatform]);
+    // 006: the installed modules' suggestion kinds, and what agent runs need from the app.
+    setSuggestionKinds([...installed.flatMap((m) => m.suggestions ?? []), ...platformKinds]);
+    const db = cache.amaxDb;
+    configureAgents({ tools: () => toolRegistry(), workflows: () => workflowsRegistry(), viewerFor: (tenantId, userId) => withTenant(db, tenantId, (tx) => viewerForUser(tx, tenantId, userId)) });
     setPrivacySources(privacySources(installed));
     setViewerScopeResolvers(installed.flatMap((m) => (m.viewerScopes ? [m.viewerScopes] : [])));
     installAuthorizer();
     // 035 AC-5: limited requests are counted for the API and webhooks screen.
     wireRateLimits(loadEnv());
+    // 030: modules start runs (notification deliveries) on the host's engine without importing it.
+    setWorkflowEngine(workflowEngine);
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
@@ -64,7 +71,7 @@ const auth = { id: "auth", events: { handles: authEventHandlers } };
 const api = () => apiPlatform(installed, workflowEngine);
 // 029: one workflow registry and engine (Postgres by default, Temporal when configured).
 let workflows: ReturnType<typeof workflowRegistry> | undefined;
-export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), ...installed]));
+export const workflowsRegistry = () => (workflows ??= workflowRegistry([platformWorkflows, api(), agentsPlatform, ...installed]));
 let engine: Promise<WorkflowEngine> | undefined;
 export function workflowEngine(): Promise<WorkflowEngine> {
   const db = getDb();
@@ -83,7 +90,7 @@ export const jobRegistry = () => registryFrom([core, auth, workflowsJobs(), api(
 // own read tool (048 get_ai_usage) sits beside them.
 let registry: ReturnType<typeof createRegistry> | undefined;
 export const adminDeps: AdminDeps = { db: () => getDb()!, workflows: () => workflowsRegistry(), engine: () => workflowEngine(), tools: () => toolRegistry() };
-export const toolRegistry = () => (registry ??= createRegistry([aiTools, ...installed, chatPlatform, adminModule(adminDeps)]));
+export const toolRegistry = () => (registry ??= createRegistry([aiTools, ...installed, chatPlatform, agentsPlatform, adminModule(adminDeps)]));
 export const chatIntents = () => installed.flatMap((m) => (m.chatIntents ?? []) as Intent[]);
 
 // Voice input is a per-tenant AI policy switch (033 AC-5).

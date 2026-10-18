@@ -163,7 +163,8 @@ export async function converse(caller: AiCaller, opts: { instructions: string; m
       messages.push(out.result.assistant);
       if (out.result.stop !== "tool_use") {
         await log(caller, { model, providerModel, policyVersion: p.policy.version, usage, redactions: p.redactions, injection: p.injection, toolsRun, ok: true });
-        return { messages, text: out.result.text, toolsRun };
+        // 006: an agent run records its cost per step; null when the model has no known price.
+        return { messages, text: out.result.text, toolsRun, usage, costUsd: costOf(providerModel ?? model, usage) };
       }
       const results = await Promise.all(out.result.toolCalls.map(async (call) => {
         const tool = opts.tools.find((t) => t.name === call.name);

@@ -7,6 +7,7 @@ import { monthLabel } from "../server/months";
 import { Donut, LineChart } from "./charts";
 import { CopyMonth } from "./CopyMonth";
 import { Grid } from "./Grid";
+import { AllocationSuggestions } from "./Suggestions";
 import "./allocations.css";
 
 const SKILL_COLOR: Record<string, string> = { ".NET": "#7B61FF", React: "#5CC8F0", QA: "#F48B9B", Data: "#F2A93B", Mobile: "#2FCB8C", Delivery: "#B3A1FF" };
@@ -34,6 +35,7 @@ export async function AllocationsPage({ params, viewer: raw }: ScreenProps) {
         <div><h1>Allocations and forecast</h1><p className="lede">{lede(headlines(grid))}</p></div>
         {canEver(viewer, "allocations:allocate") && <div className="actions"><IntentButton intent="allocations.allocate" label="Allocate" primary={false} /></div>}
       </div>
+      <AllocationSuggestions viewer={viewer} />
       <div className="cols even" style={{ marginBottom: 28 }}>
         <div className="card pinnable">
           <div className="card-head"><h2>Capacity and demand</h2><PinButton inline pin={{ label: "Capacity and demand", tool: "get_capacity_forecast", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>{f.team}, {span}</span></div>

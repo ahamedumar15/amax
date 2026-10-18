@@ -5,7 +5,7 @@ export { PROVIDERS, REPLAY_WINDOW_MS, signPayload, verifyWebhook, type Inbound, 
 export { MAX_FAILURES, publicHttps, resumeWebhook, subscribeWebhook, unsubscribeWebhook, WEBHOOK_MANAGE } from "./webhooks";
 export { deliverWebhook, DELIVER, RETRY, type DeliverInput } from "./deliver";
 export { maskEvent, maskPayload, webhookBody, type MaskedField } from "./payload";
-export { EgressError, guardedLookup, publicAddress, safePost, setEgress } from "./egress";
+export { EgressError, guardedLookup, publicAddress, safePost, safeRequest, setEgress } from "./egress";
 export { apiPlatform, apiRetention, webhookEvents, type WebhookEvent } from "./module";
 export { rateLimitRecorder } from "./limits";
 export { apiStats, listWebhooks, type ApiStats, type InboundView, type LimitedView, type WebhookView } from "./stats";

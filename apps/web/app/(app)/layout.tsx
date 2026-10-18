@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Shell } from "../../components/shell/Shell";
 import { profileOf, viewBanner, visibleNav } from "../../lib/profile";
-import { navItems } from "../../lib/registry";
+import { menuItems, navItems, topBarControls } from "../../lib/registry";
 import { getViewer } from "../../lib/viewer";
 import { voiceEnabled } from "../../lib/server";
 import { myChatUsage } from "../../lib/chat-usage";
@@ -12,10 +12,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const viewer = await getViewer();
-  if (!viewer) return <Shell items={navItems}>{children}</Shell>;
+  const topBar = topBarControls.length ? <>{topBarControls.map(({ id, Control }) => <Control key={id} viewer={viewer} />)}</> : undefined;
+  if (!viewer) return <Shell items={navItems} topBar={topBar}>{children}</Shell>;
   const [voice, usage] = await Promise.all([voiceEnabled(viewer.tenantId), myChatUsage(viewer)]);
+  const menuLinks = visibleNav(menuItems, viewer).map((i) => ({ href: i.href, label: i.label }));
   return (
-    <Shell items={visibleNav(navItems, viewer)} profile={profileOf(viewer)} banner={viewBanner(viewer)} onViewAs={viewAsAction} onSignOut={signOutAction} voice={voice} usage={usage}>
+    <Shell items={visibleNav(navItems, viewer)} profile={profileOf(viewer)} banner={viewBanner(viewer)} onViewAs={viewAsAction} onSignOut={signOutAction} voice={voice} usage={usage} topBar={topBar} menuLinks={menuLinks}>
       {children}
     </Shell>
   );

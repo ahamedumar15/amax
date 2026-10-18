@@ -2366,6 +2366,80 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     </div>
   </div>
 </section>
+<!-- ================= 006 Agent governance ================= -->
+<section data-change="006-agent-governance" id="006-agent-governance" data-roles="all" data-title="Suggestions" data-icon="spark">
+  <div class="row head">
+    <div><h1>Suggestions</h1><p class="lede">Agents never change data on their own. 2 suggestions need your decision, 0 need a second approver, and 1 accepted change can still be undone. Decisions happen in chat. Pin anything, then ask.</p></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Needs your decision <span class="chip">📌</span></div><div class="v">2</div><div class="p">Only those inside your data scope</div></div>
+    <div class="ticket t-yellow"><div class="k">Second approver needed <span class="chip">📌</span></div><div class="v">0</div><div class="p">Irreversible: can't be undone</div></div>
+    <div class="ticket t-mint"><div class="k">Can still be undone <span class="chip">📌</span></div><div class="v">1</div><div class="p">For 7 days, or until the module's cutoff</div></div>
+    <div class="ticket t-pink"><div class="k">Expiring today <span class="chip">📌</span></div><div class="v">1</div><div class="p">An expired suggestion can't be accepted</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Needs your decision</h2><span class="chip agent">An agent suggests, a person decides</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Suggestion</th><th>Agent</th><th>Evidence</th><th class="num">Confidence</th><th>Expires</th><th class="num"><span class="sr">Decide</span></th></tr></thead><tbody>
+      <tr><td style="white-space:normal;min-width:240px"><b>Move Kasun Dias to 50% on Fleet Tracker in December</b><small>Allocation change</small></td><td><span class="chip agent">Inbox agent</span><small>for Nimal Silva</small></td><td><a href="#006-agent-governance">The plan on Allocations</a> <span class="chip warn">External source: email</span><small>Email from a.lee@wideworld.test (fictional)</small></td><td class="num">0.64</td><td>Oct 19</td><td class="num"><button class="btn sm primary">✦ Accept</button> <button class="btn sm">✦ Query</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+      <tr><td style="white-space:normal;min-width:240px"><b>Move Ayesha Rahman to 50% on HR Insights in December</b><small>Allocation change</small></td><td><span class="chip agent">Allocation check</span><small>for Ayesha Rahman</small></td><td><a href="#006-agent-governance">The plan on Allocations</a></td><td class="num">0.82</td><td>Oct 24</td><td class="num"><button class="btn sm primary">✦ Accept</button> <button class="btn sm">✦ Query</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+    <p class="src" style="padding:0 28px 22px;margin:0">Pay, bank files, access and credentials need someone other than the person the agent acted for. Suggestions outside your data scope are never shown.</p>
+  </div>
+  <div class="cols even" style="margin-top:28px">
+    <div class="card flush">
+      <div class="card-head"><h2>Accepted, can be undone</h2><button class="btn sm">📌</button></div>
+      <div class="scroll-x"><table class="tbl"><thead><tr><th>Change</th><th>Decided</th><th>Undo until</th><th class="num"><span class="sr">Undo</span></th></tr></thead><tbody>
+        <tr><td><b>Move Nimal Silva to 50% on Contoso Portal in January</b><small>Allocation check for Maya Fernando</small></td><td>Maya Fernando<small>Oct 17</small></td><td>Oct 24</td><td class="num"><button class="btn sm">✦ Undo</button> <button class="btn sm">📌</button></td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Agent runs</h2><button class="btn sm">📌</button></div>
+      <p class="muted">Suggestions from an agent run show its input, tool calls, output and cost here. Recurring checks make theirs without a model.</p>
+    </div>
+  </div>
+  <div class="card flush" style="margin-top:28px">
+    <div class="card-head"><h2>Agent jobs</h2><button class="btn sm">📌</button><span class="muted" style="font-size:13px">0 of 1 on</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Job</th><th>Runs</th><th>Status</th><th class="num"><span class="sr">Ask</span></th></tr></thead><tbody>
+      <tr><td><b>Allocation check</b><small>Suggests rebalancing people planned over 100% in the next three months</small></td><td>Mondays 06:00</td><td><span class="chip warn">Paused</span></td><td class="num"><button class="btn sm">✦ Ask amax to switch on</button> <button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= 030 Notifications ================= -->
+<section data-change="030-notifications" id="030-notifications" data-roles="all" data-title="Notifications" data-nav="no" data-icon="spark">
+  <div class="row head"><div><h1>Notifications</h1><p class="lede">How amax reaches you. Urgent items skip the digest but wait for your quiet hours. Change anything in chat.</p></div><div class="actions"><button class="btn sm">✦ Ask amax to change my notifications</button></div></div>
+  <div class="cols">
+    <div>
+      <div class="card flush pinnable">
+        <div class="card-head"><h2>Channels per category</h2></div>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Category</th><th>In app</th><th>Email</th><th>Teams</th><th>Digest</th><th></th></tr></thead><tbody>
+          <tr><td>Approvals</td><td>On</td><td>On</td><td>On</td><td>Off</td><td><button class="btn sm">📌</button></td></tr>
+          <tr><td>Releases</td><td>On</td><td>Off</td><td>On</td><td>Daily at 08:00</td><td><button class="btn sm">📌</button></td></tr>
+          <tr><td>Reminders</td><td>On</td><td>On</td><td>Off</td><td>Daily at 08:00</td><td><button class="btn sm">📌</button></td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="card pinnable" style="margin-top:20px">
+        <div class="card-head"><h2>Quiet hours</h2><button class="btn sm">📌</button></div>
+        <p>21:00 to 07:00, Asia/Colombo (Lumen Labs Lanka (Pvt) Ltd, fictional)</p>
+        <p class="muted" style="font-size:13px">Email and Teams wait until quiet hours end. The bell always shows new items.</p>
+        <button class="btn sm">✦ Ask amax to change quiet hours</button>
+      </div>
+    </div>
+    <div class="card pinnable">
+      <div class="card-head"><h2>The bell <span class="chip">2 unread</span></h2><button class="btn sm">✦ Mark all read</button></div>
+      <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:4px 0">Delivery</h3>
+      <ul class="list">
+        <li><span><a href="#001-amax-foundation-releases"><b>Release v1.8.0 rolled back in UAT</b></a><small><span class="chip bad">Urgent</span> Fleet Tracker (fictional) · 2 h ago · Unread</small></span><button class="btn sm">📌</button></li>
+      </ul>
+      <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 4px">Time</h3>
+      <ul class="list">
+        <li><span><a href="#001-amax-foundation-time"><b>Kasun Dias submitted 2026-W42</b></a><small>32.5 h to approve · 10 min ago · Unread</small></span><button class="btn sm">📌</button></li>
+        <li><span><a href="#001-amax-foundation-time"><b>Your timesheet for 2026-W41 was approved</b></a><small>Yesterday</small></span><button class="btn sm">📌</button></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
     </main>
   </div>
 </div>
