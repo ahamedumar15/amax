@@ -57,7 +57,7 @@ Brand constraints kept over the skill's house rules (recorded on purpose): the l
 - [x] `T2` — Hero with the working "Waiting on you" queue: a role tab list (arrow keys, Home and End), four fictional queues, actions that resolve a card with its attribution line and a polite announcement, and a no-JS static PM queue (AC-2)
   Files: apps/web/components/marketing/Hero.tsx, apps/web/components/marketing/Queue.tsx, apps/web/components/marketing/queues.ts
   Depends: T1
-- [~] `T3` — Product film: the re-rendered video (new cast), poster and captions, MP4 first, and the "Play the tour" button that starts it inline with controls. No autoplay (AC-3, AC-11)
+- [x] `T3` — Product film: the re-rendered video (new cast), poster and captions, MP4 first, and the "Play the tour" button that starts it inline with controls. No autoplay (AC-3, AC-11)
   Files: apps/web/public/marketing/amax-product.mp4, apps/web/public/marketing/amax-product.webm, apps/web/public/marketing/amax-product-poster.jpg, apps/web/public/marketing/amax-product.en.vtt, apps/web/components/marketing/ProductVideo.tsx
   Depends: T1
 - [~] `T4` — How it works: three statements and the pinned fragment, switched by IntersectionObserver. With reduced motion or no script, all states show in sequence (AC-4)

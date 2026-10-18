@@ -1,14 +1,30 @@
+"use client";
+
+import { useRef, useState } from "react";
+
 const SRC = "/marketing/amax-product";
 
 export function ProductVideo() {
+  const video = useRef<HTMLVideoElement>(null);
+  const [started, setStarted] = useState(false);
+  const play = () => {
+    setStarted(true);
+    void video.current?.play();
+  };
   return (
-    <figure className="mk-video">
-      <video controls preload="none" playsInline poster={`${SRC}-poster.jpg`} aria-label="amax product video, 35 seconds">
-        <source src={`${SRC}.webm`} type="video/webm" />
-        <source src={`${SRC}.mp4`} type="video/mp4" />
-        <track kind="captions" srcLang="en" label="English" src={`${SRC}.en.vtt`} />
-      </video>
-      <figcaption>A commit closes a task, amax drafts the hours and Kasun accepts them, and once Kasun submits the week the PM approves it in chat. All data is fictional.</figcaption>
-    </figure>
+    <section id="tour" className="film" aria-labelledby="tour-title">
+      <div className="wrap">
+        <h2 id="tour-title" className="sr">Product tour</h2>
+        <div className="stage" data-ui>
+          <video ref={video} controls={started} preload="none" playsInline poster={`${SRC}-poster.jpg`} aria-label="amax product tour, 35 seconds">
+            <source src={`${SRC}.mp4`} type="video/mp4" />
+            <source src={`${SRC}.webm`} type="video/webm" />
+            <track kind="captions" srcLang="en" label="English" src={`${SRC}.en.vtt`} />
+          </video>
+          {!started && <button type="button" className="play" onClick={play}><span aria-hidden="true">▶</span> Play the tour · 35 s, captions</button>}
+        </div>
+        <div className="cap"><span>A commit closes a task, amax drafts the hours, Liam accepts them, and the PM approves the submitted week in chat.</span><span>All data is fictional.</span></div>
+      </div>
+    </section>
   );
 }
