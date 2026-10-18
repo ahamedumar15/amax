@@ -42,3 +42,10 @@ GST, VAT/SSCL and credit notes are proven on contracts made through the tools.
   Depends: T4
 
 ## Verify
+
+Quality: 10 → 10 duplicated lines (jscpd over modules/finance, tests included; 0 outside tests. The two clones are the DB tests' shared describe/beforeAll/afterAll setup, left as is. specclaw-quality-scan failed with jq "Argument list too long", so jscpd was run directly.)
+
+Outside `modules/finance`: one CODEOWNERS line and `pnpm-lock.yaml` (the new workspace package). No other module's standard test needed relaxing: time's switch-off test already allows `@amax/time/contracts`, and delivery has none. Delivery's project Contract tab still shows "Arrives with finance, 017"; wiring it to finance is a delivery change, left for a follow-up.
+
+Deviations from the mock: "Receivables by age" reads 81% current and 19% 1–30 days (0% 31–60 and over 60), not the mock's 72/18/7/3, because the mock's own Overdue tile ($18,315, only INV-0912) leaves nothing more than 30 days late; the $96,400 open total matches. The Contracts table adds a pin column, Accept draft and Query on Fleet Tracker's open draft, and Invoice on the ready retainer (Ask amax buttons), and the receivables card adds a line with invoiced in each entity's base currency.
+
