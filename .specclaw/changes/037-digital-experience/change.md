@@ -79,7 +79,7 @@ Ripples outside the module (AC-8, besides CODEOWNERS and BACKLOG):
   - the latest pulse, and "What we collect" with the notice date
   - Every tile, row and line is pinned; no forms; the module e2e checks the 2% visual diff, axe in light and dark, and 390 px with no side scroll (AC-3, AC-7)
   Files: modules/experience/ui/*.tsx, modules/experience/ui/art.ts, modules/experience/ui/experience.css, modules/experience/server/views.ts, modules/experience/module.ts, modules/experience/tests/e2e/*
-- [ ] `T2` — Contracts first, then the `experience` schema with RLS:
+- [x] `T2` — Contracts first, then the `experience` schema with RLS:
   - settings (pinned clock, sandbox, remediation switch), collection per entity with its notice, devices with daily and per-app readings, issues and their devices, remediations, pulses with receipts kept apart from answers, and score snapshots
   - scoring with k-anonymity, and the person's own view
   - read tools and pins; audited write tools (`set_experience_collection`, `set_experience_remediation`, `send_pulse`, `answer_pulse`); the chat intent `experience.send-pulse`; the 030 notification rule for a pulse
