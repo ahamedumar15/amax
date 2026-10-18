@@ -1,0 +1,71 @@
+/* Career screen: rules lifted from .specclaw/mock/index.html (#066-career-tree); tokens carry light and dark. */
+.career .crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-3);margin-bottom:10px}
+.career .crumb a{color:var(--ink-2);text-decoration:none;font-weight:500}
+.career .crumb a:hover{color:var(--violet)}
+.career .row.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.career .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.career .row.head .lede{margin:0}
+.career .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.career .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.career .tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.career .board{display:flex;flex-direction:column;gap:24px}
+.career .cols.even{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+.career .muted{color:var(--ink-3)}
+.career .seg button[aria-pressed="true"]{color:var(--chip-agent)}
+.career .card-head .muted{font-size:13px}
+.career .foot{font-size:13px;margin:12px 0 0;text-align:center}
+.career .note{font-size:13px;margin:8px 0 0;text-align:center}
+.career .list{list-style:none;margin:0;padding:0}
+.career .list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.career .list li:first-child{border-top:0;padding-top:0}
+.career .list li[aria-current="true"]{box-shadow:inset 3px 0 0 var(--violet);padding-left:10px}
+.career .list .pick{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+.career .list .pick:focus-visible{outline:2px solid var(--violet);outline-offset:3px;border-radius:6px}
+.career .list small,.career .trace dd{display:block;color:var(--ink-3);font-size:12.5px;margin:0}
+.career .list .pin.inline{margin:0}
+.career .what{margin:0 0 6px}
+.career .trace{margin:0}
+.career .trace>div{padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.career .trace>div:first-child{border-top:0;padding-top:0}
+.career .trace a{color:var(--chip-agent)}
+.career .ct{width:100%;max-width:900px;height:auto;display:block;margin:0 auto;overflow:visible}
+.career .ct text{font:500 11px var(--font);fill:var(--ink-3)}
+.career .ct .pj,.career .ct .gr{fill:var(--ink);font-weight:600;font-size:12px}
+.career .ct .grid{stroke:var(--line);stroke-width:1}
+.career .ct .leader{stroke:var(--line-2);stroke-width:1;stroke-dasharray:2 3}
+.career .ct .trunk{fill:var(--ink-2)}
+.career .ct .trunkroot{stroke:var(--ink-2);stroke-width:8}
+.career .ct .halo{fill:none;stroke:var(--card)}
+.career .ct .branch{fill:none;stroke:var(--ink-2);stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;animation:ct-grow .9s ease-out both}
+.career .ct .stem{stroke:var(--ink-3);stroke-width:1}
+.career .ct .lf{stroke:var(--card);stroke-width:1.5}
+.career .ct .lf.prop{fill-opacity:.35;stroke:var(--ink-3);stroke-dasharray:2 2}
+.career .ct .leaf{animation:ct-fade .6s .6s ease-out both}
+.career .ct .ring{stroke:var(--violet);stroke-width:3;stroke-linecap:round}
+.career .ct .fruit{fill:var(--mint);stroke:var(--card);stroke-width:2}
+.career .ct .fruit.old{fill:var(--ink-3);fill-opacity:.5}
+.career .ct .ground{stroke:var(--line-2);stroke-width:1.5}
+.career .ct .root{stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:3 4}
+.career .ct .rn{fill:var(--card);stroke:var(--ink-2);stroke-width:2}
+.career .ct .node{cursor:pointer;outline:none}
+.career .ct .node:focus-visible>:first-child,.career .ct .node:hover>:first-child{stroke:var(--violet)}
+.career .ct .node:focus-visible .pj,.career .ct .node:focus-visible .gr{fill:var(--violet);text-decoration:underline}
+.career .ct .sel .ring{stroke-width:5}
+.career .ct .sel .gr,.career .ct .sel .pj{fill:var(--violet)}
+.career .ct .sel .branch,.career .ct .sel .rn{stroke:var(--violet)}
+.career .ct .sel .fruit{stroke:var(--violet)}
+.career .ct .dim{opacity:.25}
+.career .ct foreignObject{overflow:visible}
+.career .ct .pin.inline{margin:0;opacity:0}
+.career .ct .pinnable:hover .pin,.career .ct .pinnable:focus-within .pin{opacity:1;transform:none}
+.career .tkey{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;padding:0;list-style:none;justify-content:center}
+.career .tkey i{display:inline-block;width:9px;height:9px;border-radius:50%}
+@keyframes ct-grow{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes ct-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.career .ct .branch,.career .ct .leaf{animation:none}}
+@media (max-width:1180px){.career .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:720px){
+  .career .board{flex-direction:column-reverse}
+  .career .cols.even{display:flex;flex-direction:column-reverse;gap:24px}
+  .career .card-head .seg{width:100%}
+}

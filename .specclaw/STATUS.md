@@ -1,20 +1,18 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 20:20 UTC
+**Last Updated:** 2026-10-18 20:30 UTC
 
 ## Active Changes
 
 
-- 🔀 **022-helpdesk** — pr raised | 5/5 tasks (100%) | 0 failed | PR #86 merged
-- 🔀 **026-insights** — pr raised | 4/4 tasks (100%) | 0 failed | PR #89 merged
-- 🔍 **037-digital-experience** — verify done | 4/4 tasks (100%) | 0 failed
+- 🔀 **037-digital-experience** — pr raised | 4/4 tasks (100%) | 0 failed | PR #93 open
 - 🔀 **062-marketing-site** — pr raised | 5/5 tasks (100%) | 0 failed | PR #74 merged
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 - 🔀 **063-public-assets-in-image** — pr raised | 1/1 tasks (100%) | 0 failed | PR #84 merged
 - 🔀 **064-marketing-revamp** — pr raised | 7/7 tasks (100%) | 0 failed | PR #87 merged
 - 🔀 **065-review-pass-cap** — pr raised | 1/1 tasks (100%) | 0 failed | PR #88 merged
-- 🔀 **066-career-tree** — PR #92 open
+- 🔀 **066-career-tree** — pr raised | 5/5 tasks (100%) | 0 failed | PR #92 merged
 
 ## Pending Proposals
 
@@ -44,9 +42,11 @@
 - ✅ **018-expenses**
 - ✅ **020-presales**
 - ✅ **021-it-access-licences**
+- ✅ **022-helpdesk**
 - ✅ **023-recruitment**
 - ✅ **024-learning**
 - ✅ **025-inbox-agent**
+- ✅ **026-insights**
 - ✅ **027-reports**
 - ✅ **028-keyflow-sync**
 - ✅ **029-workflows-scheduler**
@@ -85,5 +85,5 @@
 ## Stats
 
 - **Total changes:** 64
-- **Active:** 9
-- **Completed:** 55
+- **Active:** 7
+- **Completed:** 57

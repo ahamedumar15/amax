@@ -124,6 +124,12 @@ export async function getEmployment(tx: Tx, personId: string, reader: Reader, on
   return mask(who.viewer, full, EMPLOYMENT_SENSITIVE, subjectOf(r)) as Employment;
 }
 
+/**
+ * The Person page's sections other modules serve under /hr/p/<employeeNo>/<path> (066). The page
+ * links each one whose module's schema is installed, so a switched-off module leaves no dead tab.
+ */
+export const PERSON_SECTIONS = [{ path: "career", label: "Career", schema: "career" }] as const;
+
 /** The hr.person ids a signed-in person is known by, for access and erasure requests (032). */
 export async function personIdsForUser(tx: Tx, userId: string): Promise<string[]> {
   return (await tx.execute(sql`select id::text as id from hr.person where user_id = ${userId}`)).map((r) => r.id as string);
