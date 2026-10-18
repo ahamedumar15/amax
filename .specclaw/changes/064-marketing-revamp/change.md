@@ -63,10 +63,10 @@ Brand constraints kept over the skill's house rules (recorded on purpose): the l
 - [x] `T4` — How it works: three statements and the pinned fragment, switched by IntersectionObserver. With reduced motion or no script, all states show in sequence (AC-4)
   Files: apps/web/components/marketing/HowItWorks.tsx, apps/web/components/marketing/HowStage.tsx
   Depends: T1
-- [~] `T5` — Capability bands from `areas.ts`, each with a `role="switch"` that opens its claims. Remove the 062 Features, Trust, Problem and ChatPreview components (AC-5)
+- [x] `T5` — Capability bands from `areas.ts`, each with a `role="switch"` that opens its claims. Remove the 062 Features, Trust, Problem and ChatPreview components (AC-5)
   Files: apps/web/components/marketing/Bands.tsx, apps/web/components/marketing/areas.ts, apps/web/components/marketing/Features.tsx, apps/web/components/marketing/Trust.tsx, apps/web/components/marketing/Problem.tsx, apps/web/components/marketing/ChatPreview.tsx
   Depends: T1
-- [~] `T6` — The mock copy script ships `.specclaw/mock/media/` with `index.html` (AC-11)
+- [x] `T6` — The mock copy script ships `.specclaw/mock/media/` with `index.html` (AC-11)
   Files: apps/mock/scripts/copy-mock.mjs
 - [~] `T7` — Tests and gates. e2e: section order, queue Accept with its attribution, the video plays (`currentTime` advances, no error), the theme switch, no overflow at 390 px with a wide fallback font, and axe in light and dark. The copy guards also read the 064 mock section. Lighthouse on the mobile production build (AC-1, AC-2, AC-3, AC-7, AC-8, AC-10)
   Files: apps/web/tests/e2e/marketing.spec.ts, apps/web/tests/marketing-prose.ts, apps/web/tests/marketing-demo.test.ts
