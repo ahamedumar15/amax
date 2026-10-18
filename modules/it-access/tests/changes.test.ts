@@ -41,9 +41,13 @@ describe.skipIf(!hasDb)("access changes through 006 (Postgres)", () => {
     const [maya, ravi] = [await db.as("maya"), await db.as("ravi")];
     const today = new Date().toISOString().slice(0, 10);
     await db.registry.call(maya, "record_leaver", { employeeNo: "LL-0291", leftOn: today }, { source: "mcp" });
-    await db.tick();
-    const [s] = await db.q(sql`select id from agents.suggestion where kind = 'it-access.revoke' and target_label = 'Ayesha Rahman'`);
-    await acceptSuggestion(ctxFor(ravi), { id: s.id as string });
+    // Other modules' fixtures queue events too, so tick until the leaver's turn has come.
+    let s: Record<string, unknown> | undefined;
+    for (let i = 0; i < 5 && !s; i++) {
+      await db.tick();
+      [s] = await db.q(sql`select id from agents.suggestion where kind = 'it-access.revoke' and target_label = 'Ayesha Rahman'`);
+    }
+    await acceptSuggestion(ctxFor(ravi), { id: s!.id as string });
     await applyDue(T);
     const held = async () => (await accessView(ravi, "leavers")).people.find((x) => x.name === "Ayesha Rahman")!;
     expect(await held()).toMatchObject({ status: "left", licences: expect.any(Number) });
