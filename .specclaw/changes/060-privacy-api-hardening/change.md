@@ -41,7 +41,7 @@ None. Fixes only.
   Files: packages/api/src/rest.ts, packages/api/tests/ac1-rest.test.ts
 - [x] `T7` — Subscribing without a signing secret is refused; a missing secret at delivery doesn't count toward switch-off (AC-7, AC-9)
   Files: packages/api/src/webhooks.ts, packages/api/src/deliver.ts, packages/api/tests/ac4-outgoing.test.ts
-- [ ] `T8` — Durable replay keys for GitHub and Graph webhooks, outside the retention purge (AC-8, AC-9)
+- [x] `T8` — Durable replay keys for GitHub and Graph webhooks, outside the retention purge (AC-8, AC-9)
   Files: packages/db/migrations/0026_api_replay.sql, packages/api/src/module.ts, packages/api/src/inbound.ts, packages/api/tests/ac3-incoming.test.ts
 - [ ] `T9` — Full gates: typecheck, unit tests, lint, module-standard check, guest and signed-in e2e (AC-9)
   Files: .specclaw/changes/060-privacy-api-hardening/change.md

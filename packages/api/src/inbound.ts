@@ -17,10 +17,13 @@ const record = defineService({
   resource: "api.inbound",
   input: z.object({ provider: z.enum(PROVIDERS), eventId: z.string().max(200).nullable(), verified: z.boolean(), reason: z.string().nullable() }),
   async run(tx, input, ctx) {
-    const [row] = await tx.execute(sql`insert into api.inbound (tenant_id, provider, event_id, verified, reason)
+    // A verified call is new only if its key was never seen. The key outlives the purged log (060 AC-8).
+    const fresh = !input.verified || (await tx.execute(sql`insert into api.replay_key (tenant_id, provider, key) values (${ctx.tenantId}, ${input.provider}, ${input.eventId})
+      on conflict do nothing returning 1`)).length > 0;
+    const [row] = fresh ? await tx.execute(sql`insert into api.inbound (tenant_id, provider, event_id, verified, reason)
       values (${ctx.tenantId}, ${input.provider}, ${input.eventId}, ${input.verified}, ${input.reason})
-      on conflict (tenant_id, provider, event_id) where verified do nothing returning id`);
-    return { result: Boolean(row), resourceId: (row?.id as string | undefined) ?? null, after: input };
+      on conflict (tenant_id, provider, event_id) where verified do nothing returning id`) : [];
+    return { result: fresh, resourceId: (row?.id as string | undefined) ?? null, after: input };
   },
 });
 
