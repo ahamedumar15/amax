@@ -77,4 +77,14 @@ describe.skipIf(!hasDb)("035 AC-1 AC-2 REST API from the tool registry (Postgres
     const [a] = await db.t.owner`select actor, on_behalf_of, source from core.audit_event where action = 'demo.note.add' and after->>'text' = ${text}`;
     expect(a).toEqual(how === "person" ? { actor: `user:${kasun.id}`, on_behalf_of: null, source: "api" } : { actor: `sp:${ci.id}`, on_behalf_of: `user:${kasun.id}`, source: "api" });
   }, 60_000);
+
+  it.each([
+    ["a domain refusal", "refuse", 409, { error: "refused", message: "notes about this are refused (fictional rule)" }],
+    ["an unexpected error", "crash", 500, { error: "internal" }],
+  ] as const)("060 AC6 REST answers %s with its status and only a refusal's message", async (_, text, status, want) => {
+    const kasun = await person(db.app, T, `kasun-ac6-${text}`, ["Engineer"]);
+    const res = await call(rest("/tools/add_note", { token: kasun.token, body: { text } }));
+    expect(res.status).toBe(status);
+    expect(await res.json()).toMatchObject(want);
+  }, 60_000);
 });

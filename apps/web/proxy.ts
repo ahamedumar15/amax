@@ -1,7 +1,7 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { gate, isPublicPath } from "@amax/auth/gate";
 import { sessionStamp } from "@amax/auth/authjs";
-import { countsAsPage, takeRate } from "@amax/core/rate-limit";
+import { pageChannel, takeRate } from "@amax/core/rate-limit";
 import { wireProxy } from "./lib/rate-wiring";
 import { auth } from "./auth";
 
@@ -15,13 +15,14 @@ const guarded: Promise<Handler> | null = process.env.DATABASE_URL
       // 035 AC-5: pages are limited per user and tenant, like REST and MCP calls. Only navigations
       // count: document loads and the RSC fetch of a client-side navigation (the same work, and
       // skipping it would let any client dodge the limit by sending "rsc: 1"). Prefetches are the
-      // router's speculation, not the person's; server actions are counted where their work runs,
-      // per tool call in the registry.
+      // router's speculation, counted in their own budget; server actions (POST only) are counted where
+      // their work runs, per tool call in the registry (060 AC-4).
       // Wires this bundle's runtime, the AMAX_RATE_* limits and the recorder of 429s, wherever the host
       // runs the proxy (its own function on Vercel, its own worker on Cloudflare) (review 058).
       wireProxy();
       const stamp = sessionStamp(req.auth);
-      const r = stamp?.tenantId && countsAsPage(req.headers) ? takeRate({ tenantId: stamp.tenantId, userId: stamp.userId, channel: "page" }) : { ok: true as const };
+      const channel = pageChannel(req.method, req.headers);
+      const r = stamp?.tenantId && channel ? takeRate({ tenantId: stamp.tenantId, userId: stamp.userId, channel }) : { ok: true as const };
       return r.ok ? NextResponse.next() : new NextResponse("Too many requests. Wait a moment and try again.", { status: 429, headers: { "retry-after": String(r.retryAfter) } });
     }) as unknown as Promise<Handler>)
   : null;

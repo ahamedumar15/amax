@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { textArray } from "@amax/db";
 import { defineService } from "@amax/core/server";
+import { hasSecret } from "@amax/core/secrets";
 import { publicHttps } from "./egress";
 
 export const WEBHOOK_MANAGE = "api:webhook:manage";
@@ -22,6 +23,8 @@ export const subscribeWebhook = defineService({
     events: z.array(z.string().regex(/^[a-z][a-z0-9-]*(\.[a-z0-9_-]+)+$/)).min(1).max(50),
   }),
   async run(tx, input, ctx) {
+    // 060 AC-7: every delivery is signed, so a webhook without the signing secret could never deliver.
+    if (!(await hasSecret(tx, "amax-webhook"))) throw Object.assign(new Error("add the amax-webhook signing secret (Settings, Secrets) before subscribing a webhook"), { retryable: false, code: "invalid_input" });
     const [row] = await tx.execute(sql`insert into api.webhook (tenant_id, name, url, events, created_by)
       values (${ctx.tenantId}, ${input.name}, ${input.url}, ${textArray(input.events)}, ${ctx.actor.id}) returning id`);
     const id = row.id as string;

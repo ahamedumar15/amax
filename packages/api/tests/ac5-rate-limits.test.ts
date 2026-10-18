@@ -18,7 +18,9 @@ const whoami = (token: string, id: number) => new Request("http://localhost/api/
 describe.skipIf(!hasDb)("035 AC-5 rate limits across pages, REST and MCP (Postgres)", () => {
   let db: Awaited<ReturnType<typeof apiDb>>;
   const registry = demoRegistry();
-  const recorder = rateLimitRecorder(60_000);
+  // 060 AC-5: no timer and no manual flush; each 429 hands its write to the host's after()/waitUntil.
+  const deferred: Promise<void>[] = [];
+  const recorder = rateLimitRecorder((p) => void deferred.push(p));
   beforeAll(async () => {
     db = await apiDb();
     configureRateLimits({ call: { token: 30, user: 30, tenant: 40 }, page: { user: 5, tenant: 100 }, sink: recorder.sink, now: () => 1_800_000_000_000 });
@@ -28,7 +30,7 @@ describe.skipIf(!hasDb)("035 AC-5 rate limits across pages, REST and MCP (Postgr
     await db?.t.drop();
   });
 
-  it("AC5 flooding MCP from one tenant gets 429 with Retry-After, and another tenant is unaffected", async () => {
+  it("AC5 flooding MCP from one tenant gets 429 with Retry-After, another tenant is unaffected, and the 429s are written on the request path", async () => {
     const flooder = await person(db.app, T, "flood", ["Engineer"]);
     const calm = await person(db.app, OTHER, "calm", ["Engineer"]);
     const mcpToken = (v: typeof flooder.viewer) => createApiToken(db.app, v, { kind: "mcp", name: "client", days: 1 });
@@ -53,7 +55,7 @@ describe.skipIf(!hasDb)("035 AC-5 rate limits across pages, REST and MCP (Postgr
     expect(pages).toEqual([true, true, true, true, true, false]);
     expect(takeRate({ tenantId: OTHER, userId: calm.id, channel: "page" }).ok).toBe(true);
 
-    await recorder.flush();
+    await Promise.all(deferred);
     const counts = await withTenant(db.app, T, (tx) => tx.execute(sql`select channel, sum(count)::int as n from api.rate_limited group by channel order by channel`));
     expect(counts.map((r) => [r.channel, r.n])).toEqual([["mcp", 6], ["page", 1], ["rest", 1]]);
     expect((await db.t.owner`select count(*)::int as n from api.rate_limited where tenant_id = ${OTHER}`)[0].n).toBe(0);

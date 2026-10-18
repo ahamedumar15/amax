@@ -76,4 +76,17 @@ describe.skipIf(!hasDb)("035 AC-3 per-tenant secrets, dedupe and counting (Postg
     expect(await receiveWebhook(T, provider, sign(headers()), payload)).toMatchObject({ ok: false, reason: "duplicate" });
     expect(JSON.stringify(await db.t.owner`select * from core.audit_event`)).not.toContain(GH);
   }, 60_000);
+
+  // 060 AC-8: GitHub and Graph sign no timestamp. Their replay protection must outlive the call log,
+  // which the retention purge deletes after the P90D floor.
+  it.each([
+    ["github", () => body.replace("abc123", randomUUID()), (p: string) => new Headers({ "x-github-delivery": randomUUID(), "x-hub-signature-256": `sha256=${createHmac("sha256", GH).update(p).digest("hex")}` })],
+    ["msgraph", () => JSON.stringify({ value: [{ clientState: GRAPH, resource: `users/${randomUUID()}` }] }), () => new Headers()],
+  ] as const)("060 a %s call replayed after its log was purged is still a duplicate", async (provider, payload, headers) => {
+    const p = payload();
+    expect((await receiveWebhook(T, provider, headers(p), p)).ok).toBe(true);
+    await db.t.owner`update api.inbound set received_at = now() - interval '100 days' where provider = ${provider}`;
+    await db.t.owner`delete from api.inbound where provider = ${provider} and received_at < now() - interval '90 days'`;
+    expect(await receiveWebhook(T, provider, headers(p), p)).toMatchObject({ ok: false, reason: "duplicate" });
+  }, 60_000);
 });

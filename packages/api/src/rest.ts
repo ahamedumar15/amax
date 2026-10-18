@@ -20,6 +20,9 @@ function failure(e: unknown): Response {
   if (e instanceof ValidationError) return json(400, { error: "invalid_input", message: e.message });
   const code = (e as { code?: unknown } | null)?.code;
   if (code === "not_found" || code === "invalid_input") return json(code === "not_found" ? 404 : 400, { error: code, message: (e as Error).message });
+  // 060 AC-6: a domain refusal (PrivacyError and the like declare retryable = false) is the caller's to
+  // act on, with its message, not a server failure.
+  if ((e as { retryable?: unknown } | null)?.retryable === false) return json(409, { error: "refused", message: (e as Error).message });
   return json(500, { error: "internal", ref: logError("api.rest", e).slice(0, 8) });
 }
 
