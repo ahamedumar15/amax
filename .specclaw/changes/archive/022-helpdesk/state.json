@@ -1,0 +1,11 @@
+{
+  "change": "022-helpdesk",
+  "phase": "archived",
+  "branch": "",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-18T17:31:11Z"},
+    "verify": {"status":"done","at":"2026-10-18T18:12:28Z"},
+    "pr": {"status":"raised","at":"2026-10-18T18:12:40Z","url":"https://github.com/chan4lk/amax/pull/86"},
+    "archived": {"status":"done","at":"2026-10-18T19:11:57Z"}
+  }
+}
