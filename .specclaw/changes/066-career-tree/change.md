@@ -181,7 +181,7 @@ Two differences from the mock, on purpose:
   manager are separate events, which makes the two moves.
 - The lede names the certification in full ("Azure Developer AZ-204").
 
-- [ ] `T1` — Career screen at `/hr/p/:employeeNo/career`, mounted under hr, as in the mock:
+- [x] `T1` — Career screen at `/hr/p/:employeeNo/career`, mounted under hr, as in the mock:
   - The crumb, and a lede that leads with what needs attention: proposed technologies waiting, and an
     expired certification.
   - Two "✦ Ask amax" buttons with the person pinned, and four pinned tickets.
