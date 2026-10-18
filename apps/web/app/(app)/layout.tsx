@@ -9,6 +9,8 @@ import { signOutAction, viewAsAction } from "../actions/session";
 
 // Every app screen depends on who is signed in, so none can be prerendered.
 export const dynamic = "force-dynamic";
+// 062: only the public marketing page is indexed; app screens never are.
+export const metadata = { robots: { index: false, follow: false } };
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const viewer = await getViewer();

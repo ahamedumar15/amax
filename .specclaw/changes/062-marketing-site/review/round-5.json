@@ -1,0 +1,80 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/components/marketing/HowItWorks.tsx",
+  "apps/web/components/marketing/copy.ts",
+  "apps/web/tests/marketing-areas.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "calibrated": "records/docs/generated",
+   "file": ".specclaw/mock/index.html",
+   "fp": "42627a16a070",
+   "in_delta": false,
+   "line": 2232,
+   "message": "This only fixes the case that was named. The round-3 finding asked for two changes: reword step 2 in the React copy, and make the same change to the mock's step 2. Only `copy.ts` changed. Both mock copies still make the false claim, as card 2 in the `062-marketing-site` section: `.specclaw/mock/index.html:2232` and `apps/mock/public/mock/index.html:2232`, plus the built `apps/mock/out/mock/index.html`. They still say \"amax asks before it changes anything\" and \"Each write waits for a confirm, then is permission-checked\u2026\". The mock is the published GitHub Pages site and this change's own spec for the screen, so the mock and the shipped page now disagree, and the public mock still says MCP writes are gated. Fix: change the mock's card 2 to the new title and body (\"Every write is checked and attributed\" / \"In chat, amax asks before it changes anything. Every write, from chat, MCP or the UI, is permission-checked, audited and attributed\u2026\") in `.specclaw/mock/index.html` and `apps/mock/public/mock/index.html`, then rebuild `apps/mock/out`.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "Open the GitHub Pages mock at the 062 marketing section \u2192 step 2 reads \"Each write waits for a confirm\", but a write tool called over `/api/mcp` runs straight away with no confirm.",
+   "severity": "minor"
+  },
+  {
+   "file": "apps/web/tests/marketing-areas.test.ts",
+   "fp": "51a37cc5bc81",
+   "in_delta": true,
+   "line": 16,
+   "message": "No test proves this fix. The only test change adds STEPS to the `prose` table, and that test only checks that no Coming-feature word appears. The old step 2 (\"Each write waits for a confirm\u2026\") has no Coming words, so the test passes with or without the fix. Nothing guards against a step claiming that every write, or MCP writes, waits for a confirm. Fix: add a table-driven assertion over every copy surface (STEPS, HERO_LEDE, DESCRIPTION, the live claims, and ideally the mock's 062 section). It should reject an unqualified confirm claim (e.g. /each write waits for a confirm/i, /every write waits/i, /asks before it changes anything/ unless the same sentence scopes it to chat) and require the confirm sentence to say \"In chat\". Check that it fails on the pre-fix STEPS.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Put back the old STEPS[1].body \"Each write waits for a confirm, then is permission-checked\u2026\" \u2192 `marketing-areas.test.ts` stays green.",
+   "severity": "major"
+  }
+ ],
+ "head": "11e9abbd7c32c73916ef58a40145752b0ae529c9",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/[module]/[[...path]]/page.tsx",
+  "apps/web/app/(app)/operations/[screen]/page.tsx",
+  "apps/web/app/(app)/page.tsx",
+  "apps/web/app/(app)/settings/retention/RetentionTable.tsx",
+  "apps/web/app/(public)/welcome/page.tsx",
+  "apps/web/app/healthz/route.ts",
+  "apps/web/components/marketing/Hero.tsx",
+  "apps/web/components/workflows/SchedulesCard.tsx",
+  "apps/web/lib/admin/status.ts",
+  "apps/web/lib/privacy-sources.ts",
+  "apps/web/lib/registry.ts",
+  "apps/web/lib/server.ts",
+  "apps/web/scripts/seed-demo.ts",
+  "apps/web/scripts/temporal-worker.ts",
+  "apps/web/tests/admin/it-admin.test.ts",
+  "apps/web/tests/admin/privacy.test.ts",
+  "apps/web/tests/e2e/global-auth.ts",
+  "apps/web/tests/registry-038.test.ts",
+  "apps/web/tests/seed-demo.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 49358,
+ "round": 5,
+ "since": "09209977ce",
+ "status": "open",
+ "system_chars": 38730,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792325687,
+ "ts_start": 1792325632
+}

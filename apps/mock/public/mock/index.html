@@ -1268,14 +1268,14 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 <!-- ================= Leave ================= -->
 <section data-change="012-leave" id="001-amax-foundation-leave" data-roles="all" data-title="Leave" data-icon="calendar">
   <div class="row head">
-    <div><h1>Leave</h1><p class="lede">Nimal asked for Oct 27–30 off, the same week as the Fleet Tracker UAT retry. Next public holiday: Vap Full Moon Poya Day, Oct 26.</p></div>
-    <div class="actions"><button class="btn">Holiday calendar</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
+    <div><h1>Leave</h1><p class="lede">Nimal asked for Oct 27–30 off, the same week as the Fleet Tracker v1.8.0 UAT retry. Next public holiday: Vap Full Moon Poya Day, Oct 26. Requests, approvals and cancellations happen in chat.</p></div>
+    <div class="actions"><a class="btn" href="#leaveCal">Holiday calendar</a><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Request leave</button></div>
   </div>
   <div class="tickets four">
     <div class="ticket t-violet"><div class="k">On leave today</div><div class="v">6</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">3 annual, 2 casual, 1 medical</div></div>
     <div class="ticket t-yellow"><div class="k">Waiting for approval</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-clock"/></svg><div class="p">1 clashes with a release</div></div>
     <div class="ticket t-violet"><div class="k">Booked this month</div><div class="v">41 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-plane"/></svg><div class="p">Across 19 people</div></div>
-    <div class="ticket t-yellow"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">LKR 9.4M liability, Sri Lankan entity only</div></div>
+    <div class="ticket t-yellow"><div class="k">Unused annual leave</div><div class="v">812 days</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><div class="p">Sri Lankan entity only; payroll values the liability</div></div>
   </div>
   <div class="card" style="margin-bottom:28px">
     <div class="card-head"><h2>Team calendar, October 2026</h2><div class="legend" style="padding:0;margin:0;gap:16px"><span><i style="width:12px;height:12px;border-radius:4px;background:#B3A1FF"></i>Annual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#7FD8F5"></i>Casual</span><span><i style="width:12px;height:12px;border-radius:4px;background:#F48B9B"></i>Medical</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #7B61FF"></i>Pending</span><span><i style="width:12px;height:12px;border-radius:4px;background:#FFF1D6"></i>Holiday</span><span><i style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 2px var(--ink)"></i>Today, Oct 16</span></div></div>
@@ -1284,7 +1284,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
       <div class="card-head"><h2>Leave taken by type</h2><span class="muted" style="font-size:13px">2026, in days</span></div>
-      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Annual:412:#B3A1FF;Casual:186:#7FD8F5;Medical:97:#F48B9B;Lieu:21:#2FCB8C" data-center="716" data-sub="days taken" data-legend="lgLeave" viewBox="0 0 170 170" role="img" aria-label="Leave taken by type"></svg><ul class="donut-legend" id="lgLeave"></ul></div>
+      <div class="donut-wrap"><svg class="viz" data-kind="donut" data-parts="Annual:357:#B3A1FF;Casual:161:#7FD8F5;Medical:84:#F48B9B;Lieu:18:#2FCB8C" data-center="620" data-sub="days taken" data-legend="lgLeave" viewBox="0 0 170 170" role="img" aria-label="Leave taken by type"></svg><ul class="donut-legend" id="lgLeave"></ul></div>
     </div>
     <div class="card">
       <div class="card-head"><h2>Leave days per month</h2><span class="muted" style="font-size:13px">Everyone</span></div>
@@ -1292,12 +1292,12 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary" id="leaveApproveAll" type="button">Approve all</button></div>
+    <div class="card-head"><h2>Requests waiting for you</h2><button class="btn primary" type="button" title="Prompt: Approve the leave requests with no clash">✦ Approve 1 with no clash</button></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Person</th><th>Type</th><th>Dates</th><th class="num">Days</th><th>Clash check</th><th class="num">Action</th></tr></thead>
       <tbody>
-      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Annual</td><td>Oct 27 – Oct 30</td><td class="num">4</td><td><span class="chip warn">Overlaps Fleet UAT retry</span></td><td class="num"><button class="btn sm">Decide</button></td></tr>
-      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td>Casual</td><td>Nov 2</td><td class="num">1</td><td><span class="chip good">No clash</span></td><td class="num"><button class="btn sm primary">Approve</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a3">NS</span>Nimal Silva</div></td><td>Annual</td><td>Oct 27 – Oct 30</td><td class="num">4</td><td><span class="chip warn">Overlaps Fleet Tracker v1.8.0 UAT retry</span> <span class="chip warn">Overlaps Contoso Portal v2.4.0 QA</span></td><td class="num"><button class="btn sm" title="Prompt: Decide on Nimal Silva's annual leave, Oct 27 – Oct 30">✦ Ask amax</button></td></tr>
+      <tr><td><div class="who"><span class="av sm a2">TW</span>Tharushi Wijesinghe</div></td><td>Casual</td><td>Nov 2</td><td class="num">1</td><td><span class="chip good">No clash</span></td><td class="num"><button class="btn sm ghost" title="Prompt: Approve Tharushi Wijesinghe's casual leave, Nov 2">✦ Approve</button></td></tr>
       </tbody></table></div>
   </div>
 </section>
@@ -1913,7 +1913,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     <div class="actions"><button class="btn">Add legal hold</button><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New request</button></div>
   </div>
   <div class="tickets four">
-    <div class="ticket t-violet"><div class="k">Data classes covered</div><div class="v">14 of 14</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">100% of 14<div class="bar" aria-hidden="true"><i style="width:100%"></i></div></div></div>
+    <div class="ticket t-violet"><div class="k">Rules checked tonight</div><div class="v">14 of 14</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><div class="p">100% of 14<div class="bar" aria-hidden="true"><i style="width:100%"></i></div></div></div>
     <div class="ticket t-mint"><div class="k">Due tonight</div><div class="v">44</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-calendar"/></svg><div class="p">41 delete, 3 anonymise</div></div>
     <div class="ticket t-yellow"><div class="k">Open requests</div><div class="v">2</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><div class="p">1 access, 1 erasure</div></div>
     <div class="ticket t-pink"><div class="k">Legal holds</div><div class="v">1</div><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-briefcase"/></svg><div class="p">Purge paused for 1 person</div></div>
@@ -2018,6 +2018,13 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
       <tr><td>Oct 4</td><td>Oct 4, 02:00</td><td class="num">41 min</td><td class="num">4.1 M</td><td><span class="chip good">Verified</span></td><td><span class="chip good">Passed</span></td></tr>
       <tr><td>Sep 27</td><td>Sep 27, 02:00</td><td class="num">1 h 12 min</td><td class="num">4.1 M</td><td><span class="chip good">Verified</span></td><td><span class="chip warn">Slow, index rebuild</span></td></tr>
       </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Exports</h2><span class="chip warn">1 needs approval</span></div>
+    <ul class="list">
+      <li><div class="l"><span class="av sm a4">SK</span><div>Whole tenant, asked by Sahan Kumara<small>Oct 17. JSON per module plus files; a second Admin approves, then the link works for 24 hours</small></div></div><button class="btn sm primary">Approve</button></li>
+      <li><div class="l"><span class="av sm a3">MF</span><div>Whole tenant, asked by Maya Fernando<small>Sep 2. Approved by Sahan Kumara; 18 modules, 212 files; link expired Sep 3</small></div></div><span class="chip">Expired</span></li>
+    </ul>
   </div>
 </section>
 
@@ -2151,7 +2158,122 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   </div>
 </section>
 
+<!-- ================= 062 Marketing site ================= -->
+<section data-change="062-marketing-site" id="062-marketing-site" data-roles="all" data-title="Marketing site (public, signed out)" data-nav="no" data-icon="spark">
+  <style>
+    [id="062-marketing-site"] .mk{max-width:1120px;margin:0 auto;display:grid;gap:56px}
+    [id="062-marketing-site"] .mk-bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    [id="062-marketing-site"] .mk-bar nav{display:flex;gap:18px;margin-left:auto;flex-wrap:wrap}
+    [id="062-marketing-site"] .mk-bar a{color:var(--ink-2);text-decoration:none;font-weight:600}
+    [id="062-marketing-site"] .mk-hero{display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center}
+    [id="062-marketing-site"] .mk-hero h1{font-size:clamp(34px,5vw,56px);line-height:1.05;margin:0 0 16px;letter-spacing:-.02em}
+    [id="062-marketing-site"] .mk-hero p{font-size:18px;color:var(--ink-2);max-width:46ch}
+    [id="062-marketing-site"] .mk-video{position:relative;aspect-ratio:16/9;border-radius:var(--r-card);background:linear-gradient(135deg,var(--violet-soft),var(--mint-soft));box-shadow:var(--shadow);display:grid;place-items:center;overflow:hidden}
+    [id="062-marketing-site"] .mk-video .play{width:76px;height:76px;border-radius:50%;background:var(--violet);color:#fff;font-size:28px;border:0}
+    [id="062-marketing-site"] .mk-video small{position:absolute;bottom:12px;left:16px;right:16px;background:rgba(20,18,40,.72);color:#fff;padding:6px 10px;border-radius:10px;font-size:13px}
+    [id="062-marketing-site"] .mk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px}
+    [id="062-marketing-site"] .mk-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    [id="062-marketing-site"] .mk-n{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--violet-soft);color:var(--violet);font-weight:700}
+    [id="062-marketing-site"] .mk-band{background:var(--ink);color:var(--frame);border-radius:var(--r-card);padding:32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+    [id="062-marketing-site"] .mk-band b{display:block;font-size:17px;margin-bottom:4px}
+    [id="062-marketing-site"] .mk-band span{opacity:.75;font-size:14px}
+    [id="062-marketing-site"] .mk-cta{text-align:center;padding:48px 24px}
+    [id="062-marketing-site"] .mk-cta h2{font-size:clamp(26px,4vw,38px);margin:0 0 12px}
+    [id="062-marketing-site"] .bubble{padding:10px 14px;border-radius:16px;background:var(--sunken);max-width:80%;margin:8px 0}
+    [id="062-marketing-site"] .bubble.me{background:var(--violet-soft);margin-left:auto}
+    @media (max-width:820px){[id="062-marketing-site"] .mk-hero,[id="062-marketing-site"] .mk-steps{grid-template-columns:1fr}}
+    /* public page: no app shell (rail, top bar, chat launcher) */
+    body:has([id="062-marketing-site"].on) .rail, body:has([id="062-marketing-site"].on) .content > .top{display:none}
+    body:has([id="062-marketing-site"].on) .app{grid-template-columns:1fr}
+    [id="062-marketing-site"] .mk-heroband{border-radius:var(--r-card);padding:40px;background:radial-gradient(circle at 85% 20%,#A792FF55,transparent 55%),radial-gradient(circle at 10% 90%,#53D6A155,transparent 50%),var(--card);box-shadow:var(--shadow)}
+    [id="062-marketing-site"] .mk-video{background:linear-gradient(135deg,#53D6A1,#7B61FF)}
+    [id="062-marketing-site"] .mk-video svg.face{position:absolute;width:96px;height:96px;top:18px;left:18px;opacity:.9}
+    [id="062-marketing-site"] .mk-f{position:relative;border-radius:26px;padding:24px;min-height:200px;color:#1D1B2E;overflow:hidden}
+    [id="062-marketing-site"] .mk-f p{color:#1D1B2E;opacity:.78;max-width:24ch}
+    [id="062-marketing-site"] .mk-f .art{position:absolute;right:-6px;bottom:-6px;width:110px;height:100px}
+    [id="062-marketing-site"] .mk-coming{font-size:13px;font-weight:600}
+    [id="062-marketing-site"] .mk-f .chip{background:rgba(29,27,46,.12);color:#1D1B2E}
+    [id="062-marketing-site"] .t-sky{background:linear-gradient(135deg,#C4ECFB,#5CC8F0)}
+    [id="062-marketing-site"] .t-pink{background:linear-gradient(135deg,#FCD3DA,#F48B9B)}
+    [id="062-marketing-site"] .mk-steps .card:nth-child(2) .mk-n{background:var(--mint-soft);color:#138A5C}
+    [id="062-marketing-site"] .mk-steps .card:nth-child(3) .mk-n{background:#FBEA9C;color:var(--yellow-ink)}
+    [id="062-marketing-site"] .mk-cta{background:linear-gradient(135deg,#D9CFFF,#A6F0CF);color:#1D1B2E}
+    [id="062-marketing-site"] .mk-cta .muted{color:#1D1B2E;opacity:.75}
+  </style>
+  <div class="mk">
+    <header class="mk-bar">
+      <b style="font-size:22px">amax</b>
+      <nav aria-label="Marketing"><a href="javascript:void 0" onclick="document.getElementById('mk-features').scrollIntoView({behavior:'smooth'})">Features</a><a href="javascript:void 0" onclick="document.getElementById('mk-how').scrollIntoView({behavior:'smooth'})">How it works</a><a href="javascript:void 0" onclick="document.getElementById('mk-trust').scrollIntoView({behavior:'smooth'})">Security</a><a href="#001-amax-foundation">Sign in</a></nav>
+      <a class="btn" href="javascript:void 0" onclick="document.getElementById('mk-cta').scrollIntoView({behavior:'smooth'})">Book a demo</a>
+    </header>
+
+    <div class="mk-hero mk-heroband">
+      <div>
+        <span class="chip">Agent-native ERP for software and services firms</span>
+        <h1>Agents keep the records. People decide.</h1>
+        <p>Commits close tasks and draft your time for you to accept. Deployments move releases. Leave, people records and allocations stay up to date through chat. Your team opens amax to review and approve, not to type.</p>
+        <div class="row" style="gap:12px;margin-top:20px"><a class="btn" href="javascript:void 0" onclick="document.getElementById('mk-cta').scrollIntoView({behavior:'smooth'})">Book a demo</a><a class="btn sm" href="javascript:void 0" onclick="document.getElementById('mk-how').scrollIntoView({behavior:'smooth'})">See how it works</a></div>
+      </div>
+      <figure class="mk-video" aria-label="Product video, 35 seconds">
+        <svg class="face" viewBox="0 0 64 64" aria-hidden="true"><use href="#mascot"/></svg><button class="play" aria-label="Play the 35-second product video">▶</button>
+        <small>Captions: "Kasun pushes a commit. amax closes AMX-142 and suggests 2.5 h on Contoso Portal (fictional). Kasun accepts it."</small>
+      </figure>
+    </div>
+    <p class="muted" style="margin-top:-40px;font-size:13px">Video storyboard, 35 s: a commit closes a task (0–9 s), amax drafts 2.5 h and Kasun accepts it (9–15 s), Kasun submits the week and the PM approves it in chat (15–23 s), a release moves from UAT to Prod (23–29 s), then the end card (29–35 s). All data is fictional.</p>
+
+    <div class="card">
+      <h2>Your tools were built for people typing updates</h2>
+      <p class="muted">Jira, Monday and Kantata wait for someone to type every update. In amax, agents close tasks, draft the hours for people to accept and record releases over MCP, and every change shows who it was done for.</p>
+    </div>
+
+    <div id="mk-how">
+      <h2>How it works</h2>
+      <div class="mk-steps">
+        <div class="card"><span class="mk-n">1</span><h3>Agents write through MCP</h3><p class="muted">Every capability is an MCP tool with role-scoped permissions. Claude Code, CI and your own agents use the same tools as the UI.</p></div>
+        <div class="card"><span class="mk-n">2</span><h3>Every write is checked and attributed</h3><p class="muted">In chat, amax asks before it changes anything. Every write, from chat, MCP or the UI, is permission-checked, audited and attributed to the person or the agent acting for them.</p></div>
+        <div class="card"><span class="mk-n">3</span><h3>People review and decide</h3><p class="muted">Screens lead with what needs you: approvals, blocked releases and over-allocation. Pin anything into chat and ask.</p></div>
+      </div>
+    </div>
+
+    <div id="mk-features">
+      <h2>One system for delivery, people and money</h2>
+      <div class="mk-grid">
+        <div class="mk-f t-violet"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-rocket"/></svg><h3>Delivery</h3><p class="muted">Projects, specclaw proposals and releases across Dev, QA, UAT and Prod. Time and approvals. Allocations and capacity forecasts.</p></div>
+        <div class="mk-f t-mint"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-people"/></svg><h3>People</h3><p class="muted">Core HR. Leave. Onboarding and offboarding. Payroll runs and payslips. Recruitment, from open role to hire. Learning. OKRs from Keyflow.</p><p class="mk-coming"><span class="chip">Coming</span> Sri Lanka payroll pack, Australia payroll pack</p></div>
+        <div class="mk-f t-yellow"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-coins"/></svg><h3>Finance and sales</h3><p class="muted">Contracts, invoicing and receivables, with invoices drafted for Finance to accept. Expense claims, approved by the manager and then Finance. Presales pipeline.</p><p class="mk-coming"><span class="chip">Coming</span> Xero, QuickBooks and Business Central</p></div>
+        <div class="mk-f t-sky"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-key"/></svg><h3>Operations</h3><p class="muted">Compliance registers and incidents. Notifications.</p><p class="mk-coming"><span class="chip">Coming</span> IT assets and access, Helpdesk, Insights</p></div>
+        <div class="mk-f t-pink"><svg class="art" viewBox="0 0 120 110" aria-hidden="true"><use href="#art-shield"/></svg><h3>Platform</h3><p class="muted">An MCP server for every capability. Entra ID sign-in and SCIM. Git identities, API keys and webhooks.</p></div>
+      </div>
+    </div>
+
+    <div id="mk-trust" class="mk-band" aria-label="Trust and security">
+      <div><b>Every write attributed</b><span>A person, or an agent acting for them</span></div>
+      <div><b>Tamper-evident audit</b><span>Hash-chained trail with evidence export</span></div>
+      <div><b>Role-scoped MCP</b><span>Same permissions in chat, UI and API</span></div>
+      <div><b>Your region, your data</b><span>Region pinning, retention and legal holds</span></div>
+      <div><b>Accessible</b><span>WCAG 2.2 AA, light and dark</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Ask amax</h2><span class="chip">Preview, fictional data</span></div>
+      <div class="bubble me">Who is over-allocated next month?</div>
+      <div class="bubble">Two people are over 100% in November: Nimali Perera (120%, Contoso Portal and Fleet Tracker) and Kasun Dias (110%). Should I move 20% of Nimali to December?</div>
+      <div class="bubble me">Yes, move it.</div>
+      <div class="bubble"><b>Confirm:</b> move 20% of Nimali Perera from Fleet Tracker to December. <button class="btn sm">Confirm</button></div>
+    </div>
+
+    <div id="mk-cta" class="card mk-cta">
+      <h2>Stop typing updates. Start deciding.</h2>
+      <p class="muted">See amax on your own delivery data in 30 minutes.</p>
+      <a class="btn" href="javascript:void 0" onclick="document.getElementById('mk-cta').scrollIntoView({behavior:'smooth'})">Book a demo</a>
+    </div>
+
+    <footer class="row muted" style="font-size:13px;justify-content:space-between;flex-wrap:wrap;gap:12px"><span>© 2026 amax</span><span>Privacy · Security · Status</span></footer>
+  </div>
+</section>
+
 <!-- ================= 047 Admin end to end ================= -->
+
 <section data-change="047-admin-end-to-end" id="047-admin-end-to-end" data-roles="admin" data-title="Connections and keys (chat-first)" data-nav="no" data-parent="038-settings" data-icon="key">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Connections and keys</nav>
   <div class="row head">
@@ -2261,6 +2383,213 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     </ol>
   </div>
 </section>
+
+<!-- ================= 051 Project sections ================= -->
+<section data-change="051-project-sections" id="051-project-sections" data-roles="admin leadership pm engineer" data-title="Project sections" data-nav="no" data-icon="briefcase">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span>Contoso Portal (fictional)</nav>
+  <h1>Contoso Portal</h1>
+  <div class="tabs" role="navigation" aria-label="Sections"><a class="btn sm" href="#051-project-sections">Board</a><a class="btn sm" href="#051-project-sections">Proposals</a><a class="btn sm" href="#051-project-sections">Releases</a><a class="btn sm" href="#051-project-sections">Risks and decisions</a><a class="btn sm" aria-current="page" href="#051-project-sections">Team</a><a class="btn sm" href="#051-project-sections">Contract</a></div>
+  <div class="card flush"><div class="card-head"><h2>Team</h2><span class="muted" style="font-size:13px">From allocations</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Person</th><th>Role</th><th class="num">Oct</th><th class="num">Nov</th><th class="num">Dec</th><th></th></tr></thead><tbody>
+    <tr><td>Kasun Dias</td><td>Engineer</td><td class="num">80%</td><td class="num">80%</td><td class="num">50%</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>Ayesha Rahman</td><td>PM</td><td class="num">40%</td><td class="num">40%</td><td class="num">40%</td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="card" style="margin-top:20px;max-width:520px"><div class="card-head"><h2>Contract tab</h2></div><p class="muted">Contracts and billing arrive with finance (017).</p><button class="btn sm">✦ Ask amax about this project's contract</button></div>
+</section>
+
+<!-- ================= 055 IT admin role ================= -->
+<section data-change="055-it-admin-role" id="055-it-admin-role" data-roles="admin" data-title="AI usage (as IT Admin)" data-nav="no" data-parent="038-settings" data-icon="chart">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>AI usage</nav>
+  <h1>AI usage</h1>
+  <p class="lede">Signed in as Ravi Perera (fictional), IT Administrator. Prices are hidden for your role.</p>
+  <div class="tickets four">
+    <div class="ticket t-mint"><div class="k">Cost</div><div class="v">Hidden</div><div class="p">Hidden for your role</div></div>
+    <div class="ticket t-mint"><div class="k">Calls <span class="chip">📌</span></div><div class="v">18,402</div><div class="p">41 people</div></div>
+    <div class="ticket t-violet"><div class="k">Tokens <span class="chip">📌</span></div><div class="v">94.1M</div><div class="p">88.7M in, 5.4M out</div></div>
+    <div class="ticket t-yellow"><div class="k">Unknown price <span class="chip">📌</span></div><div class="v">12 calls</div><div class="p">Model without a price</div></div>
+  </div>
+  <div class="card" style="margin-top:20px;max-width:360px"><div class="card-head"><h2>Nav: Operations</h2></div>
+    <p>Settings · Access and licences · Helpdesk · Compliance · Digital experience · Backups and export</p></div>
+</section>
+
+<!-- ================= 054 Chat-first everywhere ================= -->
+<section data-change="054-chat-first-everywhere" id="054-chat-first-everywhere" data-roles="all" data-title="Chat-first everywhere" data-nav="no" data-icon="clock">
+  <h1>My timesheet · week 42</h1>
+  <p class="lede">Changes happen in chat. Pin anything, then ask.</p>
+  <div class="card flush"><div class="card-head"><h2>This week</h2><span><button class="btn sm">✦ Ask amax to log time</button> <button class="btn sm primary">✦ Ask amax to submit week 42</button></span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Day</th><th>Project</th><th class="num">Hours</th><th></th></tr></thead><tbody>
+    <tr><td>Mon</td><td>Contoso Portal (fictional)</td><td class="num">8.0</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>Tue</td><td>Fleet Tracker (fictional)</td><td class="num">7.5</td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="card" style="margin-top:20px;max-width:520px"><div class="card-head"><h2>Release v2.4.0</h2><button class="btn sm">📌</button></div><p class="muted">Edit tag, record or void a deployment: ask in chat.</p><button class="btn sm">✦ Ask amax to record a deployment</button></div>
+</section>
+
+<!-- ================= 062 specclaw sync plugin ================= -->
+<section data-change="062-specclaw-sync-plugin" id="062-specclaw-sync-plugin" data-roles="admin leadership pm engineer" data-title="Repo sync" data-nav="no" data-icon="plug">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span>Contoso Portal (fictional)</nav>
+  <h1>Repo sync</h1>
+  <p class="lede">Proposals follow the linked repo's specclaw state. 2 pushes were refused today.</p>
+  <div class="tickets four">
+    <div class="ticket t-yellow"><div class="k">Refused today <span class="chip">📌</span></div><div class="v">2</div><div class="p">Stale sha, repo mismatch</div></div>
+    <div class="ticket t-mint"><div class="k">Last sync <span class="chip">📌</span></div><div class="v">09:42</div><div class="p">Kasun Dias</div></div>
+    <div class="ticket t-violet"><div class="k">Last push <span class="chip">📌</span></div><div class="v">3 updated</div><div class="p">14 unchanged · 0 created</div></div>
+    <div class="ticket t-mint"><div class="k">Linked repo <span class="chip">📌</span></div><div class="v">contoso-portal</div><div class="p">github.com/example/contoso-portal</div></div>
+  </div>
+  <div class="card flush" style="margin-top:20px"><div class="card-head"><h2>Refused pushes</h2><button class="btn sm">✦ Ask amax to change the linked repo</button></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>When</th><th>By</th><th>Key</th><th>Reason</th><th></th></tr></thead><tbody>
+    <tr><td>09:40</td><td>Nimal Silva</td><td>CON-031</td><td>stale: last synced from a newer commit</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>08:15</td><td>Ayesha Rahman</td><td>all</td><td>repo not linked to CON (github.com/example/fleet-tracker)</td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="card" style="margin-top:20px;max-width:620px"><div class="card-head"><h2>Plugin dry run (developer machine)</h2></div>
+<pre style="white-space:pre-wrap;font-size:13px">/amax:sync-specclaw
+repo  github.com/example/contoso-portal @ main 4f2c9a1
+project CON (linked)
+dry run: 0 created · 3 updated · 14 unchanged · 1 refused
+  CON-033  building → verified
+  CON-034  tasks 2/6 → 5/6
+  CON-035  planned → building
+  refused CON-012  released belongs to Prod deployments
+Apply 3 updates? (y/N)</pre></div>
+</section>
+
+<!-- ================= 028 Keyflow sync ================= -->
+<section data-change="028-keyflow-sync" id="028-keyflow-sync" data-roles="admin hr" data-title="Keyflow" data-nav="no" data-parent="038-settings" data-icon="plug">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span><a href="#001-amax-foundation-integrations">Integrations</a><span>/</span>Keyflow</nav>
+  <div class="row head"><div><h1>Keyflow</h1><p class="lede">3 sync errors need you: Keyflow refused Lahiru Liyanage and Mohamed Rifkhan, and a goal came in for a Keyflow person amax doesn't know. The sync runs every 15 minutes as a job. Changes happen in chat. Pin anything, then ask.</p></div>
+    <div class="actions"><button class="btn" type="button" title="Prompt: Connect Keyflow at its address">✦ Ask amax to connect Keyflow</button></div></div>
+  <div class="app-card sister" style="margin-bottom:24px"><span class="logo-sq" style="width:56px;height:56px;border-radius:18px;font-size:18px;background:linear-gradient(135deg,#7B61FF,#2FCB8C)">K</span><div><h2>Keyflow, sister product <span class="chip">📌</span></h2><p style="margin-top:4px">OKRs, check-ins, feedback and recognition stay in Keyflow. amax sends people and teams; Keyflow sends goals, review scores and recognition back to each person's Performance page.</p></div><div style="text-align:right"><span class="chip warn">3 errors</span><div class="muted" style="font-size:12.5px;margin-top:8px">Sandbox Keyflow (fictional), last sync 4 min ago</div></div></div>
+  <div class="tickets four">
+    <div class="ticket t-pink"><div class="k">Sync errors <span class="chip">📌</span></div><div class="v">3</div><div class="p">2 refused by Keyflow, 1 unmatched person</div></div>
+    <div class="ticket t-mint"><div class="k">Last sync <span class="chip">📌</span></div><div class="v">4 min ago</div><div class="p">Every 15 minutes, next in 11 min</div></div>
+    <div class="ticket t-violet"><div class="k">Sent to Keyflow <span class="chip">📌</span></div><div class="v">184 people</div><div class="p">8 teams</div></div>
+    <div class="ticket t-yellow"><div class="k">From Keyflow <span class="chip">📌</span></div><div class="v">11 goals</div><div class="p">5 review scores, 6 recognitions</div></div>
+  </div>
+  <div class="card flush" style="margin:24px 0">
+    <div class="card-head"><h2>Sync errors</h2><span class="chip">📌</span><span class="muted" style="font-size:13px">3 open</span></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>What</th><th>Record</th><th>First seen</th><th class="num">Runs</th><th class="num">Action</th></tr></thead>
+      <tbody>
+      <tr><td><span class="chip bad">Refused</span> Keyflow refused this person: start date Nov 2, 2026 is in the future</td><td>Lahiru Liyanage</td><td>Oct 18, 08:41</td><td class="num">2</td><td class="num"><button class="btn sm" title="Prompt: Dismiss the Keyflow sync error for Lahiru Liyanage">✦ Ask amax</button> <button class="btn sm">📌</button></td></tr>
+      <tr><td><span class="chip bad">Refused</span> Keyflow refused this person: start date Nov 2, 2026 is in the future</td><td>Mohamed Rifkhan</td><td>Oct 18, 08:41</td><td class="num">2</td><td class="num"><button class="btn sm" title="Prompt: Dismiss the Keyflow sync error for Mohamed Rifkhan">✦ Ask amax</button> <button class="btn sm">📌</button></td></tr>
+      <tr><td><span class="chip warn">Unmatched</span> A goal came in for a Keyflow person amax doesn't know</td><td>Keyflow person kf-9031</td><td>Oct 18, 08:41</td><td class="num">1</td><td class="num"><button class="btn sm" title="Prompt: Dismiss the Keyflow sync error for kf-9031">✦ Ask amax</button> <button class="btn sm">📌</button></td></tr>
+      </tbody></table></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Recent runs</h2><span class="chip">📌</span><span class="muted" style="font-size:13px">Started by the keyflow.sync job</span></div>
+    <div class="scroll-x"><table class="tbl">
+      <thead><tr><th>Started</th><th>Result</th><th class="num">Out</th><th class="num">In</th><th class="num">Errors</th><th></th></tr></thead>
+      <tbody>
+      <tr><td>Oct 18, 09:11</td><td><span class="chip warn">Completed with errors</span></td><td class="num">0</td><td class="num">0</td><td class="num">2</td><td class="num"><button class="btn sm">📌</button></td></tr>
+      <tr><td>Oct 18, 08:56</td><td><span class="chip bad">Failed</span> Keyflow answered 503</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num"><button class="btn sm">📌</button></td></tr>
+      <tr><td>Oct 18, 08:41</td><td><span class="chip warn">Completed with errors</span></td><td class="num">184 people, 8 teams</td><td class="num">22</td><td class="num">3</td><td class="num"><button class="btn sm">📌</button></td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= 028 Keyflow on the person page ================= -->
+<section data-change="028-keyflow-sync" id="028-keyflow-person" data-roles="admin leadership hr pm" data-title="Kasun Dias, performance" data-nav="no" data-parent="001-amax-foundation-people">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-people">People</a><span>/</span><a href="#001-amax-foundation-person">Kasun Dias</a><span>/</span>Performance</nav>
+  <div class="row head"><div><h1>Kasun Dias, performance</h1><p class="lede">1 goal is at risk. Goals, review scores and recognition come from Keyflow, synced 4 min ago. Review scores show only to HR, leadership, Kasun and his manager.</p></div></div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Goals <span class="chip">📌</span></div><div class="v">3</div><div class="p">1 at risk</div></div>
+    <div class="ticket t-mint"><div class="k">Latest review <span class="chip">📌</span></div><div class="v">4.2 of 5</div><div class="p">2026 H1, exceeds expectations</div></div>
+    <div class="ticket t-yellow"><div class="k">Recognition <span class="chip">📌</span></div><div class="v">2</div><div class="p">This quarter</div></div>
+  </div>
+  <div class="cols even" style="margin-top:24px">
+    <div class="card"><div class="card-head"><h2>Goals</h2><span class="chip">📌</span><span class="muted" style="font-size:13px">2026 H2</span></div>
+      <ul class="list">
+        <li><div class="l"><div>Pass the AWS Solutions Architect exam<small>Due Dec 15, 20%</small></div></div><span class="chip warn">At risk</span> <span class="chip">📌</span></li>
+        <li><div class="l"><div>Cut Fleet Tracker p95 latency to 300 ms<small>Due Dec 31, 70%</small></div></div><span class="chip good">On track</span> <span class="chip">📌</span></li>
+        <li><div class="l"><div>Mentor two associate engineers<small>Due Dec 31, 50%</small></div></div><span class="chip good">On track</span> <span class="chip">📌</span></li>
+      </ul></div>
+    <div class="stack">
+      <div class="card"><div class="card-head"><h2>Review scores</h2><span class="chip">📌</span></div>
+        <ul class="list">
+          <li><div class="l"><div>2026 H1 review<small>Exceeds expectations</small></div></div><b>4.2 of 5</b> <span class="chip">📌</span></li>
+          <li><div class="l"><div>2025 H2 review<small>Meets expectations</small></div></div><b>3.8 of 5</b> <span class="chip">📌</span></li>
+        </ul></div>
+      <div class="card"><div class="card-head"><h2>Recognition</h2><span class="chip">📌</span></div>
+        <ul class="feed">
+          <li><span class="av a1">MF</span><div><p>Unblocked the v1.8.0 rollback on a Friday night (fictional)</p><small>Maya Fernando, Oct 14</small></div><span class="chip">📌</span></li>
+          <li><span class="av a3">NS</span><div><p>Patient code reviews for the new joiners (fictional)</p><small>Nimal Silva, Oct 2</small></div><span class="chip">📌</span></li>
+        </ul></div>
+    </div>
+  </div>
+</section>
+<!-- ================= 006 Agent governance ================= -->
+<section data-change="006-agent-governance" id="006-agent-governance" data-roles="all" data-title="Suggestions" data-icon="spark">
+  <div class="row head">
+    <div><h1>Suggestions</h1><p class="lede">Agents never change data on their own. 2 suggestions need your decision, 0 need a second approver, and 1 accepted change can still be undone. Decisions happen in chat. Pin anything, then ask.</p></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Needs your decision <span class="chip">📌</span></div><div class="v">2</div><div class="p">Only those inside your data scope</div></div>
+    <div class="ticket t-yellow"><div class="k">Second approver needed <span class="chip">📌</span></div><div class="v">0</div><div class="p">Irreversible: can't be undone</div></div>
+    <div class="ticket t-mint"><div class="k">Can still be undone <span class="chip">📌</span></div><div class="v">1</div><div class="p">For 7 days, or until the module's cutoff</div></div>
+    <div class="ticket t-pink"><div class="k">Expiring today <span class="chip">📌</span></div><div class="v">1</div><div class="p">An expired suggestion can't be accepted</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Needs your decision</h2><span class="chip agent">An agent suggests, a person decides</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Suggestion</th><th>Agent</th><th>Evidence</th><th class="num">Confidence</th><th>Expires</th><th class="num"><span class="sr">Decide</span></th></tr></thead><tbody>
+      <tr><td style="white-space:normal;min-width:240px"><b>Move Kasun Dias to 50% on Fleet Tracker in December</b><small>Allocation change</small></td><td><span class="chip agent">Inbox agent</span><small>for Nimal Silva</small></td><td><a href="#006-agent-governance">The plan on Allocations</a> <span class="chip warn">External source: email</span><small>Email from a.lee@wideworld.test (fictional)</small></td><td class="num">0.64</td><td>Oct 19</td><td class="num"><button class="btn sm primary">✦ Accept</button> <button class="btn sm">✦ Query</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+      <tr><td style="white-space:normal;min-width:240px"><b>Move Ayesha Rahman to 50% on HR Insights in December</b><small>Allocation change</small></td><td><span class="chip agent">Allocation check</span><small>for Ayesha Rahman</small></td><td><a href="#006-agent-governance">The plan on Allocations</a></td><td class="num">0.82</td><td>Oct 24</td><td class="num"><button class="btn sm primary">✦ Accept</button> <button class="btn sm">✦ Query</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+    <p class="src" style="padding:0 28px 22px;margin:0">Pay, bank files, access and credentials need someone other than the person the agent acted for. Suggestions outside your data scope are never shown.</p>
+  </div>
+  <div class="cols even" style="margin-top:28px">
+    <div class="card flush">
+      <div class="card-head"><h2>Accepted, can be undone</h2><button class="btn sm">📌</button></div>
+      <div class="scroll-x"><table class="tbl"><thead><tr><th>Change</th><th>Decided</th><th>Undo until</th><th class="num"><span class="sr">Undo</span></th></tr></thead><tbody>
+        <tr><td><b>Move Nimal Silva to 50% on Contoso Portal in January</b><small>Allocation check for Maya Fernando</small></td><td>Maya Fernando<small>Oct 17</small></td><td>Oct 24</td><td class="num"><button class="btn sm">✦ Undo</button> <button class="btn sm">📌</button></td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Agent runs</h2><button class="btn sm">📌</button></div>
+      <p class="muted">Suggestions from an agent run show its input, tool calls, output and cost here. Recurring checks make theirs without a model.</p>
+    </div>
+  </div>
+  <div class="card flush" style="margin-top:28px">
+    <div class="card-head"><h2>Agent jobs</h2><button class="btn sm">📌</button><span class="muted" style="font-size:13px">0 of 1 on</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Job</th><th>Runs</th><th>Status</th><th class="num"><span class="sr">Ask</span></th></tr></thead><tbody>
+      <tr><td><b>Allocation check</b><small>Suggests rebalancing people planned over 100% in the next three months</small></td><td>Mondays 06:00</td><td><span class="chip warn">Paused</span></td><td class="num"><button class="btn sm">✦ Ask amax to switch on</button> <button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= 030 Notifications ================= -->
+<section data-change="030-notifications" id="030-notifications" data-roles="all" data-title="Notifications" data-nav="no" data-icon="spark">
+  <div class="row head"><div><h1>Notifications</h1><p class="lede">How amax reaches you. Urgent items skip the digest but wait for your quiet hours. Change anything in chat.</p></div><div class="actions"><button class="btn sm">✦ Ask amax to change my notifications</button></div></div>
+  <div class="cols">
+    <div>
+      <div class="card flush pinnable">
+        <div class="card-head"><h2>Channels per category</h2></div>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Category</th><th>In app</th><th>Email</th><th>Teams</th><th>Digest</th><th></th></tr></thead><tbody>
+          <tr><td>Approvals</td><td>On</td><td>On</td><td>On</td><td>Off</td><td><button class="btn sm">📌</button></td></tr>
+          <tr><td>Releases</td><td>On</td><td>Off</td><td>On</td><td>Daily at 08:00</td><td><button class="btn sm">📌</button></td></tr>
+          <tr><td>Reminders</td><td>On</td><td>On</td><td>Off</td><td>Daily at 08:00</td><td><button class="btn sm">📌</button></td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="card pinnable" style="margin-top:20px">
+        <div class="card-head"><h2>Quiet hours</h2><button class="btn sm">📌</button></div>
+        <p>21:00 to 07:00, Asia/Colombo (Lumen Labs Lanka (Pvt) Ltd, fictional)</p>
+        <p class="muted" style="font-size:13px">Email and Teams wait until quiet hours end. The bell always shows new items.</p>
+        <button class="btn sm">✦ Ask amax to change quiet hours</button>
+      </div>
+    </div>
+    <div class="card pinnable">
+      <div class="card-head"><h2>The bell <span class="chip">2 unread</span></h2><button class="btn sm">✦ Mark all read</button></div>
+      <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:4px 0">Delivery</h3>
+      <ul class="list">
+        <li><span><a href="#001-amax-foundation-releases"><b>Release v1.8.0 rolled back in UAT</b></a><small><span class="chip bad">Urgent</span> Fleet Tracker (fictional) · 2 h ago · Unread</small></span><button class="btn sm">📌</button></li>
+      </ul>
+      <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 4px">Time</h3>
+      <ul class="list">
+        <li><span><a href="#001-amax-foundation-time"><b>Kasun Dias submitted 2026-W42</b></a><small>32.5 h to approve · 10 min ago · Unread</small></span><button class="btn sm">📌</button></li>
+        <li><span><a href="#001-amax-foundation-time"><b>Your timesheet for 2026-W41 was approved</b></a><small>Yesterday</small></span><button class="btn sm">📌</button></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 
     </main>
   </div>

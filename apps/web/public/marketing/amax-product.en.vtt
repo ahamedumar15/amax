@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:03.200
+You push a commit.
+[Terminal] git commit for task AMX-142. amax closes the task and suggests 2.5 h to Kasun Dias.
+
+00:00:03.200 --> 00:00:09.000
+amax closes the task.
+AMX-142 moves from In review to Done, closed by an agent for Kasun Dias.
+
+00:00:09.000 --> 00:00:15.000
+And drafts the time. Kasun accepts it.
+A suggestion adds 2.5 h on Contoso Portal for Wednesday. Kasun accepts, and it lands as a draft.
+
+00:00:15.000 --> 00:00:23.000
+The PM approves the week in chat.
+Kasun has submitted the week. In chat, Nimali asks to approve it and confirms it in chat. Week approved by Nimali Perera.
+
+00:00:23.000 --> 00:00:29.000
+Deployments move releases.
+Fleet Tracker v1.9.0 moves from UAT to Prod.
+
+00:00:29.000 --> 00:00:35.000
+amax. Agents keep the records. People decide.
+The agent-native ERP for software and services firms.

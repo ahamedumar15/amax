@@ -1,0 +1,59 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/tests/marketing-time.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/marketing-time.test.ts",
+   "fp": "41d14fde5690",
+   "in_delta": true,
+   "line": 5,
+   "message": "This is still a partial fix. The verbs the reviewer named now match as stems, but the three alternatives at the end of the same regex are still fixed word forms: `lands?`, `goes from` and `do(?:es)? that`. Their other forms ('landed', 'landing', 'went from', 'going from', 'did that', 'doing that') are the same class of miss the previous finding was about. The list also still leaves out common verbs for writing hours, such as 'submit', 'post', 'save' and 'create'. Any of these can claim that hours are written with no accept step, and the guard passes it. Fix: turn the remaining alternatives into stems (`land\\w*|(?:go(?:es|ing)?|went) from|(?:do(?:es|ing)?|did) that`) and add `submit\\w*|post\\w*|sav\\w*|creat\\w*`. Then add 'landed', 'went from' and 'submits' cases to the rejected table.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "\"Agents landed 6 hours on the timesheet.\" or \"Agents submit your timesheet every Friday.\" or \"Wednesday went from 5.0 to 7.5 hours.\" \u2192 HOURS matches but WRITES does not, so claims() returns [] and the surface test passes even though the sentence claims hours are written without an accept step",
+   "severity": "major"
+  }
+ ],
+ "head": "57a933277851fcd66ccc10abed4be8cba99a873e",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/lib/backup-fixtures.ts",
+  "apps/web/tests/admin/tools.test.ts",
+  "apps/web/tests/marketing-areas.test.ts",
+  "modules/allocations/fixtures/plan.ts",
+  "modules/presales/db/migrations/0001_presales.sql",
+  "modules/presales/fixtures/data.ts",
+  "packages/auth/src/authjs.ts",
+  "packages/auth/src/session.ts",
+  "packages/auth/tests/ac7-tenant.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/backup/tables.ts",
+  "packages/core/src/idempotency.ts",
+  "packages/db/migrations/0017_workflows.sql",
+  "scripts/queue.mjs"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 45856,
+ "round": 12,
+ "since": "bad36a9e18",
+ "status": "open",
+ "system_chars": 38733,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792327398,
+ "ts_start": 1792327343
+}
