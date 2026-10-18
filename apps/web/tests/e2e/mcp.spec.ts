@@ -95,7 +95,7 @@ for (const who of ADMINS) test(`AC4 Integrations lists tools by module with who 
   expect(before).toBeGreaterThan(0);
   // 047: revoking is chat-first: the Ask chip pins the grant, chat confirms revoke_mcp_client.
   await rows.first().getByRole("button", { name: /^Ask to revoke e2e client for / }).click();
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
   await card.getByRole("button", { name: "Add it" }).click();
   await expect(card).toContainText("Done");
