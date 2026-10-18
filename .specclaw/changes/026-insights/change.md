@@ -95,7 +95,7 @@ Gaps (each in BACKLOG):
 
 Ripples outside the module:
 - `modules/presales/tests/permissions.test.ts`: its switch-off test now allows `@amax/presales/contracts`, which the module standard permits.
-- `apps/web/components/marketing/areas.ts`: Insights moves to live, merged with 022's Helpdesk move.
+- `apps/web/components/marketing/areas.ts`: Insights moves to live, merged with 022's Helpdesk move. `apps/web/tests/e2e/marketing.spec.ts` counts the "Coming" chips from `AREAS`.
 - `BACKLOG.md`: 025's Insights switch item is ticked, and the missing-contract follow-ups are added.
 
 After merging 022, `tests/agents.test.ts` checks that the jobs list contains the named jobs instead of matching it exactly. Helpdesk's `helpdesk.triage` is a new installed job, and so will any later module's be.
@@ -107,6 +107,7 @@ Commands (re-run after merging origin/main with 022; Postgres 16 at `DATABASE_MI
 - `pnpm turbo run test --force --continue --concurrency=2` → 32/33. `@amax/insights` failed only the exact job list above. After the fix, `pnpm turbo run test lint --filter=@amax/insights --force` → 0 (9/9).
 - `pnpm --filter @amax/web build` → 0
 - `playwright test --config playwright.auth.config.ts` (apps/web) → 81/81
+- `pnpm --filter @amax/web e2e` (public pages) → 5/5. CI's first run caught `marketing.spec.ts` expecting three "Coming" chips; Operations now has none, so the count follows `AREAS`.
 - module e2e `pnpm --filter @amax/insights e2e` → 2/2 (axe, nothing unpinned, no forms, switches and New job open chat)
 - `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
 - `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
