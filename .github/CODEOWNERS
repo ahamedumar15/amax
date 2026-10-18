@@ -19,6 +19,7 @@
 /modules/onboarding/ @chan4lk
 /modules/payroll/ @chan4lk
 /modules/finance/ @chan4lk
+/modules/expenses/ @chan4lk
 /modules/recruitment/ @chan4lk
 # /modules/payroll/ @org/payroll-team
 # /modules/finance/ @org/finance-team
