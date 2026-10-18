@@ -1,0 +1,65 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/components/marketing/queues.ts",
+  "apps/web/tests/marketing-queue.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/marketing-queue.test.ts",
+   "fp": "b9214056437e",
+   "in_delta": true,
+   "line": 21,
+   "message": "This is still an instance fix. hr1 now sets `step: \"leave:admin\"`, and the rejecting rows go through the shared `check()`, so the named cases are covered. The root cause the last round named is still there: `step` stays optional in `Card` (queues.ts:3), and `check()` only tests a step when the card sets one. A card on a tool whose service checks a stricter permission at each step can leave `step` out and pass. That covers approve_leave and reject_leave, which reach the HR branch only through `leave:admin` (modules/leave/server/scope.ts:36), and approve_expense and reject_expense, whose Finance step needs `expenses:approve-finance`. In those cases the test only proves that the role holds the tool's broad permission (`leave:approve` comes through MANAGE for PM, Engineer, Finance and the other roles). Fix: in the test, keep one list of tools with step-dependent services (approve_leave, reject_leave, approve_expense, reject_expense). Make `check()` fail any card on those tools that has no `step`. Add rejecting rows for that case, e.g. `[\"HR\", { tool: \"approve_leave\" }]` and `[\"Finance\", { tool: \"reject_expense\" }]`, each expected to fail because the step is missing.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Add `{ id: \"hr3\", tool: \"reject_leave\", ... }` to QUEUES.HR with no `step`, or delete `step` from fi2 \u2192 check() returns [] because Finance holds `expenses:approve` \u2192 the test stays green while the card claims a step the tool's declared permission doesn't prove.",
+   "severity": "major"
+  }
+ ],
+ "head": "466792b264a4fe48e6f830222956507e6da813c3",
+ "impact": [
+  "apps/web/lib/admin/status.ts",
+  "modules/allocations/module.ts",
+  "modules/delivery/module.ts",
+  "modules/delivery/tests/chat-043.test.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/mcp-registry.test.ts",
+  "modules/expenses/tests/contracts.test.ts",
+  "modules/finance/tests/contracts.test.ts",
+  "modules/hr/module.ts",
+  "modules/keyflow/module.ts",
+  "modules/learning/module.ts",
+  "modules/leave/module.ts",
+  "modules/notifications/server/render.ts",
+  "modules/notifications/server/rules.ts",
+  "modules/notifications/tests/masking.test.ts",
+  "modules/onboarding/module.ts",
+  "modules/onboarding/tests/contracts.test.ts",
+  "modules/payroll/module.ts",
+  "modules/payroll/tests/contracts.test.ts",
+  "modules/presales/module.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 52699,
+ "round": 20,
+ "since": "1927bfc3c6",
+ "status": "open",
+ "system_chars": 39636,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792346916,
+ "ts_start": 1792346874
+}

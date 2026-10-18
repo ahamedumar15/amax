@@ -1,0 +1,60 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/components/marketing/ProductVideo.tsx",
+  "apps/web/tests/e2e/marketing-theme.spec.ts",
+  "apps/web/tests/e2e/marketing.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/marketing.spec.ts",
+   "fp": "04159af78b6e",
+   "in_delta": true,
+   "line": 50,
+   "message": "This test does not prove the fix it was written for. The test only runs in Chromium (playwright.config.ts:12). In Chromium, a `<video controls>` with tabIndex 0 sends Tab from the host into the controls in its own shadow tree. Shift+Tab then goes back to the host. So `toBeFocused()` (activeElement is retargeted to the host) passes even though focus never left the video. The previous finding was about reaching the video again after focus has moved somewhere else on the page, and that path is still untested. It is also one case, not a table of variants. Fix: write a table-driven test. (a) Focus something after the tour, such as the first link in the next section, and Shift+Tab until activeElement is the video or one of its controls. (b) Focus the skip link or something before the tour and Tab forward until the video is reached. (c) Assert that a keyboard-only key, such as Space on the focused video or its controls, toggles `paused`. Check that each case fails with `tabIndex={-1}`.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "After clicking Play, Tab moves into the video's shadow Play/Pause control and Shift+Tab returns to the host, so the test passes. A future regression that blocks reaching the video from the next section (for example a wrapper with inert, or tabindex=-1 put back on the stage) would not be caught by this test.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/components/marketing/ProductVideo.tsx",
+   "fp": "1ba795a897cc",
+   "in_delta": true,
+   "line": 20,
+   "message": "`tabIndex={0}` fixes the after-play state but adds a problem before play. While `started` is false the video has no controls but is still a Tab stop, and it comes before the Play button in DOM order. A keyboard user first lands on a video that Space and Enter don't operate, and only the next Tab reaches the Play button. Fix: set `tabIndex={started ? 0 : -1}`. Both values still let `play()` call `focus()` in the same tick, before `controls` renders. Then add a check that the first Tab into the tour lands on the Play button.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Load /welcome, Tab to the tour \u2192 focus lands on the poster-only video with no controls, and Space/Enter do nothing \u2192 one more Tab is needed to reach 'Play the tour'.",
+   "severity": "minor"
+  }
+ ],
+ "head": "b2ce34b15403b9be1662d16a0bdb4a742330ad11",
+ "impact": [
+  "apps/web/app/(public)/welcome/page.tsx"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 44587,
+ "round": 2,
+ "since": "8f436133a9",
+ "status": "open",
+ "system_chars": 39595,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792343674,
+ "ts_start": 1792343616
+}

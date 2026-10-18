@@ -59,6 +59,6 @@ describe.skipIf(!hasDb)("triage and suggestions (Postgres)", () => {
     await db.tick();
     expect(await db.q(sql`select count(*)::int as n from leave.request`)).toEqual(leaveBefore);
     expect(await db.q(sql`select f.status, f.record_type, s.status as suggestion from inbox_agent.find f join agents.suggestion s on s.id = f.suggestion_id where f.id = ${findId}`))
-      .toEqual([{ status: "suggested", record_type: "opportunity", suggestion: "open" }]);
+      .toEqual([{ status: "suggested", record_type: "ticket", suggestion: "open" }]);
   });
 });

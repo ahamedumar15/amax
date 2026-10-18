@@ -118,10 +118,10 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
     for (const label of OPERATIONS) await expect(nav.getByRole("link", { name: label, exact: true }), `${who.role} ${label}`).toBeVisible();
     // 038: Backups and export is a Settings hub card now, not a rail item.
     await expect(nav.getByRole("link", { name: "Backups and export", exact: true })).toHaveCount(0);
-    await nav.getByRole("link", { name: "Helpdesk", exact: true }).click();
-    await expect(page).toHaveURL(/\/operations\/helpdesk$/);
-    await expect(page.locator("main h1")).toHaveText("Helpdesk");
-    await expect(page.locator("main .lede")).toHaveText("Coming soon. Helpdesk arrives with change 022, Helpdesk: IT, HR and facilities queues.");
+    await nav.getByRole("link", { name: "Digital experience", exact: true }).click();
+    await expect(page).toHaveURL(/\/operations\/dex$/);
+    await expect(page.locator("main h1")).toHaveText("Digital experience");
+    await expect(page.locator("main .lede")).toHaveText("Coming soon. Digital experience arrives with change 037, Digital employee experience, without a desk agent.");
     // A settled page for axe: the rail's labels fade in on hover, and the click left the pointer there.
     await page.mouse.move(900, 500);
     await page.reload();
@@ -130,7 +130,7 @@ test("055 AC4 Admin and IT Admin get the Operations group; unbuilt screens are C
   await page.context().clearCookies();
   await signIn(page, "nimal@lumenlabs.test", "/");
   for (const label of OPERATIONS) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label, exact: true })).toHaveCount(0);
-  expect((await page.goto("/operations/helpdesk"))?.status()).toBe(404);
+  expect((await page.goto("/operations/dex"))?.status()).toBe(404);
 });
 
 test("038 AC-3, AC-5 a rail taller than the window keeps the current and focused item in view and fades its hidden edge", async ({ page }) => {

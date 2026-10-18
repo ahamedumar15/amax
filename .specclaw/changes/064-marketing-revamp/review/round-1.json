@@ -1,0 +1,86 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(public)/welcome/sections.css",
+  "apps/web/components/marketing/Bands.tsx",
+  "apps/web/components/marketing/ProductVideo.tsx",
+  "apps/web/components/marketing/Statement.tsx",
+  "apps/web/components/marketing/areas.ts",
+  "apps/web/components/marketing/copy.ts",
+  "apps/web/tests/e2e/marketing-seo.spec.ts",
+  "apps/web/tests/e2e/marketing.spec.ts",
+  "apps/web/tests/marketing-prose.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/components/marketing/ProductVideo.tsx",
+   "fp": "0fb1ef7172cd",
+   "in_delta": true,
+   "line": 20,
+   "message": "This fix adds `tabIndex={-1}` so that `play()` can focus the video. But after `started` flips, the Play button is gone and the native controls are the only way to work the video. A shadow host with a negative tabindex takes itself and its shadow-tree controls out of the Tab order. Once keyboard focus leaves the video, Tab can't reach it again, so the video can't be paused, sought or have its captions toggled. This breaks AGENTS.md core rule 8 (keyboard-complete, WCAG 2.2 AA 2.1.1). Fix: remove `tabIndex={-1}`, since a `<video controls>` is already focusable, or set it to `tabIndex={0}`. Extend the AC3 e2e so that it Tabs away from the video, Shift+Tabs back, and asserts the video or its controls get focus again.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B6",
+   "scenario": "A keyboard user presses \"Play the tour\". Focus moves to the video, and the user presses Tab to read the caption line below. Shift+Tab then skips the video entirely (the Play button no longer exists), so the playing video can't be paused from the keyboard.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/components/marketing/Bands.tsx",
+   "fp": "c539358c9079",
+   "in_delta": true,
+   "line": 15,
+   "message": "[design] The 'Coming' paragraph now sits outside the hidden `.more`. A band that starts switched off (Finance and sales, Operations) shows only its Coming items and hides everything that has shipped, so the closed view leans on what isn't built. If the goal was just to keep 'Coming' visible, consider keeping it inside `.more`, or showing both lists when a band is off.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B10",
+   "scenario": "First load \u2192 the Finance and sales band is off \u2192 the visitor sees 'Invoices drafted from approved time.' and 'Coming Xero, QuickBooks and Business Central', with no sign that contracts, invoicing, expenses and presales have shipped.",
+   "severity": "minor"
+  }
+ ],
+ "head": "8f436133a9ac8307128b6dd1d931e058690fc670",
+ "impact": [
+  "apps/mock/app/globals.css",
+  "apps/mock/scripts/copy-mock.mjs",
+  "apps/web/app/(app)/layout.tsx",
+  "apps/web/app/(app)/page.tsx",
+  "apps/web/app/(app)/settings/ai/usage/page.tsx",
+  "apps/web/app/(app)/settings/api/CredentialTable.tsx",
+  "apps/web/app/(public)/welcome/page.tsx",
+  "apps/web/app/(public)/welcome/welcome.css",
+  "apps/web/app/robots.ts",
+  "apps/web/components/marketing/AuditTiles.tsx",
+  "apps/web/components/marketing/Hero.tsx",
+  "apps/web/tests/e2e/landing.spec.ts",
+  "apps/web/tests/marketing-areas.test.ts",
+  "modules/allocations/suggestions.ts",
+  "modules/presales/contracts.ts",
+  "modules/presales/server/common.ts",
+  "packages/auth/src/gate.ts",
+  "packages/auth/tests/062-ac1-landing.test.ts",
+  "scripts/graph/rules.mjs",
+  "scripts/graph/scan.mjs"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 68320,
+ "round": 1,
+ "since": "5f46019247",
+ "status": "open",
+ "system_chars": 39637,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792343575,
+ "ts_start": 1792343481
+}

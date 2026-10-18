@@ -1,0 +1,106 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 2
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/components/marketing/Closing.tsx",
+  "apps/web/components/marketing/Queue.tsx",
+  "apps/web/components/marketing/queues.ts",
+  "apps/web/tests/e2e/marketing.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/components/marketing/queues.ts",
+   "fp": "344383810448",
+   "in_delta": true,
+   "line": 18,
+   "message": "This fixes the named defect for hr2 (the card no longer credits a team or a nonexistent onboarding agent), but the rewritten card still describes a flow the product doesn't have. That breaks the round-1 finding's 'check every QUEUES entry' (AC-6). The card says HR presses 'Start onboarding' for a new hire. But modules/onboarding/README.md:3 and :8 say checklists are 'started by hr's events': handler `onboarding.joiner` runs on `hr.person.joined`. `start_checklist` exists only 'for people recorded before onboarding was installed' (README:13). So a fresh recruitment hire never waits on HR to start onboarding. The real human decision in that hand-off is recruitment's 'Add to HR' (the hiring agent's `recruitment.hired` suggestion, recruitment README:6/:14). Fix: make hr2 that decision, e.g. 'Mateo Rossi accepted the offer' with action 'Add to HR' and outcome 'Added by you \u00b7 onboarding checklist started \u00b7 in chat', credited to the hiring agent acting for a named person. Or swap in another shipped HR decision.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "A visitor picks HR \u2192 card hr2 \u2192 presses 'Start onboarding' \u2192 the page claims HR starts a joiner's checklist by hand. In the product, hiring Mateo through recruitment \u2192 hr.person.joined \u2192 the checklist starts on its own, with no 'Start onboarding' step.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/components/marketing/queues.ts",
+   "fp": "482fa1f28bed",
+   "in_delta": true,
+   "line": 10,
+   "message": "pm3 credits the 'Allocations agent'. The shipped agent records itself as 'Allocation check' (modules/allocations/suggestions.ts:59, `agentName: \"Allocation check\"`, and the workflow title). Use the product's name so the card matches what a PM sees on the suggestion.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": ".specclaw/mock/index.html",
+   "fp": "eb5dc8ea1d30",
+   "in_delta": false,
+   "line": 2413,
+   "message": "The 064 mock section's closing chat bubble still reads 'Should I suggest moving 20% of Sophie to December?' (also in apps/mock/public/mock/index.html:2413). Closing.tsx now says the agent trims her largest project, so the screen spec and the shipped page disagree about what the allocations agent does. Change the mock copy to match (in its own small change if the mock is read-only during the build).",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": true,
+   "rule": "B4",
+   "scenario": "",
+   "severity": "minor"
+  },
+  {
+   "file": "apps/web/tests/e2e/marketing.spec.ts",
+   "fp": "608f17698646",
+   "in_delta": true,
+   "line": 31,
+   "message": "The focus fix in Queue.tsx is generic, but the e2e test only checks a role's first card, where the next control comes straight after it. Nothing checks resolving the last card in a panel (en2 / pm3). There, Tab from the outcome line has to leave the tabpanel cleanly and must not land on <body>. Nothing checks that focus survives when the person switches role and comes back either. Fix: add a table of cases (first card, last card, after a role switch) to the test.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "696cdbec291c667c8611536aec40ef1500912152",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/settings.css",
+  "apps/web/app/(public)/welcome/page.tsx",
+  "apps/web/app/(public)/welcome/welcome.css",
+  "apps/web/components/marketing/Hero.tsx",
+  "apps/web/tests/e2e/delivery-visual.spec.ts",
+  "apps/web/tests/e2e/sections.spec.ts",
+  "apps/web/tests/marketing-demo.test.ts",
+  "modules/allocations/ui/ProjectTeamPage.tsx",
+  "modules/delivery/contracts.ts",
+  "modules/delivery/server/tasks.ts",
+  "modules/delivery/tests/sections.test.ts",
+  "modules/delivery/ui/ProjectSections.tsx",
+  "modules/delivery/ui/delivery.css",
+  "modules/hr/ui/PersonPage.tsx",
+  "modules/hr/ui/hr.css",
+  "modules/presales/mcp.ts",
+  "modules/presales/server/records.ts",
+  "modules/presales/ui/OpportunityPage.tsx",
+  "modules/presales/ui/presales.css"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 55410,
+ "round": 13,
+ "since": "e1c01476cb",
+ "status": "open",
+ "system_chars": 39641,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792345317,
+ "ts_start": 1792345209
+}
