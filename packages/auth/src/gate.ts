@@ -6,7 +6,7 @@ const PUBLIC = [/^\/signin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/healthz$/, /^\/api\
   // 035: the REST API authenticates every call with an API key or a client-credentials token.
   /^\/api\/v1(\/|$)/,
   // 062: the public marketing page, shown to signed-out visitors at /.
-  /^\/welcome$/];
+  /^\/welcome$/, /^\/(robots\.txt|sitemap\.xml)$/];
 
 export const isPublicPath = (pathname: string) => PUBLIC.some((re) => re.test(pathname));
 

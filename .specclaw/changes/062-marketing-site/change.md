@@ -42,7 +42,7 @@ A new public page with no app navigation: no rail, top bar or chat launcher. Top
   Depends: T1
 - [x] `T3` — Routing: `/welcome` is a public path, and a signed-out `/` is rewritten (not redirected) to `/welcome`. A signed-in `/` still reaches the app overview. Update the gate unit tests (AC-1, AC-2)
   Files: packages/auth/src/gate.ts, packages/auth/tests/ac1-signin.test.ts, apps/web/proxy.ts
-- [ ] `T4` — SEO: metadata, canonical URL, Open Graph and Twitter tags with a 1200×630 image, `robots.ts` and `sitemap.ts` listing only the public page, and `noindex` on the `(app)` layout (AC-7)
+- [x] `T4` — SEO: metadata, canonical URL, Open Graph and Twitter tags with a 1200×630 image, `robots.ts` and `sitemap.ts` listing only the public page, and `noindex` on the `(app)` layout (AC-7)
   Files: apps/web/app/welcome/page.tsx, apps/web/app/welcome/opengraph-image.png, apps/web/app/robots.ts, apps/web/app/sitemap.ts, apps/web/app/(app)/layout.tsx
 - [ ] `T5` — Playwright: a signed-out `/` shows the marketing page with no rail, top bar or chat. A signed-in `/` shows the overview. axe passes in light and dark, there is no horizontal scroll at 390 px, the video has controls and captions, and a visual snapshot is taken. Run Lighthouse on mobile (AC-1, AC-5, AC-6, AC-8, AC-10)
   Files: apps/web/tests/e2e/marketing.spec.ts

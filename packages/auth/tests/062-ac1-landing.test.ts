@@ -11,5 +11,6 @@ describe("062 AC-1 / AC-2 signed-out visitors at / see the marketing page", () =
     expect(isPublicPath("/welcome")).toBe(true);
     expect(gate(u("/welcome"), false)).toBeNull();
     expect(isPublicPath("/welcomex")).toBe(false);
+    expect(isPublicPath("/robots.txt") && isPublicPath("/sitemap.xml")).toBe(true);
   });
 });
