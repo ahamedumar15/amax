@@ -49,7 +49,7 @@ HR tickets and the HR queue are visible only to HR (and Admin).
   - Tests: an injected instruction, an email access request, and a password reset (AC-2)
   Files: modules/helpdesk/server/triage.ts, modules/helpdesk/suggestions.ts, modules/helpdesk/tests/agent.test.ts
   Depends: T2
-- [ ] `T4` — Integrations, each optional:
+- [x] `T4` — Integrations, each optional:
   - When onboarding (013) is installed, a joiner's `onboarding.checklist.started` opens a Hardware ticket ("Laptop for new joiner").
   - Requester names come from hr (011) through its contract, falling back to the user's name.
   - 025's ticket route lights up once `helpdesk.ticket` exists. The route test proves it.
