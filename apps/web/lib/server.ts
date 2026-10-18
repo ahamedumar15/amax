@@ -13,7 +13,7 @@ import { installAuthorizer, itAdminGrants, setGrants, setViewerScopeResolvers } 
 import { createRegistry } from "@amax/mcp";
 import { chatPlatform, type Intent } from "@amax/chat";
 import { authEventHandlers } from "@amax/auth/events";
-import { engineFromEnv, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
+import { engineFromEnv, setWorkflowEngine, signalHandlers, workflowRegistry, type WorkflowEngine } from "@amax/workflows/server";
 import { platformWorkflows } from "./platform-workflows";
 import { adminModule, type AdminDeps } from "./admin";
 import { installed } from "./registry";
@@ -45,6 +45,8 @@ export function getDb(): Db | null {
     installAuthorizer();
     // 035 AC-5: limited requests are counted for the API and webhooks screen.
     wireRateLimits(loadEnv());
+    // 030: modules start runs (notification deliveries) on the host's engine without importing it.
+    setWorkflowEngine(workflowEngine);
     const env = loadEnv();
     if (process.env.AMAX_AI_PROVIDER === "scripted" && env.NODE_ENV !== "production") configureAi({ provider: scriptedProvider(), db: cache.amaxDb, model: "scripted" });
     else if (process.env.ANTHROPIC_API_KEY) configureAi({ provider: anthropicProvider(), db: cache.amaxDb, model: env.AMAX_AI_MODEL, fallbackModel: env.AMAX_AI_FALLBACK_MODEL });
