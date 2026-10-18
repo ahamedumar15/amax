@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { announce, Icon } from "@amax/ui";
 import type { Inbox } from "../contracts";
@@ -11,12 +13,20 @@ const POLL_MS = 60_000;
 const unreadIds = (i: Inbox) => i.groups.flatMap((g) => g.items.filter((n) => !n.read));
 const label = (n: number) => (n ? `Notifications, ${n} unread` : "Notifications, none unread");
 
+// The shared layout isn't rendered again on navigation, so the bell fetches its list itself: every
+// minute while the page is visible, and after each move to another screen.
 function useInbox(initial: Inbox, now: number) {
   const [state, setState] = useState({ inbox: initial, now });
+  const pathname = usePathname();
+  const first = useRef(true);
+  const refresh = () => void pollInbox().then(setState, () => undefined);
   useEffect(() => setState({ inbox: initial, now }), [initial, now]);
   useEffect(() => {
-    const tick = () => document.visibilityState === "visible" && pollInbox().then(setState, () => undefined);
-    const id = window.setInterval(tick, POLL_MS);
+    if (first.current) return void (first.current = false);
+    refresh();
+  }, [pathname]);
+  useEffect(() => {
+    const id = window.setInterval(() => document.visibilityState === "visible" && refresh(), POLL_MS);
     return () => window.clearInterval(id);
   }, []);
   return state;
@@ -66,7 +76,7 @@ export function BellMenu({ initial, now }: { initial: Inbox; now: number }) {
             {inbox.unread > 0 && <AskButton label="Mark all read" prompt="Mark all my notifications read" pin={{ label: "My notifications", tool: "get_notifications", args: {} }} />}
           </div>
           {empty ? <p className="muted">Nothing yet. Approvals, releases and reminders show up here.</p> : <NotificationList groups={inbox.groups} now={at} />}
-          <div className="foot"><a href="/notifications">Notification settings</a></div>
+          <div className="foot"><Link href="/notifications">Notification settings</Link></div>
         </div>
       )}
     </div>

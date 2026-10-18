@@ -41,7 +41,7 @@ test("030 AC-6 the bell: unread count, unread first by module, keyboard, live an
   await bell.click();
   await panel.getByRole("link", { name: "Notification settings" }).click();
   await expect(page).toHaveURL((u) => u.pathname === "/notifications");
-  await expect(page.locator(".sr[aria-live=polite]").last()).toHaveText("New notification: Reminder: submit your timesheet for 2026-W42", { timeout: 10_000 });
+  await expect(page.locator("div.sr[role=status][aria-atomic=true]")).toHaveText("New notification: Reminder: submit your timesheet for 2026-W42", { timeout: 10_000 });
   await expect(page.getByRole("button", { name: "Notifications, 3 unread" })).toBeVisible();
 
   await page.getByRole("button", { name: "Notifications, 3 unread" }).click();
