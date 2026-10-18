@@ -20,4 +20,12 @@ None. Test infrastructure only.
 
 ## Tasks
 
+- [x] `T1` — migratedDatabase clones a template built once per migration hash, under an advisory lock; keeps the 3 newest templates (AC-1, AC-2)
+  Files: packages/db/src/testdb.ts, packages/db/tests/template.test.ts
+- [x] `T2` — CI caps turbo test concurrency (AC-3)
+  Files: .github/workflows/ci.yml
+- [ ] `T3` — Time pnpm test before and after; CI green without rerun (AC-4)
+  Files: .specclaw/changes/061-ci-test-load/change.md
+  Depends: T1, T2
+
 ## Verify
