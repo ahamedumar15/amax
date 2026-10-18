@@ -18,11 +18,11 @@ const week = z.string().regex(/^\d{4}-W\d{2}$/).optional().describe("ISO week su
 const ref = z.object({ weekId: z.string().uuid().optional(), person: z.string().optional().describe("Name or email"), week });
 
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, name: "get_team_week", description: "Team timesheets for a week: hours per day, share logged by agents, status, and who you can approve.", input: z.object({ week }),
+  tool({ ...read, pin: "view", name: "get_team_week", description: "Team timesheets for a week: hours per day, share logged by agents, status, and who you can approve.", input: z.object({ week }),
     run: (v, a) => teamWeek(v, wantedWeek(a.week)) }),
-  tool({ ...read, name: "get_my_week", description: "Your own timesheet for a week, by project and day, with its status.", input: z.object({ week }),
+  tool({ ...read, pin: "view", name: "get_my_week", description: "Your own timesheet for a week, by project and day, with its status.", input: z.object({ week }),
     run: (v, a) => myWeek(v, wantedWeek(a.week)) }),
-  tool({ ...read, name: "get_timesheet", description: "One person-week: by weekId (a row on Team time), or your own week, optionally just one project's row.",
+  tool({ ...read, pin: "view", name: "get_timesheet", description: "One person-week: by weekId (a row on Team time), or your own week, optionally just one project's row.",
     input: z.object({ weekId: z.string().uuid().optional(), week, project: z.string().optional().describe("Project name, for one row of your own week") }),
     run: (v, a) => getTimesheet(v, a) }),
   tool({ name: "log_time", description: "Log hours against a project for a weekday (Monday to Friday, YYYY-MM-DD in the person's own calendar). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",

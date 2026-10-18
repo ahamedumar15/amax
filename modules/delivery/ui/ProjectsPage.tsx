@@ -1,5 +1,6 @@
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton, Ticket } from "@amax/ui";
+import { projectPin } from "../pins";
 import { listProjects, weeklyThroughput } from "../server/queries";
 import { ART_SPRITE } from "./art";
 import { axisMax, Donut, LineChart } from "./charts";
@@ -93,7 +94,7 @@ export async function ProjectsPage({ viewer: raw, searchParams = {} }: ScreenPro
                     <td data-label="Health"><span className={`chip ${tone}`}>{label}</span></td>
                     <td data-label="Margin" className="num">{p.marginPct === null ? "–" : `${p.marginPct.toFixed(1)}%`}</td>
                     <td data-label="Next release">{p.nextRelease ?? "–"}</td>
-                    <td data-label="" className="num"><a className="btn sm" href={`/delivery/p/${p.key}`}>Open board</a><PinButton pin={{ label: p.name, tool: "get_project", args: { key: p.key } }} /></td>
+                    <td data-label="" className="num"><a className="btn sm" href={`/delivery/p/${p.key}`}>Open board</a><PinButton pin={projectPin(p)} /></td>
                   </tr>
                 );
               })}

@@ -15,7 +15,7 @@ export { settingsStatus, type Area } from "./status";
 export const adminModule = (d: AdminDeps) => ({
   id: "settings",
   mcpTools: [
-    tool({ ...read("settings:read"), name: "settings_overview", description: "Every admin settings area with its status and what needs attention first.", input: z.object({ area: z.string().optional() }),
+    tool({ ...read("settings:read"), pin: "view", name: "settings_overview", description: "Every admin settings area with its status and what needs attention first.", input: z.object({ area: z.string().optional() }),
       run: async (v, a) => (await settingsStatus(d, v)).filter((x) => !a.area || x.id === a.area) }),
     ...secretTools,
     ...mcpTools(d),

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { ScreenProps } from "@amax/core";
-import { Card, EmptyState, PinButton } from "@amax/ui";
+import { Card, EmptyState, facet, PinButton } from "@amax/ui";
+import { personPin } from "../pins";
 import { today } from "../server/inforce";
 import { getPersonView } from "../server/queries";
 import { DocumentsCard } from "./DocumentsCard";
@@ -22,7 +23,7 @@ export async function PersonPage({ params, viewer: raw }: ScreenProps) {
         <div className="card idcard pinnable">
           <span className={`av lg ${avClass(p.name)}`} style={{ width: 88, height: 88, borderRadius: 28, fontSize: 26 }} aria-hidden="true">{p.initials}</span>
           <h1>{p.name}</h1><span className="muted" style={{ fontSize: 14 }}>{p.title}</span>
-          <div className="chips"><span className={`chip ${tone}`}>{label}</span><span className="chip">{countryName(p.country, p.entityName)}</span><PinButton inline pin={{ label: p.name, tool: "get_person", args: { employeeNo: p.employeeNo } }} /></div>
+          <div className="chips"><span className={`chip ${tone}`}>{label}</span><span className="chip">{countryName(p.country, p.entityName)}</span><PinButton inline pin={personPin(p)} /></div>
           <dl className="kv">
             <dt>Employee no.</dt><dd>{p.employeeNo}</dd>
             <dt>Joined</dt><dd>{longDate(p.joinedOn)}</dd>
@@ -38,11 +39,11 @@ export async function PersonPage({ params, viewer: raw }: ScreenProps) {
             <a className="btn sm" href="#documents">Documents</a><a className="btn sm" href="#leave">Leave</a>
           </nav>
           <div className="cols even">
-            <EmploymentCard e={view.employment} probationEnds={p.probationEnds} employeeNo={p.employeeNo} name={p.name} />
-            <DocumentsCard docs={view.documents} employeeNo={p.employeeNo} name={p.name} />
+            <EmploymentCard e={view.employment} probationEnds={p.probationEnds} person={p} />
+            <DocumentsCard docs={view.documents} person={p} />
           </div>
           <div className="cols even">
-            <div id="leave"><Card title="Leave balance" actions={<PinButton inline pin={{ label: `${p.name}, leave`, tool: "get_person", args: { employeeNo: p.employeeNo } }} />}><EmptyState icon="calendar" title="No leave balances yet" hint="Balances show here once the Leave module is installed." /></Card></div>
+            <div id="leave"><Card title="Leave balance" actions={<PinButton inline pin={facet(personPin(p), ", leave")} />}><EmptyState icon="calendar" title="No leave balances yet" hint="Balances show here once the Leave module is installed." /></Card></div>
           </div>
         </div>
       </div>

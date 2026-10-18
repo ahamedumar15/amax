@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AiDisabledError, aiConfigured } from "@amax/ai";
 import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
-import { cancelAction, chatTurn, confirmAction, repinConversations, type ChatTurn, type Pin } from "@amax/chat";
+import { cancelAction, chatTurn, confirmAction, resolvePins, type ChatTurn, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
 import { doneOutcome, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
@@ -31,17 +31,33 @@ export async function sendChat(input: { conversationId?: string; text: string; p
 export type { CardOutcome };
 
 export async function confirmChat(conversationId: string, actionId: string): Promise<CardOutcome> {
-  let done: { title: string; result: unknown; viewer: Awaited<ReturnType<typeof currentViewer>> };
+  let done: { title: string; result: unknown };
   try {
     const viewer = await currentViewer();
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
-    done = { title: action.title, result, viewer };
+    done = { title: action.title, result };
   } catch (e) {
     return outcomeOf(e);
   }
   // The write has committed: nothing after this may turn the card into an error (057).
   try { revalidatePath("/", "layout"); } catch (e) { logError("chat.revalidate", e); }
-  return doneOutcome(done.title, done.result, (r) => repinConversations(getDb()!, done.viewer, conversationId, r), (e) => logError("chat.repin", e));
+  return doneOutcome(done.title, done.result);
+}
+
+const pinList = z.array(z.object({ label: z.string().max(200), tool: z.string().max(80), args: z.record(z.string(), z.unknown()), facet: z.string().max(200).optional(), unavailable: z.literal(true).optional() })).max(8);
+
+/**
+ * The panel's pins read again with the viewer's permissions (059), after a confirm or whenever the
+ * panel wants their labels as they are now. Only the pins come back, never the records.
+ */
+export async function refreshPins(pins: unknown): Promise<Pin[] | null> {
+  try {
+    const viewer = await currentViewer();
+    return (await resolvePins(toolRegistry(), viewer, pinList.parse(pins))).map((r) => r.pin);
+  } catch (e) {
+    logError("chat.pins", e);
+    return null;
+  }
 }
 
 export async function cancelChat(conversationId: string, actionId: string): Promise<CardOutcome> {

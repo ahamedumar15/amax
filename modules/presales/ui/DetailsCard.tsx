@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PinButton } from "@amax/ui";
+import { facet, PinButton } from "@amax/ui";
 import type { OpportunityRow } from "../server/queries";
 import { initials, longDay, money, oppPin, usd } from "./parts";
 
@@ -30,7 +30,7 @@ export function DetailsCard({ o }: { o: OpportunityRow }) {
   ];
   return (
     <div className="card pinnable" id="details">
-      <PinButton pin={{ ...oppPin(o), label: `${o.number} details` }} />
+      <PinButton pin={facet(oppPin(o), ", details")} />
       <div className="card-head"><h2>Details</h2>{!closed && <span className={`chip ${chip}`}>{label}</span>}</div>
       {!closed && <p className="src calc">{why}</p>}
       <dl className="kv">{rows.map(([k, v]) => <div className="kv-row" key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
