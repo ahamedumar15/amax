@@ -1,0 +1,71 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/components/marketing/Problem.tsx",
+  "apps/web/components/marketing/ProductVideo.tsx",
+  "apps/web/public/marketing/amax-product.en.vtt",
+  "apps/web/public/marketing/amax-product.mp4",
+  "apps/web/public/marketing/amax-product.webm",
+  "apps/web/tests/marketing-confirm.test.ts",
+  "apps/web/tests/marketing-time.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/marketing-time.test.ts",
+   "fp": "b04249b0d0b9",
+   "in_delta": true,
+   "line": 5,
+   "message": "This is still a partial fix, not a fix for the whole class. WRITES is a hand-written list of verb forms, and it leaves out the -ing forms and other common ways of saying hours get written. `\\b(log|logs|logged|...)\\b` does not match 'logging', 'adding', 'booking', 'recording', 'filling' or 'tracking'. Verbs like 'enter', 'enters', 'entered', 'writes', 'updates' and 'puts' aren't in the list at all. A sentence using any of them can claim hours are written with no accept step, and the guard passes it. Fix: match verb stems (`log\\w*|add\\w*|book\\w*|record\\w*|fill\\w*|track\\w*|enter\\w*|writ\\w*|updat\\w*|lands?|goes from`). Add an -ing case and an 'enter' case to the rejected table.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "claims(\"Agents are logging your hours over MCP.\") returns [] because 'logging' fails WRITES, so the guard passes a sentence that says hours are logged without anyone accepting them. claims(\"Agents enter 2.5 h on your timesheet.\") also returns [].",
+   "severity": "major"
+  }
+ ],
+ "head": "bad36a9e18fcd29bcdcd6cd7343e22ede4b2387b",
+ "impact": [
+  "apps/web/app/(app)/suggestions/page.tsx",
+  "apps/web/app/(public)/welcome/page.tsx",
+  "apps/web/components/agents/UndoTable.tsx",
+  "apps/web/components/agents/format.ts",
+  "apps/web/components/marketing/Hero.tsx",
+  "apps/web/lib/admin/api.ts",
+  "apps/web/lib/admin/backups.ts",
+  "apps/web/lib/admin/privacy.ts",
+  "apps/web/lib/admin/tool.ts",
+  "apps/web/lib/agents-fixtures.ts",
+  "apps/web/tests/admin/review-052.test.ts",
+  "modules/allocations/server/services.ts",
+  "modules/compliance/contracts.ts",
+  "modules/compliance/db/migrations/0001_compliance.sql",
+  "modules/delivery/server/commit-time.ts",
+  "modules/delivery/tests/create-project-contract.test.ts",
+  "modules/keyflow/tests/sync.test.ts",
+  "modules/presales/db/migrations/0001_presales.sql",
+  "modules/presales/server/suggestions.ts",
+  "modules/presales/tests/presales.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 54321,
+ "round": 11,
+ "since": "b66546b622",
+ "status": "open",
+ "system_chars": 38781,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792327312,
+ "ts_start": 1792327228
+}

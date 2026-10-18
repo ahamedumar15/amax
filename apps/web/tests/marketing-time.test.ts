@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { surfaces } from "./marketing-prose";
 
 const HOURS = /\b\d+(?:\.\d+)?\s*(?:h|hours?)\b|\bhours\b|\btimes?(?:heets?)?\b|\bbookkeeping\b/i;
-const WRITES = /\b(log|logs|logged|add|adds|added|book|books|booked|record|records|recorded|fill|fills|filled|track|tracks|tracked|lands?|goes from|do(?:es)? that)\b/i;
+const WRITES = /\b(log\w*|add\w*|book\w*|record\w*|fill\w*|track\w*|enter\w*|writ\w*|updat\w*|put\w*|lands?|goes from|do(?:es)? that)\b/i;
 const OWNED = /\b(accept|accepts|accepted|draft|drafts|drafted|suggest|suggests|suggested|suggestion)\b/i;
 
 const claims = (body: string) => body.split(/(?<=[!?]|[^\d]\.)\s+|\n+/).flatMap((s) => s.split(/[,;:]/)).filter((c) => HOURS.test(c) && WRITES.test(c));
@@ -18,6 +18,9 @@ describe("062 AC-3 commit hours are drafted and accepted, never written on their
     ["In amax, agents fill in the timesheet over MCP."],
     ["In amax, agents do that bookkeeping over MCP."],
     ["Agents log 2.5 h, and the draft is reviewed later."],
+    ["amax is logging 2.5 h for Kasun on Wednesday."],
+    ["The agent enters the hours on the timesheet."],
+    ["Agents are tracking time and updating the timesheet for you."],
   ])("rejects %s", (claim) => {
     expect(claims(claim).length).toBeGreaterThan(0);
     expect(claims(claim).every((c) => OWNED.test(c))).toBe(false);
