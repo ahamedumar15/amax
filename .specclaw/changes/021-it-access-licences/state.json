@@ -1,9 +1,10 @@
 {
   "change": "021-it-access-licences",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T14:08:58Z"},
-    "verify": {"status":"done","at":"2026-10-18T16:16:25Z"}
+    "verify": {"status":"done","at":"2026-10-18T16:16:25Z"},
+    "pr": {"status":"raised","at":"2026-10-18T16:17:04Z","url":"https://github.com/chan4lk/amax/pull/82"}
   }
 }
