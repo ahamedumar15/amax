@@ -107,7 +107,7 @@ Commands (re-run after merging origin/main with 022; Postgres 16 at `DATABASE_MI
 - `pnpm turbo run test --force --continue --concurrency=2` → 32/33. `@amax/insights` failed only the exact job list above. After the fix, `pnpm turbo run test lint --filter=@amax/insights --force` → 0 (9/9).
 - `pnpm --filter @amax/web build` → 0
 - `playwright test --config playwright.auth.config.ts` (apps/web) → 81/81
-- `pnpm --filter @amax/web e2e` (public pages) → 5/5. CI's first run caught `marketing.spec.ts` expecting three "Coming" chips; Operations now has none, so the count follows `AREAS`.
+- `pnpm --filter @amax/web e2e` (public pages) → 8/8 after merging 064. CI's first run caught `marketing.spec.ts` expecting three "Coming" chips; Operations now has none, so the count follows `AREAS`.
 - module e2e `pnpm --filter @amax/insights e2e` → 2/2 (axe, nothing unpinned, no forms, switches and New job open chat)
 - `specclaw-preset-check .` → 1: the repo-wide comment and line-length convention, the same exception as earlier changes.
 - `specclaw-quality-scan . --gate` → not_run (jq "Argument list too long"); jscpd was run directly, see below.
