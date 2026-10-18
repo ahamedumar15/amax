@@ -25,21 +25,21 @@ New screen, Compliance: policy acknowledgement rates, open risks and incidents (
 
 ## Tasks
 
-- [ ] `T1` — Compliance screen matching the mock, on a published `contracts.ts` (AC-6, AC-7)
+- [x] `T1` — Compliance screen matching the mock, on a published `contracts.ts` (AC-6, AC-7)
   Files: modules/compliance/package.json, modules/compliance/tsconfig.json, modules/compliance/css.d.ts, modules/compliance/module.ts, modules/compliance/contracts.ts, modules/compliance/ui/CompliancePage.tsx, modules/compliance/ui/Tickets.tsx, modules/compliance/ui/Incidents.tsx, modules/compliance/ui/Registers.tsx, modules/compliance/ui/AskButton.tsx, modules/compliance/ui/art.ts, modules/compliance/ui/parts.tsx, modules/compliance/ui/prompts.ts, modules/compliance/ui/compliance.css, apps/web/lib/registry.ts
-- [ ] `T2` — `compliance` schema with RLS, breach country packs and fictional fixtures (AC-1, AC-2, AC-3)
+- [x] `T2` — `compliance` schema with RLS, breach country packs and fictional fixtures (AC-1, AC-2, AC-3)
   Files: modules/compliance/db/migrations/0001_compliance.sql, modules/compliance/packs.ts, modules/compliance/fixtures/index.ts
   Depends: T1
-- [ ] `T3` — Services and MCP tools: versioned policies and acknowledgements, risks, incidents with breach deadlines, suppliers including the 033 AI providers (AC-1, AC-2, AC-3)
+- [x] `T3` — Services and MCP tools: versioned policies and acknowledgements, risks, incidents with breach deadlines, suppliers including the 033 AI providers (AC-1, AC-2, AC-3)
   Files: modules/compliance/server/context.ts, modules/compliance/server/rows.ts, modules/compliance/server/policies.ts, modules/compliance/server/risks.ts, modules/compliance/server/incidents.ts, modules/compliance/server/suppliers.ts, modules/compliance/server/overview.ts, modules/compliance/mcp.ts
   Depends: T2
-- [ ] `T4` — Daily audit-chain check, breach deadline reminders through 030, and signed evidence bundles per control (AC-2, AC-4, AC-5)
+- [x] `T4` — Daily audit-chain check, breach deadline reminders through 030, and signed evidence bundles per control (AC-2, AC-4, AC-5)
   Files: modules/compliance/server/chain.ts, modules/compliance/server/evidence.ts, modules/compliance/server/reminders.ts, modules/compliance/module.ts, modules/compliance/mcp.ts
   Depends: T3
-- [ ] `T5` — Chat intents "report incident" and "new risk", retention entries, README and CODEOWNERS (AC-6, AC-7)
+- [x] `T5` — Chat intents "report incident" and "new risk", retention entries, README and CODEOWNERS (AC-6, AC-7)
   Files: modules/compliance/chat.ts, modules/compliance/module.ts, modules/compliance/README.md, .github/CODEOWNERS
   Depends: T4
-- [ ] `T6` — Tests: contracts, services and permissions, chain tamper, chat-first, module standard with and without optional modules, e2e with axe and the mock visual diff (AC-1 to AC-7)
+- [x] `T6` — Tests: contracts, services and permissions, chain tamper, chat-first, module standard with and without optional modules, e2e with axe and the mock visual diff (AC-1 to AC-7)
   Files: modules/compliance/tests/db.ts, modules/compliance/tests/installed.ts, modules/compliance/tests/contracts.test.ts, modules/compliance/tests/registers.test.ts, modules/compliance/tests/chain.test.ts, modules/compliance/tests/chat-first.test.ts, modules/compliance/tests/standard.test.ts, modules/compliance/tests/e2e/playwright.config.ts, modules/compliance/tests/e2e/setup.ts, modules/compliance/tests/e2e/css-hook.mjs, modules/compliance/tests/e2e/compliance.spec.ts, apps/web/tests/e2e/admin.spec.ts
   Depends: T5
 
