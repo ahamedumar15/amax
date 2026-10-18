@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { ADMINS, DOLLARS } from "./admins";
 
 async function signIn(page: Page, email: string, to: string) {
   await page.goto(to);
@@ -8,8 +9,10 @@ async function signIn(page: Page, email: string, to: string) {
   await expect(page).toHaveURL((u) => u.pathname === to);
 }
 
-test("033 AI and data: Admins see the policy; changes are asked in chat (047)", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", "/settings/ai");
+for (const who of ADMINS) test(`033 AI and data: Admins see the policy; changes are asked in chat (047), as ${who.role} (055)`, async ({ page }) => {
+  await signIn(page, who.email, "/settings/ai");
+  await expect(page.locator(".ticket", { hasText: "Calls this month" })).toContainText(who.pricing ? "in model cost" : "Model cost hidden for your role");
+  if (!who.pricing) expect(await page.locator("main").innerHTML()).not.toMatch(DOLLARS);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("AI and data");
   await expect(page.getByRole("alert").filter({ hasText: "AI features are off" })).toHaveCount(0);
   const pay = page.locator("tr", { hasText: "Pay" });

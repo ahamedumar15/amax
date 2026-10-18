@@ -24,8 +24,14 @@ test("AC5 View as previews a role: chip, banner and nav change, and the real use
   await page.getByRole("menuitemradio", { name: "Payroll" }).click();
   await expect(page.getByRole("note")).toHaveText("Viewing as Payroll: screens outside payroll are hidden.");
   await expect(page.getByRole("button", { name: /Maya Fernando, Payroll, profile menu/ })).toBeVisible();
+  // 055: View as IT Admin keeps the Operations group and hides prices.
   await page.getByRole("button", { name: /profile menu/ }).click();
-  await page.getByRole("menuitemradio", { name: "Admin" }).click();
+  await page.getByRole("menuitemradio", { name: "IT Admin" }).click();
+  await expect(page.getByRole("note")).toHaveText("Viewing as IT Admin: prices are hidden.");
+  await expect(page.getByRole("button", { name: /Maya Fernando, IT Admin, profile menu/ })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Settings", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /profile menu/ }).click();
+  await page.getByRole("menuitemradio", { name: "Admin", exact: true }).click();
   await expect(page.getByRole("note")).toHaveCount(0);
 });
 
