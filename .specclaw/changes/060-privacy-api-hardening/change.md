@@ -35,7 +35,7 @@ None. Fixes only.
   Depends: T1
 - [x] `T4` — Page rate limit: `next-action` exempt only on POST, prefetches in their own budget (AC-4, AC-9)
   Files: packages/core/src/rate-limit.ts, packages/core/tests/rate-limit-060.test.ts
-- [ ] `T5` — 429 counts written on the request path or flushed on a 429, not only by timer (AC-5, AC-9)
+- [x] `T5` — 429 counts written on the request path or flushed on a 429, not only by timer (AC-5, AC-9)
   Files: packages/api/src/limits.ts, packages/api/tests/ac5-rate-limits.test.ts
 - [ ] `T6` — REST maps non-retryable domain refusals to 400/409 with their message (AC-6, AC-9)
   Files: packages/api/src/rest.ts, packages/api/tests/ac1-rest.test.ts
