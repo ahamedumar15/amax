@@ -1,0 +1,4 @@
+.backups>.card{margin-top:28px}
+.backups>.tickets{margin-bottom:28px}
+.backups .tbl td .chip+.pin{margin-left:8px}
+.backups .viewbanner{margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}

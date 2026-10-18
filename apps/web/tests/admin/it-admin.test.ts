@@ -30,6 +30,12 @@ const ADMIN_ONLY = [
   "get_api_overview", "list_webhooks", "get_webhook", "subscribe_webhook", "unsubscribe_webhook", "resume_webhook",
 ];
 
+/** 034 AC-6: Admin only by design. A whole-tenant export carries pay and money (the pricing class IT Admin never sees). */
+const ADMIN_ALONE = [
+  "backups_overview", "list_restore_drills", "get_restore_drill", "list_tenant_exports", "get_tenant_export", "get_tenant_export_link",
+  "request_restore_drill", "request_tenant_export", "approve_tenant_export", "cancel_tenant_export", "start_tenant_offboarding", "cancel_tenant_offboarding",
+];
+
 describe("055 IT Admin grants", () => {
   beforeAll(() => setGrants([...installed, chatPlatform, privacyGrants, itAdminGrants]));
 
@@ -39,7 +45,7 @@ describe("055 IT Admin grants", () => {
     const modules = new Set(installed.map((m) => m.id));
     const adminOnly = registry.all.filter((t) => t.permission && !modules.has(t.module) && !others.some((r) => canEver(as(r), t.permission)));
     const table = Object.fromEntries(adminOnly.map((t) => [t.name, canEver(as("ITAdmin"), t.permission)]));
-    expect(table).toEqual(Object.fromEntries(ADMIN_ONLY.map((n) => [n, true])));
+    expect(table).toEqual(Object.fromEntries([...ADMIN_ONLY.map((n) => [n, true]), ...ADMIN_ALONE.map((n) => [n, false])]));
     expect(registry.toolsFor(as("ITAdmin")).map((t) => t.name)).toEqual(expect.arrayContaining(ADMIN_ONLY));
     expect([canSeePricing(as("Admin")), canSeePricing(as("ITAdmin")), canSeePricing(as("ITAdmin"), "u-ITAdmin")]).toEqual([true, false, true]);
   });

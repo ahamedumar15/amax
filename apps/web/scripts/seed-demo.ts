@@ -6,6 +6,7 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import { agentsFixtures } from "../lib/agents-fixtures";
 import { privacyFixtures } from "../lib/privacy-fixtures";
+import { backupFixtures } from "../lib/backup-fixtures";
 import { privacySources } from "../lib/privacy-sources";
 
 // Module manifests import their pages, and pages import CSS. Outside Next (tsx), stub CSS so the
@@ -22,6 +23,8 @@ export async function installedSeeds() {
     // 006: after every module, so the demo suggestions name real people, projects and plans.
     { id: "suggestions", dependsOn: ["auth", ...modules.map((m) => m.id)], fixtures: [agentsFixtures] },
     { id: "privacy", dependsOn: ["auth", ...modules.map((m) => m.id)], fixtures: [privacyFixtures(privacySources(modules))] },
+    // 034: the Backups and export screen's drill history and exports.
+    { id: "backup", dependsOn: ["auth"], fixtures: [backupFixtures] },
   ];
 }
 
