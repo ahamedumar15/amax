@@ -23,8 +23,8 @@ export const linkProjectRepo = defineService({
     if (v) assertCan(v, "delivery:project:link", { projectId: p.id as string });
     const repoUrl = input.repoUrl ? normaliseRepo(input.repoUrl) : null;
     // The default branch is stored with the link, never taken from a push: it decides which pushes cover every change.
-    // A relink keeps the stored branch unless one is given; the first link must name it.
-    const defaultRef = repoUrl ? input.defaultBranch ?? (p.repo_default_ref as string | null) : null;
+    // A relink to the same repo keeps the stored branch unless one is given; a first link or another repo must name it.
+    const defaultRef = repoUrl ? input.defaultBranch ?? (repoUrl === p.repo_url ? (p.repo_default_ref as string | null) : null) : null;
     if (repoUrl && !defaultRef) throw new Error(`name ${input.projectKey}'s default branch (for example main) when linking its repo`);
     await tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${p.id}`);
     return { result: { projectKey: input.projectKey, repoUrl, defaultBranch: defaultRef }, resourceId: p.id as string, before: { repoUrl: p.repo_url, defaultBranch: p.repo_default_ref }, after: { repoUrl, defaultBranch: defaultRef } };

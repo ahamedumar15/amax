@@ -128,8 +128,10 @@ const applied = defineService({
     scope(ctx, p.projectId);
     const { counts, events } = await applyPush(tx, p, ctx);
     // The Repo sync card lists pushes that changed something or need a person; a no-op is only audited.
-    const [row] = counts.created || counts.updated || counts.needsReview ? await pushRow(tx, ctx, p, counts, "applied", null) : [{ id: p.projectId }];
-    return { result: counts, resourceId: row.id as string, after: { ref: p.ref, sha: p.sha, created: counts.created, updated: counts.updated, unchanged: counts.unchanged, skipped: counts.skipped }, events };
+    const listed = Boolean(counts.created || counts.updated || counts.needsReview);
+    const [row] = listed ? await pushRow(tx, ctx, p, counts, "applied", null) : [null];
+    return { result: { ...counts, listed }, resourceId: (row?.id as string | undefined) ?? null,
+      after: { projectId: p.projectId, ref: p.ref, sha: p.sha, created: counts.created, updated: counts.updated, unchanged: counts.unchanged, skipped: counts.skipped }, events };
   },
 });
 
@@ -171,8 +173,9 @@ export async function pushSpecclaw(viewer: Viewer, raw: z.input<typeof PushInput
   try {
     if (dryRun) return result("preview", await preview(ctx, plan));
     // Applied even with nothing new: the stale marks still move, as one audited write (062 review round 4).
-    const counts = await applied(ctx, plan);
-    return result(counts.created || counts.updated ? "applied" : "unchanged", counts);
+    const { listed, ...counts } = await applied(ctx, plan);
+    // "applied" whenever the push is on the Repo sync card, so the answer matches the row.
+    return result(listed ? "applied" : "unchanged", counts);
   } catch (e) {
     if (!(e instanceof RepoRefused)) throw e;
     const { records: _, ...where } = plan;

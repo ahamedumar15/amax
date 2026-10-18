@@ -203,8 +203,8 @@ export const SyncInput = z.object({
     meta: z.record(z.string(), z.unknown()),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
-    // 062: the commit time the spec was read at, when the writer knows it; it moves the stale mark.
-    committedAt: z.string().datetime({ offset: true }).optional(),
+    // 062: the commit time the spec was read at. Every specclaw write moves the stale mark with it.
+    committedAt: z.string().datetime({ offset: true }),
   });
 export type SyncInput = z.infer<typeof SyncInput>;
 
@@ -240,7 +240,7 @@ export const markSynced = defineService({
   name: "delivery.proposal.mark",
   action: "delivery:proposal:sync",
   resource: "delivery.project",
-  input: z.object({ projectKey: z.string(), keys: z.array(z.string()).max(500), committedAt: z.string().datetime({ offset: true }) }),
+  input: z.object({ projectKey: z.string(), keys: z.array(z.string()), committedAt: z.string().datetime({ offset: true }) }),
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:sync", project.id as string);
@@ -281,7 +281,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
     if (input.tasks) await writeTasks(tx, ctx.tenantId, row.id as string, input.tasks);
-    if (input.committedAt) await markSyncedRows(tx, sql`id = ${row.id}`, input.committedAt);
+    await markSyncedRows(tx, sql`id = ${row.id}`, input.committedAt);
     // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
     if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {

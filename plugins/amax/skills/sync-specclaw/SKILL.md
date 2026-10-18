@@ -39,12 +39,15 @@ preview is clean (step 4). `--project KEY` overrides `amax.project` in `.speccla
 
    If `outcome` is `refused`, show the `reason` and stop. A missing or wrong repo link is fixed by the
    project's PM in amax ("link <KEY> to <repoUrl>"), not here.
-   If `created` and `updated` are both 0 and `needsReview` is false, say "amax is up to date" and stop.
+   If `created` and `updated` are both 0 and `needsReview` is false, nothing changes. Still call
+   `sync_specclaw` with `dryRun: false`, without asking, so amax records the commit each proposal was
+   read at. Then say "amax is up to date" and stop.
 
 4. **Apply.**
    - **Interactive (no `--apply`):** ask "Apply <n> changes to <projectKey>?". On yes, call
      `sync_specclaw` again with the same fields and `dryRun: false`, then show the counts. The
-     outcome is `applied`, or `unchanged` when there was nothing new.
+     outcome is `applied` when the push is listed on the project's Repo sync card. It is `unchanged`
+     when there was nothing new and nothing to review.
    - **`--apply`:** apply as above when `needsReview` is false. amax sets it true only for skips a
      person should look at, such as an unreadable `state.json` or a key held by another proposal. It is
      false for the standing ones that come back on every run until main or a Prod deployment catches up.

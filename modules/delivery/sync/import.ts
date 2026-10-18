@@ -41,7 +41,7 @@ export const storedSpecRows = (tx: Tx, projectKey: string) =>
  * One-way import of a repo's specclaw changes into a delivery project, as a caller of sync_proposal's
  * service (008 AC-7): audited as `ctx`, the sync's service principal, and only for changed rows.
  */
-export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt?: string }): Promise<SyncResult> {
+export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt: string }): Promise<SyncResult> {
   const existing = await withTenant(db, ctx.tenantId, (tx) => storedSpecRows(tx, opts.projectKey));
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
@@ -70,14 +70,14 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     if (cur) result.updated++;
     else result.created++;
   }
-  if (opts.committedAt && same.length) await markSynced(ctx, { projectKey: opts.projectKey, keys: same, committedAt: opts.committedAt });
+  if (same.length) await markSynced(ctx, { projectKey: opts.projectKey, keys: same, committedAt: opts.committedAt });
   // Folders that disappeared are marked withdrawn, never deleted.
   for (const [key, cur] of byKey) {
     const meta = cur.meta as Record<string, unknown>;
     if (meta.withdrawn) continue;
     await syncProposal(ctx, {
       projectKey: opts.projectKey, project, key, title: cur.title as string, phase: cur.phase as never, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total),
-      source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null, meta: { ...meta, withdrawn: true, sha: opts.sha },
+      source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null, meta: { ...meta, withdrawn: true, sha: opts.sha }, committedAt: opts.committedAt,
     });
     result.withdrawn++;
   }
