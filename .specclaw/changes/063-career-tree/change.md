@@ -15,19 +15,25 @@ and staffing.
 
 What changes on screen, and where to see it: [`063-career-tree`](../../mock/index.html#063-career-tree)
 
-New "Career" view under the Person page (Kasun Dias). It shows a career tree that grows up from the
-join date:
-- **Trunk:** the years.
-- **Rings:** promotions and grade changes.
-- **Branches:** projects. Each branch leaves the trunk at its start month, and its length is the time
-  on the project.
-- **Leaves:** the technologies used on each project.
-- **Fruit:** certifications.
-- **Roots:** department, manager and entity moves.
+New "Career" view under the Person page (Kasun Dias). The career tree is drawn to scale, not
+freehand:
+- **Trunk:** a straight time axis from the join date up to today, at a fixed number of pixels per
+  month.
+- **Rings:** grade changes. The trunk gets wider at each grade, with a short linear taper.
+- **Branches:** projects. Each leaves the trunk at its start month through a fixed-radius elbow,
+  then runs parallel to the trunk for exactly the time on the project. Its thickness scales with
+  the allocation %. Projects running at the same time take parallel lanes, balanced left and right.
+  The fixture has three at once in Apr–May 2025.
+- **Leaves:** technologies, fanned at equal angles on an arc at each branch tip. Each technology
+  keeps one colour everywhere. Faint leaves are technologies the agent proposed that nobody has
+  confirmed yet.
+- **Fruit:** certifications, drawn as diamonds on the branch that was active when they were
+  issued. A grey diamond is an expired certification.
+- **Roots:** department, entity and manager, drawn below the ground line at equal angles.
 
-Beside the tree is a "What changed" timeline list with filters (all, promotions, projects,
-technologies, certifications, moves). The selected node's trace panel shows what changed, when, who
-recorded it (a person, or an agent acting for one), the source record, and its pin.
+Below the tree:
+- the selected node's trace (what changed, when, who recorded it, who approved it, the source);
+- a filterable "What changed" list with the same events, newest first.
 
 ## Acceptance Criteria
 
@@ -42,15 +48,31 @@ recorded it (a person, or an agent acting for one), the source record, and its p
    It writes only to its own `career` schema. hr can't host it, because allocations already imports
    hr's contracts and the reverse import would create a cycle. `npm run check:graph` passes.
 2. **AC-2** The Person page gets a "Career" link that opens `/hr/p/<id>/career` (route owned by
-   `career`). The tree follows the Mock Delta encoding:
-   - Rings are placed at each grade change. They are labelled with the new grade and get thicker
-     with seniority.
-   - A branch starts at the project's first allocated month and ends at the last one (or "now").
-     Consecutive months merge into one branch.
-   - Fruit is placed at the issue date. A certification that has expired shows as a faded fruit.
-   - Root changes are placed below the ground line at their effective date.
+   `career`). The layout is a pure function from events to geometry, unit-tested with no DOM.
 
-   For the fixture person, the counts match the mock exactly.
+   **Time and branches**
+   - y is linear in months.
+   - A branch starts at the first allocated month and ends at the last one (or today).
+     Consecutive months merge into one branch.
+   - A branch's stroke width is `1.5 + 4 × allocation`.
+
+   **Concurrent projects**
+   - Lanes come from greedy interval colouring, in start order.
+   - A new project goes to the side with fewer active branches, and alternates sides on a tie.
+   - It then takes the innermost free lane on that side.
+   - Any number of concurrent projects fits, and two projects never share a lane while both are
+     active.
+   - Where one connector crosses another branch, it is drawn with a gap (a halo in the card
+     colour).
+
+   **Leaves, fruit, rings and roots**
+   - Leaves sit at equal angles on a half-circle at the branch tip.
+   - Fruit sits at the issue month on the branch active then, or on the trunk if no branch is.
+   - Rings sit at each grade change, and the trunk widens by grade.
+   - Roots are spread at equal angles below the ground line.
+
+   For the fixture person, the counts and lane assignment match the mock exactly.
+
 3. **AC-3** Technologies are career's own records: a `technology` tag per person × project, with a
    source.
    - An agent proposes tags from delivery's ingested commits and linked repos (languages and
@@ -98,7 +120,7 @@ recorded it (a person, or an agent acting for one), the source record, and its p
    | What | Count | Detail |
    |---|---|---|
    | Grade changes | 3 | Associate Engineer 2021 → Engineer 2022 → Senior Engineer 2024 |
-   | Projects | 4 | Contoso Portal, Northwind Claims, Fleet Tracker, Internal Design System |
+   | Projects | 5 | Contoso Portal, Northwind Claims, Fleet Tracker, Internal Design System, Adatum claims spike. Three run at once in Apr–May 2025 |
    | Technologies | 9 | — |
    | Certifications | 2 | 1 expired |
    | Moves | 2 | Manager changes |
@@ -107,8 +129,9 @@ recorded it (a person, or an agent acting for one), the source record, and its p
 
 - Do delivery's ingested commits carry language or dependency data? If not, `tag_technology` starts
   as chat-only, and the agent proposal follows in a later change.
-- Should the Person page link be a tab or a card? The mock shows a card with a mini tree that
-  links through.
+- Should the Person page link be a tab or a card?
+- Above how many concurrent lanes should the tree switch to a compact mode (for example a contractor
+  on 6+ projects)? The mock shows 3.
 
 ## Tasks
 
