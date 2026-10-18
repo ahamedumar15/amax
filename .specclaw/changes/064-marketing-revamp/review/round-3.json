@@ -1,0 +1,43 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/web/tests/e2e/marketing.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/marketing.spec.ts",
+   "fp": "227f5b69a5e1",
+   "in_delta": true,
+   "line": 50,
+   "message": "This only partly fixes the test (B1 applied to the test). The loop now reaches the video from outside it, once from before and once from after, which covers variants (a) and (b) of the round-2 finding. Variant (c) is still missing: nothing checks that the video can be operated from the keyboard once it has focus. The original defect was that keyboard users lost the native controls. `toBeFocused()` is retargeted to the host, so it only proves the host or its shadow tree has focus. It does not prove a key press reaches the controls. That leaves two cases, both about focus, and none about operation. Fix: add a third row. Focus the video by keyboard (Tab from the last queue button), press Space (or `k`/Enter on the focused control), and assert that `paused` flips. Press it again and assert it flips back. Check that this row fails when `tabIndex={-1}` is set or `controls` is removed.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "A later change keeps `tabIndex={0}` but swaps in a wrapper or keydown handler that stops native control keys (or drops `controls` after play). Tab and Shift+Tab still land on the video, so this test stays green, but a keyboard user who presses Space on the focused tour gets no play or pause.",
+   "severity": "major"
+  }
+ ],
+ "head": "cfccdaae50e202d5b846fbd239906c0e8509db09",
+ "impact": [],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 42670,
+ "round": 3,
+ "since": "b2ce34b154",
+ "status": "open",
+ "system_chars": 39564,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792343869,
+ "ts_start": 1792343790
+}

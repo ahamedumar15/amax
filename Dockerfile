@@ -28,6 +28,8 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static
+# 063: standalone output leaves out public/ (the marketing video, poster, captions, share image).
+COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public
 COPY --from=build --chown=node:node /repo/apps/web/scripts/worker.mjs ./apps/web/worker.mjs
 USER node
 EXPOSE 3000

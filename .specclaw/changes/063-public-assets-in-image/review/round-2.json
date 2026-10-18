@@ -1,0 +1,65 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  ".github/workflows/ci.yml",
+  "apps/web/tests/proxy-matcher.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/proxy-matcher.test.ts",
+   "fp": "f4992782e8e0",
+   "in_delta": true,
+   "line": 11,
+   "message": "The previous round's finding is fixed for the whole class, not just the named case. Every file now has to return exactly 200, the Range request exactly 206, and the content type must be exactly video/mp4. The new matcher test also checks the signed-out gate, which the smoke container skips because it runs without DATABASE_URL. What's left: the list of five media files is written out twice, here and in .github/workflows/ci.yml:89. It is also separate from what apps/web/public/marketing actually holds and from the file extensions the proxy matcher skips (`mp4|webm|vtt|jpg`, apps/web/proxy.ts:38). If someone adds a marketing asset to one place but not the others, these checks won't notice. Fix: build the test's list by reading apps/web/public/marketing/ (or one shared manifest), so every file there is checked against the matcher.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B4",
+   "scenario": "Someone adds apps/web/public/marketing/amax-product.de.vtt and references it as a caption track, but adds it to neither list. Both lists still pass. Or someone adds amax-product.ogg: the matcher doesn't skip .ogg, so a signed-out visitor is redirected to /signin, and the test, the CI step and the matcher stay green.",
+   "severity": "minor"
+  }
+ ],
+ "head": "ebd79547184ed40724ca49940320988f6929e51e",
+ "impact": [
+  ".claude-plugin/marketplace.json",
+  "Dockerfile",
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(app)/settings/ai/usage/CostChart.tsx",
+  "apps/web/app/(app)/settings/ai/usage/UsageFilters.tsx",
+  "apps/web/app/(app)/settings/ai/usage/UsageTables.tsx",
+  "apps/web/app/(app)/settings/ai/usage/page.tsx",
+  "apps/web/app/(app)/settings/audit/format.ts",
+  "apps/web/components/agents/DecideTable.tsx",
+  "apps/web/components/marketing/ProductVideo.tsx",
+  "apps/web/lib/admin/tool.ts",
+  "apps/web/lib/agents-fixtures.ts",
+  "apps/web/scripts/ignore-css.mjs",
+  "apps/web/scripts/seed-demo.ts",
+  "apps/web/tests/admin/api-reveal.test.ts",
+  "apps/web/tests/admin/hardening-053.test.ts",
+  "apps/web/tests/admin/it-admin.test.ts",
+  "apps/web/tests/admin/privacy.test.ts",
+  "apps/web/tests/admin/review-052.test.ts",
+  "apps/web/tests/admin/secret.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 50953,
+ "round": 2,
+ "since": "d43b7262a1",
+ "status": "clean",
+ "system_chars": 39595,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792342748,
+ "ts_start": 1792342686
+}

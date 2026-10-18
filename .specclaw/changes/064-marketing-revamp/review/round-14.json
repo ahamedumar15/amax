@@ -1,0 +1,45 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [
+  "5955ccf9c9b8"
+ ],
+ "files": [
+  "apps/web/components/marketing/queues.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/components/marketing/queues.ts",
+   "fp": "5955ccf9c9b8",
+   "in_delta": true,
+   "line": 18,
+   "message": "This fixes the named defect: hr2 no longer describes the 'Start onboarding' flow, which the product doesn't have, and certification reminders are a shipped feature (learning's remind_certification and the Remind chip). But the rewritten card makes a new claim the product doesn't back, which breaks AC-6 ('claims still match the product'). The card says 'Certification recorded by Liam Walsh'. Recording a certification needs `learning:certification:record`, and modules/learning/module.ts:23 grants that to HR only (README:13). This same queue presents Liam Walsh as an Engineer (en1 'Accepted by you, Liam Walsh'), so he can't record his own certificate. Fix: credit the recording to an HR person (e.g. 'Recorded in learning by <HR name>'). Before marking AC-6 met, check that the card's other fields (holder, actor, action) can each be done by the role the card names.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Liam Walsh (Engineer role) calls record_certification \u2192 the service refuses: the Engineer role lacks learning:certification:record. The card shows him doing exactly that.",
+   "severity": "major"
+  }
+ ],
+ "head": "2c39d5fba924e4545252ad8ad07243c7ab7b9ed0",
+ "impact": [],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 43261,
+ "round": 14,
+ "since": "696cdbec29",
+ "status": "escalate",
+ "system_chars": 39653,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792345390,
+ "ts_start": 1792345339
+}

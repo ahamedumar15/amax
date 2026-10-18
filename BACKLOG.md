@@ -10,7 +10,7 @@ Follow-up work that a change deliberately left out. Each item becomes its own sp
 
 - [ ] **A "log activity" chat intent in Presales** (from 025). The inbox agent routes a sales activity to Presales' `log_opportunity_activity` by prompt, because Presales declares no intent for it. Add `presales.log-activity` and point `modules/inbox-agent/routes.ts` at it.
 
-- [ ] **Helpdesk's ticket intent and permission** (from 025). `modules/inbox-agent/routes.ts` expects 022 to declare the chat intent `helpdesk.new-ticket`, the permission `helpdesk:ticket:create` and the table `helpdesk.ticket`. Until 022 lands that route stays dark; when it does, match the names or update the route.
+- [ ] **021 grants access when helpdesk approves it** (from 022). When a resource's owner approves the support agent's `helpdesk.access` suggestion, the ticket is resolved and `helpdesk.access.approved` is emitted, but nothing is granted: someone still adds the person by hand. Map helpdesk's access resources to 021's products and groups, and have it-access handle the event by queueing the grant (without a second approval, since the owner approved it).
 
 - [ ] **Graph read credential label** (from 025). The inbox agent reads mail and Teams with the 031 `msgraph-read` credential, whose "used for" line in `packages/core/src/secrets/connectors.ts` still says "People, licences, devices sync". Add the inbox agent, and say which Graph permissions it needs (Mail.Read, ChannelMessage.Read.All).
 

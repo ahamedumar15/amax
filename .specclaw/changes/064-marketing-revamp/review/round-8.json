@@ -1,0 +1,85 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/app/(public)/welcome/welcome.css",
+  "apps/web/components/marketing/ProductVideo.tsx",
+  "apps/web/components/marketing/copy.ts",
+  "apps/web/components/marketing/queues.ts",
+  "apps/web/tests/e2e/marketing-video.spec.ts",
+  "apps/web/tests/e2e/marketing.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/marketing-video.spec.ts",
+   "fp": "53e1c8eff845",
+   "in_delta": true,
+   "line": 13,
+   "message": "The CSS fix covers every breakpoint, but the test does not. The round-7 finding pointed out that the \u2264480 px rule shrank the button to 48 px. This test checks the 64 px target only at Playwright's default 1280\u00d7720 viewport, because playwright.config.ts sets no viewport or projects. So the breakpoint where the defect actually was is never checked. Fix: make the size check table-driven over viewports such as 1440, 768 and 390 px. At each one, call page.setViewportSize, then assert that the button found by the exact name 'Play the 35-second product tour' is at least 64 px tall.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "Someone adds `height:48px` back to the `@media (max-width:480px){\u2026 .m2 .play{\u2026}}` rule in welcome.css. The button is 48 px on a 390 px phone, which breaks AC-3, and marketing-video.spec.ts still passes because it only measures at 1280 px.",
+   "severity": "major"
+  },
+  {
+   "file": ".specclaw/mock/index.html",
+   "fp": "dd0a3052581e",
+   "in_delta": false,
+   "line": 2334,
+   "message": "The site now ends every queue outcome line with '\u00b7 in chat' (queues.ts). The mock's 064 hero card still says '\u2713 Promoted to Prod by you \u00b7 deployment recorded', so the mock and the site now give different outcome text for the same card. Fix: add '\u00b7 in chat' to the mock's queue `.ok` lines too.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B4",
+   "scenario": "Mock PM card 'Promote' shows '\u2713 Promoted to Prod by you \u00b7 deployment recorded'. On /welcome the same card shows '\u2026 \u00b7 deployment recorded \u00b7 in chat'.",
+   "severity": "minor"
+  },
+  {
+   "file": ".specclaw/changes/064-marketing-revamp/change.md",
+   "fp": "659acf9ed6aa",
+   "in_delta": false,
+   "line": 18,
+   "message": "The Mock Delta still describes the button as 'A \"Play the tour \u00b7 35 s, captions\" pill', and T3 (line 60) says 'the \"Play the tour\" button'. AC-3, the code and the mock now use 'Play the 35-second product tour'. Fix: update the Mock Delta and T3 wording to match AC-3.",
+   "original_severity": "minor",
+   "pass": "review",
+   "pre_existing": true,
+   "rule": "B1",
+   "scenario": "",
+   "severity": "minor"
+  }
+ ],
+ "head": "68f24e649fe4e72bc5c261664e29d2ab08164293",
+ "impact": [
+  "apps/web/app/(public)/welcome/page.tsx",
+  "apps/web/components/marketing/AuditTiles.tsx",
+  "apps/web/components/marketing/HowItWorks.tsx",
+  "apps/web/tests/marketing-prose.ts",
+  "modules/payroll/contracts.ts",
+  "modules/payroll/server/steps.ts",
+  "modules/payroll/tests/contracts.test.ts",
+  "modules/presales/contracts.ts",
+  "modules/presales/server/common.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 62482,
+ "round": 8,
+ "since": "8e88d540f4",
+ "status": "open",
+ "system_chars": 39657,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792344439,
+ "ts_start": 1792344364
+}

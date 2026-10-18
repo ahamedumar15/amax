@@ -1,0 +1,12 @@
+{
+  "change": "065-review-pass-cap",
+  "phase": "pr",
+  "branch": "specclaw/065-review-pass-cap",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-18T18:16:00Z"},
+    "tasks": {"status":"done","at":"2026-10-18T18:16:00Z"},
+    "build": {"status":"in-progress","at":"2026-10-18T18:16:02Z"},
+    "verify": {"status":"done","at":"2026-10-18T18:16:46Z"},
+    "pr": {"status":"raised","at":"2026-10-18T18:17:46Z","url":"https://github.com/chan4lk/amax/pull/88"}
+  }
+}

@@ -1,0 +1,32 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/components/marketing/copy.ts"
+ ],
+ "final": false,
+ "findings": [],
+ "head": "e9e19bf3dbe63e1f3dbcaa3ffdb475b5eada549e",
+ "impact": [
+  "apps/web/components/marketing/AuditTiles.tsx"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 45008,
+ "round": 11,
+ "since": "3172bf01aa",
+ "status": "clean",
+ "system_chars": 39646,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792344911,
+ "ts_start": 1792344701
+}
