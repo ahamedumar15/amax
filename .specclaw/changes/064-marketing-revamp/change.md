@@ -73,3 +73,6 @@ Brand constraints kept over the skill's house rules (recorded on purpose): the l
   Depends: T2, T3, T4, T5
 
 ## Verify
+
+Quality: 523 → 523 duplicated lines repo-wide, none in this change's files (refactor skipped).
+Build note on AC-1: on a phone (390 px, Avenir Next) the hero headline sets on three lines; two lines would need about 25 px. The two-line check runs at 1440 and 768.
