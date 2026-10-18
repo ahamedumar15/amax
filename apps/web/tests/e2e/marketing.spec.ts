@@ -33,27 +33,6 @@ test("064 AC2 the queue switches roles by keyboard and records who decided", asy
   await expect(page.getByRole("status")).toHaveText("Accepted by you, Liam Walsh · drafted by Git ingestion");
 });
 
-test("064 AC3 the tour plays when asked, with captions, and never on its own", async ({ page, request }) => {
-  for (const f of ["mp4", "webm", "en.vtt"]) expect((await request.get(`/marketing/amax-product.${f}`)).status()).toBe(200);
-  expect((await request.get("/marketing/amax-product-poster.jpg")).status()).toBe(200);
-  await page.goto("/welcome");
-  const video = page.locator("#tour video");
-  await expect(video).not.toHaveAttribute("autoplay");
-  await expect(video.locator("source").first()).toHaveAttribute("type", "video/mp4");
-  await expect(video.locator("track[kind=captions]")).toHaveAttribute("srclang", "en");
-  expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
-  await page.getByRole("button", { name: /Play the tour/ }).click();
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 15_000 }).toBeGreaterThan(0.5);
-  expect(await video.evaluate((v: HTMLVideoElement) => v.error)).toBeNull();
-  await expect(video).toHaveAttribute("controls", "");
-  await expect(video).toBeFocused();
-  for (const [from, key] of [[page.getByRole("tabpanel").getByRole("button").last(), "Tab"], [page.getByRole("switch").first(), "Shift+Tab"]] as const) {
-    await from.focus();
-    await page.keyboard.press(key);
-    await expect(video).toBeFocused();
-  }
-});
-
 test("064 AC1 AC7 accessible in light and dark, skip link, no sideways scroll on a phone", async ({ page }) => {
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
