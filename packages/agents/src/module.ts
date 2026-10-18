@@ -17,7 +17,7 @@ const EVERYONE = [READ, DECIDE, SUGGEST];
 /** The platform's suggestions surface (006): everyone may read and decide within their own scope per kind. */
 export const agentsPlatform = {
   id: "suggestions",
-  grants: { Leadership: EVERYONE, PM: EVERYONE, Engineer: EVERYONE, Finance: EVERYONE, Sales: EVERYONE, HR: EVERYONE, Payroll: EVERYONE, Employee: EVERYONE },
+  grants: { ITAdmin: EVERYONE, Leadership: EVERYONE, PM: EVERYONE, Engineer: EVERYONE, Finance: EVERYONE, Sales: EVERYONE, HR: EVERYONE, Payroll: EVERYONE, Employee: EVERYONE },
   workflows: [agentRun],
   retention: agentsRetention,
 };

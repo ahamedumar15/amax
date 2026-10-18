@@ -6,6 +6,7 @@ import { newToken, tokenHash } from "./tokens";
 
 export const CREDENTIAL_MANAGE = "api:credential:manage";
 export const MAX_CREDENTIAL_DAYS = 365;
+export const REVOKE_REASONS = ["replaced", "compromised", "unused"] as const;
 export const SCOPE = /^[a-z][a-z0-9-]*:(read|write|sensitive)$/;
 export type Reveal = { label: string; value: string };
 
@@ -65,12 +66,15 @@ export const revokeCredential = defineService({
   name: "auth.principal.revoke",
   action: CREDENTIAL_MANAGE,
   resource: "auth.service_principal",
-  input: z.object({ id: z.uuid(), reason: z.enum(["replaced", "compromised", "unused"]) }),
-  async run(tx, input) {
-    const [row] = await tx.execute(sql`update auth.service_principal set revoked_at = now() where id = ${input.id} and revoked_at is null returning name`);
-    if (!row) throw notFound(input.id);
-    await withoutTokens(tx, input.id);
-    const after = { name: row.name as string, reason: input.reason };
-    return { result: { id: input.id, revoked: true }, resourceId: input.id, after, events: [{ name: "auth.principal.revoked", payload: { id: input.id, reason: input.reason } }] };
-  },
+  input: z.object({ id: z.uuid(), reason: z.enum(REVOKE_REASONS) }),
+  run: (tx, input) => revokePrincipal(tx, input),
 });
+
+/** The revoke write inside the caller's transaction: the service, and an approved agent suggestion (006). */
+export async function revokePrincipal(tx: Tx, input: { id: string; reason: (typeof REVOKE_REASONS)[number] }) {
+  const [row] = await tx.execute(sql`update auth.service_principal set revoked_at = now() where id = ${input.id} and revoked_at is null returning name`);
+  if (!row) throw notFound(input.id);
+  await withoutTokens(tx, input.id);
+  const after = { name: row.name as string, reason: input.reason };
+  return { result: { id: input.id, revoked: true }, resourceId: input.id, after, events: [{ name: "auth.principal.revoked", payload: { id: input.id, reason: input.reason } }] };
+}

@@ -47,6 +47,10 @@ export const createSuggestion = defineService({
     const kind = kindOf(input.kind);
     const proposed = kind.proposed.safeParse(input.proposed);
     if (!proposed.success) throw new ValidationError(proposed.error.issues.map((i) => ({ ...i, path: ["proposed", ...i.path] })));
+    // An agent that runs again proposes the same open change once: the open suggestion is returned.
+    const [open] = await tx.execute(sql`select id, expires_at from agents.suggestion where kind = ${input.kind} and target_type = ${input.target.type} and target_id = ${input.target.id}
+      and status in ('open', 'queried', 'approved') and expires_at >= now() limit 1`);
+    if (open) return { result: { id: open.id as string, kind: input.kind, status: "open" as Status, expiresAt: new Date(open.expires_at as string).toISOString(), existing: true }, resourceId: open.id as string, after: { existing: true } };
     const [row] = await tx.execute(sql`insert into agents.suggestion (tenant_id, kind, target_type, target_id, target_label, title, detail, proposed, evidence, confidence,
         agent, agent_name, acts_for, source_channel, source_label, source_ref, scope, run_id, expires_at)
       values (${ctx.tenantId}, ${input.kind}, ${input.target.type}, ${input.target.id}, ${input.target.label}, ${input.title}, ${input.detail ?? null}, ${JSON.stringify(proposed.data)}::jsonb,
@@ -54,7 +58,7 @@ export const createSuggestion = defineService({
         ${input.source.ref ?? null}, ${JSON.stringify(input.scope)}::jsonb, ${input.runId ?? null}, now() + make_interval(days => ${input.expiresInDays})) returning id, expires_at`);
     const id = row.id as string;
     return {
-      result: { id, kind: input.kind, status: "open" as Status, expiresAt: new Date(row.expires_at as string).toISOString() },
+      result: { id, kind: input.kind, status: "open" as Status, expiresAt: new Date(row.expires_at as string).toISOString(), existing: false },
       resourceId: id,
       after: { kind: input.kind, target: input.target, agent: ctx.actor.id, agentName: input.agentName, actsFor: actsFor(ctx), source: input.source.channel, confidence: input.confidence },
       events: [{ name: "agents.suggestion.created", payload: { suggestionId: id, kind: input.kind } }],

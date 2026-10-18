@@ -40,7 +40,7 @@ The pattern on Payroll changes (agent chip, Accept/Query), licence savings (Revi
 - [x] `T6` — Agent runs as a durable 029 workflow (think step with tool calls and cost, suggest step, `waitForEvent` per suggestion), run view per suggestion masked by class; read-only tool allow-list, output only schema-valid suggestions with their external source; injection test (AC-4, AC-6)
   Files: packages/agents/src/run.ts, packages/ai/src/gateway.ts, packages/agents/tests/ac4-run.test.ts, packages/agents/tests/ac6-injection.test.ts
   Depends: T3, T4
-- [ ] `T7` — Real kinds: allocations rebalance (reversible, cutoff at the month's start) with its recurring agent check (off by default), and service-credential revocation (sensitive, irreversible) (AC-2, AC-3, AC-4)
+- [x] `T7` — Real kinds: allocations rebalance (reversible, cutoff at the month's start) with its recurring agent check (off by default), and service-credential revocation (sensitive, irreversible) (AC-2, AC-3, AC-4)
   Files: modules/allocations/suggestions.ts, modules/allocations/module.ts, modules/allocations/tests/suggestions.test.ts, packages/agents/src/kinds/credential.ts
   Depends: T4, T6
 - [ ] `T8` — Wiring: MCP tools (list, get, run, create, and chat-only accept, query, dismiss, undo), grants, privacy sources, workflows registry, demo fixtures, docs (AC-1, AC-2, AC-3, AC-4, AC-5, AC-6)

@@ -5,3 +5,4 @@ export { undoSuggestion } from "./undo";
 export { getSuggestion, listSuggestions, type Bucket, type ListFilter, type Person, type SuggestionView } from "./read";
 export { agentRun, configureAgents, RunInput, type AgentDeps } from "./run";
 export { agentsPlatform, agentsRetention } from "./module";
+export { platformKinds, revokeCredentialKind } from "./kinds/credential";

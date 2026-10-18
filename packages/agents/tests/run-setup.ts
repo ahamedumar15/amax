@@ -5,7 +5,8 @@ import { fakeProvider, type FakeStep } from "@amax/ai/fake";
 
 type Canned = ReturnType<FakeStep>;
 import { createRegistry } from "@amax/mcp";
-import { createPostgresEngine, getRun, workflowRegistry, type RunStatus } from "@amax/workflows/server";
+import type { RunStatus } from "@amax/workflows";
+import { createPostgresEngine, getRun, workflowRegistry } from "@amax/workflows/server";
 import { agentsPlatform, configureAgents } from "../src/server";
 import { agentsDb, ANA, T, viewer } from "./setup";
 
