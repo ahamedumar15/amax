@@ -2,7 +2,7 @@
 
 **Change:** 044-release-and-region-hardening
 **Started:** -
-**Last Updated:** 2026-10-17
+**Last Updated:** 2026-10-18
 
 ## Progress
 
@@ -14,7 +14,7 @@
 | Tasks | ✅ Done |  |
 | Build | ✅ Done |  |
 | Verify | ✅ Done |  |
-| PR | - | - |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/67 |
 | Archived | - | - |
 
 ## Issues
