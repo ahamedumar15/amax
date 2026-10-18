@@ -1,0 +1,47 @@
+/* Learning screen: rules lifted from .specclaw/mock/index.html (module standard: shared UI starts in the module). */
+.learning{--l-bar-dim:#D6CCFF;--l-good:#0F7A50}
+:root[data-theme="dark"] .learning{--l-bar-dim:#3A3466;--l-good:#5FE0A6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .learning{--l-bar-dim:#3A3466;--l-good:#5FE0A6}}
+.learning .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.learning .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
+.learning .row.head>div:first-child{flex:1 1 420px;min-width:0}
+.learning .row.head .lede{margin:0}
+.learning .row.head>.actions{flex-shrink:0}
+.learning .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.learning .tickets.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.learning .tickets.four .v{font-size:clamp(21px,1.75vw,28px)}
+.learning .ticket .bar b{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#1D1B2E}
+:root[data-theme="dark"] .learning .ticket .bar b{background:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .learning .ticket .bar b{background:#fff}}
+.learning .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+.learning .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap;min-height:38px}
+.learning .card.flush{padding:0}
+.learning .card.flush .card-head{padding:26px 28px 0;margin-bottom:18px}
+.learning .muted{color:var(--ink-3)}
+.learning .scroll-x{overflow-x:auto}
+.learning .tbl td{white-space:normal}
+.learning .tbl td.num{white-space:nowrap}
+.learning .tbl small{display:block;color:var(--ink-3);font-size:12.5px}
+.learning .tbl .row{justify-content:flex-start;gap:10px}
+.learning .meter{flex:1;height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;min-width:72px}
+.learning .meter i{display:block;height:100%;border-radius:8px}
+.learning .chart{width:100%;height:auto;display:block;overflow:visible}
+.learning .chart text{font-family:var(--font)}
+.learning .chart .ax{fill:var(--ink-3);font-size:12px}
+.learning .hr{height:1px;background:var(--line-2);margin:24px 0}
+.learning .list{list-style:none;margin:0;padding:0}
+.learning .list li{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line);font-size:14px}
+.learning .list li:first-child{border-top:0;padding-top:0}
+.learning .list li small{display:block;color:var(--ink-3);font-size:12.5px}
+.learning .list .l{display:flex;align-items:center;gap:12px;min-width:0}
+.learning .av{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;flex:none}
+.learning .av.sm{width:30px;height:30px;border-radius:10px;font-size:11px}
+.learning .a1{background:linear-gradient(135deg,#FFB86B,#F48B9B)}
+.learning .a2{background:linear-gradient(135deg,#7FD8F5,#7B61FF)}
+.learning .a3{background:linear-gradient(135deg,#7BE3B4,#2FB5A0)}
+.learning .a4{background:linear-gradient(135deg,#C3B5FF,#8E6CF0)}
+.learning .btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:10px}
+.learning .empty-line{color:var(--ink-3);font-size:14px;margin:0}
+@media (max-width:1100px){.learning .cols{grid-template-columns:minmax(0,1fr)}.learning .tickets.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.learning .tickets.four{grid-template-columns:minmax(0,1fr)}}
+.learning .seg button[aria-pressed="true"]{color:var(--chip-agent)}
