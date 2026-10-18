@@ -1,9 +1,10 @@
 {
   "change": "037-digital-experience",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T19:39:37Z"},
-    "verify": {"status":"done","at":"2026-10-18T20:20:05Z"}
+    "verify": {"status":"done","at":"2026-10-18T20:20:05Z"},
+    "pr": {"status":"raised","at":"2026-10-18T20:20:17Z","url":"https://github.com/chan4lk/amax/pull/93"}
   }
 }
