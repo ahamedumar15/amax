@@ -25,7 +25,7 @@ export async function availabilityOf(tx: Tx, v: Viewer, inputs: Inputs, rows: Pe
   const from = addDays(today, 1) > `${month}-01` ? addDays(today, 1) : `${month}-01`;
   const range = from <= monthEnd(month) ? { from, to: monthEnd(month) } : null;
   const allocated = await allocatedIn(tx, v, rows.map((r) => r.personId), month);
-  const people = inputs.people.filter((p) => rows.some((r) => r.userId === p.userId));
+  const people = rows.flatMap((r) => inputs.people.filter((p) => p.userId === r.userId));
   return {
     range, allocationsOn: allocated !== null,
     rows: people.map((p) => {

@@ -43,3 +43,5 @@ Fixture hours are fictional and give fixtures.md's October table (222 ÷ 264 = 8
   Depends: T2
 
 ## Verify
+
+Quality: 0 → 0 duplicated lines (jscpd on modules/reports; specclaw-quality-scan fails on this repo with jq "Argument list too long"). The one clone jscpd reports is 5 lines of test setup (contracts.test.ts and utilisation.test.ts), which the scan excludes as tests.

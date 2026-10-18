@@ -13,11 +13,11 @@ describe.skipIf(!hasDb)("utilisation (Postgres)", () => {
 
   it("AC1 billable ÷ available after leave and holidays gives the team 84% for October to date, only to those who may see it", async () => {
     const r = await db.call<Report>("maya", "get_utilisation", {});
-    expect(pick(r)).toEqual([["Ayesha Rahman", 88, "1 day casual", 84, 64, 73], ["Kasun Dias", 80, "2 days medical", 78, 70, 88], ["Nimal Silva", 96, null, 98.5, 88, 92]]);
+    expect(pick(r)).toEqual([["Nimal Silva", 96, null, 98.5, 88, 92], ["Kasun Dias", 80, "2 days medical", 78, 70, 88], ["Ayesha Rahman", 88, "1 day casual", 84, 64, 73]]);
     expect(r.team).toMatchObject({ availableHours: 264, loggedHours: 260.5, billableHours: 222, utilisation: 84 });
     expect(r.lede).toBe("Billable hours ÷ available hours, October to date (Oct 1–16, 12 working days, 96 h per full-time person). Team: 222 ÷ 264 = 84%, against an 80% target.");
     expect(r.trend.map((t) => t.utilisation)).toEqual([72, 68, 74, 77, 79, 81, 78, 83, 82, 80, 84, 84]);
-    expect(r.availability.rows.map((x) => [x.name, x.workdays, x.availableHours, x.allocated])).toEqual([["Ayesha Rahman", 6, 48, 100], ["Kasun Dias", 9, 72, 100], ["Nimal Silva", 9, 72, 100]]);
+    expect(r.availability.rows.map((x) => [x.name, x.workdays, x.availableHours, x.allocated])).toEqual([["Nimal Silva", 9, 72, 100], ["Kasun Dias", 9, 72, 100], ["Ayesha Rahman", 6, 48, 100]]);
     const finance = await db.call<Report>("sahan", "get_utilisation", {}, "Finance");
     expect([finance.rows, finance.team.utilisation]).toEqual([[], null]);
     expect((await db.call<Report>("sahan", "get_utilisation", {}, "PM")).rows).toEqual([]);

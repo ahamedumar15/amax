@@ -47,7 +47,8 @@ export function personFigures(p: Person, inputs: Inputs, range: Range): PersonUt
 export function utilisationOf(inputs: Inputs, range: Range): { rows: PersonUtilisation[]; team: TeamUtilisation } {
   const rows = inputs.people
     .filter((p) => (inputs.hours.get(p.userId) ?? []).some((h) => h.day >= range.from && h.day <= range.to))
-    .map((p) => personFigures(p, inputs, range));
+    .map((p) => personFigures(p, inputs, range))
+    .sort((a, b) => (b.utilisation ?? -1) - (a.utilisation ?? -1) || a.name.localeCompare(b.name));
   const counted = rows.filter((r) => r.availableHours !== null);
   const sum = (f: (r: PersonUtilisation) => number) => tidy(counted.reduce((n, r) => n + f(r), 0));
   const availableHours = sum((r) => r.availableHours ?? 0), billableHours = sum((r) => r.billableHours);
