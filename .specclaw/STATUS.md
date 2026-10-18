@@ -1,13 +1,13 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 09:43 UTC
+**Last Updated:** 2026-10-18 10:07 UTC
+
+_1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
-
-- 🔀 **043-chat-write-tool-contract** — pr raised | 5/5 tasks (100%) | 0 failed | PR #66 merged
-- 🔍 **044-release-and-region-hardening** — verify done | 4/4 tasks (100%) | 0 failed
+_No active changes._
 
 ## Pending Proposals
 
@@ -58,6 +58,8 @@
 - ✅ **040-dependency-updates**
 - ✅ **041-delivery-mock-parity**
 - ✅ **042-release-management**
+- ✅ **043-chat-write-tool-contract**
+- ✅ **044-release-and-region-hardening**
 - ✅ **045-delivery-create-project-contract**
 - ✅ **046-chat-first-and-pins**
 - ✅ **047-admin-end-to-end**
@@ -79,5 +81,5 @@
 ## Stats
 
 - **Total changes:** 45
-- **Active:** 2
-- **Completed:** 43
+- **Active:** 0
+- **Completed:** 45
