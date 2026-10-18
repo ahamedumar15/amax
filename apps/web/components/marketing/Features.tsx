@@ -11,7 +11,7 @@ export function Features() {
             <Art name={a.art} />
             <h3>{a.title}</h3>
             <p>{a.live.map((c) => c.text).join(". ")}.</p>
-            {a.coming.length > 0 && <p className="mk-coming"><span className="chip">Coming</span> {a.coming.join(", ")}</p>}
+            {a.coming.length > 0 && <p className="mk-coming"><span className="chip">Coming</span> {a.coming.map((c) => c.text).join(", ")}</p>}
           </li>
         ))}
       </ul>

@@ -1,7 +1,8 @@
 import type { ArtName } from "./Art";
 
 export type Claim = { text: string; module?: string };
-export type Area = { title: string; tone: string; art: ArtName; live: Claim[]; coming: string[] };
+export type Planned = { text: string; module: string; words: string[] };
+export type Area = { title: string; tone: string; art: ArtName; live: Claim[]; coming: Planned[] };
 
 const PLATFORM = "platform";
 
@@ -11,16 +12,27 @@ export const AREAS: Area[] = [
     { text: "Time and approvals", module: "time" },
     { text: "Allocations and capacity forecasts", module: "allocations" },
   ] },
-  { title: "People", tone: "good", art: "people", coming: ["Onboarding and offboarding", "Payroll for Sri Lanka and Australia"], live: [
+  { title: "People", tone: "good", art: "people", coming: [
+    { text: "Onboarding and offboarding", module: "onboarding", words: ["onboarding", "offboarding"] },
+    { text: "Payroll for Sri Lanka and Australia", module: "payroll", words: ["payroll", "payslip"] },
+  ], live: [
     { text: "Core HR", module: "hr" },
     { text: "Leave", module: "leave" },
     { text: "Learning", module: "learning" },
     { text: "OKRs from Keyflow", module: "keyflow" },
   ] },
-  { title: "Finance and sales", tone: "attention", art: "coins", coming: ["Contracts and billing", "Expenses", "Xero, QuickBooks and Business Central"], live: [
+  { title: "Finance and sales", tone: "attention", art: "coins", coming: [
+    { text: "Contracts and billing", module: "finance", words: ["contract", "billing", "invoic"] },
+    { text: "Expenses", module: "expenses", words: ["expense"] },
+    { text: "Xero, QuickBooks and Business Central", module: "accounting", words: ["xero", "quickbooks", "business central"] },
+  ], live: [
     { text: "Presales pipeline", module: "presales" },
   ] },
-  { title: "Operations", tone: "sky", art: "key", coming: ["IT assets and access", "Helpdesk", "Insights"], live: [
+  { title: "Operations", tone: "sky", art: "key", coming: [
+    { text: "IT assets and access", module: "it-access", words: ["it asset", "licence"] },
+    { text: "Helpdesk", module: "helpdesk", words: ["helpdesk"] },
+    { text: "Insights", module: "insights", words: ["insights"] },
+  ], live: [
     { text: "Compliance registers and incidents", module: "compliance" },
     { text: "Notifications", module: "notifications" },
   ] },

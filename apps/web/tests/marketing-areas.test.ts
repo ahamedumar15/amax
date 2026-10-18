@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { modules } from "../generated/modules";
 import { AREAS, isPlatform } from "../components/marketing/areas";
+import { DESCRIPTION, HERO_LEDE } from "../components/marketing/copy";
 
-describe("062 AC-3 every live claim on the marketing page is a shipped module", () => {
+describe("062 AC-3 the marketing page claims only what ships", () => {
   const installed = new Set(modules.map((m) => m.id));
-  const claims = AREAS.flatMap((a) => a.live.filter((c) => !isPlatform(c)).map((c) => [a.title, c.text, c.module ?? ""] as const));
-  it.each(claims)("%s: %s comes from module %s", (_area, _text, id) => {
+  const live = AREAS.flatMap((a) => a.live.filter((c) => !isPlatform(c)).map((c) => [a.title, c.text, c.module ?? ""] as const));
+  const planned = AREAS.flatMap((a) => a.coming.map((c) => [a.title, c.text, c.module] as const));
+  it.each(live)("%s: %s comes from installed module %s", (_area, _text, id) => {
     expect(installed.has(id)).toBe(true);
   });
-  it("names no unshipped module as live and marks planned work Coming", () => {
-    for (const planned of ["payroll", "contracts", "expenses", "it-access", "helpdesk", "insights", "onboarding"]) expect(installed.has(planned)).toBe(false);
-    expect(AREAS.flatMap((a) => a.coming)).toEqual(expect.arrayContaining(["Payroll for Sri Lanka and Australia", "Contracts and billing", "IT assets and access"]));
+  it.each(planned)("%s: %s is Coming because module %s is not installed", (_area, _text, id) => {
+    expect(installed.has(id)).toBe(false);
+  });
+  const prose = [["hero", HERO_LEDE], ["description", DESCRIPTION], ["live claims", AREAS.flatMap((a) => a.live.map((c) => c.text)).join(" ")]] as const;
+  it.each(prose)("the %s names no Coming feature", (_where, text) => {
+    for (const word of AREAS.flatMap((a) => a.coming.flatMap((c) => c.words))) expect(text.toLowerCase()).not.toContain(word);
   });
 });
