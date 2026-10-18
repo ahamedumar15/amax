@@ -45,3 +45,5 @@ suggestions, and a person adds the record through the owning module's chat inten
   Depends: T4
 
 ## Verify
+
+Quality: 0 → 0 duplicated lines (jscpd on modules/inbox-agent; specclaw-quality-scan fails on this repo).

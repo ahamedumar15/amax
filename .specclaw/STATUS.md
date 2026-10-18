@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 14:11 UTC
+**Last Updated:** 2026-10-18 14:28 UTC
 
 ## Active Changes
 
@@ -10,7 +10,7 @@
 - 🔀 **017-finance-contracts-billing** — pr raised | 5/5 tasks (100%) | 0 failed | PR #76 merged
 - 🔀 **018-expenses** — PR #78 merged
 - 🔀 **023-recruitment** — pr raised | 6/6 tasks (100%) | 0 failed | PR #77 merged
-- 📝 **025-inbox-agent** — tasks done | 0/5 tasks (0%) | 0 failed
+- 📝 **025-inbox-agent** — tasks done | 5/5 tasks (100%) | 0 failed
 - 🔀 **062-specclaw-sync-plugin** — pr raised | 6/6 tasks (100%) | 0 failed | PR #72 merged
 
 ## Pending Proposals
