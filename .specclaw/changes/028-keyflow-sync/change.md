@@ -21,4 +21,24 @@ The Keyflow sister-product card.
 
 ## Tasks
 
+- [ ] `T1` — Mock: add this change's own sections, the Keyflow sync screen (connection, last sync, what went out and came in, sync errors with Ask amax, recent runs) and a person's Keyflow performance page (goals, review scores masked by `performance`, recognition); a pin on every card, ticket and row (AC-1, AC-2)
+  Files: .specclaw/mock/index.html
+- [ ] `T2` — Publish `contracts.ts`: goal, review score, recognition and sync-run types, event names and payloads (`keyflow.sync.completed`, `keyflow.sync.failed`), `keyflowProfile(tx, reader, personId)` (scores masked per `performance`) and `lastSync(tx, reader)` reads, with contract tests (AC-1, AC-3)
+  Files: modules/keyflow/contracts.ts, modules/keyflow/package.json, modules/keyflow/tsconfig.json, modules/keyflow/css.d.ts, modules/keyflow/.gitignore, modules/keyflow/tests/contracts.test.ts, pnpm-lock.yaml
+- [ ] `T3` — Screens matching the mock: the Keyflow sync screen at /keyflow (Operations, linked from Settings and Integrations by breadcrumb) leading with errors, and the person's Performance page mounted at /hr/p/:employeeNo/performance (051); Ask amax buttons and pins everywhere, no forms (AC-1, AC-2)
+  Files: modules/keyflow/ui/*.tsx, modules/keyflow/ui/keyflow.css
+  Depends: T2
+- [ ] `T4` — `keyflow` schema (connection, sync run, sync error, outbound link, goal, review score, recognition; RLS on tenant_id), fixtures consistent with the shared Lumen Labs people and clearly fictional, and the sandbox Keyflow the demo tenant syncs with (AC-1, AC-2)
+  Files: modules/keyflow/db/migrations/0001_keyflow.sql, modules/keyflow/fixtures/index.ts, modules/keyflow/server/sandbox.ts
+  Depends: T2
+- [ ] `T5` — Sync: the transport (HTTPS through the `@amax/api/egress` guards, the `keyflow` credential through `@amax/core/secrets`), people and teams out as deltas, goals, scores and recognition in, recorded by a `defineService()` with its run, counts and per-record errors; the `keyflow.sync` workflow on a 15-minute cron (029); services to set the endpoint and dismiss an error; MCP read and write tools (AC-1, AC-2)
+  Files: modules/keyflow/server/*.ts, modules/keyflow/workflows.ts, modules/keyflow/mcp.ts
+  Depends: T4
+- [ ] `T6` — Manifest (group Operations, grants, retention for every personal table, events and payloads, workflow and schedule, mounted route), chat intent "connect Keyflow", README, CODEOWNERS line (AC-2, AC-3)
+  Files: modules/keyflow/module.ts, modules/keyflow/chat.ts, modules/keyflow/README.md, .github/CODEOWNERS
+  Depends: T5
+- [ ] `T7` — Tests: schema, RLS and retention; sync with a fake transport (deltas, unmatched people, Keyflow errors, unreachable host, missing credential); egress refuses private hosts; performance masking; chat-first (writes wait for confirm, pins resolve); module standard (switch-off, only hr installed); screen a11y e2e (AC-1..AC-3)
+  Files: modules/keyflow/tests/*.ts, modules/keyflow/tests/e2e/*
+  Depends: T6
+
 ## Verify
