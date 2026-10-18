@@ -11,8 +11,8 @@
 | Proposal | ✅ Approved | Deferred from the 042 final review by the product owner, 2026-10-17 (option 1) |
 | Spec | - | - |
 | Design | - | - |
-| Tasks | - | - |
-| Build | - | - |
+| Tasks | ✅ Done |  |
+| Build | 🔨 In-progress |  |
 | Verify | - | - |
 | PR | - | - |
 | Archived | - | - |
