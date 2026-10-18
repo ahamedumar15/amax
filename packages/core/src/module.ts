@@ -198,6 +198,8 @@ export type ModuleManifest = {
   workflows?: readonly unknown[];
   /** Cron schedules (029): cron() results from @amax/workflows, opaque to core. */
   schedules?: readonly unknown[];
+  /** Agent suggestion kinds (006): defineSuggestionKind() results from @amax/agents, opaque to core. */
+  suggestions?: readonly unknown[];
   /** Notification rules for the events this module emits (030). */
   notifications?: NotificationRule[];
   /** Where the module's root screen is reached: the rail (default) or the profile menu (030's preferences). */
