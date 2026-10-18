@@ -25,4 +25,30 @@ The Overview activity feed and the "Claude for <person>" attribution.
 
 ## Tasks
 
+Approved by the product owner in Discord, 2026-10-18 ("start with 38, then wave 4").
+
+Platform ripples AC-5 can't avoid, each kept to a slot that any module can use:
+- `ModuleManifest.activity` (an Overview feed contribution) and `ModuleManifest.inbound` (a verified-webhook handler).
+- `/api/webhooks/[provider]`, which runs 035's `receiveWebhook` and then hands the verified event to the modules.
+- A principal's optional `tools` allow-list, checked wherever the principal's scope is checked.
+
+- [ ] `T1` — Overview "Agent activity" card: each module's `activity` feed, merged newest first, with "Claude for <person>" or "<principal> for <person>" attribution as in the 001 mock. Delivery contributes its ingested events (AC-4)
+  Files: packages/core/src/module.ts, apps/web/app/(app)/page.tsx, apps/web/components/overview/ActivityFeed.tsx, modules/delivery/server/activity.ts, modules/delivery/module.ts, apps/web/tests/e2e/overview.spec.ts
+- [ ] `T2` — Proposal tasks as records: a `delivery.task` table that `sync_proposal` writes. `mark_task_done` closes one and keeps `tasks_done` in step. MCP tools `sync_proposal` and `mark_task_done` sit beside `record_deployment`, each declaring its service (AC-1)
+  Files: modules/delivery/db/migrations/0013_tasks_ingest.sql, modules/delivery/server/tasks.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/tests/ingest-ac1.test.ts
+- [ ] `T3` — A principal may be limited to named tools (`tools` on the credential). REST and job calls refuse any other tool, and acts-for limits still apply (AC-1)
+  Files: packages/auth/src/credentials.ts, packages/auth/src/principals.ts, packages/api/src/caller.ts, packages/db/migrations/00xx_principal_tools.sql, packages/api/tests/principal-tools.test.ts
+- [ ] `T4` — Inbound webhooks: the `/api/webhooks/[provider]` route verifies through 035 and dispatches to each module's `inbound`. Delivery maps GitHub and Azure DevOps pushes to people through `auth.git_identity`. A commit is attributed only when it is signature-verified or the author's email is verified. Anyone else becomes a "link this Git identity" suggestion. A "T<n> done" commit closes that task (AC-2)
+  Files: packages/core/src/module.ts, apps/web/app/api/webhooks/[provider]/route.ts, modules/delivery/server/ingest.ts, modules/delivery/suggestions.ts, modules/delivery/tests/ingest-ac2.test.ts
+  Depends: T2
+- [ ] `T5` — Commit time becomes a draft suggestion on the person's timesheet through a new `time` contract command, never approved automatically. An Admin switches it on per legal entity (`set_commit_time_logging`, which also records that people were notified). It is never used for ratings (AC-3, AC-6)
+  Files: modules/time/contracts.ts, modules/time/suggestions.ts, modules/delivery/server/commit-time.ts, modules/delivery/mcp.ts, modules/delivery/tests/ingest-ac3.test.ts
+  Depends: T4
+- [ ] `T6` — The 039 importer becomes a caller of `sync_proposal`. Keys and history are kept (AC-7)
+  Files: modules/delivery/sync/import.ts, modules/delivery/sync/bin.ts, modules/delivery/tests/sync-import.test.ts
+  Depends: T2
+- [ ] `T7` — Module standard: contracts first with contract tests, README, fixtures and manifest. Switching delivery's ingestion off degrades gracefully, as does running without `time` or `agents` (AC-5)
+  Files: modules/delivery/contracts.ts, modules/delivery/README.md, modules/delivery/fixtures/, modules/delivery/tests/ingest-ac5.test.ts
+  Depends: T5, T6
+
 ## Verify
