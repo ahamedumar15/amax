@@ -24,7 +24,8 @@ export const stepped = (row: Row, status: ClaimStatus, by: string): ClaimStepped
 
 async function payment(tx: Tx, row: Row, asked?: PayVia) {
   const payroll = await payrollInstalled(tx);
-  const via = asked ?? (row.pay_via as PayVia | null) ?? (payroll ? "payroll" : "bank");
+  // Bank unless someone asked for payroll: payroll doesn't add reimbursementsDue to payslips yet (BACKLOG).
+  const via = asked ?? (row.pay_via as PayVia | null) ?? "bank";
   if (via === "payroll" && !payroll) throw new Error("payroll isn't installed, so pay this claim by bank");
   return { via, period: via === "payroll" ? await thisMonth(tx) : null };
 }
@@ -51,7 +52,7 @@ const ref = { claimId: z.uuid().describe("The claim's id, from list_expense_clai
 
 export const approveExpense = defineService({
   scoped: true, name: "expenses.claim.approve", action: "expenses:approve", resource: "expenses.claim",
-  input: z.object({ ...ref, payVia: z.enum(PAY_VIA).optional().describe("Finance step only: payroll (next pay run) or bank") }),
+  input: z.object({ ...ref, payVia: z.enum(PAY_VIA).optional().describe("Finance step only: bank (the default) or payroll (next pay run; check the payslips before marking it paid)") }),
   run: (tx, a, ctx) => approve(tx, ctx, a.claimId, a.payVia),
 });
 

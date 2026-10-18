@@ -15,9 +15,9 @@ describe.skipIf(!hasDb)("payment through payroll (Postgres)", () => {
   beforeAll(async () => { db = await expensesDb(); await db.tick(); }, 120_000);
   afterAll(() => db?.t.drop());
 
-  it("AC-1 Finance's approval queues the claim for this month's payroll; payslips sent suggests marking them paid, which Finance accepts", async () => {
+  it("AC-1 Finance's approval, asked for payroll, queues the claim for this month's payroll; payslips sent suggests marking them paid, which Finance accepts", async () => {
     const [c] = await db.q(sql`select id from expenses.claim where number = 'EXP-0104'`);
-    const ok = await db.call<{ payVia: string; payrollPeriod: string }>("sahan", "approve_expense", { claimId: c.id });
+    const ok = await db.call<{ payVia: string; payrollPeriod: string }>("sahan", "approve_expense", { claimId: c.id, payVia: "payroll" });
     expect(ok.payVia).toBe("payroll");
     const due = await db.tx((tx) => reimbursementsDue(tx, contextFor.job(T, "test"), { legalEntityId: LK, period: ok.payrollPeriod }));
     expect(due.map((d) => d.number)).toContain("EXP-0104");
