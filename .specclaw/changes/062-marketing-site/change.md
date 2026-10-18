@@ -40,7 +40,7 @@ A new public page with no app navigation: no rail, top bar or chat launcher. Top
 - [ ] `T2` — Product video made with `brag` (`brag-slim`) in brand. Inputs: logo, mascot, mint-to-violet gradient, app font, ticket colours, and screenshots of the demo app with fictional data. Outputs: an MP4 (H.264, ≤ 8 MB), a WebM, a poster and WebVTT captions. `ProductVideo` uses native controls, `preload="none"`, and no autoplay under reduced motion (AC-5, AC-8, AC-12)
   Files: apps/web/public/marketing/amax-product.mp4, apps/web/public/marketing/amax-product.webm, apps/web/public/marketing/amax-product-poster.jpg, apps/web/public/marketing/amax-product.en.vtt, apps/web/components/marketing/ProductVideo.tsx
   Depends: T1
-- [ ] `T3` — Routing: `/welcome` is a public path, and a signed-out `/` is rewritten (not redirected) to `/welcome`. A signed-in `/` still reaches the app overview. Update the gate unit tests (AC-1, AC-2)
+- [x] `T3` — Routing: `/welcome` is a public path, and a signed-out `/` is rewritten (not redirected) to `/welcome`. A signed-in `/` still reaches the app overview. Update the gate unit tests (AC-1, AC-2)
   Files: packages/auth/src/gate.ts, packages/auth/tests/ac1-signin.test.ts, apps/web/proxy.ts
 - [ ] `T4` — SEO: metadata, canonical URL, Open Graph and Twitter tags with a 1200×630 image, `robots.ts` and `sitemap.ts` listing only the public page, and `noindex` on the `(app)` layout (AC-7)
   Files: apps/web/app/welcome/page.tsx, apps/web/app/welcome/opengraph-image.png, apps/web/app/robots.ts, apps/web/app/sitemap.ts, apps/web/app/(app)/layout.tsx
