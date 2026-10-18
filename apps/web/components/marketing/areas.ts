@@ -31,11 +31,11 @@ export const AREAS: Area[] = [
     { text: "Presales pipeline", module: "presales" },
   ] },
   { title: "Operations", pitch: "Compliance and incidents, on the record.", tone: "v4", coming: [
-    { text: "Helpdesk", module: "helpdesk", words: ["helpdesk"] },
     { text: "Insights", module: "insights", words: ["insights"] },
   ], live: [
     { text: "IT access and licences, with every grant and revoke decided by a person", module: "it-access" },
     { text: "Compliance registers and incidents", module: "compliance" },
+    { text: "Helpdesk queues with SLAs, and a support agent that acts only on approved requests", module: "helpdesk" },
     { text: "Notifications", module: "notifications" },
   ] },
   { title: "Platform", pitch: "Every capability is an MCP tool.", tone: "v5", coming: [], live: [
