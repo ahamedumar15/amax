@@ -229,6 +229,26 @@ export const syncProposal = defineService({
   },
 });
 
+/** 062: moves the stale mark forward (never back) on the matched proposals: the commit their spec was last read at. */
+export const markSyncedRows = (tx: Tx, where: ReturnType<typeof sql>, committedAt: string) =>
+  tx.execute(sql`update delivery.proposal set synced_commit_at = greatest(coalesce(synced_commit_at, ${committedAt}::timestamptz), ${committedAt}::timestamptz) where ${where}`);
+
+// 062: a self-sync that found a proposal unchanged still read it at this commit, so its mark moves too,
+// as one audited write per sync run.
+export const markSynced = defineService({
+  scoped: true,
+  name: "delivery.proposal.mark",
+  action: "delivery:proposal:sync",
+  resource: "delivery.project",
+  input: z.object({ projectKey: z.string(), keys: z.array(z.string()).max(500), committedAt: z.string().datetime({ offset: true }) }),
+  async run(tx, input, ctx) {
+    const project = await projectByKey(tx, input.projectKey);
+    scoped(ctx, "delivery:proposal:sync", project.id as string);
+    await markSyncedRows(tx, sql`project_id = ${project.id} and key = any(${textArray(input.keys)})`, input.committedAt);
+    return { result: { marked: input.keys.length }, resourceId: project.id as string, after: { keys: input.keys.length, committedAt: input.committedAt } };
+  },
+});
+
 /** One spec change's proposal row and tasks, in the caller's transaction (syncProposal, and 062's push). */
 export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceContext, project: Record<string, unknown>) {
     // The project row lock serialises this with createProposal's key computation (review round 2).
@@ -261,7 +281,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
     if (input.tasks) await writeTasks(tx, ctx.tenantId, row.id as string, input.tasks);
-    if (input.committedAt) await tx.execute(sql`update delivery.proposal set synced_commit_at = greatest(coalesce(synced_commit_at, ${input.committedAt}::timestamptz), ${input.committedAt}::timestamptz) where id = ${row.id}`);
+    if (input.committedAt) await markSyncedRows(tx, sql`id = ${row.id}`, input.committedAt);
     // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
     if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
     return {

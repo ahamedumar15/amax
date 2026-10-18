@@ -52,7 +52,8 @@ What amax accepts:
   the future is refused. Pushes to one project run one at a time, and each push applies all of its
   changes or none of them.
 - **How much:** at most 200 changes per call, inside amax's per-caller rate limit. A push with nothing
-  new returns `unchanged` and records nothing.
+  new returns `unchanged`. It adds no row to the Repo sync card, and one audit entry records the commit
+  it was read at.
 
 Each project's page in amax shows a **Repo sync** card: the linked repo, the last sync, and refused pushes with their reasons.
 

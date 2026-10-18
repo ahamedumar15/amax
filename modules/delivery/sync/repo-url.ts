@@ -1,6 +1,6 @@
 // 062: the repo URL a tool accepts. A URL with a user or token in it (https://x-access-token:ghp_…@…,
 // or x-access-token:ghp_…@github.com:org/repo) is refused rather than stored or echoed in an error;
-// the scp form git@host:path names an SSH user, not a secret, and is accepted.
+// an SSH user alone (git@host:path, ssh://git@host/path) names no secret and is accepted.
 import { z } from "zod";
 import { hasCredentials, normaliseRepo } from "./repo-name";
 

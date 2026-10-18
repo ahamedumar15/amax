@@ -8,7 +8,7 @@ export const chatIntents = [
   { id: "delivery.new-release", label: "New release", tool: "create_release", required: ["projectKey", "version"],
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Version, e.g. v2.5.0" }] },
   { id: "delivery.link-repo", label: "Link a repo", tool: "link_project_repo", required: ["projectKey", "repoUrl"],
-    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "repoUrl", ask: "Which repo should its proposals sync from? e.g. https://github.com/example/portal" }, { name: "defaultBranch", ask: "Its default branch? (main if you're not sure)" }] },
+    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "repoUrl", ask: "Which repo should its proposals sync from? e.g. https://github.com/example/portal" }, { name: "defaultBranch", ask: "Its default branch, for example main?" }] },
   { id: "delivery.deploy", label: "Record a deployment", tool: "record_deployment", required: ["projectKey", "version", "environment"],
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Which release version?" }, { name: "environment", ask: "Which environment, e.g. Dev, QA, UAT or Prod?" }] },
   { id: "delivery.tag-release", label: "Change a release", tool: "set_release_proposals", required: ["projectKey", "version", "proposalKeys"],

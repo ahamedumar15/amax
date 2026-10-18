@@ -5,5 +5,6 @@
 export const normaliseRepo = (url: string) =>
   url.trim().toLowerCase().replace(/^[a-z+]+:\/\//, "").replace(/^[^@/]+@/, "").replace(/^([^/:]+):(?!\d+\/)/, "$1/").replace(/^([^/:]+):\d+\//, "$1/").replace(/\.git$/, "").replace(/\/+$/, "");
 
-/** A user name with a secret before the host, in any form: scheme://user:token@host or user:token@host:path. */
-export const hasCredentials = (url: string) => /^([a-z+]+:\/\/)?[^/@\s]+:[^/@\s]*@/i.test(url.trim()) || /^[a-z+]+:\/\/[^/@\s]+@/i.test(url.trim());
+/** A secret before the host: user:token@ in any form, or any user in an http(s) URL (where it is a token).
+ * An SSH user alone (ssh://git@host/…, git@host:…) names no secret. */
+export const hasCredentials = (url: string) => /^([a-z+]+:\/\/)?[^/@\s:]+:[^/@\s]*@/i.test(url.trim()) || /^https?:\/\/[^/@\s]+@/i.test(url.trim());

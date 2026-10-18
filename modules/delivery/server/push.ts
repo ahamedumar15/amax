@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { setTenant, type Tx } from "@amax/db";
+import { setTenant, textArray, type Tx } from "@amax/db";
 import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, defineService, ForbiddenError, getRuntime, type Emitted, type ServiceContext, type Source } from "@amax/core/server";
 import { PHASES, type Phase } from "../contracts";
@@ -8,7 +8,7 @@ import { desired, fingerprint, storedSpecRows, type Task } from "../sync/import"
 import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { forUserOf } from "./activity";
 import { ctxFor } from "./context";
-import { KeyTakenError, upsertSpecProposal } from "./services";
+import { KeyTakenError, markSyncedRows, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
@@ -59,7 +59,7 @@ function refusal(d: { phase: Phase }, cur: Stored | undefined, committedAt: stri
   return null;
 }
 
-const same = (cur: Stored, d: Parameters<typeof fingerprint>[0] & { phase: Phase }) =>
+const unchanged = (cur: Stored, d: Parameters<typeof fingerprint>[0] & { phase: Phase }) =>
   fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Stored }) === fingerprint(d);
 
 /** The push's writes in `tx`; the caller commits them (apply) or rolls them back (preview). */
@@ -80,6 +80,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   // A branch that names none of the changes (detached HEAD, another default branch) syncs nothing: say so.
   if (!onDefault && !mine.length) skip(p.ref, ["nomatch", `not the default branch (${String(project.repo_default_ref)}) and no change is named ${own}`]);
   const events: Emitted[] = [];
+  const same: string[] = [];
   for (const r of mine) {
     const key = `${p.projectKey}-${r.number}`;
     const cur = byKey.get(key);
@@ -89,7 +90,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
     const why = r.unreadable ? (["unreadable", "state.json unreadable"] as [Code, string]) : refusal(d, cur, p.committedAt);
     if (why) { skip(key, why); continue; }
-    if (cur && same(cur, d)) { counts.unchanged++; continue; }
+    if (cur && unchanged(cur, d)) { counts.unchanged++; same.push(key); continue; }
     try {
       const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, source: "specclaw", sourceRef: r.dir, committedAt: p.committedAt, ...d }, ctx, project);
       await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });
@@ -102,6 +103,8 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     if (cur) counts.updated++;
     else counts.created++;
   }
+  // Read at this commit too, so the mark moves for proposals that didn't change (written ones moved in the upsert).
+  if (same.length) await markSyncedRows(tx, sql`project_id = ${p.projectId} and key = any(${textArray(same)})`, p.committedAt);
   return { counts, events };
 }
 
@@ -124,8 +127,9 @@ const applied = defineService({
   async run(tx, p, ctx) {
     scope(ctx, p.projectId);
     const { counts, events } = await applyPush(tx, p, ctx);
-    const [row] = await pushRow(tx, ctx, p, counts, "applied", null);
-    return { result: counts, resourceId: row.id as string, after: { ref: p.ref, sha: p.sha, created: counts.created, updated: counts.updated, skipped: counts.skipped }, events };
+    // The Repo sync card lists pushes that changed something or need a person; a no-op is only audited.
+    const [row] = counts.created || counts.updated || counts.needsReview ? await pushRow(tx, ctx, p, counts, "applied", null) : [{ id: p.projectId }];
+    return { result: counts, resourceId: row.id as string, after: { ref: p.ref, sha: p.sha, created: counts.created, updated: counts.updated, unchanged: counts.unchanged, skipped: counts.skipped }, events };
   },
 });
 
@@ -165,11 +169,10 @@ export async function pushSpecclaw(viewer: Viewer, raw: z.input<typeof PushInput
   const plan: Plan = { ...rest, projectId: p.id as string, repoUrl: normaliseRepo(input.repoUrl) };
   const result = (outcome: PushResult["outcome"], c: Counts, reason: string | null = null): PushResult => ({ outcome, projectKey: input.projectKey, reason, ...c });
   try {
-    const counts = await preview(ctx, plan);
-    if (dryRun) return result("preview", counts);
-    // Nothing to write and nothing for a person to see: no transaction kept, no row, no audit.
-    if (!counts.created && !counts.updated && !counts.needsReview) return result("unchanged", counts);
-    return result("applied", await applied(ctx, plan));
+    if (dryRun) return result("preview", await preview(ctx, plan));
+    // Applied even with nothing new: the stale marks still move, as one audited write (062 review round 4).
+    const counts = await applied(ctx, plan);
+    return result(counts.created || counts.updated ? "applied" : "unchanged", counts);
   } catch (e) {
     if (!(e instanceof RepoRefused)) throw e;
     const { records: _, ...where } = plan;

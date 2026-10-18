@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Db, type Tx } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
-import { KeyTakenError, syncProposal } from "../server/services";
+import { KeyTakenError, markSynced, syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
@@ -46,6 +46,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
   const byKey = new Map(existing.map((e) => [e.key as string, e]));
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
   const project = { name: opts.projectName, client: opts.client };
+  const same: string[] = [];
 
   for (const r of opts.records) {
     const cur = byKey.get(`${opts.projectKey}-${r.number}`);
@@ -55,6 +56,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;
+      same.push(d.key);
       continue;
     }
     try {
@@ -68,6 +70,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     if (cur) result.updated++;
     else result.created++;
   }
+  if (opts.committedAt && same.length) await markSynced(ctx, { projectKey: opts.projectKey, keys: same, committedAt: opts.committedAt });
   // Folders that disappeared are marked withdrawn, never deleted.
   for (const [key, cur] of byKey) {
     const meta = cur.meta as Record<string, unknown>;

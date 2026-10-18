@@ -15,7 +15,7 @@ export const linkProjectRepo = defineService({
   name: "delivery.project.repo",
   action: "delivery:project:link",
   resource: "delivery.project",
-  input: z.object({ projectKey: z.string(), repoUrl: RepoUrl.nullable(), defaultBranch: z.string().min(1).max(200).default("main") }),
+  input: z.object({ projectKey: z.string(), repoUrl: RepoUrl.nullable(), defaultBranch: z.string().min(1).max(200).optional() }),
   async run(tx, input, ctx) {
     const [p] = await tx.execute(sql`select id, repo_url, repo_default_ref from delivery.project where key = ${input.projectKey}`);
     if (!p) throw new Error(`no project ${input.projectKey}`);
@@ -23,7 +23,9 @@ export const linkProjectRepo = defineService({
     if (v) assertCan(v, "delivery:project:link", { projectId: p.id as string });
     const repoUrl = input.repoUrl ? normaliseRepo(input.repoUrl) : null;
     // The default branch is stored with the link, never taken from a push: it decides which pushes cover every change.
-    const defaultRef = repoUrl ? input.defaultBranch : null;
+    // A relink keeps the stored branch unless one is given; the first link must name it.
+    const defaultRef = repoUrl ? input.defaultBranch ?? (p.repo_default_ref as string | null) : null;
+    if (repoUrl && !defaultRef) throw new Error(`name ${input.projectKey}'s default branch (for example main) when linking its repo`);
     await tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${p.id}`);
     return { result: { projectKey: input.projectKey, repoUrl, defaultBranch: defaultRef }, resourceId: p.id as string, before: { repoUrl: p.repo_url, defaultBranch: p.repo_default_ref }, after: { repoUrl, defaultBranch: defaultRef } };
   },

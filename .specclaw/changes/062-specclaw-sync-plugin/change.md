@@ -50,11 +50,13 @@ same section.
    proposals made by hand. Keys stay `<KEY>-<NNN>`. A record
    that breaks a rule is skipped and reported per key; the rest of the batch still applies.
 7. **AC-7** **Idempotent and bounded:** a record whose 039 fingerprint matches the stored proposal is
-   not written. Re-running the same push returns `unchanged`, with 0 writes, no row and no audit. A skip
-   a person should see sets `needsReview` and is recorded. A call is capped at 200
+   not written. Re-running the same push returns `unchanged`: no proposal written and no Repo sync row,
+   with one audit row that moves the stale marks (product owner's choice in review round 4). A skip a
+   person should see sets `needsReview` and is recorded. A call is capped at 200
    records and goes through the 035 per-caller rate limit. Each push stores `sha` and `ref` on the
    proposal's `source_ref`.
-8. **AC-8** **Ordering:** a proposal last pushed from a newer commit (`synced_commit_at`) is skipped as
+8. **AC-8** **Ordering:** a proposal last read at a newer commit (`synced_commit_at`, moved by every
+   specclaw writer for every proposal it read, changed or not; `sync_proposal` must send `committedAt`) is skipped as
    `stale`. The plugin sends the commit time with the sha so the server can check this without the
    repo. A commit time in the future is refused. One push is one transaction under the project's row
    lock, so concurrent pushes serialise and a failed push applies nothing.
