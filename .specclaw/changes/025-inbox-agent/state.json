@@ -1,8 +1,9 @@
 {
   "change": "025-inbox-agent",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
-    "tasks": {"status":"done","at":"2026-10-18T14:11:36Z"}
+    "tasks": {"status":"done","at":"2026-10-18T14:11:36Z"},
+    "verify": {"status":"done","at":"2026-10-18T16:16:30Z"}
   }
 }
