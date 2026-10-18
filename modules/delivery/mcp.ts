@@ -8,6 +8,7 @@ import { getActivity, listActivity } from "./server/activity";
 import { markTaskDone, TaskInput } from "./server/tasks";
 import { COMMIT_TIME_MANAGE, commitTimeSettings, setCommitTimeLogging } from "./server/commit-time";
 import { syncProposal } from "./server/services";
+import { getRepoSync, getSyncPush, linkProjectRepo, PushInput, pushSpecclaw } from "./server/repo-sync";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -76,6 +77,18 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional() }),
     service: syncProposal, run: (v, a, s = "mcp") => syncProposal(ctxFor(v, s), { projectKey: a.projectKey, project: { name: a.projectName, client: a.client }, key: a.key, title: a.title, phase: a.phase,
       tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks }) }),
+  // 062: the amax plugin's push of a whole repo's specclaw state. Many keyed writes, so never a chat
+  // confirm card (service: null); the plugin previews with dryRun and the developer confirms there.
+  tool({ name: "sync_specclaw", description: "Push a repo's specclaw changes to its linked project. dryRun (the default) previews created, updated, unchanged and skipped; dryRun false applies. Refused when the repo isn't the project's linked repo, the commit is older than the last one applied from the same branch, or you're not on the project. Never releases, never creates a project.",
+    scope: "write", permission: "delivery:proposal:sync", input: PushInput, service: null, run: (v, a, s = "mcp") => pushSpecclaw(v, a, s) }),
+  tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_repo_sync", description: "A project's linked repo and its recent specclaw pushes (applied and refused, with who and why), by projectId or project key.",
+    input: z.object({ projectId: z.string().uuid().optional(), projectKey: z.string().optional() }), run: (v, a) => getRepoSync(v, a) }),
+  tool({ ...read, pin: { id: "pushId", of: pinOf.push }, name: "get_sync_push", description: "One specclaw push to a project by pushId: who, branch and commit, counts, and what was skipped or why it was refused.",
+    input: z.object({ pushId: z.string().uuid() }), run: (v, a) => getSyncPush(v, a.pushId) }),
+  tool({ name: "link_project_repo", description: "Link the one repo a project's specclaw proposals sync from, e.g. https://github.com/example/portal. Pushes from any other repo are refused. PM or Admin.", scope: "write",
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: z.string().min(3).max(300) }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
+  tool({ name: "unlink_project_repo", description: "Unlink a project's repo, so no specclaw push is accepted until one is linked again. PM or Admin.", scope: "write", destructive: true,
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null }) }),
   tool({ name: "mark_task_done", description: "Mark one task of a proposal done by its id, e.g. CON-014 T3, optionally naming the commit that finished it.", scope: "write", permission: "delivery:task:done",
     input: z.object({ key: z.string(), task: z.string(), commit: z.string().optional() }), service: markTaskDone, run: (v, a, s = "mcp") => markTaskDone(ctxFor(v, s), a) }),
   // 008 AC-6: drafting timesheets from commits, per legal entity, Admin only.

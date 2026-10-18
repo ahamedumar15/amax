@@ -7,6 +7,8 @@ import { getProject, listEnvironments, type ProposalRow } from "../server/querie
 import { AskButton } from "./AskButton";
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
+import { getRepoSync } from "../server/repo-sync";
+import { RepoSyncCard } from "./RepoSyncCard";
 import { initials, needViewer, SignInFirst, Stk } from "./parts";
 import { ProjectTabs } from "./ProjectSections";
 
@@ -71,6 +73,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   const { project, proposals } = data;
   const canMove = can(viewer, "delivery:proposal:move", { projectId: project.id });
   const envs = await listEnvironments(viewer, project.key);
+  const sync = await getRepoSync(viewer, { projectId: project.id });
 
   // Synced projects have no sprint counters; their progress is the proposals' tasks.
   const done = project.sprintTotal ? project.sprintDone : proposals.reduce((n, p) => n + p.tasksDone, 0);
@@ -100,6 +103,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           );
         })}
       </div>
+      {sync && <RepoSyncCard projectKey={project.key} projectId={project.id} repoUrl={sync.repoUrl} recent={sync.recent} canLink={can(viewer, "delivery:project:link", { projectId: project.id })} />}
       <EnvironmentsCard projectKey={project.key} envs={envs} canEdit={can(viewer, "delivery:release:create", { projectId: project.id })} />
     </>
   );

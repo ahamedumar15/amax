@@ -190,6 +190,7 @@ export class KeyTakenError extends Error {
 }
 
 export const syncProposal = defineService({
+  scoped: true,
   name: "delivery.proposal.sync",
   action: "delivery:proposal:sync",
   resource: "delivery.proposal",
@@ -210,11 +211,15 @@ export const syncProposal = defineService({
   }),
   async run(tx, input, ctx) {
     let [project] = await tx.execute(sql`select * from delivery.project where key = ${input.projectKey}`);
+    // 062: a person syncs only into a project they're on, and makes one only if they may create projects.
+    const v = viewerOf(ctx);
+    if (!project && v) assertCan(v, "delivery:project:create");
     if (!project) {
       [project] = await tx.execute(sql`insert into delivery.project (tenant_id, key, name, client, billing, color, sprint)
         values (${ctx.tenantId}, ${input.projectKey}, ${input.project.name}, ${input.project.client}, 'internal', 'mint', 'specclaw waves') returning *`);
       await ensureEnvironments(tx, ctx.tenantId, project.id as string);
     }
+    scoped(ctx, "delivery:proposal:sync", project.id as string);
     // The project row lock serialises this with createProposal's key computation (review round 2).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);

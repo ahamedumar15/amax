@@ -1,8 +1,7 @@
 # amax Claude plugin: specclaw sync
 
 **Change:** 062-specclaw-sync-plugin · **Created:** 2026-10-18
-**Lane:** Delivery · **Module:** `modules/delivery` + `plugins/amax` · **Depends on:** [039](../archive/039-specclaw-self-sync/change.md), [044](../archive/044-release-and-region-hardening/change.md), [004](../004-mcp-gateway/change.md)
-**Takes over:** 008 AC-1 (`sync_proposal` for specclaw) and AC-7. 008 keeps the webhook, time and deployment criteria.
+**Lane:** Delivery · **Module:** `modules/delivery` + `plugins/amax` · **Depends on:** [008](../008-delivery-ingestion/change.md), [039](../archive/039-specclaw-self-sync/change.md), [044](../archive/044-release-and-region-hardening/change.md)
 
 ## Problem
 
@@ -33,9 +32,10 @@ same section.
    `dryRun: true` first and shows the created, updated, unchanged and refused counts. It applies only
    when the user confirms, or when the run is unattended (AC-9).
 3. **AC-3** The new MCP write tool `sync_specclaw` (in `modules/delivery/mcp.ts`, permission
-   `delivery:proposal:sync`) takes `{ projectKey, repoUrl, sha, ref, records[], dryRun }`. It calls the
-   existing `syncProposal` service for each changed record. The tool does not create projects. An
-   unknown `projectKey` is refused.
+   `delivery:proposal:sync`) takes `{ projectKey, repoUrl, sha, ref, committedAt, records[], dryRun }`.
+   It reuses 008/039's `syncSpecclaw()` (compare-before-write, done tasks stay done), so it writes only
+   changed records, through `syncProposal`. It does not create projects and does not withdraw
+   proposals. An unknown `projectKey` is refused. 008's `sync_proposal` stays as it is for CI.
 4. **AC-4** **Repo binding:** a project syncs only from its linked repo. The write tools
    `link_project_repo` and `unlink_project_repo` are for PM or Admin and go through the chat confirm.
    A push whose normalised `repoUrl` doesn't match the linked repo is refused with "repo not linked to
@@ -66,17 +66,17 @@ same section.
 
 ## Tasks
 
-- [ ] `T1` — Repo sync card on the project page: linked repo, last sync and who, counts, refused pushes; PinButton per tile and row, IntentButton to link or unlink (AC-10)
+- [x] `T1` — Repo sync card on the project page: linked repo, last sync and who, counts, refused pushes; PinButton per tile and row, IntentButton to link or unlink (AC-10)
   Files: modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/pins.ts
-- [ ] `T2` — Migration: `delivery.project.repo_url`, and `delivery.sync_push` (project, by, ref, sha, committed_at, counts, refused jsonb, at) (AC-4, AC-8, AC-10)
+- [x] `T2` — Migration: `delivery.project.repo_url`, and `delivery.sync_push` (project, by, ref, sha, committed_at, counts, refused jsonb, at) (AC-4, AC-8, AC-10)
   Files: modules/delivery/db/migrations/0014_repo_sync.sql
-- [ ] `T3` — Services `linkProjectRepo` / `unlinkProjectRepo` (PM or Admin, scoped, audited, URL normalised); read `getRepoSync`; MCP tools `link_project_repo`, `unlink_project_repo`, `get_repo_sync` with pins (AC-4, AC-10)
+- [x] `T3` — Services `linkProjectRepo` / `unlinkProjectRepo` (PM or Admin, scoped, audited, URL normalised); read `getRepoSync`; MCP tools `link_project_repo`, `unlink_project_repo`, `get_repo_sync` with pins (AC-4, AC-10)
   Files: modules/delivery/server/services.ts, modules/delivery/server/queries.ts, modules/delivery/mcp.ts, modules/delivery/module.ts, modules/delivery/pins.ts
   Depends: T2
-- [ ] `T4` — `sync_specclaw` MCP tool and `pushSpecclaw`: refuse unknown project and unlinked repo, project-scoped `delivery:proposal:sync` (Engineer@assigned, PM@managed), cap 200, dryRun, per-record skip for released / foreign source / stale sha, 039 fingerprint idempotency, no project creation and no withdrawals, one `sync_push` row per applied call (AC-3, AC-5, AC-6, AC-7, AC-8)
+- [x] `T4` — `sync_specclaw` MCP tool and `pushSpecclaw`: refuse unknown project and unlinked repo, project-scoped `delivery:proposal:sync` (Engineer@assigned, PM@managed), cap 200, dryRun, per-record skip for released / foreign source / stale sha, 039 fingerprint idempotency, no project creation and no withdrawals, one `sync_push` row per applied call (AC-3, AC-5, AC-6, AC-7, AC-8)
   Files: modules/delivery/sync/import.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/module.ts
   Depends: T3
-- [ ] `T5` — Tests: each refusal, dry run writes nothing, idempotent re-push, rate limit applies, 039 CLI still syncs (AC-11)
+- [x] `T5` — Tests: each refusal, dry run writes nothing, idempotent re-push, rate limit applies, 039 CLI still syncs (AC-11)
   Files: modules/delivery/tests/sync-push.test.ts, modules/delivery/tests/mcp-registry.test.ts
   Depends: T4
 - [ ] `T6` — Plugin `plugins/amax/`: plugin.json, `.mcp.json`, repo `.claude-plugin/marketplace.json`, `read-specclaw.mjs` bundled from `modules/delivery/sync/specclaw.ts` (with a drift test), skill `sync-specclaw` (dry run, confirm, `--apply` unattended rule), README with the Claude Desktop routine (AC-1, AC-2, AC-9)
