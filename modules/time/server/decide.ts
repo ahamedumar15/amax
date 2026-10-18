@@ -44,7 +44,7 @@ export const remindWeek = defineService({
     await approver(tx, ctx, week);
     if (week.status !== "draft" && week.status !== "rejected") throw new Error(`${keyOf(week)} is already ${week.status}`);
     const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx) };
-    return { result: { week: keyOf(week), person: week.person_name as string, recorded: true, delivered: false,
-      note: "Reminder recorded as an event; it reaches the person once notifications (030) has a rule for it" }, resourceId: week.id, events: [{ name: EVENTS.weekReminded, payload }] };
+    return { result: { week: keyOf(week), person: week.person_name as string, recorded: true,
+      note: "Reminder recorded; notifications (030) delivers it to the person when installed" }, resourceId: week.id, events: [{ name: EVENTS.weekReminded, payload }] };
   },
 });

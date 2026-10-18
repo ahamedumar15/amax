@@ -18,13 +18,16 @@ export type Profile = {
   viewAs?: string;
 };
 
+export type MenuLink = { href: string; label: string };
+
 type Props = {
   profile: Profile | null;
+  links?: MenuLink[];
   onViewAs?: (role: string | null) => Promise<void>;
   onSignOut?: () => Promise<void>;
 };
 
-export function ProfileMenu({ profile, onViewAs, onSignOut }: Props) {
+export function ProfileMenu({ profile, onViewAs, onSignOut, links = [] }: Props) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeChoice>("system");
   const [, start] = useTransition();
@@ -69,6 +72,12 @@ export function ProfileMenu({ profile, onViewAs, onSignOut }: Props) {
               <button key={t} type="button" role="menuitemradio" aria-checked={theme === t} onClick={() => choose(t)}>{t[0].toUpperCase() + t.slice(1)}</button>
             ))}
           </div>
+          {profile && links.length > 0 && (
+            <>
+              <div className="menu-sep" role="separator" />
+              {links.map((l) => <a key={l.href} role="menuitem" href={l.href} style={{ display: "block", padding: "8px 12px", borderRadius: 10, fontSize: 14, color: "inherit", textDecoration: "none" }}>{l.label}</a>)}
+            </>
+          )}
           {profile?.isAdmin && (
             <>
               <div className="menu-sep" role="separator" />

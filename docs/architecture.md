@@ -73,6 +73,7 @@ modules/hr/
 ```
 
 - **Mounting:** `apps/web/app/(app)/[module]/[[...path]]/page.tsx` resolves the route through the registry. Adding a module means one line in `apps/web/modules.ts`; nothing else in the app changes.
+- **Shell slots (030):** `topBar` adds a control to the top bar (the notifications bell) and `menu: "profile"` puts a module's root screen in the profile menu instead of the rail. `events.handlesFrom` builds handlers from every installed manifest (notifications turns other modules' `notifications` rules into outbox handlers). A module starts a 029 run with `startWorkflow()` from `@amax/workflows`; the host registers its engine with `setWorkflowEngine()`, so no module imports an engine.
 - **Boundaries** are enforced by an ESLint import rule plus a CI check:
   - A module may import `@amax/core`, `@amax/ui`, `@amax/auth`, `@amax/db`, `@amax/ai`, `@amax/agents`, `@amax/workflows` and other modules' `contracts.ts`, and nothing else. No module or package imports a model provider SDK; every LLM call goes through `@amax/ai` (033).
   - For example, `payroll` reads leave through `@amax/leave/contracts`, never through `leave/db`.

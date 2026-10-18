@@ -2,9 +2,10 @@ import type { ReactNode, Ref } from "react";
 import { Icon } from "./Icon";
 import { Mascot } from "./Mascot";
 
-type TopBarProps = { onSearch?: () => void; onAsk?: () => void; askOpen?: boolean; askRef?: Ref<HTMLButtonElement>; profile: ReactNode };
+/** `bell`: a module's notification control (030); the plain icon when none is installed. */
+type TopBarProps = { onSearch?: () => void; onAsk?: () => void; askOpen?: boolean; askRef?: Ref<HTMLButtonElement>; profile: ReactNode; bell?: ReactNode };
 
-export function TopBar({ onSearch, onAsk, askOpen, askRef, profile }: TopBarProps) {
+export function TopBar({ onSearch, onAsk, askOpen, askRef, profile, bell }: TopBarProps) {
   return (
     <div className="top">
       <button className="search" type="button" onClick={onSearch} aria-haspopup="dialog">
@@ -16,7 +17,7 @@ export function TopBar({ onSearch, onAsk, askOpen, askRef, profile }: TopBarProp
         <span className="ltxt">Ask amax</span>
       </button>
       <div className="icons">
-        <button className="iconbtn" type="button" aria-label="Notifications"><Icon name="bell" /></button>
+        {bell ?? <button className="iconbtn" type="button" aria-label="Notifications"><Icon name="bell" /></button>}
         <span className="vr" />
         {profile}
       </div>

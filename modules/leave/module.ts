@@ -46,6 +46,15 @@ export default defineModule({
   ],
   chatIntents,
   jobs: [],
+  // 030: the approver chain hears about a request; the person hears the decision. Medical details never go out.
+  notifications: [
+    { id: "leave.requested", event: EVENTS.requested, category: "approvals", to: [{ approvers: "userId" }], permission: "leave:approve", subject: "userId",
+      title: "{userId|name} asked for {type} leave, {startsOn} to {endsOn}", body: "{days} days to approve", href: "/leave" },
+    { id: "leave.approved", event: EVENTS.approved, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
+      title: "Your {type} leave from {startsOn} was approved", href: "/leave" },
+    { id: "leave.rejected", event: EVENTS.rejected, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
+      title: "Your {type} leave from {startsOn} was declined", href: "/leave" },
+  ],
   // 035: outgoing webhooks send only declared fields (review 058).
   events: {
     emits: Object.values(EVENTS),
