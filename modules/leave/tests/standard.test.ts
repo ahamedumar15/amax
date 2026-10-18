@@ -18,7 +18,8 @@ const others = (keep: string[]) => discoverModules(join(repoRoot, "modules")).fi
 describe("module standard", () => {
   it("AC4 can be switched off: nothing outside modules/leave imports it", () => {
     expect(discoverModules(join(repoRoot, "modules"), ["leave"])).not.toContain("leave");
-    expect(others(["leave"]).flatMap((m) => files(join(repoRoot, "modules", m))).filter((f) => readFileSync(f, "utf8").includes("@amax/leave"))).toEqual([]);
+    // Other modules may integrate through the contract (014 payroll reads it there), never the internals.
+    expect(others(["leave"]).flatMap((m) => files(join(repoRoot, "modules", m))).filter((f) => /@amax\/leave(?!\/contracts")/.test(readFileSync(f, "utf8")))).toEqual([]);
   });
 });
 

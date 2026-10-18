@@ -13,11 +13,12 @@ export const AREAS: Area[] = [
     { text: "Allocations and capacity forecasts", module: "allocations" },
   ] },
   { title: "People", tone: "good", art: "people", coming: [
-    { text: "Payroll for Sri Lanka and Australia", module: "payroll", words: ["payroll", "payslip"] },
+    { text: "Sri Lanka and Australia payroll packs", module: "payroll-lk", words: ["sri lanka", "australia"] },
   ], live: [
     { text: "Core HR", module: "hr" },
     { text: "Leave", module: "leave" },
     { text: "Onboarding and offboarding", module: "onboarding" },
+    { text: "Payroll runs and payslips", module: "payroll" },
     { text: "Learning", module: "learning" },
     { text: "OKRs from Keyflow", module: "keyflow" },
   ] },
