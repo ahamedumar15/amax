@@ -2287,6 +2287,53 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   <div class="card" style="margin-top:20px;max-width:520px"><div class="card-head"><h2>Release v2.4.0</h2><button class="btn sm">📌</button></div><p class="muted">Edit tag, record or void a deployment: ask in chat.</p><button class="btn sm">✦ Ask amax to record a deployment</button></div>
 </section>
 
+<!-- ================= 006 Agent governance ================= -->
+<section data-change="006-agent-governance" id="006-agent-governance" data-roles="all" data-title="Suggestions" data-icon="spark">
+  <div class="row head">
+    <div><h1>Suggestions</h1><p class="lede">Agents never change data on their own. 3 suggestions need your decision, 1 needs a second approver, and 2 accepted changes can still be undone. Decisions happen in chat. Pin anything, then ask.</p></div>
+  </div>
+  <div class="tickets four">
+    <div class="ticket t-violet"><div class="k">Needs your decision <span class="chip">📌</span></div><div class="v">3</div><div class="p">Only those inside your data scope</div></div>
+    <div class="ticket t-yellow"><div class="k">Second approver needed <span class="chip">📌</span></div><div class="v">1</div><div class="p">Irreversible: can't be undone</div></div>
+    <div class="ticket t-mint"><div class="k">Can still be undone <span class="chip">📌</span></div><div class="v">2</div><div class="p">For 7 days, or until the module's cutoff</div></div>
+    <div class="ticket t-pink"><div class="k">Expiring today <span class="chip">📌</span></div><div class="v">1</div><div class="p">An expired suggestion can't be accepted</div></div>
+  </div>
+  <div class="card flush">
+    <div class="card-head"><h2>Needs your decision</h2><span class="chip agent">An agent suggests, a person decides</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Suggestion</th><th>Agent</th><th>Evidence</th><th class="num">Confidence</th><th>Expires</th><th class="num"><span class="sr">Decide</span></th></tr></thead><tbody>
+      <tr><td style="white-space:normal;min-width:240px"><b>Move Kasun Dias to 60% on Contoso Portal in November</b><small>Allocations · from 100% · over-allocated at 130%</small></td><td><span class="chip agent">Allocation check</span><small>for Ayesha Rahman</small></td><td><a href="#006-agent-governance">Nov plan</a> · <a href="#006-agent-governance">Run 3f2a…</a></td><td class="num">0.82</td><td>Oct 24</td><td class="num"><button class="btn sm primary">✦ Ask amax to accept</button> <button class="btn sm">✦ Query</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+      <tr><td style="white-space:normal;min-width:240px"><b>Move Tharushi Perera to 20% on Fleet Tracker (fictional) in December</b><small>Allocations · from 80% · the client paused the next phase</small></td><td><span class="chip agent">Inbox agent</span><small>for Ayesha Rahman</small></td><td><span class="chip warn">External source: email from a.lee@harbour.test</span></td><td class="num">0.64</td><td>Today</td><td class="num"><button class="btn sm primary">✦ Ask amax to accept</button> <button class="btn sm">✦ Query</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+      <tr><td style="white-space:normal;min-width:240px"><b>Revoke the unused "Build bot (fictional)" API credential</b><small>Access · sensitive · irreversible · approved once by Maya Perera</small></td><td><span class="chip agent">Access review</span><small>for Maya Perera</small></td><td><a href="#006-agent-governance">Last used 94 days ago</a></td><td class="num">0.91</td><td>Oct 30</td><td class="num"><button class="btn sm primary">✦ Ask amax to approve as second approver</button> <button class="btn sm">✦ Dismiss</button> <button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+    <p class="src" style="padding:0 28px 22px;margin:0">Pay, bank files, access and credentials need someone other than the person the agent acted for. Suggestions outside your data scope are never shown.</p>
+  </div>
+  <div class="cols even" style="margin-top:28px">
+    <div class="card flush">
+      <div class="card-head"><h2>Accepted, can be undone</h2><button class="btn sm">📌</button></div>
+      <div class="scroll-x"><table class="tbl"><thead><tr><th>Change</th><th>Decided</th><th>Undo until</th><th class="num"><span class="sr">Undo</span></th></tr></thead><tbody>
+        <tr><td><b>Nimal Silva to 40% on Fleet Tracker (fictional)</b><small>Allocation check for Ayesha Rahman</small></td><td>Ayesha Rahman<small>Oct 16</small></td><td>Oct 23</td><td class="num"><button class="btn sm">✦ Ask amax to undo</button> <button class="btn sm">📌</button></td></tr>
+        <tr><td><b>Dinesh Wickrama to 50% on Contoso Portal</b><small>Allocation check for Ayesha Rahman</small></td><td>Ayesha Rahman<small>Oct 17</small></td><td>Nov 1 <small>month starts</small></td><td class="num"><button class="btn sm">✦ Ask amax to undo</button> <button class="btn sm">📌</button></td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Run 3f2a…</h2><span class="chip good">Waiting for a person</span><button class="btn sm">📌</button></div>
+      <ol>
+        <li>Input: November plan for the Delivery team, acts for Ayesha Rahman</li>
+        <li>Read tool <code>list_allocations</code> (read-only allow-list)</li>
+        <li>Output: 1 suggestion, schema valid</li>
+        <li>Waiting for the decision, no compute used</li>
+      </ol>
+      <p class="src" style="margin:12px 0 0">Model and API cost $0.004. Pay and bank fields are masked unless you may see them.</p>
+    </div>
+  </div>
+  <div class="card flush" style="margin-top:28px">
+    <div class="card-head"><h2>Agent jobs</h2><button class="btn sm">📌</button><span class="muted" style="font-size:13px">0 of 1 on</span></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Job</th><th>Runs</th><th>Status</th><th class="num"><span class="sr">Ask</span></th></tr></thead><tbody>
+      <tr><td><b>Allocation check</b><small>Suggests rebalancing over-allocated people</small></td><td>Mondays 06:00</td><td><span class="chip warn">Paused</span></td><td class="num"><button class="btn sm">✦ Ask amax to switch on</button> <button class="btn sm">📌</button></td></tr>
+    </tbody></table></div>
+  </div>
+</section>
+
     </main>
   </div>
 </div>

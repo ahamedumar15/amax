@@ -24,7 +24,7 @@ The pattern on Payroll changes (agent chip, Accept/Query), licence savings (Revi
 
 ## Tasks
 
-- [ ] `T1` — Mock section: the Suggestions screen (needs your decision, second approvals, undo window, run detail, agent jobs) with Ask amax and pins (AC-2, AC-3, AC-4, AC-5, AC-6)
+- [x] `T1` — Mock section: the Suggestions screen (needs your decision, second approvals, undo window, run detail, agent jobs) with Ask amax and pins (AC-2, AC-3, AC-4, AC-5, AC-6)
   Files: .specclaw/mock/index.html
 - [ ] `T2` — Suggestions screen and nav entry matching the mock, chat-first (Ask amax to accept, query, dismiss, undo; pins on every card), plus a suggestions card on Allocations where they apply (AC-2, AC-3, AC-4, AC-5, AC-6)
   Files: apps/web/app/(app)/suggestions/page.tsx, apps/web/app/(app)/suggestions/suggestions.css, apps/web/components/agents/SuggestionCard.tsx, apps/web/components/agents/AgentJobsCard.tsx, apps/web/lib/registry.ts, modules/allocations/ui/AllocationsPage.tsx, modules/allocations/ui/Suggestions.tsx, apps/web/tests/e2e/suggestions.spec.ts
