@@ -1,9 +1,10 @@
 {
   "change": "028-keyflow-sync",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "",
   "phases": {
     "tasks": {"status":"done","at":"2026-10-18T05:04:32Z"},
-    "verify": {"status":"done","at":"2026-10-18T05:33:15Z"}
+    "verify": {"status":"done","at":"2026-10-18T05:33:15Z"},
+    "pr": {"status":"raised","at":"2026-10-18T05:41:59Z","url":"https://github.com/chan4lk/amax/pull/61"}
   }
 }
