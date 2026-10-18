@@ -30,7 +30,7 @@ None. Fixes only.
 - [x] `T2` — Every personal column is a subject; erasure anonymises only the matched columns; check fails a rule that breaks this (AC-2, AC-9)
   Files: modules/time/module.ts, modules/allocations/module.ts, modules/presales/module.ts, modules/delivery/module.ts, packages/core/src/module.ts, packages/core/src/privacy/apply.ts, scripts/check-module-standard.mjs, packages/core/tests/privacy-060-columns.test.ts
   Depends: T1
-- [ ] `T3` — Name-only rows and access packages count first, and page or refuse above the limit with the reason shown (AC-3, AC-9)
+- [x] `T3` — Name-only rows and access packages count first, and page or refuse above the limit with the reason shown (AC-3, AC-9)
   Files: packages/core/src/privacy/name-rows.ts, packages/core/src/privacy/package.ts, packages/core/src/privacy/inventory.ts, packages/core/tests/privacy-060-limits.test.ts
   Depends: T1
 - [ ] `T4` — Page rate limit: `next-action` exempt only on POST, prefetches in their own budget (AC-4, AC-9)
