@@ -73,26 +73,40 @@ export function guardedLookup(resolve: Resolve): Lookup {
   };
 }
 
-const httpsSend: Send = (url, init, lookup) =>
+type Exchange = (url: URL, init: { body: string; headers: Record<string, string>; signal: AbortSignal }, lookup: Lookup) => Promise<{ status: number; body: string }>;
+const MAX_BODY = 64 * 1024;
+
+// The answer's body is read up to 64 KB (an OAuth token, say) and the rest is dropped.
+const httpsExchange: Exchange = (url, init, lookup) =>
   new Promise((ok, fail) => {
     const req = request(url, { method: "POST", headers: { ...init.headers, "content-length": Buffer.byteLength(init.body) }, lookup: lookup as never, signal: init.signal }, (res) => {
-      res.resume();
-      res.on("end", () => ok(res.statusCode ?? 0));
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk: string) => { if (body.length < MAX_BODY) body += chunk.slice(0, MAX_BODY - body.length); });
+      res.on("end", () => ok({ status: res.statusCode ?? 0, body }));
       res.on("error", fail);
     });
     req.on("error", fail);
     req.end(init.body);
   });
 
-const deps: { resolve: Resolve; send: Send } = { resolve: systemResolve, send: httpsSend };
+const httpsSend: Send = (url, init, lookup) => httpsExchange(url, init, lookup).then((r) => r.status);
+
+const deps: { resolve: Resolve; send: Send; exchange: Exchange } = { resolve: systemResolve, send: httpsSend, exchange: httpsExchange };
 
 /** Tests swap the resolver and the wire; the checks above stay in the path. */
 export function setEgress(d: Partial<typeof deps>) {
-  Object.assign(deps, { resolve: systemResolve, send: httpsSend }, d);
+  Object.assign(deps, { resolve: systemResolve, send: httpsSend, exchange: httpsExchange }, d);
 }
 
 /** POSTs to a public receiver only, pinned to the address that was checked. Redirects are not followed. */
 export async function safePost(url: string, init: { body: string; headers: Record<string, string>; signal: AbortSignal }): Promise<number> {
   if (!publicHttps(url)) throw new EgressError("refused: the webhook URL is not a public https address");
   return deps.send(new URL(url), init, guardedLookup(deps.resolve));
+}
+
+/** safePost's checks, returning the answer's status and body (Microsoft Graph's token and mail calls, 030). */
+export async function safeRequest(url: string, init: { body: string; headers: Record<string, string>; signal: AbortSignal }): Promise<{ status: number; body: string }> {
+  if (!publicHttps(url)) throw new EgressError("refused: the URL is not a public https address");
+  return deps.exchange(new URL(url), init, guardedLookup(deps.resolve));
 }
