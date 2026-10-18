@@ -24,7 +24,8 @@ describe.skipIf(!hasDb)("AC-2 the daily sweep (Postgres)", () => {
     expect(await sweep("2026-10-16")).toEqual({ sent: 1 });
     expect(await sweep("2026-10-16")).toEqual({ sent: 0 });
     const [e] = await db.q(sql`select payload from core.event where name = ${EVENTS.certificationExpiring}`);
-    expect(e.payload as CertificationExpiring).toMatchObject({ name: "AZ-305 Solutions Architect", expiresOn: "2026-12-02", daysLeft: 47, kind: "scheduled" });
+    expect(e.payload as CertificationExpiring).toMatchObject({ name: "AZ-305 Solutions Architect", userId: (await db.as("nimal")).userId, expiresOn: "2026-12-02", daysLeft: 47, kind: "scheduled" });
+    expect(manifest.notifications?.map((r) => [r.event, r.to])).toEqual([[EVENTS.certificationExpiring, [{ owner: "userId" }]]]);
     expect(await sweep("2026-11-01")).toEqual({ sent: 5 });
     expect(await sweep("2026-11-20")).toEqual({ sent: 1 });
     const windows = await db.q(sql`select window_days, count(*)::int as n from learning.reminder group by 1 order by 1`);

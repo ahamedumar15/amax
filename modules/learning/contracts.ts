@@ -23,8 +23,8 @@ export type ProgrammeCreated = { programmeId: string; number: string; title: str
 export type Enrolled = { programmeId: string; personIds: string[]; by: string };
 export type Completed = { enrolmentId: string; programmeId: string; personId: string; completedOn: string; by: string };
 export type CertificationRecorded = { certificationId: string; personId: string; name: string; expiresOn: string | null; by: string };
-/** A reminder is due: notifications (030) turns it into a message to the person; `kind` says whether a person asked for it. */
-export type CertificationExpiring = { certificationId: string; personId: string; name: string; expiresOn: string; daysLeft: number; kind: "scheduled" | "manual"; by: string };
+/** A reminder is due: notifications (030) tells the holder (`userId`, their sign-in, when they have one); `kind` says whether a person asked for it. */
+export type CertificationExpiring = { certificationId: string; personId: string; userId: string | null; name: string; expiresOn: string; daysLeft: number; kind: "scheduled" | "manual"; by: string };
 
 export const numberOf = (n: number) => `LP-${String(n).padStart(4, "0")}`;
 export const dayOf = (v: unknown) => (v === null || v === undefined ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10));

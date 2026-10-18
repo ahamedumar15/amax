@@ -34,6 +34,11 @@ export default defineModule({
     { table: "learning.reminder", label: "Certification reminders", subject: ["requested_by"], fields: ["requested_by"], class: "personal", period: "P2Y", start: { at: ["sent_at"] }, action: "delete" },
   ],
   chatIntents,
+  // 030: the holder hears about an expiring certification; they may not open /learning, so no link.
+  notifications: [
+    { id: "learning.certification-expiring", event: EVENTS.certificationExpiring, category: "reminders", to: [{ owner: "userId" }], subject: "userId",
+      title: "Your {name} certification expires on {expiresOn}", body: "{daysLeft} days left to renew it" },
+  ],
   jobs: [],
   workflows,
   schedules,
@@ -43,7 +48,7 @@ export default defineModule({
     [EVENTS.enrolled]: declarePayload<Enrolled>({ programmeId: "plain", personIds: "plain", by: "plain" }),
     [EVENTS.completed]: declarePayload<Completed>({ enrolmentId: "plain", programmeId: "plain", personId: "plain", completedOn: "plain", by: "plain" }),
     [EVENTS.certificationRecorded]: declarePayload<CertificationRecorded>({ certificationId: "plain", personId: "plain", name: "plain", expiresOn: "plain", by: "plain" }),
-    [EVENTS.certificationExpiring]: declarePayload<CertificationExpiring>({ certificationId: "plain", personId: "plain", name: "plain", expiresOn: "plain", daysLeft: "plain", kind: "plain", by: "plain" }),
+    [EVENTS.certificationExpiring]: declarePayload<CertificationExpiring>({ certificationId: "plain", personId: "plain", userId: "plain", name: "plain", expiresOn: "plain", daysLeft: "plain", kind: "plain", by: "plain" }),
   } },
   fixtures: [learningFixtures],
 });

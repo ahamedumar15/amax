@@ -33,7 +33,8 @@ async function remind(tx: Tx, ctx: ServiceContext, c: Record<string, unknown>, o
   const [r] = await tx.execute(sql`insert into learning.reminder (tenant_id, certification_id, expires_on, kind, window_days, requested_by)
     values (${ctx.tenantId}, ${c.id}, ${expiresOn}, ${kind}, ${windowDays}, ${actorOf(ctx)}) on conflict do nothing returning id`);
   if (!r) return null;
-  const payload: CertificationExpiring = { certificationId: c.id as string, personId: c.person_id as string, name: c.name as string, expiresOn, daysLeft: daysBetween(on, expiresOn), kind, by: actorOf(ctx) };
+  const holder = await getPerson(tx, ctx, c.person_id as string);
+  const payload: CertificationExpiring = { certificationId: c.id as string, personId: c.person_id as string, userId: holder?.userId ?? null, name: c.name as string, expiresOn, daysLeft: daysBetween(on, expiresOn), kind, by: actorOf(ctx) };
   return { name: EVENTS.certificationExpiring, payload };
 }
 
