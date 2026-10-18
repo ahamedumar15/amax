@@ -8,7 +8,8 @@ import { capture, diffRatio } from "./diff";
 const mock = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
 
 async function signIn(page: Page, email = "maya@lumenlabs.test", to = "/delivery") {
-  await page.goto(to);
+  // 062: a signed-out / is the marketing page, so sign in from /signin, which lands on /.
+  await page.goto(to === "/" ? "/signin" : to);
   await page.getByLabel("Demo user (fixtures only)").fill(email);
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
   await expect(page).toHaveURL((url) => url.pathname === to);

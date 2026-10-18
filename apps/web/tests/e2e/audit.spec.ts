@@ -4,7 +4,8 @@ import postgres from "postgres";
 import { ADMINS, DOLLARS } from "./admins";
 
 async function signIn(page: Page, email: string, to: string) {
-  await page.goto(to);
+  // 062: a signed-out / is the marketing page, so sign in from /signin, which lands on /.
+  await page.goto(to === "/" ? "/signin" : to);
   await page.getByLabel("Demo user (fixtures only)").fill(email);
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
 }

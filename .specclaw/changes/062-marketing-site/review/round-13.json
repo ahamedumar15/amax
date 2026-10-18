@@ -1,0 +1,75 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 2,
+  "minor": 0
+ },
+ "escalated": [
+  "8129c4841a1d",
+  "bb1bcf4e01a8"
+ ],
+ "files": [
+  "apps/web/tests/marketing-time.test.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/marketing-time.test.ts",
+   "fp": "8129c4841a1d",
+   "in_delta": true,
+   "line": 6,
+   "message": "The comment says the guard is now a closed list, but only the verb side is closed. The guard first decides whether a clause is about hours, using the HOURS regex, and HOURS is still a hand-written list of noun forms. It matches `hours` (plural only), `<n> h`, `<n> hour(s)`, `time\u2026` and `bookkeeping`. It misses the singular `hour` with no number before it, `hrs`/`hr`, `half an hour` and words like `worklog` or `effort`. A clause using any of those never reaches the OWNED check, so it passes whatever verb it uses. This is the same class of miss as the last three rounds, moved from the verb list to the noun list. Fix: widen HOURS to stems such as `\\bhours?\\b|\\bhrs?\\b|\\d+(?:\\.\\d+)?\\s*(?:h|hrs?|hours?)\\b|\\btime\\w*|\\bbookkeeping\\b|\\bworklog\\w*`. Then add 'Each commit logs an hour for Kasun.', 'Agents log 7.5 hrs.' and 'The agent books half an hour.' to the rejected table. That table has no case for these forms today.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "'Each commit logs an hour for Kasun.' or 'Agents log 7.5 hrs for Kasun.' \u2192 HOURS does not match \u2192 unowned() returns [] \u2192 the surface test passes a claim that hours are written with no accept step.",
+   "severity": "major"
+  },
+  {
+   "file": "apps/web/tests/marketing-time.test.ts",
+   "fp": "bb1bcf4e01a8",
+   "in_delta": true,
+   "line": 11,
+   "message": "OWNED only checks that a clause contains one of the words accept, draft or suggest. It does not check that those words describe the hours. A clause that names them in a negation, or about something else, still passes. The guard is meant to catch any clause that says hours get written with no draft or accept step, and this lets that exact claim through. Fix: treat OWNED as satisfied only when no negation (`no|without|never|skip\\w*|before`) comes before it in the clause. Or flip the check so the clause must say the hours are what gets drafted, suggested or accepted. Add 'Agents log 2.5 h without a draft.' and 'Commits log hours with no accept step.' to the rejected table.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "'Agents log 2.5 h without a draft.' \u2192 HOURS matches, OWNED matches 'draft' \u2192 unowned() returns [] \u2192 passes, even though the sentence says hours are logged with no draft.",
+   "severity": "major"
+  }
+ ],
+ "head": "7b1af6a395be322ca1c7ea741331a6a3eacffcc0",
+ "impact": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/lib/backup-fixtures.ts",
+  "apps/web/tests/admin/tools.test.ts",
+  "apps/web/tests/marketing-areas.test.ts",
+  "modules/allocations/fixtures/plan.ts",
+  "modules/presales/db/migrations/0001_presales.sql",
+  "modules/presales/fixtures/data.ts",
+  "packages/auth/src/authjs.ts",
+  "packages/auth/src/session.ts",
+  "packages/auth/tests/ac7-tenant.test.ts",
+  "packages/chat/src/engine.ts",
+  "packages/core/src/backup/tables.ts",
+  "packages/core/src/idempotency.ts",
+  "packages/db/migrations/0017_workflows.sql",
+  "scripts/queue.mjs"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 46879,
+ "round": 13,
+ "since": "57a9332778",
+ "status": "escalate",
+ "system_chars": 38743,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1792327500,
+ "ts_start": 1792327449
+}
