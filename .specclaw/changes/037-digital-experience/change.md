@@ -141,6 +141,8 @@ Re-run on HEAD 26cd1ed after the build agent's last commit (E2E ports 3637/3638,
 - `npx playwright test --config playwright.auth.config.ts` → 81/81
 - `pnpm --filter @amax/experience e2e` → 3/3
 
+Re-run after merging origin/main with 066 (career), HEAD 8a0b006: lint 35/35, test 35/35, web build 0, public e2e 8/8, signed-in e2e 81/81, module e2e 3/3.
+
 Screenshots: `.specclaw/changes/037-digital-experience/shots/app.png`, `.specclaw/changes/037-digital-experience/shots/mock.png`.
 Review: skipped. Per-change review is off (`code_review: false`, product owner 2026-10-17).
 
