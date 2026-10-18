@@ -1,14 +1,15 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 05:35 UTC
+**Last Updated:** 2026-10-18 05:50 UTC
 
 ## Active Changes
 
 
 - 🔀 **006-agent-governance** — pr raised | 9/9 tasks (100%) | 0 failed | PR #60 merged
 - 🔀 **012-leave** — pr raised | 7/7 tasks (100%) | 0 failed | PR #57 merged
-- 🔀 **024-learning** — pr raised | 6/6 tasks (100%) | 0 failed | PR #59 open
+- 🔀 **024-learning** — pr raised | 6/6 tasks (100%) | 0 failed | PR #59 merged
+- 🔀 **028-keyflow-sync** — pr raised | 7/7 tasks (100%) | 0 failed | PR #61 open
 - 🔀 **030-notifications** — pr raised | 7/7 tasks (100%) | 0 failed | PR #58 merged
 - 🔍 **055-it-admin-role** — verify done | 5/5 tasks (100%) | 0 failed | PR #56 merged
 - 🔀 **059-stable-pins** — pr raised | 7/7 tasks (100%) | 0 failed | PR #55 merged
@@ -30,7 +31,6 @@
 - 📋 **025-inbox-agent** — proposal ready, awaiting planning
 - 📋 **026-insights** — proposal ready, awaiting planning
 - 📋 **027-reports** — proposal ready, awaiting planning
-- 📋 **028-keyflow-sync** — proposal ready, awaiting planning
 - 📋 **034-backup-restore-and-export** — proposal ready, awaiting planning
 - 📋 **036-compliance-registers** — proposal ready, awaiting planning
 - 📋 **037-digital-experience** — proposal ready, awaiting planning
@@ -77,6 +77,6 @@
 
 ## Stats
 
-- **Total changes:** 39
-- **Active:** 6
+- **Total changes:** 40
+- **Active:** 7
 - **Completed:** 33
