@@ -33,7 +33,7 @@ automatically. With 021 installed, its own handler takes over the suggestion.
   Files: modules/onboarding/ui/OnboardingPage.tsx, modules/onboarding/ui/onboarding.css, modules/onboarding/module.ts, modules/onboarding/tests/e2e/onboarding.spec.ts
 - [x] `T2` — Contracts first, then data. `contracts.ts` gets events and types. Templates by legal entity and role are fixtures. `hr.person.joined` and `left` start a checklist whose tasks go to owners (HR, IT Admin, the manager). MCP tools `list_checklists`, `get_checklist`, `complete_checklist_task` (AC-1)
   Files: modules/onboarding/contracts.ts, modules/onboarding/db/migrations/0001_onboarding.sql, modules/onboarding/server/*.ts, modules/onboarding/mcp.ts, modules/onboarding/fixtures/, modules/onboarding/tests/onboarding.test.ts, modules/onboarding/tests/contracts.test.ts
-- [ ] `T3` — IT access: a grant on joining, a revoke on leaving, as `onboarding.access.requested` plus an IT Admin task. Nothing is revoked automatically, and it degrades without 021 (AC-2)
+- [x] `T3` — IT access: a grant on joining, a revoke on leaving, as `onboarding.access.requested` plus an IT Admin task. Nothing is revoked automatically, and it degrades without 021 (AC-2)
   Files: modules/onboarding/server/access.ts, modules/onboarding/tests/access.test.ts
   Depends: T2
 - [ ] `T4` — Exit questionnaire: a single-use link token that expires after 14 days. The public page records the answers once, and the token is stored hashed (AC-3)

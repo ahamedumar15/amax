@@ -5,9 +5,10 @@ import type { Tx } from "@amax/db";
 import { contextFor, defineService, type Emitted, type ServiceContext } from "@amax/core/server";
 import { EVENTS as HR, getPerson, type PersonJoined, type PersonLeft, type PersonRef } from "@amax/hr/contracts";
 import { EVENTS, KINDS, type ChecklistKind, type ChecklistStarted, type TaskOwner } from "../contracts";
+import { accessRequested, accessTask } from "./access";
 import { actorOf, addDays } from "./read";
 
-type Planned = { title: string; owner: TaskOwner; ownerUserId: string | null; dueOn: string };
+type Planned = { title: string; owner: TaskOwner; ownerUserId: string | null; dueOn: string; access?: "grant" | "revoke" };
 
 /** The template for this person: the one matching most of legal entity and role (department or job title); null fields match anyone. */
 async function templateFor(tx: Tx, kind: ChecklistKind, p: PersonRef) {
@@ -43,15 +44,15 @@ export async function startFor(tx: Tx, ctx: ServiceContext, input: { personId: s
   const startsOn = input.kind === "joiner" ? p.joinedOn : p.leftOn;
   if (!startsOn) throw new Error(input.kind === "joiner" ? `${p.name} has no joining date in HR` : `${p.name} has no last day in HR`);
   const template = await templateFor(tx, input.kind, p);
-  const plan = await planFrom(tx, (template?.id as string | undefined) ?? null, p, startsOn);
+  const plan = [...await planFrom(tx, (template?.id as string | undefined) ?? null, p, startsOn), accessTask(input.kind, startsOn)];
   const [c] = await tx.execute(sql`insert into onboarding.checklist (tenant_id, kind, person_id, person_name, employee_no, job_title, department, legal_entity_id, manager_user_id, manager_name, template_id, starts_on, created_by)
     values (${ctx.tenantId}, ${input.kind}, ${p.id}, ${p.name}, ${p.employeeNo}, ${p.title}, ${p.department}, ${p.legalEntityId}, ${p.managerUserId}, ${p.managerName}, ${template?.id ?? null}, ${startsOn}, ${actorOf(ctx)}) returning id`);
   for (const [i, t] of plan.entries()) {
-    await tx.execute(sql`insert into onboarding.task (tenant_id, checklist_id, position, title, owner, owner_user_id, due_on)
-      values (${ctx.tenantId}, ${c.id}, ${i + 1}, ${t.title}, ${t.owner}, ${t.ownerUserId}, ${t.dueOn})`);
+    await tx.execute(sql`insert into onboarding.task (tenant_id, checklist_id, position, title, owner, owner_user_id, access, due_on)
+      values (${ctx.tenantId}, ${c.id}, ${i + 1}, ${t.title}, ${t.owner}, ${t.ownerUserId}, ${t.access ?? null}, ${t.dueOn})`);
   }
   const payload: ChecklistStarted = { checklistId: c.id as string, kind: input.kind, personId: p.id, legalEntityId: p.legalEntityId, startsOn, templateId: (template?.id as string | undefined) ?? null, tasks: plan.length, by: actorOf(ctx) };
-  return { id: c.id as string, started: true, tasks: plan.length, events: [{ name: EVENTS.checklistStarted, payload }] as Emitted[] };
+  return { id: c.id as string, started: true, tasks: plan.length, events: [{ name: EVENTS.checklistStarted, payload }, accessRequested(p, input.kind)] as Emitted[] };
 }
 
 export const startChecklist = defineService({

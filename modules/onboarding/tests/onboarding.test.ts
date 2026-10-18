@@ -26,9 +26,10 @@ describe.skipIf(!hasDb)("onboarding against Postgres", () => {
       [["Collect the signed contract and ID copies", "Mohamed Rifkhan"]], true, []]);
     const all = await listChecklists(maya, ON);
     const rifkhan = all.find((c) => c.personName === "Mohamed Rifkhan")!;
-    expect(owners(rifkhan).slice(0, 6)).toEqual([
+    expect(owners(rifkhan)).toEqual([
       ["Send the welcome pack", "HR", "HR"], ["Collect the signed contract and ID copies", "HR", "HR"], ["Order and image a laptop", "ITAdmin", "IT Admin"],
-      ["Pick a buddy and plan the first week", "Manager", "Nimal Silva"], ["Register for EPF and ETF", "HR", "HR"], ["First-week check-in", "Manager", "Nimal Silva"],
+      ["Pick a buddy and plan the first week", "Manager", "Nimal Silva"], ["Grant sign-in, email and licences", "ITAdmin", "IT Admin"],
+      ["Register for EPF and ETF", "HR", "HR"], ["First-week check-in", "Manager", "Nimal Silva"],
     ]);
     expect(all.find((c) => c.personName === "Rizwan Farook")).toMatchObject({ kind: "leaver", startsOn: "2026-09-30", completedOn: expect.any(String) });
 
@@ -38,8 +39,8 @@ describe.skipIf(!hasDb)("onboarding against Postgres", () => {
     await db.tick();
     const fresh = await listChecklists(maya, ON);
     const jordan = fresh.find((c) => c.personName === "Jordan Example")!;
-    expect([jordan.kind, jordan.startsOn, owners(jordan).slice(0, 4).map((o) => o[0])]).toEqual(["joiner", "2026-12-01",
-      ["Send the welcome pack", "Order a laptop", "Plan the first week", "Collect the TFN declaration and super choice"]]);
+    expect([jordan.kind, jordan.startsOn, owners(jordan).map((o) => o[0])]).toEqual(["joiner", "2026-12-01",
+      ["Send the welcome pack", "Order a laptop", "Plan the first week", "Grant sign-in, email and licences", "Collect the TFN declaration and super choice"]]);
     const ayesha = fresh.find((c) => c.personName === "Ayesha Rahman")!;
     expect([ayesha.kind, owners(ayesha)[0]]).toEqual(["leaver", ["Agree the handover of work", "Manager", "Maya Fernando"]]);
     expect(await db.q(sql`select actor, source from core.audit_event where action = 'onboarding.checklist.start' order by actor`)).toEqual([
