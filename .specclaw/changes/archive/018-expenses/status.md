@@ -1,6 +1,6 @@
-# Status: 014-payroll-engine
+# Status: 018-expenses
 
-**Change:** 014-payroll-engine
+**Change:** 018-expenses
 **Started:** 2026-10-18
 **Last Updated:** 2026-10-18
 
@@ -14,7 +14,8 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
-| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/75 |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/78 |
+| Archived | ✅ Done |  |
 
 ## Task Progress
 
