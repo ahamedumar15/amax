@@ -57,7 +57,7 @@ doesn't exist; the new section shows only those two:
      items, and panels (series, share, metric, progress, list). apps/web/lib/overview.ts gathers the
      hooks the viewer may read, with each module's failure isolated. -->
 
-- [ ] `T1` — Overview UI: core part types and `overview` hook, the gatherer, and the page with tickets, hours chart, Waiting on you, insights, performance, donut, readiness and activity, plus pins, intents, empty and "Couldn't load" states (AC-1–AC-9 UI, AC-8)
+- [x] `T1` — Overview UI: core part types and `overview` hook, the gatherer, and the page with tickets, hours chart, Waiting on you, insights, performance, donut, readiness and activity, plus pins, intents, empty and "Couldn't load" states (AC-1–AC-9 UI, AC-8)
   Files: packages/core/src/module.ts, packages/core/src/index.ts, apps/web/lib/overview.ts, apps/web/app/(app)/page.tsx, apps/web/components/overview/StatTickets.tsx, apps/web/components/overview/SeriesChart.tsx, apps/web/components/overview/WaitingTable.tsx, apps/web/components/overview/ShareDonut.tsx, apps/web/components/overview/Panels.tsx
 - [ ] `T2` — Time: a `weeklyHours` contract read (12 weeks, agents vs people, optional project); overview hook giving the Hours ticket, the series panel, the by-project share panel and submitted weeks the viewer may approve (AC-1, AC-2, AC-3, AC-6)
   Files: modules/time/contracts.ts, modules/time/server/overview.ts, modules/time/module.ts, modules/time/tests/overview.test.ts

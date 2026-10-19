@@ -3,8 +3,13 @@ import { can, type Viewer } from "@amax/auth";
 import { logError } from "@amax/core/server";
 import { Card, EmptyState } from "@amax/ui";
 import { ActivityFeed } from "../../components/overview/ActivityFeed";
+import { Panel } from "../../components/overview/Panels";
+import { StatTickets } from "../../components/overview/StatTickets";
+import { WaitingTable } from "../../components/overview/WaitingTable";
+import { gatherOverview, type OverviewData } from "../../lib/overview";
 import { installed } from "../../lib/registry";
 import { getViewer } from "../../lib/viewer";
+import "./overview.css";
 
 export const metadata = { title: "Overview" };
 
@@ -16,17 +21,35 @@ async function activity(viewer: Viewer): Promise<ActivityItem[]> {
   return lines.flat().sort((a, b) => b.at.localeCompare(a.at)).slice(0, 8);
 }
 
-export default async function OverviewPage() {
+const EMPTY: OverviewData = { tickets: [], waiting: [], panels: [], ledes: [], failed: [] };
+
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const viewer = await getViewer();
-  const items = viewer ? await activity(viewer) : [];
+  const raw = await searchParams;
+  const query = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
+  const [items, data] = viewer ? await Promise.all([activity(viewer), gatherOverview(viewer, query)]) : [[], EMPTY];
+  const side = data.panels.filter((p) => p.slot === "aside");
+  const main = data.panels.filter((p) => p.slot === "main");
+  const blank = !items.length && !data.tickets.length && !data.panels.length && !data.waiting.length;
   return (
     <>
       <h1>Delivery overview</h1>
-      <p className="lede">{items.length ? `Agents keep the records: the latest is ${items[0].by} ${items[0].text}.` : "Stat cards, the hours chart and Waiting on you arrive with the delivery module."}</p>
-      {items.length ? <ActivityFeed items={items} /> : (
+      <p className="lede">{data.ledes.length ? data.ledes.join(" ") : "Agents keep the records here: hours, proposals, releases and the decisions waiting on you."}</p>
+      {data.failed.length > 0 && <div className="card overview-failed" role="status">Couldn&apos;t load {data.failed.join(", ")}. Those blocks are left out rather than shown as zero.</div>}
+      {blank ? (
         <Card>
           <EmptyState icon="home" title="Nothing to show yet" hint="Activity shows here once agents, pipelines or people record work. Until then, open any installed module from the rail." />
         </Card>
+      ) : (
+        <div className="overview-cols">
+          <div className="stack">
+            <StatTickets tickets={data.tickets} />
+            {main.map((p) => <Panel key={p.key} panel={p} />)}
+            {viewer && <WaitingTable items={data.waiting} now={Date.now()} />}
+            {items.length > 0 && <ActivityFeed items={items} />}
+          </div>
+          {side.length > 0 && <aside className="stack">{side.map((p) => <Panel key={p.key} panel={p} />)}</aside>}
+        </div>
       )}
     </>
   );
