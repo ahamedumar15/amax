@@ -1,13 +1,14 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-18 22:08 UTC
+**Last Updated:** 2026-10-19 01:19 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
-_No active changes._
+
+- 🔍 **067-glob-security-bump** — verify done | 2/2 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
@@ -86,6 +87,6 @@ _No active changes._
 
 ## Stats
 
-- **Total changes:** 64
-- **Active:** 0
+- **Total changes:** 65
+- **Active:** 1
 - **Completed:** 64

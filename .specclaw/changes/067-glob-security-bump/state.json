@@ -1,0 +1,11 @@
+{
+  "change": "067-glob-security-bump",
+  "phase": "pr",
+  "branch": "specclaw/067-glob-security-bump",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-19T01:10:00Z"},
+    "build": {"status":"in-progress","at":"2026-10-19T01:10:25Z"},
+    "verify": {"status":"done","at":"2026-10-19T01:19:26Z"},
+    "pr": {"status":"raised","at":"2026-10-19T01:20:09Z","url":"https://github.com/chan4lk/amax/pull/96"}
+  }
+}
