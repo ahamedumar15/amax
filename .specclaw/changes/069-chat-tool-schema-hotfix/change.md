@@ -26,7 +26,7 @@ Nothing new on screen. Chat answers again where it showed the "AI chat failed" e
 - [x] `T2` — Every registered tool sends a valid provider schema (AC-2)
   Files: apps/web/tests/tool-schemas.test.ts
   Depends: T1
-- [ ] `T3` — Carry the provider's status and error type as `AiOutputError.code` (AC-4)
+- [x] `T3` — Carry the provider's status and error type as `AiOutputError.code` (AC-4)
   Files: packages/ai/src/gateway.ts, packages/ai/tests/gateway.test.ts
 
 ## Verify

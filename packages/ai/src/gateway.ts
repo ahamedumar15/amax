@@ -27,11 +27,17 @@ export class AiDisabledError extends Error {
   }
 }
 export class AiOutputError extends Error {
-  constructor(message: string) {
+  constructor(message: string, readonly code?: string) {
     super(message);
     this.name = "AiOutputError";
   }
 }
+
+const providerCode = (e: unknown) => {
+  const o = (e ?? {}) as { status?: unknown; error?: { type?: unknown; error?: { type?: unknown } } };
+  const parts = [o.status, o.error?.error?.type ?? o.error?.type].filter((p) => typeof p === "number" || typeof p === "string");
+  return parts.length ? parts.join(" ").slice(0, 40) : undefined;
+};
 
 /** Who is asking, for the call log and permissions. `userId` and `conversationId` attribute the cost (048); jobs leave them out. */
 export type AiCaller = { tenantId: string; caller: string; source: Source; purpose: string; userId?: string; conversationId?: string };
@@ -81,6 +87,7 @@ async function callWithFallback(req: Omit<ProviderCall, "model">, accept: (r: Pr
   const models = [model, ...(fallbackModel && fallbackModel !== model ? [fallbackModel] : [])];
   const usage: Usage = { inputTokens: 0, outputTokens: 0 };
   let lastError = "no model ran";
+  let code: string | undefined;
   for (const m of models) {
     try {
       const r = await provider.call({ ...req, model: m });
@@ -89,11 +96,13 @@ async function callWithFallback(req: Omit<ProviderCall, "model">, accept: (r: Pr
       const problem = r.stop === "refusal" ? "the model declined" : r.stop === "max_tokens" ? "the answer was cut off" : accept(r);
       if (!problem) return { result: r, usage, model: m, providerModel: r.model };
       lastError = problem;
+      code = undefined;
     } catch (e) {
       lastError = e instanceof Error ? e.message : String(e);
+      code = providerCode(e);
     }
   }
-  return { result: null, usage, model: models.at(-1)!, providerModel: undefined as string | undefined, error: lastError };
+  return { result: null, usage, model: models.at(-1)!, providerModel: undefined as string | undefined, error: lastError, code };
 }
 
 /** Structured extraction: the answer must validate against `schema`, or it's an error. */
@@ -103,7 +112,7 @@ export async function extract<T>(caller: AiCaller, opts: { instructions: string;
   const out = await callWithFallback({ system: p.system, messages, schema: opts.schema, effort: "low", maxTokens: 4000 }, (r) =>
     opts.schema.safeParse(r.parsed).success ? null : "the answer didn't match the expected shape");
   await log(caller, { model: out.model, providerModel: out.providerModel, policyVersion: p.policy.version, usage: out.usage, redactions: p.redactions, injection: p.injection, ok: Boolean(out.result), error: out.error });
-  if (!out.result) throw new AiOutputError(`AI extraction failed: ${out.error}`);
+  if (!out.result) throw new AiOutputError(`AI extraction failed: ${out.error}`, out.code);
   return opts.schema.parse(out.result.parsed);
 }
 
@@ -113,7 +122,7 @@ export async function complete(caller: AiCaller, opts: { instructions: string; d
   const messages: Message[] = [{ role: "user", content: [{ type: "text", text: `${p.dataText}\n\n${opts.ask}` }] }];
   const out = await callWithFallback({ system: p.system, messages, effort: "low", maxTokens: 4000 }, (r) => (r.text.trim() ? null : "empty answer"));
   await log(caller, { model: out.model, providerModel: out.providerModel, policyVersion: p.policy.version, usage: out.usage, redactions: p.redactions, injection: p.injection, ok: Boolean(out.result), error: out.error });
-  if (!out.result) throw new AiOutputError(`AI completion failed: ${out.error}`);
+  if (!out.result) throw new AiOutputError(`AI completion failed: ${out.error}`, out.code);
   return out.result.text;
 }
 
@@ -161,7 +170,7 @@ export async function converse(caller: AiCaller, opts: { instructions: string; m
       usage.outputTokens += out.usage.outputTokens;
       model = out.model;
       providerModel = out.providerModel;
-      if (!out.result) throw new AiOutputError(`AI chat failed: ${out.error}`);
+      if (!out.result) throw new AiOutputError(`AI chat failed: ${out.error}`, out.code);
       messages.push(out.result.assistant);
       if (out.result.stop !== "tool_use") {
         await log(caller, { model, providerModel, policyVersion: p.policy.version, usage, redactions: p.redactions, injection: p.injection, toolsRun, ok: true });

@@ -6,6 +6,7 @@ import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { fakeProvider } from "../src/fake";
 import { AiDisabledError, AiOutputError, configureAi, converse, extract } from "../src";
 import { quoteData } from "../src/prompt";
+import { logError } from "@amax/core/server";
 
 const T = "a1a1a1a1-0000-4000-8000-0000000000a1";
 const caller = { tenantId: T, caller: "user:maya", source: "chat" as const, purpose: "test" };
@@ -56,6 +57,18 @@ describe.skipIf(!hasDb)("@amax/ai gateway (Postgres, fake provider)", () => {
     await expect(extract(caller, { instructions: "x", data: [], schema: Contact })).rejects.toBeInstanceOf(AiOutputError);
     configureAi({ provider: fakeProvider(() => ({ throw: "boom" })), db: app, model: "claude-haiku-5-5" });
     await expect(extract(caller, { instructions: "x", data: [], schema: Contact })).rejects.toThrow(/boom/);
+  });
+
+  it("AC-4 (069) a provider API error reaches the log as its status and type, without its message", async () => {
+    const apiError = Object.assign(new Error("400 tools.219.custom.input_schema.type: secret detail"), { status: 400, error: { type: "error", error: { type: "invalid_request_error" } } });
+    configureAi({ provider: { name: "fake", call: async () => Promise.reject(apiError) }, db: app, model: "claude-haiku-5-5" });
+    const failed = await extract(caller, { instructions: "x", data: [], schema: Contact }).catch((e: unknown) => e);
+    expect(failed).toMatchObject({ name: "AiOutputError", code: "400 invalid_request_error" });
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    logError("chat", failed);
+    expect(spy.mock.calls.flat().join(" ")).toMatch(/AiOutputError 400 invalid_request_error/);
+    expect(spy.mock.calls.flat().join(" ")).not.toMatch(/secret/);
+    spy.mockRestore();
   });
 
   it("AC-2 blocked classes are redacted before the call and counted; allowed ones go through", async () => {
