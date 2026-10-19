@@ -1,11 +1,12 @@
 {
   "change": "068-overview-dashboard",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "specclaw/068-overview-dashboard",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-19T01:43:36Z"},
     "tasks": {"status":"done","at":"2026-10-19T01:44:28Z"},
     "build": {"status":"in-progress","at":"2026-10-19T01:44:44Z"},
-    "verify": {"status":"done","at":"2026-10-19T02:23:56Z"}
+    "verify": {"status":"done","at":"2026-10-19T02:23:56Z"},
+    "pr": {"status":"raised","at":"2026-10-19T02:24:14Z","url":"https://github.com/chan4lk/amax/pull/97"}
   }
 }
