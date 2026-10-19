@@ -76,3 +76,26 @@ doesn't exist; the new section shows only those two:
   Depends: T2, T3, T4, T5
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — tickets read 141.5 h (64% agents), proposals in flight with building/verified, $14,200 ready to invoice, each pinned (`modules/time/tests/overview.test.ts`, `modules/finance/tests/overview.test.ts`, e2e `overview.spec.ts`).
+- AC-2: pass — `weeklyHours` gives 12 or 26 weeks, agents vs people; the project filter goes through `?hp=` and only accepts listed options (unit test feeds it `javascript:alert(1)`; e2e picks Contoso Portal).
+- AC-3: pass — Waiting on you holds W42 timesheets, the v1.8.0 UAT rollback (Retry UAT), proposals the viewer may move, and open agent suggestions, oldest first, six shown. Every row has a pin; Ask amax fills chat ("Retry Fleet Tracker v1.8.0 in UAT"); Approve selected only opens chat.
+- AC-4: pass — top 3 current insights, each pinned, with Open insights → /insights (e2e).
+- AC-5: pass — 5 shipped this month, −58.3% vs last month, top contributor Nimal Silva with 14 tasks, 10 by agents (`modules/delivery/tests/overview.test.ts`).
+- AC-6: pass — donut of this week's hours by project (Contoso 68 h, Fleet 51.5 h, HR Insights 22 h) adds up to 141.5 h.
+- AC-7: pass — Fleet v1.8.0 2 of 4 (rolled back from UAT on Oct 14) shows first, then Contoso v2.4.0 1 of 4 (in QA, UAT next).
+- AC-8: pass — the page reads only through manifest `overview` hooks and `@amax/agents/server`; `check:graph` ok (22 modules, 11 packages); a failed hook is logged and listed under "Couldn't load".
+- AC-9: pass — the activity feed stays (008 AC-4 test still passes); the lede is built from real numbers; axe (wcag2a/aa, 21aa, 22aa) passes in light and dark. Axe caught two dark-mode contrast issues during the build; both are fixed.
+
+Commands (worktree, `DATABASE_MIGRATE_URL` on local Postgres):
+- `turbo run build --force` exit 0; `turbo run test --force --concurrency=2` exit 0 (35/35 tasks, DB suites on); `pnpm lint` exit 0; `build:cloudflare` exit 0.
+- `pnpm --filter @amax/web e2e:auth` exit 0 (82 passed); `pnpm --filter @amax/web e2e` exit 0 (8 passed).
+- Default turbo concurrency hit 5 s scrypt timeouts with the host at load 40 (as in 067); `--concurrency=2` is clean.
+
+Notes:
+- `specclaw-preset-check .`: only the repo-wide `comment` rule (2467 hits across the repo); no line-limit hits in 068 files.
+- Quality: `specclaw-quality-scan` not_run (jq "Argument list too long", as in 066/067). `jscpd` over the 068 files, and SeriesChart against delivery's charts: 0 clones.
+- Screenshots: `shots/app.png` (light), `shots/app-dark.png`, `shots/mock.png` (`#001-amax-foundation`), `shots/mock-068.png`. Compared against the mock: same layout and blocks. The deltas are the two in Mock Delta, plus tickets without art.
+- specclaw-review: not run per change (operator rule: review once per module end).
