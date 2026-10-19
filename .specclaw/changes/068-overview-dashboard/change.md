@@ -65,7 +65,7 @@ doesn't exist; the new section shows only those two:
 - [x] `T3` — Delivery: reads for month-over-month shipped, top contributor and release progress; overview hook giving the Proposals ticket, the performance metric, readiness progress and waiting items (rolled-back releases, proposals awaiting approval) (AC-1, AC-3, AC-5, AC-7)
   Files: modules/delivery/server/queries.ts, modules/delivery/server/overview.ts, modules/delivery/module.ts, modules/delivery/tests/overview.test.ts
   Depends: T1
-- [ ] `T4` — Finance: a `readyToInvoice` read (open drafts, total + top lines per currency) and the Ready to invoice ticket (AC-1)
+- [x] `T4` — Finance: a `readyToInvoice` read (open drafts, total + top lines per currency) and the Ready to invoice ticket (AC-1)
   Files: modules/finance/contracts.ts, modules/finance/server/overview.ts, modules/finance/module.ts, modules/finance/tests/overview.test.ts
   Depends: T1
 - [ ] `T5` — Insights: overview hook giving the top 3 current insights as a list panel (AC-4)

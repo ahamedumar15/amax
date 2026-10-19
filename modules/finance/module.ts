@@ -2,6 +2,7 @@ import { declarePayload, defineModule } from "@amax/core";
 import { EVENTS, type ContractCreated, type CreditNoteIssued, type InvoiceDrafted, type InvoiceIssued, type PaymentRecorded } from "./contracts";
 import { financeFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
+import { financeOverview } from "./server/overview";
 import { draftAgent, invoiceDraft, releaseAgent, timeAgent } from "./suggestions";
 import { FinancePage } from "./ui/FinancePage";
 
@@ -20,6 +21,7 @@ export default defineModule({
   grants: { Finance: WRITE, Leadership: ["finance:read"] },
   routes: [{ path: "", title: "Financials", component: FinancePage }],
   mcpTools,
+  overview: financeOverview as never,
   search: search as never,
   retention: [
     { table: "finance.contract", label: "Who created each contract", subject: ["created_by"], entity: "legal_entity_id", fields: ["created_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
