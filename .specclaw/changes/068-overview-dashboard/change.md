@@ -71,7 +71,7 @@ doesn't exist; the new section shows only those two:
 - [x] `T5` — Insights: overview hook giving the top 3 current insights as a list panel (AC-4)
   Files: modules/insights/server/overview.ts, modules/insights/module.ts
   Depends: T1
-- [ ] `T6` — Integration: open suggestions in Waiting on you, the lede from real numbers, e2e coverage for every block with axe in light and dark, and count ripples (AC-3, AC-8, AC-9)
+- [x] `T6` — Integration: open suggestions in Waiting on you, the lede from real numbers, e2e coverage for every block with axe in light and dark, and count ripples (AC-3, AC-8, AC-9)
   Files: apps/web/lib/overview.ts, apps/web/app/(app)/page.tsx, apps/web/tests/e2e/overview.spec.ts
   Depends: T2, T3, T4, T5
 
