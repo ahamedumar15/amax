@@ -49,3 +49,14 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .overview-cols .up{color:var(--mint)}:root:not([data-theme="light"]) .overview-cols .down,:root:not([data-theme="light"]) .overview-failed{color:#FF9B8E}}
 :root[data-theme="dark"] .overview-cols .up{color:var(--mint)}
 :root[data-theme="dark"] .overview-cols .down,:root[data-theme="dark"] .overview-failed{color:#FF9B8E}
+.overview-cols .waiting .tbl td.num .when{display:inline-flex;align-items:center;gap:6px}
+.overview-cols .donut-wrap{grid-template-columns:150px minmax(0,1fr);gap:14px}
+.overview-cols .donut-legend b{white-space:nowrap}
+.overview-cols .waiting .tbl{table-layout:fixed;min-width:640px}
+.overview-cols .waiting .tbl th:nth-child(1){width:58px}
+.overview-cols .waiting .tbl th:nth-child(3){width:110px}
+.overview-cols .waiting .tbl th:nth-child(4){width:160px}
+.overview-cols .waiting .tbl th:nth-child(5){width:72px}
+.overview-cols .waiting .tbl th:nth-child(6){width:150px}
+.overview-cols .waiting .tbl .chip{white-space:normal;display:inline-block;line-height:1.35}
+.overview-cols .empty-line a{color:var(--ink);font-weight:600}

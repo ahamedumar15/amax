@@ -8,11 +8,13 @@ type Series = Extract<OverviewPanel, { kind: "series" }>;
 const COLORS = ["#7B61FF", "#2FCB8C", "#F7B23B"];
 const W = 700, H = 250, L = 44, R = 12, T = 16, B = 30;
 
-const curve = (pts: [number, number][]) => {
+// Control points are clamped to the baseline, so a smooth line never dips below zero hours.
+const curve = (pts: [number, number][], base: number) => {
+  const y = (v: number) => Math.min(base, v);
   let s = `M${pts[0][0]} ${pts[0][1]}`;
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2;
-    s += ` C${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]} ${p2[1]}`;
+    s += ` C${p1[0] + (p2[0] - p0[0]) / 6} ${y(p1[1] + (p2[1] - p0[1]) / 6)} ${p2[0] - (p3[0] - p1[0]) / 6} ${y(p2[1] - (p3[1] - p1[1]) / 6)} ${p2[0]} ${p2[1]}`;
   }
   return s;
 };
@@ -34,7 +36,7 @@ export function SeriesChart({ panel }: { panel: Series }) {
         {ticks.map((v) => <g key={v}><line x1={L} x2={W - R} y1={Y(v)} y2={Y(v)} stroke="var(--line)" /><text x={L - 10} y={Y(v) + 4} textAnchor="end" className="ax">{v ? `${v} h` : "0"}</text></g>)}
         {panel.labels.map((l, i) => <text key={l} x={X(i)} y={H - 8} textAnchor="middle" className="ax">{l}</text>)}
         {n > 1 && panel.series.map((s, k) => {
-          const d = curve(s.data.map((v, i) => [X(i), Y(v)]));
+          const d = curve(s.data.map((v, i) => [X(i), Y(v)]), Y(0));
           return (
             <g key={s.name}>
               <path d={`${d} L${X(n - 1)} ${Y(0)} L${X(0)} ${Y(0)} Z`} fill={COLORS[k % 3]} opacity={k ? 0.1 : 0.16} />
