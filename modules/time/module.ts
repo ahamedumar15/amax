@@ -3,6 +3,7 @@ import { chatIntents } from "./chat";
 import { EVENTS, type EntryLogged, type WeekDecided, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
 import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
+import { timeOverview } from "./server/overview";
 import { commitDraft, commitTimeHandler } from "./suggestions";
 import { MyPage } from "./ui/MyPage";
 import { TeamPage } from "./ui/TeamPage";
@@ -36,6 +37,7 @@ export default defineModule({
     { path: "my/:week", title: "My timesheet", component: MyPage },
   ],
   mcpTools,
+  overview: timeOverview as never,
   retention: [
     { table: "time.week", label: "Timesheet weeks", subject: ["user_id", "decided_by"], subjectName: ["person_name"], fields: ["person_name", "note", "reject_comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["decided_at"], idle: "P1Y" }, action: "anonymise" },
     { table: "time.entry", label: "Time entries", subject: ["user_id", "project_id", "logged_by"], fields: ["note", "logged_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },

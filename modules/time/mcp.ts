@@ -5,6 +5,7 @@ import { ctxFor } from "./server/context";
 import { approveWeek, rejectWeek, remindWeek } from "./server/decide";
 import { logTime } from "./server/log";
 import { myWeek } from "./server/my";
+import { hoursTrend } from "./server/overview";
 import { reopenWeek } from "./server/reopen";
 import { getTimesheet } from "./server/sheet";
 import { submitWeek } from "./server/submit";
@@ -20,6 +21,8 @@ const ref = z.object({ weekId: z.string().uuid().optional(), person: z.string().
 export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: "view", name: "get_team_week", description: "Team timesheets for a week: hours per day, share logged by agents, status, and who you can approve.", input: z.object({ week }),
     run: (v, a) => teamWeek(v, wantedWeek(a.week)) }),
+  tool({ ...read, pin: "view", name: "get_hours_trend", description: "Hours logged per ISO week up to the latest, by agents and by people, optionally for one project (the Overview chart).",
+    input: z.object({ weeks: z.number().int().min(1).max(52).optional(), projectId: z.string().uuid().optional() }), run: (v, a) => hoursTrend(v, a) }),
   tool({ ...read, pin: "view", name: "get_my_week", description: "Your own timesheet for a week, by project and day, with its status.", input: z.object({ week }),
     run: (v, a) => myWeek(v, wantedWeek(a.week)) }),
   tool({ ...read, pin: "view", name: "get_timesheet", description: "One person-week: by weekId (a row on Team time), or your own week, optionally just one project's row.",

@@ -37,3 +37,21 @@ export async function listContractRefs(tx: Tx, reader: Reader): Promise<Contract
     currency: String(r.currency), value: String(r.value), invoiced: String(r.invoiced), open: String(r.open),
   }));
 }
+
+export type ReadyLine = { draftId: string; contractId: string; projectId: string; description: string; amount: string };
+export type ReadyToInvoice = { currency: string; total: string; lines: ReadyLine[] };
+
+/** 068 AC-1: open invoice drafts the reader may see, per currency, largest total first; lines largest first. */
+export async function readyToInvoice(tx: Tx, reader: Reader): Promise<ReadyToInvoice[]> {
+  const rows = await tx.execute(sql`select d.id, d.contract_id, c.project_id, c.legal_entity_id, c.currency, d.description, round(d.amount, 2)::text as amount
+    from finance.draft d join finance.contract c on c.id = d.contract_id where d.status = 'open' order by d.amount desc`);
+  const by = new Map<string, ReadyToInvoice>();
+  for (const r of rows.filter((x) => mayRead(reader, x.legal_entity_id as string))) {
+    const currency = String(r.currency);
+    const g = by.get(currency) ?? { currency, total: "0", lines: [] };
+    g.lines.push({ draftId: r.id as string, contractId: r.contract_id as string, projectId: r.project_id as string, description: r.description as string, amount: String(r.amount) });
+    g.total = (Number(g.total) + Number(r.amount)).toFixed(2);
+    by.set(currency, g);
+  }
+  return [...by.values()].sort((a, b) => Number(b.total) - Number(a.total));
+}

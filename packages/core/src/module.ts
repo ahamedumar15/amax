@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { Tx } from "@amax/db";
 import type { IconName } from "@amax/ui";
 import type { Sensitivity } from "./audit";
+import type { OverviewPart, OverviewQuery } from "./overview";
 
 /** What a screen receives: route params (":key" segments), query params (optional, 041) and the signed-in viewer (null in the guest preview). */
 export type ScreenProps = { params: Record<string, string>; searchParams?: Record<string, string>; viewer: unknown };
@@ -228,6 +229,8 @@ export type ModuleManifest = {
   subjectIds?: (tx: Tx, userId: string) => Promise<string[]>;
   /** Contributes the newest lines to the Overview's Agent activity feed (008 AC-4). */
   activity?: (viewer: never, limit: number) => Promise<ActivityItem[]>;
+  /** Contributes tickets, waiting decisions and panels to the Overview (068). Return only what the viewer may read. */
+  overview?: (viewer: never, query: OverviewQuery) => Promise<OverviewPart>;
   /** Verified inbound webhooks this module acts on (008: GitHub and Azure DevOps pushes). */
   inbound?: { providers: readonly string[]; handle: (e: InboundEvent) => Promise<void> };
   /** Contributes results to the built-in `search` tool. */

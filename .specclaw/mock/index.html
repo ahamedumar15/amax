@@ -891,6 +891,35 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
   </div>
 </section>
 
+<!-- ================= 068 Overview deltas ================= -->
+<section data-change="068-overview-dashboard" id="068-overview-dashboard" data-roles="all" data-title="Overview: changed blocks" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Overview: changed blocks</h1>
+  <p class="lede">The Overview is built as in <a href="#001-amax-foundation">Delivery overview</a>. Only these two blocks differ.</p>
+  <div class="card">
+    <div class="card-head"><h2>Where time went</h2><span class="chip">This week, by project</span></div>
+    <div class="donut-wrap">
+      <svg viewBox="0 0 170 170" role="img" aria-label="Hours this week by project: Fleet Tracker 58 h, Contoso Portal 51 h, HR Insights 32.5 h">
+        <circle cx="85" cy="85" r="60" fill="none" stroke="#7B61FF" stroke-width="22" stroke-dasharray="155 377" transform="rotate(-90 85 85)"/>
+        <circle cx="85" cy="85" r="60" fill="none" stroke="#2FCB8C" stroke-width="22" stroke-dasharray="136 377" stroke-dashoffset="-155" transform="rotate(-90 85 85)"/>
+        <circle cx="85" cy="85" r="60" fill="none" stroke="#F7B23B" stroke-width="22" stroke-dasharray="86 377" stroke-dashoffset="-291" transform="rotate(-90 85 85)"/>
+        <text x="85" y="90" text-anchor="middle" font-size="18" font-weight="700" fill="currentColor">141.5 h</text>
+      </svg>
+      <ul class="donut-legend">
+        <li><i style="background:#7B61FF"></i>Fleet Tracker <b>58 h · 41%</b></li>
+        <li><i style="background:#2FCB8C"></i>Contoso Portal <b>51 h · 36%</b></li>
+        <li><i style="background:#F7B23B"></i>HR Insights <b>32.5 h · 23%</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Release readiness</h2>
+    <div class="split">
+      <div><div class="k">Contoso v2.4.0</div><div class="big">2 of 4</div><div class="gbar"><i style="width:50%;background:linear-gradient(90deg,#C3B5FF,#7B61FF)"></i></div><small class="muted" style="display:block;margin-top:10px;font-size:12.5px">Dev, QA passed. In QA, UAT next</small></div>
+      <div><div class="k">Fleet v1.8.0</div><div class="big">2 of 4</div><div class="gbar"><i style="width:50%;background:linear-gradient(90deg,#FFC2B8,#F26B5B)"></i></div><small class="muted" style="display:block;margin-top:10px;font-size:12.5px">Rolled back from UAT on Oct 14</small></div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= Insights ================= -->
 <section data-change="026-insights" id="001-amax-foundation-insights" data-roles="admin leadership pm" data-title="Insights" data-icon="spark">
   <div class="row head">
