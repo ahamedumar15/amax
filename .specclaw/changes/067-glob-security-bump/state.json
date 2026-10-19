@@ -1,0 +1,9 @@
+{
+  "change": "067-glob-security-bump",
+  "phase": "build",
+  "branch": "specclaw/067-glob-security-bump",
+  "phases": {
+    "tasks": {"status":"done","at":"2026-10-19T01:10:00Z"},
+    "build": {"status":"in-progress","at":"2026-10-19T01:10:25Z"}
+  }
+}
