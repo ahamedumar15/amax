@@ -22,7 +22,7 @@ No screen change.
 
 ## Tasks
 
-- [ ] `T1` — Add scoped `pnpm.overrides` for glob and regenerate the lockfile (AC-1)
+- [x] `T1` — Add scoped `pnpm.overrides` for glob and regenerate the lockfile (AC-1)
   Files: package.json, pnpm-lock.yaml
 - [ ] `T2` — Run `pnpm build`, the OpenNext build and `pnpm test --force`; confirm CI green (AC-2, AC-3)
   Files: none
