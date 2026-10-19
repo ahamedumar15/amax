@@ -3,7 +3,7 @@ import type { Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError } from "@amax/core/server";
 import { seesWeek } from "./server/chain";
-import type { IsoWeek } from "./week";
+import { shiftWeek, weekKey, type IsoWeek } from "./week";
 
 export { isoWeekOf, parseWeekKey, shiftWeek, weekKey, weekStart, workDays, type IsoWeek } from "./week";
 
@@ -73,4 +73,26 @@ export async function projectHours(tx: Tx, viewer: Viewer, range: { from: string
   const tidy = (x: number) => Math.round(x * 100) / 100;
   return [...by.values()].map((p) => ({ ...p, hours: tidy(p.hours), agentHours: tidy(p.agentHours), billableHours: tidy(p.billableHours) }))
     .sort((a, b) => b.hours - a.hours);
+}
+
+export type WeekHours = { week: string; agentHours: number; personHours: number };
+
+/** 068 AC-2: hours per ISO week, agents vs people, the `weeks` up to `last`, oldest first. Same week-level scope as projectHours. */
+export async function weeklyHours(tx: Tx, viewer: Viewer, q: { last: IsoWeek; weeks: number; projectId?: string }): Promise<WeekHours[]> {
+  mustRead(viewer);
+  const keys = Array.from({ length: q.weeks }, (_, i) => shiftWeek(q.last, i - q.weeks + 1));
+  const first = keys[0];
+  const only = q.projectId ? sql`and e.project_id = ${q.projectId}` : sql``;
+  const rows = await tx.execute(sql`select w.user_id, w.iso_year, w.iso_week, ${weekProjects} as projects,
+      coalesce(sum(e.hours) filter (where e.source = 'agent'), 0) as agent, coalesce(sum(e.hours) filter (where e.source <> 'agent'), 0) as person
+    from time.week w join time.entry e on e.week_id = w.id
+    where (w.iso_year, w.iso_week) between (${first.year}, ${first.week}) and (${q.last.year}, ${q.last.week}) ${only} group by w.id`);
+  const by = new Map(keys.map((k) => [weekKey(k), { week: weekKey(k), agentHours: 0, personHours: 0 }]));
+  for (const r of rows) {
+    if (!visible(viewer, r.user_id as string, (r.projects as string[]) ?? [])) continue;
+    const w = by.get(weekKey({ year: Number(r.iso_year), week: Number(r.iso_week) }));
+    if (w) { w.agentHours += n(r.agent); w.personHours += n(r.person); }
+  }
+  const tidy = (x: number) => Math.round(x * 10) / 10;
+  return [...by.values()].map((w) => ({ ...w, agentHours: tidy(w.agentHours), personHours: tidy(w.personHours) }));
 }
