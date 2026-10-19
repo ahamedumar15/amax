@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { z } from "zod";
+import { toolInputSchema } from "./tool-schema";
 import type { Message, Provider, ProviderCall, ProviderResult, ToolUseBlock } from "./types";
 
 // The only place in the repo that talks to a model provider SDK (check-graph R7).
@@ -26,7 +26,7 @@ export function anthropicProvider(opts: { apiKey?: string; baseURL?: string } = 
         system: [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }],
         messages: toParams(req.messages),
       };
-      const tools = req.tools?.map((t) => ({ name: t.name, description: t.description, input_schema: z.toJSONSchema(t.input) as Anthropic.Tool.InputSchema }));
+      const tools = req.tools?.map((t) => ({ name: t.name, description: t.description, input_schema: toolInputSchema(t.input) as Anthropic.Tool.InputSchema }));
       const response = req.schema
         ? await client.messages.parse({ ...base, output_config: { effort: req.effort, format: zodOutputFormat(req.schema) } })
         : await client.messages.create({ ...base, output_config: { effort: req.effort }, ...(tools?.length ? { tools } : {}) });

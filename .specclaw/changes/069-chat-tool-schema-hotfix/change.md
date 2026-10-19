@@ -21,7 +21,7 @@ Nothing new on screen. Chat answers again where it showed the "AI chat failed" e
 
 ## Tasks
 
-- [ ] `T1` — Flatten union tool inputs into one object schema in the Anthropic provider (AC-1, AC-3)
+- [x] `T1` — Flatten union tool inputs into one object schema in the Anthropic provider (AC-1, AC-3)
   Files: packages/ai/src/tool-schema.ts, packages/ai/src/anthropic.ts, packages/ai/tests/tool-schema.test.ts
 - [ ] `T2` — Every registered tool sends a valid provider schema (AC-2)
   Files: apps/web/tests/tool-schemas.test.ts
