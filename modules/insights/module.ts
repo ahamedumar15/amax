@@ -3,6 +3,7 @@ import { chatIntents } from "./chat";
 import { EVENTS, type InsightDismissed, type InsightRecorded } from "./contracts";
 import { insightsFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
+import { insightsOverview } from "./server/overview";
 import { briefingKind } from "./server/agents";
 import { InsightsPage } from "./ui/InsightsPage";
 import { schedules, workflows } from "./workflows";
@@ -23,6 +24,7 @@ export default defineModule({
   grants: { Leadership: [...READ, "insights:record", "insights:dismiss"], PM: READ },
   routes: [{ path: "", title: "Insights", component: InsightsPage }],
   mcpTools,
+  overview: insightsOverview as never,
   chatIntents,
   // 032: an insight and its sources (which cascade with it) are kept two years from the day they are as of.
   retention: [

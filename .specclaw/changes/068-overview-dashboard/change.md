@@ -68,7 +68,7 @@ doesn't exist; the new section shows only those two:
 - [x] `T4` — Finance: a `readyToInvoice` read (open drafts, total + top lines per currency) and the Ready to invoice ticket (AC-1)
   Files: modules/finance/contracts.ts, modules/finance/server/overview.ts, modules/finance/module.ts, modules/finance/tests/overview.test.ts
   Depends: T1
-- [ ] `T5` — Insights: overview hook giving the top 3 current insights as a list panel (AC-4)
+- [x] `T5` — Insights: overview hook giving the top 3 current insights as a list panel (AC-4)
   Files: modules/insights/server/overview.ts, modules/insights/module.ts
   Depends: T1
 - [ ] `T6` — Integration: open suggestions in Waiting on you, the lede from real numbers, e2e coverage for every block with axe in light and dark, and count ripples (AC-3, AC-8, AC-9)
