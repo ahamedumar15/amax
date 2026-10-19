@@ -1,9 +1,10 @@
 {
   "change": "069-chat-tool-schema-hotfix",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-19T05:43:34Z"},
-    "tasks": {"status":"done","at":"2026-10-19T05:44:18Z"}
+    "tasks": {"status":"done","at":"2026-10-19T05:44:18Z"},
+    "verify": {"status":"done","at":"2026-10-19T06:00:24Z"}
   }
 }

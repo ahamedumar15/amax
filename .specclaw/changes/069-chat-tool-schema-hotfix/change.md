@@ -30,3 +30,21 @@ Nothing new on screen. Chat answers again where it showed the "AI chat failed" e
   Files: packages/ai/src/gateway.ts, packages/ai/tests/gateway.test.ts
 
 ## Verify
+
+**Verdict:** PASS
+
+- AC-1: pass — `toolInputSchema` turns the `place_legal_hold` union into one `type: "object"` schema (merged properties, `kind` as an enum, `required` = kind and reason); `packages/ai/tests/tool-schema.test.ts`. Sending all 289 registered tools to the real API now returns 200 (it returned `400 tools.219.custom.input_schema.type: Field required` before).
+- AC-2: pass — `apps/web/tests/tool-schemas.test.ts` checks every tool in `toolRegistry()`. With the old `z.toJSONSchema` it flags `allow_inbox_source` and `place_legal_hold`.
+- AC-3: pass — the gateway still runs `tool.input.safeParse` before a tool runs; the test shows the union rejects a matter hold with no matter or ids.
+- AC-4: pass — a provider error with status 400 and type `invalid_request_error` throws `AiOutputError` with code `400 invalid_request_error`; `logError` prints that code and not the message (`packages/ai/tests/gateway.test.ts`, DB suite on).
+
+Commands (`DATABASE_MIGRATE_URL` on local test Postgres):
+- `turbo run test --force` exit 0 (35/35 tasks); `turbo run lint --force` + `check-graph` exit 0 (22 modules, 11 packages); `pnpm build` exit 0.
+- `pnpm --filter @amax/web e2e` exit 0 (8 passed); `pnpm --filter @amax/web e2e:auth` exit 0 (82 passed).
+
+Notes:
+- Cause found in prod: `ai.call` shows every chat since 2026-10-19 failing on both haiku and sonnet; the API key works; the 400 reproduces with the registered tool list.
+- `specclaw-preset-check .`: only the repo-wide `comment` rule; no hits in 069 files.
+- Quality: `specclaw-quality-scan` not_run (jq "Argument list too long", as in 066–068).
+- Screenshots: no UI change. `shots/mock.png`; chat is checked on the live app after deploy.
+- specclaw-review: not run per change (operator rule: review once per module end).
