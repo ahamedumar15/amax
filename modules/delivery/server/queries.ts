@@ -56,7 +56,7 @@ const PROPOSALS = sql`
     select e.name, d.status from delivery.deployment d join delivery.environment e on e.id = d.environment_id
     where d.release_id = p.release_id and d.voided_at is null order by e.position desc, d.at desc limit 1) last on true`;
 
-const ACTIVE = sql`coalesce(p.meta->>'withdrawn', 'false') <> 'true'`;
+export const ACTIVE = sql`coalesce(p.meta->>'withdrawn', 'false') <> 'true'`;
 
 export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: string } = {}) =>
   read(v, async (tx) => {
@@ -81,13 +81,13 @@ export const getProject = (v: Viewer, key: string | undefined, projectId?: strin
  * "Today" for a tenant's date windows: its delivery.clock_pin row (a validated date; the visual tests
  * pin fixtures.md's Oct 16, 2026), else the real date. Per tenant, module data, no process env.
  */
-const clockOf = async (tx: Tx): Promise<Date> => {
+export const clockOf = async (tx: Tx): Promise<Date> => {
   const [r] = await tx.execute(sql`select today::text as today from delivery.clock_pin`);
   return r ? new Date(`${r.today as string}T15:00:00Z`) : new Date();
 };
 export const today = (v: Viewer) => read(v, clockOf);
 /** The end of "today" (UTC): windows stop there, so a pin earlier than real time never counts later rows (final review). */
-const endOfDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
+export const endOfDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
 
 const isoWeek = (d: Date) => {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));

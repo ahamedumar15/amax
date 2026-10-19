@@ -13,6 +13,7 @@ import { ReleasesPage } from "./ui/ReleasesPage";
 import { ReleasePage } from "./ui/ReleasePage";
 import { ProjectProposals, ProjectReleases } from "./ui/ProjectLists";
 import { ContractSection, RisksSection, TeamSection } from "./ui/ProjectSections";
+import { deliveryOverview } from "./server/overview";
 
 const READ = ["delivery:read"];
 
@@ -51,6 +52,7 @@ export default defineModule({
   mcpTools,
   search: search as never,
   activity: listActivity as never,
+  overview: deliveryOverview as never,
   // 008 AC-2: verified pushes close the tasks their commits name.
   inbound: { providers: ["github", "azure-devops"], handle: ingestPush },
   suggestions: [linkIdentity],
