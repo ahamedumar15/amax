@@ -1,14 +1,15 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-19 01:19 UTC
+**Last Updated:** 2026-10-19 05:43 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
-- 🔍 **067-glob-security-bump** — verify done | 2/2 tasks (100%) | 0 failed
+- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed | PR #96 merged
+- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed | PR #97 merged
 
 ## Pending Proposals
 
@@ -16,6 +17,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
 - 📋 **016-payroll-australia** — proposal ready, awaiting planning
 - 📋 **019-accounting-journals** — proposal ready, awaiting planning
+- 📋 **069-chat-tool-schema-hotfix** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -87,6 +89,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 65
-- **Active:** 1
+- **Total changes:** 66
+- **Active:** 2
 - **Completed:** 64
