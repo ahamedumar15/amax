@@ -44,6 +44,9 @@ test("070 AC5 a draft week's row opens chat to fix those hours, with the row pin
   await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText("Fleet Tracker, 2026-W42");
   await expect(page.getByLabel("Message amax")).toHaveValue("Fix my Fleet Tracker hours for 2026-W42: ");
   expect(await axe(page)).toEqual([]);
+  await page.locator("table.tbl tbody tr", { hasText: "Fleet Tracker" }).getByRole("button", { name: "Add Fleet Tracker, 2026-W42 to chat" }).press("Enter");
+  await expect(page.getByLabel("Message amax")).toHaveValue("");
+  await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span")).toHaveText(["Fleet Tracker, 2026-W42"]);
   const kasun = await (await browser.newContext({ baseURL: test.info().project.use.baseURL })).newPage();
   await signIn(kasun, "kasun@lumenlabs.test", "/time/my/2026-W42");
   await expect(kasun.getByRole("button", { name: /^Fix .* hours$/ })).toHaveCount(0);

@@ -111,10 +111,14 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       // An untouched Ask amax prompt belongs to the record it pinned. A pin or prompt for another record
       // replaces both, so the agent never gets the last row's pin with this row's question.
       const ask = asked.current;
-      if (ask && ask.key !== key && filled.current !== null && filled.current === textNow.current) {
+      const untouched = ask !== null && filled.current !== null && filled.current === textNow.current;
+      if (ask && untouched && ask.key !== key) {
         if (ask.added) setPins((p) => p.filter((x) => pinKey(x) !== ask.key));
         if (!d.prompt && !d.intent) { filled.current = null; setText(""); }
         asked.current = null;
+      } else if (untouched && !d.prompt && !d.intent) {
+        // A bare pin (the row's +) on the record the prompt came with keeps the pin and drops the prompt.
+        filled.current = null; setText(""); asked.current = null;
       }
       const added = ask && ask.key === key ? ask.added : !pinsNow.current.some((x) => pinKey(x) === key);
       // A pin replaces pins of the same kind (same read tool and facet), so a second row takes the first
