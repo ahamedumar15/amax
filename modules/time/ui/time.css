@@ -2,6 +2,7 @@
 .time .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .time .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .time .actions form{display:contents}
+.time .row-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .time .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
 .time .row.head .lede{margin:0}
 .time .row.head>.actions{flex-shrink:0;width:auto}
