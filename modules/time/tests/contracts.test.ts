@@ -13,6 +13,7 @@ describe("time contracts", () => {
     expect(weekStart({ year: 2026, week: 42 }).toISOString().slice(0, 10)).toBe("2026-10-12");
     expect(workDays({ year: 2026, week: 42 })).toEqual(["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16"]);
     expect(isoWeekOf(new Date("2021-01-03T00:00:00Z"))).toEqual({ year: 2020, week: 53 });
+    expect(weekKey(isoWeekOf(new Date("2025-12-29T00:00:00Z")))).toBe("2026-W01");
     expect(weekKey(shiftWeek({ year: 2026, week: 53 }, 1))).toBe("2027-W01");
     expect(parseWeekKey("2026-W42")).toEqual({ year: 2026, week: 42 });
     expect(parseWeekKey("2025-W53")).toBeNull();

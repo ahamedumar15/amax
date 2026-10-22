@@ -93,10 +93,12 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 - [x] `T4` — Reports: `revision` and `deleted_at` on `logged_hours`, corrected and deleted handlers applying only newer revisions, a late `logged` never reviving a tombstone, utilisation skipping tombstones (AC-7)
   Files: modules/reports/db/migrations/0002_hours_revision.sql, modules/reports/server/hours.ts, modules/reports/server/inputs.ts, modules/reports/module.ts, modules/reports/tests/hours-sync.test.ts
   Depends: T2
-- [ ] `T5` — Integration through the outbox: log → submit → reject → correct/delete → resubmit with totals and Reports; TIM-T01 undo; out-of-order and retried events; TIM-T04, TIM-T05; README (AC-11, AC-12)
+- [x] `T5` — Integration through the outbox: log → submit → reject → correct/delete → resubmit with totals and Reports; TIM-T01 undo; out-of-order and retried events; TIM-T04, TIM-T05; README (AC-11, AC-12)
   Files: modules/time/tests/corrections-flow.test.ts, modules/time/README.md
   Depends: T3, T4
 
 ## Verify
 
 <!-- Filled by verify. -->
+
+Quality: not_run (`specclaw-quality-scan`: "jq is required", not installed on this Windows host; `jscpd` not installed either).
