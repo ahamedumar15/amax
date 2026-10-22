@@ -892,6 +892,71 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 068 Overview deltas ================= -->
+<section data-change="073-time-workflow-enhancements" id="073-time-workflow-enhancements" data-roles="all" data-title="Time: weekend and reminders" data-nav="no" data-parent="001-amax-foundation-time">
+  <h1>Time: weekend hours, reminders, This week</h1>
+  <p class="lede">Changes to <a href="#001-amax-foundation-time">Time</a>. Fictional data.</p>
+  <div class="card pinnable">
+    <h2>This week</h2>
+    <div class="big">118.5 h <span class="muted" style="font-size:15px;font-weight:500">of 176 h allocated</span></div>
+    <div class="gbar" style="margin:16px 0 22px"><i style="width:67%;background:linear-gradient(90deg,#C3B5FF,#7B61FF)"></i></div>
+    <div class="row line pinnable"><span>Fleet Tracker</span><b>58 h</b></div>
+    <div class="row line pinnable"><span>Contoso Portal</span><b>41 h</b></div>
+    <div class="row line pinnable"><span>HR Insights</span><b>19.5 h</b></div>
+    <p class="muted">No allocation data: "118.5 h logged · allocation unknown".</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>My timesheet, 2026-W42</h2><span class="chip">Weekend hours shown</span></div>
+    <table><thead><tr><th>Project</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat <small>weekend</small></th><th>Sun <small>weekend</small></th><th>Total</th></tr></thead>
+      <tbody><tr><td>Fleet Tracker</td><td>8</td><td>8</td><td>7.5</td><td>8</td><td>8</td><td>4</td><td>0</td><td>43.5</td></tr></tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Notifications</h2><span class="chip">Mon 09:00, Asia/Colombo</span></div>
+    <p>Reminder: submit your timesheet for 2026-W42</p>
+  </div>
+</section>
+<section data-change="072-time-consumers-sync" id="072-time-consumers-sync" data-roles="all" data-title="Time: approvers notified" data-nav="no" data-parent="001-amax-foundation-time">
+  <h1>Time: project approvers hear about submissions</h1>
+  <p class="lede">Only the bell and the Reports lede change. Fictional data.</p>
+  <div class="card">
+    <div class="card-head"><h2>Notifications (Ayesha Perera, PM of Fleet Tracker)</h2><span class="chip">Approvals</span></div>
+    <p><strong>Kasun Dias submitted 2026-W42</strong><br><span class="muted">12 h on Fleet Tracker to approve</span> · <a href="#001-amax-foundation-time">Open Team time</a></p>
+  </div>
+  <div class="card">
+    <h2>Reports</h2>
+    <p class="lede">Utilisation from submitted and approved time: 81% month to date, against a target of 80%.</p>
+  </div>
+</section>
+<section data-change="071-time-access-and-integrity" id="071-time-access-and-integrity" data-roles="admin payroll" data-title="Payroll: time sources" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Payroll run: where overtime came from</h1>
+  <p class="lede">Only the run's Sources line changes. Fictional data.</p>
+  <div class="card">
+    <div class="card-head"><h2>Sources, October 2026, Lumen Labs LK</h2></div>
+    <div class="row line"><span>HR</span><b>Base salary and cost centre from HR</b></div>
+    <div class="row line"><span>Leave</span><b>Approved leave, unpaid days deducted</b></div>
+    <div class="row line"><span>Time</span><b>Approved timesheets, 4 weeks, 12 people</b></div>
+    <div class="row line"><span>Time (incomplete case)</span><b><span class="chip" style="background:#FFF1D6;color:#8A5A00">2 of 14 people unreadable: overtime incomplete</span></b></div>
+  </div>
+</section>
+<section data-change="070-time-entry-corrections" id="070-time-entry-corrections" data-roles="all" data-title="Time: fix hours" data-nav="no" data-parent="001-amax-foundation-time">
+  <h1>My timesheet: fix or remove hours through chat</h1>
+  <p class="lede">A rejected week, 2026-W42. No edit fields: Ask amax opens chat with the row pinned. Fictional data.</p>
+  <div class="card">
+    <div class="card-head"><h2>Sent back by Ayesha Perera</h2><span class="chip">Rejected</span></div>
+    <p>"Fleet Tracker Wednesday says 10 h; you were on leave that afternoon."</p>
+  </div>
+  <div class="card pinnable">
+    <table><thead><tr><th>Project</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Total</th><th></th></tr></thead>
+      <tbody>
+        <tr class="pinnable"><td>Fleet Tracker</td><td>8</td><td>8</td><td>10</td><td>8</td><td>8</td><td>42</td><td><button class="btn sm">✦ Fix these hours</button></td></tr>
+        <tr class="pinnable"><td>Contoso Portal</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1.5</td><td>1.5</td><td><button class="btn sm">✦ Fix these hours</button></td></tr>
+      </tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>amax chat</h2><span class="chip">Pinned: Fleet Tracker, 2026-W42</span></div>
+    <p><strong>You:</strong> Wednesday should be 6 h.</p>
+    <p><strong>amax:</strong> Change Fleet Tracker, Wed Oct 14, from 10 h to 6 h? <button class="btn sm primary">Confirm</button> <button class="btn sm">Cancel</button></p>
+  </div>
+</section>
 <section data-change="069-chat-tool-schema-hotfix" id="069-chat-tool-schema-hotfix" data-roles="all" data-title="Chat answers again" data-nav="no" data-parent="001-amax-foundation">
   <h1>Chat answers again</h1>
   <p class="lede">A fix with no new screen: chat replies instead of showing "AI chat failed". Fictional data.</p>

@@ -1,0 +1,9 @@
+{
+  "change": "070-time-entry-corrections",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-22T12:20:08Z"},
+    "tasks": {"status":"done","at":"2026-10-22T12:20:58Z"}
+  }
+}
