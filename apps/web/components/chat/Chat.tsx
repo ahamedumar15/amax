@@ -78,6 +78,12 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   const fields = useRef<string[]>([]);
   // A prompt an Ask amax chip filled, until the person edits it (059 AC-7): what they type finishes it.
   const filled = useRef<string | null>(null);
+  // The pin that came with that prompt, and whether the prompt added it (rather than it being pinned already).
+  const asked = useRef<{ key: string; added: boolean } | null>(null);
+  const textNow = useRef(text);
+  textNow.current = text;
+  const pinsNow = useRef(pins);
+  pinsNow.current = pins;
 
   useEffect(() => { if (open) input.current?.focus(); }, [open]);
   // The caret goes to the end of a filled prompt in the same commit that shows it, so nothing can see
@@ -101,9 +107,27 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   useEffect(() => {
     const onEvent = (e: Event) => {
       const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
-      if (d.pin) { setPins((p) => (p.some((x) => pinKey(x) === pinKey(d.pin!)) ? p : [...p, d.pin!])); announce(`${d.pin.label} added to chat`); }
-      if (d.intent) { setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
+      const key = d.pin ? pinKey(d.pin) : undefined;
+      // An untouched Ask amax prompt belongs to the record it pinned. A pin or prompt for another record
+      // replaces both, so the agent never gets the last row's pin with this row's question.
+      const ask = asked.current;
+      if (ask && ask.key !== key && filled.current !== null && filled.current === textNow.current) {
+        if (ask.added) setPins((p) => p.filter((x) => pinKey(x) !== ask.key));
+        if (!d.prompt && !d.intent) { filled.current = null; setText(""); }
+        asked.current = null;
+      }
+      const added = ask && ask.key === key ? ask.added : !pinsNow.current.some((x) => pinKey(x) === key);
+      // A pin replaces pins of the same kind (same read tool and facet), so a second row takes the first
+      // row's place; pins of other kinds (a project, a person) stay, for questions across records.
+      const pin = d.pin;
+      if (pin) {
+        const sameKind = (x: Pin) => x.tool === pin.tool && (x.facet ?? "") === (pin.facet ?? "") && pinKey(x) !== key;
+        setPins((p) => { const rest = p.filter((x) => !sameKind(x)); return rest.some((x) => pinKey(x) === key) ? rest : [...rest, pin]; });
+        announce(`${pin.label} added to chat`);
+      }
+      if (d.intent) { asked.current = null; setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
       else if (d.prompt) {
+        asked.current = key ? { key, added } : null;
         filled.current = d.prompt;
         setText(d.prompt);
       }

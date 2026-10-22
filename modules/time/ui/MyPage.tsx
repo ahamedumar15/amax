@@ -34,12 +34,12 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
         </div>
         <div className="scroll-x"><table className="tbl">
           <caption className="sr">My hours for {m.key}</caption>
-          <thead><tr><th>Project</th>{DAY_NAMES.map((d) => <th className="num" key={d}>{d}</th>)}<th className="num">Total</th></tr></thead>
+          <thead><tr><th>Project</th>{DAY_NAMES.map((d) => <th className="num" key={d}>{d}</th>)}<th className="num">Total</th><th className="num"><span className="sr">Actions</span></th></tr></thead>
           <tbody>
-            {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b>{pin(r.projectName)}</td></tr>)}
-            {m.rows.length === 0 && <tr><td colSpan={7} className="muted">No time logged this week.</td></tr>}
+            {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td><td className="num" data-label="">{pin(r.projectName)}</td></tr>)}
+            {m.rows.length === 0 && <tr><td colSpan={8} className="muted">No time logged this week.</td></tr>}
           </tbody>
-          <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" key={i}>{hrs(h)}</td>)}<td className="num"><b>{m.total.toFixed(1)}</b></td></tr></tfoot>
+          <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" key={i}>{hrs(h)}</td>)}<td className="num"><b>{m.total.toFixed(1)}</b></td><td /></tr></tfoot>
         </table></div>
       </div>
     </div>
