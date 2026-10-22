@@ -99,6 +99,36 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
 
-Quality: not_run (`specclaw-quality-scan`: "jq is required", not installed on this Windows host; `jscpd` not installed either).
+Every AC passes. The two specclaw gates don't run clean on this Windows host (see Gates); the product owner chose to record PASS with them noted, as in 068 (2026-10-22).
+
+- AC-1: pass — `modules/time/tests/corrections.test.ts` AC1: owner corrects a draft entry to the day's exact 24 h and refuses 0.05 h more; 0, 0.07 and 24.05 h and an empty change are invalid; project and billable change; a teammate is out of scope; Kasun's submitted week refuses, then once approved refuses Kasun and lets Sahan change it with one more `time.week.locked_change` audit row.
+- AC-2: pass — corrections.test.ts AC2: delete by a teammate refused, by the owner done, and a second delete of the same id gives the same out-of-scope error.
+- AC-3: pass — corrections.test.ts AC3: `time.entry.corrected` (revision 2, `before.hours`, `lockedChange: false`) then `time.entry.deleted` (revision 3) in `core.event`; the `time.entry.correct` audit row has before and after. Payloads declared in `module.ts`; `logged` carries `revision: 1`.
+- AC-4: pass — corrections.test.ts AC4: a trigger fails the event insert after the update; entry (hours, revision 1), audit log and outbox are unchanged.
+- AC-5: pass — `mcp.test.ts` "070 AC5": `get_timesheet` returns the row's entries with ids; `correct_time_entry` from the model becomes a pending card, writes nothing until confirmed, then revision 2, audited `source: chat`. `time.correct`/`time.delete` intents listed (`contracts.test.ts`). e2e `time.spec.ts` "070 AC5": the row's "Fix these hours" opens chat with "Fleet Tracker, 2026-W42" pinned and the prompt filled, axe clean; a submitted week has no button.
+- AC-6: pass — `commit-draft-008.test.ts`: undo leaves `time.entry.deleted` (revision 2) for the entry; `corrections-flow.test.ts` (TIM-T01): accept → outbox → one live `logged_hours` row; undo → outbox → none.
+- AC-7: pass — `modules/reports/tests/hours-sync.test.ts`: through the outbox, utilisation goes 4 h → 2.5 h → person gone (tombstone, revision 3); deleted-before-logged stays deleted; corrections delivered as revision 3, 2, 3 keep revision 3.
+- AC-8: pass — `week-guards.test.ts` AC8: Maya can't reopen her own approved W43 ("your own week"); Sahan can.
+- AC-9: pass — week-guards.test.ts AC9: `submit_week` with no week, and approve/remind/reopen naming a person without a week, refuse with "say which ISO week"; `mcp.test.ts` "070 AC9" refuses the same through MCP. Read tools still default to the latest week.
+- AC-10: pass — week-guards.test.ts AC10: a random week id and Ayesha's week give Nimal the identical error; with another transaction holding Ayesha's row `for update`, Nimal's approve fails at once (no wait on the lock); the namesake error has no `@`.
+- AC-11: pass — `corrections-flow.test.ts`: log 8 h + 7.5 h → submit → reject → correct to 6 h and delete → resubmit gives `hours: 6` in the result, 6 h in `weekTotals`, and one live 6 h row in Reports; TIM-T01 as in AC-6; TIM-T04 23.95 + 0.05 = 24 h accepted, one more 0.05 h refused, 0.07/0/24.05 invalid; TIM-T05 in `contracts.test.ts` (`isoWeekOf(2025-12-29)` = `2026-W01`). Unauthorised, submitted, approved and out-of-order cases are in AC-1, AC-2 and AC-7. No required test skipped.
+- AC-12: pass — `modules/time/README.md` (tools, events, rules) and `modules/reports/README.md` updated; time 82/82 and reports 7/7 with DB tests running; `check-graph --root` has only the Windows false positive below.
+
+Commands (`specclaw/070-time-entry-corrections` at `dc277e4`, `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`, the `amax-dev-postgres` container; Windows 11):
+- `pnpm lint` exit 0 (35/35 tsc tasks). Its `check-graph` step reports "0 modules" on Windows, so `node scripts/check-graph.mjs --root <repo>` was run instead: one R7 hit in `packages/testing/boundaries/r7-provider-sdk`, the deliberately broken fixture, which `rules.mjs` skips by a `/`-separated prefix that never matches a Windows `relative()` path. No real violation.
+- `pnpm turbo run build` exit 0.
+- `pnpm turbo run test --force --concurrency=1 --continue`: 31/35 packages green; 1,371 passed, 6 failed, 6 skipped (workflows' Temporal suite, `AMAX_TEMPORAL_TESTS` unset). The 6 failures are in packages 070 doesn't touch (`git diff b257a6d..HEAD -- packages modules/delivery` is empty) and are Windows-only: core `ac5-adapters` (backslash paths vs a `/` allowlist), testing `ac7-config` ×3 (symlink EPERM), delivery `releases` (absolute Windows path, failing on `main` before 070 too), workflows `kill` (POSIX signals). With `--concurrency=2` vitest's shared cache hit EPERM on Windows and no package ran.
+- Time e2e: `npx playwright test` through a scratch config that only quotes the setup paths as `file://` URLs (the repo config's bare `--import C:\Personal Projects\…` fails on Windows): 3 passed (009 AC3 mock diff ≤ 2 %, 070 AC5, 009 AC2/054 AC5).
+- `modules/time`, `modules/reports`, `finance`, `payroll`, `notifications`, `insights` suites and `apps/web/tests/tool-schemas.test.ts` (069) green with DB tests running.
+
+Gates:
+- `specclaw-preset-check .` exit 1: 2,491 repo-wide hits (2,421 `comment`, 70 `max_lines`), as in 068. In 070's files the hits are the modules' existing commented style plus short `070 AC-n` notes in the same convention; the two `max_lines` files were already over 80 lines before 070 (`modules/time/contracts.ts` 98 → 103, `modules/time/tests/review.test.ts` 140 → 141).
+- `specclaw-quality-scan . --gate` exit 2: "jq is required"; it also needs `lizard` (uvx) and `jscpd` (npx), none installed here. Quality: not_run.
+
+Screenshots: `shots/app.png` (My timesheet, Tharushi's draft W42, light), `shots/app-dark.png`, `shots/app-chat.png` ("Fix these hours" → chat with the row pinned and the prompt filled), `shots/mock.png` (`#070-time-entry-corrections`). Compared against the mock: same per-row "Fix these hours" button beside the row pin and the same chat hand-off with no edit fields. The mock shows a rejected week; the fixture week is a draft, so the sent-back comment (existing 009 chip) isn't on the shot.
+
+Notes:
+- The build refreshes the tracked copy `apps/mock/public/mock/index.html` from `.specclaw/mock/index.html` (+192 lines: 068, 069 and 070–073 sections); it isn't part of 070 and is left unstaged.
+- Playwright's Chromium headless shell (1248) was installed for the e2e run.
