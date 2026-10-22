@@ -35,17 +35,13 @@ describe.skipIf(!hasDb)("070 entry corrections (Postgres)", () => {
     const mon = (await entry("kasun", "2026-10-12", "CON"))!;
     await expect(correctEntry(ctxFor(kasun), { entryId: mon.id, hours: 7 })).rejects.toThrow(/submitted and waiting/);
     await approveWeek(ctxFor(sahan), { person: "kasun@lumenlabs.test", week: W });
-    await expect(correctEntry(ctxFor(kasun), { entryId: mon.id, hours: 7 })).rejects.toThrow(/approved and locked/);
-    const locked = sql`select count(*) as n from core.audit_event where action = 'time.week.locked_change' and actor = ${`user:${sahan.userId}`}`;
-    const before = await count(locked);
-    await expect(correctEntry(ctxFor(sahan), { entryId: mon.id, hours: 7 })).resolves.toMatchObject({ hours: 7 });
-    expect(await count(locked)).toBe(before + 1);
+    for (const who of [kasun, sahan]) await expect(correctEntry(ctxFor(who), { entryId: mon.id, hours: 7, reason: "Friday was 7 h" })).rejects.toThrow(/approved and locked; reopen it/);
   });
 
   it("AC2 delete follows the same rules: the owner's draft entry goes, someone else's is refused", async () => {
-    const [tharushi, nimal] = await Promise.all([db.as("tharushi"), db.as("nimal")]);
+    const [tharushi, kasun] = await Promise.all([db.as("tharushi"), db.as("kasun")]);
     const tue = (await entry("tharushi", "2026-10-13", "FLT"))!;
-    await expect(deleteEntry(ctxFor(nimal), { entryId: tue.id })).rejects.toThrow(/data scope/);
+    await expect(deleteEntry(ctxFor(kasun), { entryId: tue.id })).rejects.toThrow(/data scope/);
     await expect(deleteEntry(ctxFor(tharushi), { entryId: tue.id })).resolves.toMatchObject({ deleted: true });
     await expect(deleteEntry(ctxFor(tharushi), { entryId: tue.id })).rejects.toThrow(/data scope/);
   });

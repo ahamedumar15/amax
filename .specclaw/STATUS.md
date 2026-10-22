@@ -1,28 +1,27 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-22 13:46 UTC
+**Last Updated:** 2026-10-22 17:24 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
-- 🔀 **015-payroll-sri-lanka** — PR #command requires
-- 🔀 **016-payroll-australia** — PR #command requires
-- 🔀 **019-accounting-journals** — PR #command requires
-- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed | PR #96 merged
-- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed | PR #97 merged
-- 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed | PR #98 merged
-- 🔀 **070-time-entry-corrections** — pr raised | 5/5 tasks (100%) | 0 failed | PR #102 open
-- 🔨 **071-time-access-and-integrity** — 0/5 tasks (0%) | 0 failed | PR #command requires
-- 🔨 **072-time-consumers-sync** — 0/5 tasks (0%) | 0 failed | PR #command requires
-- 🔨 **073-time-workflow-enhancements** — 0/4 tasks (0%) | 0 failed | PR #command requires
-- 🔀 **eval** — PR #command requires
+- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed
+- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed
+- 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed
+- 🔍 **070-time-entry-corrections** — verify done | 9/9 tasks (100%) | 0 failed
+- 🔨 **071-time-access-and-integrity** — 0/5 tasks (0%) | 0 failed
+- 🔨 **072-time-consumers-sync** — 0/5 tasks (0%) | 0 failed
+- 🔨 **073-time-workflow-enhancements** — 0/4 tasks (0%) | 0 failed
 
 ## Pending Proposals
 
-_None._
+
+- 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
+- 📋 **016-payroll-australia** — proposal ready, awaiting planning
+- 📋 **019-accounting-journals** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -94,6 +93,6 @@ _None._
 
 ## Stats
 
-- **Total changes:** 75
-- **Active:** 11
+- **Total changes:** 71
+- **Active:** 7
 - **Completed:** 64

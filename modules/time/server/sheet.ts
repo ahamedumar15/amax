@@ -26,7 +26,7 @@ export async function getTimesheet(v: Viewer, ref: SheetRef) {
   const t = await teamWeek(v, wantedWeek(key));
   const row = t.rows.find((r) => r.weekId === ref.weekId);
   if (!row) return null;
-  // An Admin changes a locked week's entries (070), so they see the ids; others see the totals only.
-  const entries = can(v, "time:admin") ? await read(v, async (tx) => weekEntries(tx, row.weekId, await projectNames(tx))) : undefined;
+  // Whoever may fix the week's entries (070 AC-14: its approvers, Admins included) sees their ids; others see the totals only.
+  const entries = row.canApprove || can(v, "time:admin") ? await read(v, async (tx) => weekEntries(tx, row.weekId, await projectNames(tx))) : undefined;
   return { week: t.key, dates: t.days, ...row, ...(entries ? { entries } : {}) };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scriptedWrite } from "@amax/ai/scripted-writes";
-import { approveAllPrompt, decidePrompt, remindAllPrompt } from "../ui/prompts";
+import { approveAllPrompt, decidePrompt, fixOtherPrompt, remindAllPrompt } from "../ui/prompts";
 
 const rows = [
   { weekId: "11111111-1111-4111-8111-111111111111", personName: "Nimal Silva" },
@@ -19,5 +19,13 @@ describe("057 Team time prompts carry the week id end to end", () => {
   ])("%s", (_n, prompt, want) => {
     expect(prompt).toContain("week id");
     expect(run(prompt)).toEqual(want);
+  });
+});
+
+describe("070 AC-14 Team time's Fix hours prompt", () => {
+  it("AC14 names the person and the week id and asks for a reason", () => {
+    const prompt = fixOtherPrompt(rows[1], "2026-W42");
+    expect(prompt).toContain(`Kasun Dias's hours for 2026-W42 (week id ${rows[1].weekId})`);
+    expect(prompt).toMatch(/Reason: $/);
   });
 });

@@ -10,6 +10,11 @@ can't be fixed, and hours never go down. Undoing a commit-draft suggestion delet
 (TIM-B06); writes without a week act on the UTC current week (TIM-B10); and `findWeek` tells "doesn't exist" apart
 from "not yours", and locks rows before checking the caller (TIM-B12). Evidence is in [`audit.md`](audit.md).
 
+**Amendment, 2026-10-22** (from the Time page requirements, FR-4.6, FR-5.8, FR-5.10, FR-5.14, FR-5.18): an
+approved week can still be edited directly by another Admin rather than being locked, only the owner can fix a
+draft or rejected entry, a delete removes the row instead of keeping it, and the confirm card doesn't say what is
+changing. AC-13 to AC-17 cover these.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`070-time-entry-corrections`](../../mock/index.html#070-time-entry-corrections)
@@ -17,6 +22,11 @@ What changes on screen, and where to see it: [`070-time-entry-corrections`](../.
 My timesheet (009) gets, per project row, an **Ask amax** "Fix these hours" button with that row pinned. Chat lists the
 row's entries and proposes `correct_time_entry` or `delete_time_entry`, which the person confirms. A rejected week shows
 the approver's comment above the rows with the same button. There are no edit fields.
+
+Amendment: the confirm card says what changes ("Fleet Tracker, Wed Oct 14: 10 h → 6 h"). An approved week
+has no "Fix these hours" button, and chat answers a fix request with "locked, reopen it with a reason". A PM's card for a
+member's entry names the person and the reason, and the member's bell shows "Ayesha Perera changed your Fleet Tracker
+hours for Wed Oct 14" with the reason.
 
 ## Acceptance Criteria
 
@@ -58,6 +68,52 @@ the approver's comment above the rows with the same button. There are no edit fi
 12. **AC-12** README (tools, events, rules) updated. `check:graph` passes; the `modules/time` and `modules/reports`
     suites pass with DB tests running.
 
+**Amendment, 2026-10-22.** It is additive only: it changes 070's own new tools (`correct_time_entry`,
+`delete_time_entry` and their cards), and nothing already on `main` behaves differently. Where AC-13 to AC-17
+differ from AC-1 to AC-3, they win.
+
+13. **AC-13** Approved weeks are locked for corrections and deletes (FR-4.6, FR-5.18). `correct_time_entry` and
+    `delete_time_entry` on an **approved** week are refused for everyone, Admin included, with "2026-W42 is approved
+    and locked; reopen it with a reason (reopen_week) to change it". Nothing is written. A reopened week (draft)
+    takes them again. Chat relays the refusal and offers the reopen path. My timesheet shows no "Fix these hours"
+    button on an approved week. **Unchanged:** `log_time`, accepting a commit draft, the 009 lock guard and its
+    `time.week.locked_change` audit, and every event payload's existing fields (`lockedChange` stays, and is
+    `false` on corrections and deletes).
+14. **AC-14** A PM or Admin can fix someone else's entry (FR-5.10). The owner can correct or delete as before. So can a
+    PM who holds `time:approve` on the entry's project (and on the new project, if it changes), and an Admin. Anyone
+    else gets the AC-10 out-of-scope error. A non-owner must give `reason` (3–500 characters), or validation fails
+    and names the field. The owner may leave it out. The same week rules apply to everyone: draft or rejected only,
+    a submitted week is refused, and an approved week is refused (AC-13). The audit row records the reason. The
+    `corrected` and `deleted` payloads gain `by`, `byOther` and `reason`.
+15. **AC-15** The member hears about it (FR-5.10). New rules `time.entry-corrected-by-other` and
+    `time.entry-deleted-by-other` (`when: { byOther: true }`, to the owner, except `by`) put
+    "{by} changed your {project} hours for {day}" (or "removed") in the owner's bell, with the reason as the body, linking
+    to `/time/my/{week}`. A change the owner makes to their own entry sends nothing.
+16. **AC-16** Soft delete (FR-5.8). `time.entry` gets nullable `deleted_at timestamptz` and `deleted_by uuid`
+    (migration `0003_entry_deleted_at.sql`, columns only; existing rows stay null). `delete_time_entry` sets them
+    instead of removing the row, and bumps `revision`. Every read and guard skips rows with `deleted_at` set:
+    `get_my_week`, `get_timesheet`, Team time, the week total and project list, the day-total guard, the submit
+    payload, and `weekTotals`/`projectHours`/`visible()` in `contracts.ts`. No existing row has it set, so every
+    existing read returns what it does today. Correcting or deleting a deleted entry gives the same error as a missing
+    one. The row and its audit trail stay. **Unchanged:** the commit-draft undo keeps removing its entry as today
+    (with 070's event).
+17. **AC-17** The confirm card says what changes (FR-5.14). For a correction it names the project and day and shows
+    each changed field before → after (e.g. "Fleet Tracker, Wed Oct 14: 10 h → 6 h"). For a delete it names the
+    project, day and hours. For someone else's entry it also names the person and the reason. The tools take
+    `project`, `day`, `hoursBefore` and `person` as inputs, and their `propose` check refuses a card whose values
+    don't match the stored entry. The shared card lists every input, so the entry id still shows, after those
+    fields. Tested on the pending card's title. The shared confirm-card component and other tools' cards don't
+    change.
+18. **AC-18** Tests (DB-backed, none skipped): an Admin and the owner both refused to correct or delete on an approved
+    week, then allowed after `reopen_week`. A PM fixes a managed project's entry with a reason and the owner gets one
+    notification. A PM is refused on an unmanaged project, on moving the entry to an unmanaged project, and without a
+    reason. A soft-deleted entry is gone from every read and total but its row and audit remain. The card-text checks
+    from AC-17. README updated.
+19. **AC-19** Nothing existing changes: every test that exists on `main` and in 009 passes **unmodified**,
+    including Admin `log_time` into an approved week (audited as `time.week.locked_change`), the commit-draft undo,
+    and the shape of existing event payloads. Only tests for 070's own correct/delete locked-change cases are
+    replaced, because AC-13 supersedes them. `git diff main -- modules/time/tests` shows no edits to pre-070 tests.
+
 ## Scope
 
 - **In `modules/time/`:** `server/correct.ts` (new), `server/log.ts` (export the lock and day-total guards),
@@ -68,6 +124,15 @@ the approver's comment above the rows with the same button. There are no edit fi
   (`revision`, `deleted_at`). Without these, Reports keeps stale hours after every correction, which is AC-7.
   utilisation reads skip tombstones.
 - **Not here:** draft or rejected hours in Reports (REP-B04 → 072); Finance (072); entity scope (071).
+- **Amendment adds, in `modules/time/`:** `server/correct.ts` (its own approved-week refusal; `guardLock` and
+  `log.ts` behave as before), `server/entry.ts` (PM/Admin scope), the `deleted_at is null` filter in
+  `server/read.ts`, `server/weeks.ts`, `server/team.ts`, `server/guards.ts` (day total) and `contracts.ts`,
+  `module.ts` (two new rules; new optional payload fields only), `mcp.ts`, `chat.ts`, `ui/MyPage.tsx`, migration
+  `0003_entry_deleted_at.sql`, new tests, README. Nothing new outside `modules/time/`: Reports' tombstone already
+  handles `time.entry.deleted`.
+- **Not altered:** `log_time`, the commit-draft accept and undo, `reopen_week`, the 009 lock guard and its audit,
+  the shared confirm card, existing event fields, existing notification rules.
+- **Knock-on for unbuilt changes:** 071's migration becomes `0004`, 073's `0005`.
 
 ## Decisions
 
@@ -76,6 +141,15 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 - **D1 What can be corrected:** hours, billable, note and project, not the day. Allowing the day to change would let
   an entry move weeks, which mixes two weeks' locks.
 - **D2 Reports ordering:** revision plus tombstone in Reports (above), not a re-read of Time per event.
+- **D3 Approved weeks lock fully for corrections and deletes** (product owner, 2026-10-22): no Admin can correct or
+  delete an entry in an approved week; reopen with a reason is the only path (FR-4.6, FR-5.18). The product owner
+  also asked that no existing feature change, so 009's Admin `log_time` into an approved week stays as it is. Locking
+  that too would be its own change.
+- **D4 Who fixes someone else's entry** (product owner, 2026-10-22, FR-5.10): a PM on the entry's project, or an
+  Admin, with a reason; the member is notified.
+- **D5 Soft delete** (product owner, 2026-10-22, FR-5.8): `deleted_at` on the row; the audit trail and Reports'
+  tombstone are unchanged.
+- **D6 Confirm card** (product owner, 2026-10-22, FR-5.14): before → after for each changed field.
 
 ## Tasks
 
@@ -97,14 +171,28 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
   Files: modules/time/tests/corrections-flow.test.ts, modules/time/README.md
   Depends: T3, T4
 
+<!-- Amendment (AC-13–AC-19). Additive only: log_time, guardLock, the commit-draft accept/undo and pre-070 tests stay as they are. -->
+
+- [x] `T6` — Team time: a "Fix hours" `AskButton` on each draft or rejected row the viewer can approve (row pinned, prompt naming the person and week id and asking for a reason). My timesheet keeps no button on approved weeks; the chat-first test covers both (AC-13 UI, AC-14 UI)
+  Files: modules/time/ui/Timesheets.tsx, modules/time/ui/prompts.ts, modules/time/tests/chat-first.test.ts, modules/time/tests/prompts.test.ts
+- [x] `T7` — Backend: migration `0003_entry_deleted_at.sql`; correct and delete refuse approved weeks for everyone with the reopen hint; PM (managed project, old and new) or Admin may act with a required reason; soft delete; `deleted_at is null` in every read, guard and contract; optional `by`/`byOther`/`reason` on the corrected and deleted payloads; the two `*-by-other` notification rules (AC-13–AC-16)
+  Files: modules/time/db/migrations/0003_entry_deleted_at.sql, modules/time/server/correct.ts, modules/time/server/entry.ts, modules/time/server/guards.ts, modules/time/server/read.ts, modules/time/server/weeks.ts, modules/time/contracts.ts, modules/time/module.ts, modules/time/tests/governance.test.ts
+  Depends: T6
+- [x] `T8` — Tools and chat: `reason` on `correct_time_entry` and `delete_time_entry`; their confirm cards say project, day, person and before → after, never the id; `get_timesheet` returns entry ids to whoever may fix that week (AC-14, AC-17)
+  Files: modules/time/mcp.ts, modules/time/chat.ts, modules/time/server/sheet.ts, modules/time/tests/mcp.test.ts
+  Depends: T7
+- [x] `T9` — Integration: replace 070's own locked-change correct/delete tests; PM fix → outbox → one bell item for the owner; soft-deleted entry gone from totals and Reports; pre-070 tests unmodified (`git diff main -- modules/time/tests`); README (AC-18, AC-19)
+  Files: modules/time/tests/corrections.test.ts, modules/time/tests/corrections-flow.test.ts, modules/time/README.md
+  Depends: T7, T8
+
 ## Verify
 
 **Verdict:** PASS
 
-Every AC passes. The two specclaw gates don't run clean on this Windows host (see Gates); the product owner chose to record PASS with them noted, as in 068 (2026-10-22).
+Re-verified after the 2026-10-22 amendment (AC-13 to AC-19), working tree on `specclaw/070-time-entry-corrections` at `e67af2d` plus the uncommitted amendment. Every AC passes. The two specclaw gates don't run clean on this Windows host (see Gates); the product owner chose again, on 2026-10-22, to record PASS with them noted.
 
-- AC-1: pass — `modules/time/tests/corrections.test.ts` AC1: owner corrects a draft entry to the day's exact 24 h and refuses 0.05 h more; 0, 0.07 and 24.05 h and an empty change are invalid; project and billable change; a teammate is out of scope; Kasun's submitted week refuses, then once approved refuses Kasun and lets Sahan change it with one more `time.week.locked_change` audit row.
-- AC-2: pass — corrections.test.ts AC2: delete by a teammate refused, by the owner done, and a second delete of the same id gives the same out-of-scope error.
+- AC-1: pass — `modules/time/tests/corrections.test.ts` AC1: the owner corrects a draft entry to the day's exact 24 h and is refused 0.05 h more; 0, 0.07 and 24.05 h and an empty change are invalid; project and billable change; someone out of scope is refused; Kasun's submitted week is refused. Once approved, Kasun and Sahan (Admin) are both refused with the reopen hint (AC-13 supersedes the locked-change path for corrections).
+- AC-2: pass — corrections.test.ts AC2: a delete by someone out of scope (Kasun) is refused, the owner's delete goes through, and a second delete of the same id gives the same out-of-scope error.
 - AC-3: pass — corrections.test.ts AC3: `time.entry.corrected` (revision 2, `before.hours`, `lockedChange: false`) then `time.entry.deleted` (revision 3) in `core.event`; the `time.entry.correct` audit row has before and after. Payloads declared in `module.ts`; `logged` carries `revision: 1`.
 - AC-4: pass — corrections.test.ts AC4: a trigger fails the event insert after the update; entry (hours, revision 1), audit log and outbox are unchanged.
 - AC-5: pass — `mcp.test.ts` "070 AC5": `get_timesheet` returns the row's entries with ids; `correct_time_entry` from the model becomes a pending card, writes nothing until confirmed, then revision 2, audited `source: chat`. `time.correct`/`time.delete` intents listed (`contracts.test.ts`). e2e `time.spec.ts` "070 AC5": the row's "Fix these hours" opens chat with "Fleet Tracker, 2026-W42" pinned and the prompt filled, axe clean; a submitted week has no button.
@@ -115,20 +203,23 @@ Every AC passes. The two specclaw gates don't run clean on this Windows host (se
 - AC-10: pass — week-guards.test.ts AC10: a random week id and Ayesha's week give Nimal the identical error; with another transaction holding Ayesha's row `for update`, Nimal's approve fails at once (no wait on the lock); the namesake error has no `@`.
 - AC-11: pass — `corrections-flow.test.ts`: log 8 h + 7.5 h → submit → reject → correct to 6 h and delete → resubmit gives `hours: 6` in the result, 6 h in `weekTotals`, and one live 6 h row in Reports; TIM-T01 as in AC-6; TIM-T04 23.95 + 0.05 = 24 h accepted, one more 0.05 h refused, 0.07/0/24.05 invalid; TIM-T05 in `contracts.test.ts` (`isoWeekOf(2025-12-29)` = `2026-W01`). Unauthorised, submitted, approved and out-of-order cases are in AC-1, AC-2 and AC-7. No required test skipped.
 - AC-12: pass — `modules/time/README.md` (tools, events, rules) and `modules/reports/README.md` updated; time 82/82 and reports 7/7 with DB tests running; `check-graph --root` has only the Windows false positive below.
+- AC-13: pass — `governance.test.ts` AC13: once Kasun's W42 is approved, Kasun and Sahan (Admin) are both refused correct and delete with "approved and locked; reopen it with a reason (reopen_week)", and no `time.week.locked_change` row is added; after `reopen_week` the owner's correction goes through. My timesheet already hides "Fix these hours" outside draft and rejected (e2e 070 AC5). `approvals.test.ts` still shows Sahan logging into an approved week, audited as `time.week.locked_change` (unchanged).
+- AC-14: pass — governance.test.ts AC14: Nimal (PM of Fleet Tracker) without a reason gets "invalid input: reason"; moving the entry to HR Insights (not his project) gets the out-of-scope error; Kasun is refused; Nimal with a reason succeeds; the event has `by`, `byOther: true`, the `reason`, `projectName` and `week`, and the audit row's `after` has the reason; Sahan (Admin) deletes with a reason. UI: Team time shows "Fix hours" on draft and rejected rows the viewer can approve (`prompts.test.ts` AC14, screenshot `shots/app-team.png`); `get_timesheet` gives that viewer the entry ids (`mcp.test.ts` 070 AC17).
+- AC-15: pass — `corrections-flow.test.ts` AC15, through the outbox and notifications' workflow engine: Nimal's fix gives Tharushi exactly one bell item, "Nimal Silva changed your Fleet Tracker hours for 2026-11-13", body "Left at 4 on Friday", link `/time/my/2026-W46`; her own correction and delete send nothing; Reports holds the corrected 7 h.
+- AC-16: pass — governance.test.ts AC16: after a delete, `weekTotals` and My timesheet drop the entry's hours, `entries` no longer lists it, the row is still there with `deleted_at` and `deleted_by` set, and correcting it gives the out-of-scope error. Migration `0003_entry_deleted_at.sql` adds nullable columns only. corrections-flow AC11 (correct and delete, then resubmit) still totals 6 h in Time and Reports.
+- AC-17: pass — mcp.test.ts 070 AC17: a card whose `hoursBefore` doesn't match the entry isn't made (no pending); the matching card's title reads "Fix one time entry: Fleet Tracker, <day>, Tharushi Wijesinghe, <before>, 0.25, On leave that afternoon, <id>". The id still shows, after the named fields, because the shared card lists every input (AC-17 text records this). The shared card component is untouched.
+- AC-18: pass — the tests listed under AC-13 to AC-17; time README "Corrections (070)" and "Approval rules" updated.
+- AC-19: pass — `git diff main -- modules/time/tests modules/reports/tests`: the amendment changed no pre-070 test. In files that existed on `main`, its only edits are an import line in `prompts.test.ts` plus a new AC14 test, and the 070-only AC5 and new AC17 tests in `mcp.test.ts`. (070's original T3 had already widened the tool and intent list in `contracts.test.ts`.) Every pre-070 suite passes unmodified, including Admin `log_time` into an approved week and the commit-draft undo.
 
-Commands (`specclaw/070-time-entry-corrections` at `dc277e4`, `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`, the `amax-dev-postgres` container; Windows 11):
-- `pnpm lint` exit 0 (35/35 tsc tasks). Its `check-graph` step reports "0 modules" on Windows, so `node scripts/check-graph.mjs --root <repo>` was run instead: one R7 hit in `packages/testing/boundaries/r7-provider-sdk`, the deliberately broken fixture, which `rules.mjs` skips by a `/`-separated prefix that never matches a Windows `relative()` path. No real violation.
-- `pnpm turbo run build` exit 0.
-- `pnpm turbo run test --force --concurrency=1 --continue`: 31/35 packages green; 1,371 passed, 6 failed, 6 skipped (workflows' Temporal suite, `AMAX_TEMPORAL_TESTS` unset). The 6 failures are in packages 070 doesn't touch (`git diff b257a6d..HEAD -- packages modules/delivery` is empty) and are Windows-only: core `ac5-adapters` (backslash paths vs a `/` allowlist), testing `ac7-config` ×3 (symlink EPERM), delivery `releases` (absolute Windows path, failing on `main` before 070 too), workflows `kill` (POSIX signals). With `--concurrency=2` vitest's shared cache hit EPERM on Windows and no package ran.
-- Time e2e: `npx playwright test` through a scratch config that only quotes the setup paths as `file://` URLs (the repo config's bare `--import C:\Personal Projects\…` fails on Windows): 3 passed (009 AC3 mock diff ≤ 2 %, 070 AC5, 009 AC2/054 AC5).
-- `modules/time`, `modules/reports`, `finance`, `payroll`, `notifications`, `insights` suites and `apps/web/tests/tool-schemas.test.ts` (069) green with DB tests running.
+Commands (`DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`, `amax-dev-postgres`; Windows 11):
+- `vitest run --config ../../vitest.config.ts --dir .` in `modules/time` 88/88 (14 files), `modules/reports` 7/7, `modules/notifications` 7/7, `modules/finance` 8/8, `modules/payroll` 8/8; `apps/web/tests/tool-schemas.test.ts` 1/1.
+- `pnpm lint` exit 0 (35/35). Its graph step reports "0 modules" on Windows; `node scripts/check-graph.mjs --root <repo>` shows only the known R7 fixture false positive (`packages/testing/boundaries/r7-provider-sdk`).
+- `pnpm turbo run build --filter=./apps/web` exit 0.
+- Time e2e through a scratch config that only quotes the setup paths as `file://` URLs: 3/3 (009 AC3 Team week vs mock ≤ 2 % with the new button, 070 AC5, 009 AC2/054 AC5), axe clean.
+- Not rerun: the whole-repo `turbo run test`. The amendment touches only `modules/time`, and its consumers' suites (reports, notifications, finance, payroll) were run above.
 
 Gates:
-- `specclaw-preset-check .` exit 1: 2,491 repo-wide hits (2,421 `comment`, 70 `max_lines`), as in 068. In 070's files the hits are the modules' existing commented style plus short `070 AC-n` notes in the same convention; the two `max_lines` files were already over 80 lines before 070 (`modules/time/contracts.ts` 98 → 103, `modules/time/tests/review.test.ts` 140 → 141).
-- `specclaw-quality-scan . --gate` exit 2: "jq is required"; it also needs `lizard` (uvx) and `jscpd` (npx), none installed here. Quality: not_run.
+- `specclaw-preset-check .` exit 1: repo-wide `comment` and `max_lines` hits as in 068 and 070's first verify. In the amendment's files, the new hits are short `070 AC-n` comments in the modules' existing style, plus `contracts.ts` going 103 → 104 lines (over 80 before 070). The new files (`server/card.ts` 40, `tests/governance.test.ts` 67) and the edited ones stay under 80.
+- `specclaw-quality-scan .` didn't complete: its jq step fails with "Argument list too long" on this host. Quality: not_run.
 
-Screenshots: `shots/app.png` (My timesheet, Tharushi's draft W42, light), `shots/app-dark.png`, `shots/app-chat.png` ("Fix these hours" → chat with the row pinned and the prompt filled), `shots/mock.png` (`#070-time-entry-corrections`). Compared against the mock: same per-row "Fix these hours" button beside the row pin and the same chat hand-off with no edit fields. The mock shows a rejected week; the fixture week is a draft, so the sent-back comment (existing 009 chip) isn't on the shot.
-
-Notes:
-- The build refreshes the tracked copy `apps/mock/public/mock/index.html` from `.specclaw/mock/index.html` (+192 lines: 068, 069 and 070–073 sections); it isn't part of 070 and is left unstaged.
-- Playwright's Chromium headless shell (1248) was installed for the e2e run.
+Screenshots: `shots/app-team.png` (Team time W42 as Maya: "Fix hours" beside Remind on the two draft rows, none on submitted rows), `shots/app-team-chat.png` (Fix hours → chat with "Tharushi Wijesinghe, 2026-W42" pinned and "… (week id …). Reason: " filled in), `shots/app-team-dark.png`, `shots/mock.png` (`#070-time-entry-corrections` with the amendment cards); earlier `shots/app.png`, `app-dark.png`, `app-chat.png` (My timesheet). Compared against the mock: the same Ask amax hand-off with the record pinned and no edit fields. The mock's before → after card is rendered by the shared card as listed fields (hoursBefore, hours) rather than struck-through text.

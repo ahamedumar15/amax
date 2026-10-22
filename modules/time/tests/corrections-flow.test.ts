@@ -5,6 +5,7 @@ import { hasDb } from "@amax/db/testdb";
 import { contextForViewer, setGrants } from "@amax/auth";
 import { registryFrom, runDueJobs } from "@amax/core/server";
 import { agentsPlatform } from "@amax/agents/module";
+import { createPostgresEngine, setWorkflowEngine, workflowRegistry } from "@amax/workflows/server";
 import { acceptSuggestion, setSuggestionKinds, undoSuggestion } from "@amax/agents/server";
 import { EVENTS as DELIVERY } from "@amax/delivery/contracts";
 import { weekTotals } from "../contracts";
@@ -25,7 +26,9 @@ describe.skipIf(!hasDb)("070 corrections through the outbox (Postgres)", () => {
     const modules = await installedModules();
     setGrants([...modules, agentsPlatform as never]);
     setSuggestionKinds([commitDraft]);
-    tick = () => runDueJobs(db.app, registryFrom(modules));
+    const engine = createPostgresEngine({ db: db.app, registry: workflowRegistry(modules) });
+    setWorkflowEngine(async () => engine);
+    tick = async () => { await runDueJobs(db.app, registryFrom(modules)); await engine.tick(); };
   }, 120_000);
   afterAll(() => db?.t.drop());
 
@@ -60,5 +63,18 @@ describe.skipIf(!hasDb)("070 corrections through the outbox (Postgres)", () => {
     await expect(logTime(ctxFor(tharushi), { projectKey: "CON", day: "2026-11-04", hours: 0.05 })).resolves.toMatchObject({ hours: 0.05 });
     await expect(logTime(ctxFor(tharushi), { projectKey: "CON", day: "2026-11-04", hours: 0.05 })).rejects.toThrow(/more than 24 h/);
     for (const hours of [0.07, 0, 24.05]) await expect(logTime(ctxFor(tharushi), { projectKey: "CON", day: "2026-11-05", hours })).rejects.toThrow(/invalid input/);
+  }, 120_000);
+
+  it("AC15 a PM's fix with a reason reaches the owner's bell once; the owner's own change and delete send nothing; the deleted row leaves Reports", async () => {
+    const [tharushi, nimal] = await Promise.all([db.as("tharushi"), db.as("nimal")]);
+    const fri = await logTime(ctxFor(tharushi), { projectKey: "FLT", day: "2026-11-13", hours: 9 });
+    const own = await logTime(ctxFor(tharushi), { projectKey: "CON", day: "2026-11-13", hours: 1 });
+    await correctEntry(ctxFor(tharushi), { entryId: own.id, hours: 2 });
+    await deleteEntry(ctxFor(tharushi), { entryId: own.id });
+    await correctEntry(ctxFor(nimal), { entryId: fri.id, hours: 7, reason: "Left at 4 on Friday" });
+    await tick();
+    const bell = await db.q(sql`select rule_id, title, body, href from notifications.notification where user_id = ${tharushi.userId} and rule_id like 'time.entry-%'`);
+    expect(bell).toEqual([{ rule_id: "time.entry-corrected-by-other", title: "Nimal Silva changed your Fleet Tracker hours for 2026-11-13", body: "Left at 4 on Friday", href: "/time/my/2026-W46" }]);
+    expect(await live(tharushi.userId, "2026-11-13", "2026-11-13")).toEqual([{ entry_id: fri.id, hours: 7 }]);
   }, 120_000);
 });

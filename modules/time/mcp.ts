@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpToolDef } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { ctxFor } from "./server/context";
+import { cardFields, checkCard, type CardInput } from "./server/card";
 import { correctEntry, deleteEntry } from "./server/correct";
 import { approveWeek, rejectWeek, remindWeek } from "./server/decide";
 import { logTime } from "./server/log";
@@ -35,11 +36,12 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "log_time", description: "Log hours against a project for a weekday (Monday to Friday, YYYY-MM-DD in the person's own calendar). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",
     input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional() }),
     service: logTime, run: (v, a, s = "mcp") => logTime(ctxFor(v, s), { ...a, source: s === "mcp" ? "agent" : "person" }) }),
-  tool({ name: "correct_time_entry", description: "Fix one time entry (an id from get_my_week or get_timesheet): its hours, billable flag, note or project. The day can't change; delete the entry and log it again instead.", scope: "write", permission: "time:log",
-    input: z.object({ entryId: z.string().uuid(), hours: z.number().positive().max(24).optional(), billable: z.boolean().optional(), note: z.string().max(500).optional(), projectKey: z.string().optional() }),
-    service: correctEntry, run: (v, a, s = "mcp") => correctEntry(ctxFor(v, s), a) }),
-  tool({ name: "delete_time_entry", description: "Remove one time entry (an id from get_my_week or get_timesheet) from a draft or rejected week.", scope: "write", permission: "time:log",
-    input: z.object({ entryId: z.string().uuid() }), service: deleteEntry, run: (v, a, s = "mcp") => deleteEntry(ctxFor(v, s), a) }),
+  tool({ name: "correct_time_entry", description: "Fix one time entry. Copy its project, day and current hours (and the person, when it isn't yours) from get_my_week or get_timesheet, so the confirm card shows them; then give the new hours, billable flag, note or project. The day can't change; delete the entry and log it again instead. Someone else's entry needs a reason, which they are told.", scope: "write", permission: "time:log",
+    input: z.object({ ...cardFields, hours: z.number().positive().max(24).optional(), billable: z.boolean().optional(), note: z.string().max(500).optional(), projectKey: z.string().optional(), reason: z.string().optional(), entryId: z.string().uuid() }),
+    propose: (v: Viewer, a: CardInput) => checkCard(v, a), service: correctEntry, run: (v, a, s = "mcp") => correctEntry(ctxFor(v, s), a) }),
+  tool({ name: "delete_time_entry", description: "Remove one time entry from a draft or rejected week. Copy its project, day and hours (and the person, when it isn't yours) from get_my_week or get_timesheet, so the confirm card shows them. Someone else's entry needs a reason, which they are told.", scope: "write", permission: "time:log",
+    input: z.object({ ...cardFields, reason: z.string().optional(), entryId: z.string().uuid() }),
+    propose: (v: Viewer, a: CardInput) => checkCard(v, a), service: deleteEntry, run: (v, a, s = "mcp") => deleteEntry(ctxFor(v, s), a) }),
   tool({ name: "submit_week", description: "Submit your timesheet for a week for approval.", scope: "write", permission: "time:submit", input: z.object({ week: isoWeek.describe("ISO week such as 2026-W42") }),
     service: submitWeek, run: (v, a, s = "mcp") => submitWeek(ctxFor(v, s), a) }),
   tool({ name: "approve_week", description: "Approve a submitted timesheet. Approved weeks are locked.", scope: "write", permission: "time:approve", input: ref,

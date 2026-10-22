@@ -31,6 +31,6 @@ export async function guardLock(tx: Tx, ctx: ServiceContext, week: WeekRow, afte
 /** A person-day holds at most 24 h, counted in hundredths so 23.95 + 0.05 is exactly 24. */
 export async function guardDayTotal(tx: Tx, userId: string, day: string, hours: number, except?: string) {
   const other = except ? sql`and id <> ${except}` : sql``;
-  const [{ total }] = await tx.execute(sql`select coalesce(sum(hours), 0) as total from time.entry where user_id = ${userId} and day = ${day} ${other}`);
+  const [{ total }] = await tx.execute(sql`select coalesce(sum(hours), 0) as total from time.entry where user_id = ${userId} and day = ${day} and deleted_at is null ${other}`);
   if (Math.round(Number(total) * 100) + Math.round(hours * 100) > 2400) throw new Error(`that would make ${day} more than 24 h`);
 }

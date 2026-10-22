@@ -33,17 +33,33 @@ describe.skipIf(!hasDb)("MCP tools (Postgres)", () => {
     await db.t.owner`insert into ai.settings (tenant_id, zdr_confirmed) values (${T}, true) on conflict do nothing`;
     const registry = createRegistry([manifest]);
     const dinesh = await db.as("dinesh");
-    const sheet = (await registry.call(dinesh, "get_timesheet", { week: "2026-W42", project: "Fleet Tracker" }, { source: "chat" })) as { entries: { id: string; projectName: string; hours: number }[] };
+    const sheet = (await registry.call(dinesh, "get_timesheet", { week: "2026-W42", project: "Fleet Tracker" }, { source: "chat" })) as { entries: { id: string; projectName: string; day: string; hours: number }[] };
     expect(sheet.entries.length).toBeGreaterThan(0);
     expect(sheet.entries.every((e) => e.projectName === "Fleet Tracker")).toBe(true);
     const target = sheet.entries[0];
-    configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "correct_time_entry", input: { entryId: target.id, hours: 0.5 } }] }), () => ({ text: "Confirm?" })]), db: db.app, model: "claude-haiku-5-5" });
+    configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "correct_time_entry", input: { project: "Fleet Tracker", day: target.day, hoursBefore: target.hours, hours: 0.5, entryId: target.id } }] }), () => ({ text: "Confirm?" })]), db: db.app, model: "claude-haiku-5-5" });
     const turn = await chatTurn(db.app, registry, dinesh, { text: "Fix my Fleet Tracker hours for 2026-W42: make it 0.5 h" });
     expect(turn.pending.map((p) => p.tool)).toEqual(["correct_time_entry"]);
     expect(Number((await db.q(sql`select hours from time.entry where id = ${target.id}`))[0].hours)).toBe(target.hours);
     await confirmAction(db.app, registry, dinesh, turn.conversationId, turn.pending[0].id);
     expect(await db.q(sql`select hours::float as hours, revision from time.entry where id = ${target.id}`)).toEqual([{ hours: 0.5, revision: 2 }]);
     expect(await db.q(sql`select source from core.audit_event where action = 'time.entry.correct' and resource_id = ${target.id}`)).toEqual([{ source: "chat" }]);
+  }, 60_000);
+
+  it("070 AC17 a PM's card names the project, day, person and before → after, and a card that doesn't match the entry isn't made", async () => {
+    const registry = createRegistry([manifest]);
+    const nimal = await db.as("nimal");
+    const [{ id: weekId }] = await db.q(sql`select w.id from time.week w join auth.user u on u.id = w.user_id where u.email = 'tharushi@lumenlabs.test' and w.iso_week = 42`);
+    const sheet = (await registry.call(nimal, "get_timesheet", { weekId }, { source: "chat" })) as { entries: { id: string; projectName: string; day: string; hours: number }[] };
+    const e = sheet.entries.find((x) => x.projectName === "Fleet Tracker")!;
+    const card = { project: "Fleet Tracker", day: e.day, person: "Tharushi Wijesinghe", hours: 0.25, reason: "On leave that afternoon", entryId: e.id };
+    const propose = (input: object) => {
+      configureAi({ provider: fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "correct_time_entry", input }] }), () => ({ text: "Done." })]), db: db.app, model: "claude-haiku-5-5" });
+      return chatTurn(db.app, registry, nimal, { text: "Fix Tharushi's Fleet Tracker hours" });
+    };
+    expect((await propose({ ...card, hoursBefore: e.hours + 1 })).pending).toEqual([]);
+    const [p] = (await propose({ ...card, hoursBefore: e.hours })).pending;
+    expect(p.title).toContain(`Fleet Tracker, ${e.day}, Tharushi Wijesinghe, ${e.hours}, 0.25, On leave that afternoon`);
   }, 60_000);
 
   it("070 AC9 write tools need the week: submit_week without one, or approve_week naming a person without one, is refused", async () => {

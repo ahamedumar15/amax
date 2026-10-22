@@ -54,7 +54,7 @@ export async function findWeek(tx: Tx, ref: WeekRef, action: string, may: MayAct
 }
 
 export const weekProjectIds = async (tx: Tx, weekId: string) =>
-  (await tx.execute(sql`select distinct project_id from time.entry where week_id = ${weekId}`)).map((r) => r.project_id as string);
+  (await tx.execute(sql`select distinct project_id from time.entry where week_id = ${weekId} and deleted_at is null`)).map((r) => r.project_id as string);
 
 export const weekHours = async (tx: Tx, weekId: string) =>
-  Number((await tx.execute(sql`select coalesce(sum(hours), 0) as h from time.entry where week_id = ${weekId}`))[0].h);
+  Number((await tx.execute(sql`select coalesce(sum(hours), 0) as h from time.entry where week_id = ${weekId} and deleted_at is null`))[0].h);
