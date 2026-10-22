@@ -2,6 +2,7 @@ import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
+import { fixPrompt } from "./prompts";
 import { DAY_NAMES, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
 
 export async function MyPage({ viewer: raw, params }: ScreenProps) {
@@ -11,7 +12,12 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const weekPin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
-  const pin = (project: string) => <PinButton pin={{ label: `${project}, ${m.key}`, tool: "get_timesheet", args: { week: m.key, project } }} />;
+  const fixable = m.status === "draft" || m.status === "rejected";
+  const rowPin = (project: string) => ({ label: `${project}, ${m.key}`, tool: "get_timesheet", args: { week: m.key, project } });
+  const pin = (project: string) => <>
+    {fixable && <AskButton label="Fix these hours" name={`Fix ${project} hours`} prompt={fixPrompt(project, m.key)} pin={rowPin(project)} />}
+    <PinButton pin={rowPin(project)} />
+  </>;
   const lede = `${weekSpan(m.week, m.days)}. ${m.total.toFixed(1)} h logged${m.total ? `, ${Math.round((m.agentHours / m.total) * 100)}% by agents` : ""}.${m.status === "approved" ? " Approved and locked." : ""}`;
   return (
     <div className="time">

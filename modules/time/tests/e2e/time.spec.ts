@@ -37,6 +37,18 @@ test("AC3 the Team week matches the mock: totals, agent share and the This week 
   expect(await axe(page)).toEqual([]);
 });
 
+test("070 AC5 a draft week's row opens chat to fix those hours, with the row pinned; a submitted week has no fix button", async ({ page, browser }) => {
+  await signIn(page, "tharushi@lumenlabs.test", "/time/my/2026-W42");
+  await expect(page.locator("main form, main dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Fix Fleet Tracker hours" }).click();
+  await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText("Fleet Tracker, 2026-W42");
+  await expect(page.getByLabel("Message amax")).toHaveValue("Fix my Fleet Tracker hours for 2026-W42: ");
+  expect(await axe(page)).toEqual([]);
+  const kasun = await (await browser.newContext({ baseURL: test.info().project.use.baseURL })).newPage();
+  await signIn(kasun, "kasun@lumenlabs.test", "/time/my/2026-W42");
+  await expect(kasun.getByRole("button", { name: /^Fix .* hours$/ })).toHaveCount(0);
+});
+
 test("AC2 / 054 AC5 approving through chat locks the week; the My timesheet switch shows your own hours", async ({ page }) => {
   test.setTimeout(60_000);
   await signIn(page, "maya@lumenlabs.test", W42);
