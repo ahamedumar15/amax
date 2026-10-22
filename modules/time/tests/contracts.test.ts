@@ -33,8 +33,8 @@ describe("time contracts", () => {
   it("AC4 and AC5 the manifest declares its events, the log time intent and the MCP tools", () => {
     expect(manifest.events?.emits).toEqual(Object.values(EVENTS));
     expect(Object.values(EVENTS).every((e) => e.startsWith("time."))).toBe(true);
-    expect(chatIntents.map((c) => [c.id, c.tool])).toEqual([["time.log", "log_time"]]);
-    expect(mcpTools.map((t) => t.name)).toEqual(expect.arrayContaining(["log_time", "submit_week", "approve_week"]));
+    expect(chatIntents.map((c) => [c.id, c.tool])).toEqual([["time.log", "log_time"], ["time.correct", "correct_time_entry"], ["time.delete", "delete_time_entry"]]);
+    expect(mcpTools.map((t) => t.name)).toEqual(expect.arrayContaining(["log_time", "correct_time_entry", "delete_time_entry", "submit_week", "approve_week"]));
     expect(manifest).toMatchObject({ id: "time", group: "Work", order: 20, dependsOn: ["delivery"], integratesWith: ["hr", "leave"] });
   });
 });
