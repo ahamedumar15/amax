@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { assertCan, viewerOf } from "@amax/auth";
+import { can, viewerOf } from "@amax/auth";
 import { defineService } from "@amax/core/server";
 import { EVENTS, type WeekSubmitted } from "../contracts";
 import { findWeek, keyOf, weekHours } from "./weeks";
@@ -13,8 +13,7 @@ export const submitWeek = defineService({
   input: z.object({ week: z.string().optional(), weekId: z.string().uuid().optional(), person: z.string().optional() }),
   async run(tx, a, ctx) {
     const v = viewerOf(ctx);
-    const week = await findWeek(tx, { weekId: a.weekId, week: a.week, person: a.person ?? v?.email });
-    if (v) assertCan(v, "time:submit", { ownerUserId: week.user_id });
+    const week = await findWeek(tx, { weekId: a.weekId, week: a.week, person: a.person ?? v?.email }, "time:submit", (w) => !v || can(v, "time:submit", { ownerUserId: w.user_id }));
     if (week.status === "submitted" || week.status === "approved") throw new Error(`${keyOf(week)} is already ${week.status}`);
     const hours = await weekHours(tx, week.id);
     if (hours === 0) throw new Error(`${keyOf(week)} has no time logged yet`);

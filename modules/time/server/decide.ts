@@ -5,7 +5,7 @@ import { ScopeError, viewerOf } from "@amax/auth";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type WeekDecided, type WeekReminded } from "../contracts";
 import { chainFor } from "./chain";
-import { by, findWeek, keyOf, weekProjectIds, type WeekRow } from "./weeks";
+import { by, findWeek, keyOf, weekProjectIds, type WeekRef, type WeekRow } from "./weeks";
 
 const ref = { weekId: z.string().uuid().optional(), person: z.string().optional(), week: z.string().optional() };
 
@@ -14,6 +14,10 @@ async function approver(tx: Tx, ctx: ServiceContext, week: WeekRow) {
   if (!chain) throw new ScopeError("time:approve");
   return chain;
 }
+
+// Only weeks the caller is in the approval chain for are found (070 AC-10).
+const target = (tx: Tx, ctx: ServiceContext, a: WeekRef) =>
+  findWeek(tx, a, "time:approve", async (w) => chainFor(viewerOf(ctx), w.user_id, await weekProjectIds(tx, w.id)) !== null);
 
 async function decide(tx: Tx, ctx: ServiceContext, week: WeekRow, to: "approved" | "rejected", comment: string | null) {
   const chain = await approver(tx, ctx, week);
@@ -28,20 +32,19 @@ async function decide(tx: Tx, ctx: ServiceContext, week: WeekRow, to: "approved"
 
 export const approveWeek = defineService({
   scoped: true, name: "time.week.approve", action: "time:approve", resource: "time.week", input: z.object(ref),
-  run: async (tx, a, ctx) => decide(tx, ctx, await findWeek(tx, a), "approved", null),
+  run: async (tx, a, ctx) => decide(tx, ctx, await target(tx, ctx, a), "approved", null),
 });
 
 export const rejectWeek = defineService({
   scoped: true, name: "time.week.reject", action: "time:approve", resource: "time.week",
   input: z.object({ ...ref, comment: z.string().trim().min(3, "say why it's rejected").max(1000) }),
-  run: async (tx, a, ctx) => decide(tx, ctx, await findWeek(tx, a), "rejected", a.comment),
+  run: async (tx, a, ctx) => decide(tx, ctx, await target(tx, ctx, a), "rejected", a.comment),
 });
 
 export const remindWeek = defineService({
   scoped: true, name: "time.week.remind", action: "time:approve", resource: "time.week", input: z.object(ref),
   async run(tx, a, ctx) {
-    const week = await findWeek(tx, a);
-    await approver(tx, ctx, week);
+    const week = await target(tx, ctx, a);
     if (week.status !== "draft" && week.status !== "rejected") throw new Error(`${keyOf(week)} is already ${week.status}`);
     const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx) };
     return { result: { week: keyOf(week), person: week.person_name as string, recorded: true,

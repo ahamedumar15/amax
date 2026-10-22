@@ -12,7 +12,10 @@ export type WeekStatus = (typeof WEEK_STATUSES)[number];
 export type EntrySource = "person" | "agent";
 export type ApprovalChain = "manager" | "project" | "admin";
 
-export type EntryLogged = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; source: EntrySource; lockedChange: boolean };
+export type EntryLogged = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; source: EntrySource; lockedChange: boolean; revision: number };
+/** 070: an entry's new state; `revision` grows with every change, so a consumer keeps only the newest. */
+export type EntryCorrected = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; revision: number; before: { hours: number; billable: boolean; projectId: string }; lockedChange: boolean };
+export type EntryDeleted = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; revision: number; lockedChange: boolean };
 export type WeekSubmitted = { weekId: string; userId: string; week: string; hours: number };
 export type WeekDecided = { weekId: string; userId: string; week: string; by: string; chain: ApprovalChain; comment: string | null };
 export type WeekReopened = { weekId: string; userId: string; week: string; by: string; reason: string };
@@ -20,6 +23,8 @@ export type WeekReminded = { weekId: string; userId: string; week: string; by: s
 
 export const EVENTS = {
   entryLogged: "time.entry.logged",
+  entryCorrected: "time.entry.corrected",
+  entryDeleted: "time.entry.deleted",
   weekSubmitted: "time.week.submitted",
   weekApproved: "time.week.approved",
   weekRejected: "time.week.rejected",
