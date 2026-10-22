@@ -90,7 +90,7 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 - [x] `T3` — Tools and chat: `correct_time_entry` and `delete_time_entry`, the `time.correct`/`time.delete` intents, entry ids on `get_my_week` and `get_timesheet`, required `week` on write tools; undo of a commit draft emits `time.entry.deleted` (AC-5, AC-6, AC-9)
   Files: modules/time/mcp.ts, modules/time/chat.ts, modules/time/server/my.ts, modules/time/server/sheet.ts, modules/time/suggestions.ts, modules/time/tests/mcp.test.ts, modules/time/tests/contracts.test.ts, modules/time/tests/commit-draft-008.test.ts
   Depends: T2
-- [ ] `T4` — Reports: `revision` and `deleted_at` on `logged_hours`, corrected and deleted handlers applying only newer revisions, a late `logged` never reviving a tombstone, utilisation skipping tombstones (AC-7)
+- [x] `T4` — Reports: `revision` and `deleted_at` on `logged_hours`, corrected and deleted handlers applying only newer revisions, a late `logged` never reviving a tombstone, utilisation skipping tombstones (AC-7)
   Files: modules/reports/db/migrations/0002_hours_revision.sql, modules/reports/server/hours.ts, modules/reports/server/inputs.ts, modules/reports/module.ts, modules/reports/tests/hours-sync.test.ts
   Depends: T2
 - [ ] `T5` — Integration through the outbox: log → submit → reject → correct/delete → resubmit with totals and Reports; TIM-T01 undo; out-of-order and retried events; TIM-T04, TIM-T05; README (AC-11, AC-12)
