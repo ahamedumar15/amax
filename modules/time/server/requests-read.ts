@@ -34,7 +34,7 @@ const toRequest = (r: Record<string, unknown>): ChangeRequest => ({
   userId: r.user_id as string, personName: r.person_name as string, entryId: r.entry_id as string, day: r.day as string, dayLabel: dayLabel(r.day as string),
   kind: r.kind as ChangeRequest["kind"], before: r.before as Values, proposed: r.proposed as Partial<Values>, revision: Number(r.revision), reason: r.reason as string,
   status: r.status as RequestStatus, question: r.question as string | null, answer: r.answer as string | null, decisionNote: r.decision_note as string | null,
-  decidedBy: r.decided_by as string | null, createdAt: String(r.created_at),
+  decidedBy: r.decided_by as string | null, createdAt: new Date(r.created_at as string | Date).toISOString(),
 });
 
 export async function requestRows(tx: Tx, where: SQL, lock = false): Promise<ChangeRequest[]> {

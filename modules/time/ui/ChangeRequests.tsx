@@ -2,11 +2,11 @@ import { PinButton } from "@amax/ui";
 import { changeText, type ChangeRequest } from "../server/requests-read";
 import { AskButton } from "./AskButton";
 import { reviewPrompt } from "./prompts";
+import { Since } from "./Since";
 import { avatar, initials, STATUS } from "./parts";
 
 // 070 amendment 3: open change requests the viewer reviews. Decisions are made in chat, on a confirm card.
 export const requestPin = (r: ChangeRequest) => ({ label: `${r.personName}, change request`, tool: "get_change_requests", args: { id: r.id } });
-const age = (at: string) => { const h = Math.round((Date.now() - new Date(at).getTime()) / 3_600_000); return h < 1 ? "just now" : h < 24 ? `${h} h ago` : `${Math.round(h / 24)} d ago`; };
 
 export function ChangeRequests({ rows }: { rows: ChangeRequest[] }) {
   return (
@@ -23,7 +23,7 @@ export function ChangeRequests({ rows }: { rows: ChangeRequest[] }) {
               <td data-label="Entry">{r.before.projectName}, {r.dayLabel}</td>
               <td data-label="Change">{changeText(r).join(" · ")}</td>
               <td data-label="Reason">{r.reason}{r.status === "needs_info" && <small className="muted"> · waiting for {r.personName.split(" ")[0]}'s answer</small>}</td>
-              <td data-label="Asked">{age(r.createdAt)}</td>
+              <td data-label="Asked"><Since at={r.createdAt} /></td>
               <td className="num" data-label=""><div className="row-actions">
                 <AskButton label="Review" name={`Review ${r.personName}'s change request`} prompt={reviewPrompt(r)} pin={requestPin(r)} />
                 <PinButton pin={requestPin(r)} />
@@ -40,7 +40,7 @@ export function MyRequests({ rows }: { rows: ChangeRequest[] }) {
   return <>{rows.map((r) => (
     <div key={r.id} className="card pinnable notice" role="status" style={{ marginBottom: 20 }}>
       <div className="card-head"><h2>Change requested: {r.before.projectName}, {r.dayLabel}</h2><PinButton inline pin={requestPin(r)} /></div>
-      <p>{changeText(r).join(" · ")} · {r.status === "needs_info" ? `Your approver asks: ${r.question}` : "Waiting for review"}</p>
+      <p>{changeText(r).join(" · ")} · {r.status === "needs_info" ? `Your approver asks: ${r.question}` : "Waiting for review"} · asked <Since at={r.createdAt} /></p>
     </div>
   ))}</>;
 }

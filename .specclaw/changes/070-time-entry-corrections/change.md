@@ -328,6 +328,10 @@ Time removes two buttons and gains two bulk tools. Context never grants anything
    refused, Reload shows Maya; Tharushi's first session is revoked in `auth.session`; sign-out in one tab bans the
    other. Two separate contexts stay independent. Every existing auth and chat test passes unmodified.
 
+57. **AC-57** (from the product owner's demo rehearsal, 2026-10-23: "the 'asked' stays as just now") A change request's
+    age counts minutes, hours and minutes, then days and hours ("1 h 15 min ago"), keeps updating while the page is
+    open, and shows the exact time on hover, on Team time's Change requests card and on the owner's notice.
+
 **Not here — independent accounts per tab.** A browser can't give each tab its own cookie. Doing it would mean
 either keeping the session in `sessionStorage` and sending it as a header (loses HTTP-only protection against
 script theft, breaks server rendering of pages), or a multi-account design with one cookie per account and the
@@ -524,6 +528,8 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 ## Verify
 
 **Verdict:** PASS
+
+**AC-57, verified 2026-10-23:** pass — `modules/time/tests/age.test.ts` AC57 (just now, 5 min, 59 min, 1 h, 1 h 24 min, 1 d, 1 d 3 h, a future time as just now); `createdAt` is now an ISO time; `ui/Since.tsx` re-renders every 30 s with the exact time in its tooltip. On the running app a request created 75 minutes earlier showed "1 h 15 min ago" on Team time and "asked 1 h 15 min ago" on the owner's notice. Time 104/104. Also checked on the same day: Nimal (Engineer, "Tech lead", PM of Fleet Tracker in the fixtures) sees only Kasun, Tharushi and Dinesh on Team time, the people with Fleet Tracker time, under 009's project-manager approval rule; not an Admin.
 
 **Amendment 5, verified 2026-10-23** on the working tree (Windows 11). AC-51 to AC-56 pass. Gates as for amendments 1–4 (PASS recorded with them noted, to be confirmed by the product owner).
 
