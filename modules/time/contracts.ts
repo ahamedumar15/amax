@@ -14,7 +14,7 @@ export type ApprovalChain = "manager" | "project" | "admin";
 
 export type EntryLogged = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; source: EntrySource; lockedChange: boolean; revision: number };
 /** 070: an entry's new state; `revision` grows with every change. AC-14: `byOther` when someone else fixed it, with the `reason` they are told. */
-type FixedBy = { by?: string; byOther?: boolean; reason?: string | null; projectName?: string; week?: string };
+type FixedBy = { by?: string; byOther?: boolean; reason?: string | null; projectName?: string; week?: string; dayLabel?: string };
 export type EntryCorrected = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; revision: number; before: { hours: number; billable: boolean; projectId: string }; lockedChange: boolean } & FixedBy;
 export type EntryDeleted = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; revision: number; lockedChange: boolean } & FixedBy;
 export type WeekSubmitted = { weekId: string; userId: string; week: string; hours: number };

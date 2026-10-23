@@ -3,6 +3,7 @@ import { z } from "zod";
 import { defineService } from "@amax/core/server";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { EVENTS, type EntryCorrected, type EntryDeleted } from "../contracts";
+import { dayLabel } from "../week";
 import { fixedBy, guardFixable, lockedEntry } from "./entry";
 import { guardDayTotal, Hours } from "./guards";
 import { by, keyOf } from "./weeks";
@@ -31,7 +32,7 @@ export const correctEntry = defineService({
     const [{ revision }] = await tx.execute(sql`update time.entry set hours = ${next.hours}, billable = ${next.billable}, note = ${next.note}, project_id = ${next.projectId},
       revision = revision + 1 where id = ${entry.id} returning revision`);
     const before = { hours: entry.hours, billable: entry.billable, projectId: entry.project_id };
-    const payload: EntryCorrected = { entryId: entry.id, weekId: week.id, userId: entry.user_id, projectId: next.projectId, day: entry.day, hours: next.hours, billable: next.billable, revision: Number(revision), before, lockedChange: false, week: keyOf(week), ...who };
+    const payload: EntryCorrected = { entryId: entry.id, weekId: week.id, userId: entry.user_id, projectId: next.projectId, day: entry.day, hours: next.hours, billable: next.billable, revision: Number(revision), before, lockedChange: false, week: keyOf(week), dayLabel: dayLabel(entry.day), ...who };
     return { result: { id: entry.id, week: keyOf(week), day: entry.day, hours: next.hours, revision: Number(revision) }, resourceId: entry.id,
       before: { ...before, note: entry.note }, after: { ...next, reason: who.reason }, events: [{ name: EVENTS.entryCorrected, payload }] };
   },
@@ -45,7 +46,7 @@ export const deleteEntry = defineService({
     guardFixable(week);
     const who = await fixedBy(tx, ctx, entry, entry.project_id, a.reason);
     const [{ revision }] = await tx.execute(sql`update time.entry set deleted_at = now(), deleted_by = ${by(ctx)}, revision = revision + 1 where id = ${entry.id} returning revision`);
-    const payload: EntryDeleted = { entryId: entry.id, weekId: week.id, userId: entry.user_id, projectId: entry.project_id, day: entry.day, hours: entry.hours, revision: Number(revision), lockedChange: false, week: keyOf(week), ...who };
+    const payload: EntryDeleted = { entryId: entry.id, weekId: week.id, userId: entry.user_id, projectId: entry.project_id, day: entry.day, hours: entry.hours, revision: Number(revision), lockedChange: false, week: keyOf(week), dayLabel: dayLabel(entry.day), ...who };
     return { result: { id: entry.id, week: keyOf(week), day: entry.day, deleted: true }, resourceId: entry.id,
       before: { hours: entry.hours, billable: entry.billable, projectId: entry.project_id, day: entry.day }, after: { deleted: true, reason: who.reason }, events: [{ name: EVENTS.entryDeleted, payload }] };
   },

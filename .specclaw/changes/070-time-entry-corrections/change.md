@@ -15,6 +15,13 @@ approved week can still be edited directly by another Admin rather than being lo
 draft or rejected entry, a delete removes the row instead of keeping it, and the confirm card doesn't say what is
 changing. AC-13 to AC-17 cover these.
 
+**Amendment 2, 2026-10-23** (from a live run with the real model; approved by the product owner, "make those changes
+in the current branch"): the confirm cards are hard to read (the title is the tool description plus a comma list of
+every input, the body shows raw field names, ISO dates and the entry id), approval cards show only a week id, and chat
+can make a card that can only fail (Kasun confirmed "log 6 h" on his submitted week, then got the refusal). AC-20 to
+AC-27 cover these. Ctrl+K on Team time was rechecked and works once the page has loaded (the run's driver pressed it
+too early), so it isn't part of this.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`070-time-entry-corrections`](../../mock/index.html#070-time-entry-corrections)
@@ -27,6 +34,12 @@ Amendment: the confirm card says what changes ("Fleet Tracker, Wed Oct 14: 10 h 
 has no "Fix these hours" button, and chat answers a fix request with "locked, reopen it with a reason". A PM's card for a
 member's entry names the person and the reason, and the member's bell shows "Ayesha Perera changed your Fleet Tracker
 hours for Wed Oct 14" with the reason.
+
+Amendment 2 ([`#070-amendment-2`](../../mock/index.html#070-amendment-2)): Time's confirm cards get a plain title and
+labelled before → after lines, with no ids or field names: "Fix Fleet Tracker, Wed Oct 14" / "Hours 2.7 h → 2 h"; a fix
+for someone else adds "For Tharushi Wijesinghe", the reason and "Tharushi will be notified"; "Approve Nimal Silva's
+timesheet for 2026-W42 (31.5 h)". A request on a submitted or approved week gets a reply saying why and what to do next,
+and no card.
 
 ## Acceptance Criteria
 
@@ -114,6 +127,38 @@ differ from AC-1 to AC-3, they win.
     and the shape of existing event payloads. Only tests for 070's own correct/delete locked-change cases are
     replaced, because AC-13 supersedes them. `git diff main -- modules/time/tests` shows no edits to pre-070 tests.
 
+**Amendment 2, 2026-10-23.** It changes how cards look and when they are made; no service, event or rule changes, and
+every refusal it adds at proposal time is one the service already makes at run time. Where AC-20 to AC-25 differ from
+AC-17, they win.
+
+20. **AC-20** A tool can declare an optional `card(viewer, input)` returning `{ title, lines: { label, value }[] }`.
+    When it does, chat's pending card uses that title and shows those lines instead of the raw input list. The input
+    is still stored and run as today. Tools without `card` look exactly as they do now, a card saved before this
+    still renders, and a `card` that throws falls back to today's card. The buttons and the confirm flow don't change.
+21. **AC-21** `correct_time_entry`'s card reads the stored entry: title "Fix {project}, {Wed Oct 14}"; one line per
+    changed field, before → after ("Hours 2.7 h → 2 h", billable, note, project); for someone else's entry also
+    "For {person}", "Reason {reason}" and "{first name} will be notified". No entry id or field names show.
+22. **AC-22** `delete_time_entry`'s card: "Remove {project}, {Wed Oct 14}: {hours} h", plus the person, reason and
+    notify lines as in AC-21.
+23. **AC-23** `log_time`'s card: "Log {hours} h to {project}, {Wed Oct 14}", with billable and note lines when given.
+24. **AC-24** `approve_week`, `reject_week`, `remind_week` and `reopen_week` cards name the person, the ISO week and
+    its total ("Approve Nimal Silva's timesheet for 2026-W42 (31.5 h)"), plus the comment or reason when given.
+25. **AC-25** No doomed card. The tool's `propose` check refuses, so no card is made and chat is told why, when:
+    correct or delete targets a submitted or approved week (AC-13's messages); `log_time` targets a submitted week,
+    or an approved week the caller may not change (009's rule, unchanged); approve or reject targets a week that
+    isn't submitted; remind targets one that isn't draft or rejected; reopen targets a week that isn't approved, or
+    the caller's own. The services keep every check they have.
+26. **AC-26** Tests: the title and lines for each tool above (own and someone else's entry); each AC-25 refusal leaves
+    no pending card and writes nothing; a tool without `card`, and a `card` that throws, give today's card. 070's
+    AC-17 test on the old title text is replaced; every other existing test passes unmodified.
+27. **AC-27** A clean live run with the real model, from reset local demo data, of the demo script: Tharushi fixes and
+    removes an entry, Kasun's request on his submitted week gets a reply and no card, Maya fixes Tharushi's entry
+    with a reason and Tharushi's bell shows it, Sahan's request on an approved week gets a reply and no card.
+    Screenshots of each card in `shots/`.
+28. **AC-28** The member's bell names the day as the cards do: "Maya Fernando changed your Fleet Tracker hours for
+    Tue Oct 13" (and "removed"), not the ISO date. The `corrected` and `deleted` payloads gain an optional
+    `dayLabel`; `day` and every other field stay as they are.
+
 ## Scope
 
 - **In `modules/time/`:** `server/correct.ts` (new), `server/log.ts` (export the lock and day-total guards),
@@ -133,6 +178,11 @@ differ from AC-1 to AC-3, they win.
 - **Not altered:** `log_time`, the commit-draft accept and undo, `reopen_week`, the 009 lock guard and its audit,
   the shared confirm card, existing event fields, existing notification rules.
 - **Knock-on for unbuilt changes:** 071's migration becomes `0004`, 073's `0005`.
+- **Amendment 2 adds:** `packages/core/src/module.ts` (the optional `card` on a tool), `packages/chat/src/engine.ts`
+  (use it for the pending card), `apps/web/components/chat/Chat.tsx` (render its lines), and in `modules/time/`
+  `mcp.ts`, `server/card.ts`, `server/guards.ts` (the lock rule as a pure check, `guardLock` unchanged in behaviour),
+  `server/weeks.ts` (find a week without locking it, for the propose check), tests, README. Not here: the Sonnet
+  0 requests-per-minute limit on the Anthropic workspace (a Console setting), and the outbox tick in local dev.
 
 ## Decisions
 
@@ -185,9 +235,42 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
   Files: modules/time/tests/corrections.test.ts, modules/time/tests/corrections-flow.test.ts, modules/time/README.md
   Depends: T7, T8
 
+<!-- Amendment 2 (AC-20–AC-27). Cards and proposal-time checks only: services, events and rules stay as they are. -->
+
+- [x] `T10` — Chat panel: a pending card with `lines` shows its title and labelled lines instead of the raw input list; one without them renders as today (AC-20 UI)
+  Files: apps/web/components/chat/Chat.tsx, packages/chat/src/engine.ts
+- [x] `T11` — Shared: optional `card(viewer, input)` on a tool; the chat engine uses it for the pending card's title and lines, falling back to today's card when absent or when it throws; chat tests (AC-20, AC-26)
+  Files: packages/core/src/module.ts, packages/chat/src/engine.ts, packages/chat/tests/card-hook.test.ts
+  Depends: T10
+- [x] `T12` — Time: cards for correct, delete, log, approve, reject, remind and reopen; propose checks refusing doomed cards, reusing the lock rule as a pure check and a non-locking week lookup; tests, replacing 070's AC-17 title test (AC-21–AC-26)
+  Files: modules/time/mcp.ts, modules/time/server/card.ts, modules/time/server/guards.ts, modules/time/server/weeks.ts, modules/time/tests/cards.test.ts, modules/time/tests/mcp.test.ts
+  Depends: T11
+- [x] `T13` — Integration: README; reset local demo data; live run of the demo script with the real model; screenshots of each card (AC-27)
+  Files: modules/time/README.md, .specclaw/changes/070-time-entry-corrections/shots/
+  Depends: T12
+- [x] `T14` — Bell titles name the day as "Tue Oct 13": optional `dayLabel` on the corrected and deleted payloads, used by the two by-other rules (AC-28)
+  Files: modules/time/week.ts, modules/time/contracts.ts, modules/time/module.ts, modules/time/server/correct.ts, modules/time/server/entry-card.ts, modules/time/tests/corrections-flow.test.ts
+  Depends: T13
+
 ## Verify
 
 **Verdict:** PASS
+
+**Amendment 2, verified 2026-10-23** on the working tree at `269313b` plus the uncommitted amendment (Windows 11). AC-20 to AC-27 pass. The two specclaw gates don't run clean on this host, as before; the product owner chose, on 2026-10-23, to record PASS with them noted.
+
+- AC-20: pass — `packages/chat/tests/card-hook.test.ts` AC20: one turn proposes three tools; the one with `card` gets its title and lines, the one without and the one whose `card` throws get today's "Save one thing: w-1, 2" card with no lines; the input is stored unchanged on all three. Chat 29/29, so existing cards are unchanged.
+- AC-21: pass — `modules/time/tests/cards.test.ts` AC21 (own: "Fix Fleet Tracker, Mon Oct 12", Hours and Note before → after, no id); `mcp.test.ts` 070 AC17, replaced as AC-26 allows (someone else's: For, Hours, Reason, "Tharushi will be notified").
+- AC-22: pass — cards.test.ts AC22: "Remove Fleet Tracker, {day}: {hours} h".
+- AC-23: pass — cards.test.ts AC23: "Log 1.5 h to Fleet Tracker, Fri Oct 16" with Billable no and the note.
+- AC-24: pass — cards.test.ts AC24: "Approve Nimal Silva's timesheet for 2026-W42 (31.5 h)"; "Send back …" with the Comment line.
+- AC-25: pass — cards.test.ts AC25: Kasun's `log_time` and correction on his submitted week, Maya approving Tharushi's draft, reminding Kasun's submitted week and Sahan reopening it all make no card, and `time.entry` plus `core.audit_event` counts don't move. `guardLock` keeps its behaviour through `lockRefusal` (time 93/93, including 009's Admin `log_time` into an approved week).
+- AC-26: pass — the tests above; the 070 AC17 test now reopens Tharushi's W42 first, because an earlier test in its file approves it, so the old test was asserting a card that could only fail. No other existing test changed.
+- AC-27: pass — live run on `pnpm dev` with Claude Haiku 5.5 (the workspace's Sonnet 5.5 limit is 0 requests a minute), from local demo data reset to its seeded values: Tharushi's fix ("Fix Fleet Tracker, Wed Oct 14 · Hours 2.7 h → 2 h") and removal ("Remove Fleet Tracker, Mon Oct 12: 2.4 h") confirmed; Kasun's request ran `correct_time_entry`, got no card, and chat said to ask the approver to send the week back; Maya's fix for Tharushi (For, Hours, Reason, Notice) confirmed, and after the outbox tick Tharushi has one bell item and Reports holds 2.0 h, 1.5 h and the tombstone at revision 2; Maya's approval card read "Approve Nimal Silva's timesheet for 2026-W42 (31.5 h)"; Sahan's request on the approved week ran `correct_time_entry`, got no card, chat offered the reopen path, and the entry stayed 0.3 h at revision 1. Screenshots: `shots/amend2-fix-card.png`, `amend2-delete-card.png`, `amend2-submitted-no-card.png`, `amend2-pm-fix-card.png`, `amend2-approve-card.png`, `amend2-approved-no-card.png`; compared against `#070-amendment-2` in the mock.
+- AC-28: pass — `corrections-flow.test.ts` AC15, through the outbox and notifications' workflow engine: Tharushi's one bell item now reads "Nimal Silva changed your Fleet Tracker hours for Fri Nov 13"; `dayLabel` is declared on both payloads and `day` is unchanged. Time 93/93, notifications 7/7, reports 7/7, `pnpm lint` exit 0 after the change.
+
+Commands (`DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`): `vitest run --config ../../vitest.config.ts --dir .` in `modules/time` 93/93, `modules/reports` 7/7, `modules/notifications` 7/7, `modules/finance` 8/8, `modules/payroll` 8/8, `packages/chat` 29/29, `packages/mcp` 20/20; `apps/web/tests/tool-schemas.test.ts` 1/1; `packages/core` 157/158, the one failure being `ac5-adapters` listing 60 pre-existing files with Windows path separators (none touched here). `pnpm lint` exit 0; `check-graph --root` only the known R7 fixture. `pnpm turbo run build --filter=./apps/web` exit 0. Not run: the time and chat Playwright e2e (the setup-path issue on Windows noted below); the live run covers the card screens.
+
+Gates: `specclaw-preset-check .` exit 1 (repo-wide hits as before; the new files are under 80 lines: `server/card.ts` 50, `server/entry-card.ts` 56, `server/week-card.ts` 45, `tests/cards.test.ts` 70, `packages/chat/tests/card-hook.test.ts` 56). `specclaw-quality-scan .` not_run ("Argument list too long" in its jq step). Quality: not_run. Review: specclaw-review not installed.
 
 Re-verified after the 2026-10-22 amendment (AC-13 to AC-19), working tree on `specclaw/070-time-entry-corrections` at `e67af2d` plus the uncommitted amendment. Every AC passes. The two specclaw gates don't run clean on this Windows host (see Gates); the product owner chose again, on 2026-10-22, to record PASS with them noted.
 

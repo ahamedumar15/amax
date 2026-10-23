@@ -74,7 +74,7 @@ describe.skipIf(!hasDb)("070 corrections through the outbox (Postgres)", () => {
     await correctEntry(ctxFor(nimal), { entryId: fri.id, hours: 7, reason: "Left at 4 on Friday" });
     await tick();
     const bell = await db.q(sql`select rule_id, title, body, href from notifications.notification where user_id = ${tharushi.userId} and rule_id like 'time.entry-%'`);
-    expect(bell).toEqual([{ rule_id: "time.entry-corrected-by-other", title: "Nimal Silva changed your Fleet Tracker hours for 2026-11-13", body: "Left at 4 on Friday", href: "/time/my/2026-W46" }]);
+    expect(bell).toEqual([{ rule_id: "time.entry-corrected-by-other", title: "Nimal Silva changed your Fleet Tracker hours for Fri Nov 13", body: "Left at 4 on Friday", href: "/time/my/2026-W46" }]);
     expect(await live(tharushi.userId, "2026-11-13", "2026-11-13")).toEqual([{ entry_id: fri.id, hours: 7 }]);
   }, 120_000);
 });

@@ -38,16 +38,22 @@ async function candidates(tx: Tx, ref: WeekRef): Promise<WeekRow[]> {
     where (lower(u.email) = lower(${ref.person}) or lower(w.person_name) = lower(${ref.person})) and w.iso_year = ${w.year} and w.iso_week = ${w.week} order by u.email`)) as unknown as WeekRow[];
 }
 
-/**
- * 070 AC-10: the week a write acts on. Only weeks the caller may act on are considered, before any row
- * is locked, so a missing week and someone else's give the same error, and a namesake's email never shows.
- */
-export async function findWeek(tx: Tx, ref: WeekRef, action: string, may: MayAct): Promise<WeekRow> {
+/** The one week the caller may act on that `ref` names, without locking it; null when there's none. */
+export async function peekWeek(tx: Tx, ref: WeekRef, may: MayAct): Promise<WeekRow | null> {
   const rows: WeekRow[] = [];
   for (const r of await candidates(tx, ref)) if (await may(r)) rows.push(r);
   const exact = rows.filter((r) => String(r.email ?? "").toLowerCase() === ref.person?.toLowerCase());
   const pick = exact.length === 1 ? exact[0] : rows.length === 1 ? rows[0] : null;
   if (!pick && rows.length > 1) throw new Error(`more than one ${ref.person} has a timesheet in ${ref.week} you can act on; use their email`);
+  return pick;
+}
+
+/**
+ * 070 AC-10: the week a write acts on. Only weeks the caller may act on are considered, before any row
+ * is locked, so a missing week and someone else's give the same error, and a namesake's email never shows.
+ */
+export async function findWeek(tx: Tx, ref: WeekRef, action: string, may: MayAct): Promise<WeekRow> {
+  const pick = await peekWeek(tx, ref, may);
   const [locked] = pick ? await tx.execute(sql`select * from time.week where id = ${pick.id} for update`) : [];
   if (!locked || !(await may(locked as WeekRow))) throw new ScopeError(action);
   return locked as WeekRow;

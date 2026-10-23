@@ -57,15 +57,15 @@ export default defineModule({
       title: "Reminder: submit your timesheet for {week}", href: "/time/my/{week}" },
     // 070 AC-15: someone else fixed or removed your hours; the reason comes with it.
     { id: "time.entry-corrected-by-other", event: EVENTS.entryCorrected, when: { byOther: true }, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
-      title: "{by|name} changed your {projectName} hours for {day}", body: "{reason}", href: "/time/my/{week}" },
+      title: "{by|name} changed your {projectName} hours for {dayLabel}", body: "{reason}", href: "/time/my/{week}" },
     { id: "time.entry-deleted-by-other", event: EVENTS.entryDeleted, when: { byOther: true }, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
-      title: "{by|name} removed your {projectName} hours for {day}", body: "{reason}", href: "/time/my/{week}" },
+      title: "{by|name} removed your {projectName} hours for {dayLabel}", body: "{reason}", href: "/time/my/{week}" },
   ],
   // 035: outgoing webhooks send only declared fields (review 058).
   events: { emits: Object.values(EVENTS), payloads: {
     [EVENTS.entryLogged]: declarePayload<EntryLogged>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", billable: "plain", source: "plain", lockedChange: "plain", revision: "plain" }),
-    [EVENTS.entryCorrected]: declarePayload<EntryCorrected>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", billable: "plain", revision: "plain", before: "plain", lockedChange: "plain", by: "plain", byOther: "plain", reason: "plain", projectName: "plain", week: "plain" }),
-    [EVENTS.entryDeleted]: declarePayload<EntryDeleted>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", revision: "plain", lockedChange: "plain", by: "plain", byOther: "plain", reason: "plain", projectName: "plain", week: "plain" }),
+    [EVENTS.entryCorrected]: declarePayload<EntryCorrected>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", billable: "plain", revision: "plain", before: "plain", lockedChange: "plain", by: "plain", byOther: "plain", reason: "plain", projectName: "plain", week: "plain", dayLabel: "plain" }),
+    [EVENTS.entryDeleted]: declarePayload<EntryDeleted>({ entryId: "plain", weekId: "plain", userId: "plain", projectId: "plain", day: "plain", hours: "plain", revision: "plain", lockedChange: "plain", by: "plain", byOther: "plain", reason: "plain", projectName: "plain", week: "plain", dayLabel: "plain" }),
     [EVENTS.weekSubmitted]: declarePayload<WeekSubmitted>({ weekId: "plain", userId: "plain", week: "plain", hours: "plain" }),
     [EVENTS.weekApproved]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
     [EVENTS.weekRejected]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),

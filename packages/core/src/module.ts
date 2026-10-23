@@ -85,6 +85,9 @@ export type FixtureSeed = (ctx: { tx: Tx; tenantId: string; shared: SharedFixtur
 /** What a write tool names as its service: a defineService result. */
 export type ToolService = { spec: { name: string } };
 
+export type CardLine = { label: string; value: string };
+export type ToolCard = { title: string; lines: CardLine[] };
+
 export type McpToolDef = {
   name: string;
   description: string;
@@ -115,6 +118,11 @@ export type McpToolDef = {
    * a ToolError (code invalid_input) to refuse the card; its message is what the model is told.
    */
   propose?: (viewer: never, input: never) => Promise<void>;
+  /**
+   * What a write tool's confirm card says, in the person's words (070 amendment 2): a title and labelled
+   * lines read from the stored record. Without it, the card shows the description and the raw input.
+   */
+  card?: (viewer: never, input: never) => Promise<ToolCard>;
   /** How a pin on this read tool names what it shows (059); the registry checks it at startup. */
   pin?: PinSpec;
 };

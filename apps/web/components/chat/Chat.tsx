@@ -284,7 +284,8 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
           return (
             <div key={i} className="m"><div className="b" role="group" aria-label={`Confirm: ${e.action.title}`}>
               <p><b>{e.action.title}</b></p>
-              <dl className="rec">{Object.entries(e.action.input).map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt className={fieldClass(e.action.fields, k)}><span className="fd" />{k}</dt><dd>{String(v)}</dd></div>)}</dl>
+              <dl className="rec">{(e.action.lines ?? Object.entries(e.action.input).map(([label, v]) => ({ label, value: String(v) }))).map(({ label, value }, j) =>
+                <div key={j} style={{ display: "contents" }}><dt className={e.action.lines ? FIELD_CLASSES[j % FIELD_CLASSES.length] : fieldClass(e.action.fields, label)}><span className="fd" />{label}</dt><dd>{value}</dd></div>)}</dl>
               {e.state === "open" ? (<>
                 {e.note && <p className="err">{e.note}</p>}
                 {e.action.secret && convo.current ? (

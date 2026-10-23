@@ -6,6 +6,7 @@ import { fakeProvider } from "@amax/ai/fake";
 import { chatTurn, confirmAction } from "@amax/chat";
 import { createRegistry } from "@amax/mcp";
 import manifest from "../module";
+import { dayLabel } from "../week";
 import { T, timeDb } from "./db";
 
 describe.skipIf(!hasDb)("MCP tools (Postgres)", () => {
@@ -48,8 +49,9 @@ describe.skipIf(!hasDb)("MCP tools (Postgres)", () => {
 
   it("070 AC17 a PM's card names the project, day, person and before → after, and a card that doesn't match the entry isn't made", async () => {
     const registry = createRegistry([manifest]);
-    const nimal = await db.as("nimal");
-    const [{ id: weekId }] = await db.q(sql`select w.id from time.week w join auth.user u on u.id = w.user_id where u.email = 'tharushi@lumenlabs.test' and w.iso_week = 42`);
+    const [nimal, sahan] = await Promise.all([db.as("nimal"), db.as("sahan")]);
+    const [{ id: weekId, status }] = await db.q(sql`select w.id, w.status from time.week w join auth.user u on u.id = w.user_id where u.email = 'tharushi@lumenlabs.test' and w.iso_week = 42`);
+    if (status === "approved") await registry.call(sahan, "reopen_week", { weekId, reason: "Fix the Fleet Tracker hours" }, { source: "mcp" });
     const sheet = (await registry.call(nimal, "get_timesheet", { weekId }, { source: "chat" })) as { entries: { id: string; projectName: string; day: string; hours: number }[] };
     const e = sheet.entries.find((x) => x.projectName === "Fleet Tracker")!;
     const card = { project: "Fleet Tracker", day: e.day, person: "Tharushi Wijesinghe", hours: 0.25, reason: "On leave that afternoon", entryId: e.id };
@@ -59,7 +61,8 @@ describe.skipIf(!hasDb)("MCP tools (Postgres)", () => {
     };
     expect((await propose({ ...card, hoursBefore: e.hours + 1 })).pending).toEqual([]);
     const [p] = (await propose({ ...card, hoursBefore: e.hours })).pending;
-    expect(p.title).toContain(`Fleet Tracker, ${e.day}, Tharushi Wijesinghe, ${e.hours}, 0.25, On leave that afternoon`);
+    expect([p.title, p.lines]).toEqual([`Fix Fleet Tracker, ${dayLabel(e.day)}`, [{ label: "For", value: "Tharushi Wijesinghe" }, { label: "Hours", value: `${e.hours} h → 0.25 h` },
+      { label: "Reason", value: "On leave that afternoon" }, { label: "Notice", value: "Tharushi will be notified" }]]);
   }, 60_000);
 
   it("070 AC9 write tools need the week: submit_week without one, or approve_week naming a person without one, is refused", async () => {

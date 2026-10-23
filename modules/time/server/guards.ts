@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
-import { can, viewerOf } from "@amax/auth";
+import { can, viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, type ServiceContext } from "@amax/core/server";
 import { isoDate } from "../week";
 import { keyOf, type WeekRow } from "./weeks";
@@ -18,12 +18,18 @@ export function workDay(day: string): Date {
 
 // A submitted week is what the approver decides on, so it can't change underneath them; an approved
 // week is locked and only another Admin may change it, audited.
+export function lockRefusal(week: WeekRow, v: Viewer | undefined): string | null {
+  if (week.status === "submitted") return `${keyOf(week)} is submitted and waiting for approval; ask the approver to send it back before changing it`;
+  if (week.status !== "approved") return null;
+  if (!v || !can(v, "time:admin")) return `${keyOf(week)} is approved and locked; only an Admin can change it`;
+  if (week.user_id === v.userId) return `${keyOf(week)} is your own approved week; another Admin has to change it`;
+  return null;
+}
+
 export async function guardLock(tx: Tx, ctx: ServiceContext, week: WeekRow, after: object) {
-  if (week.status === "submitted") throw new Error(`${keyOf(week)} is submitted and waiting for approval; ask the approver to send it back before changing it`);
+  const refused = lockRefusal(week, viewerOf(ctx));
+  if (refused) throw new Error(refused);
   if (week.status !== "approved") return false;
-  const v = viewerOf(ctx);
-  if (!v || !can(v, "time:admin")) throw new Error(`${keyOf(week)} is approved and locked; only an Admin can change it`);
-  if (week.user_id === v.userId) throw new Error(`${keyOf(week)} is your own approved week; another Admin has to change it`);
   await appendAudit(tx, ctx, { action: "time.week.locked_change", resource: "time.week", resourceId: week.id, before: { status: week.status }, after });
   return true;
 }
