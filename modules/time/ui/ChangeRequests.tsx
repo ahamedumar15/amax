@@ -10,7 +10,7 @@ const age = (at: string) => { const h = Math.round((Date.now() - new Date(at).ge
 
 export function ChangeRequests({ rows }: { rows: ChangeRequest[] }) {
   return (
-    <div className="card flush pinnable" style={{ margin: "28px 0" }}>
+    <div className="card flush pinnable requests" style={{ margin: "28px 0" }}>
       <div className="card-head"><h2>Change requests</h2><span className="chip">{rows.length} open</span></div>
       <div className="scroll-x"><table className="tbl">
         <caption className="sr">Change requests waiting for review</caption>
@@ -38,7 +38,7 @@ export function ChangeRequests({ rows }: { rows: ChangeRequest[] }) {
 
 export function MyRequests({ rows }: { rows: ChangeRequest[] }) {
   return <>{rows.map((r) => (
-    <div key={r.id} className="card pinnable" role="status" style={{ marginBottom: 20 }}>
+    <div key={r.id} className="card pinnable notice" role="status" style={{ marginBottom: 20 }}>
       <div className="card-head"><h2>Change requested: {r.before.projectName}, {r.dayLabel}</h2><PinButton inline pin={requestPin(r)} /></div>
       <p>{changeText(r).join(" · ")} · {r.status === "needs_info" ? `Your approver asks: ${r.question}` : "Waiting for review"}</p>
     </div>

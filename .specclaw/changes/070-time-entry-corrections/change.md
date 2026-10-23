@@ -27,6 +27,13 @@ approved, its owner can't change it, and chat only says "ask the approver" or "r
 happens outside amax, with no record, no queue for the approver, and no notice to the owner when a week is reopened.
 AC-29 to AC-39 add change requests: the owner asks once in chat, and an approver applies, reopens, asks or declines.
 
+**Amendment 4, 2026-10-23** (approved by the product owner, "approve amendment 4", with the recommended D11–D14):
+chat doesn't know which page or week the person is on, so they have to say it or pin a row; nothing on screen
+says what chat can do here except per-row buttons the client finds cluttered ("Fix these hours", "Fix hours"); and
+"Remind 2 people" or "Approve 3 submitted" make one card per person with no summary of who was done. AC-40 to AC-49
+add page-aware chat with suggestions, remove the two Fix buttons, and make team reminders and approvals one card with
+a result per person.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`070-time-entry-corrections`](../../mock/index.html#070-time-entry-corrections)
@@ -58,6 +65,15 @@ Amendment 3 ([`#070-amendment-3`](../../mock/index.html#070-amendment-3)):
 - **Chat (approver):** "Apply it", "Reopen for Kasun", "Ask Kasun" or "Decline" through one confirm card each, e.g.
   "Apply Kasun Dias's change: Fleet Tracker, Wed Oct 14 · Hours 7 h → 5 h · Week stays submitted".
 - **Bell:** the approver gets "Kasun Dias asked to change Fleet Tracker, Wed Oct 14"; the owner gets each decision.
+
+Amendment 4 ([`#070-amendment-4`](../../mock/index.html#070-amendment-4)): the chat header shows where you are,
+"My timesheet · Week of Oct 12". With an empty message box, chat offers up to four suggestions for this page that the
+viewer can actually do, e.g. on My timesheet "Fix an entry", "Submit my week", "What did I log this week?" (or "Ask for
+a change" on a locked week); on Team time "Who hasn't submitted?", "Remind everyone who hasn't submitted", "Review
+change requests", "Approve submitted timesheets". A suggestion fills the message box; it never sends on its own.
+My timesheet rows lose "Fix these hours" and Team time rows lose "Fix hours"; their pins stay. "Remind 2 people"
+gives one card, "Remind 2 people to submit 2026-W42" listing each person, and after confirming: "Reminded 2 · skipped
+0 · failed 0", with a line per person.
 
 ## Acceptance Criteria
 
@@ -228,6 +244,50 @@ to AC-28 stay as they are, except as D7 and D8 allow, and only through a request
     request; Maya sees it on Team time, applies it; Kasun's bell and timesheet show the result. Then a request on an
     approved week, reopened, fixed and resubmitted. Screenshots in `shots/`.
 
+**Amendment 4, 2026-10-23.** Shared chat gains page context and suggestions;
+Time removes two buttons and gains two bulk tools. Context never grants anything: every tool keeps its own checks.
+
+40. **AC-40** Page context. With every message the chat panel sends the page's path. The server matches it against the
+    installed modules' routes (`/time/my/2026-W42` → Time, "My timesheet", `{ week: "2026-W42" }`); an unknown path
+    gives no context. The model gets one data item "Current page" with the module, page title, route params and the
+    page's suggestions (AC-42), re-read on every message, so a follow-up uses the page the person is on now. Pins
+    stay the way to name one record; the page alone never picks a record when more than one fits.
+41. **AC-41** Context indicator. The chat header shows the page title and, when the module gives one, a label for the
+    params: Time gives "Week of Oct 12" for a week. It updates on navigation.
+42. **AC-42** Suggestions. A module declares `chatSuggestions` per route: label, prompt, the tool it leads to, and an
+    optional server check (`when(viewer, params)`). The panel shows at most four, only those whose tool the viewer
+    may use (`toolsFor`) and whose check passes, in the empty state and above an empty message box. Choosing one
+    fills the message box; it never sends. Keyboard reachable, read as a list of buttons by screen readers.
+43. **AC-43** "What can you help me do here?" The model's instructions say to answer from the page's suggestions and
+    the viewer's tools, and to say plainly when something isn't possible here, offering what is.
+44. **AC-44** Rule change (D11). AGENTS.md rule 1 and review rule R3: a write that chat suggests on that page (AC-42)
+    needs no per-record Ask amax button; forms stay forbidden, and every record and metric keeps its pin.
+45. **AC-45** My timesheet drops "Fix these hours" and Team time drops "Fix hours"; rows keep their pins. Time's
+    suggestions cover them: "Fix an entry" (draft or rejected week), "Ask for a change" (submitted or approved,
+    own week), "Fix someone's hours" on Team time for approvers with a draft or rejected week in view. The unused
+    prompts go; 070's tests that pressed the buttons are replaced by pin + suggestion.
+46. **AC-46** `remind_weeks` (Team time, approvers): everyone in the viewer's scope whose week is draft or rejected,
+    or only the people named. One card: "Remind 2 people to submit 2026-W42" with a line per person (status, hours).
+    Confirming runs `remind_week`'s service once per person, each in its own transaction, and returns a result per
+    person: `sent`, `skipped` (already submitted by then, or not in scope) or `failed` (reason). The card then reads
+    "Reminded 2 · skipped 0 · failed 0" with the per-person lines. A replayed confirm runs nothing again.
+47. **AC-47** `approve_weeks`, the same for submitted weeks: "Approve 3 timesheets for 2026-W42 (87.5 h)", a line per
+    person, per-person results; a week that is no longer submitted, or is the viewer's own, is skipped with the reason.
+    Team time's "Remind N people" and "Approve N submitted" prompts use these tools.
+48. **AC-48** Tests (DB-backed where it touches data): route matching and unknown paths; the "Current page" data item
+    on each turn; suggestions filtered by permission and by their check (an Engineer sees no Team time approvals;
+    a submitted week shows "Ask for a change", not "Fix an entry"); the two buttons gone and pins present; bulk
+    reminders and approvals with a skipped and a failed person, and a replay; e2e: the header label, a suggestion
+    filling the box, axe clean. Every other existing test passes unmodified.
+49. **AC-49** Live run with the real model: on My timesheet, "change Wednesday to 6 h" with no pin resolves to the week
+    on screen; "What can you help me do here?" lists this page's actions; on Team time "remind everyone who hasn't
+    submitted" gives one card and per-person results. Screenshots in `shots/`.
+50. **AC-50** (added by the product owner during the build, 2026-10-23: "fix any UI issues … I need the UI clean and
+    perfect") My timesheet, Team time, the change-request cards and the chat panel render cleanly at desktop and phone
+    widths, in light and dark, for a draft, submitted, sent-back and approved week and for an approver and an
+    engineer: no overlapping, clipped or overflowing content, no horizontal page scroll, readable contrast. Each
+    issue found is fixed and listed under Verify with before and after screenshots.
+
 ## Scope
 
 - **In `modules/time/`:** `server/correct.ts` (new), `server/log.ts` (export the lock and day-total guards),
@@ -294,6 +354,17 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 - **D9 Notification on reopen.** *Recommended:* add the missing owner notification for `time.week.reopened` here, since
   requests reopen weeks.
 - **D10 One entry per request.** *Recommended:* yes for now; several entries are several requests.
+
+**Amendment 4, approved by the product owner 2026-10-23 ("approve amendment 4"): the recommended option of each.**
+
+- **D11 Buttons and rule R3.** *Recommended:* amend AGENTS.md rule 1 and R3 as in AC-44, and remove only the two Fix
+  buttons now; Approve, Remind, Review, "Ask amax to log time" and Submit stay until the suggestions prove themselves.
+- **D12 Where suggestions show.** *Recommended:* the chat panel only (empty state and above an empty message box), at
+  most four, none on the page itself.
+- **D13 Bulk actions.** *Recommended:* reminders and approvals only; corrections stay one card per entry, because each
+  needs its own before → after.
+- **D14 "Hasn't submitted".** *Recommended:* as today's "Remind N people": weeks in the viewer's scope that are draft
+  or rejected. People with no timesheet at all for the week are left to 073's scheduled reminders.
 
 ## Tasks
 
@@ -364,9 +435,48 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
   Files: modules/time/README.md, .specclaw/changes/070-time-entry-corrections/shots/
   Depends: T18
 
+<!-- Amendment 4 (AC-40–AC-49). Page context is matched on the server from the path; suggestions are filtered by
+     the viewer's tools and each suggestion's own check; bulk tools run the existing services once per person. -->
+
+- [x] `T20` — Chat panel: page label in the header, up to four suggestions in the empty state and above an empty message box (fill, never send), the page path sent with each message; Time drops "Fix these hours" and "Fix hours" (AC-41, AC-42 UI, AC-45)
+  Files: apps/web/components/chat/Chat.tsx, apps/web/components/chat/Suggestions.tsx, modules/time/ui/MyPage.tsx, modules/time/ui/Timesheets.tsx, modules/time/ui/prompts.ts
+- [x] `T21` — Shared: `chatSuggestions` and `pageLabel` on the manifest; the server matches a path to a module route; `pageContext` action; the engine's "Current page" data item and instruction (AC-40, AC-42, AC-43)
+  Files: packages/core/src/module.ts, apps/web/lib/page-context.ts, apps/web/app/actions/chat.ts, packages/chat/src/engine.ts
+  Depends: T20
+- [x] `T22` — Time: suggestions with their checks and the week label; `remind_weeks` and `approve_weeks` with per-person results; the card's done note shows a result summary; Team time prompts use them (AC-45–AC-47)
+  Files: modules/time/chat-suggestions.ts, modules/time/module.ts, modules/time/server/bulk.ts, modules/time/mcp-bulk.ts, modules/time/mcp.ts, modules/time/ui/prompts.ts, apps/web/lib/chat-outcome.ts
+  Depends: T21
+- [x] `T23` — Rules: AGENTS.md rule 1 and review rule R3 as in AC-44
+  Files: AGENTS.md, .specclaw/review/rules/R3-chat-first-and-pins.md
+- [x] `T24` — Tests: route matching, page data item, suggestion filtering, buttons gone, bulk results with skipped/failed and replay, e2e header label and suggestion (AC-48)
+  Files: apps/web/tests/page-context.test.ts, modules/time/tests/suggestions.test.ts, modules/time/tests/bulk.test.ts, modules/time/tests/e2e/time.spec.ts, modules/time/tests/prompts.test.ts
+  Depends: T22
+- [x] `T26` — UI audit of Time's screens and the chat panel at desktop and phone widths, light and dark, across week states and roles; fix what's broken (AC-50)
+  Files: modules/time/ui/*, packages/ui/src/styles/chat.css, .specclaw/changes/070-time-entry-corrections/shots/
+  Depends: T24
+- [x] `T25` — Integration: README; live run with the real model; screenshots (AC-49)
+  Files: modules/time/README.md, .specclaw/changes/070-time-entry-corrections/shots/
+  Depends: T24
+
 ## Verify
 
 **Verdict:** PASS
+
+**Amendment 4, verified 2026-10-23** on the working tree (Windows 11). AC-40 to AC-50 pass. The specclaw gates don't run clean on this host, as before; PASS is recorded with them noted (to be confirmed by the product owner, as for amendments 1–3).
+
+- AC-40: pass — `apps/web/tests/page-context.test.ts` AC40/AC42 (path → module, page, label, params; unknown and root paths → none); `packages/chat/tests/card-hook.test.ts` AC40: the turn's "Current page" carries 2026-W42, a follow-up on another page carries 2026-W43, a turn with no page carries none. Live: "change my 2.7 h Fleet Tracker entry on Wednesday to 2 h" on My timesheet with no pin and no week named gave "Fix Fleet Tracker, Wed Oct 14 · Hours 2.7 h → 2 h" (`shots/amend4-live-fix-no-pin.png`).
+- AC-41: pass — header reads "My timesheet · Week of Oct 12" / "Team time · Week of Oct 12" (e2e 070 AC41; `amend4-chat-suggestions.png`, `amend4-team-chat-phone.png`). The Team time routes were titled "Time"; renamed "Team time" so the header (and tab title) match the page heading.
+- AC-42: pass — page-context test (tool filter, failing and throwing checks dropped, three at most plus "What can you help me do here?"); `modules/time/tests/suggestions.test.ts` AC42/AC45 (Tharushi draft: Fix an entry, Submit my week, What did I log; Kasun submitted: Ask for a change; Kasun on Team time: only "Who hasn't submitted?"; Maya: approvals, reminders, fixes). A suggestion fills the box (e2e). Keyboard reachable buttons in a labelled list; axe clean.
+- AC-43: pass — live: "What can you help me do here?" listed this page's actions, what isn't possible here, and the change-request route (`amend4-live-what-can-you-do.png`).
+- AC-44: pass — AGENTS.md rule 1 and `.specclaw/review/rules/R3-chat-first-and-pins.md` amended as in AC-44 (a not-a-finding entry added).
+- AC-45: pass — "Fix these hours" and "Fix hours" removed; row pins stay (e2e: no `Fix … hours` buttons, row "+" pins "Fleet Tracker, 2026-W42"); `fixPrompt`/`fixOtherPrompt` removed with 070's own AC-14 prompt test, so `prompts.test.ts` is back to its `main` version.
+- AC-46: pass — `modules/time/tests/bulk.test.ts` AC46: one card "Remind 2 people to submit 2026-W42" listing Tharushi, Dinesh, Kasun (skipped: submitted) and one week out of scope; "Reminded 2 · skipped 2 · failed 0"; a replayed confirm runs nothing (two reminder events). Deviation from the AC text: the per-person steps are savepoints inside one service, not separate transactions, because the chat engine's 043 rule allows exactly one keyed write per confirmed card; a failure still rolls back only that person. Live: Maya's "Remind everyone who hasn't submitted" → `get_team_week`, `remind_weeks` → "Done: Reminded 2 · skipped 0 · failed 0. Tharushi Wijesinghe: sent; Dinesh Wickrama: sent." (`amend4-live-remind-everyone.png`).
+- AC-47: pass — bulk.test AC47: "Approve 3 timesheets for 2026-W42 (87.5 h)"; with a trigger failing Ayesha's approval, Nimal and Kasun are approved and Ayesha is "failed" with the database's reason (never the query text), her week still submitted. Team time's "Remind N people" / "Approve N submitted" prompts are unchanged: the pre-070 057 test pins them to per-person calls under the scripted model; the real model picks the bulk tools from their descriptions (live run above).
+- AC-48: pass — the tests above; e2e 3/3 (scratch config quoting setup paths for Windows), including 009 AC3 Team week vs mock ≤ 2 %, the new 070 AC41/42/45 test and axe. Every other existing test passes unmodified.
+- AC-49: pass — the live runs under AC-40, AC-43 and AC-46, Claude Haiku 5.5.
+- AC-50: pass — audit of My timesheet (draft, submitted, sent back, approved, an earlier week), Team time (approver, engineer) and the chat panel at 1440 px and 390 px, light and dark, 32 views plus chat: no horizontal scroll or overflow anywhere. Fixed: (1) phones: My timesheet's total row broke out of the card layout into a narrow column → it stacks like the rows, with day labels and rounded corners; (2) desktop: the total row's label sat off its numbers with a stray rule under it (it used the header style) → body padding, one rule above; (3) Change requests: person, week chip and "just now" wrapped → kept on one line; (4) the change-request notice had a blank line on phones (the hidden pin wrapped) → one compact block; (5) the engineer's empty Team time put "Open my timesheet" outside the centred empty state → it is the empty state's action. After screenshots: `amend4-my-timesheet-desktop.png`, `amend4-my-timesheet-phone-dark.png`, `amend4-request-notice-phone.png`, `amend4-team-time-dark.png`, `amend4-team-empty-phone.png`. Row pins show on hover, as everywhere in the app (unchanged).
+
+Commands: `vitest run --config ../../vitest.config.ts --dir .` in `modules/time` 103/103, `modules/reports` 7/7, `modules/notifications` 7/7, `modules/finance` 8/8, `modules/payroll` 8/8, `packages/chat` 30/30, `packages/mcp` 20/20; `apps/web` page-context, chat-outcome, tool-schemas, pin-refs, routes, nav 23/23; `pnpm lint` exit 0; `pnpm turbo run build --filter=./apps/web` exit 0; `check-graph --root` only the known R7 fixture; time e2e 3/3 after the UI fixes. Gates: `specclaw-preset-check .` exit 1 (repo-wide; the amendment's new files are under 80 lines); `specclaw-quality-scan` not_run on this host.
 
 **Amendment 3, verified 2026-10-23** on the working tree at `269313b` plus the uncommitted amendments 2 and 3 (Windows 11). AC-29 to AC-39 pass. The specclaw gates don't run clean on this host, as for amendments 1 and 2; PASS is recorded with them noted, as the product owner chose for those (to be confirmed for this amendment).
 

@@ -53,4 +53,16 @@ describe.skipIf(!hasDb)("070 amendment 2: a tool's own confirm card", () => {
       broken: ["Save one thing: w-1, 2", undefined, input],
     });
   });
+
+  it("AC40 the page goes to the model as \"Current page\" on every turn, and only when there is one", async () => {
+    const seen: string[] = [];
+    configureAi({ db: app, model: "m", provider: fakeProvider((req) => { seen.push(JSON.stringify(req)); return { text: "ok" }; }) });
+    const page = { module: "time", page: "My timesheet", label: "My timesheet · Week of Oct 12", params: { week: "2026-W42" }, suggestions: [{ label: "Fix an entry", prompt: "Fix: " }] };
+    const first = await chatTurn(app, registry, maya, { text: "change Wednesday to 6 h", page });
+    await chatTurn(app, registry, maya, { conversationId: first.conversationId, text: "and Thursday", page: { ...page, params: { week: "2026-W43" } } });
+    await chatTurn(app, registry, maya, { text: "hello" });
+    // The turn's own data comes before the stored history, so the first block is the page the user is on now.
+    const latest = (s: string) => [...s.matchAll(/data label=\\"Current page\\">([\s\S]*?)<\/data>/g)][0]?.[1] ?? "";
+    expect(seen.map((s) => [latest(s).includes("2026-W42"), latest(s).includes("2026-W43")])).toEqual([[true, false], [false, true], [false, false]]);
+  });
 });

@@ -1,16 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
 import type { Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
-import { cancelChat, confirmChat, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
+import { cancelChat, confirmChat, pageContext, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
+import type { PageInfo } from "../../lib/page-context";
 import { pinKey, withFresh, type Pin } from "@amax/chat/pins";
 import { followMove } from "../../lib/chat-move";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
 import { SecretConfirm } from "./SecretConfirm";
 import { RevealOnce } from "./RevealOnce";
+import { Suggestions } from "./Suggestions";
 
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
@@ -72,6 +74,9 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   const [talking, setTalking] = useState(false);
   const [turnUsage, setTurnUsage] = useState<string | null>(null);
   const [history, setHistory] = useState<{ items: ConversationSummary[]; error?: string } | null>(null);
+  // 070 amendment 4: the page chat is open on, read again after each turn so suggestions follow the record's state.
+  const pathname = usePathname();
+  const [page, setPage] = useState<PageInfo | null>(null);
   const convo = useRef<string | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -102,6 +107,12 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
     el.setSelectionRange(el.value.length, el.value.length);
   };
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight }); }, [log, busy]);
+  useEffect(() => {
+    if (!open || !signedIn) return;
+    let live = true;
+    pageContext(pathname).then((p) => { if (live) setPage(p); }, () => { if (live) setPage(null); });
+    return () => { live = false; };
+  }, [open, signedIn, pathname, log.length]);
 
   // Pins and intents arrive from anywhere on the page.
   useEffect(() => {
@@ -204,7 +215,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
     setBusy(true);
     setLog((l) => [...l, { kind: "me", text: message, highlights: [] }]);
     const sent = pins;
-    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId: intent });
+    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId: intent, path: pathname });
     setBusy(false);
     if (!r.ok) { setLog((l) => [...l, { kind: "amax", text: r.error, tools: [], error: true }]); return; }
     convo.current = r.conversationId;
@@ -266,7 +277,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
     <aside className={open ? "chat open" : "chat"} id="chat" aria-label="amax chat" inert={!open}>
       <header className="c-head">
         <span className="c-face"><Mascot /></span>
-        <div><b>amax</b><small>{intent ? "Filling in a new record" : "Ask, add or drop anything here"}</small></div>
+        <div><b>amax</b><small data-testid="chat-page">{intent ? "Filling in a new record" : page?.label ?? "Ask, add or drop anything here"}</small></div>
         {signedIn && <button className="iconbtn h-toggle" type="button" aria-label="Chat history" aria-pressed={history !== null} title="History" onClick={showHistory}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2" /></svg></button>}
         <button className="iconbtn" type="button" aria-label="Close chat" onClick={close}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
       </header>
@@ -312,6 +323,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
           <span key={pinKey(p)} className={p.unavailable ? "pinchip muted" : "pinchip"}><span>{p.label}</span><button type="button" aria-label={`Remove ${p.label} from chat`} onClick={() => setPins((x) => x.filter((y) => pinKey(y) !== pinKey(p)))}>×</button></span>
         ))}
       </div>
+      {signedIn && !busy && !text && page && <Suggestions items={page.suggestions} onPick={(prompt) => { filled.current = prompt; setText(prompt); }} />}
       <form className="c-input" onSubmit={(e) => { e.preventDefault(); send(text); }}>
         <input ref={input} value={text} onChange={(e) => { filled.current = null; setText(e.target.value); }} onKeyDown={(e) => toEnd(e.currentTarget)} onPointerDown={() => { filled.current = null; }} autoComplete="off" aria-label="Message amax" placeholder={signedIn ? "Type, or tap amax and talk" : "Sign in first"} disabled={!signedIn} />
         <button className="c-send" type="submit" aria-label="Send" disabled={!signedIn || busy}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z" /></svg></button>

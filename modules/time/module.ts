@@ -1,5 +1,6 @@
 import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
+import { chatSuggestions, pageLabel } from "./chat-suggestions";
 import { EVENTS, type ChangeCompleted, type ChangeDecided, type ChangeRequested, type EntryCorrected, type EntryDeleted, type EntryLogged, type WeekDecided, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
 import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
@@ -31,8 +32,8 @@ export default defineModule({
     Employee: OWN,
   },
   routes: [
-    { path: "", title: "Time", component: TeamPage },
-    { path: "w/:week", title: "Time", component: TeamPage },
+    { path: "", title: "Team time", component: TeamPage },
+    { path: "w/:week", title: "Team time", component: TeamPage },
     { path: "my", title: "My timesheet", component: MyPage },
     { path: "my/:week", title: "My timesheet", component: MyPage },
   ],
@@ -45,6 +46,8 @@ export default defineModule({
     { table: "time.approval", label: "Timesheet approvals", subject: ["decided_by"], fields: ["comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
   ],
   chatIntents,
+  chatSuggestions,
+  pageLabel,
   jobs: [],
   // 030: who hears about a week. Approvers see a submission; the person hears the decision and reminders.
   notifications: [

@@ -22,7 +22,7 @@ export async function TeamPage({ viewer: raw, params }: ScreenProps) {
       <Head title="Team time" lede={t.rows.length ? lede : `${weekSpan(t.week, t.days)}.`} week={t.week} base="" />
       {requests.length > 0 && <ChangeRequests rows={requests} />}
       {t.rows.length === 0 ? (
-        <Card><EmptyState icon="clock" title="No timesheets come to you this week" hint="You see the weeks of people who report to you or who logged time on projects you manage." /><a className="btn" href={weekHref("/my", t.week)}>Open my timesheet</a></Card>
+        <Card><EmptyState icon="clock" title="No timesheets come to you this week" hint="You see the weeks of people who report to you or who logged time on projects you manage." action={<a className="btn" href={weekHref("/my", t.week)}>Open my timesheet</a>} /></Card>
       ) : (
         <>
           <div className="cols">

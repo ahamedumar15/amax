@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpToolDef } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { isoWeek, read, tool } from "./mcp-kit";
+import { bulkTools } from "./mcp-bulk";
 import { requestTools } from "./mcp-requests";
 import { ctxFor } from "./server/context";
 import { cardFields, checkCard, type CardInput } from "./server/card";
@@ -53,4 +54,5 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "reopen_week", description: "Unlock an approved timesheet so it can change. Admin only; give a reason.", scope: "write", permission: "time:admin", input: ref.extend({ reason: z.string() }),
     propose: proposeWeek("reopen"), card: weekCard("reopen"), service: reopenWeek, run: (v, a, s = "mcp") => reopenWeek(ctxFor(v, s), a) }),
   ...requestTools,
+  ...bulkTools,
 ];

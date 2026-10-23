@@ -8,10 +8,6 @@ const one = (r: Who) => `${r.personName} (week id ${r.weekId})`;
 
 export const decidePrompt = (verb: "Approve" | "Remind", r: Who, week: string) => `${verb} ${r.personName}'s timesheet for ${week} (week id ${r.weekId})`;
 export const approveAllPrompt = (rows: Who[], week: string) => `Approve the submitted timesheets for ${week}: ${rows.map(one).join(", ")}`;
-// 070: the row's entries are fixed through correct_time_entry or delete_time_entry, confirmed in chat.
-export const fixPrompt = (project: string, week: string) => `Fix my ${project} hours for ${week}: `;
-// 070 AC-14: a PM or Admin fixing someone else's entry gives a reason, which the person is told.
-export const fixOtherPrompt = (r: Who, week: string) => `Fix ${r.personName}'s hours for ${week} (week id ${r.weekId}). Reason: `;
 // 070 amendment 3: the request is named by its id, so chat decides on exactly that one.
 export const reviewPrompt = (r: Pick<ChangeRequest, "id" | "personName" | "dayLabel" | "before">) =>
   `Review ${r.personName}'s change request for ${r.before.projectName}, ${r.dayLabel} (request id ${r.id}): `;

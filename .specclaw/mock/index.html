@@ -1040,6 +1040,26 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     <div class="card-head"><h2>Kasun's bell</h2><span class="chip">Approvals</span></div>
     <p><b>Maya Fernando applied your change to Fleet Tracker, Wed Oct 14</b><br><small class="muted">7 h → 5 h · Open 2026-W42</small></p>
   </div>
+  <h2 id="070-amendment-4">Amendment 4: chat knows the page, suggests what you can do, and does team actions in one card</h2>
+  <div class="card">
+    <div class="card-head"><h2>amax chat</h2><span class="chip">My timesheet · Week of Oct 12</span></div>
+    <p class="muted">Try one of these, or just say what you need:</p>
+    <p><button class="btn sm">Fix an entry</button> <button class="btn sm">Submit my week</button> <button class="btn sm">What did I log this week?</button> <button class="btn sm">What can you help me do here?</button></p>
+  </div>
+  <div class="card pinnable">
+    <div class="card-head"><h2>My timesheet · 2026-W42</h2><span class="chip">Draft</span></div>
+    <table><thead><tr><th>Project</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Total</th><th></th></tr></thead>
+      <tbody><tr class="pinnable"><td>Fleet Tracker</td><td>7</td><td>8</td><td>8</td><td>–</td><td>–</td><td>23</td><td><button class="btn sm" aria-label="Add Fleet Tracker, 2026-W42 to chat">+</button></td></tr></tbody></table>
+    <p class="muted">No "Fix these hours" button: the row keeps its pin; chat's suggestions and plain requests cover the fix.</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>amax chat (Maya)</h2><span class="chip">Team time · Week of Oct 12</span></div>
+    <p><strong>Maya Fernando:</strong> Remind everyone who hasn't submitted.</p>
+    <p><b>Remind 2 people to submit 2026-W42</b></p>
+    <p>Tharushi Wijesinghe · Draft, 25.9 h<br>Dinesh Wickrama · Draft, 25.0 h</p>
+    <p><button class="btn sm primary">Add it</button> <button class="btn sm">Change something</button> <button class="btn sm">Cancel</button></p>
+    <p><b>Done: Reminded 2 · skipped 0 · failed 0</b><br><small class="muted">Tharushi Wijesinghe: sent · Dinesh Wickrama: sent</small></p>
+  </div>
 </section>
 <section data-change="069-chat-tool-schema-hotfix" id="069-chat-tool-schema-hotfix" data-roles="all" data-title="Chat answers again" data-nav="no" data-parent="001-amax-foundation">
   <h1>Chat answers again</h1>

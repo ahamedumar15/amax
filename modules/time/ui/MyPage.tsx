@@ -4,7 +4,6 @@ import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
 import { openOfMine } from "../server/requests-read";
 import { MyRequests } from "./ChangeRequests";
-import { fixPrompt } from "./prompts";
 import { DAY_NAMES, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
 
 export async function MyPage({ viewer: raw, params }: ScreenProps) {
@@ -15,12 +14,9 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const weekPin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
-  const fixable = m.status === "draft" || m.status === "rejected";
+  // 070 amendment 4: fixes are asked for in chat (its suggestions offer them); the row keeps its pin.
   const rowPin = (project: string) => ({ label: `${project}, ${m.key}`, tool: "get_timesheet", args: { week: m.key, project } });
-  const pin = (project: string) => <>
-    {fixable && <AskButton label="Fix these hours" name={`Fix ${project} hours`} prompt={fixPrompt(project, m.key)} pin={rowPin(project)} />}
-    <PinButton pin={rowPin(project)} />
-  </>;
+  const pin = (project: string) => <PinButton pin={rowPin(project)} />;
   const lede = `${weekSpan(m.week, m.days)}. ${m.total.toFixed(1)} h logged${m.total ? `, ${Math.round((m.agentHours / m.total) * 100)}% by agents` : ""}.${m.status === "approved" ? " Approved and locked." : ""}`;
   return (
     <div className="time">
@@ -43,7 +39,7 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
             {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td><td className="num" data-label="">{pin(r.projectName)}</td></tr>)}
             {m.rows.length === 0 && <tr><td colSpan={8} className="muted">No time logged this week.</td></tr>}
           </tbody>
-          <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" key={i}>{hrs(h)}</td>)}<td className="num"><b>{m.total.toFixed(1)}</b></td><td /></tr></tfoot>
+          <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Week"><b>{m.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
         </table></div>
       </div>
     </div>

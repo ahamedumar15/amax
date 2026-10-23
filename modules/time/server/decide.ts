@@ -43,11 +43,13 @@ export const rejectWeek = defineService({
 
 export const remindWeek = defineService({
   scoped: true, name: "time.week.remind", action: "time:approve", resource: "time.week", input: z.object(ref),
-  async run(tx, a, ctx) {
-    const week = await target(tx, ctx, a);
-    if (week.status !== "draft" && week.status !== "rejected") throw new Error(`${keyOf(week)} is already ${week.status}`);
-    const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx) };
-    return { result: { week: keyOf(week), person: week.person_name as string, recorded: true,
-      note: "Reminder recorded; notifications (030) delivers it to the person when installed" }, resourceId: week.id, events: [{ name: EVENTS.weekReminded, payload }] };
-  },
+  run: async (tx, a, ctx) => writeRemind(ctx, await target(tx, ctx, a)),
 });
+
+/** The reminder itself, shared by remind_week and remind_weeks (070 amendment 4). */
+export function writeRemind(ctx: ServiceContext, week: WeekRow) {
+  if (week.status !== "draft" && week.status !== "rejected") throw new Error(`${keyOf(week)} is already ${week.status}`);
+  const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx) };
+  return { result: { week: keyOf(week), person: week.person_name as string, recorded: true,
+    note: "Reminder recorded; notifications (030) delivers it to the person when installed" }, resourceId: week.id, events: [{ name: EVENTS.weekReminded, payload }] };
+}

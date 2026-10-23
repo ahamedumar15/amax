@@ -24,7 +24,10 @@ Answer briefly and concretely. Use the read tools to look things up instead of g
 To create or change anything, call the matching write tool with every field you can fill. Write tools don't run straight away:
 the user sees a confirm card and decides, so never say a change is done until a later message confirms it.
 If a required field is missing, ask for it in one short question instead of calling the tool.
-If a tool says you're not allowed, tell the user plainly that their role can't do that.`;
+If a tool says you're not allowed, tell the user plainly that their role can't do that.
+"Current page", when given, is where the user is now: use its module and params (such as the week) to read the right
+records, but it is context, not permission, and never picks one record when several fit. Asked what you can do here,
+answer from its suggestions and your tools, and say plainly what isn't possible here.`;
 
 const titleOf = (t: RegisteredTool, input: Record<string, unknown>) =>
   `${t.description.split(".")[0]}: ${Object.values(input).filter((v) => typeof v === "string" || typeof v === "number").join(", ")}`;
@@ -102,10 +105,12 @@ async function proposeCheck(t: RegisteredTool, viewer: Viewer, input: Record<str
 }
 
 /** One user message: answer with read tools, turn write calls into confirm cards. */
-export const chatTurn = (db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> =>
+/** `page` (070 amendment 4): the page the user is on, as the host matched it; context for the model, never permission. */
+export type TurnPage = { module: string; page: string; label: string; params: Record<string, string>; suggestions: { label: string; prompt: string }[] };
+export const chatTurn = (db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent; page?: TurnPage }): Promise<ChatTurn> =>
   withTrace(traceFor(viewer), () => runTurn(db, registry, viewer, opts));
 
-async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent }): Promise<ChatTurn> {
+async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conversationId?: string; text: string; pins?: Pin[]; intent?: Intent; page?: TurnPage }): Promise<ChatTurn> {
   const convo = await load(db, viewer, opts.conversationId);
   await traceStep({ kind: "turn", recordId: convo.id, detail: { pins: opts.pins?.length ?? 0, intent: opts.intent?.id ?? null } });
   const pending: PendingAction[] = [];
@@ -132,7 +137,8 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
   // under its label as it is now (059). A record, not text, so the gateway redacts its classified
   // fields like any other record.
   const resolved = await resolvePins(registry, viewer, opts.pins ?? [], convo.savedAt);
-  const data: DataItem[] = resolved.map((r) => ({ label: r.pin.label, record: r.record, ...(r.tool ? { sensitive: r.tool.sensitive } : {}) }));
+  const data: DataItem[] = [...(opts.page ? [{ label: "Current page", record: opts.page }] : []),
+    ...resolved.map((r) => ({ label: r.pin.label, record: r.record, ...(r.tool ? { sensitive: r.tool.sensitive } : {}) }))];
   const pins = resolved.map((r) => r.pin);
 
   const intentNote = opts.intent

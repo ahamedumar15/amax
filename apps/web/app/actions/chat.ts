@@ -8,6 +8,8 @@ import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, confirmAction, resolvePins, type ChatTurn, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
 import { doneOutcome, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
+import { pageInfo, type PageInfo } from "../../lib/page-context";
+import { installed } from "../../lib/registry";
 import { chatIntents, getDb, toolRegistry } from "../../lib/server";
 
 export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok: false; error: string };
@@ -15,12 +17,13 @@ export type ChatResult = ({ ok: true; usage: string | null } & ChatTurn) | { ok:
 const friendly = (e: unknown) =>
   e instanceof AiDisabledError ? e.message : e instanceof Error && /forbidden|scope/.test(e.message) ? e.message : "Sorry, something went wrong. Try again.";
 
-export async function sendChat(input: { conversationId?: string; text: string; pins?: Pin[]; intentId?: string }): Promise<ChatResult> {
+export async function sendChat(input: { conversationId?: string; text: string; pins?: Pin[]; intentId?: string; path?: string }): Promise<ChatResult> {
   try {
     const viewer = await currentViewer();
     if (!aiConfigured()) return { ok: false, error: "AI is off: no API key is configured on the server." };
     const intent = input.intentId ? chatIntents().find((i) => i.id === input.intentId) : undefined;
-    const turn = await chatTurn(getDb()!, toolRegistry(), viewer, { conversationId: input.conversationId, text: input.text.slice(0, 4000), pins: input.pins?.slice(0, 8), intent });
+    const page = input.path ? (await pageInfo(installed, toolRegistry(), viewer, input.path.slice(0, 300))) ?? undefined : undefined;
+    const turn = await chatTurn(getDb()!, toolRegistry(), viewer, { conversationId: input.conversationId, text: input.text.slice(0, 4000), pins: input.pins?.slice(0, 8), intent, page });
     return { ok: true, ...turn, usage: await myChatUsage(viewer) };
   } catch (e) {
     const id = logError("chat", e);
@@ -29,6 +32,17 @@ export async function sendChat(input: { conversationId?: string; text: string; p
 }
 
 export type { CardOutcome };
+
+/** 070 amendment 4: the page chat's header and suggestions describe; null for a page with no module route. */
+export async function pageContext(path: string): Promise<PageInfo | null> {
+  try {
+    if (typeof path !== "string" || path.length > 300) return null;
+    return await pageInfo(installed, toolRegistry(), await currentViewer(), path);
+  } catch (e) {
+    logError("chat.page", e);
+    return null;
+  }
+}
 
 export async function confirmChat(conversationId: string, actionId: string): Promise<CardOutcome> {
   let done: { title: string; result: unknown };

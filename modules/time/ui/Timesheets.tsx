@@ -1,7 +1,7 @@
 import { PinButton } from "@amax/ui";
 import type { TeamRow } from "../server/team";
 import { AskButton } from "./AskButton";
-import { decidePrompt, fixOtherPrompt, remindAllPrompt } from "./prompts";
+import { decidePrompt, remindAllPrompt } from "./prompts";
 import { avatar, DAY_NAMES, hrs, initials, STATUS } from "./parts";
 
 // Quote every text cell, double embedded quotes, and defuse leading formula characters (CSV injection).
@@ -16,11 +16,8 @@ function Action({ row, weekKey }: { row: TeamRow; weekKey: string }) {
   if (row.status === "approved") return <span className="muted">Locked</span>;
   if (!row.canApprove) return null;
   const verb = row.status === "submitted" ? "Approve" : "Remind";
-  return <>
-    <AskButton className={`btn sm${verb === "Approve" ? " ghost" : ""}`} spark={false} label={verb} name={`${verb} ${row.personName}`}
-      prompt={decidePrompt(verb, row, weekKey)} pin={sheetPin(row, weekKey)} />
-    {verb === "Remind" && <AskButton label="Fix hours" name={`Fix ${row.personName}'s hours`} prompt={fixOtherPrompt(row, weekKey)} pin={sheetPin(row, weekKey)} />}
-  </>;
+  return <AskButton className={`btn sm${verb === "Approve" ? " ghost" : ""}`} spark={false} label={verb} name={`${verb} ${row.personName}`}
+    prompt={decidePrompt(verb, row, weekKey)} pin={sheetPin(row, weekKey)} />;
 }
 
 export function Timesheets({ rows, weekKey }: { rows: TeamRow[]; weekKey: string }) {
