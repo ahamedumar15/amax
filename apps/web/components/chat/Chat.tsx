@@ -63,7 +63,7 @@ export function Markdown({ text }: { text: string }) {
 
 type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; start: () => void; stop: () => void };
 
-export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; voice: boolean; usage?: string | null }) {
+export function Chat({ open, onClose, returnFocus, signedIn, userId, voice, usage = null }: { open: boolean; onClose: () => void; returnFocus: RefObject<HTMLButtonElement | null>; signedIn: boolean; userId?: string; voice: boolean; usage?: string | null }) {
   const [log, setLog] = useState<Entry[]>([]);
   const [pins, setPins] = useState<Pin[]>([]);
   const router = useRouter();
@@ -110,9 +110,9 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   useEffect(() => {
     if (!open || !signedIn) return;
     let live = true;
-    pageContext(pathname).then((p) => { if (live) setPage(p); }, () => { if (live) setPage(null); });
+    pageContext(pathname, userId).then((p) => { if (live) setPage(p); }, () => { if (live) setPage(null); });
     return () => { live = false; };
-  }, [open, signedIn, pathname, log.length]);
+  }, [open, signedIn, pathname, log.length, userId]);
 
   // Pins and intents arrive from anywhere on the page.
   useEffect(() => {
@@ -182,7 +182,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
 
   async function showHistory() {
     if (history) { setHistory(null); return; }
-    const r = await listChats("");
+    const r = await listChats("", userId);
     setHistory(r.ok ? { items: r.items } : { items: [], error: r.error });
   }
 
@@ -196,7 +196,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
   }
 
   async function reopen(id: string) {
-    const r = await openChat(id);
+    const r = await openChat(id, userId);
     if (!r.ok) { setHistory((h) => ({ items: h?.items ?? [], error: r.error })); return; }
     convo.current = r.conversation.id;
     fields.current = r.conversation.pending.flatMap((p) => p.fields);
@@ -215,7 +215,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
     setBusy(true);
     setLog((l) => [...l, { kind: "me", text: message, highlights: [] }]);
     const sent = pins;
-    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId: intent, path: pathname });
+    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId: intent, path: pathname, as: userId });
     setBusy(false);
     if (!r.ok) { setLog((l) => [...l, { kind: "amax", text: r.error, tools: [], error: true }]); return; }
     convo.current = r.conversationId;
@@ -240,7 +240,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
     const apply = (o: CardOutcome) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, ...o } : x)));
     try {
       // The server says what the card is now: done, cancelled, back open to retry, or an error.
-      const o = ok ? await confirmChat(convo.current, action.id) : await cancelChat(convo.current, action.id);
+      const o = ok ? await confirmChat(convo.current, action.id, userId) : await cancelChat(convo.current, action.id, userId);
       apply(o);
       announce(o.note);
       // The record this page shows was renamed (a re-tag): follow it, or the page would read "not found".
@@ -251,7 +251,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
       // by id, so nothing is rewritten; a pin added or removed meanwhile stays as it is.
       const sent = pins;
       if (o.state === "done" && sent.length) {
-        const fresh = await refreshPins(sent);
+        const fresh = await refreshPins(sent, userId);
         if (fresh) setPins((ps) => withFresh(ps, sent, fresh));
       }
     } catch {
@@ -281,7 +281,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
         {signedIn && <button className="iconbtn h-toggle" type="button" aria-label="Chat history" aria-pressed={history !== null} title="History" onClick={showHistory}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2" /></svg></button>}
         <button className="iconbtn" type="button" aria-label="Close chat" onClick={close}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
       </header>
-      {history && <History key={history.error ?? "list"} initial={history.items} error={history.error} onOpen={reopen} onNew={newChat} />}
+      {history && <History key={history.error ?? "list"} initial={history.items} error={history.error} onOpen={reopen} onNew={newChat} as={userId} />}
       <div className="c-log" hidden={history !== null} role="log" aria-live="polite" aria-label="Conversation" ref={logRef}>
         {!signedIn && <div className="m"><div className="b">Sign in to use amax chat.</div></div>}
         {log.map((e, i) => {
@@ -300,7 +300,7 @@ export function Chat({ open, onClose, returnFocus, signedIn, voice, usage = null
               {e.state === "open" ? (<>
                 {e.note && <p className="err">{e.note}</p>}
                 {e.action.secret && convo.current ? (
-                  <SecretConfirm conversationId={convo.current} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
+                  <SecretConfirm conversationId={convo.current} as={userId} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
                     onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} />
                 ) : (
                   <div className="acts">

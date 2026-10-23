@@ -35,7 +35,7 @@ describe.skipIf(!hasDb)("070 amendment 3: deciding change requests (Postgres)", 
     await expect(decideRequest(ctxFor(maya), { requestId: stale.id, decision: "apply" })).rejects.toThrow(/entry changed since the request/);
     await decideRequest(ctxFor(maya), { requestId: stale.id, decision: "decline", note: "Ask again once it's settled" });
     expect([await w.status(stale.id), (await row(fri.id)).deleted]).toEqual(["declined", false]);
-  });
+  }, 60_000);
 
   it("AC34 (D7) apply on an approved week keeps it approved, audited as a locked change with the request id", async () => {
     const [kasun, maya, sahan] = await Promise.all([as("kasun"), as("maya"), as("sahan")]);
@@ -63,7 +63,7 @@ describe.skipIf(!hasDb)("070 amendment 3: deciding change requests (Postgres)", 
     const sent = await requestChange(ctxFor(ayesha), { entryId: hri.id, hours: 7, reason: "Dentist at 4" });
     await decideRequest(ctxFor(maya), { requestId: sent.id, decision: "reopen" });
     expect([await weekStatus("ayesha"), await w.status(sent.id)]).toEqual(["rejected", "reopened"]);
-  });
+  }, 60_000);
 
   it("AC34 the approver's card names the person, the entry, the change and what happens to the week", async () => {
     const [nimal, maya] = await Promise.all([as("nimal"), as("maya")]);

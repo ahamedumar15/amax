@@ -34,6 +34,15 @@ says what chat can do here except per-row buttons the client finds cluttered ("F
 add page-aware chat with suggestions, remove the two Fix buttons, and make team reminders and approvals one card with
 a result per person.
 
+**Amendment 5, 2026-10-23** (approved by the product owner: "approve but do it in 070"; drafted as 074-session-switch-safety): Signing in as Maya in one tab while Tharushi is signed in in another makes Tharushi's tab show Maya on refresh. Root
+cause, reproduced on 2026-10-23: amax's session is one HTTP-only cookie (`authjs.session-token`, an Auth.js JWT that
+carries only tenant, user and session ids). A browser keeps one cookie per site for all of its tabs, so a second
+sign-in replaces it for every tab; separate browser profiles stay independent. No auth state is in localStorage or
+sessionStorage (only the theme), and "view as" lives on the server-side session row. Three defects make this unsafe:
+the sign-in page shows the form to a browser that is already signed in and replaces the identity silently; the
+replaced session is never revoked, so it stays valid for 12 hours (139 live sessions in the local database); and until
+it is refreshed, the first tab still shows Tharushi while anything it does (a chat confirm, "view as") runs as Maya.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`070-time-entry-corrections`](../../mock/index.html#070-time-entry-corrections)
@@ -74,6 +83,14 @@ change requests", "Approve submitted timesheets". A suggestion fills the message
 My timesheet rows lose "Fix these hours" and Team time rows lose "Fix hours"; their pins stay. "Remind 2 people"
 gives one card, "Remind 2 people to submit 2026-W42" listing each person, and after confirming: "Reminded 2 · skipped
 0 · failed 0", with a line per person.
+
+Amendment 5 ([`#070-amendment-5`](../../mock/index.html#070-amendment-5)):
+
+- **Sign-in page, already signed in:** "You're signed in as Tharushi Wijesinghe (Engineer)" with "Continue as
+  Tharushi" and "Sign out to switch account"; no sign-in form until the browser signs out.
+- **Any open tab after another tab signs in or out:** a blocking banner, "You're now signed in as Maya Fernando in
+  another tab. Reload to continue as Maya." (or "You signed out in another tab. Sign in again."), with a Reload button;
+  the chat panel can't send or confirm until then.
 
 ## Acceptance Criteria
 
@@ -288,6 +305,36 @@ Time removes two buttons and gains two bulk tools. Context never grants anything
     engineer: no overlapping, clipped or overflowing content, no horizontal page scroll, readable contrast. Each
     issue found is fixed and listed under Verify with before and after screenshots.
 
+**Amendment 5, 2026-10-23.** Sessions: one identity per browser, switched on purpose; a stale tab can't act.
+
+51. **AC-51** `/signin` with a live session shows who is signed in, "Continue" (to `next`) and "Sign out to switch
+   account"; the providers and the demo and password forms appear only once the browser has no live session.
+52. **AC-52** A sign-in never leaves the browser's earlier session alive: the password and demo sign-in actions revoke
+   any live session of the current cookie before opening the new one (audited `auth.signout` with
+   `reason: "switched"`), and sign-out keeps revoking as today. Directory (Entra) sign-in starts only from a signed-out
+   browser (AC-51).
+53. **AC-53** Each page knows which user it was rendered for. The chat actions (`sendChat`, `confirmChat`,
+   `cancelChat`, `refreshPins`, `pageContext`, the chat-history actions) and `viewAsAction` take that user id and
+   refuse, writing nothing, when the session's user differs ("signed in as someone else in another tab").
+54. **AC-54** Open tabs notice a switch: on focus or visibility, and when another tab signs in or out (a
+   `BroadcastChannel` message, no auth data in it), the page reads its own session; if the user changed or is gone it
+   shows the blocking banner from the mock with Reload. Nothing about the session is kept in browser storage.
+55. **AC-55** Authorisation stays on the server: every module page and tool still rebuilds the viewer from the session
+   row on each request (`loadViewer`); nothing in AC-53 or AC-54 trusts the client's user id for permission, it only
+   refuses a mismatch.
+56. **AC-56** Tests: unit tests for the user-id check on each guarded action (match runs, mismatch refuses, nothing
+   written) and for the revoke-on-switch sign-in; e2e in one browser context with two tabs: A signs in as Tharushi,
+   B sees "signed in as Tharushi" on `/signin`, signs out and in as Maya; A shows the banner on focus, its chat send is
+   refused, Reload shows Maya; Tharushi's first session is revoked in `auth.session`; sign-out in one tab bans the
+   other. Two separate contexts stay independent. Every existing auth and chat test passes unmodified.
+
+**Not here — independent accounts per tab.** A browser can't give each tab its own cookie. Doing it would mean
+either keeping the session in `sessionStorage` and sending it as a header (loses HTTP-only protection against
+script theft, breaks server rendering of pages), or a multi-account design with one cookie per account and the
+account in the URL (`/u/0/…`, `/u/1/…`, as Google does), which touches every route, link and pin. Neither is
+recommended now. To use two roles at once, use two browser profiles or a private window; an Admin can also preview
+another role with "view as".
+
 ## Scope
 
 - **In `modules/time/`:** `server/correct.ts` (new), `server/log.ts` (export the lock and day-total guards),
@@ -324,6 +371,10 @@ Time removes two buttons and gains two bulk tools. Context never grants anything
     AGENTS.md rule 1 and review rule R3.
   - **077 Team time multi-step:** "remind everyone who hasn't submitted" with per-person results (skipped, failed, sent).
   - Slash commands: not needed if 075's suggestions land; revisit after the pilot.
+- **Amendment 5 adds:** `apps/web/app/signin/page.tsx`, `apps/web/app/actions/chat.ts`, `apps/web/app/actions/chat-history.ts`,
+`apps/web/app/actions/session.ts`, `apps/web/app/(app)/layout.tsx`, `apps/web/components/shell/` (the banner and the
+tab watcher), `apps/web/components/chat/Chat.tsx` (send the user id), `packages/auth/src/session.ts` (revoke with a
+reason), tests.
 
 ## Decisions
 
@@ -458,9 +509,36 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
   Files: modules/time/README.md, .specclaw/changes/070-time-entry-corrections/shots/
   Depends: T24
 
+<!-- Amendment 5 (AC-51–AC-56). The session stays one HTTP-only cookie; the fix makes switching explicit, revokes
+     the replaced session, and stops a stale tab from acting. Nothing is stored in the browser. -->
+
+- [x] `T27` — Screens: `/signin` when already signed in (who, Continue, Sign out to switch); the blocking "signed in elsewhere" banner and tab watcher in the shell (AC-51, AC-54)
+  Files: apps/web/app/signin/page.tsx, apps/web/components/shell/SessionWatch.tsx, apps/web/app/(app)/layout.tsx, apps/web/components/shell/Shell.tsx
+- [x] `T28` — Server: revoke the browser's live session on a password or demo sign-in (audited, reason "switched"); `currentIdentity` action; the user-id check on the chat, chat-history and view-as actions (AC-52, AC-53, AC-55)
+  Files: packages/auth/src/session.ts, apps/web/lib/same-user.ts, apps/web/app/actions/chat.ts, apps/web/app/actions/chat-history.ts, apps/web/app/actions/session.ts, apps/web/components/chat/Chat.tsx
+  Depends: T27
+- [x] `T29` — Tests: the user-id check, revoke on switch, two tabs in one browser and two profiles end to end (AC-56)
+  Files: apps/web/tests/same-user.test.ts, packages/auth/tests/switch.test.ts, modules/time/tests/e2e/time.spec.ts
+  Depends: T28
+
 ## Verify
 
 **Verdict:** PASS
+
+**Amendment 5, verified 2026-10-23** on the working tree (Windows 11). AC-51 to AC-56 pass. Gates as for amendments 1–4 (PASS recorded with them noted, to be confirmed by the product owner).
+
+Root cause (reproduced before the fix, one Chromium context = one browser profile): A signed in as Tharushi, B signed in as Maya, A refreshed → Maya; two separate contexts stayed independent. The session is one HTTP-only cookie (`authjs.session-token`, an Auth.js JWT with tenant, user and session ids); a browser keeps one cookie per site for all its tabs. No auth state in localStorage or sessionStorage (only the theme); "view as" is on `auth.session`. Defects found: the sign-in page replaced a live session silently; the replaced session row stayed live for 12 hours (139 live rows locally); a stale tab acted as the new user.
+
+- AC-51: pass — e2e `session.time.spec.ts`: with Tharushi signed in, `/signin` shows "You're signed in as Tharushi Wijesinghe" and no demo form; "Sign out to switch account" brings the form back.
+- AC-52: pass — `packages/auth/tests/switch.test.ts` AC52: the replaced session no longer loads a viewer, the new one does, `auth.signout` is audited once with `reason: "switched"`, a second end is a no-op. The password and demo sign-in actions call it with the browser's current session first; Entra starts only from a signed-out browser (AC-51).
+- AC-53: pass — `apps/web/tests/same-user.test.ts` AC53: the check passes the same user and refuses another or none; with the session switched to Sahan, Maya's tab's `sendChat`, `confirmChat` and `listChats` refuse ("…signed in as someone else in another tab…"), no conversation is created and the card's archive doesn't run; the same card then confirms as Sahan. `cancelChat`, `refreshPins`, `pageContext`, `openChat`, `confirmSecretChat` (hidden field) and `viewAsAction` make the same check.
+- AC-54: pass — e2e: after B signs in as Maya, A shows "You're now signed in as Maya Fernando in another tab." (axe clean) and Reload shows Maya; after B signs out, A shows "You signed out in another tab." Tabs re-check on focus, on becoming visible and on a `BroadcastChannel` ping sent by every page load and by `/signin`; the ping carries no data and nothing is stored in the browser.
+- AC-55: pass — the guard only refuses; pages and tools still rebuild the viewer from `auth.session` (`getViewer`/`loadViewer`); `currentIdentity` reads the same.
+- AC-56: pass — the tests above; e2e also checks that a second profile (Kasun) doesn't change A. Existing auth (49/49 with the new test), chat (30/30), chat-history action and time tests pass unmodified, except two amendment-3 tests given the module's usual 60 s DB timeout after a timeout under parallel load (they drain the outbox through the workflow engine).
+
+Not done, by design: independent accounts per tab (see AC-56's note). Existing live sessions created before this change aren't revoked by it.
+
+Commands: `vitest run` in `packages/auth` 49/49, `packages/chat` 30/30, `modules/time` 103/103 (three runs); `apps/web` same-user, chat-history-action, chat-outcome, page-context, tool-schemas, pin-refs, routes, nav 26/26; `pnpm lint` exit 0; `pnpm turbo run build --filter=./apps/web` exit 0; time e2e 4/4 (scratch config for Windows).
 
 **Amendment 4, verified 2026-10-23** on the working tree (Windows 11). AC-40 to AC-50 pass. The specclaw gates don't run clean on this host, as before; PASS is recorded with them noted (to be confirmed by the product owner, as for amendments 1–3).
 

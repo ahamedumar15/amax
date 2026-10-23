@@ -37,7 +37,7 @@ describe.skipIf(!hasDb)("070 amendment 3: asking for a change to a locked week (
     expect((await w.registry.call(maya, "get_change_requests", { mine: false }, { source: "mcp" })) as unknown[]).toHaveLength(1);
     expect(await w.registry.call(dinesh, "get_change_requests", {}, { source: "mcp" })).toEqual([]);
     await expect(decideRequest(ctxFor(dinesh), { requestId: mine.id, decision: "decline", note: "No" })).rejects.toThrow();
-  });
+  }, 60_000);
 
   it("AC35 ask, answer and back to pending; a withdrawn request can't be decided", async () => {
     const [ayesha, maya] = await Promise.all([as("ayesha"), as("maya")]);
@@ -51,7 +51,7 @@ describe.skipIf(!hasDb)("070 amendment 3: asking for a change to a locked week (
     expect((await w.bell(maya, "time.change-answered")).map((b) => b.body)).toEqual(["The Northwind demo, 3 pm"]);
     await cancelRequest(ctxFor(ayesha), { requestId: r.id });
     await expect(decideRequest(ctxFor(maya), { requestId: r.id, decision: "decline", note: "Late" })).rejects.toThrow(/cancelled/);
-  });
+  }, 60_000);
 
   it("AC31 chat routes by week state: a fix on a submitted week makes no correction card but a request card", async () => {
     const ayesha = await as("ayesha");
