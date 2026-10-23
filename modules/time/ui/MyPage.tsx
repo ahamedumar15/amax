@@ -2,6 +2,8 @@ import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
+import { openOfMine } from "../server/requests-read";
+import { MyRequests } from "./ChangeRequests";
 import { fixPrompt } from "./prompts";
 import { DAY_NAMES, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
 
@@ -9,6 +11,7 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
   const viewer = viewerOrNull(raw);
   if (!viewer) return <div className="time"><h1>My timesheet</h1><SignInFirst /></div>;
   const m = await myWeek(viewer, weekParam(params.week));
+  const requests = m.status === "submitted" || m.status === "approved" ? await openOfMine(viewer, m.key) : [];
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const weekPin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
@@ -23,6 +26,7 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
     <div className="time">
       <Head title="My timesheet" lede={lede} week={m.week} base="/my" />
       {m.rejectComment && m.status === "rejected" && <p className="chip bad" role="status">Sent back: {m.rejectComment}</p>}
+      <MyRequests rows={requests} />
       <div className="card flush pinnable">
         <div className="card-head">
           <h2>{m.key}{m.status && <> <span className={`chip ${STATUS[m.status][0]}`}>{STATUS[m.status][1]}</span></>}</h2>

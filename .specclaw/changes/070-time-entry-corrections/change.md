@@ -22,6 +22,11 @@ can make a card that can only fail (Kasun confirmed "log 6 h" on his submitted w
 AC-27 cover these. Ctrl+K on Team time was rechecked and works once the page has loaded (the run's driver pressed it
 too early), so it isn't part of this.
 
+**Amendment 3, 2026-10-23** (approved by the product owner, "approve amendment 3", with the recommended D7–D10): once a week is submitted or
+approved, its owner can't change it, and chat only says "ask the approver" or "reopen it with a reason"; the asking
+happens outside amax, with no record, no queue for the approver, and no notice to the owner when a week is reopened.
+AC-29 to AC-39 add change requests: the owner asks once in chat, and an approver applies, reopens, asks or declines.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`070-time-entry-corrections`](../../mock/index.html#070-time-entry-corrections)
@@ -40,6 +45,19 @@ labelled before → after lines, with no ids or field names: "Fix Fleet Tracker,
 for someone else adds "For Tharushi Wijesinghe", the reason and "Tharushi will be notified"; "Approve Nimal Silva's
 timesheet for 2026-W42 (31.5 h)". A request on a submitted or approved week gets a reply saying why and what to do next,
 and no card.
+
+Amendment 3 ([`#070-amendment-3`](../../mock/index.html#070-amendment-3)):
+
+- **Chat (owner, locked week):** instead of a refusal, a change-request card: "Request a change to Fleet Tracker,
+  Wed Oct 14 · Hours 7 h → 5 h · Reason … · Week 2026-W42 is submitted; Maya Fernando reviews it". Confirming sends
+  the request; nothing on the timesheet changes.
+- **My timesheet:** a locked week with an open request shows a pinnable notice: "Change requested: Fleet Tracker, Wed
+  Oct 14, 7 h → 5 h · Waiting for review".
+- **Team time:** a "Change requests" card above the timesheets, listing open requests in the viewer's scope (person,
+  week, entry, before → after, reason, age), each row pinnable with an Ask amax "Review" that opens chat with it pinned.
+- **Chat (approver):** "Apply it", "Reopen for Kasun", "Ask Kasun" or "Decline" through one confirm card each, e.g.
+  "Apply Kasun Dias's change: Fleet Tracker, Wed Oct 14 · Hours 7 h → 5 h · Week stays submitted".
+- **Bell:** the approver gets "Kasun Dias asked to change Fleet Tracker, Wed Oct 14"; the owner gets each decision.
 
 ## Acceptance Criteria
 
@@ -159,6 +177,57 @@ AC-17, they win.
     Tue Oct 13" (and "removed"), not the ISO date. The `corrected` and `deleted` payloads gain an optional
     `dayLabel`; `day` and every other field stay as they are.
 
+**Amendment 3, 2026-10-23.** It adds a request path for locked weeks; the correction rules, cards and events of AC-1
+to AC-28 stay as they are, except as D7 and D8 allow, and only through a request.
+
+29. **AC-29** A change request is stored in `time.change_request` (migration `0004_change_request.sql`): week, entry, kind
+   (`correct` or `delete`), the entry's values and `revision` when asked, the proposed values, reason, status,
+   requester, reviewer, decision note and timestamps. At most one open request per entry. Existing tables don't change;
+   071's and 073's migrations move to `0005` and `0006`.
+30. **AC-30** `request_time_change` (MCP tool + `time.change.request` service): the owner asks to correct (hours, billable,
+   note, project) or delete one entry of their own **submitted or approved** week, with a reason (3–500 characters). It is
+   refused for a draft or rejected week (chat uses `correct_time_entry` there), for someone else's entry, and for an entry
+   that already has an open request. Its card reads "Request a change to {project}, {Wed Oct 14}" with before → after
+   lines, the reason, the week's status and who reviews it. Creating it changes no entry, week or total.
+31. **AC-31** Chat routes by week state: a fix on a draft or rejected week stays `correct_time_entry`; on a submitted or
+   approved week the agent proposes `request_time_change` instead of telling the owner to ask someone. The tool
+   descriptions and AC-13's refusal messages point to it.
+32. **AC-32** Who reviews: anyone in the week's approval chain (`chainFor`: Admin, the owner's line manager, a PM of a
+   project with time in that week), never the owner. Event `time.change.requested` notifies them through the existing
+   `approvers` recipient (line managers, else Admins), "{owner} asked to change {project}, {Wed Oct 14}".
+33. **AC-33** `get_change_requests` (read): the owner sees their own requests; a reviewer sees open and recent requests in
+   their scope, filtered by status and week. Nobody sees requests outside their scope; a missing request and one out of
+   scope give the same error.
+34. **AC-34** `decide_change_request` with `decision`:
+   - `apply`: the reviewer's own correction or delete on the entry, through the correction services, attributed to the reviewer
+     with the request's reason and id; the owner is notified as in AC-15. The week keeps its status. Refused if the
+     entry's `revision` changed since the request ("the entry changed; ask Kasun to confirm the request again").
+   - `reopen`: a submitted week is sent back (`reject_week`, comment = the request) and an approved week is reopened
+     (`reopen_week`, reason = the request). The owner then fixes and resubmits as today. The request is `reopened`, and
+     becomes `completed` when the week is next submitted.
+   - `ask`: status `needs_info` with the reviewer's question; the owner answers in chat (`answer_change_request`), which
+     returns it to `pending` with the answer.
+   - `decline`: status `declined` with a reason; nothing else changes.
+   Each decision has one confirm card naming the person, entry, before → after and what happens to the week.
+35. **AC-35** Lifecycle: `pending → needs_info → pending`; `pending → applied | reopened → completed | declined`; the owner
+   may `cancel` while `pending` or `needs_info`. Any other transition is refused. A decided request can't be decided
+   again (a second confirm of the same card is a no-op, as for every chat card).
+36. **AC-36** Events `time.change.requested`, `time.change.decided` (`decision`, `by`, `note`) and `time.change.completed`,
+   declared in `module.ts`; each in the same transaction as its row change, audited with before and after. Rules notify
+   the reviewer of a request and of an answer, and the owner of every decision.
+37. **AC-37** Screens as in the mock: My timesheet shows the open request on a locked week; Team time shows the
+   "Change requests" card in the viewer's scope, rows pinnable (R3) with an Ask amax "Review" (prompt names the request).
+   No forms or inline edits.
+38. **AC-38** Tests (DB-backed, none skipped): request on a submitted and on an approved week leaves totals and Reports
+    unchanged; refused on draft, on someone else's entry and on a second open request; routed to the right reviewers and
+    not the owner; out-of-scope reviewer refused; `apply` changes the entry and notifies, and is refused on a stale
+    revision; `reopen` on submitted and approved weeks, then resubmit completes it; `ask` → `answer` → `pending`;
+    `decline` changes nothing; replayed decision is a no-op; the chat card text for each. Every existing test passes
+    unmodified.
+39. **AC-39** A live run with the real model: Kasun asks in chat to fix Thursday on his submitted week, confirms the
+    request; Maya sees it on Team time, applies it; Kasun's bell and timesheet show the result. Then a request on an
+    approved week, reopened, fixed and resubmitted. Screenshots in `shots/`.
+
 ## Scope
 
 - **In `modules/time/`:** `server/correct.ts` (new), `server/log.ts` (export the lock and day-total guards),
@@ -183,6 +252,18 @@ AC-17, they win.
   `mcp.ts`, `server/card.ts`, `server/guards.ts` (the lock rule as a pure check, `guardLock` unchanged in behaviour),
   `server/weeks.ts` (find a week without locking it, for the propose check), tests, README. Not here: the Sonnet
   0 requests-per-minute limit on the Anthropic workspace (a Console setting), and the outbox tick in local dev.
+- **Amendment 3 adds** (in `modules/time/` only): migration `0004_change_request.sql`, `server/request.ts` (new), `server/decide-request.ts` (new),
+`server/requests-read.ts` (new), `server/correct.ts` (accept a request id on the reviewer's write), `mcp.ts`, `chat.ts`,
+`module.ts` (events, rules), `contracts.ts`, `ui/MyPage.tsx`, `ui/Timesheets.tsx`, `ui/ChangeRequests.tsx` (new),
+`ui/prompts.ts`, tests, README.
+- **Not in amendment 3** (follow-up changes):
+  - **075 page-aware chat and suggestions:** chat knows the module, page, week and selected record (shown as
+    "My timesheet · Week of Oct 12"), and offers compact suggestions from the capabilities the viewer may use, plus
+    "What can you help me do here?". Shared; context never grants permission.
+  - **076 fewer buttons on My timesheet:** remove "Fix these hours" once 074 and 075 work, after the product owner amends
+    AGENTS.md rule 1 and review rule R3.
+  - **077 Team time multi-step:** "remind everyone who hasn't submitted" with per-person results (skipped, failed, sent).
+  - Slash commands: not needed if 075's suggestions land; revisit after the pilot.
 
 ## Decisions
 
@@ -200,6 +281,19 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
 - **D5 Soft delete** (product owner, 2026-10-22, FR-5.8): `deleted_at` on the row; the audit trail and Reports'
   tombstone are unchanged.
 - **D6 Confirm card** (product owner, 2026-10-22, FR-5.14): before → after for each changed field.
+
+**Amendment 3, approved by the product owner 2026-10-23 ("approve amendment 3"): the recommended option of each.**
+
+- **D7 Applying a fix to a locked week.** D3 says no one changes an approved week without reopening it. `apply`
+  would change that for one entry when, and only when, the owner asked for it and the approver agrees, audited with the
+  request id. *Recommended:* allow `apply` on submitted weeks (the approver is deciding on that week anyway) and on
+  approved weeks, recorded as `time.week.locked_change` with the request id. *Alternative:* on an approved week,
+  `apply` = reopen + correct + the owner resubmits.
+- **D8 Who may reopen through a request.** `reopen_week` is Admin only. *Recommended:* anyone in the week's approval chain
+  may reopen **through a request** (the client asked for PMs too); `reopen_week` itself stays Admin only.
+- **D9 Notification on reopen.** *Recommended:* add the missing owner notification for `time.week.reopened` here, since
+  requests reopen weeks.
+- **D10 One entry per request.** *Recommended:* yes for now; several entries are several requests.
 
 ## Tasks
 
@@ -252,9 +346,43 @@ Approved by the product owner, 2026-10-22 ("approve 070, go with your recommende
   Files: modules/time/week.ts, modules/time/contracts.ts, modules/time/module.ts, modules/time/server/correct.ts, modules/time/server/entry-card.ts, modules/time/tests/corrections-flow.test.ts
   Depends: T13
 
+<!-- Amendment 3 (AC-29–AC-39). Requests live in time.change_request; decisions reuse the correction, send-back and
+     reopen code paths through shared cores, so the rules stay in one place. -->
+
+- [x] `T15` — Screens: Team time "Change requests" card (open requests in scope, rows pinnable with an Ask amax "Review"); My timesheet notice for an open request on a locked week; review prompt (AC-37)
+  Files: modules/time/ui/ChangeRequests.tsx, modules/time/ui/TeamPage.tsx, modules/time/ui/MyPage.tsx, modules/time/ui/prompts.ts, modules/time/server/requests-read.ts
+- [x] `T16` — Backend: migration `0004_change_request.sql`; request, answer and cancel services; decide service (apply through a shared correction core, locked change audited with the request id; reopen through the shared send-back and reopen cores for the approval chain; ask; decline); lifecycle guard; submit completes reopened requests; events, payloads and rules, including the owner's reopened notice (AC-29, AC-30, AC-32, AC-34–AC-36)
+  Files: modules/time/db/migrations/0004_change_request.sql, modules/time/server/request.ts, modules/time/server/decide-request.ts, modules/time/server/correct.ts, modules/time/server/decide.ts, modules/time/server/reopen.ts, modules/time/server/submit.ts, modules/time/contracts.ts, modules/time/module.ts
+  Depends: T15
+- [x] `T17` — Tools and chat: `request_time_change`, `get_change_requests`, `decide_change_request`, `answer_change_request`, `cancel_change_request` with propose checks and cards; locked-week messages and tool descriptions point to a request; intents (AC-30, AC-31, AC-33, AC-34)
+  Files: modules/time/mcp.ts, modules/time/chat.ts, modules/time/server/request-card.ts, modules/time/server/entry.ts
+  Depends: T16
+- [x] `T18` — Tests: lifecycle, routing, scope, apply/stale, reopen → resubmit completes, ask → answer, decline, replay, cards (AC-38)
+  Files: modules/time/tests/requests.test.ts, modules/time/tests/requests-decide.test.ts
+  Depends: T17
+- [x] `T19` — Integration: README; live run with the real model; screenshots (AC-39)
+  Files: modules/time/README.md, .specclaw/changes/070-time-entry-corrections/shots/
+  Depends: T18
+
 ## Verify
 
 **Verdict:** PASS
+
+**Amendment 3, verified 2026-10-23** on the working tree at `269313b` plus the uncommitted amendments 2 and 3 (Windows 11). AC-29 to AC-39 pass. The specclaw gates don't run clean on this host, as for amendments 1 and 2; PASS is recorded with them noted, as the product owner chose for those (to be confirmed for this amendment).
+
+- AC-29: pass — `0004_change_request.sql` (table, one-open-per-entry unique index, tenant RLS, grants); applied to the local database with `pnpm db:migrate`; in every DB test. Retention entry added in `module.ts`.
+- AC-30: pass — `requests.test.ts` AC30: Ayesha's request on her submitted week returns pending with "Hours … → 5 h"; her week total and Reports' row are unchanged; a second request on the entry, Tharushi's on her draft week, and Tharushi's on Ayesha's entry are refused. Live: Kasun's and Nimal's cards read "Ask to change Fleet Tracker, Thu Oct 15 · Hours 1.6 h → 1 h · Reason · Review: 2026-W42 is submitted; nothing changes until an approver decides" (`shots/amend3-owner-request-card.png`, `amend3-approved-week-request-card.png`).
+- AC-31: pass — `requests.test.ts` AC31: `correct_time_entry` on a submitted week makes no card; `request_time_change` makes the request card. Live: Kasun, Nimal and Ayesha each described the fix in plain words and the agent chose `request_time_change` itself; for Nimal's ambiguous Tuesday (two entries) it asked which entry first.
+- AC-32: pass — `requests.test.ts` AC32/33: after the outbox, Maya (Ayesha's manager) has "Ayesha Rahman asked to change Contoso Portal, Thu Oct 15" and Ayesha has nothing. Live: Maya's bell had "Kasun Dias asked to change Fleet Tracker, Thu Oct 15".
+- AC-33: pass — same test: Ayesha sees her request, Maya sees it to review, Dinesh (outside the chain) sees none and his decide is refused.
+- AC-34: pass — `requests-decide.test.ts`: apply on a submitted week (entry 1 h, revision 2, week stays submitted, replay refused, owner's bell "Maya Fernando changed your Fleet Tracker hours for Thu Oct 15"); stale revision refused, then decline leaves the entry; D7 apply on an approved week keeps it approved with a `time.week.locked_change` audit carrying the request id; D8 Nimal (PM, not Admin) reopens Kasun's approved week (chain `project`), D9 Kasun's bell "Your timesheet for 2026-W42 was reopened", fix + resubmit completes it; Ayesha's submitted week is sent back; the decide card "Apply Nimal Silva's change: Fleet Tracker, Wed Oct 14" with Hours, Reason, Week, Notice. Live: Maya's Review → "apply it" → applied (week stayed submitted), and Review → "reopen it" on Nimal's approved week → draft (`amend3-apply-card.png`, `amend3-reopen-card.png`).
+- AC-35: pass — `requests.test.ts` AC35: ask → apply refused while it needs info → answer → pending; the question and answer reach the owner's and the approver's bells; a withdrawn request can't be declined. Live: Nimal fixed and resubmitted, and his request went to `completed`.
+- AC-36: pass — events declared in `module.ts` and emitted in the decide/request transactions (the AC34 and AC35 tests read their notifications after the outbox); audit rows from `defineService` (`time.change.request`, `time.change.decide`, …) plus the locked-change audit.
+- AC-37: pass — Team time "Change requests" card (pinnable rows, Ask amax "Review" pinning the request and filling "Review … (request id …): ") and the My timesheet notice on a locked week; no forms (`amend3-team-time-requests.png`, `amend3-my-timesheet-notice.png`). Spacing between the new cards and the next card fixed after the first screenshot.
+- AC-38: pass — `requests.test.ts` 4/4 and `requests-decide.test.ts` 4/4. Time 101/101. `contracts.test.ts`'s intent and tool list line (already widened by 070) now includes `time.request` and the request tools; no other existing test changed.
+- AC-39: pass — live run on `pnpm dev`, Claude Haiku 5.5, from reset demo data, steps and screenshots as above; the submit card still uses the shared default title ("Submit your timesheet for a week for approval: 2026-W42"), which isn't part of this amendment.
+
+Commands: `vitest run --config ../../vitest.config.ts --dir .` in `modules/time` 101/101, `modules/reports` 7/7, `modules/notifications` 7/7, `modules/finance` 8/8, `modules/payroll` 8/8, `packages/chat` 29/29, `packages/mcp` 20/20; `apps/web/tests/tool-schemas.test.ts` 1/1; `pnpm lint` exit 0; `pnpm turbo run build --filter=./apps/web` exit 0; `tsc --noEmit` in `modules/time` after the last UI edit. Gates: `specclaw-preset-check .` exit 1 (repo-wide; the amendment's files are all under 80 lines); `specclaw-quality-scan` not_run on this host. Local dev note: a production build run while a dev server was up left `apps/web/.next/dev` stale and made the sign-in page reload in a loop; clearing `.next/dev` fixed it (not a code issue).
 
 **Amendment 2, verified 2026-10-23** on the working tree at `269313b` plus the uncommitted amendment (Windows 11). AC-20 to AC-27 pass. The two specclaw gates don't run clean on this host, as before; the product owner chose, on 2026-10-23, to record PASS with them noted.
 

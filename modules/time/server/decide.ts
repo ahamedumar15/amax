@@ -19,7 +19,7 @@ async function approver(tx: Tx, ctx: ServiceContext, week: WeekRow) {
 export const mayDecide = (tx: Tx, v: Viewer | undefined): MayAct => async (w) => chainFor(v, w.user_id, await weekProjectIds(tx, w.id)) !== null;
 const target = (tx: Tx, ctx: ServiceContext, a: WeekRef) => findWeek(tx, a, "time:approve", mayDecide(tx, viewerOf(ctx)));
 
-async function decide(tx: Tx, ctx: ServiceContext, week: WeekRow, to: "approved" | "rejected", comment: string | null) {
+export async function decide(tx: Tx, ctx: ServiceContext, week: WeekRow, to: "approved" | "rejected", comment: string | null) {
   const chain = await approver(tx, ctx, week);
   if (week.status !== "submitted") throw new Error(`${keyOf(week)} is ${week.status}, not submitted`);
   await tx.execute(sql`update time.week set status = ${to}, decided_at = now(), decided_by = ${by(ctx)}, reject_comment = ${comment},

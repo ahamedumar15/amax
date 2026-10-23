@@ -14,12 +14,17 @@ export type ApprovalChain = "manager" | "project" | "admin";
 
 export type EntryLogged = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; source: EntrySource; lockedChange: boolean; revision: number };
 /** 070: an entry's new state; `revision` grows with every change. AC-14: `byOther` when someone else fixed it, with the `reason` they are told. */
-type FixedBy = { by?: string; byOther?: boolean; reason?: string | null; projectName?: string; week?: string; dayLabel?: string };
+type FixedBy = { by?: string; byOther?: boolean; reason?: string | null; projectName?: string; week?: string; dayLabel?: string; requestId?: string };
 export type EntryCorrected = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; revision: number; before: { hours: number; billable: boolean; projectId: string }; lockedChange: boolean } & FixedBy;
 export type EntryDeleted = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; revision: number; lockedChange: boolean } & FixedBy;
 export type WeekSubmitted = { weekId: string; userId: string; week: string; hours: number };
 export type WeekDecided = { weekId: string; userId: string; week: string; by: string; chain: ApprovalChain; comment: string | null };
 export type WeekReopened = { weekId: string; userId: string; week: string; by: string; reason: string };
+// 070 amendment 3: change requests on locked weeks. `answered` marks the owner's reply to a question.
+type RequestRef = { requestId: string; weekId: string; userId: string; week: string; entryId: string; projectName: string; dayLabel: string };
+export type ChangeRequested = RequestRef & { change: string; reason: string; answered: boolean; answer: string | null };
+export type ChangeDecided = RequestRef & { decision: "apply" | "reopen" | "ask" | "decline" | "cancel"; by: string; note: string | null };
+export type ChangeCompleted = { requestId: string; weekId: string; userId: string; week: string };
 export type WeekReminded = { weekId: string; userId: string; week: string; by: string };
 
 export const EVENTS = {
@@ -31,6 +36,9 @@ export const EVENTS = {
   weekRejected: "time.week.rejected",
   weekReopened: "time.week.reopened",
   weekReminded: "time.week.reminded",
+  changeRequested: "time.change.requested",
+  changeDecided: "time.change.decided",
+  changeCompleted: "time.change.completed",
 } as const;
 
 export type PersonWeek = { weekId: string; userId: string; personName: string; status: WeekStatus; hours: number; agentHours: number; billableHours: number };

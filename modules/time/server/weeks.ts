@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
-import { ScopeError } from "@amax/auth";
+import { ScopeError, viewerOf } from "@amax/auth";
 import type { ServiceContext } from "@amax/core/server";
 import { parseWeekKey, weekKey, weekStart, type IsoWeek } from "../week";
 
@@ -8,6 +8,8 @@ export type WeekRow = Record<string, unknown> & { id: string; user_id: string; s
 export type WeekRef = { weekId?: string; person?: string; week?: string };
 
 export const by = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
+/** The acting person's user id, as event payloads name them for notifications (`{by|name}`, `except: "by"`). */
+export const actorId = (ctx: ServiceContext) => viewerOf(ctx)?.userId ?? ctx.actor.id;
 export const keyOf = (w: WeekRow) => weekKey({ year: Number(w.iso_year), week: Number(w.iso_week) });
 
 /** 070 AC-9: a week a write names must be given; the server never picks one by the UTC clock. */
