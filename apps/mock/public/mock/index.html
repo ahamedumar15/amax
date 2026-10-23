@@ -956,6 +956,28 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     <p><strong>You:</strong> Wednesday should be 6 h.</p>
     <p><strong>amax:</strong> Change Fleet Tracker, Wed Oct 14, from 10 h to 6 h? <button class="btn sm primary">Confirm</button> <button class="btn sm">Cancel</button></p>
   </div>
+  <h2>Amendment: confirm cards, approved weeks, fixes by a PM</h2>
+  <div class="card">
+    <div class="card-head"><h2>Confirm card</h2><span class="chip">Fix hours</span></div>
+    <p><b>Fleet Tracker, Wed Oct 14</b></p>
+    <p>Hours: <s>10 h</s> → <b>6 h</b> · Note: <s>"API work"</s> → <b>"API work, morning only"</b></p>
+    <p><button class="btn sm primary">Confirm</button> <button class="btn sm">Cancel</button></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>amax chat</h2><span class="chip">2026-W41 · Approved</span></div>
+    <p><strong>Ayesha Perera (Admin):</strong> Change Tharushi's Monday on Contoso Portal to 7 h.</p>
+    <p><strong>amax:</strong> 2026-W41 is approved and locked, so nobody can change its entries. To fix it, reopen the week with a reason; it goes back to draft and can be corrected and approved again. <button class="btn sm">✦ Reopen 2026-W41…</button></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>amax chat (PM)</h2><span class="chip">Pinned: Kasun Dias · Fleet Tracker, 2026-W42 · Rejected</span></div>
+    <p><strong>Ayesha Perera (PM):</strong> Wednesday should be 6 h, he was on leave that afternoon.</p>
+    <p><strong>amax:</strong> Change <b>Kasun Dias</b>'s Fleet Tracker, Wed Oct 14: <s>10 h</s> → <b>6 h</b>. Reason: "On leave Wednesday afternoon." Kasun will be notified. <button class="btn sm primary">Confirm</button> <button class="btn sm">Cancel</button></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Kasun's bell</h2><span class="chip">Approvals</span></div>
+    <p><b>Ayesha Perera changed your Fleet Tracker hours for Wed Oct 14</b><br><small class="muted">On leave Wednesday afternoon. · Open 2026-W42</small></p>
+  </div>
+  <p class="muted">An approved week has no "Fix these hours" button. Removed entries leave the timesheet and totals but stay in the audit trail.</p>
 </section>
 <section data-change="069-chat-tool-schema-hotfix" id="069-chat-tool-schema-hotfix" data-roles="all" data-title="Chat answers again" data-nav="no" data-parent="001-amax-foundation">
   <h1>Chat answers again</h1>
