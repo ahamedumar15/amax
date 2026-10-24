@@ -4,7 +4,7 @@ import { z } from "zod";
 import { can, viewerOf } from "@amax/auth";
 import { defineService } from "@amax/core/server";
 import { EVENTS, type ChangeCompleted, type WeekSubmitted } from "../contracts";
-import { findWeek, keyOf, weekHours } from "./weeks";
+import { findWeek, keyOf, weekHours, weekProjectIds } from "./weeks";
 import { entityOf, inEntity } from "./chain";
 
 export const submitWeek = defineService({
@@ -20,7 +20,7 @@ export const submitWeek = defineService({
     const hours = await weekHours(tx, week.id);
     if (hours === 0) throw new ToolError(`${keyOf(week)} has no time logged yet`, "invalid_input");
     await tx.execute(sql`update time.week set status = 'submitted', submitted_at = now(), reject_comment = null, updated_at = now() where id = ${week.id}`);
-    const payload: WeekSubmitted = { weekId: week.id, userId: week.user_id, week: keyOf(week), hours };
+    const payload: WeekSubmitted = { weekId: week.id, userId: week.user_id, week: keyOf(week), hours, projectIds: await weekProjectIds(tx, week.id), legalEntityId: await entityOf(tx, week.user_id) };
     // 070 AC-35: a change request that reopened this week is done once the week is submitted again.
     const done = await tx.execute(sql`update time.change_request set status = 'completed', updated_at = now() where week_id = ${week.id} and status = 'reopened' returning id`);
     const completed = done.map((d): { name: string; payload: ChangeCompleted } => ({ name: EVENTS.changeCompleted, payload: { requestId: d.id as string, weekId: week.id, userId: week.user_id, week: keyOf(week) } }));

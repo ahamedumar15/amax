@@ -12,12 +12,15 @@ import { lockedEntry } from "./entry";
 import { dateRefusal } from "./rules";
 import { projectNames } from "./read";
 import { changeText, OPEN, requestRows, type ChangeRequest, type Values } from "./requests-read";
-import { actorId, keyOf } from "./weeks";
+import { entityOf } from "./chain";
+import { actorId, keyOf, weekProjectIds } from "./weeks";
 
 // 070 amendment 3: the owner asks for a change to a locked week, answers a question about it, or withdraws it.
 export const refOf = (r: ChangeRequest) => ({ requestId: r.id, weekId: r.weekId, userId: r.userId, week: r.week, entryId: r.entryId, projectName: r.before.projectName, dayLabel: r.dayLabel });
-const requested = (r: ChangeRequest, answer: string | null): { name: string; payload: ChangeRequested } =>
-  ({ name: EVENTS.changeRequested, payload: { ...refOf(r), change: changeText(r).join(" · "), reason: r.reason, answered: answer !== null, answer } });
+// 072 AC-3: the request reaches the week's project approvers in the owner's entity, as a submission does.
+const requested = async (tx: Tx, r: ChangeRequest, answer: string | null): Promise<{ name: string; payload: ChangeRequested }> =>
+  ({ name: EVENTS.changeRequested, payload: { ...refOf(r), change: changeText(r).join(" · "), reason: r.reason, answered: answer !== null, answer,
+    projectIds: await weekProjectIds(tx, r.weekId), legalEntityId: await entityOf(tx, r.userId) } });
 
 /** One request, locked, once the caller is known to be allowed it; a missing one and someone else's give one error. */
 export async function lockRequest(tx: Tx, id: string, may: (r: ChangeRequest) => boolean | Promise<boolean>): Promise<ChangeRequest> {
@@ -49,7 +52,7 @@ export const requestChange = defineService({
       values (${ctx.tenantId}, ${week.id}, ${entry.id}, ${entry.user_id}, ${a.remove ? "delete" : "correct"}, ${JSON.stringify(before)}::jsonb, ${JSON.stringify(proposed)}::jsonb, ${entry.revision}, ${a.reason}) returning id`);
     const [r] = await requestRows(tx, sql`c.id = ${id}`);
     return { result: { id: r.id, status: r.status, week: r.week, entry: `${before.projectName}, ${dayLabel(entry.day)}`, change: changeText(r).join(" · ") },
-      resourceId: r.id, after: { kind: r.kind, before, proposed, reason: a.reason }, events: [requested(r, null)] };
+      resourceId: r.id, after: { kind: r.kind, before, proposed, reason: a.reason }, events: [await requested(tx, r, null)] };
   },
 });
 
@@ -60,7 +63,7 @@ export const answerRequest = defineService({
     const r = await lockRequest(tx, a.requestId, mine(viewerOf(ctx)));
     if (r.status !== "needs_info") throw new ToolError(`that request is ${r.status.replace("_", " ")}, not waiting for your answer`, "invalid_input");
     await tx.execute(sql`update time.change_request set status = 'pending', answer = ${a.answer}, updated_at = now() where id = ${r.id}`);
-    return { result: { id: r.id, status: "pending" }, resourceId: r.id, before: { status: r.status }, after: { status: "pending", answer: a.answer }, events: [requested(r, a.answer)] };
+    return { result: { id: r.id, status: "pending" }, resourceId: r.id, before: { status: r.status }, after: { status: "pending", answer: a.answer }, events: [await requested(tx, r, a.answer)] };
   },
 });
 

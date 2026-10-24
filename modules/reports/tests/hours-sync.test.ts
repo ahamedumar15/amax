@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import type { EventHandlerDef } from "@amax/core";
 import { hoursCorrectedHandler, hoursDeletedHandler, hoursHandler } from "../server/hours";
+import { weekStatusHandlers } from "../server/status";
 import type { Report } from "../server/view";
 import { reportsDb, T } from "./db";
 
@@ -18,6 +19,10 @@ describe.skipIf(!hasDb)("070 reports keeps up with corrected and deleted time (P
 
   it("AC7 a correction replaces the copy, a delete tombstones it, and late, repeated or out-of-order events never bring back old hours", async () => {
     const { id } = await db.call<{ id: string }>("tharushi", "log_time", { projectKey: "FLT", day: "2026-10-16", hours: 4, billable: true });
+    // 072 AC-6: Reports counts submitted and approved weeks; her week is marked submitted in its copy, so the
+    // correction and tombstone logic below is what's tested (Time's week stays a draft, so it can still change).
+    const [{ week_id: weekId, user_id: owner }] = await db.q(sql`select week_id, user_id from time.entry where id = ${id}`);
+    await deliver(weekStatusHandlers[0], { weekId, userId: owner });
     await db.tick();
     expect(await tharushi()).toMatchObject({ loggedHours: 4, billableHours: 4 });
     await db.call("tharushi", "correct_time_entry", { entryId: id, hours: 2.5 });
@@ -31,6 +36,7 @@ describe.skipIf(!hasDb)("070 reports keeps up with corrected and deleted time (P
 
     const userId = (await db.as("tharushi")).userId;
     const base = { userId, day: "2026-10-15", projectId: randomUUID(), weekId: randomUUID(), lockedChange: false };
+    await deliver(weekStatusHandlers[0], { weekId: base.weekId, userId });
     const late = randomUUID();
     await deliver(hoursDeletedHandler, { ...base, entryId: late, hours: 3, revision: 2 });
     await deliver(hoursHandler, { ...base, entryId: late, hours: 3, billable: true, source: "person", revision: 1 });

@@ -37,12 +37,17 @@ export async function allocationRefusal(tx: Tx, tenantId: string, userId: string
   return `not allocated to ${project} in ${month(day)}` + (options.length ? `; allocated to ${list(options)} that month, so choose one of those` : "; ask a PM or Admin for an allocation");
 }
 
+/** The person's date now, in their legal entity's time zone (UTC when unknown). */
+export async function localToday(tx: Tx, userId: string) {
+  const zone = await entityZone(tx, await entityOf(tx, userId));
+  return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
+
 /** AC-11: why the owner can't change this day (outside the back-dating limit, or in the future), or null. */
 export async function dateRefusal(tx: Tx, userId: string, day: string): Promise<string | null> {
   const s = await settingsOf(tx);
   if (s.backdateWeeks === null && s.allowFuture) return null;
-  const zone = await entityZone(tx, await entityOf(tx, userId));
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const today = await localToday(tx, userId);
   if (!s.allowFuture && day > today) return `${dayLabel(day)} is in the future; log time once the day has come`;
   if (s.backdateWeeks !== null) {
     const earliest = weekStart(shiftWeek(isoWeekOf(new Date(`${today}T00:00:00Z`)), -s.backdateWeeks)).toISOString().slice(0, 10);

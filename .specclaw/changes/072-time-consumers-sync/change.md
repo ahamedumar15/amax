@@ -158,7 +158,7 @@ What changes on screen, and where to see it: [`072-time-consumers-sync`](../../m
 
 ## Decisions
 
-Approved by the product owner, 2026-10-24 ("approve"): the recommended option of each. D1: count submitted and approved weeks, through a Time contract read (option B); D2: no action; D3: both figures, named apart; D4: every live entry except a rejected week's; D5: accepted as fixes, listed under Verify; D6: Time's own per-person target.
+Approved by the product owner, 2026-10-24 ("approve"): the recommended option of each. D1: count submitted and approved weeks; option B was approved first, then changed to **option A** during the build (2026-10-24, product owner: "Option A instead") because Time's fixtures hold only week 42 and B would empty Reports' 12-month demo; D2: no action; D3: both figures, named apart; D4: every live entry except a rejected week's; D5: accepted as fixes, listed under Verify; D6: Time's own per-person target.
 
 - **D1 What Reports' utilisation counts, and who owns the status.** Utilisation is billable ÷ available (027).
   - **Product:** count (a) approved only, (b) submitted and approved, or (c) every logged hour except rejected?
@@ -190,28 +190,36 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 
 ## Tasks
 
-<!-- UI first, then backend, then integration. D1 option B: Reports reads hours from Time (submitted and approved
-     weeks) and stops reading `reports.logged_hours`; the table and its handlers are retired but not dropped (no
-     destructive migration). Reports' demo figures then follow Time's demo entries (D5, listed under Verify). -->
+<!-- UI first, then backend, then integration. D1 option A (changed from B during the build): Reports keeps its copy
+     of the hours, adds each entry's week and a week-status table fed by Time's week events, and counts submitted and
+     approved weeks. Seeded demo rows have no week and keep counting, so the demo is unchanged. -->
 
-- [ ] `T1` — Screens: Reports' lede names the hours it counts ("Utilisation from submitted and approved time"); Team time's chat suggestion "Who is below 80% this week?" for approvers (AC-6 UI, AC-9 UI)
+- [x] `T1` — Screens: Reports' lede names the hours it counts ("Utilisation from submitted and approved time"); Team time's chat suggestion "Who is below 80% this week?" for approvers (AC-6 UI, AC-9 UI)
   Files: modules/reports/server/lede.ts, modules/time/chat-suggestions.ts, modules/time/tests/suggestions.test.ts
-- [ ] `T2` — Finance: one idempotent recompute per contract and month on week approved and reopened, and on logged, corrected or deleted with `lockedChange: true`; invoiced periods leave the difference as a draft (AC-1, AC-2)
+- [x] `T2` — Finance: one idempotent recompute per contract and month on week approved and reopened, and on logged, corrected or deleted with `lockedChange: true`; invoiced periods leave the difference as a draft (AC-1, AC-2)
   Files: modules/finance/suggestions.ts, modules/finance/module.ts, modules/finance/tests/time-sync.test.ts
   Depends: T1
-- [ ] `T3` — Notifications: `projects` and `entity` on the `approvers` recipient; `projectIds` and `legalEntityId` on `WeekSubmitted` and `ChangeRequested`; Time's three rules use them; TIM-T06 and the email test (AC-3–AC-5)
+- [x] `T3` — Notifications: `projects` and `entity` on the `approvers` recipient; `projectIds` and `legalEntityId` on `WeekSubmitted` and `ChangeRequested`; Time's three rules use them; TIM-T06 and the email test (AC-3–AC-5)
   Files: packages/core/src/module.ts, modules/notifications/server/recipients.ts, modules/time/contracts.ts, modules/time/module.ts, modules/time/server/submit.ts, modules/time/server/request.ts, modules/notifications/tests/project-approvers.test.ts, modules/notifications/tests/decision-email.test.ts
   Depends: T1
-- [ ] `T4` — Reports by week status (D1 option B): Time contract read `loggedHours(tx, viewer, { from, to, statuses })` with `hoursVisibleTo` scope; Reports' inputs read it; `logged_hours` handlers retired; fixtures follow Time's entries (AC-6)
-  Files: modules/time/server/logged.ts, modules/time/contracts.ts, modules/reports/server/inputs.ts, modules/reports/server/hours.ts, modules/reports/module.ts, modules/reports/fixtures/index.ts, modules/reports/tests/status.test.ts
+- [x] `T4` — Reports by week status (D1 option A): migration `reports/0003_week_status.sql` (`week_id` on `logged_hours`, `reports.week_status`); entry handlers keep the week; week events set its status (submitted, approved, rejected, reopened → draft); utilisation counts hours whose week is submitted or approved, and seeded rows without a week (AC-6)
+  Files: modules/reports/db/migrations/0003_week_status.sql, modules/reports/server/hours.ts, modules/reports/server/status.ts, modules/reports/server/inputs.ts, modules/reports/module.ts, modules/reports/tests/status.test.ts
   Depends: T1
-- [ ] `T5` — Weekly utilisation: migration `0006_weekly_target.sql`; `set_weekly_target` (card, entity-scoped, audited); `get_week_utilisation` (scope, %, overtime, missing days, leave-adjusted, lowest first, `below`); `get_my_week` gains `target` and `utilisation` (AC-7–AC-9)
+- [x] `T5` — Weekly utilisation: migration `0006_weekly_target.sql`; `set_weekly_target` (card, entity-scoped, audited); `get_week_utilisation` (scope, %, overtime, missing days, leave-adjusted, lowest first, `below`); `get_my_week` gains `target` and `utilisation` (AC-7–AC-9)
   Files: modules/time/db/migrations/0006_weekly_target.sql, modules/time/server/targets.ts, modules/time/server/utilisation.ts, modules/time/server/my.ts, modules/time/mcp-utilisation.ts, modules/time/mcp.ts, modules/time/module.ts, modules/time/tests/utilisation.test.ts
   Depends: T1
-- [ ] `T6` — Integration: outbox consumer tests with a retried event; full suites; live run with the real model (PM below 80%, Engineer read-back and colleague, Admin part-time target); READMEs and tool descriptions; intended figure and recipient changes listed under Verify (AC-10, AC-11)
+- [x] `T6` — Integration: outbox consumer tests with a retried event; full suites; live run with the real model (PM below 80%, Engineer read-back and colleague, Admin part-time target); READMEs and tool descriptions; intended figure and recipient changes listed under Verify (AC-10, AC-11)
   Files: modules/time/tests/consumers.test.ts, modules/time/README.md, modules/reports/README.md, modules/finance/README.md, modules/notifications/README.md
   Depends: T2, T3, T4, T5
 
 ## Verify
 
 <!-- Filled by verify. -->
+
+Build notes (2026-10-24, for verify):
+- D1 changed from option B to option A during the build (product owner, 2026-10-24), because Time's fixtures hold only week 42 and B would empty Reports' 12-month demo. Reports' demo figures are unchanged (84% team utilisation, the trend).
+- Ordering: the outbox claims events in batches with no order guarantee, so `reports.week_status` keeps the newest status by the event's `created_at` (`as_of`); found by the consumer test, where a batch applied "submitted" after "approved".
+- Intended changes to existing tests (D5): `notifications/tests/rules.test.ts` (a submission also reaches Nimal, PM of Fleet Tracker; the redelivery check counts per event and reads Maya's deliveries); `reports/tests/utilisation.test.ts` and `tests/e2e/reports.spec.ts` (the lede names the hours; a draft entry no longer counts); `reports/tests/hours-sync.test.ts` (070's: the weeks are marked submitted in Reports' copy so its correction and tombstone checks still run); `time/tests/suggestions.test.ts` (070's: Maya's full suggestion list gains "Who is below 80% this week?"; the panel still shows her first three).
+- Not from 072: `packages/core` `ac5-adapters` fails on Windows path separators (as in 070's verify).
+- Quality: not_run (`specclaw-quality-scan`'s jq step on this host).
+- Live run (Claude via `ANTHROPIC_API_KEY`, `pnpm dev`, local demo data; Dinesh's target reset afterwards): Maya "Who is below 80% utilisation this week?" → `get_week_utilisation`: Ayesha 59% (73% with Friday's leave, 32 h target), Dinesh 63%, Tharushi 73%, Nimal 79%, lowest first with missing days; Kasun "What did I log this week?" → "32.5 hours … against a 40-hour target (81%)"; "And what is Nimal's utilisation?" → only his own, 81%, offered; Sahan "Set Dinesh Wickrama's weekly target to 24 hours" → card "Weekly target for Dinesh Wickrama · Target 40 h → 24 h", confirmed. Screenshots `shots/live-*.png`.
