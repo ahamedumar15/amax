@@ -25,6 +25,12 @@ The product owner moved the Team grid (FR-1) to its own change, 074. From the Ti
   - Submitting a week with missing working days gives no warning (FR-4.1).
   - "Approve all" also approves weeks that need a closer look: over 60 h, a day over 14 h, or missing days (FR-4.4).
 
+**Amendment 1, 2026-10-24** (product owner: "add it in 073"; the Team grid was going to be change 074). From the
+requirements' FR-1: Team time's table shows hours but not whether a day is missing, low, on target or over. It has no
+summary of the team's week, no utilisation column, no filters or sorting, and no daily totals row. A day's project
+breakdown and a member's own timesheet take a chat question. There's no way to jump to a date's week, and people
+with no timesheet that week don't appear at all. AC-13 to AC-24 cover these.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`073-time-workflow-enhancements`](../../mock/index.html#073-time-workflow-enhancements)
@@ -48,6 +54,16 @@ What changes on screen, and where to see it: [`073-time-workflow-enhancements`](
 - **Chat, submit:** the card warns "Missing: Fri Oct 16" and still submits.
 - **Chat, approve all:** "Approve 3 timesheets (2 skipped: Kasun Dias, a day over 14 h; Dinesh Wickrama, missing
   Fri Oct 16)".
+
+Amendment 1 ([`#073-amendment-1`](../../mock/index.html#073-amendment-1)), Team time:
+- **Summary strip:** above the grid, four pinnable stats: "141.5 h logged", "59% average utilisation", "5 people
+  with missing days", "3 timesheets to approve".
+- **Toolbar:** project, team and status filters, a date picker beside the week arrows, and sortable column headers.
+- **Grid:** each day cell is coloured and labelled: ✕ Missing, ▲ Low, ✓ On target, ● Over, or "–" Not yet. Hovering,
+  focusing or tapping a cell lists its hours by project.
+- **New columns and rows:** a Utilisation column with a progress bar, a footer row of daily team totals, and rows
+  for people with no timesheet yet ("Not started").
+- **Member's timesheet:** a name opens that person's week as a read-only screen.
 
 ## Acceptance Criteria
 
@@ -143,6 +159,61 @@ What changes on screen, and where to see it: [`073-time-workflow-enhancements`](
     README updated. `check:graph` passes, and the time e2e passes. Every existing test passes unmodified, except where
     D6 lists an intended change.
 
+**Amendment 1, 2026-10-24: the Team grid (FR-1).** Read-only controls only (filters, sort, the date picker); every
+stat and row keeps a pin (AGENTS.md rules 1 and 2). It changes Team time's table as listed under D11 and adds to it;
+nothing else changes.
+
+13. **AC-13** Cell states (FR-1, NFR usability). Each day cell on Team time shows its hours and one state:
+
+    | State | Rule | Colour |
+    |---|---|---|
+    | Missing | A working day before the person's local today, with no hours and no approved leave | red |
+    | Low | A working day, below 75% of the person's daily target | amber |
+    | On target | 75% to 112.5% of the daily target | green |
+    | Over | Above 112.5% of the daily target | purple |
+    | Not yet | A day still to come, a weekend day without hours, or approved leave | grey |
+
+    The daily target is the person's weekly target (072) ÷ 5, so a 40 h week gives exactly the requirements' 6 h and
+    9 h. Every cell has a visible icon and an accessible name, e.g. "Tue Oct 13: 3.0 h, low". Colour is never the only
+    signal, and contrast meets WCAG AA in light and dark.
+14. **AC-14** Summary strip (FR-1.2): four stats above the grid, each pinnable (resolving through `get_team_week`):
+    - total team hours;
+    - average weekly utilisation % (072);
+    - how many people have missing days;
+    - how many timesheets are waiting for the viewer's approval.
+15. **AC-15** Utilisation column (FR-1.3): each row shows 072's weekly utilisation % against the person's target,
+    with a progress bar. Above 100% is shown as is and marked overtime.
+16. **AC-16** Filters (FR-1.4):
+    - project;
+    - team (the HR department, shown only when HR is installed);
+    - status: Not submitted (draft or not started), Submitted, Approved, Rejected.
+
+    They're URL query parameters set by read-only controls. A project filter recalculates every figure from that
+    project's hours alone: cells, totals, utilisation, the summary strip and the footer. Who appears is still 071's
+    scope.
+17. **AC-17** Day breakdown (FR-1.5): hovering, focusing or tapping a day cell shows that person's hours by project
+    for that day. It works by keyboard and touch, and screen readers announce it.
+18. **AC-18** Member's timesheet (FR-1.6): a person's name links to `/time/w/{week}/p/{weekId}`.
+    - It's a read-only screen of that week: hours by project and day, the status, and the decision and comment.
+    - It has the same scope as `get_timesheet`, its rows are pinnable, and chat suggestions do the actions.
+    - A week the viewer can't see gives the same "not found" as a missing one.
+19. **AC-19** Footer row (FR-1.7): daily team totals under the grid, and the week's total.
+20. **AC-20** Sort (FR-1.8): column headers sort by name, total or utilisation, ascending or descending, through
+    links. One click brings the lowest loggers to the top.
+21. **AC-21** Week picker (FR-1.1): beside the week arrows, a date input opens the week containing the chosen date.
+    It's navigation only.
+22. **AC-22** People with no timesheet yet (D9): people the viewer is responsible for (073's D2 helper) who have no
+    week that week appear as "Not started" rows. Their past working days show Missing, and they show under the "Not
+    submitted" filter. Nobody outside the viewer's scope appears.
+23. **AC-23** Performance (FR-1.9): Team time's data for 100 people, each with a week of entries, loads in under 2
+    seconds on the server. Reads are batched rather than run per person. A test seeds 100 people and times it.
+24. **AC-24** Tests:
+    - DB-backed: cell states at 40 h and 24 h targets, leave, future days, weekends; summary figures; filters,
+      including a project filter's recalculation; sort; "Not started" rows; the member screen's scope; performance.
+    - e2e: the grid and the member screen, with axe in light and dark and at phone width.
+    - The 009 AC3 mock comparison still passes.
+    - A live run on the dev server; the README.
+
 ## Scope
 
 - **In `modules/time/`:**
@@ -159,6 +230,12 @@ What changes on screen, and where to see it: [`073-time-workflow-enhancements`](
   - The Team grid (FR-1: cell colours, summary strip, Utilisation column, filters, sort, day breakdown, totals row,
     week picker) is change **074**.
   - Slack or Teams reminders, and holiday awareness (D5).
+
+- **Amendment 1:**
+  - In `modules/time/`: `ui/Timesheets.tsx` (the grid), new `ui/Summary.tsx`, `ui/Filters.tsx`, `ui/DayCell.tsx`
+    (client) and `ui/SheetPage.tsx`, `ui/TeamPage.tsx`, `ui/parts.tsx`, `ui/time.css`; `server/team.ts` (states,
+    filters, sort, batching), `server/utilisation.ts`, `module.ts` (the member route), tests.
+  - Outside: HR is read through `@amax/hr/contracts` (`listPeople` for departments).
 
 ## Decisions
 
@@ -186,6 +263,22 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
   Everything else is additive: messages, records, schedules off by default, card warnings, `anomalies`.
   *Recommended:* accept both, listed under Verify.
 
+**Amendment 1, approved by the product owner 2026-10-24 ("approve"): the recommended option of each, D7–D11.**
+
+- **D7 Team.** The HR department as of the week's Monday. Without HR, there's no team filter.
+- **D8 Cell thresholds.** Scale with the person's target: daily target = weekly target ÷ 5; Low below 75%, Over
+  above 112.5%. That's 6 h and 9 h at 40 h, as the requirements say, and fair to part-time staff.
+- **D9 People with no timesheet.** Show them as "Not started" rows (073's D2 decides who), so gaps show without a
+  drill-down. This changes which rows Team time shows.
+- **D10 Member screen.** A new read-only route, `/time/w/{week}/p/{weekId}`. Its actions are chat suggestions, not
+  buttons.
+- **D11 What changes on Team time:**
+  - The Timesheets table is restyled: coloured cells, a Utilisation column, a footer row.
+  - Rows sort by name by default (today they follow creation order).
+  - "Not started" rows appear (D9).
+
+  The chart, ThisWeek, change requests, row actions and pins stay. Listed under Verify.
+
 ## Tasks
 
 <!-- UI first, then backend, then integration. Reminders go through one service per kind (week, day), each recorded in
@@ -209,6 +302,21 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 - [x] `T6` — Integration: full suites, time e2e with axe on the weekend columns (light and dark), live run with the real model, README, intended changes listed under Verify (AC-11, AC-12)
   Files: modules/time/tests/e2e/time.spec.ts, modules/time/README.md
   Depends: T2, T3, T4, T5
+
+<!-- Amendment 1 (AC-13–AC-24): UI first, then the data behind it, then integration. Team time's data is computed once
+     per request in batches (no per-person queries); the grid, summary and filters read from that one shape. -->
+
+- [ ] `T7` — Screens: the grid's coloured and labelled cells with the day breakdown (client cell), the summary strip, the Utilisation column, the footer row, filters, sortable headers and the date picker; the member's timesheet screen and its route (AC-13 UI, AC-14, AC-15, AC-16 UI, AC-17, AC-18 UI, AC-19, AC-20 UI, AC-21)
+  Files: modules/time/ui/Timesheets.tsx, modules/time/ui/DayCell.tsx, modules/time/ui/Summary.tsx, modules/time/ui/Filters.tsx, modules/time/ui/SheetPage.tsx, modules/time/ui/TeamPage.tsx, modules/time/ui/parts.tsx, modules/time/ui/time.css, modules/time/module.ts, modules/time/tests/grid-ui.test.ts
+- [ ] `T8` — Data: per-cell state (daily target from 072, leave, local today), per-day project breakdown, weekly utilisation and summary on `teamWeek`; filters (project recalculating every figure, HR department, status), sort, "Not started" rows for expected people; the member sheet read; batched reads (AC-13, AC-16, AC-18, AC-20, AC-22)
+  Files: modules/time/server/team.ts, modules/time/server/grid.ts, modules/time/server/sheet.ts, modules/time/server/utilisation.ts, modules/time/mcp.ts, modules/time/tests/grid.test.ts
+  Depends: T7
+- [ ] `T9` — Performance: 100 people with a week of entries in under 2 s on the server; batch whatever the timing shows (AC-23)
+  Files: modules/time/server/team.ts, modules/time/server/grid.ts, modules/time/server/capacity.ts, modules/time/tests/grid-perf.test.ts
+  Depends: T8
+- [ ] `T10` — Integration: e2e for the grid and the member screen with axe (light, dark, phone width), the 009 AC3 mock comparison, live check on the dev server, README (AC-24)
+  Files: modules/time/tests/e2e/time.spec.ts, modules/time/README.md
+  Depends: T8, T9
 
 ## Verify
 
