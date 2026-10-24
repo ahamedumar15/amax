@@ -1,0 +1,9 @@
+{
+  "change": "073-time-workflow-enhancements",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-24T07:07:12Z"},
+    "tasks": {"status":"done","at":"2026-10-24T07:08:04Z"}
+  }
+}
