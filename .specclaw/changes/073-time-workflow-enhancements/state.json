@@ -1,11 +1,11 @@
 {
   "change": "073-time-workflow-enhancements",
-  "phase": "verify",
+  "phase": "pr",
   "branch": "specclaw/073-time-workflow-enhancements",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-24T07:07:12Z"},
     "tasks": {"status":"done","at":"2026-10-24T07:08:04Z"},
     "verify": {"status":"done","at":"2026-10-24T07:59:06Z","verdict":"PASS"},
-    "pr": {"status":"raised","at":"2026-10-24T08:08:09Z","tasks":{"done":6,"total":6,"failed":0},"verdict":"PASS","url":"https://github.com/chan4lk/amax/pull/105"}
+    "pr": {"status":"done","at":"2026-10-24T11:52:34Z","url":"https://github.com/chan4lk/amax/pull/105"}
   }
 }
