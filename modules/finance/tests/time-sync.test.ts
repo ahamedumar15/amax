@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { EVENTS as TIME } from "@amax/time/contracts";
-import { timeHandlers } from "../suggestions";
+import { timeHandlers } from "../server/time-sync";
 import { financeDb, T } from "./db";
 
 describe.skipIf(!hasDb)("072 Finance follows reopened weeks and locked changes (Postgres)", () => {
