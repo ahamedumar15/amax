@@ -1,0 +1,9 @@
+{
+  "change": "071-time-access-and-integrity",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-24T04:47:54Z"},
+    "tasks": {"status":"done","at":"2026-10-24T04:49:04Z"}
+  }
+}

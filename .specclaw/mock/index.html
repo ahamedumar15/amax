@@ -936,6 +936,30 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
     <div class="row line"><span>Time</span><b>Approved timesheets, 4 weeks, 12 people</b></div>
     <div class="row line"><span>Time (incomplete case)</span><b><span class="chip" style="background:#FFF1D6;color:#8A5A00">2 of 14 people unreadable: overtime incomplete</span></b></div>
   </div>
+  <h2>Update: entry rules in chat (settings off by default)</h2>
+  <div class="card">
+    <div class="card-head"><h2>amax chat</h2><span class="chip">Allocation required</span></div>
+    <p><strong>Tharushi Wijesinghe:</strong> Log 3 h on HR Insights for Wednesday.</p>
+    <p><strong>amax:</strong> You aren't allocated to HR Insights in October, so I can't log it there. You're allocated to <b>Fleet Tracker</b> and <b>Contoso Portal</b> this month. Which one was it?</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Confirm card</h2><span class="chip">Possible duplicate</span></div>
+    <p><b>Log 2 h to Fleet Tracker, Wed Oct 14</b></p>
+    <p>Note: API work</p>
+    <p><span class="chip" style="background:#FFF1D6;color:#8A5A00">Already logged: Fleet Tracker, Wed Oct 14, 2 h, same note</span></p>
+    <p><button class="btn sm primary">Confirm</button> <button class="btn sm">Cancel</button></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>amax chat</h2><span class="chip">Date window</span></div>
+    <p><strong>Kasun Dias:</strong> Log 4 h on Fleet Tracker for Mon Sep 7.</p>
+    <p><strong>amax:</strong> Time can be logged up to 4 weeks back, so Mon Sep 7 is too early. If those hours are missing, ask your PM to add them with a reason.</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>amax chat</h2><span class="chip">Utilisation</span></div>
+    <p><strong>Kasun Dias (Engineer):</strong> What is Nimal's utilisation this week?</p>
+    <p><strong>amax:</strong> I can only show your own utilisation. Yours for 2026-W42 is 81%: 32.5 h of 40 h, with Friday still open.</p>
+  </div>
+  <p class="muted">Team time shows only weeks in your legal entities. Each rule above is an Admin setting; with it off, logging works as today.</p>
 </section>
 <section data-change="070-time-entry-corrections" id="070-time-entry-corrections" data-roles="all" data-title="Time: fix hours" data-nav="no" data-parent="001-amax-foundation-time">
   <h1>My timesheet: fix or remove hours through chat</h1>
