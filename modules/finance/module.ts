@@ -3,7 +3,8 @@ import { EVENTS, type ContractCreated, type CreditNoteIssued, type InvoiceDrafte
 import { financeFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
 import { financeOverview } from "./server/overview";
-import { draftAgent, invoiceDraft, releaseAgent, timeHandlers } from "./suggestions";
+import { draftAgent, invoiceDraft, releaseAgent } from "./suggestions";
+import { timeHandlers } from "./server/time-sync";
 import { FinancePage } from "./ui/FinancePage";
 
 const WRITE = ["finance:read", "finance:contract:write", "finance:invoice:draft", "finance:invoice:issue", "finance:payment:record"];

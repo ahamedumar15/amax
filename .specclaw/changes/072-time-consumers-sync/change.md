@@ -214,7 +214,32 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+Verified 2026-10-24 at `7917527` plus the Finance split below (branch `specclaw/072-time-consumers-sync`, stacked on 071's `98fdabf`), Windows 11, `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`. Every AC passes. The specclaw gates don't run clean on this host (see Gates); the product owner chose, on 2026-10-24, to record PASS with them noted, as for 070 and 071.
+
+- AC-1: pass — `modules/finance/server/time-sync.ts`: one `recompute` (upsert per contract and period, through `draftFromTime`) on `time.week.approved`, `time.week.reopened`, and logged/corrected/deleted with `lockedChange: true`; invoiced periods keep the existing `draftFor` behaviour (`drafts.test.ts`, unchanged, passes).
+- AC-2: pass — `modules/finance/tests/time-sync.test.ts` (TIM-T07, through the outbox): approve → H, reopen → back to the figure before, resubmit and approve → H; a change request applied to the approved week → H − 1; the approval handler delivered twice more → still H − 1.
+- AC-3: pass — `packages/core/src/module.ts` (`projects?`, `entity?` on `approvers`) and `modules/notifications/server/recipients.ts`; Time's `time.week-submitted`, `time.change-requested`, `time.change-answered` use them; `modules/time/tests/consumers.test.ts`: the submit and request events carry `projectIds` and `legalEntityId`. Rules without the fields are unchanged (the other notifications tests pass). Admins, who approve every project, stay the fallback only.
+- AC-4: pass — `modules/notifications/tests/time-routing.test.ts` AC3/AC4 (TIM-T06): Kasun's submission reaches Nimal (PM of Fleet Tracker, not his manager) and Maya (manager), not Ayesha (PM of an unrelated project); his change request reaches Nimal; with Nimal's grant scoped to another entity, the next submission reaches Maya and not Nimal. `rules.test.ts`: Tharushi's submission reaches Maya and Nimal.
+- AC-5: pass — time-routing AC5: approved, rejected and reopened weeks reach the owner in the bell and through the email adapter (Graph `sendMail` on a fake wire); the rejection mail carries "Split Tuesday by project". No notifications code changed for this.
+- AC-6: pass — `modules/reports/tests/status.test.ts`: through Time's tools and the outbox, a draft entry doesn't count, submitted counts, rejected doesn't, resubmitted counts, approved counts, reopened doesn't; the lede reads "Billable hours from submitted and approved time ÷ available hours…". `consumers.test.ts`: a redelivered approval leaves the status approved. Demo figures unchanged: 84%, the 12-month trend (`shots/app.png`, `app-dark.png`).
+- AC-7: pass — `modules/time/tests/utilisation.test.ts` AC7: an Engineer can't set a target; Sahan sets Dinesh to 24 h (audited `time.target.set`), his row and `get_my_week` use it (8 h → 33%), `null` returns him to 40 h. Migration `0006_weekly_target.sql`. Live: card "Weekly target for Dinesh Wickrama · Target 40 h → 24 h", confirmed (`shots/live-target-card.png`).
+- AC-8: pass — utilisation AC8: 8, 8, 6, 8, 4 h → 34 h, 85%; 44.8 h → 112%, `overtime: true`; Dinesh's Monday-only week lists Tue–Fri as missing; rows lowest first; `below: 80` keeps only Dinesh; Kasun sees only himself; W42 Ayesha 23.5 h, 59%, one leave day, 32 h, 73%.
+- AC-9: pass — utilisation AC9: `get_my_week` returns `target` and `utilisation`; "Who is below 80% this week?" is offered to Maya and not to Kasun. Live: Maya's question → `get_week_utilisation`, four people lowest first with missing days and Ayesha's leave-adjusted figure (`shots/live-below-80.png`); Kasun's "What did I log this week?" → "32.5 hours … 40-hour target (81%)", and his colleague question → his own 81% offered (`shots/live-my-week.png`).
+- AC-10: pass — the tests above, all DB-backed, none skipped, events delivered through the outbox with a retried event.
+- AC-11: pass — the live run (build notes); time, finance, notifications and reports READMEs updated; tool descriptions for the two new tools. Existing tests changed only as listed in the build notes (D5).
+
+Commands:
+- `vitest run --config ../../vitest.config.ts --dir .`: `modules/time` 114/114 (27 files), `modules/finance` 9/9, `modules/notifications` 9/9, `modules/reports` 9/9, `modules/payroll` 10/10, `modules/allocations` 38/38, `packages/chat` 30/30, `packages/mcp` 20/20; `apps/web` tool-schemas, page-context, pin-refs, routes 9/9. `packages/core` 157/158: `ac5-adapters` fails on Windows path separators, as in 070's verify.
+- `pnpm lint` exit 0; `node scripts/check-graph.mjs --root <repo>`: only the known R7 fixture; `pnpm turbo run build --filter=./apps/web` exit 0.
+- After verify started, Finance's time handlers moved from `suggestions.ts` to `server/time-sync.ts` (88 → 71 lines; no behaviour change); finance 9/9, lint and build re-run after it.
+
+Gates:
+- `specclaw-preset-check .` exit 1: repo-wide `comment` and `max_lines` hits. 072's new files are all under 80 lines; already-long files grew slightly: `time/contracts.ts` 116 → 118, `time/module.ts` 99 → 100, `packages/core/src/module.ts` 296 → 301; `finance/suggestions.ts` is now under the limit (71).
+- `specclaw-quality-scan`: not_run (its jq step on this host). Review: specclaw-review not installed.
+
+Screenshots: `shots/app.png`, `app-dark.png` (Reports, October, the new lede), `shots/mock.png` (`#072-time-consumers-sync`), `live-below-80.png`, `live-my-week.png`, `live-target-card.png`. Compared against the mock: the bell routing, Reports lede, chat answers and target card match. One difference: the model answered "below 80%" as a markdown table, which the chat panel shows as plain `|` text (the panel doesn't render tables; not from 072). Follow-up: render tables in chat, or ask tools' descriptions for one line per person.
 
 Build notes (2026-10-24, for verify):
 - D1 changed from option B to option A during the build (product owner, 2026-10-24), because Time's fixtures hold only week 42 and B would empty Reports' 12-month demo. Reports' demo figures are unchanged (84% team utilisation, the trend).
