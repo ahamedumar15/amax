@@ -5,6 +5,7 @@ import { getProjectRef } from "@amax/delivery/contracts";
 import { dayLabel } from "../week";
 import { refuse, storedEntry } from "./card";
 import { read } from "./read";
+import { dateRefusal } from "./rules";
 import { changeText, listRequests, OPEN, type ChangeRequest, type RequestStatus } from "./requests-read";
 import { keyOf } from "./weeks";
 
@@ -20,6 +21,8 @@ export async function proposeRequest(v: Viewer, a: Ask) {
   if (e.week.status !== "submitted" && e.week.status !== "approved") refuse(`${keyOf(e.week)} is ${e.week.status}, so fix the entry directly with correct_time_entry`);
   const [open] = await read(v, (tx) => tx.execute(sql`select id from time.change_request where entry_id = ${a.entryId} and status in ('pending', 'needs_info')`));
   if (open) refuse(`that entry already has an open change request (request id ${open.id}); check it with get_change_requests`);
+  const late = await read(v, (tx) => dateRefusal(tx, e.userId, e.day));
+  if (late) refuse(late);
 }
 
 export async function requestCard(v: Viewer, a: Ask): Promise<ToolCard> {

@@ -2,7 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import type { Viewer } from "@amax/auth";
 import { dayLabel, weekKey } from "../week";
-import { chainFor } from "./chain";
+import { chainFor, entityOf } from "./chain";
 import { read } from "./read";
 import { weekProjectIds } from "./weeks";
 
@@ -44,7 +44,7 @@ export async function requestRows(tx: Tx, where: SQL, lock = false): Promise<Cha
 }
 
 /** Whether the viewer reviews this request: anyone in its week's approval chain, never its owner (070 AC-32). */
-export const reviews = async (tx: Tx, v: Viewer, r: Pick<ChangeRequest, "userId" | "weekId">) => chainFor(v, r.userId, await weekProjectIds(tx, r.weekId)) !== null;
+export const reviews = async (tx: Tx, v: Viewer, r: Pick<ChangeRequest, "userId" | "weekId">) => chainFor(v, r.userId, await weekProjectIds(tx, r.weekId), await entityOf(tx, r.userId)) !== null;
 
 export type RequestFilter = { id?: string; status?: RequestStatus; week?: string; mine?: boolean };
 

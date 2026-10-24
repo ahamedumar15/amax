@@ -19,8 +19,8 @@ export default defineModule({
   group: "Work",
   order: 20,
   dependsOn: ["delivery"],
-  integratesWith: ["hr", "leave"],
-  permissions: ["time:read", "time:log", "time:submit", "time:approve", "time:team", "time:admin"],
+  integratesWith: ["hr", "leave", "allocations"],
+  permissions: ["time:read", "time:log", "time:submit", "time:approve", "time:team", "time:admin", "time:totals"],
   grants: {
     Leadership: [...APPROVE, "time:team"],
     Finance: [...OWN, "time:team"],
@@ -28,7 +28,8 @@ export default defineModule({
     Engineer: APPROVE,
     Sales: OWN,
     HR: OWN,
-    Payroll: OWN,
+    // 071 AC-1: approved hours per person and week for overtime, and nothing more of anyone else's timesheet.
+    Payroll: [...OWN, "time:totals"],
     Employee: OWN,
   },
   routes: [

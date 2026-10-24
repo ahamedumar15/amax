@@ -1,4 +1,5 @@
-import { can, type Viewer } from "@amax/auth";
+import { type Viewer } from "@amax/auth";
+import { adminOver, entityOf } from "./chain";
 import type { ToolCard } from "@amax/core";
 import { refuse } from "./card";
 import { mayDecide } from "./decide";
@@ -20,7 +21,7 @@ const blocked: Record<Kind, (w: WeekRow, v: Viewer) => string | null> = {
 
 async function preview(v: Viewer, kind: Kind, a: Args) {
   const found = await read(v, async (tx) => {
-    const may: MayAct = kind === "reopen" ? () => can(v, "time:admin") : mayDecide(tx, v);
+    const may: MayAct = kind === "reopen" ? async (w) => adminOver(v, await entityOf(tx, w.user_id)) : mayDecide(tx, v);
     const week = await peekWeek(tx, a, may).catch((e: Error) => refuse(e.message));
     return week && { week, hours: Math.round((await weekHours(tx, week.id)) * 10) / 10 };
   });

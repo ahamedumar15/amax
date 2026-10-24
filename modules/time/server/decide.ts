@@ -4,19 +4,19 @@ import type { Tx } from "@amax/db";
 import { ScopeError, viewerOf, type Viewer } from "@amax/auth";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type WeekDecided, type WeekReminded } from "../contracts";
-import { chainFor } from "./chain";
+import { chainFor, entityOf } from "./chain";
 import { by, findWeek, keyOf, weekProjectIds, type MayAct, type WeekRef, type WeekRow } from "./weeks";
 
 const ref = { weekId: z.string().uuid().optional(), person: z.string().optional(), week: z.string().optional() };
 
 async function approver(tx: Tx, ctx: ServiceContext, week: WeekRow) {
-  const chain = chainFor(viewerOf(ctx), week.user_id, await weekProjectIds(tx, week.id));
+  const chain = chainFor(viewerOf(ctx), week.user_id, await weekProjectIds(tx, week.id), await entityOf(tx, week.user_id));
   if (!chain) throw new ScopeError("time:approve");
   return chain;
 }
 
 // Only weeks the caller is in the approval chain for are found (070 AC-10).
-export const mayDecide = (tx: Tx, v: Viewer | undefined): MayAct => async (w) => chainFor(v, w.user_id, await weekProjectIds(tx, w.id)) !== null;
+export const mayDecide = (tx: Tx, v: Viewer | undefined): MayAct => async (w) => chainFor(v, w.user_id, await weekProjectIds(tx, w.id), await entityOf(tx, w.user_id)) !== null;
 const target = (tx: Tx, ctx: ServiceContext, a: WeekRef) => findWeek(tx, a, "time:approve", mayDecide(tx, viewerOf(ctx)));
 
 export async function decide(tx: Tx, ctx: ServiceContext, week: WeekRow, to: "approved" | "rejected", comment: string | null) {

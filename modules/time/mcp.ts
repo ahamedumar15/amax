@@ -3,6 +3,7 @@ import type { McpToolDef } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { isoWeek, read, tool } from "./mcp-kit";
 import { bulkTools } from "./mcp-bulk";
+import { settingsTools } from "./mcp-settings";
 import { requestTools } from "./mcp-requests";
 import { ctxFor } from "./server/context";
 import { cardFields, checkCard, type CardInput } from "./server/card";
@@ -11,6 +12,7 @@ import { correctCard, deleteCard, logCard, proposeLog } from "./server/entry-car
 import { proposeWeek, weekCard } from "./server/week-card";
 import { approveWeek, rejectWeek, remindWeek } from "./server/decide";
 import { logTime } from "./server/log";
+import { logOnce } from "./server/replay";
 import { myWeek } from "./server/my";
 import { hoursTrend } from "./server/overview";
 import { reopenWeek } from "./server/reopen";
@@ -35,8 +37,9 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ weekId: z.string().uuid().optional(), week, project: z.string().optional().describe("Project name, for one row of your own week") }),
     run: (v, a) => getTimesheet(v, a) }),
   tool({ name: "log_time", description: "Log hours against a project for a weekday (Monday to Friday, YYYY-MM-DD in the person's own calendar). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",
-    input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional() }),
-    propose: proposeLog, card: logCard, service: logTime, run: (v, a, s = "mcp") => logTime(ctxFor(v, s), { ...a, source: s === "mcp" ? "agent" : "person" }) }),
+    input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional(),
+      clientRef: z.string().min(1).max(100).optional().describe("Your own id for this entry; a retry with the same id and input logs nothing twice") }),
+    propose: proposeLog, card: logCard, service: logTime, run: (v, a, s = "mcp") => logOnce(v, a, s) }),
   tool({ name: "correct_time_entry", description: "Fix one time entry of a DRAFT or REJECTED week (for a submitted or approved week of your own, use request_time_change). Copy its project, day and current hours (and the person, when it isn't yours) from get_my_week or get_timesheet, so the confirm card shows them; then give the new hours, billable flag, note or project. The day can't change; delete the entry and log it again instead. Someone else's entry needs a reason, which they are told.", scope: "write", permission: "time:log",
     input: z.object({ ...cardFields, hours: z.number().positive().max(24).optional(), billable: z.boolean().optional(), note: z.string().max(500).optional(), projectKey: z.string().optional(), reason: z.string().optional(), entryId: z.string().uuid() }),
     propose: (v: Viewer, a: CardInput) => checkCard(v, a), card: correctCard, service: correctEntry, run: (v, a, s = "mcp") => correctEntry(ctxFor(v, s), a) }),
@@ -55,4 +58,5 @@ export const mcpTools: McpToolDef[] = [
     propose: proposeWeek("reopen"), card: weekCard("reopen"), service: reopenWeek, run: (v, a, s = "mcp") => reopenWeek(ctxFor(v, s), a) }),
   ...requestTools,
   ...bulkTools,
+  ...settingsTools,
 ];

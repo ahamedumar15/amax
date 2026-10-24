@@ -8,6 +8,7 @@ import { EVENTS, type ChangeDecided, type ChangeRequested } from "../contracts";
 import { dayLabel } from "../week";
 import { Changes } from "./correct";
 import { lockedEntry } from "./entry";
+import { dateRefusal } from "./rules";
 import { projectNames } from "./read";
 import { changeText, OPEN, requestRows, type ChangeRequest, type Values } from "./requests-read";
 import { actorId, keyOf } from "./weeks";
@@ -32,6 +33,8 @@ export const requestChange = defineService({
     .refine((a) => a.remove || a.hours !== undefined || a.billable !== undefined || a.note !== undefined || a.projectKey !== undefined, "say what to change: hours, billable, note or project, or remove it"),
   async run(tx, a, ctx: ServiceContext) {
     const { week, entry } = await lockedEntry(tx, ctx, a.entryId);
+    const late = await dateRefusal(tx, entry.user_id, entry.day);
+    if (late) throw new Error(late);
     if (entry.user_id !== viewerOf(ctx)?.userId) throw new ScopeError("time:log");
     if (week.status !== "submitted" && week.status !== "approved") throw new Error(`${keyOf(week)} is ${week.status}, so you can fix it yourself with correct_time_entry`);
     const [open] = await tx.execute(sql`select id from time.change_request where entry_id = ${entry.id} and status in ('pending', 'needs_info')`);

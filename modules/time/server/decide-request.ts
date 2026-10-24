@@ -4,7 +4,7 @@ import type { Tx } from "@amax/db";
 import { viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type ChangeDecided } from "../contracts";
-import { chainFor } from "./chain";
+import { chainFor, entityOf } from "./chain";
 import { writeCorrection, writeDelete } from "./correct";
 import { decide } from "./decide";
 import { liveEntry } from "./entry";
@@ -37,7 +37,7 @@ async function apply(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRo
 
 async function reopen(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRow): Promise<Outcome> {
   if (week.status === "submitted") return { status: "reopened", events: (await decide(tx, ctx, week, "rejected", summary(r))).events };
-  const chain = chainFor(viewerOf(ctx), week.user_id, await weekProjectIds(tx, week.id)) ?? "admin";
+  const chain = chainFor(viewerOf(ctx), week.user_id, await weekProjectIds(tx, week.id), await entityOf(tx, week.user_id)) ?? "admin";
   return { status: "reopened", events: (await writeReopen(tx, ctx, week, summary(r), chain)).events };
 }
 

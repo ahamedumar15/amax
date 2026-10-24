@@ -4,7 +4,9 @@ import type { CardLine, ToolCard } from "@amax/core";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { dayLabel, isoWeekOf } from "../week";
 import { refuse, storedEntry, type StoredEntry } from "./card";
-import { lockRefusal, workDay } from "./guards";
+import { entityOf } from "./chain";
+import { lockRefusal, possibleDuplicate, workDay } from "./guards";
+import { allocationRefusal, dateRefusal } from "./rules";
 import { read } from "./read";
 import type { WeekRow } from "./weeks";
 
@@ -39,16 +41,27 @@ export async function deleteCard(v: Viewer, a: { entryId: string; reason?: strin
 type Log = { projectKey: string; hours: number; day: string; billable?: boolean; note?: string };
 
 export async function logCard(v: Viewer, a: Log): Promise<ToolCard> {
-  const name = (await read(v, (tx) => getProjectRef(tx, a.projectKey)))?.name ?? a.projectKey;
+  const { name, twin } = await read(v, async (tx) => {
+    const p = await getProjectRef(tx, a.projectKey);
+    return { name: p?.name ?? a.projectKey, twin: p ? await possibleDuplicate(tx, v.userId, p.id, a.day, a.note) : null };
+  });
+  const warn = twin ? [{ label: "Already logged", value: `${name}, ${dayLabel(a.day)}, ${h(twin.hours)}, same note` }] : [];
   return { title: `Log ${h(a.hours)} to ${name}, ${dayLabel(a.day)}`,
-    lines: [...(a.billable === false ? [{ label: "Billable", value: "no" }] : []), ...(a.note ? [{ label: "Note", value: a.note }] : [])] };
+    lines: [...(a.billable === false ? [{ label: "Billable", value: "no" }] : []), ...(a.note ? [{ label: "Note", value: a.note }] : []), ...warn] };
 }
 
 /** Amendment 2: no log card for a weekend, or for a week the viewer can't add to now (009's lock rule). */
 export async function proposeLog(v: Viewer, a: Log) {
   let w;
   try { w = isoWeekOf(workDay(a.day)); } catch (e) { return refuse((e as Error).message); }
-  const [week] = await read(v, (tx) => tx.execute(sql`select * from time.week where user_id = ${v.userId} and iso_year = ${w.year} and iso_week = ${w.week}`));
-  const refused = week && lockRefusal(week as WeekRow, v);
+  const { week, entity } = await read(v, async (tx) => ({ entity: await entityOf(tx, v.userId),
+    week: (await tx.execute(sql`select * from time.week where user_id = ${v.userId} and iso_year = ${w.year} and iso_week = ${w.week}`))[0] }));
+  const refused = week && lockRefusal(week as WeekRow, v, entity);
   if (refused) refuse(refused);
+  // 071 AC-10/AC-11: no card that the entry rules would refuse; chat says why (and which projects are allowed).
+  const rule = await read(v, async (tx) => {
+    const p = await getProjectRef(tx, a.projectKey);
+    return p ? (await allocationRefusal(tx, v.tenantId, v.userId, p.id, a.day)) ?? (await dateRefusal(tx, v.userId, a.day)) : null;
+  });
+  if (rule) refuse(rule);
 }
