@@ -14,6 +14,7 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done | PASS |
+| PR | ✅ Raised | https://github.com/chan4lk/amax/pull/105 — PASS — 6/6 tasks |
 
 ## Task Progress
 
