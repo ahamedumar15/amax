@@ -8,6 +8,7 @@ import { timeOverview } from "./server/overview";
 import { commitDraft, commitTimeHandler } from "./suggestions";
 import { reminderSchedules, reminderWorkflows } from "./server/reminder-jobs";
 import { MyPage } from "./ui/MyPage";
+import { SheetPage } from "./ui/SheetPage";
 import { TeamPage } from "./ui/TeamPage";
 
 const OWN = ["time:read", "time:log@own", "time:submit@own"];
@@ -36,6 +37,8 @@ export default defineModule({
   routes: [
     { path: "", title: "Team time", component: TeamPage },
     { path: "w/:week", title: "Team time", component: TeamPage },
+    // 073 AC-18: one member's week, read-only, opened from their name on Team time.
+    { path: "w/:week/p/:weekId", title: "Timesheet", component: SheetPage },
     { path: "my", title: "My timesheet", component: MyPage },
     { path: "my/:week", title: "My timesheet", component: MyPage },
   ],

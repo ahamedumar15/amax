@@ -1,20 +1,11 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { capture, diffRatio } from "./diff";
+import { axe, signIn } from "./helpers";
 
 const mock = `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#001-amax-foundation-time`;
 const W42 = "/time/w/2026-W42";
-
-async function signIn(page: Page, email: string, to: string) {
-  await page.goto(to);
-  await page.getByLabel("Demo user (fixtures only)").fill(email);
-  await page.getByRole("button", { name: "Sign in as demo user" }).click();
-  await expect(page).toHaveURL((url) => url.pathname === to);
-}
-
-const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
