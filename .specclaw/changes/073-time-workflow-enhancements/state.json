@@ -1,6 +1,6 @@
 {
   "change": "073-time-workflow-enhancements",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "specclaw/073-time-workflow-enhancements",
   "phases": {
     "proposal": {"status":"approved","at":"2026-10-24T07:07:12Z"},
