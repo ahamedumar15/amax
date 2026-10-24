@@ -238,7 +238,36 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+Verified 2026-10-24 at `82e50ea` (branch `specclaw/071-time-access-and-integrity`, stacked on 070's `625be24`), Windows 11, `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`. Every AC passes. The two specclaw gates don't run clean on this host (see Gates); the product owner chose, on 2026-10-24, to record PASS with them noted, as for 070.
+
+- AC-1: pass — `modules/payroll/tests/overtime-time.test.ts` AC3 and `server/totals.ts`: `approvedWeekHours` returns approved weeks only, live entries only (`deleted_at is null`), `{ userId, week, hours }` and nothing else; `time:totals` declared and granted to Payroll only (`module.ts`).
+- AC-2: pass — overtime-time AC2: with Kasun outside a scoped Payroll drafter's entity, his slip carries `overtime-unknown`, Sources reads "Timesheets: 1 of N people unreadable, overtime incomplete" with `timeIncomplete: true`; the system-draft and no-time messages are unchanged (`standard.test.ts`, packs test). Screen: the Sources line shows that text as a warning chip (`shots/app-sources.png`, `app-sources-dark.png`).
+- AC-3: pass — overtime-time AC3 (TIM-T02): a Payroll-role drafter gets "Overtime, 6 h" for Kasun's 46 h approved week; Nimal's 46 h submitted week and Tharushi's week brought under 40 h by deletes give none; Sources reads "Approved timesheets, N weeks, M people"; Kasun calling `approvedWeekHours` gets `time:totals` forbidden; the Payroll drafter gets null from `get_timesheet` and `[]` from `get_change_requests`.
+- AC-4: pass — `modules/time/tests/entity-scope.test.ts`: Sahan's Admin scoped to another entity is refused approve, reject and remind with exactly the missing-week error, refused a fix (`mayFix`) and a change-request decision, `approve_weeks` skips the week, Team time and `weekTotals` are empty; an owner with no entity is out of a scoped Admin's reach and in an unscoped one's. The shared checks (`chainFor`, `seesWeek`, `mayFix`, `adminOver`, contract `visible()`) take the owner's entity, so 009's and 070's callers (reopen, lock rule, cards, suggestions, bulk, requests) inherit it.
+- AC-5: pass — same test: scoped Admin refused across the write tools, the same error as a missing week; unscoped Admin then approves and reopens Kasun's week as before.
+- AC-6: pass — `commit-dedup.test.ts`: two suggestions for one commit → one entry (`source_ref git:<sha>`), the second resolves `alreadyLogged` and its undo keeps the entry; a re-push drafts nothing; two accepts at once → one entry. Migration `0005_entry_source_ref.sql` (partial unique index on live entries).
+- AC-7: pass — `modules/delivery/tests/ingest-distinct.test.ts`: GitHub commits with `distinct: false` are dropped, the rest kept; the existing ingest tests pass.
+- AC-8: pass — `idempotency.test.ts`: a retry with the same `clientRef` returns the first id with `replayed: true` and entry, audit and event counts don't move; other hours or project → "clientRef already used for a different entry"; two concurrent calls → one entry, same id.
+- AC-9: pass — `settings.test.ts`: `get_time_settings` defaults `{ requireAllocation: false, backdateWeeks: null, allowFuture: true }`; an Engineer can't set them; Sahan can, audited (`time.settings.set`); with defaults logging is as before. Live: Sahan's chat card "Change the timesheet rules · Allocated projects only".
+- AC-10: pass — settings AC9/AC10: with allocation required, Tharushi's HR Insights log is refused "not allocated to HR Insights in October; allocated to Fleet Tracker and Contoso Portal that month", chat makes no card, moving an entry to HR Insights is refused; switched off, the move works. Live: no card, and chat named her two allocated projects (`shots/live-unallocated.png`).
+- AC-11: pass — settings AC11: with 4 weeks back and no future dates, her own log beyond the limit and a future day are refused with the reason, and no card; Sahan logging for her on the early day is exempt; reset, it logs.
+- AC-12: pass — `duplicates.test.ts`: the card adds "Already logged: Fleet Tracker, Mon Oct 26, 2 h, same note", the MCP result has `possibleDuplicateOf`, a different note doesn't. Live: `shots/live-duplicate-card.png`. The shared card shows it as a labelled line, not the mock's amber chip (card lines have no warning style).
+- AC-13: pass — `modules/reports/tests/utilisation-scope.test.ts`: Sahan as PM sees none, then, as Fleet Tracker's manager, exactly the people with October Fleet Tracker hours; an Admin scoped to another entity sees nobody, unscoped sees everyone Maya does; Kasun asking for Nimal's figure gets nothing. Reports' existing tests, including the no-Time install, pass. Live: Kasun was told he can see only his own and offered it (`shots/live-colleague-utilisation.png`).
+- AC-14: pass — the tests above, all DB-backed and none skipped, plus the live run (build notes below).
+- AC-15: pass — time, reports and payroll READMEs updated; tool descriptions for `log_time` (`clientRef`), the settings tools and `get_person_utilisation`. `check-graph --root`: only the known R7 fixture. Existing tests unmodified except the one intended `integratesWith` assertion in `time/tests/contracts.test.ts` (`git diff 625be24 HEAD` over the four modules' tests).
+
+Commands:
+- `vitest run --config ../../vitest.config.ts --dir .`: `modules/time` 111/111 (25 files), `modules/payroll` 10/10, `modules/reports` 8/8, `modules/notifications` 7/7, `modules/finance` 8/8, `modules/allocations` 38/38, `packages/chat` 30/30, `packages/mcp` 20/20; `apps/web` tool-schemas, page-context, pin-refs, routes 9/9.
+- `modules/delivery` 254/256: `releases.test.ts` and `sync-import.test.ts` fail, and fail the same with 071's `ingest.ts` swapped for 070's (pre-existing, Windows/working-tree dependent); `create-project-surfaces.test.ts` failed once under parallel load and passes alone.
+- `pnpm lint` exit 0; `pnpm turbo run build --filter=./apps/web` exit 0.
+
+Gates:
+- `specclaw-preset-check .` exit 1: about 2,610 repo-wide `comment` and `max_lines` hits. 071's new files are all under 80 lines; three files already over grew: `time/contracts.ts` 112 → 116, `time/module.ts` 98 → 99, `payroll/server/draft.ts` 103 → 112.
+- `specclaw-quality-scan`: not_run ("Argument list too long" in its jq step). Quality: not_run. Review: specclaw-review not installed.
+
+Screenshots: `shots/app.png`, `app-dark.png` (Payroll run, October; the run's sources were set to the incomplete case in local demo data for the shot, then restored), `app-sources.png`, `app-sources-dark.png`, `shots/mock.png` (`#071-time-access-and-integrity`), `live-settings-card.png`, `live-unallocated.png`, `live-duplicate-card.png`, `live-colleague-utilisation.png`. Compared against the mock: the Sources chip and the chat replies match; the duplicate warning is a plain card line (above).
 
 Build notes (2026-10-24, for verify):
 - Quality: not_run (`specclaw-quality-scan`: "Argument list too long" in its jq step on this Windows host).
