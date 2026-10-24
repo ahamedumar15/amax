@@ -1,11 +1,12 @@
 import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { chatSuggestions, pageLabel } from "./chat-suggestions";
-import { EVENTS, type ChangeCompleted, type ChangeDecided, type ChangeRequested, type EntryCorrected, type EntryDeleted, type EntryLogged, type WeekDecided, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
+import { EVENTS, type ChangeCompleted, type ChangeDecided, type ChangeRequested, type EntryCorrected, type EntryDeleted, type EntryLogged, type WeekDecided, type DayReminded, type WeekReminded, type WeekReopened, type WeekSubmitted } from "./contracts";
 import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { timeOverview } from "./server/overview";
 import { commitDraft, commitTimeHandler } from "./suggestions";
+import { reminderSchedules, reminderWorkflows } from "./server/reminder-jobs";
 import { MyPage } from "./ui/MyPage";
 import { TeamPage } from "./ui/TeamPage";
 
@@ -51,6 +52,9 @@ export default defineModule({
   chatSuggestions,
   pageLabel,
   jobs: [],
+  // 073 AC-5/AC-6: the daily and weekly reminders, per legal entity in its own time zone.
+  workflows: reminderWorkflows,
+  schedules: reminderSchedules,
   // 030: who hears about a week. Approvers see a submission; the person hears the decision and reminders.
   notifications: [
     { id: "time.week-submitted", event: EVENTS.weekSubmitted, category: "approvals", to: [{ approvers: "userId", projects: "projectIds", entity: "legalEntityId" }], permission: "time:approve", subject: "userId",
@@ -60,7 +64,10 @@ export default defineModule({
     { id: "time.week-rejected", event: EVENTS.weekRejected, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
       title: "Your timesheet for {week} was sent back", body: "{comment}", href: "/time/my/{week}" },
     { id: "time.week-reminded", event: EVENTS.weekReminded, category: "reminders", to: [{ owner: "userId" }], except: "by", subject: "userId",
-      title: "Reminder: submit your timesheet for {week}", href: "/time/my/{week}" },
+      title: "Reminder: submit your timesheet for {week}", body: "{message}", href: "/time/my/{week}" },
+    // 073 AC-3: a day with nothing logged; the link marks that day on My timesheet.
+    { id: "time.day-reminded", event: EVENTS.dayReminded, category: "reminders", to: [{ owner: "userId" }], except: "by", subject: "userId",
+      title: "Log your hours for {dayLabel}", body: "{message}", href: "/time/my/{week}?day={day}" },
     // 070 AC-15: someone else fixed or removed your hours; the reason comes with it.
     { id: "time.entry-corrected-by-other", event: EVENTS.entryCorrected, when: { byOther: true }, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
       title: "{by|name} changed your {projectName} hours for {dayLabel}", body: "{reason}", href: "/time/my/{week}" },
@@ -88,7 +95,8 @@ export default defineModule({
     [EVENTS.weekApproved]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
     [EVENTS.weekRejected]: declarePayload<WeekDecided>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", chain: "plain", comment: "plain" }),
     [EVENTS.weekReopened]: declarePayload<WeekReopened>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", reason: "plain" }),
-    [EVENTS.weekReminded]: declarePayload<WeekReminded>({ weekId: "plain", userId: "plain", week: "plain", by: "plain" }),
+    [EVENTS.weekReminded]: declarePayload<WeekReminded>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", message: "plain" }),
+    [EVENTS.dayReminded]: declarePayload<DayReminded>({ userId: "plain", day: "plain", dayLabel: "plain", week: "plain", by: "plain", message: "plain" }),
     [EVENTS.changeRequested]: declarePayload<ChangeRequested>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain", entryId: "plain", projectName: "plain", dayLabel: "plain", change: "plain", reason: "plain", answered: "plain", answer: "plain", projectIds: "plain", legalEntityId: "plain" }),
     [EVENTS.changeDecided]: declarePayload<ChangeDecided>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain", entryId: "plain", projectName: "plain", dayLabel: "plain", decision: "plain", by: "plain", note: "plain" }),
     [EVENTS.changeCompleted]: declarePayload<ChangeCompleted>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain" }),

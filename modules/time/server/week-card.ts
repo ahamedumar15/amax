@@ -4,12 +4,14 @@ import type { ToolCard } from "@amax/core";
 import { refuse } from "./card";
 import { mayDecide } from "./decide";
 import { read } from "./read";
+import { agoText, recentReminders } from "./reminders";
+import { weekAnomalies } from "./anomalies";
 import { keyOf, peekWeek, weekHours, type MayAct, type WeekRef, type WeekRow } from "./weeks";
 
 // 070 amendment 2: week cards name the person, the week and its hours, and a week that can't take the
 // decision gets no card. The services keep these same checks at run time.
 type Kind = "approve" | "reject" | "remind" | "reopen";
-type Args = WeekRef & { comment?: string; reason?: string };
+type Args = WeekRef & { comment?: string; reason?: string; message?: string };
 
 const blocked: Record<Kind, (w: WeekRow, v: Viewer) => string | null> = {
   approve: (w) => (w.status === "submitted" ? null : `${keyOf(w)} is ${w.status}, not submitted`),
@@ -41,6 +43,11 @@ export const proposeWeek = (kind: Kind) => async (v: Viewer, a: Args) => void (a
 
 export const weekCard = (kind: Kind) => async (v: Viewer, a: Args): Promise<ToolCard> => {
   const { week, hours } = await preview(v, kind, a);
+  // 073 AC-4: a reminder card warns when the same person was reminded in the last 4 hours.
+  // 073 AC-10: an approval card names what needs a closer look; approving one at a time still works.
+  const checks = kind === "approve" ? await read(v, (tx) => weekAnomalies(tx, week)) : [];
+  const recent = kind === "remind" ? (await read(v, (tx) => recentReminders(tx, [week.user_id]))).get(week.user_id) : undefined;
   return { title: titles[kind](week.person_name as string, keyOf(week), hours),
-    lines: [...(a.comment ? [{ label: "Comment", value: a.comment }] : []), ...(a.reason ? [{ label: "Reason", value: a.reason }] : [])] };
+    lines: [...(a.comment ? [{ label: "Comment", value: a.comment }] : []), ...(a.reason ? [{ label: "Reason", value: a.reason }] : []),
+      ...(a.message ? [{ label: "Message", value: a.message }] : []), ...(checks.length ? [{ label: "Check", value: checks.join("; ") }] : []), ...(recent ? [{ label: "Note", value: `reminded ${agoText(recent.at)} by ${recent.by}` }] : [])] };
 };

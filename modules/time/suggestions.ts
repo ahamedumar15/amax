@@ -7,6 +7,7 @@ import { createSuggestion } from "@amax/agents/server";
 import { EVENTS as DELIVERY, type CommitTime } from "@amax/delivery/contracts";
 import { EVENTS, type EntryDeleted } from "./contracts";
 import { bySource, logEntry } from "./server/log";
+import { isWeekend } from "./week";
 
 const gitRef = (commit: string) => `git:${commit}`;
 const Draft = z.object({ userId: z.uuid(), projectKey: z.string().min(1), day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), hours: z.number().positive().max(12), commit: z.string().min(4), proposalKey: z.string() });
@@ -23,7 +24,7 @@ export const commitDraft = defineSuggestionKind<Draft, { entryId: string; alread
     // 071 AC-6: a commit already on the timesheet logs nothing; the suggestion resolves pointing at that entry.
     const had = await bySource(tx, p.userId, gitRef(p.commit));
     if (had) return { applied: { entryId: had.id, alreadyLogged: true }, action: "time.entry.log", resource: "time.entry", resourceId: had.id, after: { alreadyLogged: true } };
-    const out = await logEntry(tx, { projectKey: p.projectKey, day: p.day, hours: p.hours, billable: true, note: `${p.proposalKey}, commit ${p.commit.slice(0, 7)}`, userId: p.userId, source: "agent", agent: "Git" }, ctx, gitRef(p.commit));
+    const out = await logEntry(tx, { projectKey: p.projectKey, day: p.day, hours: p.hours, billable: true, note: `${p.proposalKey}, commit ${p.commit.slice(0, 7)}`, userId: p.userId, source: "agent", agent: "Git", weekend: isWeekend(p.day) }, ctx, gitRef(p.commit));
     return { applied: { entryId: out.resourceId }, action: "time.entry.log", resource: "time.entry", resourceId: out.resourceId, after: out.after, events: out.events };
   },
   async undo(tx, _ctx, p, a) {
@@ -47,7 +48,8 @@ export const commitTimeHandler: EventHandlerDef = {
     if (taken) return;
     await createSuggestion(contextFor.job(tenantId, "time.commit-draft", `user:${c.userId}`), {
       kind: commitDraft.kind, target: { type: "time.week", id: `${c.userId}:${c.day}:${c.commit}`, label: `${c.hours} h on ${c.projectKey}, ${c.day}` },
-      title: `Add ${c.hours} h on ${c.projectKey} for ${c.day}`, detail: `Your commit ${c.commit.slice(0, 7)} for ${c.proposalKey} says ${c.hours} h. Accept to add it to your timesheet as a draft.`,
+      // 073 AC-2: a weekend commit says so; accepting it logs the weekend work.
+      title: `Add ${c.hours} h on ${c.projectKey} for ${c.day}${isWeekend(c.day) ? " (weekend)" : ""}`, detail: `Your commit ${c.commit.slice(0, 7)} for ${c.proposalKey} says ${c.hours} h${isWeekend(c.day) ? " of weekend work" : ""}. Accept to add it to your timesheet as a draft.`,
       proposed: { userId: c.userId, projectKey: c.projectKey, day: c.day, hours: c.hours, commit: c.commit, proposalKey: c.proposalKey }, confidence: 0.6, agentName: "Git ingestion",
       scope: { ownerUserId: c.userId, projectId: c.projectId }, evidence: [{ type: "record", label: `Commit ${c.commit.slice(0, 7)}`, ref: `/delivery/proposals` }],
     });

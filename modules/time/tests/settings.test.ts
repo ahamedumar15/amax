@@ -35,7 +35,7 @@ describe.skipIf(!hasDb)("071 entry rules: allocated projects and the date window
 
   it("AC9 AC10 with allocation required, an unallocated project is refused with the allowed ones, and no card is made; off, it logs as before", async () => {
     const [tharushi, sahan, kasun] = [await db.as("tharushi"), await db.as("sahan"), await db.as("kasun")];
-    expect(await call(tharushi, "get_time_settings", {})).toEqual({ requireAllocation: false, backdateWeeks: null, allowFuture: true });
+    expect(await call(tharushi, "get_time_settings", {})).toEqual({ requireAllocation: false, backdateWeeks: null, allowFuture: true, dailyReminderAt: null });
     await expect(call(tharushi, "log_time", { projectKey: "HRI", day: "2026-10-27", hours: 1 })).resolves.toMatchObject({ hours: 1 });
     await expect(call(kasun, "set_time_settings", { requireAllocation: true })).rejects.toThrow();
     await call(sahan, "set_time_settings", { requireAllocation: true });

@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import type { Viewer } from "@amax/auth";
 import { listProjectRefs } from "@amax/delivery/contracts";
 import type { WeekStatus } from "../contracts";
-import { weekKey, workDays, type IsoWeek } from "../week";
+import { shownDays, weekKey, type IsoWeek } from "../week";
 import { targetsOf } from "./targets";
 import { entrySums, hoursOf, latestWeek, projectNames, read, weekEntries, type EntryLine } from "./read";
 
@@ -17,9 +17,9 @@ export type MyWeek = {
 export const myWeek = (v: Viewer, wanted?: IsoWeek) =>
   read(v, async (tx): Promise<MyWeek> => {
     const w = wanted ?? (await latestWeek(tx, v.userId));
-    const days = workDays(w);
     const [wk] = await tx.execute(sql`select * from time.week where user_id = ${v.userId} and iso_year = ${w.year} and iso_week = ${w.week}`);
     const sums = await entrySums(tx, w, v.userId);
+    const days = shownDays(w, sums.map((s) => s.day));
     const names = await projectNames(tx);
     const rows = [...new Set(sums.map((s) => s.project_id))].map((id) => {
       const perDay = days.map((d) => hoursOf(sums, (s) => s.project_id === id && s.day === d));

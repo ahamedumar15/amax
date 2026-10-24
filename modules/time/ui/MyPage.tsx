@@ -4,12 +4,14 @@ import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
 import { openOfMine } from "../server/requests-read";
 import { MyRequests } from "./ChangeRequests";
-import { DAY_NAMES, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
+import { DayHead, dayName, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
 
-export async function MyPage({ viewer: raw, params }: ScreenProps) {
+export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps) {
   const viewer = viewerOrNull(raw);
   if (!viewer) return <div className="time"><h1>My timesheet</h1><SignInFirst /></div>;
   const m = await myWeek(viewer, weekParam(params.week));
+  // 073 AC-3: a day reminder links here with ?day=, and that day's column is marked.
+  const marked = searchParams?.day && m.days.includes(searchParams.day) ? searchParams.day : null;
   const requests = m.status === "submitted" || m.status === "approved" ? await openOfMine(viewer, m.key) : [];
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
@@ -34,12 +36,12 @@ export async function MyPage({ viewer: raw, params }: ScreenProps) {
         </div>
         <div className="scroll-x"><table className="tbl">
           <caption className="sr">My hours for {m.key}</caption>
-          <thead><tr><th>Project</th>{DAY_NAMES.map((d) => <th className="num" key={d}>{d}</th>)}<th className="num">Total</th><th className="num"><span className="sr">Actions</span></th></tr></thead>
+          <thead><tr><th>Project</th>{m.days.map((d) => <DayHead key={d} day={d} missing={d === marked} />)}<th className="num">Total</th><th className="num"><span className="sr">Actions</span></th></tr></thead>
           <tbody>
-            {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td><td className="num" data-label="">{pin(r.projectName)}</td></tr>)}
-            {m.rows.length === 0 && <tr><td colSpan={8} className="muted">No time logged this week.</td></tr>}
+            {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className="num" data-label={dayName(m.days[i])} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td><td className="num" data-label="">{pin(r.projectName)}</td></tr>)}
+            {m.rows.length === 0 && <tr><td colSpan={m.days.length + 3} className="muted">No time logged this week.</td></tr>}
           </tbody>
-          <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" data-label={DAY_NAMES[i]} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Week"><b>{m.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
+          <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className="num" data-label={dayName(m.days[i])} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Week"><b>{m.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
         </table></div>
       </div>
     </div>

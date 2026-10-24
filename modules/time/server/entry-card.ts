@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import type { Viewer } from "@amax/auth";
 import type { CardLine, ToolCard } from "@amax/core";
 import { getProjectRef } from "@amax/delivery/contracts";
-import { dayLabel, isoWeekOf } from "../week";
+import { dayLabel, isoWeekOf, isWeekend } from "../week";
 import { refuse, storedEntry, type StoredEntry } from "./card";
 import { entityOf } from "./chain";
 import { lockRefusal, possibleDuplicate, workDay } from "./guards";
@@ -38,7 +38,7 @@ export async function deleteCard(v: Viewer, a: { entryId: string; reason?: strin
   return { title: `Remove ${e.projectName}, ${dayLabel(e.day)}: ${h(e.hours)}`, lines: [...head, ...tail] };
 }
 
-type Log = { projectKey: string; hours: number; day: string; billable?: boolean; note?: string };
+type Log = { projectKey: string; hours: number; day: string; billable?: boolean; note?: string; weekend?: boolean };
 
 export async function logCard(v: Viewer, a: Log): Promise<ToolCard> {
   const { name, twin } = await read(v, async (tx) => {
@@ -46,14 +46,14 @@ export async function logCard(v: Viewer, a: Log): Promise<ToolCard> {
     return { name: p?.name ?? a.projectKey, twin: p ? await possibleDuplicate(tx, v.userId, p.id, a.day, a.note) : null };
   });
   const warn = twin ? [{ label: "Already logged", value: `${name}, ${dayLabel(a.day)}, ${h(twin.hours)}, same note` }] : [];
-  return { title: `Log ${h(a.hours)} to ${name}, ${dayLabel(a.day)}`,
+  return { title: `Log ${h(a.hours)} to ${name}, ${dayLabel(a.day)}${isWeekend(a.day) ? " (weekend)" : ""}`,
     lines: [...(a.billable === false ? [{ label: "Billable", value: "no" }] : []), ...(a.note ? [{ label: "Note", value: a.note }] : []), ...warn] };
 }
 
 /** Amendment 2: no log card for a weekend, or for a week the viewer can't add to now (009's lock rule). */
 export async function proposeLog(v: Viewer, a: Log) {
   let w;
-  try { w = isoWeekOf(workDay(a.day)); } catch (e) { return refuse((e as Error).message); }
+  try { w = isoWeekOf(workDay(a.day, a.weekend)); } catch (e) { return refuse((e as Error).message); }
   const { week, entity } = await read(v, async (tx) => ({ entity: await entityOf(tx, v.userId),
     week: (await tx.execute(sql`select * from time.week where user_id = ${v.userId} and iso_year = ${w.year} and iso_week = ${w.week}`))[0] }));
   const refused = week && lockRefusal(week as WeekRow, v, entity);

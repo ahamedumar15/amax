@@ -48,7 +48,8 @@ describe.skipIf(!hasDb)("070 amendment 2: Time confirm cards in plain words, and
 
   it("AC24 approval cards name the person, the week and its hours, with the comment", async () => {
     const maya = await db.as("maya");
-    expect(await card(maya, "approve_week", { person: "Nimal Silva", week: "2026-W42" })).toEqual([{ title: "Approve Nimal Silva's timesheet for 2026-W42 (31.5 h)", lines: [] }]);
+    // 073 AC-10: the approval card names what needs a closer look.
+    expect(await card(maya, "approve_week", { person: "Nimal Silva", week: "2026-W42" })).toEqual([{ title: "Approve Nimal Silva's timesheet for 2026-W42 (31.5 h)", lines: [{ label: "Check", value: "missing Fri Oct 16" }] }]);
     expect(await card(maya, "reject_week", { person: "Nimal Silva", week: "2026-W42", comment: "Split Tuesday by project" })).toEqual([
       { title: "Send back Nimal Silva's timesheet for 2026-W42 (31.5 h)", lines: [{ label: "Comment", value: "Split Tuesday by project" }] }]);
   });

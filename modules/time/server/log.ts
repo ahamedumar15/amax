@@ -23,6 +23,7 @@ const input = z.object({
   source: z.enum(["person", "agent"]).default("person"),
   agent: z.string().max(80).optional(),
   clientRef: z.string().min(1).max(100).optional(),
+  weekend: z.boolean().optional(),
 });
 
 async function personOf(tx: Tx, userId: string) {
@@ -53,7 +54,7 @@ export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext, sourceR
     // 071 AC-10/AC-11: the tenant's entry rules (both off by default); the date window binds only the person's own time.
     const refused = (await allocationRefusal(tx, ctx.tenantId, userId, project.id, day)) ?? (userId === actorId(ctx) ? await dateRefusal(tx, userId, day) : null);
     if (refused) throw new Error(refused);
-    const week = await ensureWeek(tx, ctx.tenantId, await personOf(tx, userId), isoWeekOf(workDay(day)));
+    const week = await ensureWeek(tx, ctx.tenantId, await personOf(tx, userId), isoWeekOf(workDay(day, a.weekend)));
     const lockedChange = await guardLock(tx, ctx, week, { day, hours: a.hours, projectKey: a.projectKey });
     await guardDayTotal(tx, userId, day, a.hours);
     const twin = await possibleDuplicate(tx, userId, project.id, day, a.note);

@@ -192,24 +192,33 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
      time.reminder; schedules follow compliance's pattern (`schedules` in the manifest, `timezone: "entity"`). Who is
      expected to log (D2) is one helper used by remind_missing and the daily slot. -->
 
-- [ ] `T1` — Screens: Sat and Sun columns only for a week with weekend hours; the day a reminder links to marked "Missing"; the last-reminder line on Team time rows; ThisWeek capacity from Allocations and targets, with row pins (AC-1 UI, AC-3 UI, AC-4 UI, AC-8)
+- [x] `T1` — Screens: Sat and Sun columns only for a week with weekend hours; the day a reminder links to marked "Missing"; the last-reminder line on Team time rows; ThisWeek capacity from Allocations and targets, with row pins (AC-1 UI, AC-3 UI, AC-4 UI, AC-8)
   Files: modules/time/ui/MyPage.tsx, modules/time/ui/Timesheets.tsx, modules/time/ui/ThisWeek.tsx, modules/time/ui/parts.tsx, modules/time/ui/time.css, modules/time/server/my.ts, modules/time/server/team.ts, modules/time/server/capacity.ts, modules/time/tests/screens-073.test.ts
-- [ ] `T2` — Weekend hours: `weekend: true` through `log_time`, its card and chat; weekend days in `workDays`-based reads where hours exist; weekend commit drafts (AC-1, AC-2)
+- [x] `T2` — Weekend hours: `weekend: true` through `log_time`, its card and chat; weekend days in `workDays`-based reads where hours exist; weekend commit drafts (AC-1, AC-2)
   Files: modules/time/server/guards.ts, modules/time/server/log.ts, modules/time/week.ts, modules/time/server/entry-card.ts, modules/time/mcp.ts, modules/time/chat.ts, modules/time/suggestions.ts, modules/time/tests/weekend.test.ts
   Depends: T1
-- [ ] `T3` — Migration `0007_reminders.sql` (`time.reminder`, `daily_reminder_at`, `time.project_reminder`); `remind_missing` with the expected-people helper (D2), leave and logged skips, message, `time.day.reminded` and its rule; `remind_week` message; the reminder record; the 4-hour line on cards; weekends refused (AC-3, AC-4, AC-7)
+- [x] `T3` — Migration `0007_reminders.sql` (`time.reminder`, `daily_reminder_at`, `time.project_reminder`); `remind_missing` with the expected-people helper (D2), leave and logged skips, message, `time.day.reminded` and its rule; `remind_week` message; the reminder record; the 4-hour line on cards; weekends refused (AC-3, AC-4, AC-7)
   Files: modules/time/db/migrations/0007_reminders.sql, modules/time/server/expected.ts, modules/time/server/reminders.ts, modules/time/server/decide.ts, modules/time/server/bulk-card.ts, modules/time/mcp-reminders.ts, modules/time/mcp.ts, modules/time/contracts.ts, modules/time/module.ts, modules/time/tests/reminders.test.ts
   Depends: T1
-- [ ] `T4` — Schedules: the daily reminder (`dailyReminderAt` in settings, PM `set_project_reminders`, one per person and day) and the weekly Monday reminder, both entity-zoned, weekdays only, retry-safe (AC-5, AC-6, AC-7)
+- [x] `T4` — Schedules: the daily reminder (`dailyReminderAt` in settings, PM `set_project_reminders`, one per person and day) and the weekly Monday reminder, both entity-zoned, weekdays only, retry-safe (AC-5, AC-6, AC-7)
   Files: modules/time/server/schedules.ts, modules/time/server/settings.ts, modules/time/server/rules.ts, modules/time/mcp-settings.ts, modules/time/module.ts, modules/time/tests/schedules.test.ts
   Depends: T3
-- [ ] `T5` — Approval checks: missing days on the submit card and result; anomalies (over 60 h, a day over 14 h, missing days) on `get_team_week` rows, the approve card, and skipped by `approve_weeks` (AC-9, AC-10)
+- [x] `T5` — Approval checks: missing days on the submit card and result; anomalies (over 60 h, a day over 14 h, missing days) on `get_team_week` rows, the approve card, and skipped by `approve_weeks` (AC-9, AC-10)
   Files: modules/time/server/anomalies.ts, modules/time/server/submit.ts, modules/time/server/week-card.ts, modules/time/server/bulk.ts, modules/time/server/bulk-card.ts, modules/time/server/team.ts, modules/time/tests/approval-checks.test.ts
   Depends: T1
-- [ ] `T6` — Integration: full suites, time e2e with axe on the weekend columns (light and dark), live run with the real model, README, intended changes listed under Verify (AC-11, AC-12)
+- [x] `T6` — Integration: full suites, time e2e with axe on the weekend columns (light and dark), live run with the real model, README, intended changes listed under Verify (AC-11, AC-12)
   Files: modules/time/tests/e2e/time.spec.ts, modules/time/README.md
   Depends: T2, T3, T4, T5
 
 ## Verify
 
 <!-- Filled by verify. -->
+
+Build notes (2026-10-24, for verify):
+- Found in the live run and fixed: (1) D2's Admin branch reminded everyone in the entity, including people who never log time (IT, sales); it now also needs time or an allocation in the last 4 weeks, as the daily schedule already did. (2) Approve-all over only flagged weeks made a card "Approve 0 timesheets"; it now makes no card and says each week needs individual review. Both have test lines.
+- The daily schedule runs every 15 minutes on weekdays and sends once the Admin's local time has passed (schedules are fixed crons; the time is a setting). One per person a day (`time.reminder` slot), so later runs and retries send nothing.
+- Performance: Team time works out anomalies only for submitted weeks (all rows made the parallel suite time out).
+- Intended changes to existing tests (D6 and additions): `time/tests/cards.test.ts` (070: Nimal's approve card gains "Check: missing Fri Oct 16"); `time/tests/bulk.test.ts` (070: the two weeks' gaps are filled so it still tests one failed approval among clean ones; title 87.5 h → 103.5 h); `time/tests/settings.test.ts` (071: the settings object gains `dailyReminderAt: null`). Other changes in behaviour: `log_time`'s weekend refusal now offers `weekend: true`; the week reminder's bell body is the message ("" when none, was null); `submit_week` has a card ("Submit your timesheet for 2026-W43 (32 h)") instead of the shared default.
+- Not from 073: delivery `releases` and `sync-import`, workflows `kill.test` (POSIX signals) fail on this host, as in 070–072.
+- Quality: not_run (`specclaw-quality-scan`'s jq step on this host).
+- Live run (Claude via `ANTHROPIC_API_KEY`, `pnpm dev`, local demo data; `dailyReminderAt` reset to off afterwards; today was Saturday Oct 24, so the day reminder used Fri Oct 23): Maya "Remind everyone who hasn't logged any hours on Friday Oct 23" → card "Remind 5 people to log Fri Oct 23", each marked "reminded 3 min ago by Maya Fernando" on the second ask; Sahan "Turn on the automatic reminder at 16:00…" → card "Daily reminder · off → 16:00 on working days…", confirmed; Kasun "Log 3 hours on Fleet Tracker for Saturday Oct 24…" → card "Log 3 h to Fleet Tracker, Sat Oct 24 (weekend)", confirmed; "Submit my timesheet" → card "Missing · Mon Oct 19 … Fri Oct 23. You can still submit.", confirmed; Maya "Approve all the submitted timesheets for 2026-W43" → no bulk card, Kasun's single approval card with "Check · missing …". My timesheet W43 with `?day=2026-10-23`: headers Mon–Thu, "Fri Missing", "Sat weekend", "Sun weekend"; axe clean in light and dark. Screenshots `shots/live-*.png`, `app.png`, `app-dark.png`.

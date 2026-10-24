@@ -5,6 +5,7 @@ import { ScopeError, viewerOf, type Viewer } from "@amax/auth";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type WeekDecided, type WeekReminded } from "../contracts";
 import { chainFor, entityOf } from "./chain";
+import { recordReminder } from "./reminders";
 import { by, findWeek, keyOf, weekProjectIds, type MayAct, type WeekRef, type WeekRow } from "./weeks";
 
 const ref = { weekId: z.string().uuid().optional(), person: z.string().optional(), week: z.string().optional() };
@@ -42,14 +43,15 @@ export const rejectWeek = defineService({
 });
 
 export const remindWeek = defineService({
-  scoped: true, name: "time.week.remind", action: "time:approve", resource: "time.week", input: z.object(ref),
-  run: async (tx, a, ctx) => writeRemind(ctx, await target(tx, ctx, a)),
+  scoped: true, name: "time.week.remind", action: "time:approve", resource: "time.week", input: z.object({ ...ref, message: z.string().trim().min(1).max(300).optional() }),
+  run: async (tx, a, ctx) => writeRemind(tx, ctx, await target(tx, ctx, a), a.message ?? null),
 });
 
-/** The reminder itself, shared by remind_week and remind_weeks (070 amendment 4). */
-export function writeRemind(ctx: ServiceContext, week: WeekRow) {
+/** The reminder itself, shared by remind_week and remind_weeks (070 amendment 4); 073 AC-3/AC-4: with a message, recorded. */
+export async function writeRemind(tx: Tx, ctx: ServiceContext, week: WeekRow, message: string | null = null) {
   if (week.status !== "draft" && week.status !== "rejected") throw new Error(`${keyOf(week)} is already ${week.status}`);
-  const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx) };
+  await recordReminder(tx, ctx, { userId: week.user_id, kind: "week", weekId: week.id, message });
+  const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx), message };
   return { result: { week: keyOf(week), person: week.person_name as string, recorded: true,
     note: "Reminder recorded; notifications (030) delivers it to the person when installed" }, resourceId: week.id, events: [{ name: EVENTS.weekReminded, payload }] };
 }

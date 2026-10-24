@@ -9,12 +9,12 @@ import { entityOf } from "./chain";
 import { projectNames } from "./read";
 
 // 071 AC-9 to AC-11: the tenant's entry rules. With no row, or every default, nothing changes from before 071.
-export type TimeSettings = { requireAllocation: boolean; backdateWeeks: number | null; allowFuture: boolean };
-export const DEFAULTS: TimeSettings = { requireAllocation: false, backdateWeeks: null, allowFuture: true };
+export type TimeSettings = { requireAllocation: boolean; backdateWeeks: number | null; allowFuture: boolean; dailyReminderAt: string | null };
+export const DEFAULTS: TimeSettings = { requireAllocation: false, backdateWeeks: null, allowFuture: true, dailyReminderAt: null };
 
 export async function settingsOf(tx: Tx): Promise<TimeSettings> {
-  const [r] = await tx.execute(sql`select require_allocation, backdate_weeks, allow_future from time.setting`);
-  return r ? { requireAllocation: Boolean(r.require_allocation), backdateWeeks: (r.backdate_weeks as number | null) ?? null, allowFuture: Boolean(r.allow_future) } : DEFAULTS;
+  const [r] = await tx.execute(sql`select require_allocation, backdate_weeks, allow_future, to_char(daily_reminder_at, 'HH24:MI') as daily_reminder_at from time.setting`);
+  return r ? { requireAllocation: Boolean(r.require_allocation), backdateWeeks: (r.backdate_weeks as number | null) ?? null, allowFuture: Boolean(r.allow_future), dailyReminderAt: (r.daily_reminder_at as string | null) ?? null } : DEFAULTS;
 }
 
 export const allocationsInstalled = async (tx: Tx) => Boolean((await tx.execute(sql`select to_regclass('allocations.allocation') is not null as on`))[0]?.on);
