@@ -4,7 +4,7 @@ import type { Tx } from "@amax/db";
 import { ScopeError, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type ChangeDecided } from "../contracts";
-import { chainFor } from "./chain";
+import { chainFor, entityOf } from "./chain";
 import { writeCorrection, writeDelete } from "./correct";
 import { decide } from "./decide";
 import { liveEntry, mayMove } from "./entry";
@@ -36,7 +36,7 @@ async function apply(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRo
         // Fails closed: a context with no viewer (a job) never moves hours to another project (review round 2).
         const v = viewerOf(ctx);
         const move = { userId: entry.user_id, before: { projectId: entry.project_id }, proposed: { projectId } };
-        if (v ? !mayMove(v, move) : projectId !== entry.project_id) throw new ScopeError("time:log");
+        if (v ? !mayMove(v, move, await entityOf(tx, entry.user_id)) : projectId !== entry.project_id) throw new ScopeError("time:log");
         return { ...who, projectName: names.get(projectId) ?? r.before.projectName };
       });
   return { status: "applied", events: done.events, after: done.after };
@@ -44,7 +44,7 @@ async function apply(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRo
 
 async function reopen(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRow): Promise<Outcome> {
   if (week.status === "submitted") return { status: "reopened", events: (await decide(tx, ctx, week, "rejected", summary(r))).events };
-  const chain = chainFor(viewerOf(ctx), week.user_id, await weekProjectIds(tx, week.id)) ?? "admin";
+  const chain = chainFor(viewerOf(ctx), week.user_id, await weekProjectIds(tx, week.id), await entityOf(tx, week.user_id)) ?? "admin";
   return { status: "reopened", events: (await writeReopen(tx, ctx, week, summary(r), chain)).events };
 }
 

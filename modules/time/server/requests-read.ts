@@ -3,7 +3,7 @@ import type { Tx } from "@amax/db";
 import { can, canEver, type Viewer } from "@amax/auth";
 import { ValidationError } from "@amax/core/server";
 import { dayLabel, parseWeekKey, weekKey } from "../week";
-import { chainFor } from "./chain";
+import { chainFor, entityOf } from "./chain";
 import { read } from "./read";
 import { weekProjectIds } from "./weeks";
 
@@ -53,14 +53,14 @@ export async function requestRows(tx: Tx, where: SQL, lock = false, limit?: numb
 }
 
 /** Whether the viewer reviews this request: anyone in its week's approval chain, never its owner (070 AC-32). */
-export const reviews = async (tx: Tx, v: Viewer, r: Pick<ChangeRequest, "userId" | "weekId">) => chainFor(v, r.userId, await weekProjectIds(tx, r.weekId)) !== null;
+export const reviews = async (tx: Tx, v: Viewer, r: Pick<ChangeRequest, "userId" | "weekId">) => chainFor(v, r.userId, await weekProjectIds(tx, r.weekId), await entityOf(tx, r.userId)) !== null;
 
 export type RequestFilter = { id?: string; status?: RequestStatus | RequestStatus[]; week?: string; mine?: boolean; before?: string };
 
 /**
- * Who reviews a request, in SQL (070 review rounds 2 and 3): own requests; anyone's for a tenant-wide approver; a
- * direct report's; or a week with hours on a project the viewer approves. The same rules as chainFor, with the
- * projects decided by can() up front, so every fetched row is one the viewer may see.
+ * Who could review a request, in SQL (070 review rounds 2 and 3): own requests; anyone's for an approver; a direct
+ * report's; or a week with hours on a project the viewer approves. chainFor's rules without 071's legal-entity
+ * narrowing, so a superset: reviews() (chainFor with the owner's entity) still decides every row.
  */
 function scopeSql(v: Viewer): SQL {
   if (can(v, "time:approve")) return sql`true`;

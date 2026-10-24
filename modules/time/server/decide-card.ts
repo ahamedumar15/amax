@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { Viewer } from "@amax/auth";
 import type { CardLine, ToolCard } from "@amax/core";
 import { refuse } from "./card";
+import { entityOf } from "./chain";
 import { mayMove } from "./entry";
 import { read } from "./read";
 import { asLines, findRequest } from "./request-card";
@@ -19,7 +20,7 @@ async function checked(v: Viewer, a: Decide): Promise<ChangeRequest> {
   if (!locked(r.weekStatus)) refuse(`${r.week} is ${r.weekStatus} now, so ${first(r)} can fix it directly`);
   const [e] = await read(v, (tx) => tx.execute(sql`select revision from time.entry where id = ${r.entryId} and deleted_at is null`));
   if (!e || Number(e.revision) !== r.revision) refuse(`the entry changed since the request; ask ${first(r)} to request it again`);
-  if (!mayMove(v, r)) refuse(`you don't approve ${r.proposed.projectName ?? "the project"} it moves to, so you can't apply it; reopen the week or decline it`);
+  if (!mayMove(v, r, await read(v, (tx) => entityOf(tx, r.userId)))) refuse(`you don't approve ${r.proposed.projectName ?? "the project"} it moves to, so you can't apply it; reopen the week or decline it`);
   return r;
 }
 

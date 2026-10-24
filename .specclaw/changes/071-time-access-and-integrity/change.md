@@ -213,29 +213,36 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
      mayFix, visible) with the owner's legal entity, so 009's and 070's callers inherit it. Every new rule is a
      setting that defaults to today's behaviour. -->
 
-- [ ] `T1` — Screens: the payroll run's Sources line shows "Approved timesheets, N weeks, M people" or the "X of Y people unreadable" warning chip; the `log_time` card's "Already logged" warning line (AC-2 UI, AC-12 UI)
+- [x] `T1` — Screens: the payroll run's Sources line shows "Approved timesheets, N weeks, M people" or the "X of Y people unreadable" warning chip; the `log_time` card's "Already logged" warning line (AC-2 UI, AC-12 UI)
   Files: modules/payroll/ui/PayrollPage.tsx, modules/time/server/entry-card.ts, modules/time/tests/cards.test.ts
-- [ ] `T2` — Entity scope: the owner's `legal_entity_id` passed to `chainFor`, `seesWeek`, `mayFix` and the contract reads' `visible()`; reopen, the locked-change guard, change requests (read, decide, reviewers), `remind_weeks`/`approve_weeks`, card and suggestion checks, `get_timesheet` entry ids; an owner with no entity fails closed for a scoped viewer (AC-4, AC-5)
+- [x] `T2` — Entity scope: the owner's `legal_entity_id` passed to `chainFor`, `seesWeek`, `mayFix` and the contract reads' `visible()`; reopen, the locked-change guard, change requests (read, decide, reviewers), `remind_weeks`/`approve_weeks`, card and suggestion checks, `get_timesheet` entry ids; an owner with no entity fails closed for a scoped viewer (AC-4, AC-5)
   Files: modules/time/server/chain.ts, modules/time/server/entry.ts, modules/time/server/weeks.ts, modules/time/server/team.ts, modules/time/server/reopen.ts, modules/time/server/guards.ts, modules/time/server/decide.ts, modules/time/server/decide-request.ts, modules/time/server/requests-read.ts, modules/time/server/request.ts, modules/time/server/bulk.ts, modules/time/server/sheet.ts, modules/time/server/card.ts, modules/time/chat-suggestions.ts, modules/time/contracts.ts, modules/time/tests/entity-scope.test.ts
   Depends: T1
-- [ ] `T3` — `time:totals` and `approvedWeekHours` (approved weeks, live entries, entity scope, `unreadable`); Payroll overtime uses it, flags `overtime-unknown` slips and says how many people were unreadable (AC-1–AC-3)
+- [x] `T3` — `time:totals` and `approvedWeekHours` (approved weeks, live entries, entity scope, `unreadable`); Payroll overtime uses it, flags `overtime-unknown` slips and says how many people were unreadable (AC-1–AC-3)
   Files: modules/time/module.ts, modules/time/contracts.ts, modules/payroll/server/draft.ts, modules/payroll/tests/overtime-time.test.ts, modules/time/tests/totals.test.ts
   Depends: T2
-- [ ] `T4` — Migration `0005_entry_source_ref.sql` (`source_ref` with its partial unique index, `time.setting`); commit dedup on accept and in the handler; Delivery's push parser skips `distinct: false` commits (AC-6, AC-7)
+- [x] `T4` — Migration `0005_entry_source_ref.sql` (`source_ref` with its partial unique index, `time.setting`); commit dedup on accept and in the handler; Delivery's push parser skips `distinct: false` commits (AC-6, AC-7)
   Files: modules/time/db/migrations/0005_entry_source_ref.sql, modules/time/server/log.ts, modules/time/suggestions.ts, modules/delivery/server/push.ts, modules/time/tests/commit-dedup.test.ts, modules/delivery/tests/ingest-distinct.test.ts
-- [ ] `T5` — `log_time` `clientRef` (replay, conflict, concurrency) and the possible-duplicate result field (AC-8, AC-12)
+- [x] `T5` — `log_time` `clientRef` (replay, conflict, concurrency) and the possible-duplicate result field (AC-8, AC-12)
   Files: modules/time/mcp.ts, modules/time/server/log.ts, modules/time/tests/idempotency.test.ts
   Depends: T4
-- [ ] `T6` — Settings: `get_time_settings`/`set_time_settings` (Admin, confirm card, audited); the allocation check (Allocations by month, hr person) and the date window in log, correct, delete, request and commit accept, with matching card checks; `integratesWith: ["allocations"]` (AC-9–AC-11)
+- [x] `T6` — Settings: `get_time_settings`/`set_time_settings` (Admin, confirm card, audited); the allocation check (Allocations by month, hr person) and the date window in log, correct, delete, request and commit accept, with matching card checks; `integratesWith: ["allocations"]` (AC-9–AC-11)
   Files: modules/time/server/settings.ts, modules/time/server/rules.ts, modules/time/server/log.ts, modules/time/server/correct.ts, modules/time/server/request.ts, modules/time/server/card.ts, modules/time/suggestions.ts, modules/time/mcp.ts, modules/time/module.ts, modules/time/tests/settings.test.ts
   Depends: T4
-- [ ] `T7` — Reports: `seesHours` uses Time's week scope through a contract read (PMs see their project members; `time:team` stays within the viewer's entities); `get_person_utilisation`'s description says to decline and offer the asker's own figure (AC-13)
+- [x] `T7` — Reports: `seesHours` uses Time's week scope through a contract read (PMs see their project members; `time:team` stays within the viewer's entities); `get_person_utilisation`'s description says to decline and offer the asker's own figure (AC-13)
   Files: modules/time/contracts.ts, modules/reports/server/reach.ts, modules/reports/server/inputs.ts, modules/reports/mcp.ts, modules/reports/tests/utilisation-scope.test.ts
   Depends: T2
-- [ ] `T8` — Integration: the full time, payroll, reports and delivery suites; live run with the real model (unallocated project, duplicate, colleague's utilisation); README and tool descriptions; list the intended access changes under Verify (AC-14, AC-15)
+- [x] `T8` — Integration: the full time, payroll, reports and delivery suites; live run with the real model (unallocated project, duplicate, colleague's utilisation); README and tool descriptions; list the intended access changes under Verify (AC-14, AC-15)
   Files: modules/time/README.md, modules/reports/README.md, modules/payroll/README.md
   Depends: T3, T5, T6, T7
 
 ## Verify
 
 <!-- Filled by verify. -->
+
+Build notes (2026-10-24, for verify):
+- Quality: not_run (`specclaw-quality-scan`: "Argument list too long" in its jq step on this Windows host).
+- Intended changes to existing behaviour (D5): entity-scoped Admins and approvers lose other entities' weeks, requests and bulk rows (AC-4, AC-5); Delivery skips `distinct: false` commits (AC-7); Reports shows a PM their project members and keeps `time:team` within its entities (AC-13). One existing assertion changed: `contracts.test.ts` now expects `integratesWith: ["hr", "leave", "allocations"]` (graph rule R4 requires it for the allocation check).
+- Not here: the `approvers` notification recipient for change requests is still entity-blind (a notifications-module rule; 072 scopes that recipient).
+- Pre-existing failures, not from 071 (they fail on 070's code with 071's `ingest.ts` swapped out): delivery `releases.test.ts` (assignProposals call sites) and `sync-import.test.ts` (self-sync of the working tree's `.specclaw`).
+- Live run (Claude via `ANTHROPIC_API_KEY`, `pnpm dev`, local demo data with Tharushi given October allocations to Fleet Tracker and Contoso Portal, removed afterwards; rules reset to defaults): unallocated HR Insights → no card, reply named her two allocated projects; a repeat log → card line "Already logged: Fleet Tracker, Tue Oct 20, 2 h, same note"; Kasun asking for Nimal's utilisation → told he can see only his own, offered his own. Screenshots `shots/live-*.png` (second run, so the settings card reads "on → on").

@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
-import { can, viewerOf } from "@amax/auth";
+import { viewerOf } from "@amax/auth";
+import { adminOver, entityOf } from "./chain";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type ApprovalChain, type WeekReopened } from "../contracts";
 import { by, findWeek, keyOf, type WeekRow } from "./weeks";
@@ -22,7 +23,7 @@ export const reopenWeek = defineService({
   input: z.object({ weekId: z.string().uuid().optional(), person: z.string().optional(), week: z.string().optional(), reason: z.string().trim().min(3).max(1000) }),
   async run(tx, a, ctx) {
     const v = viewerOf(ctx);
-    const week = await findWeek(tx, a, "time:admin", () => !v || can(v, "time:admin"));
+    const week = await findWeek(tx, a, "time:admin", async (w) => !v || adminOver(v, await entityOf(tx, w.user_id)));
     // 070 AC-8: as with approving, never your own week.
     if (v && week.user_id === v.userId) throw new Error(`${keyOf(week)} is your own week; another Admin has to reopen it`);
     return writeReopen(tx, ctx, week, a.reason);

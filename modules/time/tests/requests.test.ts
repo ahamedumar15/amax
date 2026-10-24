@@ -100,15 +100,16 @@ describe.skipIf(!hasDb)("070 amendment 3: asking for a change to a locked week (
       await expect(page(who, { status: "declined", before })).rejects.toThrow(/before/);
   }, 30_000);
 
-  // Review round 4: the SQL scope and chainFor are two spellings of one rule; they must agree for every kind of viewer
-  // (owner, line manager, project approver, outsider, Admin), so a rule added to one alone fails here.
+  // Review round 4: the request list must be exactly what chainFor (with 071's owner entity) allows, for every kind of
+  // viewer (owner, line manager, project approver, outsider, Admin), so the SQL scope can never drop a row it should fetch.
   it.each(["ayesha", "maya", "nimal", "kasun", "dinesh", "sahan"])("the SQL scope finds exactly the requests chainFor lets %s see", async (key) => {
     const v = await as(key);
     const all = await w.db.q(sql`select c.id, c.user_id, c.week_id from time.change_request c`);
     const want: string[] = [];
     for (const r of all) {
       const projects = (await w.db.q(sql`select distinct project_id from time.entry where week_id = ${r.week_id as string} and deleted_at is null`)).map((p) => p.project_id as string);
-      if (r.user_id === v.userId || chainFor(v, r.user_id as string, projects) !== null) want.push(r.id as string);
+      const [owner] = await w.db.q(sql`select legal_entity_id from auth.user where id = ${r.user_id as string}`);
+      if (r.user_id === v.userId || chainFor(v, r.user_id as string, projects, (owner?.legal_entity_id as string | null) ?? null) !== null) want.push(r.id as string);
     }
     expect((await listRequests(v)).map((r) => r.id).sort()).toEqual(want.sort());
   }, 60_000);
