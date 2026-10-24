@@ -3,6 +3,7 @@ import { EVENTS, type HolidaySet, type TargetSet } from "./contracts";
 import { reportsFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { hoursCorrectedHandler, hoursDeletedHandler, hoursHandler } from "./server/hours";
+import { weekStatusHandlers } from "./server/status";
 import { ReportsPage } from "./ui/ReportsPage";
 
 const READ = ["reports:read"];
@@ -24,11 +25,12 @@ export default defineModule({
   // The hours read model mirrors time.entry (logged, corrected and deleted entries, 070): kept as long as timesheets are (seven years from the day).
   retention: [
     { table: "reports.logged_hours", label: "Logged hours (reports copy)", subject: ["user_id"], fields: ["user_id", "hours"], class: "personal", period: "P7Y", start: { at: ["day"] }, action: "delete" },
+    { table: "reports.week_status", label: "Timesheet week status (reports copy)", subject: ["user_id"], fields: ["user_id", "status"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "delete" },
   ],
   jobs: [],
   events: {
     emits: Object.values(EVENTS),
-    handles: [hoursHandler, hoursCorrectedHandler, hoursDeletedHandler],
+    handles: [hoursHandler, hoursCorrectedHandler, hoursDeletedHandler, ...weekStatusHandlers],
     payloads: {
       [EVENTS.targetSet]: declarePayload<TargetSet>({ target: "plain", by: "plain" }),
       [EVENTS.holidaySet]: declarePayload<HolidaySet>({ legalEntityId: "plain", on: "plain", name: "plain", by: "plain" }),

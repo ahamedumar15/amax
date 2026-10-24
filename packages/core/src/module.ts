@@ -35,7 +35,12 @@ export type EventHandlerDef = {
 
 /** Who a notification rule reaches (030 AC-1): everyone holding a role, the person a payload field names
  * (the record's owner), or the approver chain of the person a payload field names (their manager, else Admins). */
-export type NotificationRecipient = { role: string } | { owner: string } | { approvers: string };
+/**
+ * `approvers`: the subject's managers who could approve, else the Admins. 072: `projects` (a payload field holding
+ * project ids) adds everyone who holds the rule's permission on one of them; `entity` (a payload field holding the
+ * subject's legal entity) keeps every approver within it. Both optional; without them the rule is unchanged.
+ */
+export type NotificationRecipient = { role: string } | { owner: string } | { approvers: string; projects?: string; entity?: string };
 
 /**
  * A notification rule (030 AC-1), plain data in the emitting module's manifest. The notifications module

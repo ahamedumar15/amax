@@ -19,12 +19,14 @@ export type EntryLogged = { entryId: string; weekId: string; userId: string; pro
 type FixedBy = { by?: string; byOther?: boolean; reason?: string | null; projectName?: string; week?: string; dayLabel?: string; requestId?: string };
 export type EntryCorrected = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; billable: boolean; revision: number; before: { hours: number; billable: boolean; projectId: string }; lockedChange: boolean } & FixedBy;
 export type EntryDeleted = { entryId: string; weekId: string; userId: string; projectId: string; day: string; hours: number; revision: number; lockedChange: boolean } & FixedBy;
-export type WeekSubmitted = { weekId: string; userId: string; week: string; hours: number };
+/** 072 AC-3: `projectIds` and `legalEntityId` route the notice to the week's project approvers in the owner's entity. */
+export type ApproverRoute = { projectIds?: string[]; legalEntityId?: string | null };
+export type WeekSubmitted = { weekId: string; userId: string; week: string; hours: number } & ApproverRoute;
 export type WeekDecided = { weekId: string; userId: string; week: string; by: string; chain: ApprovalChain; comment: string | null };
 export type WeekReopened = { weekId: string; userId: string; week: string; by: string; reason: string };
 // 070 amendment 3: change requests on locked weeks. `answered` marks the owner's reply to a question.
 type RequestRef = { requestId: string; weekId: string; userId: string; week: string; entryId: string; projectName: string; dayLabel: string };
-export type ChangeRequested = RequestRef & { change: string; reason: string; answered: boolean; answer: string | null };
+export type ChangeRequested = RequestRef & { change: string; reason: string; answered: boolean; answer: string | null } & ApproverRoute;
 export type ChangeDecided = RequestRef & { decision: "apply" | "reopen" | "ask" | "decline" | "cancel"; by: string; note: string | null };
 export type ChangeCompleted = { requestId: string; weekId: string; userId: string; week: string };
 export type WeekReminded = { weekId: string; userId: string; week: string; by: string };

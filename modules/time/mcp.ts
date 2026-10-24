@@ -4,6 +4,7 @@ import type { Viewer } from "@amax/auth";
 import { isoWeek, read, tool } from "./mcp-kit";
 import { bulkTools } from "./mcp-bulk";
 import { settingsTools } from "./mcp-settings";
+import { utilisationTools } from "./mcp-utilisation";
 import { requestTools } from "./mcp-requests";
 import { ctxFor } from "./server/context";
 import { cardFields, checkCard, type CardInput } from "./server/card";
@@ -59,4 +60,5 @@ export const mcpTools: McpToolDef[] = [
   ...requestTools,
   ...bulkTools,
   ...settingsTools,
+  ...utilisationTools,
 ];

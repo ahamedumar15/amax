@@ -31,6 +31,9 @@ export const chatSuggestions: ChatSuggestion[] = [
     when: when(async (v, p) => (await team(v, p)).some((r) => open(r.status))) },
   { routes: TEAM, label: "Fix someone's hours", prompt: "Fix someone's hours this week: ", tool: "correct_time_entry",
     when: when(async (v, p) => (await team(v, p)).some((r) => open(r.status))) },
+  // 072 AC-9: weekly utilisation for approvers, lowest first.
+  { routes: TEAM, label: "Who is below 80% this week?", prompt: "Who is below 80% utilisation this week?", tool: "get_week_utilisation",
+    when: when(async (v, p) => (await team(v, p)).length > 0) },
   { routes: TEAM, label: "Who hasn't submitted?", prompt: "Who hasn't submitted their timesheet this week?", tool: "get_team_week" },
 ];
 
