@@ -16,7 +16,7 @@ export function WeekChart({ perDay, days, people, week }: { perDay: DayHours[]; 
         <h2>Hours per day</h2><PinButton inline pin={{ label: `Hours per day, ${week}`, tool: "get_team_week", args: { week } }} />
         <div className="legend"><span><i style={{ background: "var(--violet)" }} />From commits and agents</span><span><i style={{ background: "var(--mint)" }} />Added by people</span></div>
       </div>
-      <div className="week" role="img" aria-label={`Team hours per day: ${label}`}>
+      <div className="week" role="img" aria-label={`Team hours per day: ${label}`} style={{ "--days": days.length } as React.CSSProperties}>
         <div className="yax">{[4, 3, 2, 1].map((q) => <span key={q}>{(top * q) / 4} h</span>)}<span>0</span></div>
         {perDay.map((d, i) => (
           <div className="day" key={days[i]}>

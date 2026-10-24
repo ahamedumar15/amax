@@ -212,7 +212,34 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+Verified 2026-10-24 at `9b6411f` plus the chart fix below (branch `specclaw/073-time-workflow-enhancements`, stacked on 072's `75d420b`), Windows 11, `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`. Every AC passes. The specclaw gates don't run clean on this host (see Gates); the product owner chose, on 2026-10-24, to record PASS with them noted, as for 070 to 072.
+
+- AC-1: pass — `modules/time/tests/weekend.test.ts` AC1: a Saturday without `weekend` is refused "is a weekend; to log weekend work, confirm it (weekend: true)", with it logs; the week shows 7 days, totals 12 h in `get_my_week` and `weekTotals`, submits 12 h; weekend days never in `missingDays`. `screens-073.test.ts` AC1: 5 days until a weekend entry, then 7. Live: card "Log 3 h to Fleet Tracker, Sat Oct 24 (weekend)"; My timesheet headers "Sat weekend", "Sun weekend" (`shots/app.png`, `app-dark.png`), axe clean.
+- AC-2: pass — weekend.test AC2: a Sunday commit's suggestion "Add 2 h on CON for 2026-10-25 (weekend)" with "weekend work" in the detail; accepting it logs 2 h on that Sunday.
+- AC-3: pass — `reminders.test.ts` AC3: Maya's card lists Nimal, Tharushi and Dinesh, leaves out Kasun (logged) and Ravi (never logs time), skips Ayesha "on approved leave", carries the default message; confirming for Dinesh and Kasun gives sent / skipped "already logged"; the event has "Fri Oct 16", 2026-W42 and the message; the rule `time.day-reminded` links to `/time/my/{week}?day={day}`. My timesheet marks that column "Missing" (`shots/app.png`). Live: "Remind 5 people to log Fri Oct 23" (`shots/live-remind-missing.png`).
+- AC-4: pass — reminders.test AC4: the reminder recorded (kind, day, message, sender "Maya Fernando"); the next card marks Dinesh "reminded {n} min ago by Maya Fernando"; `remind_week` with a message is recorded and its card has the Note line. `screens-073.test.ts` AC4: a Team time row carries the latest reminder. Live: rows "Reminded 11 min ago by Maya Fernando" (`shots/app-team.png`).
+- AC-5: pass — `schedules.test.ts` AC5: off by default; at 16:00 Colombo time it waits before and sends after, once (a later run sends 0), never on a Saturday; a PM can't switch a project they don't manage; with Dinesh's projects switched off he isn't reminded; switched back off, nothing. Live: card "Daily reminder · off → 16:00 on working days, for people with no hours that day", confirmed (`shots/live-daily-setting.png`), reset afterwards.
+- AC-6: pass — schedules.test AC6: Monday 2026-10-26 reminds last week's (2026-W43) drafts in Lumen Labs Lanka and in the Australian entity separately (Tharushi, Liam), once (a second run 0); both schedules are entity-zoned (`*/15 * * * 1-5` and `0 9 * * 1`). An entity with no zone isn't fired (workflows' rule, unchanged).
+- AC-7: pass — reminders.test AC7: Saturday and Sunday refused by the card check and the service, a future day refused; schedules weekdays only (AC-5, AC-6); approved leave skipped (AC-3).
+- AC-8: pass — `screens-073.test.ts` AC8: ThisWeek capacity 200 h for week 42 (five people 100% allocated at 40 h, the mock's "200 h allocated"), 184 h with Dinesh on 24 h, null ("allocation unknown") once someone has no HR record; a project row's pin resolves through `get_team_week` with `project`. Time e2e 009 AC3 (Team week vs mock ≤ 2 %) passes.
+- AC-9: pass — `approval-checks.test.ts` AC9: Kasun's card "Submit your timesheet for 2026-W43 (32 h)" with "Missing · Fri Oct 23. You can still submit.", and the result lists `missingDays`. Live: the same with five missing days, confirmed (`shots/live-submit-missing.png`).
+- AC-10: pass — approval-checks AC10: `get_team_week` anomalies "a day over 14 h (Mon Oct 19)", "over 60 h (65 h)", "missing Fri Oct 23", none for a clean week; `approve_weeks` approves 1 and skips 3 "needs individual review: …"; approve-all over only flagged weeks makes no card; approving one at a time still works. Live: no bulk card; Kasun's single approval card with "Check · missing …" (`shots/live-approve-all.png`).
+- AC-11: pass — the tests above (DB-backed, none skipped) and axe on the weekend columns in light and dark (My timesheet and Team time, no violations).
+- AC-12: pass — the live run (build notes); README updated; `check-graph --root` only the known R7 fixture; time e2e 4/4. Existing tests changed only as listed in the build notes (D6).
+
+Found in verify and fixed: on a week with weekend hours, the "Hours per day" chart wrapped Sat and Sun onto a second row (the grid had five columns). It now has one column per shown day (`--days`); checked on the running app: one row of 7 labels, axe clean, light and dark (`shots/app-team.png`, `app-team-dark.png`).
+
+Commands:
+- `vitest run --config ../../vitest.config.ts --dir .`: `modules/time` 126/126 (32 files, in parallel), `modules/finance` 9/9, `modules/notifications` 9/9, `modules/reports` 9/9, `modules/payroll` 10/10, `modules/allocations` 38/38, `packages/chat` 30/30, `packages/mcp` 20/20; `apps/web` tool-schemas, page-context, pin-refs, routes 9/9. Not from 073: delivery `releases` and `sync-import`, workflows `kill.test` (Windows).
+- `pnpm lint` exit 0; `pnpm turbo run build --filter=./apps/web` exit 0 (after the chart fix); time e2e (scratch config for Windows paths) 4/4 twice, after one run where 070's session test failed once (not a 073 file).
+
+Gates:
+- `specclaw-preset-check .` exit 1: repo-wide hits. 073's new files are all under 80 lines; already-long files grew: `time/contracts.ts` 118 → 121, `time/module.ts` 100 → 108 (rules, workflows, schedules).
+- `specclaw-quality-scan`: not_run (its jq step on this host). Review: specclaw-review not installed.
+
+Screenshots: `shots/app.png`, `app-dark.png` (My timesheet W43: Fri Missing, Sat and Sun weekend), `app-team.png`, `app-team-dark.png` (Team time W43: 7-day chart, weekend columns, last-reminder lines, ThisWeek "of 80.0 h allocated"), `shots/mock.png` (`#073-time-workflow-enhancements`), `live-remind-missing.png`, `live-daily-setting.png`, `live-weekend-card.png`, `live-submit-missing.png`, `live-approve-all.png`. Compared against the mock: the weekend columns, the marked day, the reminder card with its 4-hour lines, the settings card, the submit warning and the approve-all skip match.
 
 Build notes (2026-10-24, for verify):
 - Found in the live run and fixed: (1) D2's Admin branch reminded everyone in the entity, including people who never log time (IT, sales); it now also needs time or an allocation in the last 4 weeks, as the daily schedule already did. (2) Approve-all over only flagged weeks made a card "Approve 0 timesheets"; it now makes no card and says each week needs individual review. Both have test lines.
