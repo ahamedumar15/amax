@@ -4,6 +4,7 @@ import { viewerOf } from "@amax/auth";
 import { defineService, logError } from "@amax/core/server";
 import { userFacing } from "@amax/mcp";
 import { eligible, STATUS, words, type BulkResult, type Kind } from "./bulk-card";
+import { weekAnomalies } from "./anomalies";
 import { decide, mayDecide, writeRemind } from "./decide";
 import { keyOf, type WeekRow } from "./weeks";
 
@@ -29,10 +30,13 @@ const many = (kind: Kind) => defineService({
       if (!w || !(await may(w))) { results.push({ person: "A timesheet", week: "", status: "skipped", note: "not one you can act on" }); continue; }
       const who = { person: w.person_name as string, week: keyOf(w) };
       if (!eligible[kind](w)) { results.push({ ...who, status: "skipped", note: `already ${STATUS[w.status] ?? w.status}` }); continue; }
+      // 073 AC-10: a week that needs a closer look is never approved in bulk.
+      const checks = kind === "approve" ? await weekAnomalies(tx, w) : [];
+      if (checks.length) { results.push({ ...who, status: "skipped", note: `needs individual review: ${checks.join("; ")}` }); continue; }
       try {
         const out = await tx.transaction(async (sp) => {
           const [locked] = (await sp.execute(sql`select * from time.week where id = ${id} for update`)) as unknown as WeekRow[];
-          return kind === "remind" ? writeRemind(ctx, locked) : decide(sp, ctx, locked, "approved", null);
+          return kind === "remind" ? writeRemind(sp, ctx, locked) : decide(sp, ctx, locked, "approved", null);
         });
         events.push(...out.events);
         results.push({ ...who, status: "done", note: null });

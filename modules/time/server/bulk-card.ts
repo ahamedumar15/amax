@@ -4,6 +4,8 @@ import type { CardLine, ToolCard } from "@amax/core";
 import { refuse } from "./card";
 import { mayDecide } from "./decide";
 import { read } from "./read";
+import { weekAnomalies } from "./anomalies";
+import { agoText, recentReminders } from "./reminders";
 import { keyOf, weekHours, type WeekRow } from "./weeks";
 
 // 070 amendment 4 (AC-46, AC-47): one card for several people's weeks. The card lists exactly the weeks in the
@@ -31,17 +33,29 @@ async function weeks(v: Viewer, ids: string[]) {
 }
 
 export const proposeBulk = (kind: Kind) => async (v: Viewer, a: { weekIds: string[] }) => {
-  if (!(await weeks(v, a.weekIds)).some((w) => eligible[kind](w.week))) refuse(`none of those timesheets can be ${kind === "remind" ? "reminded (they're submitted or approved)" : "approved (none is submitted)"}; read get_team_week for the week ids`);
+  const all = await weeks(v, a.weekIds);
+  // 073 AC-10: when every submitted week needs a closer look, there's nothing to approve in bulk.
+  if (kind === "approve" && all.some((w) => eligible.approve(w.week))) {
+    const flagged = await read(v, async (tx) => Promise.all(all.filter((w) => eligible.approve(w.week)).map(async (w) => ({ who: w.week.person_name as string, checks: await weekAnomalies(tx, w.week) }))));
+    if (flagged.every((f) => f.checks.length)) refuse(`every submitted timesheet there needs individual review (${flagged.map((f) => `${f.who}: ${f.checks.join("; ")}`).join(" · ")}); open each with approve_week`);
+  }
+  if (!all.some((w) => eligible[kind](w.week))) refuse(`none of those timesheets can be ${kind === "remind" ? "reminded (they're submitted or approved)" : "approved (none is submitted)"}; read get_team_week for the week ids`);
 };
 
 export const bulkCard = (kind: Kind) => async (v: Viewer, a: { weekIds: string[] }): Promise<ToolCard> => {
   const all = await weeks(v, a.weekIds);
-  const go = all.filter((w) => eligible[kind](w.week));
+  // 073 AC-10: anomalous weeks are listed as skipped, never approved in bulk.
+  const checks = new Map(kind === "approve" ? await read(v, async (tx) => Promise.all(all.map(async (w) => [w.week.id, await weekAnomalies(tx, w.week)] as const))) : []);
+  const flagged = (w: (typeof all)[number]) => (checks.get(w.week.id)?.length ?? 0) > 0;
+  const go = all.filter((w) => eligible[kind](w.week) && !flagged(w));
   const keys = [...new Set(go.map((w) => keyOf(w.week)))].join(", ");
   const hours = Math.round(go.reduce((n, w) => n + w.hours, 0) * 10) / 10;
   const title = kind === "remind" ? `Remind ${go.length} ${go.length === 1 ? "person" : "people"} to submit ${keys}` : `Approve ${go.length} ${go.length === 1 ? "timesheet" : "timesheets"} for ${keys} (${hours} h)`;
-  const line = (w: (typeof all)[number]): CardLine => ({ label: w.week.person_name as string, value: `${STATUS[w.week.status] ?? w.week.status}, ${w.hours} h` });
-  const skip = all.filter((w) => !eligible[kind](w.week)).map((w) => ({ label: w.week.person_name as string, value: `skipped: ${STATUS[w.week.status] ?? w.week.status}` }));
+  const recent = kind === "remind" ? await read(v, (tx) => recentReminders(tx, go.map((w) => w.week.user_id))) : new Map();
+  const warn = (w: (typeof all)[number]) => { const r = recent.get(w.week.user_id); return r ? ` · reminded ${agoText(r.at)} by ${r.by}` : ""; };
+  const line = (w: (typeof all)[number]): CardLine => ({ label: w.week.person_name as string, value: `${STATUS[w.week.status] ?? w.week.status}, ${w.hours} h${warn(w)}` });
+  const skip = all.filter((w) => !eligible[kind](w.week) || flagged(w)).map((w) => ({ label: w.week.person_name as string,
+    value: eligible[kind](w.week) ? `skipped, needs individual review: ${checks.get(w.week.id)!.join("; ")}` : `skipped: ${STATUS[w.week.status] ?? w.week.status}` }));
   const outside = a.weekIds.length - all.length;
   return { title, lines: [...go.map(line), ...skip, ...(outside ? [{ label: "Skipped", value: `${outside} you can't act on` }] : [])] };
 };

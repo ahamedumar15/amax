@@ -49,3 +49,8 @@
 /* 070 AC-50: on phones the week's total row stacks like the project rows above it. */
 @media (max-width:600px){.time .tbl tfoot,.time .tbl tfoot tr{display:block;width:100%}.time .tbl tfoot tr{padding:14px 22px;background:var(--sunken);border-radius:0 0 24px 24px}.time .tbl tfoot th{display:block;padding:5px 0;text-align:left;font-size:15px}.time .tbl tfoot th,.time .tbl tfoot td{border:0}.time .tbl tfoot td{padding:5px 0}.time .tbl tfoot td:empty{display:none}}
 @media (max-width:860px){.time .row.head>.actions{flex-shrink:1;width:100%}.time .row.head>.actions .seg{flex:1 1 100%}.time .cols{grid-template-columns:minmax(0,1fr)}.time .big{font-size:21px}}
+/* 073: weekend columns and the day a reminder points to. */
+.time th small.weekend,.time th small.missing-tag{display:block;font-size:11px;font-weight:500;color:var(--ink-3)}
+.time th.missing{color:var(--chip-warn)}
+.time th.missing small.missing-tag{color:var(--chip-warn);font-weight:600}
+.time .reminded{display:block;font-size:12px;color:var(--ink-3)}

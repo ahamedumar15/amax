@@ -43,8 +43,12 @@ describe.skipIf(!hasDb)("070 amendment 4: team reminders and approvals in one ca
     const [nimal, kasun, ayesha] = await ids("nimal", "kasun", "ayesha");
     await db.t.owner.unsafe(`create function time.fail_ayesha() returns trigger language plpgsql as $$ begin if new.week_id = '${ayesha}' then raise exception 'approval store down'; end if; return new; end $$`);
     await db.t.owner.unsafe("create trigger fail_ayesha before insert on time.approval for each row execute function time.fail_ayesha()");
+    // 073 AC-10: weeks with missing days are skipped by approve-all, so their gaps are filled to keep this about one failure.
+    await db.t.owner`insert into time.entry (tenant_id, week_id, user_id, project_id, day, hours, billable, source, logged_by)
+      select w.tenant_id, w.id, w.user_id, (select id from delivery.project where key = 'CON'), d::date, 8, true, 'person', 'test'
+      from time.week w, (values (${nimal}::uuid, '2026-10-16'), (${ayesha}::uuid, '2026-10-14')) gap(week_id, d) where w.id = gap.week_id`;
     const turn = await propose("approve_weeks", [nimal, kasun, ayesha]);
-    expect(turn.pending[0].title).toBe("Approve 3 timesheets for 2026-W42 (87.5 h)");
+    expect(turn.pending[0].title).toBe("Approve 3 timesheets for 2026-W42 (103.5 h)");
     const { result } = await confirmAction(db.app, registry, maya, turn.conversationId, turn.pending[0].id);
     expect(result).toMatchObject({ summary: "Approved 2 · skipped 0 · failed 1", results: [{ person: "Nimal Silva", status: "approved" }, { person: "Kasun Dias", status: "approved" }, { person: "Ayesha Rahman", status: "failed", note: expect.stringMatching(/^couldn't be done \(reference .+\)$/) }] });
     // Review round 1: the database's own words never reach the card, the model or the audit.
