@@ -22,13 +22,6 @@ export const COLORS = ["var(--violet)", "var(--amber)", "var(--pink)", "var(--mi
 export const STATUS: Record<WeekStatus, [string, string]> = { draft: ["draft", "Draft"], submitted: ["good", "Submitted"], approved: ["good", "Approved"], rejected: ["bad", "Rejected"] };
 export const initials = (name: string) => name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 export const avatar = (name: string) => `a${([...name].reduce((n, c) => n + c.charCodeAt(0), 0) % 4) + 1}`;
-const date = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-
-export function weekSpan(week: IsoWeek, days: string[]) {
-  // No "today" marker: these render on the server, which doesn't know the viewer's calendar day.
-  const last = days[days.length - 1];
-  return `Week ${week.week}, Mon ${date(days[0])} to ${dayName(last)} ${date(last)}`;
-}
 
 /** The week in a screen URL: absent is the latest week, anything wantedWeek refuses is a 404. */
 export function weekParam(key: string | undefined): IsoWeek | undefined {
@@ -47,6 +40,18 @@ export const SignInFirst = () => (
   <Card><EmptyState icon="clock" title="Sign in to see timesheets" hint="Hours, approvals and your own timesheet come from the database once you're signed in." /></Card>
 );
 
+/** Time's three views. 077: Requests sits beside Team and My timesheet; from it, the other two open the current week. */
+export function Views({ current, week }: { current: "team" | "my" | "requests"; week?: IsoWeek }) {
+  const at = (v: typeof current) => (current === v ? "page" : undefined);
+  return (
+    <div className="seg" role="group" aria-label="View">
+      <a href={week ? weekHref("", week) : "/time"} aria-current={at("team")}>Team</a>
+      <a href={week ? weekHref("/my", week) : "/time/my"} aria-current={at("my")}>My timesheet</a>
+      <a href="/time/requests" aria-current={at("requests")}>Requests</a>
+    </div>
+  );
+}
+
 /** 075 amendment 1: which week this is, beside the title: "Week 42 · Last week". */
 function WeekPill({ week }: { week: IsoWeek }) {
   const p = weekPill(week, new Date());
@@ -58,10 +63,7 @@ export function Head({ title, lede, week, days, base }: { title: string; lede: s
     <div className="row head">
       <div><div className="title"><h1>{title}</h1><WeekPill week={week} /></div>{lede && <p className="lede">{lede}</p>}</div>
       <div className="actions">
-        <div className="seg" role="group" aria-label="View">
-          <a href={weekHref("", week)} aria-current={base === "" ? "page" : undefined}>Team</a>
-          <a href={weekHref("/my", week)} aria-current={base === "/my" ? "page" : undefined}>My timesheet</a>
-        </div>
+        <Views current={base === "" ? "team" : "my"} week={week} />
         <a className="btn sm" aria-label="Previous week" href={weekHref(base, shiftWeek(week, -1))}>‹</a>
         <WeekPicker base={base} monday={workDays(week)[0]} last={days[days.length - 1]} />
         <a className="btn sm" aria-label="Next week" href={weekHref(base, shiftWeek(week, 1))}>›</a>

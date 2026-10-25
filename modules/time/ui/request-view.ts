@@ -34,6 +34,8 @@ export function stateOf(r: Pick<ChangeRequest, "status" | "answer">): [string, s
   if (r.status === "pending") return ["", r.answer ? "Answered, waiting for review" : "Waiting for review"];
   if (r.status === "declined") return ["bad", "Declined"];
   if (r.status === "reopened") return ["warn", "Week reopened for you"];
+  // 077: a request the person withdrew is kept on the Requests page and in the week's history.
+  if (r.status === "cancelled") return ["", "Withdrawn"];
   return ["good", "Change applied"];
 }
 
@@ -41,6 +43,11 @@ const firstOf = (name: string) => name.split(" ")[0];
 /** The reviewer's chip: an answered request is ready for a decision; a question waits on the person. */
 export function reviewStateOf(r: Pick<ChangeRequest, "status" | "answer" | "personName">): [string, string] {
   if (r.status === "needs_info") return ["", `Waiting for ${firstOf(r.personName)}'s answer`];
+  // 077: decided requests keep their outcome on the Requests page and in a week's history.
+  if (r.status === "applied" || r.status === "completed") return ["good", "Applied"];
+  if (r.status === "reopened") return ["warn", "Week reopened"];
+  if (r.status === "declined") return ["bad", "Declined"];
+  if (r.status === "cancelled") return ["", "Withdrawn"];
   return r.answer ? ["good", `${firstOf(r.personName)} answered`] : ["warn", "New request"];
 }
 /** Answered first (they wait on the reviewer), then new, then those waiting on the person; oldest first within each. */

@@ -121,3 +121,30 @@ export const openOfMine = (v: Viewer, week: string) => listRequests(v, { mine: t
 /** 073: what My timesheet shows the owner: open requests, and ones decided in the last 7 days (the outcome, then they go). */
 export const shownToOwner = async (v: Viewer, week: string) => (await listRequests(v, { mine: true, week }))
   .filter((r) => OPEN.includes(r.status) || (r.status !== "cancelled" && r.decidedAt && Date.now() - Date.parse(r.decidedAt) < 7 * 86_400_000));
+
+// 077: the Requests page and each week's history. Both read through listRequests, so the scope is get_change_requests':
+// the viewer's own requests and those in their approval chain, nothing else.
+const isOpen = (r: ChangeRequest) => OPEN.includes(r.status);
+export const STATUS_FILTER: Record<string, RequestStatus[]> = {
+  open: OPEN, applied: ["applied", "completed"], reopened: ["reopened"], declined: ["declined"], withdrawn: ["cancelled"],
+};
+export type RequestsQuery = { lens?: string; status?: string; week?: string };
+
+export async function requestsPage(v: Viewer, q: RequestsQuery) {
+  const [mine, review] = await Promise.all([listRequests(v, { mine: true }), listRequests(v, { mine: false })]);
+  // Where there's something to do, else where there's anything at all: open reviews, then your own, then any reviews.
+  const lens: "mine" | "review" = q.lens === "mine" || q.lens === "review" ? q.lens : review.some(isOpen) || (!mine.length && review.length) ? "review" : "mine";
+  const all = lens === "mine" ? mine : review;
+  const want = q.status ? STATUS_FILTER[q.status] : undefined;
+  const rows = all.filter((r) => (!want || want.includes(r.status)) && (!q.week || r.week === q.week));
+  return {
+    lens, reviews: review.length > 0, total: all.length,
+    counts: { mine: mine.filter(isOpen).length, review: review.filter(isOpen).length },
+    weeks: [...new Set(all.map((r) => r.week))].sort().reverse(),
+    open: rows.filter(isOpen), decided: rows.filter((r) => !isOpen(r)),
+  };
+}
+
+/** A week's decided requests, newest first: the owner's own, or (with `person`) those of that person the viewer reviews. */
+export const weekHistory = async (v: Viewer, week: string, person?: string) =>
+  (await listRequests(v, { mine: !person, week })).filter((r) => !isOpen(r) && (!person || r.userId === person));

@@ -2,8 +2,10 @@ import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { notFound, redirect } from "next/navigation";
 import { teamGrid } from "../server/grid";
+import { weekHistory } from "../server/requests-read";
+import { RequestHistory } from "./RequestHistory";
 import { AskButton } from "./AskButton";
-import { DayHead, dayName, Head, hrs, SignInFirst, STATUS, viewerOrNull, weekParam, weekSpan } from "./parts";
+import { DayHead, dayName, Head, hrs, SignInFirst, STATUS, viewerOrNull, weekParam } from "./parts";
 
 /** 073 AC-18: one member's week, read-only, opened from their name on Team time. Actions are chat's (D10). */
 export async function SheetPage({ viewer: raw, params }: ScreenProps) {
@@ -16,11 +18,13 @@ export async function SheetPage({ viewer: raw, params }: ScreenProps) {
     notFound();
   }
   const names = [...new Set(row.cells.flatMap((c) => c.projects.map((p) => p.name)))].sort();
+  // 077: this person's decided change requests on the week, as their reviewer sees them.
+  const history = await weekHistory(viewer, g.key, row.userId);
   const pin = { label: `${row.personName}, ${g.key}`, tool: "get_timesheet", args: { weekId: row.weekId } };
   const [cls, label] = row.status === "not_started" ? ["bad", "Not started"] : STATUS[row.status];
   return (
     <div className="time">
-      <Head title={row.personName} lede={`${weekSpan(g.week, g.days)}. ${row.total.toFixed(1)} h logged, ${row.utilisation}% of ${row.target} h.`} week={g.week} days={g.days} base="" />
+      <Head title={row.personName} lede={`${row.total.toFixed(1)} h logged, ${row.utilisation}% of ${row.target} h.`} week={g.week} days={g.days} base="" />
       {row.rejectComment && row.status === "rejected" && <p className="chip bad" role="status">Sent back: {row.rejectComment}</p>}
       {row.anomalies.length > 0 && <p className="chip warn" role="status">Needs a closer look: {row.anomalies.join("; ")}</p>}
       <div className="card flush pinnable">
@@ -42,6 +46,8 @@ export async function SheetPage({ viewer: raw, params }: ScreenProps) {
           <tfoot><tr><th scope="row">Total</th>{row.cells.map((c) => <td className="num" data-label={dayName(c.day)} key={c.day}>{hrs(c.hours)}</td>)}<td className="num" data-label="Week"><b>{row.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
         </table></div>
       </div>
+      {/* 077: this person's decided requests on the week: background, so after the hours. */}
+      <RequestHistory rows={history} viewerId={viewer.userId} as="reviewer" />
     </div>
   );
 }

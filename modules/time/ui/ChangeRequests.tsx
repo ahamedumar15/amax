@@ -18,6 +18,7 @@ export function ChangeRequests({ rows, viewerId }: { rows: ChangeRequest[]; view
         <h2>Change requests</h2><span className="chip">{rows.length} open</span>
         {answered > 0 && <span className="chip good">{answered} answered</span>}
         {many && <ExpandAll label="change requests" />}
+        <a className="rq-allreq" href="/time/requests">See all requests</a>
       </div>
       <ul className="rq-list">{[...rows].sort(reviewOrder).map((r, i) => <ReviewRequest key={r.id} r={r} viewerId={viewerId} open={!many || i === 0} />)}</ul>
     </div>

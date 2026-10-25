@@ -3,7 +3,7 @@ import { Card, EmptyState } from "@amax/ui";
 import { openToReview } from "../server/requests-read";
 import { teamGrid } from "../server/grid";
 import { ChangeRequests } from "./ChangeRequests";
-import { Head, SignInFirst, viewerOrNull, weekParam, weekHref, weekSpan } from "./parts";
+import { Head, SignInFirst, viewerOrNull, weekParam, weekHref } from "./parts";
 import { StatusBand } from "./StatusBand";
 import { ThisWeek } from "./ThisWeek";
 import { Summary } from "./Summary";
@@ -19,8 +19,8 @@ export async function TeamPage({ viewer: raw, params, searchParams = {} }: Scree
   const base = params.week ? `/time/w/${params.week}` : "/time";
   return (
     <div className="time">
-      {/* 075: the week's progress is the status band below the title, not a sentence; the week picker shows the dates. */}
-      <Head title="Team time" lede={t.rows.length || t.notStarted ? "" : `${weekSpan(t.week, t.days)}.`} week={t.week} days={t.days} base="" />
+      {/* 075: the week's progress is the status band below the title, not a sentence; the pill and the picker name the week. */}
+      <Head title="Team time" lede="" week={t.week} days={t.days} base="" />
       <StatusBand g={t} base={base} />
       {requests.length > 0 && <ChangeRequests rows={requests} viewerId={viewer.userId} />}
       {t.rows.length === 0 && t.grid.length === 0 && !Object.values(query).some(Boolean) ? (

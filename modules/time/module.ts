@@ -8,6 +8,7 @@ import { mcpTools } from "./mcp";
 import { timeOverview } from "./server/overview";
 import { commitDraft, commitTimeHandler } from "./suggestions";
 import { reminderSchedules, reminderWorkflows } from "./server/reminder-jobs";
+import { RequestsPage } from "./ui/RequestsPage";
 import { MyPage } from "./ui/MyPage";
 import { SheetPage } from "./ui/SheetPage";
 import { TeamPage } from "./ui/TeamPage";
@@ -42,6 +43,8 @@ export default defineModule({
     { path: "w/:week/p/:weekId", title: "Timesheet", component: SheetPage },
     { path: "my", title: "My timesheet", component: MyPage },
     { path: "my/:week", title: "My timesheet", component: MyPage },
+    // 077: every change request and its outcome, for the person who asked and the person who decides.
+    { path: "requests", title: "Requests", component: RequestsPage },
   ],
   mcpTools,
   overview: timeOverview as never,

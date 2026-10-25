@@ -9,6 +9,7 @@ import { parseWeekKey, weekStart } from "./week";
 // 070 amendment 4: what chat offers on Time's pages, each only when the viewer can do it on the week shown.
 const MY = ["my", "my/:week"];
 const TEAM = ["", "w/:week"];
+const REQUESTS = ["requests"];
 type P = Record<string, string>;
 const mine = (v: Viewer, p: P) => myWeek(v, wantedWeek(p.week));
 const team = async (v: Viewer, p: P) => (await teamWeek(v, wantedWeek(p.week))).rows.filter((r) => r.canApprove);
@@ -37,6 +38,10 @@ export const chatSuggestions: ChatSuggestion[] = [
   // 072 AC-9: weekly utilisation for approvers, lowest first.
   { routes: TEAM, label: "Who is below 80% this week?", prompt: "Who is below 80% utilisation this week?", tool: "get_week_utilisation",
     when: when(async (v, p) => (await team(v, p)).length > 0) },
+  // 077: on the Requests page.
+  { routes: REQUESTS, label: "Review change requests", prompt: "Show the change requests waiting for me", tool: "decide_change_request",
+    when: when(async (v) => (await openToReview(v)).length > 0) },
+  { routes: REQUESTS, label: "What happened to my requests?", prompt: "What happened to my recent change requests?", tool: "get_change_requests" },
   { routes: TEAM, label: "Who hasn't submitted?", prompt: "Who hasn't submitted their timesheet this week?", tool: "get_team_week" },
 ];
 

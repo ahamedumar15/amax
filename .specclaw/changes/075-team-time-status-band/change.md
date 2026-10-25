@@ -114,3 +114,9 @@ Amendment 2 (2026-10-25):
     - Screenshots: pill3-team.png and pill3-my.png.
 - Checks: time 148/148; `pnpm lint` ok; build ok; time e2e 9/9.
 - Screenshots: my-light/dark/phone/approved.png and pill2-team/my/phone.png in the session scratchpad (`ui/`).
+
+Amendment 3 (2026-10-25; product owner: "the description under team time in employee page is not needed, it's already
+covered by the label and calendar picker"):
+- Team time no longer shows the "Week 43, Mon Oct 19 to Fri Oct 23." line. It was the empty-team state, for an employee with no timesheets to review.
+- A member's timesheet drops the same week-and-dates prefix and keeps "30.5 h logged, 76% of 40 h."
+- `weekSpan` and its `date` helper, now unused, are removed.

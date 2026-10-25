@@ -35,7 +35,7 @@ export function ReviewRequest({ r, viewerId, open }: { r: ChangeRequest; viewerI
             {decide("Decline", "decline")}
             {decide("Reopen week", "reopen", "btn sm link")}
           </div>
-        ) : <p className="rq-wait muted">Waiting for {who} to answer. You'll hear when they do.</p>}
+        ) : r.status === "needs_info" ? <p className="rq-wait muted">Waiting for {who} to answer. You'll hear when they do.</p> : null}
         <Steps r={r} />
       </RequestFold>
     </li>

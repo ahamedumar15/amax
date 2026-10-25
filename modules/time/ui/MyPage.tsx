@@ -2,9 +2,10 @@ import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
-import { shownToOwner } from "../server/requests-read";
+import { shownToOwner, weekHistory } from "../server/requests-read";
 import { MyRequests } from "./ChangeRequests";
 import { MyBand } from "./MyBand";
+import { RequestHistory } from "./RequestHistory";
 import { SentBack } from "./SentBack";
 import { myDayMarks } from "../server/my-days";
 import { DayHead, dayLabelFor, type DayMark, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull } from "./parts";
@@ -20,6 +21,8 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   const markOf = (d: string): DayMark => (d === marked || marks.missing.includes(d) ? "missing" : marks.leave.includes(d) ? "leave" : undefined);
   // Open requests, and ones decided this past week (a reopened week is a draft again, so any status).
   const requests = m.status ? await shownToOwner(viewer, m.key) : [];
+  // 077: every older decision on this week stays reachable, folded under the ones shown above.
+  const history = m.status ? (await weekHistory(viewer, m.key)).filter((r) => !requests.some((x) => x.id === r.id)) : [];
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const weekPin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
@@ -33,6 +36,7 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
       <MyBand m={m} />
       {m.rejectComment && m.status === "rejected" && <SentBack m={m} />}
       <MyRequests rows={requests} />
+      <RequestHistory rows={history} viewerId={viewer.userId} as="owner" />
       <div className="card flush pinnable">
         <div className="card-head">
           <h2>{m.key}{m.status && <> <span className={`chip ${STATUS[m.status][0]}`}>{STATUS[m.status][1]}</span></>}</h2>

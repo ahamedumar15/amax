@@ -74,3 +74,13 @@ test("AC2 / 054 AC5 / 073 approving through a pinned row's suggestion locks the 
   await expect(page.locator("h1")).toHaveText("My timesheet");
   expect(await axe(page)).toEqual([]);
 });
+
+test("077 the Requests tab opens every change request from Team time, open ones first", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", W42);
+  await page.getByRole("group", { name: "View" }).getByRole("link", { name: "Requests" }).click();
+  await expect(page).toHaveURL(/\/time\/requests$/);
+  await expect(page.locator("h1")).toHaveText("Requests");
+  await expect(page.getByRole("group", { name: "View" }).getByRole("link", { name: "Requests" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "Whose requests" }).getByRole("link", { name: /^Mine/ })).toBeVisible();
+  expect(await axe(page)).toEqual([]);
+});
