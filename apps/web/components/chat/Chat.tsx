@@ -7,6 +7,7 @@ import type { Conversation, ConversationSummary, Highlight, PendingAction } from
 import { cancelChat, confirmChat, pageContext, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
 import type { PageInfo } from "../../lib/page-context";
 import { pinKey, withFresh, type Pin } from "@amax/chat/pins";
+import { Markdown } from "./Markdown";
 import { followMove } from "../../lib/chat-move";
 import { listChats, openChat } from "../../app/actions/chat-history";
 import { History } from "./History";
@@ -38,27 +39,6 @@ function Marked({ text, highlights, fields }: { text: string; highlights: Highli
   }
   parts.push(text.slice(at));
   return <>{parts}</>;
-}
-
-// The model writes light markdown; render **bold**, `code`, line breaks and "- " lists as React
-// elements (never HTML), so model text can't inject markup.
-function inline(text: string, key: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <b key={`${key}-${i}`}>{part.slice(2, -2)}</b>
-      : part.startsWith("`") && part.endsWith("`") && part.length > 2 ? <code key={`${key}-${i}`}>{part.slice(1, -1)}</code> : part);
-}
-export function Markdown({ text }: { text: string }) {
-  const blocks: ReactNode[] = [];
-  let list: ReactNode[] = [];
-  const flush = () => { if (list.length) { blocks.push(<ul key={`ul${blocks.length}`} style={{ margin: "6px 0", paddingLeft: 18 }}>{list}</ul>); list = []; } };
-  text.split("\n").forEach((line, i) => {
-    const item = line.match(/^\s*[-*•]\s+(.*)$/);
-    if (item) { list.push(<li key={i}>{inline(item[1], `l${i}`)}</li>); return; }
-    flush();
-    if (line.trim()) blocks.push(<p key={i} style={{ margin: "0 0 6px" }}>{inline(line, `p${i}`)}</p>);
-  });
-  flush();
-  return <>{blocks}</>;
 }
 
 type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; start: () => void; stop: () => void };

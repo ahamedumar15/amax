@@ -89,3 +89,17 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 @media (prefers-reduced-motion:reduce){.chat{transition:none}}
 .m .b p{margin:0}
 .m .err{color:var(--chip-bad)}
+/* 073: tables in amax's replies (a week's entries, a list of people): scroll sideways in the bubble if wide. */
+.m .b .c-table{overflow-x:auto;margin:6px 0 8px;border-radius:12px;box-shadow:0 0 0 1px var(--line)}
+.m .b .c-table:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.m .b table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.m .b th,.m .b td{padding:6px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+.m .b th{white-space:normal;vertical-align:bottom}
+/* A reply with a table uses the panel's full width, so a week's columns fit without sideways scrolling. */
+.m:has(.c-table){max-width:100%}
+.m .b th{font-weight:600;color:var(--ink-2);background:var(--sunken)}
+.m .b tr:last-child td{border-bottom:0}
+.m .b th.num,.m .b td.num{text-align:right}
+.m .b ol,.m .b ul{line-height:1.5}
+/* The tools-used tag: readable in light and dark (axe color-contrast). */
+.m .tools span{color:var(--chip-agent)}
