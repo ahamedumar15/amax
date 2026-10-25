@@ -66,3 +66,6 @@
 .time .rq.notice.sent-back{gap:14px;margin-bottom:20px}
 .time .sent-back .rq-top small{white-space:nowrap}
 .time .sent-back .rq-say.ask{background:var(--chip-bad-bg);border-left-color:var(--chip-bad)}
+/* 073: a request to add hours: "+ 3 h" in the new-hours colour, with a weekend tag. */
+.time .rq-hours.add .to{color:var(--chip-good);text-decoration:none}
+.time .rq-hours.add .chip{align-self:center;font-size:12px;font-weight:600}

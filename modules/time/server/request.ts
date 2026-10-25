@@ -18,7 +18,7 @@ import { actorId, keyOf, weekProjectIds } from "./weeks";
 // 070 amendment 3: the owner asks for a change to a locked week, answers a question about it, or withdraws it.
 export const refOf = (r: ChangeRequest) => ({ requestId: r.id, weekId: r.weekId, userId: r.userId, week: r.week, entryId: r.entryId, projectName: r.before.projectName, dayLabel: r.dayLabel });
 // 072 AC-3: the request reaches the week's project approvers in the owner's entity, as a submission does.
-const requested = async (tx: Tx, r: ChangeRequest, answer: string | null): Promise<{ name: string; payload: ChangeRequested }> =>
+export const requested = async (tx: Tx, r: ChangeRequest, answer: string | null): Promise<{ name: string; payload: ChangeRequested }> =>
   ({ name: EVENTS.changeRequested, payload: { ...refOf(r), change: changeText(r).join(" · "), reason: r.reason, answered: answer !== null, answer,
     projectIds: await weekProjectIds(tx, r.weekId), legalEntityId: await entityOf(tx, r.userId) } });
 

@@ -45,7 +45,7 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ weekId: z.string().uuid().optional(), week, userId: z.string().uuid().optional().describe("With week: a person who has no timesheet that week (Not started on Team time)"),
       project: z.string().optional().describe("Project name, for one row of the week (yours, or by weekId)") }),
     run: (v, a) => getTimesheet(v, a) }),
-  tool({ name: "log_time", description: "Log hours against a project for a day (YYYY-MM-DD in the person's own calendar; a Saturday or Sunday needs weekend: true, after the person confirms the weekend work). Time logged through MCP counts as agent time.", scope: "write", permission: "time:log",
+  tool({ name: "log_time", description: "Log hours against a project for a day (YYYY-MM-DD in the person's own calendar; a Saturday or Sunday needs weekend: true, after the person confirms the weekend work). Time logged through MCP counts as agent time. On your own SUBMITTED or APPROVED week it is refused: ask with request_time_addition instead.", scope: "write", permission: "time:log",
     input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional(),
       clientRef: z.string().min(1).max(100).optional().describe("Your own id for this entry; a retry with the same id and input logs nothing twice"),
       weekend: z.boolean().optional().describe("true to log a Saturday or Sunday, once the person confirms they worked it") }),

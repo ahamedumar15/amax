@@ -8,7 +8,7 @@ import { getProjectRef } from "@amax/delivery/contracts";
 import { EVENTS, type EntryLogged } from "../contracts";
 import { isoWeekOf } from "../week";
 import { entityOf, inEntity } from "./chain";
-import { guardDayTotal, guardLock, Hours, possibleDuplicate, workDay } from "./guards";
+import { guardDayTotal, guardLock, Hours, possibleDuplicate, requestLock, workDay } from "./guards";
 import { allocationRefusal, dateRefusal } from "./rules";
 import { actorId, by, ensureWeek, keyOf } from "./weeks";
 
@@ -44,12 +44,13 @@ export async function bySource(tx: Tx, userId: string, sourceRef: string) {
     note: (e.note as string | null) ?? null, agent: (e.agent as string | null) ?? null } : null;
 }
 
-export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext, sourceRef: string | null = null) {
+// 073: `requestId` when an approver applies a request to add hours: the lock and owner checks are the request's.
+export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext, sourceRef: string | null = null, opts: { requestId?: string } = {}) {
   {
     const v = viewerOf(ctx);
     const userId = a.userId ?? v?.userId;
     if (!userId) throw new ToolError("say whose time this is", "invalid_input");
-    if (v) assertCan(v, "time:log", { ownerUserId: userId, ...(userId === v.userId ? {} : inEntity(await entityOf(tx, userId))) });
+    if (v && !opts.requestId) assertCan(v, "time:log", { ownerUserId: userId, ...(userId === v.userId ? {} : inEntity(await entityOf(tx, userId))) });
     const project = await getProjectRef(tx, a.projectKey);
     if (!project) throw new ToolError(`no project ${a.projectKey}`, "not_found");
     const day = a.day;
@@ -57,7 +58,8 @@ export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext, sourceR
     const refused = (await allocationRefusal(tx, ctx.tenantId, userId, project.id, day)) ?? (userId === actorId(ctx) ? await dateRefusal(tx, userId, day) : null);
     if (refused) throw new ToolError(refused, "invalid_input");
     const week = await ensureWeek(tx, ctx.tenantId, await personOf(tx, userId), isoWeekOf(workDay(day, a.weekend)));
-    const lockedChange = await guardLock(tx, ctx, week, { day, hours: a.hours, projectKey: a.projectKey });
+    const change = { day, hours: a.hours, projectKey: a.projectKey };
+    const lockedChange = opts.requestId ? await requestLock(tx, ctx, week, opts.requestId, change) : await guardLock(tx, ctx, week, change);
     await guardDayTotal(tx, userId, day, a.hours);
     const twin = await possibleDuplicate(tx, userId, project.id, day, a.note);
     const [e] = await tx.execute(sql`insert into time.entry (tenant_id, week_id, user_id, project_id, day, hours, billable, source, agent, note, logged_by, source_ref)

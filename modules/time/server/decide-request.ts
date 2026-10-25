@@ -9,6 +9,7 @@ import { chainFor, entityOf } from "./chain";
 import { writeCorrection, writeDelete } from "./correct";
 import { decide } from "./decide";
 import { liveEntry, mayMove } from "./entry";
+import { logEntry } from "./log";
 import { projectNames } from "./read";
 import { writeReopen } from "./reopen";
 import { refOf, lockRequest } from "./request";
@@ -21,9 +22,18 @@ type Outcome = { status: RequestStatus; events: { name: string; payload: object 
 const first = (r: ChangeRequest) => r.personName.split(" ")[0];
 const summary = (r: ChangeRequest) => `Change request: ${r.before.projectName}, ${r.dayLabel}, ${changeText(r).join(", ")}. ${r.reason}`;
 
+// 073: an addition is logged for the person through the ordinary log path (weekend, 24 h a day and allocation rules
+// included), attributed to the approver at the person's request; an approved week's change is audited with the request.
+async function add(tx: Tx, ctx: ServiceContext, r: ChangeRequest): Promise<Outcome> {
+  const p = r.proposed;
+  const done = await logEntry(tx, { projectKey: p.projectKey!, day: r.day, hours: p.hours!, billable: p.billable ?? true, note: p.note ?? undefined, userId: r.userId, source: "person", weekend: p.weekend }, ctx, null, { requestId: r.id });
+  return { status: "applied", events: done.events, after: { added: done.result } };
+}
+
 async function apply(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRow): Promise<Outcome> {
   if (week.status !== "submitted" && week.status !== "approved") throw new ToolError(`${keyOf(week)} is ${week.status} now, so ${first(r)} can fix it directly`, "invalid_input");
-  const entry = await liveEntry(tx, r.entryId);
+  if (r.kind === "add") return add(tx, ctx, r);
+  const entry = await liveEntry(tx, r.entryId!);
   if (!entry || entry.revision !== r.revision) throw new ToolError(`the entry changed since the request; ask ${first(r)} to request it again`, "invalid_input");
   const lockedChange = week.status === "approved";
   if (lockedChange) await appendAudit(tx, ctx, { action: "time.week.locked_change", resource: "time.week", resourceId: week.id, before: { status: week.status }, after: { requestId: r.id, entryId: r.entryId } });
@@ -68,7 +78,7 @@ export const decideRequest = defineService({
     const out = await act[a.decision](tx, ctx, r, week as WeekRow);
     await tx.execute(sql`update time.change_request set status = ${out.status}, decided_by = ${by(ctx)}, decision_note = ${a.note ?? null},
       question = ${a.decision === "ask" ? a.note ?? null : r.question}, decided_at = now(), updated_at = now() where id = ${r.id}`);
-    const payload: ChangeDecided = { ...refOf(r), decision: a.decision, by: actorId(ctx), note: a.note ?? null };
+    const payload: ChangeDecided = { ...refOf(r), decision: a.decision, by: actorId(ctx), note: a.note ?? null, kind: r.kind };
     return { result: { id: r.id, status: out.status, week: r.week }, resourceId: r.id, before: { status: r.status }, after: { status: out.status, note: a.note ?? null, ...out.after },
       events: [...out.events, { name: EVENTS.changeDecided, payload }] };
   },

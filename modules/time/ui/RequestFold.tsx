@@ -7,7 +7,7 @@ import { requestPin } from "./request-view";
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
 /** The change in a few characters for the folded row: "8 h → 7 h", "8 h → removed", or "Billable yes → no". */
 export const shortChange = (r: ChangeRequest) =>
-  r.kind === "delete" ? `${h(r.before.hours)} → removed` : r.proposed.hours !== undefined && r.proposed.hours !== r.before.hours ? `${h(r.before.hours)} → ${h(r.proposed.hours)}` : "Details";
+  r.kind === "add" ? `+ ${h(r.proposed.hours ?? 0)}${r.proposed.weekend ? " (weekend)" : ""}` : r.kind === "delete" ? `${h(r.before.hours)} → removed` : r.proposed.hours !== undefined && r.proposed.hours !== r.before.hours ? `${h(r.before.hours)} → ${h(r.proposed.hours)}` : "Details";
 
 /**
  * 073: a change request that folds to one row, so several don't fill the screen. A native <details>: click, Enter or

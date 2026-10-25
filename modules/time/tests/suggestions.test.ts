@@ -25,7 +25,8 @@ describe.skipIf(!hasDb)("070 amendment 4: Time's chat suggestions (Postgres)", (
     const [tharushi, kasun, maya] = await Promise.all([db.as("tharushi"), db.as("kasun"), db.as("maya")]);
     const week = { week: "2026-W42" };
     expect(await offered(tharushi, "my/:week", week)).toEqual(["Fix an entry", "Submit my week", "What did I log this week?"]);
-    expect(await offered(kasun, "my/:week", week)).toEqual(["Ask for a change", "What did I log this week?"]);
+    // 073: a locked week also takes new hours through a request.
+    expect(await offered(kasun, "my/:week", week)).toEqual(["Ask for a change", "Ask to add hours", "What did I log this week?"]);
     expect(await offered(kasun, "w/:week", week)).toEqual(["Who hasn't submitted?"]);
     expect(await offered(maya, "w/:week", week)).toEqual(["Approve submitted timesheets", "Remind everyone who hasn't submitted", "Fix someone's hours", "Who is below 80% this week?", "Who hasn't submitted?"]);
     expect([pageLabel(week), pageLabel({})]).toEqual(["Week of Oct 12", null]);

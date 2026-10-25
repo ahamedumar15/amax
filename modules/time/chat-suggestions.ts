@@ -20,6 +20,9 @@ export const chatSuggestions: ChatSuggestion[] = [
     when: when(async (v, p) => { const m = await mine(v, p); return open(m.status) && m.total > 0; }) },
   { routes: MY, label: "Ask for a change", prompt: "My week is locked; ask for a change to an entry: ", tool: "request_time_change",
     when: when(async (v, p) => { const m = await mine(v, p); return (m.status === "submitted" || m.status === "approved") && m.total > 0; }) },
+  // 073: a locked week takes new hours through a request too.
+  { routes: MY, label: "Ask to add hours", prompt: "My week is locked; ask to add hours: ", tool: "request_time_addition",
+    when: when(async (v, p) => { const m = await mine(v, p); return m.status === "submitted" || m.status === "approved"; }) },
   { routes: MY, label: "Submit my week", prompt: "Submit my timesheet for this week", tool: "submit_week",
     when: when(async (v, p) => { const m = await mine(v, p); return open(m.status) && m.total > 0; }) },
   { routes: MY, label: "What did I log this week?", prompt: "What did I log this week?", tool: "get_my_week" },

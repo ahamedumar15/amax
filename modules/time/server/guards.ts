@@ -21,11 +21,19 @@ export function workDay(day: string, weekend = false): Date {
 // A submitted week is what the approver decides on, so it can't change underneath them; an approved
 // week is locked and only another Admin may change it, audited.
 export function lockRefusal(week: WeekRow, v: Viewer | undefined, entity: Entity): string | null {
-  if (week.status === "submitted") return `${keyOf(week)} is submitted and waiting for approval; ask the approver to send it back before changing it`;
+  if (week.status === "submitted") return `${keyOf(week)} is submitted and waiting for approval; to add hours, ask with request_time_addition; to change an entry, request_time_change`;
   if (week.status !== "approved") return null;
   if (!v || !adminOver(v, entity)) return `${keyOf(week)} is approved and locked; only an Admin can change it`;
   if (week.user_id === v.userId) return `${keyOf(week)} is your own approved week; another Admin has to change it`;
   return null;
+}
+
+/** 073: an addition applied from a change request: allowed on a submitted or approved week (the request's reviewer was
+ * already checked); an approved week's change is audited with the request, as a locked change. */
+export async function requestLock(tx: Tx, ctx: ServiceContext, week: WeekRow, requestId: string, after: object) {
+  if (week.status !== "approved") return false;
+  await appendAudit(tx, ctx, { action: "time.week.locked_change", resource: "time.week", resourceId: week.id, before: { status: week.status }, after: { ...after, requestId } });
+  return true;
 }
 
 export async function guardLock(tx: Tx, ctx: ServiceContext, week: WeekRow, after: object) {

@@ -18,6 +18,12 @@ async function checked(v: Viewer, a: Decide): Promise<ChangeRequest> {
   const r = await findRequest(v, a.requestId, false, a.decision === "decline" ? OPEN : ["pending"]);
   if (a.decision !== "apply") return r;
   if (!locked(r.weekStatus)) refuse(`${r.week} is ${r.weekStatus} now, so ${first(r)} can fix it directly`);
+  if (r.kind === "add") {
+    // 073: an addition has no entry yet; it still has to fit the person's 24 h day.
+    const [{ total }] = await read(v, (tx) => tx.execute(sql`select coalesce(sum(hours), 0) as total from time.entry where user_id = ${r.userId} and day = ${r.day} and deleted_at is null`));
+    if (Number(total) + (r.proposed.hours ?? 0) > 24) refuse(`that would make ${r.dayLabel} more than 24 h for ${first(r)}`);
+    return r;
+  }
   const [e] = await read(v, (tx) => tx.execute(sql`select revision from time.entry where id = ${r.entryId} and deleted_at is null`));
   if (!e || Number(e.revision) !== r.revision) refuse(`the entry changed since the request; ask ${first(r)} to request it again`);
   if (!mayMove(v, r, await read(v, (tx) => entityOf(tx, r.userId)))) refuse(`you don't approve ${r.proposed.projectName ?? "the project"} it moves to, so you can't apply it; reopen the week or decline it`);
@@ -28,7 +34,7 @@ export const proposeDecide = async (v: Viewer, a: Decide) => void (await checked
 
 const notice = (r: ChangeRequest): CardLine => ({ label: "Notice", value: `${first(r)} will be notified` });
 const cards: Record<Decide["decision"], (r: ChangeRequest, note?: string) => ToolCard> = {
-  apply: (r) => ({ title: `Apply ${r.personName}'s change: ${about(r)}`,
+  apply: (r) => ({ title: r.kind === "add" ? `Add ${r.personName}'s ${r.proposed.hours} h to ${about(r)}` : `Apply ${r.personName}'s change: ${about(r)}`,
     lines: [...asLines(changeText(r)), { label: "Reason", value: r.reason }, { label: "Week", value: `${r.week} stays ${r.weekStatus}` }, notice(r)] }),
   reopen: (r) => ({ title: `Reopen ${r.personName}'s ${r.week} for their fix`,
     lines: [...asLines(changeText(r)), { label: "Reason", value: r.reason },

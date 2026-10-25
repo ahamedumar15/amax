@@ -7,12 +7,19 @@ import { decideRequest } from "./server/decide-request";
 import { answerRequest, cancelRequest, requestChange } from "./server/request";
 import { answerCard, cancelCard, proposeAnswer, proposeCancel, proposeRequest, requestCard } from "./server/request-card";
 import { pageRequests } from "./server/requests-read";
+import { additionCard, proposeAddition, requestAddition } from "./server/request-add";
 
 // 070 amendment 3: change requests for submitted and approved weeks, asked for by the owner and decided by an approver.
 const status = z.enum(["pending", "needs_info", "applied", "reopened", "completed", "declined", "cancelled"]);
 const requestId = z.uuid().describe("The change request's id, from get_change_requests");
 
 export const requestTools: McpToolDef[] = [
+  // 073: new hours for a locked week (weekend work, a forgotten day), which log_time refuses on a submitted or approved week.
+  tool({ name: "request_time_addition", description: "Ask an approver to ADD hours to your own SUBMITTED or APPROVED week, which you can't log into yourself (e.g. weekend work or a forgotten day after submitting; for a draft or rejected week use log_time). Give the project key, the day (YYYY-MM-DD; a Saturday or Sunday needs weekend: true, after the person confirms the weekend work), hours and a reason. The approver adds it for you or reopens the week.",
+    scope: "write", permission: "time:log",
+    input: z.object({ projectKey: z.string(), day: z.string().describe("YYYY-MM-DD, the person's local date"), hours: z.number().positive().max(24), billable: z.boolean().optional(), note: z.string().max(500).optional(),
+      weekend: z.boolean().optional(), reason: z.string().describe("Why the hours are being added now, 3 to 500 characters") }),
+    propose: proposeAddition, card: additionCard, service: requestAddition, run: (v, a, s = "mcp") => requestAddition(ctxFor(v, s), a) }),
   tool({ ...read, pin: "view", name: "get_change_requests", description: "Timesheet change requests: your own, and those you review as an approver, newest first, 50 at a time. Filter by id, status or ISO week; mine: true for only yours, false for only those you review. When truncated is true there are older ones: narrow the filter, or pass before from the result.",
     input: z.object({ id: z.uuid().optional(), status: status.optional(), week: isoWeek.optional(), mine: z.boolean().optional(), before: z.uuid().optional().describe("The before value from a truncated result") }),
     run: (v, a) => pageRequests(v, a) }),

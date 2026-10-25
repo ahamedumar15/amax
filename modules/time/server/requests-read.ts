@@ -11,8 +11,9 @@ import { weekProjectIds } from "./weeks";
 export type Values = { hours: number; billable: boolean; note: string | null; projectId: string; projectName: string };
 export type RequestStatus = "pending" | "needs_info" | "applied" | "reopened" | "completed" | "declined" | "cancelled";
 export type ChangeRequest = {
-  id: string; weekId: string; week: string; weekStatus: string; userId: string; personName: string; entryId: string; day: string; dayLabel: string;
-  kind: "correct" | "delete"; before: Values; proposed: Partial<Values>; revision: number; reason: string; status: RequestStatus; anonymised?: boolean;
+  id: string; weekId: string; week: string; weekStatus: string; userId: string; personName: string; entryId: string | null; day: string; dayLabel: string;
+  /** 073: "add" asks for new hours on a locked week (no entry yet; `before` names the project at 0 h). */
+  kind: "correct" | "delete" | "add"; before: Values; proposed: Partial<Values> & { weekend?: boolean; projectKey?: string }; revision: number; reason: string; status: RequestStatus; anonymised?: boolean;
   question: string | null; answer: string | null; decisionNote: string | null; decidedBy: string | null; createdAt: string;
   /** The person who last decided or asked (073: "Maya Fernando asks"), and when. */
   deciderName: string | null; decidedAt: string | null;
@@ -25,6 +26,7 @@ export function changeText(r: Pick<ChangeRequest, "kind" | "before" | "proposed"
   // Retention emptied what it asked for; never shown as 0 h (070 review round 4).
   if (r.anonymised) return ["Anonymised"];
   if (r.kind === "delete") return [`Remove ${h(r.before.hours)}`];
+  if (r.kind === "add") return [`Add ${h(r.proposed.hours ?? 0)}${r.proposed.weekend ? " (weekend)" : ""}`, ...(r.proposed.billable === false ? ["Not billable"] : []), ...(r.proposed.note ? [`Note ${r.proposed.note}`] : [])];
   const p = r.proposed;
   return [
     p.hours !== undefined && p.hours !== r.before.hours && `Hours ${h(r.before.hours)} → ${h(p.hours)}`,
@@ -42,17 +44,17 @@ const values = (j: unknown): Values => {
 
 const toRequest = (r: Record<string, unknown>): ChangeRequest => ({
   id: r.id as string, weekId: r.week_id as string, week: weekKey({ year: Number(r.iso_year), week: Number(r.iso_week) }), weekStatus: r.week_status as string,
-  userId: r.user_id as string, personName: r.person_name as string, entryId: r.entry_id as string, day: r.day as string, dayLabel: dayLabel(r.day as string),
-  kind: r.kind as ChangeRequest["kind"], before: values(r.before), proposed: (r.proposed ?? {}) as Partial<Values>, anonymised: !(r.before as Partial<Values> | null)?.projectId, revision: Number(r.revision), reason: r.reason as string,
+  userId: r.user_id as string, personName: r.person_name as string, entryId: (r.entry_id as string | null) ?? null, day: r.day as string, dayLabel: dayLabel(r.day as string),
+  kind: r.kind as ChangeRequest["kind"], before: values(r.before), proposed: (r.proposed ?? {}) as ChangeRequest["proposed"], anonymised: !(r.before as Partial<Values> | null)?.projectId, revision: Number(r.revision), reason: r.reason as string,
   status: r.status as RequestStatus, question: r.question as string | null, answer: r.answer as string | null, decisionNote: r.decision_note as string | null,
   decidedBy: r.decided_by as string | null, createdAt: new Date(r.created_at as string | Date).toISOString(),
   deciderName: (r.decider_name as string | null) ?? null, decidedAt: r.decided_at ? new Date(r.decided_at as string | Date).toISOString() : null,
 });
 
 export async function requestRows(tx: Tx, where: SQL, lock = false, limit?: number): Promise<ChangeRequest[]> {
-  // 073: the decider's name for the card; 070 review: filters in SQL and no tenant-wide cut, paged by the caller.
-  const rows = await tx.execute(sql`select c.*, w.iso_year, w.iso_week, w.status as week_status, w.person_name, to_char(e.day, 'YYYY-MM-DD') as day, u.name as decider_name
-    from time.change_request c join time.week w on w.id = c.week_id join time.entry e on e.id = c.entry_id
+  // 073: the decider's name, and "add" requests with no entry yet (their own day); 070 review: no tenant-wide cut, paged by the caller.
+  const rows = await tx.execute(sql`select c.*, w.iso_year, w.iso_week, w.status as week_status, w.person_name, coalesce(to_char(e.day, 'YYYY-MM-DD'), to_char(c.day, 'YYYY-MM-DD')) as day, u.name as decider_name
+    from time.change_request c join time.week w on w.id = c.week_id left join time.entry e on e.id = c.entry_id
     left join auth.user u on u.id::text = split_part(regexp_replace(c.decided_by, '^user:', ''), ' ', 1) where ${where} order by c.created_at desc, c.id desc ${limit ? sql`limit ${limit}` : sql``} ${lock ? sql`for update of c` : sql``}`);
   return rows.map(toRequest);
 }

@@ -92,6 +92,9 @@ export default defineModule({
       title: "{userId|name} answered about {projectName}, {dayLabel}", body: "{answer}", href: "/time/w/{week}" },
     { id: "time.change-asked", event: EVENTS.changeDecided, when: { decision: "ask" }, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
       title: "{by|name} has a question about your change to {projectName}, {dayLabel}", body: "{note}", href: "/time/my/{week}" },
+    // 073: an approver applied a request to add hours; the person is told what was added.
+    { id: "time.change-added", event: EVENTS.changeDecided, when: { decision: "apply", kind: "add" }, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
+      title: "{by|name} added your {projectName} hours for {dayLabel}", body: "Your request was applied.", href: "/time/my/{week}" },
     { id: "time.change-declined", event: EVENTS.changeDecided, when: { decision: "decline" }, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
       title: "{by|name} declined your change to {projectName}, {dayLabel}", body: "{note}", href: "/time/my/{week}" },
     { id: "time.week-reopened", event: EVENTS.weekReopened, category: "approvals", to: [{ owner: "userId" }], except: "by", subject: "userId",
@@ -109,7 +112,7 @@ export default defineModule({
     [EVENTS.weekReminded]: declarePayload<WeekReminded>({ weekId: "plain", userId: "plain", week: "plain", by: "plain", message: "plain" }),
     [EVENTS.dayReminded]: declarePayload<DayReminded>({ userId: "plain", day: "plain", dayLabel: "plain", week: "plain", by: "plain", message: "plain" }),
     [EVENTS.changeRequested]: declarePayload<ChangeRequested>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain", entryId: "plain", projectName: "plain", dayLabel: "plain", change: "plain", reason: "plain", answered: "plain", answer: "plain", projectIds: "plain", legalEntityId: "plain" }),
-    [EVENTS.changeDecided]: declarePayload<ChangeDecided>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain", entryId: "plain", projectName: "plain", dayLabel: "plain", decision: "plain", by: "plain", note: "plain" }),
+    [EVENTS.changeDecided]: declarePayload<ChangeDecided>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain", entryId: "plain", projectName: "plain", dayLabel: "plain", decision: "plain", by: "plain", note: "plain", kind: "plain" }),
     [EVENTS.changeCompleted]: declarePayload<ChangeCompleted>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain" }),
   },
   // 008 AC-3: a commit's hours become a draft suggestion on the person's own timesheet.

@@ -39,9 +39,10 @@ export type WeekSubmitted = { weekId: string; userId: string; week: string; hour
 export type WeekDecided = { weekId: string; userId: string; week: string; by: string; chain: ApprovalChain; comment: string | null };
 export type WeekReopened = { weekId: string; userId: string; week: string; by: string; reason: string };
 // 070 amendment 3: change requests on locked weeks. `answered` marks the owner's reply to a question.
-type RequestRef = { requestId: string; weekId: string; userId: string; week: string; entryId: string; projectName: string; dayLabel: string };
+// 073: `entryId` is null for a request to add hours (there is no entry yet).
+type RequestRef = { requestId: string; weekId: string; userId: string; week: string; entryId: string | null; projectName: string; dayLabel: string };
 export type ChangeRequested = RequestRef & { change: string; reason: string; answered: boolean; answer: string | null } & ApproverRoute;
-export type ChangeDecided = RequestRef & { decision: "apply" | "reopen" | "ask" | "decline" | "cancel"; by: string; note: string | null };
+export type ChangeDecided = RequestRef & { decision: "apply" | "reopen" | "ask" | "decline" | "cancel"; by: string; note: string | null; kind?: "correct" | "delete" | "add" };
 export type ChangeCompleted = { requestId: string; weekId: string; userId: string; week: string };
 /** 073: `weekId` is null for someone reminded before they have a timesheet that week (Not started). */
 export type WeekReminded = { weekId: string | null; userId: string; week: string; by: string; message?: string | null };

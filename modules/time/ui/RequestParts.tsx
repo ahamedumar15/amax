@@ -9,10 +9,13 @@ export const firstName = (name: string | null) => (name ?? "Your approver").spli
 /** The change at a glance: hours as before → after, a removal as "→ removed", anything else in words, and the reason. */
 export function Change({ r, reasonLabel }: { r: ChangeRequest; reasonLabel: string }) {
   const hours = r.kind === "delete" ? "removed" : r.proposed.hours !== undefined && r.proposed.hours !== r.before.hours ? h(r.proposed.hours) : null;
-  const rest = changeText(r).filter((t) => !t.startsWith("Hours ") && !t.startsWith("Remove "));
+  const rest = changeText(r).filter((t) => !t.startsWith("Hours ") && !t.startsWith("Remove ") && !t.startsWith("Add "));
+  // 073: hours to add read as "+ 3 h", with "weekend" when the day is a Saturday or Sunday.
+  const added = r.kind === "add" ? h(r.proposed.hours ?? 0) : null;
   return (
     <div className="rq-change">
-      {hours && <p className="rq-hours" aria-label={`${h(r.before.hours)} to ${hours}`}><span>{h(r.before.hours)}</span><b aria-hidden="true">→</b><span className="to">{hours}</span></p>}
+      {added && <p className="rq-hours add" aria-label={`Add ${added}${r.proposed.weekend ? ", weekend" : ""}`}><span className="to">+ {added}</span>{r.proposed.weekend && <small className="chip">weekend</small>}</p>}
+      {hours && r.kind !== "add" && <p className="rq-hours" aria-label={`${h(r.before.hours)} to ${hours}`}><span>{h(r.before.hours)}</span><b aria-hidden="true">→</b><span className="to">{hours}</span></p>}
       {rest.length > 0 && <ul className="rq-other">{rest.map((t) => <li key={t}>{t}</li>)}</ul>}
       <p className="rq-reason"><span className="muted">{reasonLabel}</span> “{r.reason}”</p>
     </div>
