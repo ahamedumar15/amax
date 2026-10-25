@@ -4,9 +4,10 @@ import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
 import { shownToOwner } from "../server/requests-read";
 import { MyRequests } from "./ChangeRequests";
+import { MyBand } from "./MyBand";
 import { SentBack } from "./SentBack";
 import { myDayMarks } from "../server/my-days";
-import { DayHead, dayLabelFor, type DayMark, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
+import { DayHead, dayLabelFor, type DayMark, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull } from "./parts";
 
 export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps) {
   const viewer = viewerOrNull(raw);
@@ -25,10 +26,11 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   // 070 amendment 4: fixes are asked for in chat (its suggestions offer them); the row keeps its pin.
   const rowPin = (project: string) => ({ label: `${project}, ${m.key}`, tool: "get_timesheet", args: { week: m.key, project } });
   const pin = (project: string) => <PinButton pin={rowPin(project)} />;
-  const lede = `${weekSpan(m.week, m.days)}. ${m.total.toFixed(1)} h logged${m.total ? `, ${Math.round((m.agentHours / m.total) * 100)}% by agents` : ""}.${m.status === "approved" ? " Approved and locked." : ""}`;
   return (
     <div className="time">
-      <Head title="My timesheet" lede={lede} week={m.week} days={m.days} base="/my" />
+      {/* 075 amendment 2: the week at a glance is a slim band, not a sentence; the pill and the picker name the week. */}
+      <Head title="My timesheet" lede="" week={m.week} days={m.days} base="/my" />
+      <MyBand m={m} />
       {m.rejectComment && m.status === "rejected" && <SentBack m={m} />}
       <MyRequests rows={requests} />
       <div className="card flush pinnable">

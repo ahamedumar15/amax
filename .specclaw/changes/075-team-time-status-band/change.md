@@ -12,6 +12,14 @@ be clicked or pinned.
 Approved by the product owner, 2026-10-25: "build it in the current branch end to end", after the status band was
 proposed in chat.
 
+**Amendment 1, 2026-10-25** (product owner: "Team time section doesn't state which week currently, makes the user confuse,
+can you add the week number?"; approved: "build in the current branch"): the sentence this change removed was the only
+place that named the week number. AC-8 and AC-9 cover it.
+
+**Amendment 2, 2026-10-25** (product owner: "the my timesheet also has description, make it similar UI to team time but
+minimal … make sure the week number is properly aligned"): My timesheet still opens with a sentence, and the week pill
+sits high against the title's letters. AC-10 and AC-11 cover these.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`075-team-time-status-band`](../../mock/index.html#075-team-time-status-band)
@@ -40,6 +48,18 @@ to it, and each bar has a **+** pin.
    the two parts stack. Axe finds nothing.
 7. **AC-7** Tests: the band's counts and percentages from a week's rows (unit); the e2e check that read the header
    sentence reads the band instead, and a legend link filters the grid. Every other test passes unmodified.
+8. **AC-8** Beside the page title on Team time, My timesheet and a member's timesheet, a pill names the week and how far
+   it is from now: "Week 42 · Last week" ("This week", "Next week", "2 weeks ago", "In 3 weeks"), with the year added
+   when it isn't this year's ("Week 52, 2025 · …"). This week's pill is highlighted. It sits outside the `<h1>`, so
+   the heading text is unchanged, and it reads as one phrase to screen readers.
+9. **AC-9** Tests: the relative label for this, last, next and far weeks and across a year (unit); e2e: Team time for
+   2026-W42 shows "Week 42". Every other test passes unmodified.
+10. **AC-10** My timesheet's sentence becomes one slim, pinnable band (`get_my_week`) in the same style as Team time's:
+    "{hours} h of {target} h" with a thin bar and the %, and "{n}% by agents" with a thin split bar and
+    "Agents {a} h · You {b} h". An approved week adds "Approved · locked". With no hours it reads "No hours logged yet"
+    against the target. Each bar has a text alternative; at phone width the two readings stack.
+11. **AC-11** The week pill sits on the title's text baseline on every page that has it. Tests: the band's figures
+    (unit); every other test passes unmodified.
 
 ## Tasks
 
@@ -48,6 +68,10 @@ to it, and each bar has a **+** pin.
 - [x] `T2` — Tests: band figures, and the e2e check reads the band and follows a legend link (AC-7)
   Files: modules/time/tests/status-band.test.ts, modules/time/tests/e2e/time.spec.ts
   Depends: T1
+- [x] `T3` — The week pill beside the title (AC-8, AC-9)
+  Files: modules/time/ui/parts.tsx, modules/time/week.ts, modules/time/ui/time.css, modules/time/tests/week-pill.test.ts, modules/time/tests/e2e/time.spec.ts
+- [x] `T4` — My timesheet's slim band, and the pill on the title's baseline (AC-10, AC-11)
+  Files: modules/time/ui/MyBand.tsx, modules/time/ui/MyPage.tsx, modules/time/ui/band.css, modules/time/ui/time.css, modules/time/tests/status-band.test.ts
 
 ## Verify
 
@@ -64,3 +88,29 @@ to it, and each bar has a **+** pin.
 - AC-7: pass — `tests/status-band.test.ts`; e2e AC3 reads the band and follows a legend link.
 - Commands: time vitest 141/141; `pnpm lint` ok; `pnpm build` ok; time e2e 9/9.
 - Screenshots: band-light.png, band-dark.png, band-phone.png and band-w43.png in the session scratchpad (`ui/`).
+
+Amendment 1 (2026-10-25):
+- AC-8: pass — `Head` (`ui/parts.tsx`) shows `WeekPill` beside the `<h1>` on Team time, My timesheet and a member's timesheet.
+  - Live: W42 reads "Week 42 · Last week"; W43 reads "Week 43 · This week", highlighted.
+  - The pill is centred on the title's line (both midlines at 155 px, and 103 px at phone width).
+  - Axe is clean in light, dark and phone.
+  - The h1 text is unchanged.
+- AC-9: pass — `tests/week-pill.test.ts`: this, last and next week, 3 weeks ago, in 3 weeks, and "Week 52, 2025". The e2e test checks "Week 42" on Team time W42.
+  - Time 147/147; `pnpm lint` ok; build ok; time e2e 9/9.
+- Screenshots: pill-light.png, pill-dark.png and pill-phone.png in the session scratchpad (`ui/`).
+
+Amendment 2 (2026-10-25):
+- AC-10: pass — `MyBand.tsx` replaces My timesheet's sentence with one slim, pinnable strip.
+  - Live, Tharushi W42: "24.9 h of 40 h · 62%", "77% by agents", "Agents 19.1 h · You 5.8 h".
+  - Live, Kasun W43 (approved): "47.0 h of 40 h · 118%" with an over-target bar, and "Approved · locked".
+  - At phone width the two readings stack. Axe is clean in light, dark, phone and on the approved week.
+  - Unit test AC10 covers `myBandOf`.
+- AC-11: pass — the week pill is centred on the title's capital letters, as the product owner asked during the build ("lift a little up, in one line").
+  - Measured: cap middle 156.0 against pill middle 154.8 at desktop, and 103.6 against 103.0 at phone width, on Team time and My timesheet.
+  - Baseline alignment was tried first and rejected: the pill hung below the letters.
+  - Then, at the product owner's request ("go a little bit down, in desktop view"), desktop moves the pill down 3 px (`top:3px` from 861 px wide), so it sits between the middle of the capitals and the middle of the lowercase letters.
+    - Measured at desktop: cap middle 156.0, x-height middle 159.0, pill middle 157.8.
+    - Phone is unchanged: 103.0 against cap middle 103.6.
+    - Screenshots: pill3-team.png and pill3-my.png.
+- Checks: time 148/148; `pnpm lint` ok; build ok; time e2e 9/9.
+- Screenshots: my-light/dark/phone/approved.png and pill2-team/my/phone.png in the session scratchpad (`ui/`).

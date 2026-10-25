@@ -33,3 +33,11 @@ export function bandOf(rows: Row[], notStarted: number) {
   };
 }
 export type Band = ReturnType<typeof bandOf>;
+
+/** 075 amendment 2: My timesheet's slim band: the week's hours against the person's target, and who logged them. */
+export function myBandOf(m: { total: number; agentHours: number; target: number }) {
+  const hours = round1(m.total);
+  const agent = round1(m.agentHours);
+  const agentPct = hours ? Math.round((agent / hours) * 100) : 0;
+  return { hours, target: m.target, pct: m.target ? Math.round((hours / m.target) * 100) : 0, agent, mine: round1(Math.max(0, hours - agent)), agentPct, minePct: hours ? 100 - agentPct : 0 };
+}

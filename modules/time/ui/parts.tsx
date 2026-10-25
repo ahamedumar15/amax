@@ -3,7 +3,7 @@ import { Card, EmptyState } from "@amax/ui";
 import type { WeekStatus } from "../contracts";
 import { notFound } from "next/navigation";
 import { wantedWeek } from "../server/weeks";
-import { isWeekend, shiftWeek, weekKey, workDays, type IsoWeek } from "../week";
+import { isWeekend, shiftWeek, weekKey, weekPill, workDays, type IsoWeek } from "../week";
 import { WeekPicker } from "./WeekPicker";
 import "./time.css";
 
@@ -47,10 +47,16 @@ export const SignInFirst = () => (
   <Card><EmptyState icon="clock" title="Sign in to see timesheets" hint="Hours, approvals and your own timesheet come from the database once you're signed in." /></Card>
 );
 
+/** 075 amendment 1: which week this is, beside the title: "Week 42 · Last week". */
+function WeekPill({ week }: { week: IsoWeek }) {
+  const p = weekPill(week, new Date());
+  return <span className={`wk${p.now ? " now" : ""}`}><b>{p.name}</b><span aria-hidden="true"> · </span><span>{p.when}</span></span>;
+}
+
 export function Head({ title, lede, week, days, base }: { title: string; lede: string; week: IsoWeek; days: string[]; base: "" | "/my" }) {
   return (
     <div className="row head">
-      <div><h1>{title}</h1>{lede && <p className="lede">{lede}</p>}</div>
+      <div><div className="title"><h1>{title}</h1><WeekPill week={week} /></div>{lede && <p className="lede">{lede}</p>}</div>
       <div className="actions">
         <div className="seg" role="group" aria-label="View">
           <a href={weekHref("", week)} aria-current={base === "" ? "page" : undefined}>Team</a>

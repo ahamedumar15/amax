@@ -5,6 +5,14 @@
 .time .row-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .time .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
 .time .row.head .lede{margin:0}
+.time .row.head .title{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px}
+.time .row.head .title h1{margin:0}
+.time .wk{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:var(--sunken);font-size:13.5px;line-height:1;color:var(--ink-2);white-space:nowrap}
+.time .wk b{font-weight:700;color:var(--ink)}
+.time .wk.now{background:var(--violet-soft);color:var(--chip-agent)}
+.time .wk.now b{color:var(--chip-agent)}
+/* Desktop: centred on the title's lowercase letters ("My timesheet" reads lower than its capitals), not its capitals. */
+@media (min-width:861px){.time .wk{position:relative;top:3px}}
 .time .row.head>.actions{flex-shrink:0;width:auto}
 .time .row.head>.actions .seg{flex:0 1 auto}
 .time .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}

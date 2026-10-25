@@ -29,6 +29,14 @@ export const shownDays = (w: IsoWeek, logged: string[]) => (logged.some(isWeeken
 
 export const shiftWeek = (w: IsoWeek, by: number) => isoWeekOf(new Date(weekStart(w).getTime() + by * 7 * DAY));
 
+/** 075 amendment 1: "Week 42 · Last week", against the week holding `today`; the year is added when it isn't this year's. */
+export function weekPill(w: IsoWeek, today: Date) {
+  const now = isoWeekOf(today);
+  const n = Math.round((weekStart(w).getTime() - weekStart(now).getTime()) / (7 * DAY));
+  const when = n === 0 ? "This week" : n === -1 ? "Last week" : n === 1 ? "Next week" : n < 0 ? `${-n} weeks ago` : `In ${n} weeks`;
+  return { name: `Week ${w.week}${w.year === now.year ? "" : `, ${w.year}`}`, when, now: n === 0 };
+}
+
 export const weekKey = ({ year, week }: IsoWeek) => `${year}-W${String(week).padStart(2, "0")}`;
 
 export function parseWeekKey(key: string | undefined): IsoWeek | null {

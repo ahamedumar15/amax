@@ -12,6 +12,7 @@ test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 
 test("AC3 the Team week matches the mock: totals, agent share and the This week card within 2%", async ({ page, context }) => {
   await signIn(page, "maya@lumenlabs.test", W42);
   // 075: the header sentence is now the status band; the figures are the same.
+  await expect(page.locator(".row.head .wk b")).toHaveText("Week 42");
   const band = page.getByRole("group", { name: "This week's progress" });
   await expect(band.locator(".fig").first()).toHaveText("3 of 5 submitted");
   await expect(band.locator(".fig").last()).toHaveText("64% by agents, of 141.5 h");
