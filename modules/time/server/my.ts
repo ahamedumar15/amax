@@ -38,13 +38,8 @@ export const myWeek = (v: Viewer, wanted?: IsoWeek) =>
     }).sort((a, b) => b.total - a.total);
     return {
       week: w, key: weekKey(w), days, status: (wk?.status as WeekStatus | undefined) ?? null, note: (wk?.note as string | null) ?? null,
-<<<<<<< HEAD
-      rejectComment: (wk?.reject_comment as string | null) ?? null, rows, entries: wk ? await weekEntries(tx, wk.id as string, names) : [], perDay: days.map((d) => hoursOf(sums, (s) => s.day === d)),
-      total: hoursOf(sums, () => true), agentHours: hoursOf(sums, (s) => s.source === "agent"), ...(await utilisationOf(tx, v.userId, w, (wk?.status as string | undefined) ?? null)),
-=======
       rejectComment: (wk?.reject_comment as string | null) ?? null, ...(await decider(tx, wk)), rows, entries: wk ? await weekEntries(tx, wk.id as string, names) : [], perDay: days.map((d) => hoursOf(sums, (s) => s.day === d)),
-      total: hoursOf(sums, () => true), agentHours: hoursOf(sums, (s) => s.source === "agent"), ...(await utilisationOf(tx, v.userId, hoursOf(sums, () => true))),
->>>>>>> 79b9bb97 (specclaw(073-time-workflow-enhancements): a sent-back week shows a card with the approver's note and next steps, not one long line)
+      total: hoursOf(sums, () => true), agentHours: hoursOf(sums, (s) => s.source === "agent"), ...(await utilisationOf(tx, v.userId, w, (wk?.status as string | undefined) ?? null)),
       projects: (await listProjectRefs(tx)).map((p) => ({ key: p.key, name: p.name })),
     };
   });

@@ -12,7 +12,7 @@ export type Values = { hours: number; billable: boolean; note: string | null; pr
 export type RequestStatus = "pending" | "needs_info" | "applied" | "reopened" | "completed" | "declined" | "cancelled";
 export type ChangeRequest = {
   id: string; weekId: string; week: string; weekStatus: string; userId: string; personName: string; entryId: string; day: string; dayLabel: string;
-  kind: "correct" | "delete"; before: Values; proposed: Partial<Values>; revision: number; reason: string; status: RequestStatus; anonymised: boolean;
+  kind: "correct" | "delete"; before: Values; proposed: Partial<Values>; revision: number; reason: string; status: RequestStatus; anonymised?: boolean;
   question: string | null; answer: string | null; decisionNote: string | null; decidedBy: string | null; createdAt: string;
   /** The person who last decided or asked (073: "Maya Fernando asks"), and when. */
   deciderName: string | null; decidedAt: string | null;
@@ -49,16 +49,11 @@ const toRequest = (r: Record<string, unknown>): ChangeRequest => ({
   deciderName: (r.decider_name as string | null) ?? null, decidedAt: r.decided_at ? new Date(r.decided_at as string | Date).toISOString() : null,
 });
 
-<<<<<<< HEAD
 export async function requestRows(tx: Tx, where: SQL, lock = false, limit?: number): Promise<ChangeRequest[]> {
-  const rows = await tx.execute(sql`select c.*, w.iso_year, w.iso_week, w.status as week_status, w.person_name, to_char(e.day, 'YYYY-MM-DD') as day
-    from time.change_request c join time.week w on w.id = c.week_id join time.entry e on e.id = c.entry_id where ${where} order by c.created_at desc, c.id desc ${limit ? sql`limit ${limit}` : sql``} ${lock ? sql`for update of c` : sql``}`);
-=======
-export async function requestRows(tx: Tx, where: SQL, lock = false): Promise<ChangeRequest[]> {
+  // 073: the decider's name for the card; 070 review: filters in SQL and no tenant-wide cut, paged by the caller.
   const rows = await tx.execute(sql`select c.*, w.iso_year, w.iso_week, w.status as week_status, w.person_name, to_char(e.day, 'YYYY-MM-DD') as day, u.name as decider_name
     from time.change_request c join time.week w on w.id = c.week_id join time.entry e on e.id = c.entry_id
-    left join auth.user u on u.id::text = split_part(regexp_replace(c.decided_by, '^user:', ''), ' ', 1) where ${where} order by c.created_at desc limit 200 ${lock ? sql`for update of c` : sql``}`);
->>>>>>> 80f91af1 (specclaw(073-time-workflow-enhancements): change requests on My timesheet become a card: status, before → after, the approver's question, one-click replies and progress)
+    left join auth.user u on u.id::text = split_part(regexp_replace(c.decided_by, '^user:', ''), ' ', 1) where ${where} order by c.created_at desc, c.id desc ${limit ? sql`limit ${limit}` : sql``} ${lock ? sql`for update of c` : sql``}`);
   return rows.map(toRequest);
 }
 
@@ -103,7 +98,6 @@ export const listRequests = (v: Viewer, f: RequestFilter = {}) => read(v, async 
   return out;
 });
 
-<<<<<<< HEAD
 export const PAGE = 50;
 /**
  * get_change_requests: newest first, PAGE at a time. `truncated` says there are older ones, fetched with
@@ -122,10 +116,6 @@ export const pageRequests = (v: Viewer, f: RequestFilter = {}) => read(v, async 
 
 export const openToReview = (v: Viewer) => listRequests(v, { mine: false, status: OPEN });
 export const openOfMine = (v: Viewer, week: string) => listRequests(v, { mine: true, week, status: OPEN });
-=======
-export const openToReview = async (v: Viewer) => (await listRequests(v, { mine: false })).filter((r) => OPEN.includes(r.status));
-export const openOfMine = async (v: Viewer, week: string) => (await listRequests(v, { mine: true, week })).filter((r) => OPEN.includes(r.status));
 /** 073: what My timesheet shows the owner: open requests, and ones decided in the last 7 days (the outcome, then they go). */
 export const shownToOwner = async (v: Viewer, week: string) => (await listRequests(v, { mine: true, week }))
   .filter((r) => OPEN.includes(r.status) || (r.status !== "cancelled" && r.decidedAt && Date.now() - Date.parse(r.decidedAt) < 7 * 86_400_000));
->>>>>>> 80f91af1 (specclaw(073-time-workflow-enhancements): change requests on My timesheet become a card: status, before → after, the approver's question, one-click replies and progress)

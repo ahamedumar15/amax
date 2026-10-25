@@ -9,6 +9,7 @@ import { myWeek } from "./my";
 import { read } from "./read";
 import { localToday } from "./rules";
 import { exactWeekHours, targetsOf, weekFigures } from "./targets";
+import { notStarted } from "./grid-rows";
 import { teamWeek } from "./team";
 
 export type WeekUtilisation = {
@@ -37,7 +38,8 @@ async function leaveIn(tx: Tx, v: Viewer, days: string[]) {
 /**
  * 072 AC-8: weekly utilisation for the people the viewer may see (071's week scope; an Engineer, only themself):
  * hours logged against their target, overtime above 100%, the working days so far with nothing logged, and, with
- * Leave, the target less approved leave. A sent-back week counts no hours (D4). Lowest first.
+ * Leave, the target less approved leave. A sent-back week counts no hours (D4). Lowest first. 073: people the viewer
+ * expects to log who have no timesheet that week (Not started on Team time) are included at 0 h, so they are never missed.
  */
 export async function weekUtilisation(v: Viewer, wanted?: IsoWeek, below?: number): Promise<WeekUtilisation[]> {
   const team = await teamWeek(v, wanted);
@@ -48,6 +50,8 @@ export async function weekUtilisation(v: Viewer, wanted?: IsoWeek, below?: numbe
   ];
   const days = workDays(team.week);
   const rows = await read(v, async (tx) => {
+    const none = (await notStarted(tx, v, team)).filter((p) => p.userId !== v.userId && !people.some((x) => x.userId === p.userId));
+    people.push(...none.map((p) => ({ userId: p.userId, name: p.name, status: "not_started", days: days.map(() => 0) })));
     const targets = await targetsOf(tx, people.map((p) => p.userId));
     // Exact sums (the screens round each day to 0.1 h, which would move a 44.8 h week to 45 h), the same query My week uses.
     const exact = await exactWeekHours(tx, people.map((p) => p.userId), team.week);

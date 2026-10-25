@@ -32,7 +32,9 @@ describe.skipIf(!hasDb)("072 weekly utilisation and targets (Postgres)", () => {
     expect(row(all, "Nimal Silva")).toMatchObject({ hours: 44.8, utilisation: 112, overtime: true });
     expect(row(all, "Dinesh Wickrama")).toMatchObject({ hours: 8, utilisation: 20, missingDays: ["Tue Oct 20", "Wed Oct 21", "Thu Oct 22", "Fri Oct 23"] });
     expect(all.map((r) => r.utilisation)).toEqual([...all.map((r) => r.utilisation)].sort((a, b) => a - b));
-    expect((await util("maya", { week: "2026-W43", below: 80 })).map((r) => r.person)).toEqual(["Dinesh Wickrama"]);
+    // 073: people Maya expects to log who have no week-43 timesheet (Ayesha, Tharushi) are included at 0 h, not left out.
+    expect(row(all, "Ayesha Rahman")).toMatchObject({ status: "not_started", hours: 0, utilisation: 0 });
+    expect((await util("maya", { week: "2026-W43", below: 80 })).map((r) => r.person)).toEqual(["Ayesha Rahman", "Tharushi Wijesinghe", "Dinesh Wickrama"]);
     expect((await util("kasun")).map((r) => r.person)).toEqual(["Kasun Dias"]);
     const w42 = await util("maya", { week: "2026-W42" });
     expect(row(w42, "Ayesha Rahman")).toMatchObject({ hours: 23.5, utilisation: 59, leaveDays: 1, adjustedTarget: 32, adjustedUtilisation: 73 });
