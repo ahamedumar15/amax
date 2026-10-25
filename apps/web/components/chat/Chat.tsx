@@ -240,7 +240,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
     announce(r.pending.some((p) => p.choice) ? "amax offered a choice for you to pick from" : r.pending.length ? "amax prepared a change for you to confirm" : "amax replied");
   }
 
-  async function decide(action: PendingAction, ok: boolean) {
+  async function decide(action: PendingAction, ok: boolean, answer?: string) {
     if (!convo.current) return;
     // One decision per card: the buttons go away while the request is in flight.
     setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working", note: undefined } : x)));
@@ -251,7 +251,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
       : (o.state === "done" || o.state === "cancelled") && sibling(x) ? { ...x, state: "cancelled" as const, note: undefined } : x)));
     try {
       // The server says what the card is now: done, cancelled, back open to retry, or an error.
-      const o = ok ? await confirmChat(convo.current, action.id, userId) : await cancelChat(convo.current, action.id, userId);
+      const o = ok ? await confirmChat(convo.current, action.id, userId, answer) : await cancelChat(convo.current, action.id, userId);
       apply(o);
       announce(o.note);
       // The record this page shows was renamed (a re-tag): follow it, or the page would read "not found".
@@ -309,7 +309,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
             if (options[0].action.id !== e.action.id) return null;
             return (
               <div key={i} className="m">
-                <ChoiceCard options={options} onConfirm={(a) => decide(a, true)} onCancel={(a) => decide(a, false)} onElse={() => input.current?.focus({ preventScroll: true })} />
+                <ChoiceCard options={options} onConfirm={(a, answer) => decide(a, true, answer)} onCancel={(a) => decide(a, false)} onElse={() => input.current?.focus({ preventScroll: true })} />
               </div>
             );
           }

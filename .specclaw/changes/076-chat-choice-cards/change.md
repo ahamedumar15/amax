@@ -11,6 +11,10 @@ steps for something amax already knew exactly.
 Approved by the product owner, 2026-10-25: "build it in the current branch end to end", after the choice card was
 proposed in chat ("only for choice-based descriptions").
 
+**Amendment 1, 2026-10-25** (product owner, after "Change Monday's Contoso Portal hours to 7" on an approved week came back
+as text: "build A end to end"): a choice whose writes all need one short value only the person can type (a reason) fell
+back to text, because a card can't be made without that value. AC-9 to AC-12 cover it.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`076-chat-choice-cards`](../../mock/index.html#076-chat-choice-cards)
@@ -45,6 +49,20 @@ usual one-line receipt; the options not chosen are dropped.
    Every existing chat test passes unmodified.
 8. **AC-8** A live run with the real model: Tharushi, with two Fleet Tracker entries on one day, says "Change Wednesday
    to 6 h" and gets one choice card; picking an option and confirming changes only that entry.
+9. **AC-9** `offer_choices` takes an optional `ask` (`field`, `label`, e.g. `reason`, "Why is this entry wrong?"). Each
+   option leaves that field out; it is checked as before with a stand-in value for the field, and its card leaves out
+   the stand-in line. With `ask`, even a single remaining option stays a choice card, so the box is still there. The
+   instructions say to use `ask` instead of asking for such a value in text.
+10. **AC-10** The card shows a labelled text box for it under the options. The button stays disabled until an option
+    is picked and something is typed; number keys don't pick options while typing, and Enter in the box confirms.
+11. **AC-11** On confirm the typed value reaches only the server action. The server adds it to the chosen option's
+    input, checks the tool's schema and its `propose` check again, and only then claims the other options and runs. An
+    empty or invalid value keeps the card open with the reason ("type … first", or what doesn't fit), and nothing runs
+    or is cancelled. A check that now refuses closes the card as failed.
+12. **AC-12** Tests: an `ask` option is carded without the field and without a stand-in line; confirm without a value
+    and with a too-short value is refused and leaves every option open; with a value, the write gets it and the other
+    option is dropped. Live with the real model: on an approved week, "Change Monday's Contoso Portal hours to 7" gives
+    one choice card with a reason box, and sending it creates a change request with that reason.
 
 ## Tasks
 
@@ -57,6 +75,8 @@ usual one-line receipt; the options not chosen are dropped.
 - [x] `T4` — Tests and a live run with the real model (AC-7, AC-8)
   Files: packages/chat/tests/choices.test.ts, .specclaw/changes/076-chat-choice-cards/change.md
   Depends: T1, T2, T3
+- [x] `T5` — The ask field: offer, confirm with the typed value, the card's box, tests and a live run (AC-9 to AC-12)
+  Files: packages/chat/src/choices.ts, packages/chat/src/engine.ts, apps/web/app/actions/chat.ts, apps/web/components/chat/Chat.tsx, apps/web/components/chat/ChoiceCard.tsx, packages/ui/src/styles/chat.css, packages/chat/tests/choices.test.ts
 
 ## Verify
 
@@ -83,3 +103,22 @@ usual one-line receipt; the options not chosen are dropped.
   - "Change Wednesday to 6 h" gave two options. Key 2 and Enter changed only her entry back to 0.7 h, so the data is as it was found.
   - Not shown live: the preview with extra details (For, Reason, Notify) on someone else's entry. In two tries as Maya, the model chose a single card and then asked for details, so no choice card appeared.
 - Screenshots: choice-light/dark/picked/done.png and choice2-open/picked/dark/phone.png in the session scratchpad (`ui/`).
+
+Amendment 1 (2026-10-25):
+- AC-9: pass — `offer_choices` takes `ask { field, label }`.
+  - Options are checked with a stand-in value, then stored and carded without the field, its fields entry or the stand-in line (`withoutStandIn`).
+  - With `ask`, a single remaining option stays a choice card.
+  - The instructions tell the model to use `ask` for such a value instead of text.
+- AC-10: pass — `ChoiceCard.tsx` shows a labelled box ("Why is this entry wrong?").
+  - Live: picked with no answer, the button read "Type your answer" and was disabled.
+  - Digits typed in the box didn't change the pick.
+  - With an answer, the button read "Send request · 1.3 h", and Enter in the box sent it.
+- AC-11: pass — `confirmChat(…, answer)` → `confirmAction(…, { answer })` → `withAnswer` adds the value, checks the schema and then `propose`, and only then runs `claimChoice` and the write.
+  - Test: missing, blank and too-short answers are refused as retry and leave both options open; a valid answer reaches the write trimmed, and the other option is then refused.
+- AC-12: pass — `choices.test.ts` AC12.
+  - Live with the real model, as Nimal (2026-W42 approved): "Change Monday's Contoso Portal hours to 7" gave one choice card with the reason box.
+  - Sending "I logged a client call twice" on "Your entry: 2.3 h → 1.3 h" created `time.change_request` (correct, pending, 2.3 → 1.3, with that reason).
+  - Axe is clean in light and dark.
+- During the build, the picked option's preview was indented to the figure column (it wrapped to four lines in the narrow chat).
+- Checks: chat 36/36 and web 317/317 (353 together); `pnpm lint` ok; build ok; time e2e 9/9.
+- Screenshots: ask-open.png, ask-filled.png and ask-dark.png in the session scratchpad (`ui/`).

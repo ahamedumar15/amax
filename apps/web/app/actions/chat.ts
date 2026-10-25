@@ -49,12 +49,14 @@ export async function pageContext(path: string, as?: string, pins: PinnedArgs[] 
   }
 }
 
-export async function confirmChat(conversationId: string, actionId: string, as?: string): Promise<CardOutcome> {
+/** `answer` (076 amendment 1): what the person typed on a choice card for its `ask` field (a reason, say). */
+export async function confirmChat(conversationId: string, actionId: string, as?: string, answer?: string): Promise<CardOutcome> {
   let done: { title: string; result: unknown; receipt?: string };
   try {
+    const typed = z.string().max(2000).optional().parse(answer);
     const viewer = await currentViewer();
     sameUser(viewer, as);
-    const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
+    const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId, typed === undefined ? {} : { answer: typed });
     done = { title: action.title, result, receipt: action.look?.done };
   } catch (e) {
     return outcomeOf(e);

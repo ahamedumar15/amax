@@ -17,7 +17,8 @@ export type { Pin };
 /** `lines` (070 amendment 2): what the tool's own `card` says changes, shown instead of the raw input. */
 /** `look` (073): how the card presents itself (`CardLook`); absent, the card keeps the plain layout. */
 /** `choice` (076): the card is one option of a choice card; options share its `id` and `question`, and only one can run. */
-export type Choice = { id: string; question: string; label: string };
+/** `ask` (076 amendment 1): one value the person types on the card (a reason), added to the chosen option's input at confirm. */
+export type Choice = { id: string; question: string; label: string; ask?: { field: string; label: string } };
 export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[]; look?: CardLook; choice?: Choice };
 export type Highlight = { text: string; field: string; index: number };
 /** `pins`: the turn's pins as read (059), in the order sent: labels refreshed, old ones moved onto ids. */
@@ -258,7 +259,7 @@ const doneNote = (title: string, result: unknown) => {
 // immutable, so a confirm that never took effect must never read as a plain confirm (052 review).
 // A cancel is recorded once it has taken effect. Every decided step is best-effort except `run`
 // (traceStepOrFail): it is written before the write, so a write never runs untraced (053).
-export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret" | "not_chosen";
+export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret" | "not_chosen" | "needs_answer";
 const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled", outcome?: ConfirmOutcome) => {
   const step = { kind: "decided" as const, tool: action.tool, detail: { actionId: action.id, decision, ...(outcome ? { outcome } : {}) } };
   return outcome === "run" ? traceStepOrFail(step) : traceStep(step);
@@ -266,12 +267,13 @@ const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled",
 const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>) => withTrace(traceFor(viewer, action.traceId), fn);
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
-export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string } = {}) {
+/** `answer` (076 amendment 1): the value typed on a choice card for its `ask` field. */
+export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string; answer?: string } = {}) {
   const action = await card(db, viewer, conversationId, actionId);
   return inTrace(viewer, action, () => confirmCard(db, registry, viewer, conversationId, action, opts));
 }
 
-async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string }) {
+async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string; answer?: string }) {
   const actionId = action.id;
   const key = keyOf(actionId);
   const by = viewer.userId;
@@ -313,12 +315,17 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
     await settleNow(db, viewer, conversationId, action, "failed", `(I couldn't run "${action.title}": it can't be confirmed in chat.)`);
     throw new ActionFailedError("this change can't be confirmed in chat", "failed");
   }
+  const input = await withAnswer(registry, viewer, action, opts.answer, () => decide("needs_answer"));
+  if ("failed" in input) {
+    await settleNow(db, viewer, conversationId, action, "failed", `(I couldn't send "${action.title}": ${input.failed})`);
+    throw new ActionFailedError(input.failed, "failed");
+  }
   if (action.choice && !(await claimChoice(db, viewer, conversationId, action))) {
     await decide("not_chosen");
     throw await cancelled();
   }
   await decide("run");
-  const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }), { service, by });
+  const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, input.value, { source: "chat", secret: action.secret ? opts.secret : undefined }), { service, by });
   const run = raw.ok ? raw : { ...raw, error: scrub(raw.error, opts.secret) };
   if (run.writes > 1) throw await unknown("it made more than one change");
   if (run.ok) {
@@ -352,6 +359,25 @@ async function failedRun(db: Db, viewer: Viewer, conversationId: string, action:
   // The note is read back by the model: the failure kind and a reference, never the message (final review).
   await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but ${toolFailure(action.tool, run.error, logError(`chat.confirm ${action.tool}`, run.error))})`);
   throw new ActionFailedError(message, "failed");
+}
+
+// 076 amendment 1: a choice card's typed value joins the chosen option's input here, and only here. The full input is
+// checked again (schema, then the tool's own propose check) before any other option is touched or anything runs: a
+// missing or invalid value keeps the card open (retry), and a check that now refuses closes it (failed).
+async function withAnswer(registry: Registry, viewer: Viewer, action: PendingAction, answer: string | undefined, refuse: () => Promise<unknown>): Promise<{ value: Record<string, unknown> } | { failed: string }> {
+  const ask = action.choice?.ask;
+  if (!ask) return { value: action.input };
+  const typed = answer?.trim();
+  const tool = registry.all.find((t) => t.name === action.tool);
+  const parsed = typed ? tool?.input.safeParse({ ...action.input, [ask.field]: typed }) : undefined;
+  if (!parsed?.success) {
+    await refuse();
+    const why = parsed?.error.issues[0]?.message;
+    throw new ActionFailedError(typed && why ? `check your answer to "${ask.label}": ${why}` : `answer "${ask.label}" first`, "retry");
+  }
+  const value = parsed.data as Record<string, unknown>;
+  const refused = await proposeCheck(tool!, viewer, value);
+  return refused ? { failed: refused.note.replace("No confirm card was made: ", "") } : { value };
 }
 
 // 076: an option of a choice card runs only if no other option has. Before it runs, every other option's key is claimed

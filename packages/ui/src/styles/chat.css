@@ -153,11 +153,16 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 .ch-key{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;border:1px solid var(--line-2);font:600 11.5px var(--font);color:var(--ink-2);background:var(--card)}
 .ch-opt.on .ch-key{border-color:var(--chip-agent);color:var(--chip-agent)}
 .ch-more{padding:0 14px 12px 44px}
-.ch-more.num{padding-left:112px}
+.ch-more.num{padding-left:44px}
 .ch-more .cc-lines{padding-top:10px;border-top:1px dashed var(--line-2)}
 .ch-more .cc-row{grid-template-columns:max-content 1fr}
 .ch.busy .ch-opt:not(.run){opacity:.45}
 .ch-spin{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--chip-agent)}
+.ch-ask{display:flex;flex-direction:column;gap:6px}
+.ch-ask span{font-size:13px;font-weight:600;color:var(--ink)}
+.ch-ask textarea{width:100%;min-height:58px;resize:vertical;padding:9px 12px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font:14px/1.45 var(--font)}
+.ch-ask textarea::placeholder{color:var(--ink-3)}
+.ch-ask textarea:focus-visible{outline:2px solid var(--violet);outline-offset:1px;border-color:transparent}
 .ch-else{align-self:flex-start;margin:-2px 0 0 -10px;padding:6px 10px}
 .cc-acts .btn.sm:disabled{opacity:.55;cursor:not-allowed}
 @media (prefers-reduced-motion:no-preference){.ch-opt{transition:border-color .15s,background .15s,box-shadow .2s,opacity .2s}.ch-more{animation:ch-in .18s ease-out}.ch-spin{animation:ch-spin .8s linear infinite}}

@@ -7,7 +7,7 @@ import { Lines } from "./ConfirmCard";
 // Keys: 1–4 pick an option, Enter confirms the picked one. "Something else…" writes nothing.
 type State = "open" | "working" | "done" | "error" | "expired" | "cancelled";
 export type Option = { action: PendingAction; state: State; note?: string };
-type Props = { options: Option[]; onConfirm: (a: PendingAction) => void; onCancel: (a: PendingAction) => void; onElse: () => void };
+type Props = { options: Option[]; onConfirm: (a: PendingAction, answer?: string) => void; onCancel: (a: PendingAction) => void; onElse: () => void };
 
 // What every option shares (the project and day, say) is said once under the question, not on each option.
 const where = (a: PendingAction) => [a.look?.subject, a.look?.detail].filter(Boolean).join(" · ");
@@ -19,6 +19,7 @@ const more = (a: PendingAction) => (a.lines ?? []).filter((l) => !keep(a.choice!
 
 export function ChoiceCard({ options, onConfirm, onCancel, onElse }: Props) {
   const [picked, setPicked] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
   const name = useId();
   const first = options[0].action;
   const done = options.find((o) => o.state === "done");
@@ -30,10 +31,15 @@ export function ChoiceCard({ options, onConfirm, onCancel, onElse }: Props) {
   const note = open.find((o) => o.note)?.note;
   const shared = open.every((o) => where(o.action) === where(first)) ? where(first) : "";
   const danger = chosen?.look?.tone === "danger";
-  const confirm = () => chosen && !working && onConfirm(chosen);
+  // 076 amendment 1: a value every option needs (a reason) is typed here; the server checks it again before anything runs.
+  const ask = first.choice!.ask;
+  const ready = !!chosen && !working && (!ask || answer.trim().length > 0);
+  const confirm = () => ready && onConfirm(chosen!, ask ? answer.trim() : undefined);
   const keys = (e: KeyboardEvent) => {
     const n = Number(e.key);
-    if (!working && n >= 1 && n <= open.length) { e.preventDefault(); setPicked(open[n - 1].action.id); }
+    if ((e.target as HTMLElement).tagName === "TEXTAREA") {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); confirm(); }
+    } else if (!working && n >= 1 && n <= open.length) { e.preventDefault(); setPicked(open[n - 1].action.id); }
     else if (e.key === "Enter" && (e.target as HTMLInputElement).type === "radio") { e.preventDefault(); confirm(); }
   };
   return (
@@ -53,15 +59,20 @@ export function ChoiceCard({ options, onConfirm, onCancel, onElse }: Props) {
           </div>
         ))}
       </div>
+      {ask && (
+        <label className="ch-ask"><span>{ask.label}</span>
+          <textarea rows={2} value={answer} maxLength={500} disabled={!!working} onChange={(e) => setAnswer(e.target.value)} aria-required="true" />
+        </label>
+      )}
       <button className="cc-quiet ch-else" type="button" onClick={onElse} disabled={!!working}>Something else…</button>
       {note && <p className="err">{note}</p>}
       <div className="cc-acts">
-        <button className={`btn sm ${danger ? "danger" : "primary"}`} type="button" disabled={!chosen || !!working} onClick={confirm}>
-          {working ? "Saving…" : chosen ? `${chosen.look?.confirm ?? "Confirm"}${chosen.look?.figure ? ` · ${chosen.look.figure}` : ""}` : "Pick an option"}
+        <button className={`btn sm ${danger ? "danger" : "primary"}`} type="button" disabled={!ready} onClick={confirm}>
+          {working ? "Saving…" : chosen && ask && !answer.trim() ? "Type your answer" : chosen ? `${chosen.look?.confirm ?? "Confirm"}${chosen.look?.figure ? ` · ${chosen.look.figure}` : ""}` : "Pick an option"}
         </button>
         {!working && <button className="cc-quiet" type="button" onClick={() => onCancel(first)}>Cancel</button>}
       </div>
-      <p className="cc-help" id={`${name}-keys`}><span className="ch-hint">Press 1–{open.length} to pick, Enter to confirm. </span>Nothing is saved until you confirm.</p>
+      <p className="cc-help" id={`${name}-keys`}><span className="ch-hint">Press 1–{open.length} to pick{ask ? ", type your answer" : ""}, Enter to confirm. </span>Nothing is saved until you confirm.</p>
     </div>
   );
 }
