@@ -4,7 +4,7 @@ import { isWeekend, type IsoWeek } from "../week";
 import { gridContext } from "./grid-context";
 import { entriesOf, notStarted } from "./grid-rows";
 import { projectNames, read, round1 } from "./read";
-import { teamWeek, type TeamRow, type TeamWeek } from "./team";
+import { lastReminders, teamWeek, type TeamRow, type TeamWeek } from "./team";
 
 export type CellState = "missing" | "low" | "on_target" | "over" | "not_yet" | "leave" | "weekend";
 export type Cell = { day: string; hours: number; state: CellState; projects: { name: string; hours: number }[] };
@@ -40,6 +40,8 @@ export async function teamGrid(v: Viewer, wanted: IsoWeek | undefined, q: GridQu
     const projectId = q.project ? [...names].find(([, n]) => n === q.project)?.[0] ?? "none" : null;
     const entries = await entriesOf(tx, team, projectId);
     const extra = await notStarted(tx, v, team);
+    // 073: a Not started row shows its last reminder too (a day reminder reaches people with no timesheet).
+    const reminded = await lastReminders(tx, extra.map((p) => p.userId));
     const ctx = await gridContext(tx, v.tenantId, [...team.rows.map((r) => r.userId), ...extra.map((p) => p.userId)], team.days);
     const build = (base: Omit<GridRow, "cells" | "total" | "target" | "utilisation" | "overtime" | "department">, mine: Map<string, Map<string, number>>): GridRow => {
       const target = ctx.targets.get(base.userId) ?? 40;
@@ -54,7 +56,7 @@ export async function teamGrid(v: Viewer, wanted: IsoWeek | undefined, q: GridQu
     };
     let grid = [
       ...team.rows.map((r) => build({ ...r }, entries.get(r.weekId) ?? new Map())),
-      ...(projectId ? [] : extra.map((p) => build({ weekId: null, userId: p.userId, personName: p.name, note: null, status: "not_started", rejectComment: null, agentHours: 0, canApprove: false, lastReminder: null, anomalies: [] }, new Map()))),
+      ...(projectId ? [] : extra.map((p) => build({ weekId: null, userId: p.userId, personName: p.name, note: null, status: "not_started", rejectComment: null, agentHours: 0, canApprove: false, lastReminder: reminded.get(p.userId) ?? null, anomalies: [] }, new Map()))),
     ];
     if (projectId) grid = grid.filter((r) => r.total > 0);
     grid = grid.filter(keep(q));

@@ -6,6 +6,7 @@ import { remindMany } from "../server/bulk";
 import { bulkCard, proposeBulk } from "../server/bulk-card";
 import { ctxFor } from "../server/context";
 import { getTimesheet } from "../server/sheet";
+import { teamGrid } from "../server/grid";
 import { T, timeDb } from "./db";
 
 // 073: Team time's rows keep only their pin. Pinning one offers its approve or remind; "Remind N people" reaches
@@ -46,5 +47,8 @@ describe.skipIf(!hasDb)("073: row actions move to pin suggestions and the bulk r
     expect((out as { results: { person: string; status: string; note: string | null }[] }).results).toEqual([
       { person: "Ravi Perera", week: "2026-W42", status: "sent", note: null }, { person: "Kasun Dias", week: "2026-W42", status: "skipped", note: "already has a timesheet" }]);
     expect(await db.q(sql`select kind, week_id, sender_name from time.reminder where user_id = ${ravi}`)).toEqual([{ kind: "week", week_id: null, sender_name: "Maya Fernando" }]);
+    // His Not started row on Team time shows that reminder, as a timesheet row does.
+    const row = (await teamGrid(maya, { year: 2026, week: 42 }, {})).grid.find((r) => r.userId === ravi)!;
+    expect([row.status, row.lastReminder?.by]).toEqual(["not_started", "Maya Fernando"]);
   }, 60_000);
 });

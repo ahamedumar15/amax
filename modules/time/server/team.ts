@@ -51,7 +51,8 @@ export const teamWeek = (v: Viewer, wanted?: IsoWeek) =>
     return { week: w, key: weekKey(w), days, rows, perDay, projects, canAdmin: can(v, "time:admin"), capacity: await capacityOf(tx, v, w, rows.map((r) => r.userId)) };
   });
 
-async function lastReminders(tx: Tx, userIds: string[]) {
+/** The newest reminder per person (073 AC-4), for Team time's rows, Not started ones included. */
+export async function lastReminders(tx: Tx, userIds: string[]) {
   if (!userIds.length) return new Map<string, { by: string; at: string }>();
   const rows = await tx.execute(sql`select distinct on (user_id) user_id, coalesce(sender_name, 'amax') as by, sent_at from time.reminder
     where user_id::text in (${sql.join(userIds.map((id) => sql`${id}`), sql`, `)}) order by user_id, sent_at desc`);
