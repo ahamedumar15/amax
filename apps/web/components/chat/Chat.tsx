@@ -7,6 +7,7 @@ import type { Conversation, ConversationSummary, Highlight, PendingAction } from
 import { cancelChat, confirmChat, pageContext, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
 import type { PageInfo } from "../../lib/page-context";
 import { pinKey, withFresh, type Pin } from "@amax/chat/pins";
+import { ConfirmCard } from "./ConfirmCard";
 import { Markdown } from "./Markdown";
 import { followMove } from "../../lib/chat-move";
 import { listChats, openChat } from "../../app/actions/chat-history";
@@ -298,30 +299,16 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
             </div></div>
           );
           return (
-            <div key={i} className="m"><div className="b" role="group" aria-label={`Confirm: ${e.action.title}`}>
-              <p><b>{e.action.title}</b></p>
-              <dl className="rec">{(e.action.lines ?? Object.entries(e.action.input).map(([label, v]) => ({ label, value: String(v) }))).map(({ label, value }, j) =>
-                <div key={j} style={{ display: "contents" }}><dt className={e.action.lines ? FIELD_CLASSES[j % FIELD_CLASSES.length] : fieldClass(e.action.fields, label)}><span className="fd" />{label}</dt><dd>{value}</dd></div>)}</dl>
-              {e.state === "open" ? (<>
-                {e.note && <p className="err">{e.note}</p>}
-                {e.action.secret && convo.current ? (
-                  <SecretConfirm conversationId={convo.current} as={userId} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
-                    onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} />
-                ) : (
-                  <div className="acts">
-                  <button className="btn sm primary" type="button" onClick={() => decide(e.action, true)}>Add it</button>
-                  <button className="btn sm" type="button" onClick={() => { setText("Change "); input.current?.focus({ preventScroll: true }); }}>Change something</button>
-                  <button className="btn sm" type="button" onClick={() => decide(e.action, false)}>Cancel</button>
-                  </div>
-                )}
-              </>) : e.state === "expired" ? (
-                <p className="muted" style={{ marginTop: 10 }}><span className="chip">Expired</span> Ask again to make a fresh request.</p>
-              ) : <p className={e.state === "error" ? "err" : "muted"} style={{ marginTop: 10 }}>{e.state === "working" ? "Working on it…" : e.note}</p>}
-              {e.reveal && <RevealOnce reveal={e.reveal} onDone={() => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, reveal: undefined } : x)))} />}
-            </div></div>
+            <div key={i} className="m">
+              <ConfirmCard action={e.action} state={e.state} note={e.note} onConfirm={() => decide(e.action, true)} onCancel={() => decide(e.action, false)}
+                onEdit={() => { setText("Change "); input.current?.focus({ preventScroll: true }); }}
+                secret={e.action.secret && convo.current ? <SecretConfirm conversationId={convo.current} as={userId} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
+                  onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} /> : undefined}
+                after={e.reveal && <RevealOnce reveal={e.reveal} onDone={() => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, reveal: undefined } : x)))} />} />
+            </div>
           );
         })}
-        {busy && <div className="m"><div className="b"><div className="dots" aria-label="amax is thinking"><i /><i /><i /></div></div></div>}
+        {busy && <div className="m"><div className="b"><div className="dots" role="status" aria-label="amax is thinking"><i /><i /><i /></div></div></div>}
       </div>
       <div className="c-ctx" aria-label="Pinned context">
         {pins.map((p) => (

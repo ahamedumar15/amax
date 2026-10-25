@@ -43,6 +43,13 @@ const cards: Record<Decide["decision"], (r: ChangeRequest, note?: string) => Too
   decline: (r, note) => ({ title: `Decline ${r.personName}'s change to ${about(r)}`, lines: [...asLines(changeText(r)), { label: "Why", value: note ?? "" }, notice(r)] }),
 };
 
+// 073: the decision card leads with the request's change and the person, and its button names the decision.
+const figureOf = (r: ChangeRequest) => (r.kind === "add" ? `+${r.proposed.hours} h` : r.kind === "delete" ? "Remove" : r.proposed.hours !== undefined ? `${r.proposed.hours} h` : "Change");
+const LOOK: Record<Decide["decision"], [string, string, string]> = { apply: ["Apply change request", "Apply change", "Applied"], reopen: ["Reopen for a fix", "Reopen week", "Reopened for a fix"], ask: ["Ask about a request", "Send question", "Asked"], decline: ["Decline request", "Decline", "Declined"] };
+
 export async function decideCard(v: Viewer, a: Decide): Promise<ToolCard> {
-  return cards[a.decision](await checked(v, a), a.note);
+  const r = await checked(v, a);
+  const [kind, confirm, did] = LOOK[a.decision];
+  return { ...cards[a.decision](r, a.note), look: { kind, figure: figureOf(r), subject: `${r.before.projectName} · ${r.personName}`, detail: r.dayLabel, confirm,
+    done: `${did} · ${r.personName}, ${r.before.projectName}, ${r.dayLabel}`, ...(a.decision === "decline" ? { tone: "danger" as const } : {}) } };
 }

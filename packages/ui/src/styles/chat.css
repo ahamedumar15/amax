@@ -103,3 +103,35 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 .m .b ol,.m .b ul{line-height:1.5}
 /* The tools-used tag: readable in light and dark (axe color-contrast). */
 .m .tools span{color:var(--chip-agent)}
+/* 073: the confirm card. Eyebrow, the one figure to check, aligned details, one named decision; tokens for both themes. */
+.m:has(.cc){max-width:100%}
+.m .b.cc{padding:16px 18px;display:flex;flex-direction:column;gap:12px;border-radius:18px;box-shadow:0 8px 24px -12px rgba(40,30,110,.25),0 0 0 1px var(--line)}
+.cc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cc-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.cc-who{font-size:12px;font-weight:600;color:var(--ink-2);background:var(--sunken);border-radius:999px;padding:2px 10px;white-space:nowrap}
+.cc-fig{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.cc-num{font-size:26px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.cc-sub{display:flex;flex-direction:column;min-width:0}
+.cc-sub b{font-size:15px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.cc-sub small{font-size:13px;color:var(--ink-2)}
+.cc-title{margin:0;padding-bottom:12px;border-bottom:1px solid var(--line);font-size:15px;font-weight:600;line-height:1.4;color:var(--ink)}
+.cc-lines{margin:0;display:flex;flex-direction:column;gap:8px}
+.cc-row{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:baseline}
+.cc-row dt{font-size:12.5px;color:var(--ink-2);margin:0}
+.cc-row dd{margin:0;font-size:14px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere}
+.cc-more summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--chip-agent);padding:2px 0;list-style:none}
+.cc-more summary::-webkit-details-marker{display:none}
+.cc-more[open] summary{display:none}
+.cc-more .cc-row{margin-top:8px}
+.cc-acts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
+.cc-acts .btn.sm{height:36px;padding:0 16px;font-weight:600}
+.cc-acts .btn.danger{background:var(--chip-bad-bg);border-color:var(--chip-bad);color:var(--chip-bad)}
+.cc-quiet{border:0;background:none;color:var(--ink-2);font:600 13.5px var(--font);padding:8px 10px;border-radius:10px;cursor:pointer}
+.cc-quiet:hover{background:var(--sunken);color:var(--ink)}
+.cc-quiet:focus-visible,.cc-acts .btn:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.cc-help{margin:-4px 0 0;font-size:12px;color:var(--ink-2)}
+.m .b.cc.done,.m .b.cc.cancelled{padding:10px 14px;gap:0;box-shadow:0 0 0 1px var(--line);align-self:flex-start}
+.cc-receipt{margin:0;display:flex;align-items:baseline;gap:8px;font-size:13.5px;color:var(--ink)}
+.cc.done .cc-tick{color:var(--chip-good);font-weight:700}
+.cc.cancelled .cc-receipt{color:var(--ink-2)}
+@media (max-width:600px){.cc-acts .btn.sm{flex:1 1 100%;height:44px}.cc-row{grid-template-columns:84px 1fr}}

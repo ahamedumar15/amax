@@ -21,13 +21,17 @@ function forOther(e: StoredEntry, reason: string | undefined): { head: CardLine[
   return { head: [{ label: "For", value: e.personName }], tail: [...why, { label: "Notice", value: `${e.personName.split(" ")[0]} will be notified` }] };
 }
 
+// 073: the card says whose record it is, and the For line then repeats nothing.
+const whose = (e: StoredEntry) => (e.own ? "for you" : `for ${e.personName}`);
+
 type Fix = { entryId: string; hours?: number; billable?: boolean; note?: string; projectKey?: string; reason?: string };
 
 export async function correctCard(v: Viewer, a: Fix): Promise<ToolCard> {
   const e = await storedEntry(v, a.entryId);
   const moved = a.projectKey ? (await read(v, (tx) => getProjectRef(tx, a.projectKey!)))?.name ?? a.projectKey : e.projectName;
   const { head, tail } = forOther(e, a.reason);
-  return { title: `Fix ${e.projectName}, ${dayLabel(e.day)}`, lines: [...head,
+  const look = { kind: "Fix hours", figure: h(a.hours ?? e.hours), subject: moved, detail: dayLabel(e.day), who: whose(e), confirm: "Save the fix", done: `Saved the fix · ${moved}, ${dayLabel(e.day)}` };
+  return { title: `Fix ${e.projectName}, ${dayLabel(e.day)}`, look, lines: [...head,
     ...change("Hours", h(e.hours), h(a.hours ?? e.hours)), ...change("Billable", yesNo(e.billable), yesNo(a.billable ?? e.billable)),
     ...change("Note", e.note ?? "none", a.note ?? e.note ?? "none"), ...change("Project", e.projectName, moved), ...tail] };
 }
@@ -35,7 +39,8 @@ export async function correctCard(v: Viewer, a: Fix): Promise<ToolCard> {
 export async function deleteCard(v: Viewer, a: { entryId: string; reason?: string }): Promise<ToolCard> {
   const e = await storedEntry(v, a.entryId);
   const { head, tail } = forOther(e, a.reason);
-  return { title: `Remove ${e.projectName}, ${dayLabel(e.day)}: ${h(e.hours)}`, lines: [...head, ...tail] };
+  return { title: `Remove ${e.projectName}, ${dayLabel(e.day)}: ${h(e.hours)}`, lines: [...head, ...tail],
+    look: { kind: "Remove hours", figure: h(e.hours), subject: e.projectName, detail: dayLabel(e.day), who: whose(e), confirm: `Remove ${h(e.hours)}`, tone: "danger", done: `Removed ${h(e.hours)} · ${e.projectName}, ${dayLabel(e.day)}` } };
 }
 
 type Log = { projectKey: string; hours: number; day: string; billable?: boolean; note?: string; weekend?: boolean };
@@ -46,7 +51,8 @@ export async function logCard(v: Viewer, a: Log): Promise<ToolCard> {
     return { name: p?.name ?? a.projectKey, twin: p ? await possibleDuplicate(tx, v.userId, p.id, a.day, a.note) : null };
   });
   const warn = twin ? [{ label: "Already logged", value: `${name}, ${dayLabel(a.day)}, ${h(twin.hours)}, same note` }] : [];
-  return { title: `Log ${h(a.hours)} to ${name}, ${dayLabel(a.day)}${isWeekend(a.day) ? " (weekend)" : ""}`,
+  const look = { kind: "Log time", figure: h(a.hours), subject: name, detail: `${dayLabel(a.day)}${isWeekend(a.day) ? " · weekend" : ""}`, who: "for you", confirm: `Log ${h(a.hours)}`, done: `Logged ${h(a.hours)} · ${name}, ${dayLabel(a.day)}` };
+  return { title: `Log ${h(a.hours)} to ${name}, ${dayLabel(a.day)}${isWeekend(a.day) ? " (weekend)" : ""}`, look,
     lines: [...(a.billable === false ? [{ label: "Billable", value: "no" }] : []), ...(a.note ? [{ label: "Note", value: a.note }] : []), ...warn] };
 }
 

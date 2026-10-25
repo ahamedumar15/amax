@@ -21,7 +21,8 @@ describe.skipIf(!hasDb)("073 approval checks: missing days on submit, anomalies 
 
   it("AC9 submitting a week with a missing working day warns on the card and still submits, listing the day", async () => {
     await logWeek("kasun", [8, 8, 8, 8, 0]);
-    expect(await submitCard(await db.as("kasun"), { week: "2026-W43" })).toEqual({ title: "Submit your timesheet for 2026-W43 (32 h)", lines: [{ label: "Missing", value: "Fri Oct 23. You can still submit." }] });
+    expect(await submitCard(await db.as("kasun"), { week: "2026-W43" })).toEqual({ title: "Submit your timesheet for 2026-W43 (32 h)", lines: [{ label: "Missing", value: "Fri Oct 23. You can still submit." }],
+      look: { kind: "Submit timesheet", figure: "32 h", subject: "Week 43", detail: "2026-W43", who: "for you", confirm: "Submit", done: "Submitted 2026-W43 · 32 h" } });
     await expect(call("kasun", "submit_week", { week: "2026-W43" })).resolves.toMatchObject({ status: "submitted", missingDays: ["Fri Oct 23"] });
   }, 60_000);
 

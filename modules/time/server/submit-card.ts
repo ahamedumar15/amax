@@ -14,6 +14,6 @@ export async function submitCard(v: Viewer, a: { week: string }): Promise<ToolCa
     return week ? { hours: Math.round((await weekHours(tx, week.id)) * 10) / 10, missing: await missingDays(tx, week) } : null;
   });
   if (!found) return { title: `Submit your timesheet for ${a.week}`, lines: [] };
-  return { title: `Submit your timesheet for ${a.week} (${found.hours} h)`,
+  return { title: `Submit your timesheet for ${a.week} (${found.hours} h)`, look: { kind: "Submit timesheet", figure: `${found.hours} h`, subject: `Week ${a.week.split("-W")[1]}`, detail: a.week, who: "for you", confirm: "Submit", done: `Submitted ${a.week} · ${found.hours} h` },
     lines: found.missing.length ? [{ label: "Missing", value: `${found.missing.join(", ")}. You can still submit.` }] : [] };
 }

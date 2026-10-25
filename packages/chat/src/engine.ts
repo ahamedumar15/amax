@@ -7,14 +7,15 @@ import { resolvePins } from "./resolve";
 import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, keyedOutcome, logError, lookupKey, ReplayedError, retryable, traceStep, traceStepOrFail, UndeclaredWriteError, withIdempotency, withTrace, type KeyedRun } from "@amax/core/server";
 import { ToolError, type Registry, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
-import type { CardLine } from "@amax/core";
+import type { CardLine, CardLook } from "@amax/core";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type { Pin };
 /** `createdAt` (ISO): a card expires after CARD_DAYS, before its idempotency record can be pruned. */
 /** `traceId` (050): the turn that proposed it, so its confirm or cancel joins the same trace. */
 /** `lines` (070 amendment 2): what the tool's own `card` says changes, shown instead of the raw input. */
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[] };
+/** `look` (073): how the card presents itself (`CardLook`); absent, the card keeps the plain layout. */
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[]; look?: CardLook };
 export type Highlight = { text: string; field: string; index: number };
 /** `pins`: the turn's pins as read (059), in the order sent: labels refreshed, old ones moved onto ids. */
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[]; pins: Pin[] };
@@ -76,7 +77,7 @@ const traceFor = (viewer: Viewer, traceId?: string) => ({ traceId, tenantId: vie
 async function pendingFor(t: RegisteredTool, viewer: Viewer, input: Record<string, unknown>): Promise<PendingAction> {
   const card = await t.card?.(viewer as never, input as never).catch((e: unknown) => void logError(`chat.card ${t.name}`, e));
   return { id: randomUUID(), tool: t.name, title: card?.title ?? titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), traceId: currentTrace()?.traceId,
-    ...(card ? { lines: card.lines } : {}), ...(t.secretInput ? { secret: t.secretInput } : {}) };
+    ...(card ? { lines: card.lines, ...(card.look ? { look: card.look } : {}) } : {}), ...(t.secretInput ? { secret: t.secretInput } : {}) };
 }
 
 // An error from a write that was given a secret never carries it on, even if some layer echoed it.

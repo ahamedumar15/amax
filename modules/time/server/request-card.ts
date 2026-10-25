@@ -30,7 +30,8 @@ export async function requestCard(v: Viewer, a: Ask): Promise<ToolCard> {
   const moved = a.projectKey ? (await read(v, (tx) => getProjectRef(tx, a.projectKey!)))?.name ?? a.projectKey : undefined;
   const before = { hours: e.hours, billable: e.billable, note: e.note, projectId: e.projectId, projectName: e.projectName };
   const change = changeText({ kind: a.remove ? "delete" : "correct", before, proposed: { hours: a.hours, billable: a.billable, note: a.note, projectName: moved } });
-  return { title: `${a.remove ? "Ask to remove" : "Ask to change"} ${e.projectName}, ${dayLabel(e.day)}`, lines: [...asLines(change), { label: "Reason", value: a.reason },
+  const look = { kind: "Change request", figure: a.remove ? "Remove" : a.hours !== undefined ? `${Number(a.hours.toFixed(2))} h` : "Change", subject: e.projectName, detail: dayLabel(e.day), who: "for you", confirm: "Send request", done: `Sent your request · ${e.projectName}, ${dayLabel(e.day)}` };
+  return { title: `${a.remove ? "Ask to remove" : "Ask to change"} ${e.projectName}, ${dayLabel(e.day)}`, look, lines: [...asLines(change), { label: "Reason", value: a.reason },
     { label: "Review", value: `${keyOf(e.week)} is ${e.week.status}; nothing changes until an approver decides` }] };
 }
 

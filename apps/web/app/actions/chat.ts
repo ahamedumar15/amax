@@ -50,18 +50,18 @@ export async function pageContext(path: string, as?: string, pins: PinnedArgs[] 
 }
 
 export async function confirmChat(conversationId: string, actionId: string, as?: string): Promise<CardOutcome> {
-  let done: { title: string; result: unknown };
+  let done: { title: string; result: unknown; receipt?: string };
   try {
     const viewer = await currentViewer();
     sameUser(viewer, as);
     const { action, result } = await confirmAction(getDb()!, toolRegistry(), viewer, conversationId, actionId);
-    done = { title: action.title, result };
+    done = { title: action.title, result, receipt: action.look?.done };
   } catch (e) {
     return outcomeOf(e);
   }
   // The write has committed: nothing after this may turn the card into an error (057).
   try { revalidatePath("/", "layout"); } catch (e) { logError("chat.revalidate", e); }
-  return doneOutcome(done.title, done.result);
+  return doneOutcome(done.title, done.result, done.receipt);
 }
 
 const pinList = z.array(z.object({ label: z.string().max(200), tool: z.string().max(80), args: z.record(z.string(), z.unknown()), facet: z.string().max(200).optional(), unavailable: z.literal(true).optional() })).max(8);

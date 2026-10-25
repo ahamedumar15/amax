@@ -57,8 +57,8 @@ test("AC2 / 054 AC5 / 073 approving through a pinned row's suggestion locks the 
   await expect(page.getByLabel("Message amax")).toHaveValue(/^Approve Nimal Silva's timesheet for 2026-W42 \(week id [0-9a-f-]{36}\)$/);
   await page.getByRole("button", { name: "Send" }).click();
   const card = page.getByRole("group", { name: /^Confirm:/ });
-  await card.getByRole("button", { name: "Add it" }).click();
-  await expect(card).toContainText("Done:");
+  await card.getByRole("button", { name: "Approve" }).click();
+  await expect(card).toContainText("Approved · Nimal Silva, 2026-W42");
   await page.reload();
   await expect(page.locator("tr", { hasText: "Nimal Silva" })).toContainText("Approved");
   await expect(page.getByRole("button", { name: "Approve 2 submitted (56.0 h)" })).toBeVisible();

@@ -39,6 +39,8 @@ const titles: Record<Kind, (who: string, key: string, hours: number) => string> 
   reopen: (who, key, hours) => `Reopen ${who}'s approved timesheet for ${key} (${hours} h)`,
 };
 
+const LOOK: Record<Kind, [string, string, string]> = { approve: ["Approve timesheet", "Approve", "Approved"], reject: ["Send back", "Send back", "Sent back"], remind: ["Remind", "Send reminder", "Reminded"], reopen: ["Reopen week", "Reopen", "Reopened"] };
+
 export const proposeWeek = (kind: Kind) => async (v: Viewer, a: Args) => void (await preview(v, kind, a));
 
 export const weekCard = (kind: Kind) => async (v: Viewer, a: Args): Promise<ToolCard> => {
@@ -47,7 +49,10 @@ export const weekCard = (kind: Kind) => async (v: Viewer, a: Args): Promise<Tool
   // 073 AC-10: an approval card names what needs a closer look; approving one at a time still works.
   const checks = kind === "approve" ? await read(v, (tx) => weekAnomalies(tx, week)) : [];
   const recent = kind === "remind" ? (await read(v, (tx) => recentReminders(tx, [week.user_id]))).get(week.user_id) : undefined;
-  return { title: titles[kind](week.person_name as string, keyOf(week), hours),
+  // 073: the card leads with the week's hours and the person, and its button names the decision.
+  const look = { kind: LOOK[kind][0], figure: `${hours} h`, subject: week.person_name as string, detail: keyOf(week), confirm: LOOK[kind][1],
+    done: `${LOOK[kind][2]} · ${week.person_name as string}, ${keyOf(week)}` };
+  return { title: titles[kind](week.person_name as string, keyOf(week), hours), look,
     lines: [...(a.comment ? [{ label: "Comment", value: a.comment }] : []), ...(a.reason ? [{ label: "Reason", value: a.reason }] : []),
       ...(a.message ? [{ label: "Message", value: a.message }] : []), ...(checks.length ? [{ label: "Check", value: checks.join("; ") }] : []), ...(recent ? [{ label: "Note", value: `reminded ${agoText(recent.at)} by ${recent.by}` }] : [])] };
 };

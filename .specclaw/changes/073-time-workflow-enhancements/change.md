@@ -474,3 +474,33 @@ Product owner, 2026-10-25: "a submitted week can only take a change request for 
 - Tests: `tests/request-add.test.ts` (weekend confirmation and draft-week refusals, nothing changes until applied, apply logs for the person and keeps the week submitted, the bell, an approved week's audited change, reopen to draft); `contracts.test.ts` and `suggestions.test.ts` list the new intent and suggestion. Time 140/140; `pnpm lint` exit 0; `check-graph --root` only the known R7 fixture; web build exit 0; time e2e 9/9. Live on the demo: Tharushi (week 43 submitted) asked to add 2 h on Saturday; Maya applied it from Team time; Tharushi's week shows Sat 2.0 h, 32 h, still submitted; her bell: "Maya Fernando added your Fleet Tracker hours for Sat Oct 24". Axe clean on both cards, light and dark.
 
 Also checked (demo E2 "removed"): the weekend entry wasn't removed; it was logged on Maya's own week (signed in as Maya at the time), so Tharushi's week never had it.
+
+### Confirm card redesign
+
+The chat confirm card is redesigned for scanning and one clear decision:
+- **Header:** an eyebrow names what the card is ("Confirm · Log time"), with a pill saying whose record it touches ("for you", or the person's name).
+- **Figure:** one large figure to check ("1.5 h", "+3 h", "4 weeks"), with the subject and day beside it.
+- **Details:** an aligned label/value list; yes/no shown as Yes/No; after 5 rows the rest fold under "+ n more".
+- **Actions:** a primary button that names the action ("Log 1.5 h", "Approve", "Send back", "Send request", "Apply change"). Destructive actions use a red button ("Remove 1.5 h", "Decline"). Edit and Cancel stay quiet.
+- **After deciding:** the card folds to a one-line receipt ("✓ Done: …" / "✕ Cancelled. Nothing was changed.").
+- **Phone:** the button is full width at 44 px.
+- **How it works:**
+  - `ToolCard` gains an optional `look` (`CardLook` in `@amax/core`), which `PendingAction` carries.
+  - Cards with no `look` keep the old title and "Add it" button.
+  - New `apps/web/components/chat/ConfirmCard.tsx`; styles are in `chat.css`.
+  - Time cards set `look`: entry, week, submit, bulk, request, add and decide.
+  - The thinking indicator gets `role="status"`, which fixes axe's aria-prohibited-attr.
+- **Tests:** `approval-checks.test.ts` AC9 includes `look`; the e2e test approves with "Approve".
+- **Results:** time 140/140; web tsc ok; lint 0; build 0; time e2e 9/9.
+- **Live on the demo** (Tharushi):
+  - the log card, its receipt and the cancelled receipt;
+  - the red "Remove 1.5 h" card;
+  - axe clean in light, dark and at phone width.
+- **Receipt follow-up:**
+  - `CardLook.done` gives each card a past-tense receipt, which replaces "Done: {title}". Examples: "Logged 1.5 h · Fleet Tracker, Tue Oct 27", "Removed …", "Approved · Nimal Silva, 2026-W42", "Sent back …", "Submitted 2026-W43 · 32 h", "Sent your request …", "Applied · {person}, {project}, {day}".
+  - Bulk writes keep their real past-tense summary, without "Done:".
+  - Cards with no `done` still say "Done: …".
+  - The receipt fits its text (`align-self:flex-start`) instead of filling the chat column.
+  - `chat-outcome.test.ts` covers the four cases; `approval-checks` AC9 and e2e approve expect the new text.
+  - Results: time 140/140; web tests 272 passed; tsc and lint ok; build 0; time e2e 9/9.
+  - Live on the demo: log and remove receipts in light (desktop) and dark (phone), axe clean.

@@ -68,5 +68,8 @@ export const bulkCard = (kind: Kind) => async (v: Viewer, a: BulkInput): Promise
     value: eligible[kind](w.week) ? `skipped, needs individual review: ${checks.get(w.week.id)!.join("; ")}` : `skipped: ${STATUS[w.week.status] ?? w.week.status}` }));
   const outside = (a.weekIds?.length ?? 0) - all.length + fresh.filter((p) => !p.ok).length;
   const started = newcomers.map((p): CardLine => ({ label: p.name, value: `Not started${ago(p.userId)}` }));
-  return { title, lines: [...go.map(line), ...started, ...skip, ...(outside ? [{ label: "Skipped", value: `${outside} you can't act on` }] : [])] };
+  // 073: the card leads with how many people it acts on; its button says so.
+  const look = kind === "remind" ? { kind: "Remind", figure: String(count), subject: count === 1 ? "person to remind" : "people to remind", detail: keys, confirm: `Remind ${count}`, done: "Reminded" }
+    : { kind: "Approve timesheets", figure: String(count), subject: count === 1 ? "timesheet" : "timesheets", detail: `${keys} · ${hours} h`, confirm: `Approve ${count}`, done: "Approved" };
+  return { title, look, lines: [...go.map(line), ...started, ...skip, ...(outside ? [{ label: "Skipped", value: `${outside} you can't act on` }] : [])] };
 };

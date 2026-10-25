@@ -41,6 +41,7 @@ export async function additionCard(v: Viewer, a: AddInput): Promise<ToolCard> {
   const lines = changeText({ kind: "add", before: { hours: 0, billable: true, note: null, projectId: project.id, projectName: project.name }, proposed: { hours: a.hours, billable: a.billable, note: a.note, weekend: a.weekend } })
     .map((t) => ({ label: t.split(" ")[0], value: t.slice(t.indexOf(" ") + 1) }));
   return { title: `Ask to add ${a.hours} h to ${project.name}, ${dayLabel(a.day)}${a.weekend ? " (weekend)" : ""}`,
+    look: { kind: "Add hours request", figure: `+${a.hours} h`, subject: project.name, detail: `${dayLabel(a.day)}${a.weekend ? " · weekend" : ""}`, who: "for you", confirm: "Send request", done: `Sent your request · +${a.hours} h, ${project.name}, ${dayLabel(a.day)}` },
     lines: [...lines, { label: "Reason", value: a.reason }, { label: "Review", value: `${weekKey(isoWeekOf(workDay(a.day, a.weekend)))} is ${week.status}; nothing changes until an approver decides` }] };
 }
 
