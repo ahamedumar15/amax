@@ -4,6 +4,7 @@ import { AskButton } from "./AskButton";
 import { myWeek } from "../server/my";
 import { shownToOwner } from "../server/requests-read";
 import { MyRequests } from "./ChangeRequests";
+import { SentBack } from "./SentBack";
 import { myDayMarks } from "../server/my-days";
 import { DayHead, dayLabelFor, type DayMark, Head, hrs, SignInFirst, weekParam, STATUS, viewerOrNull, weekSpan } from "./parts";
 
@@ -28,7 +29,7 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   return (
     <div className="time">
       <Head title="My timesheet" lede={lede} week={m.week} days={m.days} base="/my" />
-      {m.rejectComment && m.status === "rejected" && <p className="chip bad" role="status">Sent back: {m.rejectComment}</p>}
+      {m.rejectComment && m.status === "rejected" && <SentBack m={m} />}
       <MyRequests rows={requests} />
       <div className="card flush pinnable">
         <div className="card-head">

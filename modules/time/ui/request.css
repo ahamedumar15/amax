@@ -62,3 +62,7 @@
 .time .rq-group-head{display:flex;margin-bottom:8px}
 .time .rq.notice{gap:0}
 @media (prefers-reduced-motion:reduce){.time .rq-chev{transition:none}}
+/* 073: the sent-back card on My timesheet. */
+.time .rq.notice.sent-back{gap:14px;margin-bottom:20px}
+.time .sent-back .rq-top small{white-space:nowrap}
+.time .sent-back .rq-say.ask{background:var(--chip-bad-bg);border-left-color:var(--chip-bad)}
