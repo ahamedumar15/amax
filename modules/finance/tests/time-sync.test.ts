@@ -30,6 +30,12 @@ describe.skipIf(!hasDb)("072 Finance follows reopened weeks and locked changes (
     await call("sahan", "reopen_week", { ...week, reason: "Fix Wednesday" });
     await settle();
     expect(await billable()).toBeCloseTo(before, 2);
+    // 073: each superseded draft's suggestion is withdrawn; Finance is offered the current Fleet Tracker draft only.
+    const offers = await db.q(sql`select s.target_id, s.status, s.query_note from agents.suggestion s join finance.draft d on d.id::text = s.target_id
+      join finance.contract c on c.id = d.contract_id join delivery.project p on p.id = c.project_id where s.kind = 'finance.invoice-draft' and p.key = 'FLT'`);
+    const [current] = await db.q(sql`select d.id::text as id from finance.draft d join finance.contract c on c.id = d.contract_id join delivery.project p on p.id = c.project_id where p.key = 'FLT' and d.status = 'open'`);
+    expect(offers.filter((o) => o.status === "open").map((o) => o.target_id)).toEqual([current.id]);
+    expect(offers.filter((o) => o.status !== "open").every((o) => o.status === "dismissed" && o.query_note === "A newer draft replaced this one")).toBe(true);
     await call("tharushi", "submit_week", { week: "2026-W42" });
     await call("sahan", "approve_week", week);
     await settle();

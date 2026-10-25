@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { EventHandlerDef } from "@amax/core";
 import { contextFor } from "@amax/core/server";
 import { defineSuggestionKind } from "@amax/agents";
-import { createSuggestion, SuggestionError } from "@amax/agents/server";
+import { createSuggestion, SuggestionError, withdrawSuggestions } from "@amax/agents/server";
 import { EVENTS as DELIVERY, type ReleaseDeployed } from "@amax/delivery/contracts";
 import { EVENTS, type InvoiceDrafted } from "./contracts";
 import { BILLING_AGENT } from "./server/agent";
@@ -48,10 +48,15 @@ export const draftAgent: EventHandlerDef = {
   event: EVENTS.invoiceDrafted,
   async handle({ tx, tenantId, event }) {
     const e = event.payload as InvoiceDrafted;
+    const ctx = contextFor.job(tenantId, "finance.draft-agent");
+    // 073: a draft replaced by a newer one (an approval, a reopen) takes its suggestion with it, so the inbox only ever
+    // offers the current amount.
+    const stale = await tx.execute(sql`select id from finance.draft where contract_id = ${e.contractId} and status = 'superseded' order by created_at desc limit 200`);
+    await withdrawSuggestions(ctx, { kind: invoiceDraft.kind, targetType: "finance.draft", targetIds: stale.map((r) => r.id as string), reason: "A newer draft replaced this one" });
     const [d] = await tx.execute(sql`select d.*, c.currency, c.client, c.project_id from finance.draft d join finance.contract c on c.id = d.contract_id where d.id = ${e.draftId} and d.status = 'open'`);
     if (!d) return;
     const why = e.source === "tm" ? "Approved billable time not yet invoiced" : "Its release reached Prod";
-    await createSuggestion(contextFor.job(tenantId, "finance.draft-agent"), {
+    await createSuggestion(ctx, {
       kind: invoiceDraft.kind, target: { type: "finance.draft", id: e.draftId, label: `${d.client as string}: ${d.description as string}` },
       title: `Invoice ${d.client as string}, ${amt(d.amount)} ${d.currency as string}`, detail: `${why}: ${d.description as string}.`,
       proposed: { draftId: e.draftId, contractId: e.contractId, amount: amt(d.amount), currency: String(d.currency), description: d.description as string },
