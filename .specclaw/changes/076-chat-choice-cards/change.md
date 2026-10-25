@@ -122,3 +122,8 @@ Amendment 1 (2026-10-25):
 - During the build, the picked option's preview was indented to the figure column (it wrapped to four lines in the narrow chat).
 - Checks: chat 36/36 and web 317/317 (353 together); `pnpm lint` ok; build ok; time e2e 9/9.
 - Screenshots: ask-open.png, ask-filled.png and ask-dark.png in the session scratchpad (`ui/`).
+
+Amendment 2 (2026-10-25; product owner: "remove the scroll bar in the chat bot and the text area, I need it to look clean"):
+- Scrollbars are hidden on the conversation, the history list, the message box and a choice card's answer box. They still scroll by wheel, trackpad, touch and keyboard.
+- The answer box no longer has a resize grip; it grows up to 140 px.
+- A wide table in a reply keeps its sideways bar, since it's the only sign of more columns.

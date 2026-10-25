@@ -160,7 +160,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 .ch-spin{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--chip-agent)}
 .ch-ask{display:flex;flex-direction:column;gap:6px}
 .ch-ask span{font-size:13px;font-weight:600;color:var(--ink)}
-.ch-ask textarea{width:100%;min-height:58px;resize:vertical;padding:9px 12px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font:14px/1.45 var(--font)}
+.ch-ask textarea{width:100%;min-height:58px;max-height:140px;resize:none;padding:9px 12px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font:14px/1.45 var(--font)}
 .ch-ask textarea::placeholder{color:var(--ink-3)}
 .ch-ask textarea:focus-visible{outline:2px solid var(--violet);outline-offset:1px;border-color:transparent}
 .ch-else{align-self:flex-start;margin:-2px 0 0 -10px;padding:6px 10px}
@@ -169,3 +169,7 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 @keyframes ch-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @keyframes ch-spin{to{transform:rotate(360deg)}}
 @media (max-width:600px){.ch-num{min-width:48px;font-size:16px}.ch-key,.ch-hint{display:none}.ch-more,.ch-more.num{padding-left:14px}}
+/* 076 amendment 2: no visible scrollbars in the chat (conversation, history, message box, a card's answer box); they still
+   scroll by wheel, trackpad, touch and keyboard. A wide table in a reply keeps its sideways bar: it's the only sign of more columns. */
+.chat :is(.c-log,.c-history,textarea){scrollbar-width:none;-ms-overflow-style:none}
+.chat :is(.c-log,.c-history,textarea)::-webkit-scrollbar{display:none;width:0;height:0}
