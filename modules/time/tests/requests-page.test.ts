@@ -47,6 +47,9 @@ describe.skipIf(!hasDb)("077 requests page and week history (Postgres)", () => {
     const maya = await w.db.as("maya");
     expect(ids(await requestsPage(maya, { status: "declined" }))).toMatchObject({ open: [], decided: [declined] });
     expect(ids(await requestsPage(maya, { status: "open" }))).toMatchObject({ open: [open], decided: [] });
+    const kasunId = (await w.db.q(sql`select id from auth.user where email = 'kasun@lumenlabs.test'`))[0].id as string;
+    const byPerson = await requestsPage(maya, { person: kasunId });
+    expect([ids(byPerson), byPerson.people.map((x) => x.name)]).toEqual([{ lens: "review", open: [], decided: [declined] }, ["Ayesha Rahman", "Kasun Dias"]]);
     const none = await requestsPage(maya, { week: "2026-W41" });
     expect([ids(none), none.total]).toEqual([{ lens: "review", open: [], decided: [] }, 2]);
   });

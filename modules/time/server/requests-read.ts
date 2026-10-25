@@ -130,7 +130,7 @@ const isOpen = (r: ChangeRequest) => OPEN.includes(r.status);
 export const STATUS_FILTER: Record<string, RequestStatus[]> = {
   open: OPEN, applied: ["applied", "completed"], reopened: ["reopened"], declined: ["declined"], withdrawn: ["cancelled"],
 };
-export type RequestsQuery = { lens?: string; status?: string; week?: string };
+export type RequestsQuery = { lens?: string; status?: string; week?: string; person?: string };
 
 export async function requestsPage(v: Viewer, q: RequestsQuery) {
   const [mine, review] = await Promise.all([listRequests(v, { mine: true }), listRequests(v, { mine: false })]);
@@ -138,11 +138,13 @@ export async function requestsPage(v: Viewer, q: RequestsQuery) {
   const lens: "mine" | "review" = q.lens === "mine" || q.lens === "review" ? q.lens : review.some(isOpen) || (!mine.length && review.length) ? "review" : "mine";
   const all = lens === "mine" ? mine : review;
   const want = q.status ? STATUS_FILTER[q.status] : undefined;
-  const rows = all.filter((r) => (!want || want.includes(r.status)) && (!q.week || r.week === q.week));
+  const rows = all.filter((r) => (!want || want.includes(r.status)) && (!q.week || r.week === q.week) && (!q.person || r.userId === q.person));
   return {
     lens, reviews: review.length > 0, total: all.length,
     counts: { mine: mine.filter(isOpen).length, review: review.filter(isOpen).length },
     weeks: [...new Set(all.map((r) => r.week))].sort().reverse(),
+    // 077 amendment 2: whose requests, for the To review lens (a member's timesheet links here filtered to them).
+    people: [...new Map(all.map((r) => [r.userId, r.personName])).entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
     open: rows.filter(isOpen), decided: rows.filter((r) => !isOpen(r)),
   };
 }

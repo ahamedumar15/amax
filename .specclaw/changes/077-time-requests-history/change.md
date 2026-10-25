@@ -85,3 +85,11 @@ Amendment 1 (2026-10-25; product owner: "why Kasun's week 42 My timesheet has th
 My timesheet shows request cards only while a request is open. A decided request goes straight into the week's
 folded History (and stays on the Requests page) instead of a card for 7 days, which duplicated both. The owner still
 hears the outcome in their bell. `shownToOwner` returns open requests only; 073's 7-day rule is retired.
+
+Amendment 2 (2026-10-25; product owner asked whether history belongs on My timesheet or the Requests tab, and chose
+the link: "yes build it"):
+- The Requests page is the one home for request cards.
+- A week page (My timesheet, a member's timesheet) no longer folds its decided requests. It says "n decided requests on this week" and links "See in Requests", filtered to that week: Mine from your own week, To review from someone else's.
+- The link sits after the hours on both pages. From a member's timesheet it also filters to that person, using a new **Person** filter on the To review lens (shown when more than one person is listed). Without it, the 2 the link counted opened onto 3 rows.
+- Live: Kasun's W42 "1 decided request on this week → See in Requests" opens Mine, Week 42, 1 row. Maya on Nimal's W42 "2 decided requests" opens To review, Nimal Silva, Week 42, 2 rows. Axe is clean.
+- Tests: the filter test covers the person filter. Time 157/157; `pnpm lint` ok.

@@ -14,9 +14,9 @@ import "./request.css";
 export async function RequestsPage({ viewer: raw, searchParams = {} }: ScreenProps) {
   const viewer = viewerOrNull(raw);
   if (!viewer) return <div className="time"><h1>Requests</h1><SignInFirst /></div>;
-  const query = { lens: searchParams.lens, status: searchParams.status, week: searchParams.week };
+  const query = { lens: searchParams.lens, status: searchParams.status, week: searchParams.week, person: searchParams.person };
   const p = await requestsPage(viewer, query);
-  const keep = { lens: p.lens, status: query.status, week: query.week };
+  const keep = { lens: p.lens, status: query.status, week: query.week, person: p.lens === "review" ? query.person : undefined };
   const lensHref = (lens: string) => `/time/requests?${new URLSearchParams(Object.entries({ lens, status: query.status }).filter((e): e is [string, string] => !!e[1]))}`;
   const pin = { label: p.lens === "mine" ? "My change requests" : "Change requests to review", tool: "get_change_requests", args: { mine: p.lens === "mine" } };
   // Open ones in the order a reviewer works them (reviewOrder); decided ones newest first, as they come.
@@ -40,7 +40,7 @@ export async function RequestsPage({ viewer: raw, searchParams = {} }: ScreenPro
           <a href={lensHref("mine")} aria-current={p.lens === "mine" ? "page" : undefined}>Mine{p.counts.mine > 0 && <span className="rq-n">{p.counts.mine}</span>}</a>
           {(p.reviews || p.lens === "review") && <a href={lensHref("review")} aria-current={p.lens === "review" ? "page" : undefined}>To review{p.counts.review > 0 && <span className="rq-n">{p.counts.review}</span>}</a>}
         </nav>
-        <RequestFilters query={keep} weeks={p.weeks} />
+        <RequestFilters query={keep} weeks={p.weeks} people={p.lens === "review" ? p.people : []} />
         <PinButton inline pin={pin} />
       </div>
       {group("Needs attention", p.open, "warn")}

@@ -46,8 +46,8 @@ export async function SheetPage({ viewer: raw, params }: ScreenProps) {
           <tfoot><tr><th scope="row">Total</th>{row.cells.map((c) => <td className="num" data-label={dayName(c.day)} key={c.day}>{hrs(c.hours)}</td>)}<td className="num" data-label="Week"><b>{row.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
         </table></div>
       </div>
-      {/* 077: this person's decided requests on the week: background, so after the hours. */}
-      <RequestHistory rows={history} viewerId={viewer.userId} as="reviewer" />
+      {/* 077: a link to this week's decided requests on the Requests page: background, so after the hours. */}
+      <RequestHistory count={history.length} week={g.key} person={row.userId} />
     </div>
   );
 }

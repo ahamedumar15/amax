@@ -19,10 +19,10 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   // As Team time marks them: past working days with nothing logged and no leave, and approved leave.
   const marks = await myDayMarks(viewer, m.days, m.perDay);
   const markOf = (d: string): DayMark => (d === marked || marks.missing.includes(d) ? "missing" : marks.leave.includes(d) ? "leave" : undefined);
-  // Open requests as cards (a reopened week is a draft again, so any status); decided ones in the History fold below.
+  // Open requests as cards (a reopened week is a draft again, so any status); decided ones are on the Requests page.
   const requests = m.status ? await shownToOwner(viewer, m.key) : [];
-  // 077: every decision on this week stays reachable, folded under the open ones.
-  const history = m.status ? (await weekHistory(viewer, m.key)).filter((r) => !requests.some((x) => x.id === r.id)) : [];
+  // 077: every decision on this week stays reachable on the Requests page; the week links there.
+  const history = m.status ? await weekHistory(viewer, m.key) : [];
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const weekPin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
@@ -36,7 +36,6 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
       <MyBand m={m} />
       {m.rejectComment && m.status === "rejected" && <SentBack m={m} />}
       <MyRequests rows={requests} />
-      <RequestHistory rows={history} viewerId={viewer.userId} as="owner" />
       <div className="card flush pinnable">
         <div className="card-head">
           <h2>{m.key}{m.status && <> <span className={`chip ${STATUS[m.status][0]}`}>{STATUS[m.status][1]}</span></>}</h2>
@@ -56,6 +55,8 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
           <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className={`num${markOf(m.days[i]) === "missing" ? " missing" : ""}`} data-label={dayLabelFor(m.days[i], markOf(m.days[i]))} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Week"><b>{m.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
         </table></div>
       </div>
+      {/* 077: decided requests live on the Requests page; this week links there, after its hours. */}
+      <RequestHistory count={history.length} week={m.key} />
     </div>
   );
 }
