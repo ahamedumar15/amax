@@ -11,7 +11,8 @@ const MAX_LINES = 5;
 // "yes" / "no" read as values, not words in a sentence.
 const tidy = (v: string) => (v === "yes" || v === "no" ? v[0].toUpperCase() + v.slice(1) : v);
 
-function Lines({ lines }: { lines: { label: string; value: string }[] }) {
+/** The details as an aligned list, folding past MAX_LINES (076: the choice card shows the picked option's too). */
+export function Lines({ lines }: { lines: { label: string; value: string }[] }) {
   const row = (l: { label: string; value: string }, i: number) => <div key={i} className="cc-row"><dt>{l.label}</dt><dd>{tidy(l.value)}</dd></div>;
   if (lines.length <= MAX_LINES + 1) return <dl className="cc-lines">{lines.map(row)}</dl>;
   return (

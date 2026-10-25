@@ -7,6 +7,7 @@ import type { Conversation, ConversationSummary, Highlight, PendingAction } from
 import { cancelChat, confirmChat, pageContext, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
 import type { PageInfo } from "../../lib/page-context";
 import { pinKey, withFresh, type Pin } from "@amax/chat/pins";
+import { ChoiceCard } from "./ChoiceCard";
 import { ConfirmCard } from "./ConfirmCard";
 import { Markdown } from "./Markdown";
 import { followMove } from "../../lib/chat-move";
@@ -236,14 +237,18 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
       if (last >= 0) copy[last] = { kind: "me", text: message, highlights: r.highlights };
       return [...copy, ...(r.reply ? [{ kind: "amax" as const, text: r.reply, tools: r.toolsRun }] : []), ...r.pending.map((action) => ({ kind: "confirm" as const, action, state: "open" as const }))];
     });
-    announce(r.pending.length ? "amax prepared a change for you to confirm" : "amax replied");
+    announce(r.pending.some((p) => p.choice) ? "amax offered a choice for you to pick from" : r.pending.length ? "amax prepared a change for you to confirm" : "amax replied");
   }
 
   async function decide(action: PendingAction, ok: boolean) {
     if (!convo.current) return;
     // One decision per card: the buttons go away while the request is in flight.
     setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working", note: undefined } : x)));
-    const apply = (o: CardOutcome) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, ...o } : x)));
+    // 076: on a choice card, once one option is done or the card is cancelled, every other option is closed too (the
+    // server has recorded them as not chosen or cancelled).
+    const sibling = (x: Entry) => x.kind === "confirm" && !!action.choice && x.action.choice?.id === action.choice.id && x.action.id !== action.id && x.state === "open";
+    const apply = (o: CardOutcome) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, ...o }
+      : (o.state === "done" || o.state === "cancelled") && sibling(x) ? { ...x, state: "cancelled" as const, note: undefined } : x)));
     try {
       // The server says what the card is now: done, cancelled, back open to retry, or an error.
       const o = ok ? await confirmChat(convo.current, action.id, userId) : await cancelChat(convo.current, action.id, userId);
@@ -298,6 +303,16 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
               {e.error ? <p className="err">{e.text}</p> : <Markdown text={e.text} />}
             </div></div>
           );
+          const choice = e.action.choice;
+          if (choice) {
+            const options = log.filter((x): x is Extract<Entry, { kind: "confirm" }> => x.kind === "confirm" && x.action.choice?.id === choice.id);
+            if (options[0].action.id !== e.action.id) return null;
+            return (
+              <div key={i} className="m">
+                <ChoiceCard options={options} onConfirm={(a) => decide(a, true)} onCancel={(a) => decide(a, false)} onElse={() => input.current?.focus({ preventScroll: true })} />
+              </div>
+            );
+          }
           return (
             <div key={i} className="m">
               <ConfirmCard action={e.action} state={e.state} note={e.note} onConfirm={() => decide(e.action, true)} onCancel={() => decide(e.action, false)}

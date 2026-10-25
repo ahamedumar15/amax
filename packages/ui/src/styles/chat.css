@@ -135,3 +135,32 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 .cc.done .cc-tick{color:var(--chip-good);font-weight:700}
 .cc.cancelled .cc-receipt{color:var(--ink-2)}
 @media (max-width:600px){.cc-acts .btn.sm{flex:1 1 100%;height:44px}.cc-row{grid-template-columns:84px 1fr}}
+/* 076: the choice card: a question, one option per write as a radio row, and one button named for the chosen option */
+.ch-q{margin:0;font-size:15px;font-weight:600;line-height:1.4;color:var(--ink)}
+.ch-q small{display:block;margin-top:4px;font-size:13px;font-weight:500;color:var(--ink-2)}
+.ch-opts{display:flex;flex-direction:column;gap:8px}
+.ch-opt{border-radius:14px;border:1px solid var(--line);background:var(--card)}
+.ch-opt:hover{border-color:var(--line-2);background:var(--sunken)}
+.ch-opt.on{border-color:var(--chip-agent);background:var(--violet-soft);box-shadow:0 0 0 1px var(--chip-agent),0 6px 18px -10px rgba(91,68,214,.45)}
+.ch-row{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 12px 10px 14px;cursor:pointer}
+.ch-row input{flex:none;width:18px;height:18px;margin:0;accent-color:var(--chip-agent);cursor:pointer}
+.ch-row input:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.ch-num{flex:none;min-width:56px;font-size:18px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ch-opt.on .ch-num{color:var(--chip-agent)}
+.ch-txt{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ch-txt b{font-size:14px;font-weight:600;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}
+.ch-txt small{font-size:12.5px;line-height:1.35;color:var(--ink-2)}
+.ch-key{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;border:1px solid var(--line-2);font:600 11.5px var(--font);color:var(--ink-2);background:var(--card)}
+.ch-opt.on .ch-key{border-color:var(--chip-agent);color:var(--chip-agent)}
+.ch-more{padding:0 14px 12px 44px}
+.ch-more.num{padding-left:112px}
+.ch-more .cc-lines{padding-top:10px;border-top:1px dashed var(--line-2)}
+.ch-more .cc-row{grid-template-columns:max-content 1fr}
+.ch.busy .ch-opt:not(.run){opacity:.45}
+.ch-spin{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--chip-agent)}
+.ch-else{align-self:flex-start;margin:-2px 0 0 -10px;padding:6px 10px}
+.cc-acts .btn.sm:disabled{opacity:.55;cursor:not-allowed}
+@media (prefers-reduced-motion:no-preference){.ch-opt{transition:border-color .15s,background .15s,box-shadow .2s,opacity .2s}.ch-more{animation:ch-in .18s ease-out}.ch-spin{animation:ch-spin .8s linear infinite}}
+@keyframes ch-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes ch-spin{to{transform:rotate(360deg)}}
+@media (max-width:600px){.ch-num{min-width:48px;font-size:16px}.ch-key,.ch-hint{display:none}.ch-more,.ch-more.num{padding-left:14px}}

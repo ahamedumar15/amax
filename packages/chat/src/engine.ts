@@ -4,6 +4,7 @@ import { withTenant, type Db, type Tx } from "@amax/db";
 import { converse, toolFailure, type DataItem, type Message, type Tool } from "@amax/ai";
 import type { Pin } from "./pins";
 import { resolvePins } from "./resolve";
+import { CHOICE_INSTRUCTIONS, CHOICE_TOOL, choiceTool } from "./choices";
 import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, keyedOutcome, logError, lookupKey, ReplayedError, retryable, traceStep, traceStepOrFail, UndeclaredWriteError, withIdempotency, withTrace, type KeyedRun } from "@amax/core/server";
 import { ToolError, type Registry, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
@@ -15,7 +16,9 @@ export type { Pin };
 /** `traceId` (050): the turn that proposed it, so its confirm or cancel joins the same trace. */
 /** `lines` (070 amendment 2): what the tool's own `card` says changes, shown instead of the raw input. */
 /** `look` (073): how the card presents itself (`CardLook`); absent, the card keeps the plain layout. */
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[]; look?: CardLook };
+/** `choice` (076): the card is one option of a choice card; options share its `id` and `question`, and only one can run. */
+export type Choice = { id: string; question: string; label: string };
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[]; look?: CardLook; choice?: Choice };
 export type Highlight = { text: string; field: string; index: number };
 /** `pins`: the turn's pins as read (059), in the order sent: labels refreshed, old ones moved onto ids. */
 export type ChatTurn = { conversationId: string; reply: string; toolsRun: string[]; pending: PendingAction[]; highlights: Highlight[]; pins: Pin[] };
@@ -87,6 +90,7 @@ function scrub(e: unknown, secret: string | undefined): unknown {
   return Object.assign(clean, { name: e.name, retryable: (e as { retryable?: unknown }).retryable, code: (e as { code?: unknown }).code });
 }
 
+export const AWAITING = { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
 const NOT_PROPOSED = { status: "not_proposed", note: "No confirm card was made: amax couldn't record the request. Tell the user it didn't go through and to try again shortly." };
 // 043 AC-1: a card's write runs keyed to the tool's declared service, so a tool without one can't be
 // made safe to confirm and never becomes a card.
@@ -103,6 +107,22 @@ async function proposeCheck(t: RegisteredTool, viewer: Viewer, input: Record<str
     if (e instanceof ToolError && e.code === "invalid_input") return { status: "not_proposed", note: `No confirm card was made: ${e.message}.` };
     throw e;
   }
+}
+
+/**
+ * A write call made into a card, or the note that says why not (the model reads either). Shared by a single write call
+ * and by each option of a choice card (076), so an option is checked exactly as a write call is.
+ */
+export type Proposed = { action: PendingAction } | { refused: { status: string; note: string } };
+export async function proposeWrite(t: RegisteredTool, viewer: Viewer, input: Record<string, unknown>, choice?: Choice): Promise<Proposed> {
+  if (!serviceNames(t).length) return { refused: UNDECLARED };
+  const refused = await proposeCheck(t, viewer, input);
+  if (refused) return { refused };
+  // The step comes first (053): a card is shown only once its pending step is in the trace, so a
+  // step that can't be written means nothing was proposed, and the model is told exactly that.
+  const action = { ...(await pendingFor(t, viewer, input)), ...(choice ? { choice } : {}) };
+  if (!(await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id, ...(choice ? { choice: choice.id } : {}) } }))) return { refused: NOT_PROPOSED };
+  return { action };
 }
 
 /** One user message: answer with read tools, turn write calls into confirm cards. */
@@ -122,17 +142,13 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
-      if (!serviceNames(t).length) return UNDECLARED;
-      const refused = await proposeCheck(t, viewer, input);
-      if (refused) return refused;
-      // The step comes first (053): a card is shown only once its pending step is in the trace, so a
-      // step that can't be written means nothing was proposed, and the model is told exactly that.
-      const action = await pendingFor(t, viewer, input);
-      if (!(await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id } }))) return NOT_PROPOSED;
-      pending.push(action);
-      return { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
+      const p = await proposeWrite(t, viewer, input);
+      if ("refused" in p) return p.refused;
+      pending.push(p.action);
+      return AWAITING;
     },
   }) as Tool);
+  tools.push(choiceTool(registry, viewer, (a) => pending.push(a)));
 
   // Pinned records are fetched with the user's own permissions and sent as quoted data (AC-4), each
   // under its label as it is now (059). A record, not text, so the gateway redacts its classified
@@ -147,13 +163,13 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
     : "";
   const messages: Message[] = [...convo.messages, { role: "user", content: [{ type: "text", text: opts.text }] }];
   const result = await converse({ tenantId: viewer.tenantId, caller: `user:${viewer.userId}`, userId: viewer.userId, conversationId: convo.id, source: "chat", purpose: opts.intent ? `chat:${opts.intent.id}` : "chat" }, {
-    instructions: INSTRUCTIONS + intentNote,
+    instructions: INSTRUCTIONS + CHOICE_INSTRUCTIONS + intentNote,
     messages,
     tools,
     data,
   });
   await append(db, viewer, convo.id, { messages: result.messages.slice(convo.messages.length), pending, title: titleFrom(opts.text), pins });
-  return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending), pins };
+  return { conversationId: convo.id, reply: result.text, toolsRun: result.toolsRun.filter((n) => n !== CHOICE_TOOL && !pending.some((p) => p.tool === n)), pending, highlights: highlightsFor(opts.text, pending), pins };
 }
 
 /** What happened to a card: confirmed (the write ran), cancelled, failed for good, or unknown. */
@@ -242,7 +258,7 @@ const doneNote = (title: string, result: unknown) => {
 // immutable, so a confirm that never took effect must never read as a plain confirm (052 review).
 // A cancel is recorded once it has taken effect. Every decided step is best-effort except `run`
 // (traceStepOrFail): it is written before the write, so a write never runs untraced (053).
-export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret";
+export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret" | "not_chosen";
 const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled", outcome?: ConfirmOutcome) => {
   const step = { kind: "decided" as const, tool: action.tool, detail: { actionId: action.id, decision, ...(outcome ? { outcome } : {}) } };
   return outcome === "run" ? traceStepOrFail(step) : traceStep(step);
@@ -297,6 +313,10 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
     await settleNow(db, viewer, conversationId, action, "failed", `(I couldn't run "${action.title}": it can't be confirmed in chat.)`);
     throw new ActionFailedError("this change can't be confirmed in chat", "failed");
   }
+  if (action.choice && !(await claimChoice(db, viewer, conversationId, action))) {
+    await decide("not_chosen");
+    throw await cancelled();
+  }
   await decide("run");
   const raw = await withIdempotency(key, () => registry.call(viewer, action.tool, action.input, { source: "chat", secret: action.secret ? opts.secret : undefined }), { service, by });
   const run = raw.ok ? raw : { ...raw, error: scrub(raw.error, opts.secret) };
@@ -334,6 +354,23 @@ async function failedRun(db: Db, viewer: Viewer, conversationId: string, action:
   throw new ActionFailedError(message, "failed");
 }
 
+// 076: an option of a choice card runs only if no other option has. Before it runs, every other option's key is claimed
+// as cancelled (claimKey waits for one in flight), so two options can never both write; one that already ran or is
+// running means this one lost. The options not chosen are recorded as cancelled with a note that says so.
+const others = (pending: PendingAction[], action: PendingAction) => pending.filter((p) => p.choice?.id === action.choice?.id && p.id !== action.id);
+async function claimChoice(db: Db, viewer: Viewer, conversationId: string, action: PendingAction) {
+  return withTenant(db, viewer.tenantId, async (tx) => {
+    const [row] = await tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
+    const rest = others((row?.pending ?? []) as PendingAction[], action);
+    for (const o of rest) {
+      const prior = await claimKey(tx, viewer.tenantId, keyOf(o.id), { cancelled: true }, viewer.userId).catch(() => ({ done: null }));
+      if (prior && !("cancelled" in prior)) return false;
+    }
+    for (const o of rest) await settle(tx, viewer, conversationId, o, "cancelled", `(Not chosen: "${o.title}".)`);
+    return true;
+  });
+}
+
 /** "Cancel": nothing is written. Cancelling twice is fine; a card that was already decided otherwise throws NotPendingError. */
 export async function cancelAction(db: Db, viewer: Viewer, conversationId: string, actionId: string) {
   const action = await card(db, viewer, conversationId, actionId).catch((e) => {
@@ -341,11 +378,21 @@ export async function cancelAction(db: Db, viewer: Viewer, conversationId: strin
     throw e;
   });
   if (!action) return;
+  // 076: cancelling a choice card cancels every option on it.
+  const group = action.choice ? [action, ...others(await pendingOf(db, viewer, conversationId), action)] : [action];
   await inTrace(viewer, action, async () => {
-    await cancelCard(db, viewer, conversationId, action);
-    await decidedStep(action, "cancelled");
+    for (const a of group) {
+      // Another option settled meanwhile (say, confirmed in another tab) is left as it is; this card's own outcome still throws.
+      const ok = await cancelCard(db, viewer, conversationId, a).then(() => true, (e) => { if (a === action) throw e; return false; });
+      if (ok) await decidedStep(a, "cancelled");
+    }
   });
 }
+
+const pendingOf = async (db: Db, viewer: Viewer, conversationId: string) => {
+  const [row] = await withTenant(db, viewer.tenantId, (tx) => tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId}`));
+  return (row?.pending ?? []) as PendingAction[];
+};
 
 async function cancelCard(db: Db, viewer: Viewer, conversationId: string, action: PendingAction) {
   const actionId = action.id;
