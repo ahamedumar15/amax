@@ -118,9 +118,11 @@ export const pageRequests = (v: Viewer, f: RequestFilter = {}) => read(v, async 
 
 export const openToReview = (v: Viewer) => listRequests(v, { mine: false, status: OPEN });
 export const openOfMine = (v: Viewer, week: string) => listRequests(v, { mine: true, week, status: OPEN });
-/** 073: what My timesheet shows the owner: open requests, and ones decided in the last 7 days (the outcome, then they go). */
-export const shownToOwner = async (v: Viewer, week: string) => (await listRequests(v, { mine: true, week }))
-  .filter((r) => OPEN.includes(r.status) || (r.status !== "cancelled" && r.decidedAt && Date.now() - Date.parse(r.decidedAt) < 7 * 86_400_000));
+/**
+ * What My timesheet shows the owner as cards: open requests only (077 amendment 1). Decided ones go straight to the
+ * week's folded History and the Requests page; the owner hears the outcome in their bell.
+ */
+export const shownToOwner = (v: Viewer, week: string) => listRequests(v, { mine: true, week, status: OPEN });
 
 // 077: the Requests page and each week's history. Both read through listRequests, so the scope is get_change_requests':
 // the viewer's own requests and those in their approval chain, nothing else.

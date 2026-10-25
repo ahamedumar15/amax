@@ -80,3 +80,8 @@ that week's older decided requests.
   - Time 157/157; `pnpm lint` ok; build ok.
   - Time e2e: 10/10 on the second run. The first run's one failure was the known flaky 070 session test, which fails while a dev server is running.
 - Screenshots: rq-maya.png, rq-nimal-dark.png, rq-phone.png, rq-history.png, rq2-maya.png and rq2-history.png in the session scratchpad (`ui/`).
+
+Amendment 1 (2026-10-25; product owner: "why Kasun's week 42 My timesheet has the change applied request card? … yes build it"):
+My timesheet shows request cards only while a request is open. A decided request goes straight into the week's
+folded History (and stays on the Requests page) instead of a card for 7 days, which duplicated both. The owner still
+hears the outcome in their bell. `shownToOwner` returns open requests only; 073's 7-day rule is retired.

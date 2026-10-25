@@ -19,9 +19,9 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   // As Team time marks them: past working days with nothing logged and no leave, and approved leave.
   const marks = await myDayMarks(viewer, m.days, m.perDay);
   const markOf = (d: string): DayMark => (d === marked || marks.missing.includes(d) ? "missing" : marks.leave.includes(d) ? "leave" : undefined);
-  // Open requests, and ones decided this past week (a reopened week is a draft again, so any status).
+  // Open requests as cards (a reopened week is a draft again, so any status); decided ones in the History fold below.
   const requests = m.status ? await shownToOwner(viewer, m.key) : [];
-  // 077: every older decision on this week stays reachable, folded under the ones shown above.
+  // 077: every decision on this week stays reachable, folded under the open ones.
   const history = m.status ? (await weekHistory(viewer, m.key)).filter((r) => !requests.some((x) => x.id === r.id)) : [];
   const open = m.status !== "approved";
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
