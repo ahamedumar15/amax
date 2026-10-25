@@ -1,0 +1,24 @@
+/* 075: Team time's status band: two pinnable parts, each a big figure, a bar and a legend. */
+.time .band{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:0 0 20px}
+.time .band .card{padding:18px 22px 16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.time .band .k{margin:0;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.time .band .fig{margin:0;font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.time .band .fig span{font-size:14.5px;font-weight:500;color:var(--ink-2);margin-left:4px}
+.time .band .fig.empty{font-size:16px;font-weight:500;color:var(--ink-2)}
+.time .band .bar{display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken)}
+.time .band .bar i{display:block;min-width:6px;border-radius:999px}
+.time .band .approved{--c:var(--chip-good)}
+.time .band .submitted,.time .band .agent{--c:var(--chip-agent)}
+.time .band .rejected{--c:var(--chip-bad)}
+.time .band .draft{--c:var(--chip-warn)}
+.time .band .not_started{--c:var(--line-2)}
+.time .band .people{--c:var(--ink-3)}
+.time .band .bar i{background:var(--c)}
+.time .band .legend{display:flex;flex-wrap:wrap;gap:6px 8px;margin:2px 0 0;padding:0;list-style:none}
+.time .band .legend a,.time .band .legend span{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px 0 10px;border-radius:999px;font-size:13px;line-height:1;white-space:nowrap;color:var(--ink);text-decoration:none;background:var(--sunken)}
+.time .band .legend svg{width:14px;height:14px;flex:none;color:var(--c)}
+.time .band .legend .not_started svg{color:var(--ink-3)}
+.time .band .legend a:hover{box-shadow:inset 0 0 0 1px var(--c)}
+.time .band .legend a:focus-visible{outline:2px solid var(--chip-agent);outline-offset:2px}
+@media (max-width:860px){.time .band{grid-template-columns:minmax(0,1fr)}.time .band .fig{font-size:26px}}
+@media (prefers-reduced-motion:no-preference){.time .band .legend a{transition:box-shadow .15s}}

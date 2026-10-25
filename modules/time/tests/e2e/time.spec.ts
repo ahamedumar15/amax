@@ -11,7 +11,10 @@ test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 
 
 test("AC3 the Team week matches the mock: totals, agent share and the This week card within 2%", async ({ page, context }) => {
   await signIn(page, "maya@lumenlabs.test", W42);
-  await expect(page.locator(".lede")).toContainText("3 of 5 people have submitted 87.5 h. Agents logged 90.2 h, 64% of the team's 141.5 h.");
+  // 075: the header sentence is now the status band; the figures are the same.
+  const band = page.getByRole("group", { name: "This week's progress" });
+  await expect(band.locator(".fig").first()).toHaveText("3 of 5 submitted");
+  await expect(band.locator(".fig").last()).toHaveText("64% by agents, of 141.5 h");
   await expect(page.locator("table.tbl tbody tr")).toHaveCount(5);
   await expect(page.getByRole("button", { name: "Approve 3 submitted (87.5 h)" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Remind 2 people" })).toBeVisible();
@@ -26,6 +29,9 @@ test("AC3 the Team week matches the mock: totals, agent share and the This week 
     expect(diffRatio(want, got), sel).toBeLessThanOrEqual(0.02);
   }
   expect(await axe(page)).toEqual([]);
+  await band.getByRole("link", { name: /draft$/ }).click();
+  await expect(page).toHaveURL(/status=not_submitted#timesheets$/);
+  await expect(page.locator("table.tbl tbody tr")).toHaveCount(2);
 });
 
 test("070 AC41, AC42, AC45 chat names the page and suggests the fix; rows have pins and no Fix buttons; a locked week suggests a change request", async ({ page, browser }) => {

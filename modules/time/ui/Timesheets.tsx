@@ -37,7 +37,7 @@ export function Timesheets({ g, base }: { g: TeamGrid; base: string }) {
     .map((r) => (r.weekId ? { weekId: r.weekId, personName: r.personName } : { weekId: null, personName: r.personName, userId: r.userId }));
   const viewPin = { label: `Timesheets ${g.key}`, tool: "get_team_week", args: { week: g.key } };
   return (
-    <div className="card flush pinnable" style={{ marginTop: 28 }}>
+    <div className="card flush pinnable" id="timesheets" style={{ marginTop: 28 }}>
       <div className="card-head">
         <h2>Timesheets</h2><PinButton inline pin={viewPin} />
         <div className="actions">

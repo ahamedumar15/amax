@@ -50,7 +50,7 @@ export const SignInFirst = () => (
 export function Head({ title, lede, week, days, base }: { title: string; lede: string; week: IsoWeek; days: string[]; base: "" | "/my" }) {
   return (
     <div className="row head">
-      <div><h1>{title}</h1><p className="lede">{lede}</p></div>
+      <div><h1>{title}</h1>{lede && <p className="lede">{lede}</p>}</div>
       <div className="actions">
         <div className="seg" role="group" aria-label="View">
           <a href={weekHref("", week)} aria-current={base === "" ? "page" : undefined}>Team</a>

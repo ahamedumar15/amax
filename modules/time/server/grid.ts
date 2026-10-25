@@ -12,7 +12,8 @@ export type GridStatus = WeekStatus | "not_started";
 export type GridRow = Omit<TeamRow, "weekId" | "status" | "days"> & { weekId: string | null; status: GridStatus; cells: Cell[]; target: number; utilisation: number; overtime: boolean; department: string | null };
 export type GridQuery = { project?: string; team?: string; status?: string; sort?: string; dir?: string };
 export type TeamGrid = TeamWeek & { grid: GridRow[]; footer: number[]; summary: { hours: number; utilisation: number | null; missingPeople: number; awaiting: number };
-  options: { projects: string[]; teams: string[] | null }; query: GridQuery };
+  /** 075: people with no timesheet this week, whatever the filters (the status band counts them). */
+  notStarted: number; options: { projects: string[]; teams: string[] | null }; query: GridQuery };
 
 /** 073 AC-13 (D8): a day's state against the person's daily target (weekly ÷ 5): 6 h and 9 h at 40 h. */
 export function stateOf(day: string, hours: number, daily: number, today: string, onLeave: boolean): CellState {
@@ -66,6 +67,6 @@ export async function teamGrid(v: Viewer, wanted: IsoWeek | undefined, q: GridQu
     const footer = team.days.map((_, i) => round1(grid.reduce((n, r) => n + r.cells[i].hours, 0)));
     const summary = { hours: round1(grid.reduce((n, r) => n + r.total, 0)), utilisation: grid.length ? Math.round(grid.reduce((n, r) => n + r.utilisation, 0) / grid.length) : null,
       missingPeople: grid.filter((r) => r.cells.some((c) => c.state === "missing")).length, awaiting: grid.filter((r) => r.status === "submitted" && r.canApprove).length };
-    return { ...team, grid, footer, summary, options: { projects: team.projects.map((p) => p.name), teams: ctx.teams }, query: q };
+    return { ...team, grid, footer, summary, notStarted: extra.length, options: { projects: team.projects.map((p) => p.name), teams: ctx.teams }, query: q };
   });
 }
