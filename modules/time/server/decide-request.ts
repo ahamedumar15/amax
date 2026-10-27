@@ -1,13 +1,13 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
-import { viewerOf } from "@amax/auth";
+import { ScopeError, viewerOf } from "@amax/auth";
 import { appendAudit, defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type ChangeDecided } from "../contracts";
 import { chainFor } from "./chain";
 import { writeCorrection, writeDelete } from "./correct";
 import { decide } from "./decide";
-import { liveEntry } from "./entry";
+import { liveEntry, mayMove } from "./entry";
 import { projectNames } from "./read";
 import { writeReopen } from "./reopen";
 import { refOf, lockRequest } from "./request";
@@ -31,7 +31,14 @@ async function apply(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRo
   const target = { week, entry, lockedChange };
   const done = r.kind === "delete" ? await writeDelete(tx, ctx, target, { ...who, projectName: r.before.projectName })
     : await writeCorrection(tx, ctx, target, { hours: r.proposed.hours, billable: r.proposed.billable, note: r.proposed.note, projectKey: r.proposed.projectId },
-      async (projectId) => ({ ...who, projectName: names.get(projectId) ?? r.before.projectName }));
+      // 070 review round 1: a move needs the project it moves to in the approver's scope, the rule the card checks.
+      async (projectId) => {
+        // Fails closed: a context with no viewer (a job) never moves hours to another project (review round 2).
+        const v = viewerOf(ctx);
+        const move = { userId: entry.user_id, before: { projectId: entry.project_id }, proposed: { projectId } };
+        if (v ? !mayMove(v, move) : projectId !== entry.project_id) throw new ScopeError("time:log");
+        return { ...who, projectName: names.get(projectId) ?? r.before.projectName };
+      });
   return { status: "applied", events: done.events, after: done.after };
 }
 

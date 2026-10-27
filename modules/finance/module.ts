@@ -25,7 +25,7 @@ export default defineModule({
   search: search as never,
   retention: [
     { table: "finance.contract", label: "Who created each contract", subject: ["created_by"], entity: "legal_entity_id", fields: ["created_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "finance.invoice", label: "Who issued each invoice", subject: ["issued_by"], entity: "legal_entity_id", fields: ["issued_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    { table: "finance.invoice", label: "Who issued each invoice", subject: ["issued_by"], entity: "legal_entity_id", fields: ["issued_by"], keep: { tax_lines: "the invoice's tax amounts by rate, no person in them", description: "what was invoiced, part of the statutory invoice record" }, class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
     { table: "finance.payment", label: "Who recorded each payment", subject: ["recorded_by"], fields: ["recorded_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
   ],
   jobs: [],

@@ -166,6 +166,10 @@ export type RetentionEntry = {
   minimum?: `P${string}`;
   /** The row's legal entity column, so each entity's statutory minimum applies to its own rows. */
   entity?: string;
+  /** Columns that look personal (a name, note, *_by or jsonb column) but are deliberately left as they are, each
+   * with why: a deadline timestamp, figures with no person in them, a signed record (070 review round 2). The
+   * module standard requires every personal or jsonb column in fields, subject, subjectName or here. */
+  keep?: Record<string, string>;
 };
 
 /** Every field of an event payload with its 002 class, or "plain" for a field safe to send outside. */

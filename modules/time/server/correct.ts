@@ -5,9 +5,11 @@ import { defineService, type ServiceContext } from "@amax/core/server";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { EVENTS, type EntryCorrected, type EntryDeleted } from "../contracts";
 import { dayLabel } from "../week";
+import { cardFields, cardMismatch, refuse } from "./card";
 import { fixedBy, guardFixable, lockedEntry, type EntryRow, type FixedBy } from "./entry";
+import { projectNames } from "./read";
 import { guardDayTotal, Hours } from "./guards";
-import { by, keyOf, type WeekRow } from "./weeks";
+import { actorId, by, keyOf, type WeekRow } from "./weeks";
 
 const reason = z.string().trim().min(3).max(500).optional();
 export const Changes = z.object({
@@ -17,9 +19,16 @@ export const Changes = z.object({
   projectKey: z.string().min(1).optional(),
 });
 type Change = z.infer<typeof Changes>;
-const changes = Changes.extend({ entryId: z.uuid(), reason }).refine((a) => a.hours !== undefined || a.billable !== undefined || a.note !== undefined || a.projectKey !== undefined, "say what to change: hours, billable, note or project");
+const changes = Changes.extend({ entryId: z.uuid(), reason, ...cardFields }).refine((a) => a.hours !== undefined || a.billable !== undefined || a.note !== undefined || a.projectKey !== undefined, "say what to change: hours, billable, note or project");
 
 type Who = FixedBy & { requestId?: string };
+
+/** 070 review round 1: the confirmed card's values are checked again under the lock, so a card never writes over an entry changed since. */
+async function guardShown(tx: Tx, ctx: ServiceContext, { week, entry }: Target, a: { project?: string; day?: string; person?: string; hoursBefore?: number }) {
+  const shown = { projectName: (await projectNames(tx)).get(entry.project_id) ?? "Closed project", day: entry.day, hours: entry.hours, personName: String(week.person_name ?? ""), own: entry.user_id === actorId(ctx) };
+  const wrong = cardMismatch(shown, a, true);
+  if (wrong.length) refuse(`the entry changed since you saw it (${wrong.join(", ")}); read it again with get_timesheet`);
+}
 type Target = { week: WeekRow; entry: EntryRow; lockedChange?: boolean };
 
 /** The correction itself, shared by correct_time_entry and an applied change request (070 amendment 3). */
@@ -51,16 +60,18 @@ export const correctEntry = defineService({
   async run(tx, a, ctx) {
     const target = await lockedEntry(tx, ctx, a.entryId);
     guardFixable(target.week);
+    await guardShown(tx, ctx, target, a);
     return writeCorrection(tx, ctx, target, a, (projectId) => fixedBy(tx, ctx, target.entry, projectId, a.reason));
   },
 });
 
 /** 070 AC-2, AC-16: marks one entry deleted under the same rules as a correction; the row and its audit stay. */
 export const deleteEntry = defineService({
-  scoped: true, name: "time.entry.delete", action: "time:log", resource: "time.entry", input: z.object({ entryId: z.uuid(), reason }),
+  scoped: true, name: "time.entry.delete", action: "time:log", resource: "time.entry", input: z.object({ entryId: z.uuid(), reason, ...cardFields }),
   async run(tx, a, ctx) {
     const target = await lockedEntry(tx, ctx, a.entryId);
     guardFixable(target.week);
+    await guardShown(tx, ctx, target, a);
     return writeDelete(tx, ctx, target, await fixedBy(tx, ctx, target.entry, target.entry.project_id, a.reason));
   },
 });

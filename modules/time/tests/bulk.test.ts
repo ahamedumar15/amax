@@ -5,7 +5,10 @@ import { hasDb } from "@amax/db/testdb";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { chatTurn, confirmAction } from "@amax/chat";
-import { createRegistry } from "@amax/mcp";
+import { createRegistry, ToolError } from "@amax/mcp";
+import { ValidationError } from "@amax/core/server";
+import { ScopeError } from "@amax/auth";
+import { failureNote } from "../server/bulk";
 import manifest from "../module";
 import { T, timeDb } from "./db";
 
@@ -43,7 +46,26 @@ describe.skipIf(!hasDb)("070 amendment 4: team reminders and approvals in one ca
     const turn = await propose("approve_weeks", [nimal, kasun, ayesha]);
     expect(turn.pending[0].title).toBe("Approve 3 timesheets for 2026-W42 (87.5 h)");
     const { result } = await confirmAction(db.app, registry, maya, turn.conversationId, turn.pending[0].id);
-    expect(result).toMatchObject({ summary: "Approved 2 · skipped 0 · failed 1", results: [{ person: "Nimal Silva", status: "approved" }, { person: "Kasun Dias", status: "approved" }, { person: "Ayesha Rahman", status: "failed", note: expect.stringContaining("approval store down") }] });
+    expect(result).toMatchObject({ summary: "Approved 2 · skipped 0 · failed 1", results: [{ person: "Nimal Silva", status: "approved" }, { person: "Kasun Dias", status: "approved" }, { person: "Ayesha Rahman", status: "failed", note: expect.stringMatching(/^couldn't be done \(reference .+\)$/) }] });
+    // Review round 1: the database's own words never reach the card, the model or the audit.
+    expect(JSON.stringify(result)).not.toContain("approval store down");
+    expect(JSON.stringify(await db.q(sql`select after from core.audit_event where action = 'time.week.approve_many'`))).not.toContain("approval store down");
     expect(await db.q(sql`select status from time.week where id = ${ayesha}`)).toEqual([{ status: "submitted" }]);
+  });
+
+  it.each([
+    ["a refusal the module wrote", new ToolError("2026-W42 is already approved", "invalid_input"), "2026-W42 is already approved"],
+    ["a validation error", new ValidationError([{ code: "custom", path: ["weekIds"], message: "pick a week", input: undefined }]), new ValidationError([{ code: "custom", path: ["weekIds"], message: "pick a week", input: undefined }]).message],
+    ["a domain refusal that isn't retryable", Object.assign(new Error("held under a legal hold"), { retryable: false }), "held under a legal hold"],
+    ["a plain Error, not a refusal", new Error("2026-W42 is already approved"), null],
+    ["a postgres-js connection error (plain Error, code, no cause)", Object.assign(new Error("write CONNECTION_CLOSED db.internal:5432"), { code: "CONNECTION_CLOSED" }), null],
+    ["a scope refusal", new ScopeError("time:approve"), new ScopeError("time:approve").message],
+    ["a database error wrapped by the driver", Object.assign(new Error("Failed query: insert into time.approval ..."), { cause: new Error("approval store down") }), null],
+    ["a driver error class", Object.assign(new TypeError("connection reset"), {}), null],
+    ["a thrown string", "boom", null],
+  ] as [string, unknown, string | null][])("review rounds 1 to 3: a failed row's note for %s, by the REST API's rule (userFacing)", (_, e, kept) => {
+    const note = failureNote(e);
+    if (kept) expect(note).toBe(kept);
+    else expect(note).toMatch(/^couldn't be done \(reference [0-9a-f-]{36}\)$/);
   });
 });

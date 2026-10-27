@@ -41,8 +41,9 @@ export default defineModule({
   overview: timeOverview as never,
   retention: [
     { table: "time.week", label: "Timesheet weeks", subject: ["user_id", "decided_by"], subjectName: ["person_name"], fields: ["person_name", "note", "reject_comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["decided_at"], idle: "P1Y" }, action: "anonymise" },
-    { table: "time.entry", label: "Time entries", subject: ["user_id", "project_id", "logged_by"], fields: ["note", "logged_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "time.change_request", label: "Timesheet change requests", subject: ["user_id", "decided_by"], fields: ["reason", "question", "answer", "decision_note", "decided_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    { table: "time.entry", label: "Time entries", subject: ["user_id", "project_id", "logged_by", "deleted_by"], fields: ["note", "logged_by", "deleted_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
+    // before/proposed copy the entry's note, so they are anonymised with it (070 review round 1).
+    { table: "time.change_request", label: "Timesheet change requests", subject: ["user_id", "decided_by"], fields: ["reason", "question", "answer", "decision_note", "decided_by", "before", "proposed"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
     { table: "time.approval", label: "Timesheet approvals", subject: ["decided_by"], fields: ["comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
   ],
   chatIntents,

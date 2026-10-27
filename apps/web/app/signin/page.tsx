@@ -3,10 +3,9 @@ import { listProviders, providerIdFor } from "@amax/auth/authjs";
 import { loadEnv } from "@amax/core/env";
 import { Card, Logo } from "@amax/ui";
 import { AuthError } from "next-auth";
-import { endSwitchedSession } from "@amax/auth";
-import { sessionStamp } from "@amax/auth/authjs";
-import { auth, signIn, signOut } from "../../auth";
+import { signIn, signOut } from "../../auth";
 import { SessionPing } from "../../components/shell/SessionWatch";
+import { localPath } from "../../lib/local-path";
 import { profileOf } from "../../lib/profile";
 import { getViewer } from "../../lib/viewer";
 import { authEnabled, getDb } from "../../lib/server";
@@ -24,11 +23,9 @@ const ERRORS: Record<string, string> = {
 };
 
 // Credentials failures throw an AuthError; show them on this page instead of a server error.
+// 070 AC-52: the session this replaces ends in Auth.js's signIn event, only once the sign-in succeeded.
 async function credentialsSignIn(provider: string, fields: Record<string, string>, to: string) {
   "use server";
-  // 070 AC-52: the browser's earlier session ends here, so a switch never leaves one alive.
-  const before = sessionStamp(await auth());
-  if (before?.tenantId && before.sessionId) await endSwitchedSession(getDb()!, before.tenantId, before.sessionId);
   try {
     await signIn(provider, { ...fields, redirectTo: to });
   } catch (e) {
@@ -40,7 +37,7 @@ async function credentialsSignIn(provider: string, fields: Record<string, string
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
   if (!authEnabled()) redirect("/");
   const { error, next } = await searchParams;
-  const to = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const to = localPath(next);
   const providers = await listProviders(getDb()!);
   const env = loadEnv();
   const demo = env.AMAX_AUTH_DEMO === "1" && env.NODE_ENV !== "production";

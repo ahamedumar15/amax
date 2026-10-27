@@ -1,7 +1,8 @@
 import { sql, type SQL } from "drizzle-orm";
 import type { Tx } from "@amax/db";
-import type { Viewer } from "@amax/auth";
-import { dayLabel, weekKey } from "../week";
+import { can, canEver, type Viewer } from "@amax/auth";
+import { ValidationError } from "@amax/core/server";
+import { dayLabel, parseWeekKey, weekKey } from "../week";
 import { chainFor } from "./chain";
 import { read } from "./read";
 import { weekProjectIds } from "./weeks";
@@ -11,14 +12,16 @@ export type Values = { hours: number; billable: boolean; note: string | null; pr
 export type RequestStatus = "pending" | "needs_info" | "applied" | "reopened" | "completed" | "declined" | "cancelled";
 export type ChangeRequest = {
   id: string; weekId: string; week: string; weekStatus: string; userId: string; personName: string; entryId: string; day: string; dayLabel: string;
-  kind: "correct" | "delete"; before: Values; proposed: Partial<Values>; revision: number; reason: string; status: RequestStatus;
+  kind: "correct" | "delete"; before: Values; proposed: Partial<Values>; revision: number; reason: string; status: RequestStatus; anonymised: boolean;
   question: string | null; answer: string | null; decisionNote: string | null; decidedBy: string | null; createdAt: string;
 };
 export const OPEN: RequestStatus[] = ["pending", "needs_info"];
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
 /** "Hours 7 h → 5 h", or "Remove 3 h": what the request asks for, in the cards' words. */
-export function changeText(r: Pick<ChangeRequest, "kind" | "before" | "proposed">): string[] {
+export function changeText(r: Pick<ChangeRequest, "kind" | "before" | "proposed"> & { anonymised?: boolean }): string[] {
+  // Retention emptied what it asked for; never shown as 0 h (070 review round 4).
+  if (r.anonymised) return ["Anonymised"];
   if (r.kind === "delete") return [`Remove ${h(r.before.hours)}`];
   const p = r.proposed;
   return [
@@ -29,32 +32,82 @@ export function changeText(r: Pick<ChangeRequest, "kind" | "before" | "proposed"
   ].filter((x): x is string => Boolean(x));
 }
 
+// Retention anonymises before/proposed to {} (070 review round 1), so a request still reads after erasure.
+const values = (j: unknown): Values => {
+  const b = (j ?? {}) as Partial<Values>;
+  return { hours: Number(b.hours ?? 0), billable: Boolean(b.billable), note: b.note ?? null, projectId: b.projectId ?? "", projectName: b.projectName ?? "Anonymised" };
+};
+
 const toRequest = (r: Record<string, unknown>): ChangeRequest => ({
   id: r.id as string, weekId: r.week_id as string, week: weekKey({ year: Number(r.iso_year), week: Number(r.iso_week) }), weekStatus: r.week_status as string,
   userId: r.user_id as string, personName: r.person_name as string, entryId: r.entry_id as string, day: r.day as string, dayLabel: dayLabel(r.day as string),
-  kind: r.kind as ChangeRequest["kind"], before: r.before as Values, proposed: r.proposed as Partial<Values>, revision: Number(r.revision), reason: r.reason as string,
+  kind: r.kind as ChangeRequest["kind"], before: values(r.before), proposed: (r.proposed ?? {}) as Partial<Values>, anonymised: !(r.before as Partial<Values> | null)?.projectId, revision: Number(r.revision), reason: r.reason as string,
   status: r.status as RequestStatus, question: r.question as string | null, answer: r.answer as string | null, decisionNote: r.decision_note as string | null,
   decidedBy: r.decided_by as string | null, createdAt: new Date(r.created_at as string | Date).toISOString(),
 });
 
-export async function requestRows(tx: Tx, where: SQL, lock = false): Promise<ChangeRequest[]> {
+export async function requestRows(tx: Tx, where: SQL, lock = false, limit?: number): Promise<ChangeRequest[]> {
   const rows = await tx.execute(sql`select c.*, w.iso_year, w.iso_week, w.status as week_status, w.person_name, to_char(e.day, 'YYYY-MM-DD') as day
-    from time.change_request c join time.week w on w.id = c.week_id join time.entry e on e.id = c.entry_id where ${where} order by c.created_at desc limit 200 ${lock ? sql`for update of c` : sql``}`);
+    from time.change_request c join time.week w on w.id = c.week_id join time.entry e on e.id = c.entry_id where ${where} order by c.created_at desc, c.id desc ${limit ? sql`limit ${limit}` : sql``} ${lock ? sql`for update of c` : sql``}`);
   return rows.map(toRequest);
 }
 
 /** Whether the viewer reviews this request: anyone in its week's approval chain, never its owner (070 AC-32). */
 export const reviews = async (tx: Tx, v: Viewer, r: Pick<ChangeRequest, "userId" | "weekId">) => chainFor(v, r.userId, await weekProjectIds(tx, r.weekId)) !== null;
 
-export type RequestFilter = { id?: string; status?: RequestStatus; week?: string; mine?: boolean };
+export type RequestFilter = { id?: string; status?: RequestStatus | RequestStatus[]; week?: string; mine?: boolean; before?: string };
+
+/**
+ * Who reviews a request, in SQL (070 review rounds 2 and 3): own requests; anyone's for a tenant-wide approver; a
+ * direct report's; or a week with hours on a project the viewer approves. The same rules as chainFor, with the
+ * projects decided by can() up front, so every fetched row is one the viewer may see.
+ */
+function scopeSql(v: Viewer): SQL {
+  if (can(v, "time:approve")) return sql`true`;
+  const projects = [...new Set([...v.managedProjects, ...v.assignedProjects])].filter((projectId) => can(v, "time:approve", { projectId }));
+  return sql.join([
+    sql`c.user_id = ${v.userId}`,
+    canEver(v, "time:approve") && v.reports.length ? sql`c.user_id in (${sql.join(v.reports.map((id) => sql`${id}`), sql`, `)})` : null,
+    projects.length ? sql`exists (select 1 from time.entry pe where pe.week_id = c.week_id and pe.deleted_at is null and pe.project_id in (${sql.join(projects.map((id) => sql`${id}`), sql`, `)}))` : null,
+  ].filter((x): x is SQL => x !== null), sql` or `);
+}
+
+/** Every filter runs in SQL first (070 review round 1). */
+function filterSql(v: Viewer, f: RequestFilter): SQL {
+  const statuses = f.status === undefined ? null : [f.status].flat();
+  const week = f.week === undefined ? null : parseWeekKey(f.week);
+  return sql.join([
+    sql`(${scopeSql(v)})`,
+    f.id ? sql`c.id = ${f.id}` : null,
+    statuses ? sql`c.status in (${sql.join(statuses.map((s) => sql`${s}`), sql`, `)})` : null,
+    f.week !== undefined ? (week ? sql`w.iso_year = ${week.year} and w.iso_week = ${week.week}` : sql`false`) : null,
+    f.mine === true ? sql`c.user_id = ${v.userId}` : f.mine === false ? sql`c.user_id <> ${v.userId}` : null,
+    f.before ? sql`(c.created_at, c.id) < (select b.created_at, b.id from time.change_request b where b.id = ${f.before})` : null,
+  ].filter((x): x is SQL => x !== null), sql` and `);
+}
 
 /** 070 AC-33: the viewer's own requests and those they review; nothing else, whatever the filter. */
 export const listRequests = (v: Viewer, f: RequestFilter = {}) => read(v, async (tx) => {
-  const rows = await requestRows(tx, sql`true ${f.id ? sql`and c.id = ${f.id}` : sql``} ${f.status ? sql`and c.status = ${f.status}` : sql``}`);
   const out: ChangeRequest[] = [];
-  for (const r of rows) if ((!f.week || r.week === f.week) && (r.userId === v.userId ? f.mine !== false : !f.mine && (await reviews(tx, v, r)))) out.push(r);
+  for (const r of await requestRows(tx, filterSql(v, f))) if (r.userId === v.userId || (await reviews(tx, v, r))) out.push(r);
   return out;
 });
 
-export const openToReview = async (v: Viewer) => (await listRequests(v, { mine: false })).filter((r) => OPEN.includes(r.status));
-export const openOfMine = async (v: Viewer, week: string) => (await listRequests(v, { mine: true, week })).filter((r) => OPEN.includes(r.status));
+export const PAGE = 50;
+/**
+ * get_change_requests: newest first, PAGE at a time. `truncated` says there are older ones, fetched with
+ * before = the last one's id (070 review round 2: a list is never silently short, nor unbounded).
+ */
+export const pageRequests = (v: Viewer, f: RequestFilter = {}) => read(v, async (tx) => {
+  // An unknown or unseen cursor is refused, never read as the end of the list (070 review round 3).
+  if (f.before && !(await requestRows(tx, sql`c.id = ${f.before} and (${scopeSql(v)})`)).length)
+    throw new ValidationError([{ code: "custom", path: ["before"], message: "is not a request in your list; use the before value from the last result", input: f.before }]);
+  const rows = await requestRows(tx, filterSql(v, f), false, PAGE + 1);
+  const requests: ChangeRequest[] = [];
+  for (const r of rows.slice(0, PAGE)) if (r.userId === v.userId || (await reviews(tx, v, r))) requests.push(r);
+  const truncated = rows.length > PAGE;
+  return { requests, truncated, ...(truncated ? { before: rows[PAGE - 1].id } : {}) };
+});
+
+export const openToReview = (v: Viewer) => listRequests(v, { mine: false, status: OPEN });
+export const openOfMine = (v: Viewer, week: string) => listRequests(v, { mine: true, week, status: OPEN });

@@ -72,4 +72,23 @@ describe.skipIf(!hasDb)("070 amendment 3: deciding change requests (Postgres)", 
     const [card] = (await chatTurn(w.db.app, w.registry, maya, { text: "apply it" })).pending;
     expect([card.title, card.lines?.map((l) => l.label)]).toEqual(["Apply Nimal Silva's change: Fleet Tracker, Wed Oct 14", ["Hours", "Reason", "Week", "Notice"]]);
   });
+
+  // Review round 1: Nimal is in Kasun's week chain through Fleet Tracker, which he approves. He can move Kasun's
+  // Contoso hours to Fleet Tracker, but not to HR Insights (Ayesha's), and a request with no move still applies.
+  it.each([
+    ["to a project he doesn't approve", "2026-10-12", { projectKey: "HRI" }, /don't approve HR Insights/],
+    ["to the project he approves", "2026-10-13", { projectKey: "FLT" }, null],
+    ["no move, only the hours", "2026-10-14", { hours: 2 }, null],
+  ] as const)("a move is checked against the approver's projects: %s", async (_, day, change, problem) => {
+    const [kasun, who] = await Promise.all([as("kasun"), as("nimal")]);
+    const e = await w.entry(kasun, "Contoso Portal", day);
+    const r = await requestChange(ctxFor(kasun), { entryId: e.id, ...change, reason: "Booked to the wrong project" });
+    const before = await row(e.id);
+    if (problem) {
+      await expect(decideRequest(ctxFor(who), { requestId: r.id, decision: "apply" })).rejects.toThrow(/data scope/);
+      const { proposeDecide } = await import("../server/decide-card");
+      await expect(proposeDecide(who, { requestId: r.id, decision: "apply" })).rejects.toThrow(problem);
+      expect(await row(e.id)).toEqual(before);
+    } else await expect(decideRequest(ctxFor(who), { requestId: r.id, decision: "apply" })).resolves.toMatchObject({ status: "applied" });
+  });
 });

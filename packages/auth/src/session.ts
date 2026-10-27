@@ -141,3 +141,13 @@ export async function endSwitchedSession(db: Db, tenantId: string, sessionId: st
   });
 }
 
+/**
+ * 070 review round 1: called only after a sign-in has succeeded, for every provider, so a failed attempt
+ * leaves the browser's live session alone and an Entra sign-in ends the one it replaces too.
+ */
+export async function endReplacedSession(db: Db, before: { tenantId?: string; sessionId?: string } | null | undefined, after: { sessionId?: string } | null | undefined) {
+  if (!after?.sessionId || !before?.tenantId || !before.sessionId || before.sessionId === after.sessionId) return false;
+  await endSwitchedSession(db, before.tenantId, before.sessionId);
+  return true;
+}
+

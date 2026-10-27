@@ -36,15 +36,28 @@ export async function storedEntry(v: Viewer, entryId: string): Promise<StoredEnt
   return found;
 }
 
+type Shown = Pick<StoredEntry, "projectName" | "day" | "hours" | "personName" | "own">;
+
+/**
+ * Where the card's values differ from the entry. The one rule for both checks: when the card is made
+ * (every field required) and when the confirmed write runs (070 review round 1: only the fields the call
+ * carries, so a direct MCP call can still name just the entry, but a confirmed card never writes over an
+ * entry that changed after it was shown).
+ */
+export function cardMismatch(found: Shown, a: Omit<CardInput, "entryId">, partial = false): string[] {
+  const asked = (x: unknown) => !partial || x !== undefined;
+  return [
+    asked(a.project) && !same(a.project ?? "", found.projectName) && `project is ${found.projectName}`,
+    asked(a.day) && a.day !== found.day && `day is ${found.day}`,
+    asked(a.hoursBefore) && found.hours !== a.hoursBefore && `hoursBefore is ${found.hours}`,
+    asked(a.person) && !found.own && !same(a.person ?? "", found.personName) && `person is ${found.personName}`,
+  ].filter((x): x is string => Boolean(x));
+}
+
 /** 070 AC-17 and amendment 2: no card for a week that can't change, or one that doesn't match the entry. */
 export async function checkCard(v: Viewer, a: CardInput) {
   const found = await storedEntry(v, a.entryId);
   try { guardFixable(found.week); } catch (e) { refuse((e as Error).message); }
-  const wrong = [
-    !same(a.project ?? "", found.projectName) && `project is ${found.projectName}`,
-    a.day !== found.day && `day is ${found.day}`,
-    found.hours !== a.hoursBefore && `hoursBefore is ${found.hours}`,
-    !found.own && !same(a.person ?? "", found.personName) && `person is ${found.personName}`,
-  ].filter(Boolean);
+  const wrong = cardMismatch(found, a);
   if (wrong.length) refuse(`the card must match the entry: ${wrong.join(", ")}`);
 }

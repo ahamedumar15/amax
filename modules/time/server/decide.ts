@@ -5,6 +5,7 @@ import { ScopeError, viewerOf, type Viewer } from "@amax/auth";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type WeekDecided, type WeekReminded } from "../contracts";
 import { chainFor } from "./chain";
+import { ToolError } from "@amax/mcp";
 import { by, findWeek, keyOf, weekProjectIds, type MayAct, type WeekRef, type WeekRow } from "./weeks";
 
 const ref = { weekId: z.string().uuid().optional(), person: z.string().optional(), week: z.string().optional() };
@@ -21,7 +22,7 @@ const target = (tx: Tx, ctx: ServiceContext, a: WeekRef) => findWeek(tx, a, "tim
 
 export async function decide(tx: Tx, ctx: ServiceContext, week: WeekRow, to: "approved" | "rejected", comment: string | null) {
   const chain = await approver(tx, ctx, week);
-  if (week.status !== "submitted") throw new Error(`${keyOf(week)} is ${week.status}, not submitted`);
+  if (week.status !== "submitted") throw new ToolError(`${keyOf(week)} is ${week.status}, not submitted`, "invalid_input");
   await tx.execute(sql`update time.week set status = ${to}, decided_at = now(), decided_by = ${by(ctx)}, reject_comment = ${comment},
     locked_at = ${to === "approved" ? sql`now()` : null}, updated_at = now() where id = ${week.id}`);
   await tx.execute(sql`insert into time.approval (tenant_id, week_id, decision, chain, comment, decided_by) values (${ctx.tenantId}, ${week.id}, ${to}, ${chain}, ${comment}, ${by(ctx)})`);
@@ -48,7 +49,7 @@ export const remindWeek = defineService({
 
 /** The reminder itself, shared by remind_week and remind_weeks (070 amendment 4). */
 export function writeRemind(ctx: ServiceContext, week: WeekRow) {
-  if (week.status !== "draft" && week.status !== "rejected") throw new Error(`${keyOf(week)} is already ${week.status}`);
+  if (week.status !== "draft" && week.status !== "rejected") throw new ToolError(`${keyOf(week)} is already ${week.status}`, "invalid_input");
   const payload: WeekReminded = { weekId: week.id, userId: week.user_id, week: keyOf(week), by: by(ctx) };
   return { result: { week: keyOf(week), person: week.person_name as string, recorded: true,
     note: "Reminder recorded; notifications (030) delivers it to the person when installed" }, resourceId: week.id, events: [{ name: EVENTS.weekReminded, payload }] };

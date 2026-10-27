@@ -5,6 +5,7 @@ import { ctxFor } from "../server/context";
 import { correctEntry, deleteEntry } from "../server/correct";
 import { approveWeek } from "../server/decide";
 import { logTime } from "../server/log";
+import { userFacing } from "@amax/mcp";
 import { timeDb } from "./db";
 
 const W = "2026-W42";
@@ -72,5 +73,26 @@ describe.skipIf(!hasDb)("070 entry corrections (Postgres)", () => {
     expect(await db.q(sql`select hours::float as hours, revision from time.entry where id = ${thu.id}`)).toEqual([{ hours: thu.hours, revision: 1 }]);
     expect(await count(sql`select count(*) as n from core.audit_event where action = 'time.entry.correct' and resource_id = ${thu.id}`)).toBe(0);
     expect(await count(sql`select count(*) as n from core.event where payload->>'entryId' = ${thu.id} and name <> 'time.entry.logged'`)).toBe(0);
+  });
+  // Review round 1: a confirmed card is checked again when it runs, so it never writes over an entry changed after it was shown.
+  it.each([
+    ["the hours moved", { hoursBefore: 2 }, /changed since you saw it \(hoursBefore is 1\.5\)/],
+    ["the project moved", { project: "Contoso Portal" }, /changed since you saw it \(project is Fleet Tracker\)/],
+    ["the day is not the entry's", { day: "2026-10-12" }, /changed since you saw it \(day is 2026-10-16\)/],
+    ["the card still matches", { hoursBefore: 1.5, project: "fleet tracker", day: "2026-10-16" }, null],
+    ["a direct call that names only the entry", {}, null],
+  ] as const)("a correction and a delete re-check the card at write time: %s", async (_, card, problem) => {
+    const tharushi = await db.as("tharushi");
+    for (const write of ["correct", "delete"] as const) {
+      const { id } = await logTime(ctxFor(tharushi), { projectKey: "FLT", day: "2026-10-16", hours: 1.5 });
+      const run = write === "correct" ? correctEntry(ctxFor(tharushi), { entryId: id, hours: 1, ...card }) : deleteEntry(ctxFor(tharushi), { entryId: id, ...card });
+      if (problem) {
+        await expect(run).rejects.toThrow(problem);
+        // Review round 4: a refusal the caller may read, so REST answers 400, not a 500 with a reference.
+        expect(userFacing(await run.catch((e: unknown) => e))).toBe(true);
+        expect(await db.q(sql`select hours::float as hours, revision, deleted_at from time.entry where id = ${id}`)).toEqual([{ hours: 1.5, revision: 1, deleted_at: null }]);
+      } else await expect(run).resolves.toBeTruthy();
+      if (!problem && write === "correct") await deleteEntry(ctxFor(tharushi), { entryId: id });
+    }
   });
 });

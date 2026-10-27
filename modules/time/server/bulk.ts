@@ -1,13 +1,18 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { viewerOf } from "@amax/auth";
-import { defineService } from "@amax/core/server";
+import { defineService, logError } from "@amax/core/server";
+import { userFacing } from "@amax/mcp";
 import { eligible, STATUS, words, type BulkResult, type Kind } from "./bulk-card";
 import { decide, mayDecide, writeRemind } from "./decide";
 import { keyOf, type WeekRow } from "./weeks";
 
-// A database error's own message, never the query text the driver wraps it in.
-const reason = (e: unknown) => { const c = (e as { cause?: unknown }).cause; return c instanceof Error ? c.message : e instanceof Error ? e.message : String(e); };
+/**
+ * What a failed person's row says (070 review rounds 1 to 3): the app's one rule for a refusal the caller may read
+ * (userFacing, as the REST API uses it); anything else, a plain Error or a postgres-js connection error naming host
+ * and port, is logged and shown only as a reference, since the row reaches the done card, the model and the audit.
+ */
+export const failureNote = (e: unknown): string => (userFacing(e) ? e.message : `couldn't be done (reference ${logError("time.bulk", e)})`);
 
 /**
  * One confirmed card is one write (the chat engine's 043 rule), so the whole card is one service: each listed week
@@ -32,7 +37,7 @@ const many = (kind: Kind) => defineService({
         events.push(...out.events);
         results.push({ ...who, status: "done", note: null });
       } catch (e) {
-        results.push({ ...who, status: "failed", note: reason(e) });
+        results.push({ ...who, status: "failed", note: failureNote(e) });
       }
     }
     const n = (st: BulkResult["status"]) => results.filter((r) => r.status === st).length;

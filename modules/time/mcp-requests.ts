@@ -6,16 +6,16 @@ import { decideCard, proposeDecide } from "./server/decide-card";
 import { decideRequest } from "./server/decide-request";
 import { answerRequest, cancelRequest, requestChange } from "./server/request";
 import { answerCard, cancelCard, proposeAnswer, proposeCancel, proposeRequest, requestCard } from "./server/request-card";
-import { listRequests } from "./server/requests-read";
+import { pageRequests } from "./server/requests-read";
 
 // 070 amendment 3: change requests for submitted and approved weeks, asked for by the owner and decided by an approver.
 const status = z.enum(["pending", "needs_info", "applied", "reopened", "completed", "declined", "cancelled"]);
 const requestId = z.uuid().describe("The change request's id, from get_change_requests");
 
 export const requestTools: McpToolDef[] = [
-  tool({ ...read, pin: "view", name: "get_change_requests", description: "Timesheet change requests: your own, and those you review as an approver. Filter by id, status or ISO week; mine: true for only yours, false for only those you review.",
-    input: z.object({ id: z.uuid().optional(), status: status.optional(), week: isoWeek.optional(), mine: z.boolean().optional() }),
-    run: (v, a) => listRequests(v, a) }),
+  tool({ ...read, pin: "view", name: "get_change_requests", description: "Timesheet change requests: your own, and those you review as an approver, newest first, 50 at a time. Filter by id, status or ISO week; mine: true for only yours, false for only those you review. When truncated is true there are older ones: narrow the filter, or pass before from the result.",
+    input: z.object({ id: z.uuid().optional(), status: status.optional(), week: isoWeek.optional(), mine: z.boolean().optional(), before: z.uuid().optional().describe("The before value from a truncated result") }),
+    run: (v, a) => pageRequests(v, a) }),
   tool({ name: "request_time_change", description: "Ask an approver to change or remove one entry of your own SUBMITTED or APPROVED week, which you can't edit yourself (for a draft or rejected week use correct_time_entry). Take the entryId from get_my_week; give the new hours, billable flag, note or project, or remove: true, and a reason. Nothing changes until an approver decides.",
     scope: "write", permission: "time:log",
     input: z.object({ entryId: z.uuid(), hours: z.number().positive().max(24).optional(), billable: z.boolean().optional(), note: z.string().max(500).optional(), projectKey: z.string().optional(),

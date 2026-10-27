@@ -12,6 +12,13 @@ export const mayFix = (v: Viewer, ownerUserId: string, projectId: string) =>
   can(v, "time:log", { ownerUserId }) || can(v, "time:approve", { projectId });
 
 /**
+ * 070 review round 1: a change request that moves an entry to another project needs that project in the
+ * approver's scope too, as correct_time_entry does. Being in the week's chain through one project is not enough.
+ */
+export const mayMove = (v: Viewer, r: { userId: string; before: { projectId: string }; proposed: { projectId?: string } }) =>
+  !r.proposed.projectId || r.proposed.projectId === r.before.projectId || mayFix(v, r.userId, r.proposed.projectId);
+
+/**
  * 070: one live entry and its week, locked, for a correction or a delete. The caller is checked before
  * any lock, and a missing, deleted or out-of-scope entry all give the same error.
  */
