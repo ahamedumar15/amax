@@ -5,7 +5,10 @@ import { createRegistry } from "@amax/mcp";
 import { chatSuggestions } from "../chat-suggestions";
 import manifest from "../module";
 import type { WeekUtilisation } from "../server/utilisation";
-import { timeDb } from "./db";
+import { sql } from "drizzle-orm";
+import { withTenant } from "@amax/db";
+import { applyRule } from "@amax/core/privacy";
+import { T, timeDb } from "./db";
 
 const W43 = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23"];
 
@@ -50,4 +53,32 @@ describe.skipIf(!hasDb)("072 weekly utilisation and targets (Postgres)", () => {
     expect(await offered(await db.as("maya"))).toBe(true);
     expect(await offered(await db.as("kasun"))).toBe(false);
   }, 60_000);
+
+  // Review round 1: one rule for a week's figure (weekFigures), so My week and get_week_utilisation always agree,
+  // including a sent-back week (D4: no hours) and an overtime week summed exactly.
+  it("My week and the weekly utilisation agree, for an overtime week and a sent-back one", async () => {
+    const pair = async (key: string, name: string) => [(await call<{ utilisation: number }>(key, "get_my_week", { week: "2026-W43" })).utilisation, row(await util("maya"), name).utilisation];
+    expect(await pair("nimal", "Nimal Silva")).toEqual([112, 112]);
+    await call("kasun", "submit_week", { week: "2026-W43" });
+    await call("maya", "reject_week", { person: "kasun@lumenlabs.test", week: "2026-W43", comment: "Split Friday" });
+    expect(await pair("kasun", "Kasun Dias")).toEqual([0, 0]);
+  }, 60_000);
+
+  // Review round 1: leave the viewer can't see reads as not visible, never as no leave. Ayesha (PM of HR Insights)
+  // sees Dinesh's W42 through his HR Insights hours, but not his leave; Maya, his manager, sees both.
+  it("a person whose leave the viewer can't see is marked leaveVisible: false", async () => {
+    expect(row(await util("ayesha", { week: "2026-W42" }), "Dinesh Wickrama")).toMatchObject({ leaveVisible: false });
+    expect(row(await util("maya", { week: "2026-W42" }), "Dinesh Wickrama").leaveVisible).toBeUndefined();
+  }, 60_000);
+
+  // Review round 1: retention anonymises who set a target and keeps the hours, so it never resets anyone to 40 h.
+  it("the 7-year retention rule for targets keeps the hours and anonymises who set them", async () => {
+    await call("sahan", "set_weekly_target", { person: "Dinesh Wickrama", hours: 24 });
+    const rule = manifest.retention!.find((r) => r.table === "time.target")!;
+    expect(rule.action).toBe("anonymise");
+    await withTenant(db.app, T, (tx) => applyRule(tx, { ...rule, id: "t", module: "time" }, sql`true`));
+    expect(await db.q(sql`select hours::float as hours, updated_by from time.target`)).toEqual([{ hours: 24, updated_by: "Anonymised" }]);
+    expect(row(await util("maya"), "Dinesh Wickrama")).toMatchObject({ target: 24 });
+  }, 60_000);
 });
+

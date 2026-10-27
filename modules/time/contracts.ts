@@ -8,6 +8,19 @@ import { shiftWeek, weekKey, type IsoWeek } from "./week";
 
 export { approvedWeekHours, type ApprovedWeekHours } from "./server/totals";
 export { hoursVisibleTo } from "./server/hours-scope";
+
+/**
+ * 072 review rounds 2 and 3: the current status of timesheet weeks by id, for a consumer whose copy has no status for a
+ * week (submitted before it listened, or an event it missed). Read as the viewer, with Time's week scope like every
+ * contract read: a week the viewer may not see, or one Time no longer holds, is absent.
+ */
+export async function weekStatuses(tx: Tx, viewer: Viewer, weekIds: string[]): Promise<Map<string, WeekStatus>> {
+  const ids = [...new Set(weekIds)];
+  if (!ids.length) return new Map();
+  const rows = await tx.execute(sql`select w.id, w.status, w.user_id, ${weekProjects} as projects, ${ownerEntity} as owner_entity from time.week w
+    where w.id::text in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+  return new Map(rows.filter((r) => visible(viewer, r)).map((r) => [r.id as string, r.status as WeekStatus]));
+}
 export { isoWeekOf, parseWeekKey, shiftWeek, weekKey, weekStart, workDays, type IsoWeek } from "./week";
 
 export const WEEK_STATUSES = ["draft", "submitted", "approved", "rejected"] as const;

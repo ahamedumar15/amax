@@ -1,3 +1,4 @@
+import { ToolError } from "@amax/mcp";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
@@ -19,9 +20,28 @@ export async function targetsOf(tx: Tx, userIds: string[]): Promise<Map<string, 
   return new Map(ids.map((id) => [id, set.get(id) ?? DEFAULT_TARGET]));
 }
 
+/**
+ * 072 AC-8, AC-9 (review round 1): one rule for a week's utilisation, used by My week and by get_week_utilisation:
+ * the week's exact hours (never the screens' 0.1 h rounding), none for a sent-back week (D4), against the target.
+ */
+export function weekFigures(exactHours: number, status: string | null, target: number) {
+  const hours = status === "rejected" ? 0 : Math.round(exactHours * 100) / 100;
+  return { hours, target, utilisation: target > 0 ? Math.round((hours / target) * 100) : 0, overtime: hours > target };
+}
+
+/** The exact hours of each person's week: the one query My week and get_week_utilisation share (review round 2). */
+export async function exactWeekHours(tx: Tx, userIds: string[], w: { year: number; week: number }): Promise<Map<string, number>> {
+  const ids = [...new Set(userIds)];
+  if (!ids.length) return new Map();
+  const rows = await tx.execute(sql`select w.user_id, sum(e.hours) as hours from time.week w join time.entry e on e.week_id = w.id
+    where w.iso_year = ${w.year} and w.iso_week = ${w.week} and e.deleted_at is null and w.user_id::text in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)}) group by w.user_id`);
+  const found = new Map(rows.map((r) => [r.user_id as string, Number(r.hours)]));
+  return new Map(ids.map((id) => [id, found.get(id) ?? 0]));
+}
+
 async function personOf(tx: Tx, person: string) {
   const rows = await tx.execute(sql`select id, name from auth.user where status = 'active' and (lower(email) = lower(${person}) or lower(name) = lower(${person}))`);
-  if (rows.length !== 1) throw new Error(rows.length ? `more than one ${person}; use their email` : `no active person called ${person}`);
+  if (rows.length !== 1) throw new ToolError(rows.length ? `more than one ${person}; use their email` : `no active person called ${person}`, rows.length ? "invalid_input" : "not_found");
   return { id: rows[0].id as string, name: rows[0].name as string };
 }
 

@@ -3,7 +3,7 @@ import type { Viewer } from "@amax/auth";
 import { listProjectRefs } from "@amax/delivery/contracts";
 import type { WeekStatus } from "../contracts";
 import { weekKey, workDays, type IsoWeek } from "../week";
-import { targetsOf } from "./targets";
+import { exactWeekHours, targetsOf, weekFigures } from "./targets";
 import { entrySums, hoursOf, latestWeek, projectNames, read, weekEntries, type EntryLine } from "./read";
 
 export type MyRow = { projectName: string; days: number[]; total: number };
@@ -28,12 +28,13 @@ export const myWeek = (v: Viewer, wanted?: IsoWeek) =>
     return {
       week: w, key: weekKey(w), days, status: (wk?.status as WeekStatus | undefined) ?? null, note: (wk?.note as string | null) ?? null,
       rejectComment: (wk?.reject_comment as string | null) ?? null, rows, entries: wk ? await weekEntries(tx, wk.id as string, names) : [], perDay: days.map((d) => hoursOf(sums, (s) => s.day === d)),
-      total: hoursOf(sums, () => true), agentHours: hoursOf(sums, (s) => s.source === "agent"), ...(await utilisationOf(tx, v.userId, hoursOf(sums, () => true))),
+      total: hoursOf(sums, () => true), agentHours: hoursOf(sums, (s) => s.source === "agent"), ...(await utilisationOf(tx, v.userId, w, (wk?.status as string | undefined) ?? null)),
       projects: (await listProjectRefs(tx)).map((p) => ({ key: p.key, name: p.name })),
     };
   });
 
-async function utilisationOf(tx: Parameters<Parameters<typeof read>[1]>[0], userId: string, total: number) {
-  const target = (await targetsOf(tx, [userId])).get(userId)!;
-  return { target, utilisation: Math.round((total / target) * 100) };
+// The same figures get_week_utilisation shows (review round 1): one rule, weekFigures.
+async function utilisationOf(tx: Parameters<Parameters<typeof read>[1]>[0], userId: string, w: IsoWeek, status: string | null) {
+  const f = weekFigures((await exactWeekHours(tx, [userId], w)).get(userId)!, status, (await targetsOf(tx, [userId])).get(userId)!);
+  return { target: f.target, utilisation: f.utilisation };
 }

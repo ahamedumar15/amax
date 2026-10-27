@@ -46,6 +46,14 @@ describe.skipIf(!hasDb)("072 Time's notices reach project approvers in the owner
     await db.drain();
     expect(await bell("nimal", "Kasun Dias submitted 2026-W51%")).toHaveLength(0);
     expect(await bell("maya", "Kasun Dias submitted 2026-W51%")).toHaveLength(1);
+
+    // Review round 1: a manager reaches the owner's entity only through the role that grants approval. Maya's roles
+    // are scoped to another entity, and an unscoped Employee role (which doesn't approve) must not lend its reach.
+    await db.t.owner`update auth.role_assignment set legal_entity_ids = ${[other as string]} where user_id = (select id from auth.user where email = 'maya@lumenlabs.test')`;
+    await db.t.owner`insert into auth.role_assignment (tenant_id, user_id, role, source, legal_entity_ids) select ${T}, id, 'Employee', 'manual', null from auth.user where email = 'maya@lumenlabs.test' on conflict do nothing`;
+    await db.emit("time.week.submitted", { ...route, weekId: randomUUID(), week: "2026-W52", hours: 8 });
+    await db.drain();
+    expect(await bell("maya", "Kasun Dias submitted 2026-W52%")).toHaveLength(0);
   }, 120_000);
 
   it("AC5 an approved, rejected or reopened week reaches its owner in the bell and by email; the rejection carries the comment", async () => {

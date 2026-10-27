@@ -47,7 +47,10 @@ export default defineModule({
     { table: "time.entry", label: "Time entries", subject: ["user_id", "project_id", "logged_by", "deleted_by"], fields: ["note", "logged_by", "deleted_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
     // before/proposed copy the entry's note, so they are anonymised with it (070 review round 1).
     { table: "time.change_request", label: "Timesheet change requests", subject: ["user_id", "decided_by"], fields: ["reason", "question", "answer", "decision_note", "decided_by", "before", "proposed"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
-    { table: "time.target", label: "Weekly targets", subject: ["user_id", "updated_by"], fields: ["hours", "updated_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "delete" },
+    // 072 review round 1: anonymise who set it, not delete, so erasing the Admin who set a target (or the 7-year clock)
+    // never drops another person's target back to 40 h without anyone deciding it.
+    { table: "time.target", label: "Weekly targets", subject: ["user_id", "updated_by"], fields: ["updated_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise",
+      keep: { hours: "a weekly hours figure (1 to 60) that names no one; the row's person is user_id" } },
     { table: "time.approval", label: "Timesheet approvals", subject: ["decided_by"], fields: ["comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
   ],
   chatIntents,
