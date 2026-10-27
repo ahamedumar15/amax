@@ -240,6 +240,20 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 
 **Verdict:** PASS
 
+**Review loop (specclaw-review, cap of 5 passes), 2026-10-27.** Reviewed against the 070 branch tip (`20442687`) after the stack rebase, so only 071's own code; rounds ran on the working tree with a local, read-only copy of the reviewer (git is read-only for the agent).
+
+- Round 1 (1 blocker, 6 majors): `time.setting` had no retention entry; a manager's entity scope leaked through an unscoped base role; a payroll time read that couldn't happen read as "no overtime"; a `clientRef` replay ignored note and agent; an Azure DevOps re-push drafted a commit twice; a PM saw a person's whole range; 071's rule refusals were REST 500s. All fixed with variant tests (`chain-entity.test.ts`, `hours-scope.test.ts`, payroll `overtime-time` cases, `idempotency`, `ingest-ac2`, `settings`). New `delivery.commit_draft` (0018) dedupes per person and commit.
+- Round 2 (3 majors): week projects counted over the whole week; every caller refusal in Time's write paths is now `ToolError` (26 sites; clears 070's open final-pass major of the same class); a concurrent GitHub and Azure DevOps race test.
+- Round 3 (1 major): a test for a week split by the report range; one shared `weekProjects` SQL fragment.
+- Round 4: **clean.**
+- **Final pass (round 5, pass 5 of 5): OPEN, 0 blockers, 4 majors, 3 minors. The loop stopped at the cap.** No blocker, so this goes to the PR with these recorded (also in `follow-ups.md`):
+  - Major: a PM who sees only some of a person's weeks gets a utilisation row (and team figure) that counts the hidden weeks as zero. Caused by round 1's per-week scope: mark such rows partial and leave them out of the team figure, or limit a PM to people whose whole range they see.
+  - Major: `set_time_settings` checks `time:admin` without an entity, so an entity-scoped Admin changes tenant-wide entry rules. Require an unscoped `time:admin` (service and card), with a test.
+  - Major: the request list's SQL scope has no legal-entity narrowing, so for an entity-scoped approver a page can come back short with `truncated: true`. Put the owner's entity into `scopeSql`.
+  - Major: a `clientRef` replay returns without reaching the `logTime` service, so chat reads a confirmed replay as "couldn't confirm what it changed". Do the lookup inside the service.
+  - Minors: `reaches` unused; Reports README says "in the month" for the PM rule; a rejected week older than the back-dating window leaves its owner no path of their own.
+- The final pass ran on the uncommitted working tree, so it records `head 9fdb80f2`; once committed, `specclaw-review verdict` reports "code changed after the final pass". The reviewed diff is what was committed.
+
 Verified 2026-10-24 at `82e50ea` (branch `specclaw/071-time-access-and-integrity`, stacked on 070's `625be24`), Windows 11, `DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`. Every AC passes. The two specclaw gates don't run clean on this host (see Gates); the product owner chose, on 2026-10-24, to record PASS with them noted, as for 070.
 
 - AC-1: pass — `modules/payroll/tests/overtime-time.test.ts` AC3 and `server/totals.ts`: `approvedWeekHours` returns approved weeks only, live entries only (`deleted_at is null`), `{ userId, week, hours }` and nothing else; `time:totals` declared and granted to Payroll only (`module.ts`).

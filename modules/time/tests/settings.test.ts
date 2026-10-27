@@ -5,7 +5,7 @@ import type { Viewer } from "@amax/auth";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { chatTurn } from "@amax/chat";
-import { createRegistry } from "@amax/mcp";
+import { createRegistry, userFacing } from "@amax/mcp";
 import manifest from "../module";
 import { ctxFor } from "../server/context";
 import { logTime } from "../server/log";
@@ -44,8 +44,23 @@ describe.skipIf(!hasDb)("071 entry rules: allocated projects and the date window
     expect(await cardFor(tharushi, "log_time", { projectKey: "HRI", day: "2026-10-28", hours: 1 })).toEqual([]);
     const flt = await call(tharushi, "log_time", { projectKey: "FLT", day: "2026-10-28", hours: 1 });
     await expect(call(tharushi, "correct_time_entry", { entryId: flt.id, projectKey: "HRI" })).rejects.toThrow(refusal);
+    // Review round 1: every rule refusal is one the caller may read (REST 400 with the allowed projects, not a 500).
+    for (const [tool, input] of [["log_time", { projectKey: "HRI", day: "2026-10-28", hours: 1 }], ["correct_time_entry", { entryId: flt.id, projectKey: "HRI" }]] as const)
+      expect(userFacing(await call(tharushi, tool, input).catch((e: unknown) => e))).toBe(true);
     await call(sahan, "set_time_settings", { requireAllocation: false });
     await expect(call(tharushi, "correct_time_entry", { entryId: flt.id, projectKey: "HRI" })).resolves.toMatchObject({ hours: 1 });
+    // Review round 2: every refusal on these write paths, not only 071's, reads as one the caller may see.
+    await call(tharushi, "log_time", { projectKey: "FLT", day: "2026-10-29", hours: 20 });
+    for (const [tool, input, words] of [
+      ["log_time", { projectKey: "FLT", day: "2026-10-24", hours: 1 }, /is a weekend/],
+      ["log_time", { projectKey: "FLT", day: "2026-02-30", hours: 1 }, /isn't a real date/],
+      ["log_time", { projectKey: "FLT", day: "2026-10-29", hours: 5 }, /more than 24 h/],
+      ["log_time", { projectKey: "NOPE", day: "2026-10-29", hours: 1 }, /no project NOPE/],
+      ["request_time_change", { entryId: flt.id, hours: 2, reason: "Typo on Tuesday" }, /so you can fix it yourself/],
+    ] as const) {
+      const e = await call(tharushi, tool, input).catch((x: unknown) => x);
+      expect([String((e as Error).message).match(words) !== null, userFacing(e)]).toEqual([true, true]);
+    }
   }, 60_000);
 
   it("AC11 the back-dating limit and future dates bind the owner's own time; a PM or Admin is exempt", async () => {
@@ -58,6 +73,7 @@ describe.skipIf(!hasDb)("071 entry rules: allocated projects and the date window
     await expect(call(tharushi, "log_time", { projectKey: "FLT", day: early, hours: 1 })).rejects.toThrow(/up to 4 weeks back, so .* is too early/);
     await expect(call(tharushi, "log_time", { projectKey: "FLT", day: future, hours: 1 })).rejects.toThrow(/is in the future/);
     expect(await cardFor(tharushi, "log_time", { projectKey: "FLT", day: early, hours: 1 })).toEqual([]);
+    for (const day of [early, future]) expect(userFacing(await call(tharushi, "log_time", { projectKey: "FLT", day, hours: 1 }).catch((e: unknown) => e))).toBe(true);
     const [{ id: userId }] = await db.q(sql`select id from auth.user where email = 'tharushi@lumenlabs.test'`);
     await expect(logTime(ctxFor(sahan), { projectKey: "FLT", day: early, hours: 1, userId: userId as string })).resolves.toMatchObject({ day: early });
     await call(sahan, "set_time_settings", { backdateWeeks: null, allowFuture: true });

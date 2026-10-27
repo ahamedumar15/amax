@@ -41,6 +41,8 @@ export default defineModule({
   mcpTools,
   overview: timeOverview as never,
   retention: [
+    // 071 review round 1: who last changed the tenant's entry rules.
+    { table: "time.setting", label: "Who changed the timesheet rules", subject: ["updated_by"], fields: ["updated_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise" },
     { table: "time.week", label: "Timesheet weeks", subject: ["user_id", "decided_by"], subjectName: ["person_name"], fields: ["person_name", "note", "reject_comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["decided_at"], idle: "P1Y" }, action: "anonymise" },
     { table: "time.entry", label: "Time entries", subject: ["user_id", "project_id", "logged_by", "deleted_by"], fields: ["note", "logged_by", "deleted_by"], class: "personal", period: "P7Y", start: { at: ["created_at"] }, action: "anonymise" },
     // before/proposed copy the entry's note, so they are anonymised with it (070 review round 1).

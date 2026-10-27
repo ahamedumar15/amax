@@ -25,6 +25,9 @@ describe.skipIf(!hasDb)("071 log_time with a clientRef logs once (Postgres)", ()
     expect(await writes()).toEqual(before);
     await expect(log({ ...input, hours: 3 })).rejects.toThrow("clientRef already used for a different entry");
     await expect(log({ ...input, projectKey: "CON" })).rejects.toThrow("clientRef already used for a different entry");
+    // Review round 1: every field counts, so a changed note or agent is refused too, never silently replayed.
+    for (const other of [{ note: "standup" }, { agent: "Another agent" }, { billable: false }])
+      await expect(log({ ...input, ...other })).rejects.toThrow("clientRef already used for a different entry");
 
     const race = { projectKey: "FLT", day: "2026-10-28", hours: 1, clientRef: "agent-run-42" };
     const [a, b] = await Promise.all([log(race), log(race)]);

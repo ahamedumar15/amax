@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { viewerOf, type Viewer } from "@amax/auth";
@@ -12,8 +13,8 @@ export const Hours = z.number().positive().max(24).multipleOf(0.05);
 // Weeks are Mon–Fri (the screens, totals and submit payload all count the same five days).
 export function workDay(day: string): Date {
   const d = new Date(`${day}T00:00:00Z`);
-  if (Number.isNaN(d.getTime()) || isoDate(d) !== day) throw new Error(`${day} isn't a real date`);
-  if (d.getUTCDay() === 0 || d.getUTCDay() === 6) throw new Error(`${day} is a weekend; timesheets cover Monday to Friday`);
+  if (Number.isNaN(d.getTime()) || isoDate(d) !== day) throw new ToolError(`${day} isn't a real date`, "invalid_input");
+  if (d.getUTCDay() === 0 || d.getUTCDay() === 6) throw new ToolError(`${day} is a weekend; timesheets cover Monday to Friday`, "invalid_input");
   return d;
 }
 
@@ -29,7 +30,7 @@ export function lockRefusal(week: WeekRow, v: Viewer | undefined, entity: Entity
 
 export async function guardLock(tx: Tx, ctx: ServiceContext, week: WeekRow, after: object) {
   const refused = lockRefusal(week, viewerOf(ctx), await entityOf(tx, week.user_id));
-  if (refused) throw new Error(refused);
+  if (refused) throw new ToolError(refused, "invalid_input");
   if (week.status !== "approved") return false;
   await appendAudit(tx, ctx, { action: "time.week.locked_change", resource: "time.week", resourceId: week.id, before: { status: week.status }, after });
   return true;
@@ -39,7 +40,7 @@ export async function guardLock(tx: Tx, ctx: ServiceContext, week: WeekRow, afte
 export async function guardDayTotal(tx: Tx, userId: string, day: string, hours: number, except?: string) {
   const other = except ? sql`and id <> ${except}` : sql``;
   const [{ total }] = await tx.execute(sql`select coalesce(sum(hours), 0) as total from time.entry where user_id = ${userId} and day = ${day} and deleted_at is null ${other}`);
-  if (Math.round(Number(total) * 100) + Math.round(hours * 100) > 2400) throw new Error(`that would make ${day} more than 24 h`);
+  if (Math.round(Number(total) * 100) + Math.round(hours * 100) > 2400) throw new ToolError(`that would make ${day} more than 24 h`, "invalid_input");
 }
 
 /** 071 AC-12: a live entry with the same person, project, day and note; flagged, never refused. */

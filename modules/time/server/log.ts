@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
@@ -27,7 +28,7 @@ const input = z.object({
 
 async function personOf(tx: Tx, userId: string) {
   const [u] = await tx.execute(sql`select id, name from auth.user where id = ${userId} and status = 'active'`);
-  if (!u) throw new Error("no active person with that id");
+  if (!u) throw new ToolError("no active person with that id", "not_found");
   return u as { id: string; name: string };
 }
 
@@ -36,23 +37,24 @@ export type LogInput = z.infer<typeof input>;
 /** The entry write inside the caller's transaction: logTime, and an accepted commit-time draft (008). */
 /** A live entry already logged from this source (071 AC-6), for one person. */
 export async function bySource(tx: Tx, userId: string, sourceRef: string) {
-  const [e] = await tx.execute(sql`select id, project_id, to_char(day, 'YYYY-MM-DD') as day, hours, billable from time.entry
+  const [e] = await tx.execute(sql`select id, project_id, to_char(day, 'YYYY-MM-DD') as day, hours, billable, note, agent from time.entry
     where user_id = ${userId} and source_ref = ${sourceRef} and deleted_at is null`);
-  return e ? { id: e.id as string, projectId: e.project_id as string, day: e.day as string, hours: Number(e.hours), billable: Boolean(e.billable) } : null;
+  return e ? { id: e.id as string, projectId: e.project_id as string, day: e.day as string, hours: Number(e.hours), billable: Boolean(e.billable),
+    note: (e.note as string | null) ?? null, agent: (e.agent as string | null) ?? null } : null;
 }
 
 export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext, sourceRef: string | null = null) {
   {
     const v = viewerOf(ctx);
     const userId = a.userId ?? v?.userId;
-    if (!userId) throw new Error("say whose time this is");
+    if (!userId) throw new ToolError("say whose time this is", "invalid_input");
     if (v) assertCan(v, "time:log", { ownerUserId: userId, ...(userId === v.userId ? {} : inEntity(await entityOf(tx, userId))) });
     const project = await getProjectRef(tx, a.projectKey);
-    if (!project) throw new Error(`no project ${a.projectKey}`);
+    if (!project) throw new ToolError(`no project ${a.projectKey}`, "not_found");
     const day = a.day;
     // 071 AC-10/AC-11: the tenant's entry rules (both off by default); the date window binds only the person's own time.
     const refused = (await allocationRefusal(tx, ctx.tenantId, userId, project.id, day)) ?? (userId === actorId(ctx) ? await dateRefusal(tx, userId, day) : null);
-    if (refused) throw new Error(refused);
+    if (refused) throw new ToolError(refused, "invalid_input");
     const week = await ensureWeek(tx, ctx.tenantId, await personOf(tx, userId), isoWeekOf(workDay(day)));
     const lockedChange = await guardLock(tx, ctx, week, { day, hours: a.hours, projectKey: a.projectKey });
     await guardDayTotal(tx, userId, day, a.hours);

@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { defineService, type ServiceContext } from "@amax/core/server";
@@ -35,11 +36,11 @@ type Target = { week: WeekRow; entry: EntryRow; lockedChange?: boolean };
 /** The correction itself, shared by correct_time_entry and an applied change request (070 amendment 3). */
 export async function writeCorrection(tx: Tx, ctx: ServiceContext, { week, entry, lockedChange = false }: Target, a: Change, whoFor: (projectId: string) => Promise<Who>) {
   const project = a.projectKey ? await getProjectRef(tx, a.projectKey) : null;
-  if (a.projectKey && !project) throw new Error(`no project ${a.projectKey}`);
+  if (a.projectKey && !project) throw new ToolError(`no project ${a.projectKey}`, "not_found");
   const next = { hours: a.hours ?? entry.hours, billable: a.billable ?? entry.billable, note: a.note === undefined ? entry.note : a.note, projectId: project?.id ?? entry.project_id };
   const who = await whoFor(next.projectId);
   const moved = next.projectId !== entry.project_id ? await allocationRefusal(tx, ctx.tenantId, entry.user_id, next.projectId, entry.day) : null;
-  if (moved) throw new Error(moved);
+  if (moved) throw new ToolError(moved, "invalid_input");
   await guardDayTotal(tx, entry.user_id, entry.day, next.hours, entry.id);
   const [{ revision }] = await tx.execute(sql`update time.entry set hours = ${next.hours}, billable = ${next.billable}, note = ${next.note}, project_id = ${next.projectId},
     revision = revision + 1 where id = ${entry.id} returning revision`);
@@ -60,7 +61,7 @@ export async function writeDelete(tx: Tx, ctx: ServiceContext, { week, entry, lo
 /** 071 AC-11: the owner's own change keeps to the date window; a PM or Admin fix with a reason is exempt. */
 async function guardOwnDate(tx: Tx, ctx: ServiceContext, entry: EntryRow) {
   const refused = actorId(ctx) === entry.user_id ? await dateRefusal(tx, entry.user_id, entry.day) : null;
-  if (refused) throw new Error(refused);
+  if (refused) throw new ToolError(refused, "invalid_input");
 }
 
 /** 070 AC-1, AC-13, AC-14: one entry's hours, billable flag, note or project; never its day, which would move it between weeks. */

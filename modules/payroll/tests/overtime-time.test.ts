@@ -2,7 +2,11 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { approvedWeekHours } from "@amax/time/contracts";
-import { payrollDb } from "./db";
+import { contextFor } from "@amax/core/server";
+import { contextForViewer, setGrants } from "@amax/auth";
+import { agentsPlatform } from "@amax/agents/module";
+import { buildDraft, groupOf } from "../server/draft";
+import { payrollDb, T } from "./db";
 
 const DAYS = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23"];
 
@@ -11,6 +15,8 @@ describe.skipIf(!hasDb)("071 overtime from Time's totals read (Postgres)", () =>
   beforeAll(async () => { db = await payrollDb(); }, 120_000);
   afterAll(() => db?.t.drop());
 
+  // A tenant whose Payroll role lacks time:totals; restored after each case.
+  const withoutTotals = () => setGrants([...db.modules.map((m) => (m.id === "time" ? { ...m, grants: { ...m.grants, Payroll: (m.grants?.Payroll ?? []).filter((g) => g !== "time:totals") } } : m)), agentsPlatform as never]);
   const call = (v: Awaited<ReturnType<typeof db.as>>, tool: string, args: object) => db.registry.call(v, tool, args, { source: "mcp" }) as Promise<Record<string, unknown>>;
   const userId = async (key: string) => (await db.q(sql`select id from auth.user where email = ${`${key}@lumenlabs.test`}`))[0].id as string;
   const week46 = async (key: string, spare = 0) => {
@@ -53,6 +59,25 @@ describe.skipIf(!hasDb)("071 overtime from Time's totals read (Postgres)", () =>
     const [{ id: weekId }] = await db.q(sql`select id from time.week where user_id = ${await userId("kasun")} and iso_week = 43`);
     expect(await call(payroll, "get_timesheet", { weekId })).toBeNull();
     expect(await call(payroll, "get_change_requests", {})).toEqual({ requests: [], truncated: false });
+  }, 120_000);
+
+  // 071 review round 1: a time read that couldn't happen says so for everyone, never "no overtime": a system draft
+  // (no viewer) and a drafter Time refuses (no time:totals) flag every person overtime-unknown; Payroll reads them.
+  it.each([
+    ["a system draft (no viewer)", async () => contextFor.job(T, "payroll.test"), true],
+    ["a Payroll drafter Time refuses (no time:totals)", async () => { withoutTotals(); return contextForViewer(await db.as("maya", "Payroll"), "mcp"); }, true],
+    ["a Payroll drafter", async () => contextForViewer(await db.as("maya", "Payroll"), "mcp"), false],
+  ] as const)("overtime read by %s", async (_, ctxOf, unknown) => {
+    const ctx = await ctxOf();
+    const out = await db.tx(async (tx) => {
+      const [g] = await tx.execute(sql`select g.id from payroll.pay_group g join core.legal_entity e on e.id = g.legal_entity_id where e.country = 'LK' limit 1`);
+      return buildDraft(tx, ctx, (await groupOf(tx, g.id as string))!, "2026-10");
+    }).catch((e: Error) => e).finally(() => setGrants([...db.modules, agentsPlatform as never]));
+    if (out instanceof Error) throw out; // every case must reach the time read
+    const withUser = out.slips.filter((s) => s.person.userId);
+    expect(withUser.length).toBeGreaterThan(0);
+    expect(withUser.every((s) => s.flags.includes("overtime-unknown"))).toBe(unknown);
+    expect(Boolean(out.sources.timeIncomplete)).toBe(unknown);
   }, 120_000);
 
   it("AC2 people outside the drafter's entity are flagged overtime-unknown and the Sources line says the read is incomplete", async () => {

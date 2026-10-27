@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import { can, viewerOf } from "@amax/auth";
 import { defineService } from "@amax/core/server";
@@ -15,9 +16,9 @@ export const submitWeek = defineService({
   async run(tx, a, ctx) {
     const v = viewerOf(ctx);
     const week = await findWeek(tx, { weekId: a.weekId, week: a.week, person: a.person ?? v?.email }, "time:submit", async (w) => !v || can(v, "time:submit", { ownerUserId: w.user_id, ...(w.user_id === v.userId ? {} : inEntity(await entityOf(tx, w.user_id))) }));
-    if (week.status === "submitted" || week.status === "approved") throw new Error(`${keyOf(week)} is already ${week.status}`);
+    if (week.status === "submitted" || week.status === "approved") throw new ToolError(`${keyOf(week)} is already ${week.status}`, "invalid_input");
     const hours = await weekHours(tx, week.id);
-    if (hours === 0) throw new Error(`${keyOf(week)} has no time logged yet`);
+    if (hours === 0) throw new ToolError(`${keyOf(week)} has no time logged yet`, "invalid_input");
     await tx.execute(sql`update time.week set status = 'submitted', submitted_at = now(), reject_comment = null, updated_at = now() where id = ${week.id}`);
     const payload: WeekSubmitted = { weekId: week.id, userId: week.user_id, week: keyOf(week), hours };
     // 070 AC-35: a change request that reopened this week is done once the week is submitted again.

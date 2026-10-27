@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import type { Tx } from "@amax/db";
 import { ScopeError, viewerOf } from "@amax/auth";
 import type { ServiceContext } from "@amax/core/server";
@@ -14,9 +15,9 @@ export const keyOf = (w: WeekRow) => weekKey({ year: Number(w.iso_year), week: N
 
 /** 070 AC-9: a week a write names must be given; the server never picks one by the UTC clock. */
 export function weekOf(key: string | undefined): IsoWeek {
-  if (!key) throw new Error("say which ISO week, such as 2026-W42");
+  if (!key) throw new ToolError("say which ISO week, such as 2026-W42", "invalid_input");
   const w = parseWeekKey(key);
-  if (!w) throw new Error(`${key} isn't an ISO week like 2026-W42`);
+  if (!w) throw new ToolError(`${key} isn't an ISO week like 2026-W42`, "invalid_input");
   return w;
 }
 
@@ -34,7 +35,7 @@ export type MayAct = (week: WeekRow) => boolean | Promise<boolean>;
 
 async function candidates(tx: Tx, ref: WeekRef): Promise<WeekRow[]> {
   if (ref.weekId) return (await tx.execute(sql`select * from time.week where id = ${ref.weekId}`)) as unknown as WeekRow[];
-  if (!ref.person) throw new Error("say whose timesheet: a weekId, or a person and week");
+  if (!ref.person) throw new ToolError("say whose timesheet: a weekId, or a person and week", "invalid_input");
   const w = weekOf(ref.week);
   return (await tx.execute(sql`select w.*, u.email from time.week w join auth.user u on u.id = w.user_id
     where (lower(u.email) = lower(${ref.person}) or lower(w.person_name) = lower(${ref.person})) and w.iso_year = ${w.year} and w.iso_week = ${w.week} order by u.email`)) as unknown as WeekRow[];
@@ -46,7 +47,7 @@ export async function peekWeek(tx: Tx, ref: WeekRef, may: MayAct): Promise<WeekR
   for (const r of await candidates(tx, ref)) if (await may(r)) rows.push(r);
   const exact = rows.filter((r) => String(r.email ?? "").toLowerCase() === ref.person?.toLowerCase());
   const pick = exact.length === 1 ? exact[0] : rows.length === 1 ? rows[0] : null;
-  if (!pick && rows.length > 1) throw new Error(`more than one ${ref.person} has a timesheet in ${ref.week} you can act on; use their email`);
+  if (!pick && rows.length > 1) throw new ToolError(`more than one ${ref.person} has a timesheet in ${ref.week} you can act on; use their email`, "invalid_input");
   return pick;
 }
 
@@ -61,8 +62,11 @@ export async function findWeek(tx: Tx, ref: WeekRef, action: string, may: MayAct
   return locked as WeekRow;
 }
 
+/** A week's projects: those of every live entry in it, for a query over `time.week w`. The one definition (071 review round 3). */
+export const weekProjects = sql`coalesce((select array_agg(distinct x.project_id::text) from time.entry x where x.week_id = w.id and x.deleted_at is null), '{}')`;
+
 export const weekProjectIds = async (tx: Tx, weekId: string) =>
-  (await tx.execute(sql`select distinct project_id from time.entry where week_id = ${weekId} and deleted_at is null`)).map((r) => r.project_id as string);
+  ((await tx.execute(sql`select ${weekProjects} as projects from time.week w where w.id = ${weekId}`))[0]?.projects as string[] | undefined) ?? [];
 
 export const weekHours = async (tx: Tx, weekId: string) =>
   Number((await tx.execute(sql`select coalesce(sum(hours), 0) as h from time.entry where week_id = ${weekId} and deleted_at is null`))[0].h);

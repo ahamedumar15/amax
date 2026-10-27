@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { ScopeError, viewerOf, type Viewer } from "@amax/auth";
@@ -34,13 +35,13 @@ export const requestChange = defineService({
   async run(tx, a, ctx: ServiceContext) {
     const { week, entry } = await lockedEntry(tx, ctx, a.entryId);
     const late = await dateRefusal(tx, entry.user_id, entry.day);
-    if (late) throw new Error(late);
+    if (late) throw new ToolError(late, "invalid_input");
     if (entry.user_id !== viewerOf(ctx)?.userId) throw new ScopeError("time:log");
-    if (week.status !== "submitted" && week.status !== "approved") throw new Error(`${keyOf(week)} is ${week.status}, so you can fix it yourself with correct_time_entry`);
+    if (week.status !== "submitted" && week.status !== "approved") throw new ToolError(`${keyOf(week)} is ${week.status}, so you can fix it yourself with correct_time_entry`, "invalid_input");
     const [open] = await tx.execute(sql`select id from time.change_request where entry_id = ${entry.id} and status in ('pending', 'needs_info')`);
-    if (open) throw new Error(`that entry already has an open change request (request id ${open.id})`);
+    if (open) throw new ToolError(`that entry already has an open change request (request id ${open.id})`, "invalid_input");
     const project = a.projectKey ? await getProjectRef(tx, a.projectKey) : null;
-    if (a.projectKey && !project) throw new Error(`no project ${a.projectKey}`);
+    if (a.projectKey && !project) throw new ToolError(`no project ${a.projectKey}`, "not_found");
     const names = await projectNames(tx);
     const before: Values = { hours: entry.hours, billable: entry.billable, note: entry.note, projectId: entry.project_id, projectName: names.get(entry.project_id) ?? "Closed project" };
     const proposed = a.remove ? {} : Object.fromEntries(Object.entries({ hours: a.hours, billable: a.billable, note: a.note, projectId: project?.id, projectName: project?.name }).filter(([, x]) => x !== undefined));
@@ -57,7 +58,7 @@ export const answerRequest = defineService({
   input: z.object({ requestId: z.uuid(), answer: z.string().trim().min(3).max(1000) }),
   async run(tx, a, ctx) {
     const r = await lockRequest(tx, a.requestId, mine(viewerOf(ctx)));
-    if (r.status !== "needs_info") throw new Error(`that request is ${r.status.replace("_", " ")}, not waiting for your answer`);
+    if (r.status !== "needs_info") throw new ToolError(`that request is ${r.status.replace("_", " ")}, not waiting for your answer`, "invalid_input");
     await tx.execute(sql`update time.change_request set status = 'pending', answer = ${a.answer}, updated_at = now() where id = ${r.id}`);
     return { result: { id: r.id, status: "pending" }, resourceId: r.id, before: { status: r.status }, after: { status: "pending", answer: a.answer }, events: [requested(r, a.answer)] };
   },
@@ -68,7 +69,7 @@ export const cancelRequest = defineService({
   input: z.object({ requestId: z.uuid() }),
   async run(tx, a, ctx) {
     const r = await lockRequest(tx, a.requestId, mine(viewerOf(ctx)));
-    if (!OPEN.includes(r.status)) throw new Error(`that request is already ${r.status.replace("_", " ")}`);
+    if (!OPEN.includes(r.status)) throw new ToolError(`that request is already ${r.status.replace("_", " ")}`, "invalid_input");
     await tx.execute(sql`update time.change_request set status = 'cancelled', updated_at = now() where id = ${r.id}`);
     const payload: ChangeDecided = { ...refOf(r), decision: "cancel", by: actorId(ctx), note: null };
     return { result: { id: r.id, status: "cancelled" }, resourceId: r.id, before: { status: r.status }, after: { status: "cancelled" }, events: [{ name: EVENTS.changeDecided, payload }] };

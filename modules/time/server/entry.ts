@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import type { Tx } from "@amax/db";
 import { can, ScopeError, viewerOf, type Viewer } from "@amax/auth";
 import { ValidationError, type ServiceContext } from "@amax/core/server";
@@ -42,8 +43,8 @@ export async function liveEntry(tx: Tx, entryId: string): Promise<EntryRow | nul
 
 /** 070 AC-13: corrections and deletes touch draft and rejected weeks only; an approved week is reopened first. */
 export function guardFixable(week: WeekRow) {
-  if (week.status === "submitted") throw new Error(`${keyOf(week)} is submitted and waiting for approval; ask the approver to send it back before changing it, or ask for the change with request_time_change`);
-  if (week.status === "approved") throw new Error(`${keyOf(week)} is approved and locked; reopen it with a reason (reopen_week) to change it, or ask for the change with request_time_change`);
+  if (week.status === "submitted") throw new ToolError(`${keyOf(week)} is submitted and waiting for approval; ask the approver to send it back before changing it, or ask for the change with request_time_change`, "invalid_input");
+  if (week.status === "approved") throw new ToolError(`${keyOf(week)} is approved and locked; reopen it with a reason (reopen_week) to change it, or ask for the change with request_time_change`, "invalid_input");
 }
 
 export type FixedBy = { by: string; byOther: boolean; reason: string | null; projectName: string };

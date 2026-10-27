@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { ScopeError, viewerOf } from "@amax/auth";
@@ -21,9 +22,9 @@ const first = (r: ChangeRequest) => r.personName.split(" ")[0];
 const summary = (r: ChangeRequest) => `Change request: ${r.before.projectName}, ${r.dayLabel}, ${changeText(r).join(", ")}. ${r.reason}`;
 
 async function apply(tx: Tx, ctx: ServiceContext, r: ChangeRequest, week: WeekRow): Promise<Outcome> {
-  if (week.status !== "submitted" && week.status !== "approved") throw new Error(`${keyOf(week)} is ${week.status} now, so ${first(r)} can fix it directly`);
+  if (week.status !== "submitted" && week.status !== "approved") throw new ToolError(`${keyOf(week)} is ${week.status} now, so ${first(r)} can fix it directly`, "invalid_input");
   const entry = await liveEntry(tx, r.entryId);
-  if (!entry || entry.revision !== r.revision) throw new Error(`the entry changed since the request; ask ${first(r)} to request it again`);
+  if (!entry || entry.revision !== r.revision) throw new ToolError(`the entry changed since the request; ask ${first(r)} to request it again`, "invalid_input");
   const lockedChange = week.status === "approved";
   if (lockedChange) await appendAudit(tx, ctx, { action: "time.week.locked_change", resource: "time.week", resourceId: week.id, before: { status: week.status }, after: { requestId: r.id, entryId: r.entryId } });
   const names = await projectNames(tx);
@@ -61,7 +62,7 @@ export const decideRequest = defineService({
   async run(tx, a, ctx) {
     const v = viewerOf(ctx);
     const r = await lockRequest(tx, a.requestId, (x) => !v || reviews(tx, v, x));
-    if (!(a.decision === "decline" ? OPEN : ["pending"]).includes(r.status)) throw new Error(`that request is ${r.status.replace("_", " ")}, so it can't be decided now`);
+    if (!(a.decision === "decline" ? OPEN : ["pending"]).includes(r.status)) throw new ToolError(`that request is ${r.status.replace("_", " ")}, so it can't be decided now`, "invalid_input");
     const [week] = await tx.execute(sql`select * from time.week where id = ${r.weekId} for update`);
     const out = await act[a.decision](tx, ctx, r, week as WeekRow);
     await tx.execute(sql`update time.change_request set status = ${out.status}, decided_by = ${by(ctx)}, decision_note = ${a.note ?? null},

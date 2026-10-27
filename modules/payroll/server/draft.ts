@@ -51,13 +51,15 @@ function weeksStarting(from: string, to: string) {
 
 async function overtime(tx: Tx, ctx: ServiceContext, from: string, to: string, userIds: string[]): Promise<Overtime> {
   const none = (source: string): Overtime => ({ hours: new Map(), source, unreadable: new Set() });
+  // 071 review round 1: a read that couldn't happen marks everyone unknown, never "no overtime" (B3).
+  const unread = (source: string): Overtime => ({ hours: new Map(), source, unreadable: new Set(userIds) });
   if (!(await timeInstalled(tx))) return none("Time isn't installed, so no overtime from timesheets");
   const viewer = ctx.viewer as Viewer | undefined;
-  if (!viewer) return none("Drafted by the system, so timesheets weren't read");
+  if (!viewer) return unread("Drafted by the system, so timesheets weren't read; overtime unknown");
   // 071 AC-2: Time's totals read, so a drafter sees approved hours without anyone's timesheet detail.
   let read;
   try { read = await approvedWeekHours(tx, viewer, { from, to, userIds }); } catch (e) {
-    if (e instanceof ForbiddenError) return none("Timesheets aren't readable by whoever drafted it, so no overtime from time");
+    if (e instanceof ForbiddenError) return unread("Timesheets aren't readable by whoever drafted it; overtime unknown");
     throw e;
   }
   const hours = new Map<string, number>();

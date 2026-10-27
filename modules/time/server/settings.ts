@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { ToolError } from "@amax/mcp";
 import { z } from "zod";
 import type { Viewer } from "@amax/auth";
 import type { ToolCard } from "@amax/core";
@@ -22,7 +23,7 @@ export const setSettings = defineService({
   name: "time.settings.set", action: "time:admin", resource: "time.setting", input,
   async run(tx, a, ctx) {
     const before = await settingsOf(tx);
-    if (a.requireAllocation && !(await allocationsInstalled(tx))) throw new Error("allocations aren't installed, so time can't require an allocation");
+    if (a.requireAllocation && !(await allocationsInstalled(tx))) throw new ToolError("allocations aren't installed, so time can't require an allocation", "invalid_input");
     const next: TimeSettings = { requireAllocation: a.requireAllocation ?? before.requireAllocation, backdateWeeks: a.backdateWeeks === undefined ? before.backdateWeeks : a.backdateWeeks, allowFuture: a.allowFuture ?? before.allowFuture };
     await tx.execute(sql`insert into time.setting (tenant_id, require_allocation, backdate_weeks, allow_future, updated_by) values (${ctx.tenantId}, ${next.requireAllocation}, ${next.backdateWeeks}, ${next.allowFuture}, ${by(ctx)})
       on conflict (tenant_id) do update set require_allocation = excluded.require_allocation, backdate_weeks = excluded.backdate_weeks, allow_future = excluded.allow_future, updated_by = excluded.updated_by, updated_at = now()`);

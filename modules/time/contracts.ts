@@ -3,6 +3,7 @@ import type { Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError } from "@amax/core/server";
 import { seesWeek } from "./server/chain";
+import { weekProjects } from "./server/weeks";
 import { shiftWeek, weekKey, type IsoWeek } from "./week";
 
 export { approvedWeekHours, type ApprovedWeekHours } from "./server/totals";
@@ -57,7 +58,6 @@ const mustRead = (v: Viewer) => {
   if (!can(v, "time:read")) throw new ForbiddenError("time:read", "time");
 };
 const ownerEntity = sql`(select u.legal_entity_id from auth.user u where u.id = w.user_id)`;
-const weekProjects = sql`coalesce((select array_agg(distinct x.project_id) from time.entry x where x.week_id = w.id and x.deleted_at is null), '{}')`;
 
 /** Per-person totals for an ISO week, limited to the weeks the viewer may see. */
 export async function weekTotals(tx: Tx, viewer: Viewer, w: IsoWeek): Promise<PersonWeek[]> {

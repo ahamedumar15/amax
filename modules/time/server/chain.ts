@@ -9,6 +9,12 @@ const NO_ENTITY = "00000000-0000-4000-8000-000000000000";
 export type Entity = string | null;
 export const inEntity = (entity: Entity) => ({ legalEntityId: entity ?? NO_ENTITY });
 export const reaches = (v: Viewer, entity: Entity) => v.assignments.some((a) => a.legalEntityIds === null || a.legalEntityIds.includes(entity ?? NO_ENTITY));
+/**
+ * 071 review round 1: a manager approves a report's time only through an assignment that both grants time:approve
+ * and reaches the report's entity; an unscoped base role (Employee) doesn't lend its reach to a scoped approver role.
+ */
+export const approvesIn = (v: Viewer, entity: Entity) =>
+  canEver({ ...v, assignments: v.assignments.filter((a) => a.legalEntityIds === null || a.legalEntityIds.includes(entity ?? NO_ENTITY)) }, "time:approve");
 
 export async function entitiesOf(tx: Tx, userIds: string[]): Promise<Map<string, Entity>> {
   if (!userIds.length) return new Map();
@@ -20,7 +26,7 @@ export const entityOf = async (tx: Tx, userId: string) => (await entitiesOf(tx, 
 export function chainFor(v: Viewer | undefined, ownerId: string, projectIds: string[], entity: Entity): ApprovalChain | null {
   if (!v || ownerId === v.userId) return null;
   if (can(v, "time:approve", inEntity(entity))) return "admin";
-  if (v.reports.includes(ownerId) && canEver(v, "time:approve") && reaches(v, entity)) return "manager";
+  if (v.reports.includes(ownerId) && approvesIn(v, entity)) return "manager";
   if (projectIds.some((projectId) => can(v, "time:approve", { projectId, ...inEntity(entity) }))) return "project";
   return null;
 }

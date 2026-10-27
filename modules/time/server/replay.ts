@@ -19,7 +19,9 @@ export async function logOnce(v: Viewer, a: Log, s: "mcp" | "chat" | "api") {
   const replay = async () => {
     const found = await read(v, async (tx) => ({ had: await bySource(tx, v.userId, ref), project: await getProjectRef(tx, a.projectKey) }));
     if (!found.had) return null;
-    const same = found.had.projectId === found.project?.id && found.had.day === a.day && found.had.hours === a.hours && found.had.billable === (a.billable ?? true);
+    // Every field of the input, note and agent included (071 review round 1): anything else is a different entry.
+    const same = found.had.projectId === found.project?.id && found.had.day === a.day && found.had.hours === a.hours && found.had.billable === (a.billable ?? true)
+      && found.had.note === (a.note ?? null) && found.had.agent === (a.agent ?? null);
     if (!same) throw new ToolError("clientRef already used for a different entry", "invalid_input");
     return { id: found.had.id, day: found.had.day, hours: found.had.hours, replayed: true };
   };
