@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-23 15:25 UTC
+**Last Updated:** 2026-10-27 15:22 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -15,6 +15,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔨 **071-time-access-and-integrity** — 0/5 tasks (0%) | 0 failed
 - 🔨 **072-time-consumers-sync** — 0/5 tasks (0%) | 0 failed
 - 🔨 **073-time-workflow-enhancements** — 0/4 tasks (0%) | 0 failed
+- 🔍 **074-fork-pr-review-gate** — verify done
 
 ## Pending Proposals
 
@@ -93,6 +94,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 71
-- **Active:** 7
+- **Total changes:** 72
+- **Active:** 8
 - **Completed:** 64
