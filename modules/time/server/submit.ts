@@ -21,7 +21,7 @@ export const submitWeek = defineService({
     const hours = await weekHours(tx, week.id);
     if (hours === 0) throw new ToolError(`${keyOf(week)} has no time logged yet`, "invalid_input");
     // 073 AC-9: missing working days are a warning, never a refusal.
-    const missing = await missingDays(tx, week);
+    const missing = await missingDays(tx, week, v ?? null);
     await tx.execute(sql`update time.week set status = 'submitted', submitted_at = now(), reject_comment = null, updated_at = now() where id = ${week.id}`);
     const payload: WeekSubmitted = { weekId: week.id, userId: week.user_id, week: keyOf(week), hours, projectIds: await weekProjectIds(tx, week.id), legalEntityId: await entityOf(tx, week.user_id) };
     // 070 AC-35: a change request that reopened this week is done once the week is submitted again.

@@ -29,7 +29,7 @@ describe.skipIf(!hasDb)("073 amendment 1: the Team grid (Postgres)", () => {
     expect(states(row(g.grid, "Kasun Dias"))).toEqual(["on_target", "on_target", "on_target", "on_target", "low"]);
     expect(states(row(g.grid, "Nimal Silva"))[4]).toBe("missing");
     expect(states(row(g.grid, "Ayesha Rahman")).slice(2)).toEqual(["missing", "on_target", "leave"]);
-    expect(row(g.grid, "Kasun Dias").cells[4].projects).toEqual([{ name: "Fleet Tracker", hours: 1 }]);
+    expect(row(g.grid, "Kasun Dias").cells[4].projects.map(({ name, hours }) => ({ name, hours }))).toEqual([{ name: "Fleet Tracker", hours: 1 }]);
     await db.t.owner`insert into time.target (tenant_id, user_id, hours, updated_by) select ${T}, id, 24, 'test' from auth.user where email = 'dinesh@lumenlabs.test'`;
     expect(states(row((await grid()).grid, "Dinesh Wickrama")).slice(2, 4)).toEqual(["over", "low"]);
     await db.t.owner`delete from time.target`;

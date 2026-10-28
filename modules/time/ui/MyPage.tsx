@@ -15,7 +15,8 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   if (!viewer) return <div className="time"><h1>My timesheet</h1><SignInFirst /></div>;
   const m = await myWeek(viewer, weekParam(params.week));
   // 073 AC-3: a day reminder links here with ?day=, and that day's column is marked.
-  const marked = searchParams?.day && m.days.includes(searchParams.day) ? searchParams.day : null;
+  // Only while it's still empty: once hours are logged for it, the reminder link no longer marks it (review round 1).
+  const marked = searchParams?.day && m.days.includes(searchParams.day) && !m.perDay[m.days.indexOf(searchParams.day)] ? searchParams.day : null;
   // As Team time marks them: past working days with nothing logged and no leave, and approved leave.
   const marks = await myDayMarks(viewer, m.days, m.perDay);
   const markOf = (d: string): DayMark => (d === marked || marks.missing.includes(d) ? "missing" : marks.leave.includes(d) ? "leave" : undefined);
@@ -27,8 +28,9 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
   const canSubmit = m.total > 0 && (m.status === "draft" || m.status === "rejected");
   const weekPin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
   // 070 amendment 4: fixes are asked for in chat (its suggestions offer them); the row keeps its pin.
-  const rowPin = (project: string) => ({ label: `${project}, ${m.key}`, tool: "get_timesheet", args: { week: m.key, project } });
-  const pin = (project: string) => <PinButton pin={rowPin(project)} />;
+  // 073 review round 2: a row pins its project by id, as Team time's rows do.
+  const rowPin = (r: { projectId: string; projectName: string }) => ({ label: `${r.projectName}, ${m.key}`, tool: "get_timesheet", args: { week: m.key, projectId: r.projectId } });
+  const pin = (r: { projectId: string; projectName: string }) => <PinButton pin={rowPin(r)} />;
   return (
     <div className="time">
       {/* 075 amendment 2: the week at a glance is a slim band, not a sentence; the pill and the picker name the week. */}
@@ -49,7 +51,7 @@ export async function MyPage({ viewer: raw, params, searchParams }: ScreenProps)
           <caption className="sr">My hours for {m.key}</caption>
           <thead><tr><th>Project</th>{m.days.map((d) => <DayHead key={d} day={d} mark={markOf(d)} />)}<th className="num">Total</th><th className="num"><span className="sr">Actions</span></th></tr></thead>
           <tbody>
-            {m.rows.map((r) => <tr key={r.projectName} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className={`num${markOf(m.days[i]) === "missing" ? " missing" : ""}`} data-label={dayLabelFor(m.days[i], markOf(m.days[i]))} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td><td className="num" data-label="">{pin(r.projectName)}</td></tr>)}
+            {m.rows.map((r) => <tr key={r.projectId} className="pinnable"><td data-label="Project">{r.projectName}</td>{r.days.map((h, i) => <td className={`num${markOf(m.days[i]) === "missing" ? " missing" : ""}`} data-label={dayLabelFor(m.days[i], markOf(m.days[i]))} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{r.total.toFixed(1)}</b></td><td className="num" data-label="">{pin(r)}</td></tr>)}
             {m.rows.length === 0 && <tr><td colSpan={m.days.length + 3} className="muted">No time logged this week.</td></tr>}
           </tbody>
           <tfoot><tr><th scope="row">Total</th>{m.perDay.map((h, i) => <td className={`num${markOf(m.days[i]) === "missing" ? " missing" : ""}`} data-label={dayLabelFor(m.days[i], markOf(m.days[i]))} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Week"><b>{m.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>

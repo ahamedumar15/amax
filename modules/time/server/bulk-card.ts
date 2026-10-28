@@ -41,7 +41,7 @@ export const proposeBulk = (kind: Kind) => async (v: Viewer, a: BulkInput) => {
   const all = await weeks(v, a.weekIds ?? []);
   // 073 AC-10: when every submitted week needs a closer look, there's nothing to approve in bulk.
   if (kind === "approve" && all.some((w) => eligible.approve(w.week))) {
-    const flagged = await read(v, async (tx) => Promise.all(all.filter((w) => eligible.approve(w.week)).map(async (w) => ({ who: w.week.person_name as string, checks: await weekAnomalies(tx, w.week) }))));
+    const flagged = await read(v, async (tx) => Promise.all(all.filter((w) => eligible.approve(w.week)).map(async (w) => ({ who: w.week.person_name as string, checks: await weekAnomalies(tx, w.week, v) }))));
     if (flagged.every((f) => f.checks.length)) refuse(`every submitted timesheet there needs individual review (${flagged.map((f) => `${f.who}: ${f.checks.join("; ")}`).join(" · ")}); open each with approve_week`);
   }
   if (kind === "remind" && (await notStarted(v, a)).some((p) => p.ok)) return;
@@ -53,7 +53,7 @@ export const bulkCard = (kind: Kind) => async (v: Viewer, a: BulkInput): Promise
   const fresh = kind === "remind" ? await notStarted(v, a) : [];
   const newcomers = fresh.filter((p) => p.ok);
   // 073 AC-10: anomalous weeks are listed as skipped, never approved in bulk.
-  const checks = new Map(kind === "approve" ? await read(v, async (tx) => Promise.all(all.map(async (w) => [w.week.id, await weekAnomalies(tx, w.week)] as const))) : []);
+  const checks = new Map(kind === "approve" ? await read(v, async (tx) => Promise.all(all.map(async (w) => [w.week.id, await weekAnomalies(tx, w.week, v)] as const))) : []);
   const flagged = (w: (typeof all)[number]) => (checks.get(w.week.id)?.length ?? 0) > 0;
   const go = all.filter((w) => eligible[kind](w.week) && !flagged(w));
   const keys = [...new Set([...go.map((w) => keyOf(w.week)), ...(newcomers.length ? [a.week!] : [])])].join(", ");

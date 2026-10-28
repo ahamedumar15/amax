@@ -17,7 +17,8 @@ export async function SheetPage({ viewer: raw, params }: ScreenProps) {
     if (g.rows.length === 0 && params.weekId) redirect(`/time/my/${g.key}`);
     notFound();
   }
-  const names = [...new Set(row.cells.flatMap((c) => c.projects.map((p) => p.name)))].sort();
+  // 073 review round 2: rows are one per project id, so two projects that share a name (two closed ones) stay apart.
+  const projects = [...new Map(row.cells.flatMap((c) => c.projects).map((p) => [p.id, p.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
   // 077: this person's decided change requests on the week, as their reviewer sees them.
   const history = await weekHistory(viewer, g.key, row.userId);
   const pin = { label: `${row.personName}, ${g.key}`, tool: "get_timesheet", args: { weekId: row.weekId } };
@@ -36,12 +37,12 @@ export async function SheetPage({ viewer: raw, params }: ScreenProps) {
           <caption className="sr">{row.personName}'s hours for {g.key}</caption>
           <thead><tr><th>Project</th>{g.days.map((d) => <DayHead key={d} day={d} />)}<th className="num">Total</th><th className="num"><span className="sr">Actions</span></th></tr></thead>
           <tbody>
-            {names.map((n) => {
-              const per = row.cells.map((c) => c.projects.find((p) => p.name === n)?.hours ?? 0);
-              return <tr key={n} className="pinnable"><td data-label="Project">{n}</td>{per.map((h, i) => <td className="num" data-label={dayName(g.days[i])} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{per.reduce((a, b) => a + b, 0).toFixed(1)}</b></td>
-                <td className="num" data-label=""><PinButton pin={{ label: `${row.personName}, ${n}, ${g.key}`, tool: "get_timesheet", args: { weekId: row.weekId, project: n } }} /></td></tr>;
+            {projects.map(([id, n]) => {
+              const per = row.cells.map((c) => c.projects.find((p) => p.id === id)?.hours ?? 0);
+              return <tr key={id} className="pinnable"><td data-label="Project">{n}</td>{per.map((h, i) => <td className="num" data-label={dayName(g.days[i])} key={i}>{hrs(h)}</td>)}<td className="num" data-label="Total"><b>{per.reduce((a, b) => a + b, 0).toFixed(1)}</b></td>
+                <td className="num" data-label=""><PinButton pin={{ label: `${row.personName}, ${n}, ${g.key}`, tool: "get_timesheet", args: { weekId: row.weekId, projectId: id } }} /></td></tr>;
             })}
-            {names.length === 0 && <tr><td colSpan={g.days.length + 3} className="muted">No time logged this week.</td></tr>}
+            {projects.length === 0 && <tr><td colSpan={g.days.length + 3} className="muted">No time logged this week.</td></tr>}
           </tbody>
           <tfoot><tr><th scope="row">Total</th>{row.cells.map((c) => <td className="num" data-label={dayName(c.day)} key={c.day}>{hrs(c.hours)}</td>)}<td className="num" data-label="Week"><b>{row.total.toFixed(1)}</b></td><td aria-hidden="true" /></tr></tfoot>
         </table></div>

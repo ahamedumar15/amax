@@ -17,7 +17,7 @@ export type TeamRow = {
   /** 073 AC-10: what makes the week need individual review (over 60 h, a day over 14 h, missing days). */
   anomalies: string[];
 };
-export type TeamWeek = { week: IsoWeek; key: string; days: string[]; rows: TeamRow[]; perDay: DayHours[]; projects: { name: string; hours: number }[]; canAdmin: boolean;
+export type TeamWeek = { week: IsoWeek; key: string; days: string[]; rows: TeamRow[]; perDay: DayHours[]; projects: { id: string; name: string; hours: number }[]; canAdmin: boolean;
   /** 073 AC-8: allocated hours for the people shown, or null when allocation is unknown. */
   capacity: number | null };
 
@@ -41,13 +41,13 @@ export const teamWeek = (v: Viewer, wanted?: IsoWeek) =>
         agentHours: hoursOf(mine, (s) => s.source === "agent"), canApprove: chainFor(v, wk.user_id as string, projectIds, entity) !== null, lastReminder: reminded.get(wk.user_id as string) ?? null, anomalies: [] }];
     });
     // Only a submitted week is up for approval, so only its anomalies are worked out.
-    for (const r of rows) if (r.status === "submitted") r.anomalies = await weekAnomalies(tx, weeks.find((wk) => wk.id === r.weekId) as unknown as WeekRow);
+    for (const r of rows) if (r.status === "submitted") r.anomalies = await weekAnomalies(tx, weeks.find((wk) => wk.id === r.weekId) as unknown as WeekRow, v);
     const seen = new Set(rows.map((r) => r.weekId));
     const visible = sums.filter((s) => seen.has(s.week_id));
     const perDay = days.map((d) => ({ agent: hoursOf(visible, (s) => s.day === d && s.source === "agent"), person: hoursOf(visible, (s) => s.day === d && s.source === "person") }));
     const byProject = new Map<string, number>();
     for (const s of visible) byProject.set(s.project_id, (byProject.get(s.project_id) ?? 0) + s.hours);
-    const projects = [...byProject].map(([id, hours]) => ({ name: names.get(id) ?? "Closed project", hours: round1(hours) })).sort((a, b) => b.hours - a.hours);
+    const projects = [...byProject].map(([id, hours]) => ({ id, name: names.get(id) ?? "Closed project", hours: round1(hours) })).sort((a, b) => b.hours - a.hours);
     return { week: w, key: weekKey(w), days, rows, perDay, projects, canAdmin: can(v, "time:admin"), capacity: await capacityOf(tx, v, w, rows.map((r) => r.userId)) };
   });
 

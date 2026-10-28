@@ -16,6 +16,8 @@ export function weekStart({ year, week }: IsoWeek): Date {
 }
 
 export const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+/** A real calendar date in YYYY-MM-DD: never one Date would roll over (2026-02-30 → Mar 2). The one rule (073 review round 2). */
+export const isRealDate = (day: string) => { const d = new Date(`${day}T00:00:00Z`); return !Number.isNaN(d.getTime()) && isoDate(d) === day; };
 
 const DAY_LABEL = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 /** "2026-10-14" → "Wed Oct 14", as confirm cards and the bell name a day (070 amendment 2). */

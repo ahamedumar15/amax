@@ -3,7 +3,7 @@ import type { Viewer } from "@amax/auth";
 import type { CardLine, ToolCard } from "@amax/core";
 import { refuse } from "./card";
 import { entityOf } from "./chain";
-import { mayMove } from "./entry";
+import { mayAddOn, mayMove } from "./entry";
 import { read } from "./read";
 import { asLines, findRequest } from "./request-card";
 import { changeText, OPEN, type ChangeRequest } from "./requests-read";
@@ -22,6 +22,7 @@ async function checked(v: Viewer, a: Decide): Promise<ChangeRequest> {
     // 073: an addition has no entry yet; it still has to fit the person's 24 h day.
     const [{ total }] = await read(v, (tx) => tx.execute(sql`select coalesce(sum(hours), 0) as total from time.entry where user_id = ${r.userId} and day = ${r.day} and deleted_at is null`));
     if (Number(total) + (r.proposed.hours ?? 0) > 24) refuse(`that would make ${r.dayLabel} more than 24 h for ${first(r)}`);
+    if (!mayAddOn(v, r.userId, r.before.projectId, await read(v, (tx) => entityOf(tx, r.userId)))) refuse(`you don't approve ${r.before.projectName}, so you can't add hours to it; reopen the week or decline it`);
     return r;
   }
   const [e] = await read(v, (tx) => tx.execute(sql`select revision from time.entry where id = ${r.entryId} and deleted_at is null`));

@@ -32,7 +32,13 @@ async function remindNotStarted(tx: Tx, ctx: ServiceContext, a: z.infer<typeof i
   if (!a.userIds?.length || !a.week) return;
   for (const p of await notStartedIn(tx, viewerOf(ctx)!, a.week, a.userIds)) {
     if (!p.ok) { results.push({ person: p.name, week: a.week, status: "skipped", note: p.why }); continue; }
-    await tx.transaction((sp) => recordReminder(sp, ctx, { userId: p.userId, kind: "week", weekId: null }));
+    // 073 review round 1: one person's failure is their own failed row, as for the weeks above; the others still go.
+    try {
+      await tx.transaction((sp) => recordReminder(sp, ctx, { userId: p.userId, kind: "week", weekId: null }));
+    } catch (e) {
+      results.push({ person: p.name, week: a.week, status: "failed", note: failureNote(e) });
+      continue;
+    }
     const payload: WeekReminded = { weekId: null, userId: p.userId, week: a.week, by: by(ctx), message: null };
     events.push({ name: EVENTS.weekReminded, payload });
     results.push({ person: p.name, week: a.week, status: "done", note: null });
@@ -51,7 +57,7 @@ const many = (kind: Kind) => defineService({
       const who = { person: w.person_name as string, week: keyOf(w) };
       if (!eligible[kind](w)) { results.push({ ...who, status: "skipped", note: `already ${STATUS[w.status] ?? w.status}` }); continue; }
       // 073 AC-10: a week that needs a closer look is never approved in bulk.
-      const checks = kind === "approve" ? await weekAnomalies(tx, w) : [];
+      const checks = kind === "approve" ? await weekAnomalies(tx, w, viewerOf(ctx) ?? null) : [];
       if (checks.length) { results.push({ ...who, status: "skipped", note: `needs individual review: ${checks.join("; ")}` }); continue; }
       try {
         const out = await tx.transaction(async (sp) => {

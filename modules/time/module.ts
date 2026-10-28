@@ -49,6 +49,10 @@ export default defineModule({
   mcpTools,
   overview: timeOverview as never,
   retention: [
+    // 073 review round 1: reminders say who sent them (id and name) and carry the sender's own words; the per-project
+    // switch says which PM changed it.
+    { table: "time.reminder", label: "Timesheet reminders", subject: ["user_id", "sent_by"], subjectName: ["sender_name"], fields: ["message", "sent_by", "sender_name"], class: "personal", period: "P2Y", start: { at: ["sent_at"] }, action: "anonymise" },
+    { table: "time.project_reminder", label: "Project reminder switches", subject: ["updated_by"], fields: ["updated_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise" },
     // 071 review round 1: who last changed the tenant's entry rules.
     { table: "time.setting", label: "Who changed the timesheet rules", subject: ["updated_by"], fields: ["updated_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise" },
     { table: "time.week", label: "Timesheet weeks", subject: ["user_id", "decided_by"], subjectName: ["person_name"], fields: ["person_name", "note", "reject_comment", "decided_by"], class: "personal", period: "P7Y", start: { at: ["decided_at"], idle: "P1Y" }, action: "anonymise" },

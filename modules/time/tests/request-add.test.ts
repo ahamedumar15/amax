@@ -48,4 +48,25 @@ describe.skipIf(!hasDb)("073: requests to add hours to a locked week (Postgres)"
     expect(await decideRequest(ctxFor(maya), { requestId: again.id, decision: "reopen" })).toMatchObject({ status: "reopened" });
     expect([(await weekOf("ayesha")).status, await sat("ayesha")]).toEqual(["draft", []]);
   }, 60_000);
+
+  // 073 review round 1: applying an addition needs the project in the approver's reach, as a move does. Nimal is in
+  // Kasun's week chain through Fleet Tracker; he may add Fleet Tracker hours, not HR Insights (Ayesha's). Maya, Kasun's
+  // manager, may add either.
+  it.each([
+    ["nimal", "HRI", false],
+    ["nimal", "FLT", true],
+    ["maya", "HRI", true],
+  ] as const)("%s applying an addition on %s: allowed %s", async (who, projectKey, allowed) => {
+    const [kasun, approver] = await Promise.all([as("kasun"), as(who)]);
+    const r = await requestAddition(ctxFor(kasun), { projectKey, day: "2026-10-18", hours: 1, weekend: true, reason: "Sunday deploy support" });
+    const { proposeDecide } = await import("../server/decide-card");
+    if (allowed) {
+      await expect(decideRequest(ctxFor(approver), { requestId: r.id, decision: "apply" })).resolves.toMatchObject({ status: "applied" });
+    } else {
+      await expect(proposeDecide(approver, { requestId: r.id, decision: "apply" })).rejects.toThrow(/don't approve HR Insights/);
+      await expect(decideRequest(ctxFor(approver), { requestId: r.id, decision: "apply" })).rejects.toThrow(/data scope/);
+      await decideRequest(ctxFor(await as("maya")), { requestId: r.id, decision: "decline", note: "Raise it with Ayesha" });
+    }
+  }, 60_000);
 });
+

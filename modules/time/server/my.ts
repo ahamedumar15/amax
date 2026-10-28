@@ -7,7 +7,7 @@ import { shownDays, weekKey, type IsoWeek } from "../week";
 import { exactWeekHours, targetsOf, weekFigures } from "./targets";
 import { entrySums, hoursOf, latestWeek, projectNames, read, weekEntries, type EntryLine } from "./read";
 
-export type MyRow = { projectName: string; days: number[]; total: number };
+export type MyRow = { projectId: string; projectName: string; days: number[]; total: number };
 export type MyWeek = {
   week: IsoWeek; key: string; days: string[]; status: WeekStatus | null; note: string | null; rejectComment: string | null;
   /** 073: who sent the week back and when, for the sent-back card. */
@@ -34,7 +34,7 @@ export const myWeek = (v: Viewer, wanted?: IsoWeek) =>
     const names = await projectNames(tx);
     const rows = [...new Set(sums.map((s) => s.project_id))].map((id) => {
       const perDay = days.map((d) => hoursOf(sums, (s) => s.project_id === id && s.day === d));
-      return { projectName: names.get(id) ?? "Closed project", days: perDay, total: hoursOf(sums, (s) => s.project_id === id) };
+      return { projectId: id, projectName: names.get(id) ?? "Closed project", days: perDay, total: hoursOf(sums, (s) => s.project_id === id) };
     }).sort((a, b) => b.total - a.total);
     return {
       week: w, key: weekKey(w), days, status: (wk?.status as WeekStatus | undefined) ?? null, note: (wk?.note as string | null) ?? null,

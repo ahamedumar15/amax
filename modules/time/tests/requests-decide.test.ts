@@ -95,4 +95,19 @@ describe.skipIf(!hasDb)("070 amendment 3: deciding change requests (Postgres)", 
       expect(await row(e.id)).toEqual(before);
     } else await expect(decideRequest(ctxFor(who), { requestId: r.id, decision: "apply" })).resolves.toMatchObject({ status: "applied" });
   });
+
+  // 073 review round 3: one rule for putting someone's hours on a project, whichever path. The direct move
+  // (correct_time_entry on Tharushi's draft Fleet Tracker entry) gives the same answers as the requested move above:
+  // Nimal (PM of Fleet Tracker) may not move hours to HR Insights; Maya (Admin) may.
+  it.each([
+    ["nimal", "HRI", false],
+    ["maya", "HRI", true],
+  ] as const)("a direct move by %s to %s: allowed %s, as for a requested move", async (who, projectKey, allowed) => {
+    const [tharushi, mover] = await Promise.all([as("tharushi"), as(who)]);
+    const e = await w.entry(tharushi, "Fleet Tracker", allowed ? "2026-10-13" : "2026-10-12");
+    const run = correctEntry(ctxFor(mover), { entryId: e.id, projectKey, reason: "Booked to the wrong project" });
+    if (allowed) await expect(run).resolves.toMatchObject({ id: e.id });
+    else await expect(run).rejects.toThrow(/data scope/);
+  });
 });
+

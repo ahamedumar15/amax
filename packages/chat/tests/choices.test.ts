@@ -9,7 +9,7 @@ import { installAuthorizer, upsertPasswordUser, viewerForUser, type Viewer } fro
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { createRegistry, ToolError } from "@amax/mcp";
-import { ActionFailedError, cancelAction, chatTurn, confirmAction, NotPendingError } from "../src/engine";
+import { claimChoice, ActionFailedError, cancelAction, chatTurn, confirmAction, NotPendingError } from "../src/engine";
 
 // 076: a choice card is 2–4 ordinary pending cards sharing a `choice`; each is checked like a write call, and only one runs.
 const T = "00000000-0000-4000-8000-000000000a76";
@@ -75,12 +75,66 @@ describe.skipIf(!hasDb)("076 choice cards", () => {
     expect(ran).toEqual([1]);
   });
 
-  it("AC7 two options confirmed at once never both write", async () => {
-    const { turn } = await offer([option("c", 3), option("d", 4)]);
+  // 073 review round 1: exactly one write, never none: of options confirmed at once, the loser never cancels the winner.
+  it.each([2, 3])("AC7 %i options confirmed at once: exactly one writes, the others are refused as cancelled", async (n) => {
+    const { turn } = await offer([option("c", 3), option("d", 4), option("e", 5)].slice(0, n));
     ran.length = 0;
-    await Promise.allSettled(turn.pending.map((p) => confirmAction(app, registry, maya, turn.conversationId, p.id)));
-    expect(ran.length).toBeLessThanOrEqual(1);
+    const out = await Promise.allSettled(turn.pending.map((p) => confirmAction(app, registry, maya, turn.conversationId, p.id)));
+    expect(ran).toHaveLength(1);
+    expect(out.filter((o) => o.status === "fulfilled")).toHaveLength(1);
+    expect(out.filter((o) => o.status === "rejected").map((o) => (o as PromiseRejectedResult).reason.decision)).toEqual(Array(n - 1).fill("cancelled"));
   });
+
+  // 073 review round 2: a claim that fails (here the idempotency store refuses the insert) surfaces as an error. It is
+  // never taken as "another option already ran": nothing is written, no option is recorded as not chosen, and the card
+  // stays open, so the same confirm works once the store is back. (Before the fix, a swallowed failure still surfaced
+  // here only because Postgres aborts the transaction on a failed insert; the claim no longer relies on that.)
+  it("AC7 a failed claim is an error, not a decision; the card stays open and confirms afterwards", async () => {
+    const { turn } = await offer([option("h", 8), option("i", 9)]);
+    ran.length = 0;
+    await t.owner.unsafe(`create function core.t073_fail() returns trigger language plpgsql as $$ begin raise exception 'idempotency store down'; end $$;
+      create trigger t073_fail before insert on core.idempotency for each row execute function core.t073_fail()`);
+    try {
+      const failed = await confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id).catch((e: unknown) => e);
+      expect(failed).toBeInstanceOf(Error);
+      expect((failed as { decision?: string }).decision).not.toBe("cancelled");
+      expect(ran).toEqual([]);
+      const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select pending, decided from chat.conversation where id = ${turn.conversationId}`));
+      expect([(row.pending as unknown[]).length, Object.values((row.decided ?? {}) as object)]).toEqual([2, []]);
+    } finally {
+      await t.owner.unsafe("drop trigger t073_fail on core.idempotency; drop function core.t073_fail()");
+    }
+    await confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id);
+    expect(ran).toEqual([8]);
+  });
+
+  // 073 review round 3: the same option confirmed twice at once (a double tap) writes once and both confirms succeed;
+  // neither is reported as cancelled, and the sibling option is the one cancelled. The exact interleaving is covered
+  // by the claimChoice decision table below.
+  it("AC7 the same option confirmed twice at once writes once; both confirms succeed", async () => {
+    const { turn } = await offer([option("j", 10), option("k", 11)]);
+    ran.length = 0;
+    const out = await Promise.allSettled([0, 1].map(() => confirmAction(app, registry, maya, turn.conversationId, turn.pending[0].id)));
+    expect(ran).toEqual([10]);
+    expect(out.map((o) => o.status)).toEqual(["fulfilled", "fulfilled"]);
+    await expect(confirmAction(app, registry, maya, turn.conversationId, turn.pending[1].id)).rejects.toMatchObject({ decision: "cancelled" });
+  });
+
+  // 073 review round 4: what claimChoice decides for an option that is no longer pending, by its own recorded decision.
+  // Only "cancelled" (a sibling won) means lost. Any other (the same option tried before: confirmed, unknown, failed)
+  // goes on, so its own key reports what really happened, and its recorded decision is never rewritten as cancelled.
+  // This drives the decision directly with the option already settled: the moment a second confirm reaches it after
+  // the first settled, which concurrent calls can't be made to hit on purpose.
+  it.each([["cancelled", false], ["confirmed", true], ["unknown", true], ["failed", true]] as const)(
+    "AC7 an option no longer pending, recorded %s: goes on %s, and its decision stays", async (decision, goesOn) => {
+      const { turn } = await offer([option("m", 12), option("n", 13)]);
+      const [a] = turn.pending;
+      await withTenant(app, T, (tx) => tx.execute(sql`update chat.conversation set pending = ${JSON.stringify(turn.pending.slice(1))}::jsonb,
+        decided = coalesce(decided, '{}'::jsonb) || ${JSON.stringify({ [a.id]: decision })}::jsonb where id = ${turn.conversationId}`));
+      expect(await claimChoice(app, maya, turn.conversationId, a)).toBe(goesOn);
+      const [row] = await withTenant(app, T, (tx) => tx.execute(sql`select decided from chat.conversation where id = ${turn.conversationId}`));
+      expect((row.decided as Record<string, string>)[a.id]).toBe(decision);
+    });
 
   it("AC7 cancel on a choice card cancels every option", async () => {
     const { turn } = await offer([option("e", 5), option("f", 6), option("g", 7)]);

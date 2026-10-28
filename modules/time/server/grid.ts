@@ -7,7 +7,7 @@ import { projectNames, read, round1 } from "./read";
 import { lastReminders, teamWeek, type TeamRow, type TeamWeek } from "./team";
 
 export type CellState = "missing" | "low" | "on_target" | "over" | "not_yet" | "leave" | "weekend";
-export type Cell = { day: string; hours: number; state: CellState; projects: { name: string; hours: number }[] };
+export type Cell = { day: string; hours: number; state: CellState; projects: { id: string; name: string; hours: number }[] };
 export type GridStatus = WeekStatus | "not_started";
 export type GridRow = Omit<TeamRow, "weekId" | "status" | "days"> & { weekId: string | null; status: GridStatus; cells: Cell[]; target: number; utilisation: number; overtime: boolean; department: string | null };
 export type GridQuery = { project?: string; team?: string; status?: string; sort?: string; dir?: string };
@@ -43,11 +43,11 @@ export async function teamGrid(v: Viewer, wanted: IsoWeek | undefined, q: GridQu
     const extra = await notStarted(tx, v, team);
     // 073: a Not started row shows its last reminder too (a day reminder reaches people with no timesheet).
     const reminded = await lastReminders(tx, extra.map((p) => p.userId));
-    const ctx = await gridContext(tx, v.tenantId, [...team.rows.map((r) => r.userId), ...extra.map((p) => p.userId)], team.days);
+    const ctx = await gridContext(tx, v, [...team.rows.map((r) => r.userId), ...extra.map((p) => p.userId)], team.days);
     const build = (base: Omit<GridRow, "cells" | "total" | "target" | "utilisation" | "overtime" | "department">, mine: Map<string, Map<string, number>>): GridRow => {
       const target = ctx.targets.get(base.userId) ?? 40;
       const cells = team.days.map((day) => {
-        const byProject = [...(mine.get(day) ?? new Map<string, number>())].map(([id, hours]) => ({ name: names.get(id) ?? "Closed project", hours: round1(hours) }));
+        const byProject = [...(mine.get(day) ?? new Map<string, number>())].map(([id, hours]) => ({ id, name: names.get(id) ?? "Closed project", hours: round1(hours) }));
         const hours = round1(byProject.reduce((n, p) => n + p.hours, 0));
         return { day, hours, state: stateOf(day, hours, target / 5, ctx.today.get(base.userId) ?? "9999-12-31", ctx.onLeave(base.userId, day)), projects: byProject };
       });

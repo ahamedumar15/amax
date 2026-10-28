@@ -30,11 +30,12 @@ const ref = z.object({ weekId: z.string().uuid().optional(), person: z.string().
   week: isoWeek.optional().describe("ISO week such as 2026-W42; required when naming a person") });
 
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, pin: "view", name: "get_team_week", description: "Team timesheets for a week: hours per day, share logged by agents, status, and who you can approve. With `project` (a name from the week's projects), just that project's hours (073: ThisWeek's project rows pin to this).", input: z.object({ week, project: z.string().optional() }),
+  tool({ ...read, pin: "view", name: "get_team_week", description: "Team timesheets for a week: hours per day, share logged by agents, status, and who you can approve. With `projectId` (or `project`, a name from the week's projects), just that project's hours (073: ThisWeek's project rows pin to it by id).", input: z.object({ week, project: z.string().optional(), projectId: z.uuid().optional() }),
     run: async (v, a) => {
       const t = await teamWeek(v, wantedWeek(a.week));
-      if (!a.project) return t;
-      const p = t.projects.find((x) => x.name.toLowerCase() === a.project!.toLowerCase());
+      if (!a.project && !a.projectId) return t;
+      // 073 review round 1: a pin names the project by id, so a rename never breaks it (059).
+      const p = t.projects.find((x) => (a.projectId ? x.id === a.projectId : x.name.toLowerCase() === a.project!.toLowerCase()));
       return p ? { week: t.key, project: p.name, hours: p.hours } : null;
     } }),
   tool({ ...read, pin: "view", name: "get_hours_trend", description: "Hours logged per ISO week up to the latest, by agents and by people, optionally for one project (the Overview chart).",
@@ -43,7 +44,8 @@ export const mcpTools: McpToolDef[] = [
     run: (v, a) => myWeek(v, wantedWeek(a.week)) }),
   tool({ ...read, pin: "view", name: "get_timesheet", description: "One person-week: by weekId (a row on Team time), by week and userId for someone with no timesheet yet (Not started), or your own week, optionally just one project's row.",
     input: z.object({ weekId: z.string().uuid().optional(), week, userId: z.string().uuid().optional().describe("With week: a person who has no timesheet that week (Not started on Team time)"),
-      project: z.string().optional().describe("Project name, for one row of the week (yours, or by weekId)") }),
+      project: z.string().optional().describe("Project name, for one row of the week (yours, or by weekId)"),
+      projectId: z.uuid().optional().describe("Project id, for one row of the week: what a pin passes (073 review round 1)") }),
     run: (v, a) => getTimesheet(v, a) }),
   tool({ name: "log_time", description: "Log hours against a project for a day (YYYY-MM-DD in the person's own calendar; a Saturday or Sunday needs weekend: true, after the person confirms the weekend work). Time logged through MCP counts as agent time. On your own SUBMITTED or APPROVED week it is refused: ask with request_time_addition instead.", scope: "write", permission: "time:log",
     input: z.object({ projectKey: z.string(), hours: z.number().positive().max(24), day: z.string().describe("YYYY-MM-DD, the person's local date"), billable: z.boolean().optional(), note: z.string().optional(), agent: z.string().optional(),

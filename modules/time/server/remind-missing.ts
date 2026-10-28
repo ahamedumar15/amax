@@ -5,7 +5,8 @@ import type { Tx } from "@amax/db";
 import { viewerOf, type Viewer } from "@amax/auth";
 import type { ToolCard } from "@amax/core";
 import { defineService } from "@amax/core/server";
-import { dayLabel, isWeekend } from "../week";
+import { dayLabel, isRealDate, isWeekend } from "../week";
+import { failureNote } from "./bulk";
 import { refuse } from "./card";
 import { expectedBy } from "./expected";
 import { read } from "./read";
@@ -18,7 +19,7 @@ type Plan = { remind: { id: string; name: string; recent: string | null }[]; ski
 
 /** Why a day can't be reminded about: a weekend (AC-7), a day still to come, or not a real date. */
 async function dayRefusal(tx: Tx, v: Viewer, day: string) {
-  if (Number.isNaN(Date.parse(`${day}T00:00:00Z`))) return `${day} isn't a real date`;
+  if (!isRealDate(day)) return `${day} isn't a real date`;
   if (isWeekend(day)) return `${dayLabel(day)} is a weekend; reminders go out on working days only`;
   if (day > (await localToday(tx, v.userId))) return `${dayLabel(day)} hasn't happened yet`;
   return null;
@@ -29,7 +30,7 @@ async function plan(tx: Tx, v: Viewer, a: Input): Promise<Plan> {
   const scope = await expectedBy(tx, v, a.day);
   const ids = a.userIds ? a.userIds.filter((id) => scope.includes(id)) : scope;
   const names = new Map((ids.length ? await tx.execute(sql`select id, name from auth.user where id::text in (${sql.join(ids.map((i) => sql`${i}`), sql`, `)})`) : []).map((r) => [r.id as string, r.name as string]));
-  const { logged, onLeave } = await dayState(tx, v.tenantId, a.day, ids);
+  const { logged, onLeave } = await dayState(tx, v.tenantId, a.day, ids, v);
   const recent = await recentReminders(tx, ids);
   const out: Plan = { remind: [], skipped: a.userIds ? [...Array(a.userIds.length - ids.length)].map(() => ({ name: "Someone", why: "not someone you can remind" })) : [] };
   for (const id of ids.sort((x, y) => names.get(x)!.localeCompare(names.get(y)!))) {
@@ -51,9 +52,21 @@ export const remindMissing = defineService({
     if (why) throw new ToolError(why, "invalid_input");
     const p = await plan(tx, v, a);
     const events = [];
-    for (const r of p.remind) { const e = await writeDayReminder(tx, ctx, r.id, a.day, a.message ?? DEFAULT_MESSAGE); if (e) events.push(e); }
-    const results = [...p.remind.map((r) => ({ person: r.name, status: "sent", note: null })), ...p.skipped.map((s) => ({ person: s.name, status: "skipped", note: s.why }))];
-    return { result: { summary: `Reminded ${p.remind.length} · skipped ${p.skipped.length} · failed 0`, results }, resourceId: null, after: { day: a.day, sent: p.remind.length }, events };
+    const results: { person: string; status: string; note: string | null }[] = [];
+    // 073 review round 3: each person in their own savepoint, as remind_weeks does; one failure is that person's failed
+    // row, never the whole card, and the others still go out.
+    for (const r of p.remind) {
+      try {
+        const e = await tx.transaction((sp) => writeDayReminder(sp, ctx, r.id, a.day, a.message ?? DEFAULT_MESSAGE));
+        if (e) events.push(e);
+        results.push({ person: r.name, status: "sent", note: null });
+      } catch (e) {
+        results.push({ person: r.name, status: "failed", note: failureNote(e) });
+      }
+    }
+    results.push(...p.skipped.map((s) => ({ person: s.name, status: "skipped", note: s.why })));
+    const n = (st: string) => results.filter((x) => x.status === st).length;
+    return { result: { summary: `Reminded ${n("sent")} · skipped ${n("skipped")} · failed ${n("failed")}`, results }, resourceId: null, after: { day: a.day, sent: n("sent") }, events };
   },
 });
 

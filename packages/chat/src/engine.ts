@@ -384,12 +384,19 @@ async function withAnswer(registry: Registry, viewer: Viewer, action: PendingAct
 // as cancelled (claimKey waits for one in flight), so two options can never both write; one that already ran or is
 // running means this one lost. The options not chosen are recorded as cancelled with a note that says so.
 const others = (pending: PendingAction[], action: PendingAction) => pending.filter((p) => p.choice?.id === action.choice?.id && p.id !== action.id);
-async function claimChoice(db: Db, viewer: Viewer, conversationId: string, action: PendingAction) {
+/** Exported for its decision table test (073 review round 4); confirmCard is its only caller. */
+export async function claimChoice(db: Db, viewer: Viewer, conversationId: string, action: PendingAction) {
   return withTenant(db, viewer.tenantId, async (tx) => {
-    const [row] = await tx.execute(sql`select pending from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
-    const rest = others((row?.pending ?? []) as PendingAction[], action);
+    const [row] = await tx.execute(sql`select pending, decided from chat.conversation where id = ${conversationId} and user_id = ${viewer.userId} for update`);
+    const pending = (row?.pending ?? []) as PendingAction[];
+    // 073 review rounds 1, 3 and 4: under the card's lock, an option no longer pending has lost only if it was recorded as
+    // cancelled (a sibling won). Any other own decision (confirmed, unknown, failed, expired: the same option tried
+    // before) goes on, so its own key reports what really happened; nothing settles over it as "not chosen".
+    if (!pending.some((p) => p.id === action.id)) return ((row?.decided ?? {}) as Record<string, string>)[action.id] !== "cancelled";
+    const rest = others(pending, action);
     for (const o of rest) {
-      const prior = await claimKey(tx, viewer.tenantId, keyOf(o.id), { cancelled: true }, viewer.userId).catch(() => ({ done: null }));
+      // A claim that fails (a database error) surfaces as an error, never as "another option already ran" (B3).
+      const prior = await claimKey(tx, viewer.tenantId, keyOf(o.id), { cancelled: true }, viewer.userId);
       if (prior && !("cancelled" in prior)) return false;
     }
     for (const o of rest) await settle(tx, viewer, conversationId, o, "cancelled", `(Not chosen: "${o.title}".)`);

@@ -31,12 +31,12 @@ export async function latestWeek(tx: Tx, userId?: string): Promise<IsoWeek> {
   return r ? { year: Number(r.iso_year), week: Number(r.iso_week) } : isoWeekOf(new Date());
 }
 
-export type EntryLine = { id: string; projectName: string; day: string; hours: number; billable: boolean; source: string; note: string | null };
+export type EntryLine = { id: string; projectId: string; projectName: string; day: string; hours: number; billable: boolean; source: string; note: string | null };
 
 /** 070 AC-5: a week's entries by id, so chat can name the one to correct or delete. */
 export async function weekEntries(tx: Tx, weekId: string, names: Map<string, string>): Promise<EntryLine[]> {
   const rows = await tx.execute(sql`select id, project_id, to_char(day, 'YYYY-MM-DD') as day, hours, billable, source, note from time.entry where week_id = ${weekId} and deleted_at is null order by day, created_at`);
-  return rows.map((r) => ({ id: r.id as string, projectName: names.get(r.project_id as string) ?? "Closed project", day: r.day as string, hours: Number(r.hours),
+  return rows.map((r) => ({ id: r.id as string, projectId: r.project_id as string, projectName: names.get(r.project_id as string) ?? "Closed project", day: r.day as string, hours: Number(r.hours),
     billable: Boolean(r.billable), source: r.source as string, note: (r.note as string | null) ?? null }));
 }
 

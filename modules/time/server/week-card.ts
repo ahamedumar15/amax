@@ -47,7 +47,7 @@ export const weekCard = (kind: Kind) => async (v: Viewer, a: Args): Promise<Tool
   const { week, hours } = await preview(v, kind, a);
   // 073 AC-4: a reminder card warns when the same person was reminded in the last 4 hours.
   // 073 AC-10: an approval card names what needs a closer look; approving one at a time still works.
-  const checks = kind === "approve" ? await read(v, (tx) => weekAnomalies(tx, week)) : [];
+  const checks = kind === "approve" ? await read(v, (tx) => weekAnomalies(tx, week, v)) : [];
   const recent = kind === "remind" ? (await read(v, (tx) => recentReminders(tx, [week.user_id]))).get(week.user_id) : undefined;
   // 073: the card leads with the week's hours and the person, and its button names the decision.
   const look = { kind: LOOK[kind][0], figure: `${hours} h`, subject: week.person_name as string, detail: keyOf(week), confirm: LOOK[kind][1],

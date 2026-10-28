@@ -14,11 +14,22 @@ export const mayFix = (v: Viewer, ownerUserId: string, projectId: string, entity
   : can(v, "time:log", { ownerUserId, ...inEntity(entity) }) || can(v, "time:approve", { projectId, ...inEntity(entity) });
 
 /**
+ * Who may put the owner's hours on a project (073 review rounds 1 to 3: one rule for every path): mayFix, the rule
+ * correct_time_entry and its card use, also decides applying a change request that adds hours on a project or moves
+ * them to it. An approver of that project in the owner's entity (Admins included); being in the week's chain through
+ * another project is not enough. One rule, so a direct move and a requested move always get the same answer.
+ */
+export const mayPutOn = mayFix;
+
+/** 073: applying a request to add hours on a project. */
+export const mayAddOn = mayPutOn;
+
+/**
  * 070 review round 1: a change request that moves an entry to another project needs that project in the
  * approver's scope too, as correct_time_entry does. Being in the week's chain through one project is not enough.
  */
 export const mayMove = (v: Viewer, r: { userId: string; before: { projectId: string }; proposed: { projectId?: string } }, entity: Entity) =>
-  !r.proposed.projectId || r.proposed.projectId === r.before.projectId || mayFix(v, r.userId, r.proposed.projectId, entity);
+  !r.proposed.projectId || r.proposed.projectId === r.before.projectId || mayPutOn(v, r.userId, r.proposed.projectId, entity);
 
 /**
  * 070: one live entry and its week, locked, for a correction or a delete. The caller is checked before

@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Tx } from "@amax/db";
 import { viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, type ServiceContext } from "@amax/core/server";
-import { isoDate } from "../week";
+import { isRealDate } from "../week";
 import { adminOver, entityOf, type Entity } from "./chain";
 import { keyOf, type WeekRow } from "./weeks";
 
@@ -13,7 +13,7 @@ export const Hours = z.number().positive().max(24).multipleOf(0.05);
 // A week is Monday to Friday; 073 AC-1: Saturday and Sunday take hours only when the weekend work is confirmed.
 export function workDay(day: string, weekend = false): Date {
   const d = new Date(`${day}T00:00:00Z`);
-  if (Number.isNaN(d.getTime()) || isoDate(d) !== day) throw new ToolError(`${day} isn't a real date`, "invalid_input");
+  if (!isRealDate(day)) throw new ToolError(`${day} isn't a real date`, "invalid_input");
   if (!weekend && (d.getUTCDay() === 0 || d.getUTCDay() === 6)) throw new ToolError(`${day} is a weekend; to log weekend work, confirm it (weekend: true)`, "invalid_input");
   return d;
 }

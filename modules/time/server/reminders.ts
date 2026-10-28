@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
+import type { Viewer } from "@amax/auth";
+import { leaveSeen } from "./leave-view";
 import type { Tx } from "@amax/db";
-import { contextFor, type ServiceContext } from "@amax/core/server";
-import { approvedLeave } from "@amax/leave/contracts";
+import type { ServiceContext } from "@amax/core/server";
 import { viewerOf } from "@amax/auth";
 import { EVENTS, type DayReminded } from "../contracts";
 import { dayLabel, isoWeekOf, weekKey } from "../week";
@@ -32,14 +33,17 @@ export async function recentReminders(tx: Tx, userIds: string[]): Promise<Map<st
 export const agoText = (at: Date) => { const m = Math.max(1, Math.round((Date.now() - at.getTime()) / 60_000)); return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
 export const isRecent = (at: Date) => Date.now() - at.getTime() < FOUR_HOURS;
 
-/** Who logged hours on a day, and who is on approved leave then: the two reasons a day reminder skips someone. */
-export async function dayState(tx: Tx, tenantId: string, day: string, userIds: string[]) {
+/**
+ * Who logged hours on a day, and who is on approved leave then: the two reasons a day reminder skips someone. Leave
+ * is read as the viewer (073 final review), so a card never says "on approved leave" about leave they may not see;
+ * the scheduled reminder (no viewer, shows nothing to anyone) reads it as a system job.
+ */
+export async function dayState(tx: Tx, tenantId: string, day: string, userIds: string[], viewer: Viewer | null) {
   if (!userIds.length) return { logged: new Set<string>(), onLeave: new Set<string>() };
   const ids = sql.join(userIds.map((id) => sql`${id}`), sql`, `);
   const logged = new Set((await tx.execute(sql`select distinct user_id from time.entry where day = ${day} and deleted_at is null and user_id::text in (${ids})`)).map((r) => r.user_id as string));
-  const leaveOn = Boolean((await tx.execute(sql`select to_regclass('leave.request') is not null as on`))[0]?.on);
-  const leave = leaveOn ? await approvedLeave(tx, contextFor.job(tenantId, "time.reminders"), { from: day, to: day }) : [];
-  return { logged, onLeave: new Set(leave.flatMap((l) => (l.userId && userIds.includes(l.userId) ? [l.userId] : []))) };
+  const leave = await leaveSeen(tx, viewer, tenantId, { from: day, to: day }, userIds);
+  return { logged, onLeave: new Set(userIds.filter((id) => leave.on(id, day))) };
 }
 
 /** One day reminder: recorded, and the event the bell turns into "Log your hours for {day}" (AC-3). */

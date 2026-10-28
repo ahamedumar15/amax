@@ -34,8 +34,8 @@ export const remindDaily = defineService({
     const at = (await settingsOf(tx)).dailyReminderAt;
     const { day, time } = await localNow(tx, a.legalEntityId, a.now ? new Date(a.now) : new Date());
     if (!at || isWeekend(day) || time < at) return { result: { reminded: 0, day }, resourceId: null, events: [] };
-    const people = await expectedIn(tx, a.legalEntityId, day);
-    const { logged, onLeave } = await dayState(tx, ctx.tenantId, day, people);
+    const people = await expectedIn(tx, ctx.tenantId, a.legalEntityId, day);
+    const { logged, onLeave } = await dayState(tx, ctx.tenantId, day, people, null);
     const off = await switchedOff(tx, people, day);
     const events = [];
     for (const id of people) {

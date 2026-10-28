@@ -8,7 +8,7 @@ import { EVENTS, type ChangeDecided } from "../contracts";
 import { chainFor, entityOf } from "./chain";
 import { writeCorrection, writeDelete } from "./correct";
 import { decide } from "./decide";
-import { liveEntry, mayMove } from "./entry";
+import { liveEntry, mayAddOn, mayMove } from "./entry";
 import { logEntry } from "./log";
 import { projectNames } from "./read";
 import { writeReopen } from "./reopen";
@@ -26,6 +26,9 @@ const summary = (r: ChangeRequest) => `Change request: ${r.before.projectName}, 
 // included), attributed to the approver at the person's request; an approved week's change is audited with the request.
 async function add(tx: Tx, ctx: ServiceContext, r: ChangeRequest): Promise<Outcome> {
   const p = r.proposed;
+  // 073 review round 1: the project is checked here too, as for a move; with no viewer (a job), never (fails closed).
+  const v = viewerOf(ctx);
+  if (!v || !mayAddOn(v, r.userId, r.before.projectId, await entityOf(tx, r.userId))) throw new ScopeError("time:approve");
   const done = await logEntry(tx, { projectKey: p.projectKey!, day: r.day, hours: p.hours!, billable: p.billable ?? true, note: p.note ?? undefined, userId: r.userId, source: "person", weekend: p.weekend }, ctx, null, { requestId: r.id });
   return { status: "applied", events: done.events, after: { added: done.result } };
 }

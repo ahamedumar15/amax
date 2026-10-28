@@ -1,3 +1,4 @@
+import { PinButton } from "@amax/ui";
 import type { MyWeek } from "../server/my";
 import { AskButton } from "./AskButton";
 import { Since } from "./Since";
@@ -11,7 +12,9 @@ export function SentBack({ m }: { m: MyWeek }) {
   const pin = { label: `My timesheet ${m.key}`, tool: "get_my_week", args: { week: m.key } };
   const who = m.rejectedBy ?? "Your approver";
   return (
-    <section className="card notice rq sent-back" aria-label={`${m.key} was sent back`}>
+    <section className="card notice rq sent-back pinnable" aria-label={`${m.key} was sent back`}>
+      {/* 073 review round 1 (R3): the card shows a record (the sent-back week, who sent it and why), so it is pinnable. */}
+      <PinButton inline pin={pin} />
       <div className="rq-top">
         <span className="chip bad">Sent back · fix and resubmit</span>
         {m.rejectedAt && <small className="muted">sent back <Since at={m.rejectedAt} /></small>}

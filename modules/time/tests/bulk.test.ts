@@ -8,7 +8,9 @@ import { chatTurn, confirmAction } from "@amax/chat";
 import { createRegistry, ToolError } from "@amax/mcp";
 import { ValidationError } from "@amax/core/server";
 import { ScopeError } from "@amax/auth";
-import { failureNote } from "../server/bulk";
+import { failureNote, remindMany } from "../server/bulk";
+import { remindMissing } from "../server/remind-missing";
+import { ctxFor } from "../server/context";
 import manifest from "../module";
 import { T, timeDb } from "./db";
 
@@ -72,4 +74,37 @@ describe.skipIf(!hasDb)("070 amendment 4: team reminders and approvals in one ca
     if (kept) expect(note).toBe(kept);
     else expect(note).toMatch(/^couldn't be done \(reference [0-9a-f-]{36}\)$/);
   });
+
+  // 073 review rounds 1 and 3: every per-person reminder loop reports a failure as that person's own failed row and
+  // still reminds the others: remind_weeks for people with no timesheet (Not started), and remind_missing for a day.
+  // The failure falls on the first person, the last, or everyone; the reminders recorded match the rows that say sent.
+  const failing = async (ids: string[], run: () => Promise<unknown>) => {
+    await db.t.owner.unsafe(`create function time.fail_reminder() returns trigger language plpgsql as $$ begin if new.user_id::text in (${ids.map((i) => `'${i}'`).join(",") || "''"}) then raise exception 'reminder store down'; end if; return new; end $$`);
+    await db.t.owner.unsafe("create trigger fail_reminder before insert on time.reminder for each row execute function time.fail_reminder()");
+    try { return await run(); } finally { await db.t.owner.unsafe("drop trigger fail_reminder on time.reminder; drop function time.fail_reminder()"); }
+  };
+  type Rows = { results: { person: string; status: string; note: string | null }[]; summary: string };
+  const PEOPLE = { tharushi: "Tharushi Wijesinghe", dinesh: "Dinesh Wickrama", kasun: "Kasun Dias" } as const;
+  it.each([
+    ["remind_weeks", "the first", ["tharushi"]], ["remind_weeks", "the last", ["kasun"]], ["remind_weeks", "every", ["tharushi", "dinesh", "kasun"]],
+    ["remind_missing", "the first", ["tharushi"]], ["remind_missing", "the last", ["kasun"]], ["remind_missing", "every", ["tharushi", "dinesh", "kasun"]],
+  ] as const)("%s with %s person failing: failed rows for them, the others reminded and recorded", async (tool, _, failKeys) => {
+    const maya = await db.as("maya");
+    const ids = Object.fromEntries(await Promise.all(Object.keys(PEOPLE).map(async (k) => [k, await db.idOf(k)] as const)));
+    const before = Number((await db.q(sql`select count(*)::int as n from time.reminder`))[0].n);
+    const all = Object.values(ids);
+    const out = (await failing(failKeys.map((k) => ids[k]), () => (tool === "remind_weeks"
+      ? remindMany(ctxFor(maya), { weekIds: [], week: "2026-W46", userIds: all })
+      : remindMissing(ctxFor(maya), { day: "2026-10-26", userIds: all })))) as Rows;
+    const tried = out.results.filter((r) => r.status !== "skipped");
+    expect(tried.length).toBeGreaterThan(1);
+    const failNames: string[] = failKeys.map((k) => PEOPLE[k]).filter((n) => tried.some((r) => r.person === n));
+    for (const r of tried) {
+      expect([r.person, r.status]).toEqual([r.person, failNames.includes(r.person) ? "failed" : "sent"]);
+      if (failNames.includes(r.person)) expect(r.note).toMatch(/^couldn't be done \(reference .+\)$/);
+    }
+    expect(out.summary).toContain(`failed ${failNames.length}`);
+    expect(Number((await db.q(sql`select count(*)::int as n from time.reminder`))[0].n) - before).toBe(tried.length - failNames.length);
+  }, 60_000);
 });
+
