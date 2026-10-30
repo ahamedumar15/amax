@@ -56,7 +56,7 @@ loop, two pass as `covered-by` it, and one fails because the change it names has
 
 ## Verify
 
-**Verdict:** FAIL (one item left: the mock compared by eye; everything else passes)
+**Verdict:** PASS
 
 Verified 2026-10-30 at `3df8db96` plus the uncommitted review records.
 
@@ -98,8 +98,7 @@ Commands:
   creating symlinks (Windows without symlink rights), `ac3-boundaries` ×1 5 s timeout on this host.
 - `specclaw-preset-check .`: exit 1 from the repo-wide backlog; none in 078 files.
 - `specclaw-quality-scan . --gate`: exit 126, not_run (jq "Argument list too long", as in 066–074).
-- Screenshots: no app UI. `specclaw-screenshot` failed (Playwright not installed); mock at
-  `.specclaw/mock/index.html#078-review-covered-by` not yet compared by eye.
+- Screenshots: no app UI. `specclaw-screenshot` failed (Playwright not installed), so the mock was compared by eye.
 - `pnpm lint` after the review fixes: exit 0 (35/35); gate tests 20/20.
 
-To pass: compare `.specclaw/mock/index.html#078-review-covered-by` by eye and record `compared by eye: <name>`.
+- Mock `.specclaw/mock/index.html#078-review-covered-by`: compared by eye: Umar Ahamed, 2026-10-30 (no app UI).
