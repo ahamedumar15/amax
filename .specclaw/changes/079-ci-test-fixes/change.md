@@ -39,7 +39,21 @@ No screen changes. The mock section notes that.
 
 ## Verify
 
-Build notes, 2026-10-30 (verify after the review pass):
+**Verdict:** FAIL (one item left: the mock compared by eye; everything else passes)
+
+Verified 2026-10-30 at `dc678e29`.
+
+- AC-1: pass — `fingerprint()` sorts tasks by ref; `sync-task-order.test.ts` 5/5 (four orders fingerprint as storage's,
+  a different task set doesn't); `sync-import.test.ts` "079 AC-1" re-syncs `T2, T10, T1` with `updated: 0`; the
+  real-repo re-sync (070's T26 before T25) passes.
+- AC-2: pass — `chat.test.ts` AC-5 expects `whoami, search, offer_choices` and passes.
+- AC-3: pass — `@amax/delivery` tests 261/262 on local Postgres; the one failure is Windows-only (below). The fork-PR
+  review gate over this branch exits 0, all 10 changes pass, 079 "final round 2/5 clean". `specclaw-review verdict`:
+  "CLEAN — 2 rounds, final pass dc678e29c3".
+- Final pass round 2: clean, 0/0/1. The minor (no `pushSpecclaw` out-of-order case) is in `follow-ups.md`.
+- Screenshots: no app UI; the mock section only notes that.
+
+Build notes, 2026-10-30:
 
 - `DATABASE_MIGRATE_URL=…:5440 pnpm turbo run test --filter @amax/delivery`: 256 passed, 1 failed. The two CI failures
   (`sync-import` re-sync, `chat` AC-5) and the new out-of-order test pass. The one failure is
