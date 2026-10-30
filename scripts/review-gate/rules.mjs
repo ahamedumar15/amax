@@ -4,8 +4,20 @@ const NOT_RAN = new Set(["not_run", "skipped"]);
 export const MAX_PASSES = 5;
 
 export function reviewScope(changeMd) {
-  const match = /\*\*Review:\*\*\s*`?(change|module-end)`?/.exec(changeMd ?? "");
-  return match ? match[1] : "change";
+  const match = /\*\*Review:\*\*\s*`?(change|module-end|covered-by)`?(?:\s+`?(\d{3}-[\w-]+)`?)?/.exec(changeMd ?? "");
+  return match ? { scope: match[1], by: match[1] === "covered-by" ? match[2] ?? null : null } : { scope: "change", by: null };
+}
+
+function judgeCovered({ name, by, load, isAncestor }) {
+  const fail = (reason) => ({ verdict: "fail", reason: `covered by ${by ?? "(none)"}: ${reason}` });
+  if (!by) return fail("covered-by names no change");
+  if (by === name) return fail("a change can't cover itself");
+  const cover = load(by);
+  if (!cover) return fail("no such change at the PR head");
+  const { scope } = reviewScope(cover.changeMd);
+  if (scope === "covered-by") return fail(`${by} is itself covered-by, no chains`);
+  const result = judgeEvidence({ ...cover, scope, isAncestor });
+  return { verdict: result.verdict, reason: `covered by ${by}: ${result.reason}` };
 }
 
 export function touchedChangeDirs(files) {
@@ -44,14 +56,18 @@ export function judgeEvidence({ rounds, scope, changeMd, isAncestor }) {
   return { verdict: "pass", reason: `final round ${counted.length}/${MAX_PASSES} ${last.status}, ${blockers} blockers, head ${last.head.slice(0, 7)} in PR` };
 }
 
-export function gate({ fork, files, changes, isAncestor }) {
+function judge(change, { fork, load, isAncestor }) {
+  const { scope, by } = reviewScope(change.changeMd);
+  if (fork && scope === "covered-by") return { scope, ...judgeCovered({ name: change.name, by, load, isAncestor }) };
+  if (fork || scope === "module-end") return { scope, ...judgeEvidence({ ...change, scope, isAncestor }) };
+  return { scope, verdict: "skip", reason: "single change, review runs at module end" };
+}
+
+export function gate({ fork, files, changes, isAncestor, load }) {
   const lines = [fork ? "fork PR: review evidence required" : "same-repo PR: module cadence"];
   let ok = true;
   for (const change of changes) {
-    const scope = reviewScope(change.changeMd);
-    const result = fork || scope === "module-end"
-      ? judgeEvidence({ ...change, scope, isAncestor })
-      : { verdict: "skip", reason: "single change, review runs at module end" };
+    const { scope, ...result } = judge(change, { fork, load, isAncestor });
     if (result.verdict === "fail") ok = false;
     lines.push(`${change.name.padEnd(28)} scope=${scope.padEnd(10)} ${result.verdict} — ${result.reason}`);
   }

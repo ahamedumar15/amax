@@ -23,15 +23,19 @@ if (diff.status !== 0) {
 }
 const files = lines(diff.stdout);
 
-const changes = [...touchedChangeDirs(files)].map(([name, dir]) => ({
+const readChange = (name, dir) => ({
   name,
   changeMd: show(`${dir}/change.md`),
   rounds: lines(git("ls-tree", "--name-only", head, `${dir}/review/`).stdout)
     .filter((path) => /\/round-\d+\.json$/.test(path))
     .map((path) => JSON.parse(show(path))),
-})).filter((change) => change.changeMd !== null);
+});
+const changes = [...touchedChangeDirs(files)].map(([name, dir]) => readChange(name, dir))
+  .filter((change) => change.changeMd !== null);
+const load = (name) => [`.specclaw/changes/${name}`, `.specclaw/changes/archive/${name}`]
+  .map((dir) => readChange(name, dir)).find((change) => change.changeMd !== null) ?? null;
 
 const isAncestor = (sha) => git("merge-base", "--is-ancestor", sha, head).status === 0;
-const result = gate({ fork, files, changes, isAncestor });
+const result = gate({ fork, files, changes, isAncestor, load });
 console.log(result.lines.join("\n"));
 process.exit(result.ok ? 0 : 1);

@@ -33,7 +33,10 @@ ask the product owner first.
 missing) or `**Review:** module-end` for a module's last change, whose loop runs with `--since` over the
 whole module. CI's `review-gate` job (`scripts/check-review-gate.mjs`) checks the review files under
 `review/`. A PR from a fork must carry a finished loop for every change it touches, whatever the scope.
-A same-repo PR needs one only for a `module-end` change.
+A same-repo PR needs one only for a `module-end` change. On a stacked branch, where one loop reviewed
+several changes, a change can declare `**Review:** covered-by <NNN-slug>` instead, and the gate judges it by
+that change's final round. Use it only when that loop actually reviewed this change's commits, and say so
+under the covering change's `## Verify`. The named change can't be `covered-by` in turn.
 
 ## Core rules
 

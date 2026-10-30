@@ -992,6 +992,24 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
 </pre>
   </div>
 </section>
+<section data-change="078-review-covered-by" id="078-review-covered-by" data-roles="all" data-title="Review gate: covering loop" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Review gate: a covering loop counts</h1>
+  <p class="lede">A CI check with no app screen. Sample <code>review-gate</code> output for fork PRs from a stacked branch. Fictional PRs and forks.</p>
+  <div class="card">
+    <div class="card-head"><h2>PR #211 · from fork demo-contributor/amax</h2><span class="chip">review-gate: passed</span></div>
+    <pre style="white-space:pre-wrap">fork PR: review evidence required
+081-leave-requests       scope=change      pass — final round 4/5 clean, 0 blockers, head 9d1e4a2 in PR
+082-leave-calendar       scope=covered-by  pass — covered by 081-leave-requests: final round 4/5 clean, 0 blockers, head 9d1e4a2 in PR
+083-leave-reminders      scope=covered-by  pass — covered by 081-leave-requests: final round 4/5 clean, 0 blockers, head 9d1e4a2 in PR
+</pre>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>PR #212 · from fork sample-dev/amax</h2><span class="chip">review-gate: failed</span></div>
+    <pre style="white-space:pre-wrap">fork PR: review evidence required
+084-expense-export       scope=covered-by  fail — covered by 085-expense-close: no final review round (review/ has 0 rounds)
+</pre>
+  </div>
+</section>
 <!-- ================= 068 Overview deltas ================= -->
 <section data-change="073-time-workflow-enhancements" id="073-time-workflow-enhancements" data-roles="all" data-title="Time: weekend and reminders" data-nav="no" data-parent="001-amax-foundation-time">
   <h1>Time: weekend hours, reminders, This week</h1>

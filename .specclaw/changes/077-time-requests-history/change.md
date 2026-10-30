@@ -1,6 +1,6 @@
 # Time requests history
 
-**Change:** 077-time-requests-history · **Created:** 2026-10-25
+**Change:** 077-time-requests-history · **Created:** 2026-10-25 · **Review:** covered-by 073-time-workflow-enhancements
 
 ## Problem
 

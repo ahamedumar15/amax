@@ -1,6 +1,6 @@
 # Team time status band
 
-**Change:** 075-team-time-status-band · **Created:** 2026-10-25
+**Change:** 075-team-time-status-band · **Created:** 2026-10-25 · **Review:** covered-by 073-time-workflow-enhancements
 
 ## Problem
 
