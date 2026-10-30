@@ -1,0 +1,9 @@
+{
+  "change": "079-ci-test-fixes",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-10-30T13:05:32Z"},
+    "tasks": {"status":"done","at":"2026-10-30T13:05:44Z"}
+  }
+}

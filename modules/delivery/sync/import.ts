@@ -9,9 +9,11 @@ export type SyncResult = { created: number; updated: number; unchanged: number; 
 export type Task = SpecRecord["tasks"][number];
 
 // 008: a task a commit closed stays closed, so the repo's open task is merged with the stored one;
-// otherwise every sync would see a "change" it can't make.
+// otherwise every sync would see a "change" it can't make. Tasks are put in storedSpecRows' order (ref
+// length, then ref), so a change.md that lists T26 before T25 isn't a change on every sync (079).
+const byRef = (a: Task, b: Task) => a.ref.length - b.ref.length || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
 export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: Task[] = []) => {
-  const tasks = r.tasks.map((t) => ({ ...t, done: t.done || stored.some((s) => s.ref === t.ref && s.done) }));
+  const tasks = r.tasks.map((t) => ({ ...t, done: t.done || stored.some((s) => s.ref === t.ref && s.done) })).sort(byRef);
   return {
   key: `${projectKey}-${r.number}`,
   title: r.title,
