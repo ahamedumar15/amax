@@ -17,9 +17,11 @@ No screen changes. The mock section notes that.
 
 ## Acceptance Criteria
 
-1. **AC-1** `desired()` in `modules/delivery/sync/import.ts` orders a record's tasks as storage returns them (ref
-   length, then ref), so a re-sync of an unchanged repo is `updated: 0` however the change.md orders its tasks. A test
-   syncs a fake repo whose tasks are written `T2, T10, T1`, re-syncs it, and gets `created: 0, updated: 0`.
+1. **AC-1** `fingerprint()` in `modules/delivery/sync/import.ts` (used by both the import and the repo push to
+   decide "changed?") compares tasks sorted by ref, so a re-sync of an unchanged repo is `updated: 0` however the
+   change.md orders its tasks. A variant table (T26 before T25, T10 before T9, reversed, sorted) checks the
+   fingerprint, and a DB test syncs tasks written `T2, T10, T1` twice and gets `created: 0, updated: 0`. (Amended
+   after the final pass: the sort moved from `desired()` into `fingerprint()`, so storage order no longer matters.)
 2. **AC-2** `modules/delivery/tests/chat.test.ts` AC-5 expects the refused role's tools to be
    `whoami, search, offer_choices`, matching 076 AC-1.
 3. **AC-3** `pnpm turbo run test --filter @amax/delivery` passes against local Postgres, and the fork-PR review gate
@@ -44,3 +46,8 @@ Build notes, 2026-10-30 (verify after the review pass):
   `releases.test.ts:289`, Windows-only: its `modules\/delivery\/` path regex doesn't match backslash paths. Untouched
   by 079; it passes on CI's Linux runner.
 - `pnpm lint`: exit 0 (35/35).
+- Final pass round 1 (open, 0 blockers, 2 majors, 1 minor): the sort lived in two places (JS and SQL) and the test
+  had one case and skipped the push path. Fixed: the sort is inside `fingerprint()` and `sync-task-order.test.ts`
+  is a variant table over it. Re-run: 261 passed, 1 failed (the same Windows-only `releases.test.ts:289`).
+  The pre-existing major (a task removed from or listed twice in change.md also reads as a change every sync) is
+  out of scope, in `follow-ups.md`.
