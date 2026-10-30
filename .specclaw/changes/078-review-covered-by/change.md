@@ -56,22 +56,40 @@ loop, two pass as `covered-by` it, and one fails because the change it names has
 
 ## Verify
 
-**Verdict:** FAIL
+**Verdict:** FAIL (one item left: the mock compared by eye; everything else passes)
 
-Verified 2026-10-30 at `fa72929f`.
+Verified 2026-10-30 at `3df8db96` plus the uncommitted review records.
 
-- AC-1: pass — `reviewScope()` returns `{ scope, by }`; `change`, `module-end` and a missing line read as before (074 tests
-  unchanged and passing); `covered-by 101-cover` parses (`review-gate-covered.test.ts` AC1 AC2).
-- AC-2: pass — a fork PR judges `103-stacked` by archived `101-cover`'s rounds, which the PR doesn't touch: "pass — covered
-  by 101-cover: final round 1/5 clean" (test AC1 AC2).
-- AC-3: pass — missing, unnamed, self and chained `covered-by` each fail with their reason (test AC3).
+- AC-1: pass — `reviewScope()` returns `{ scope, by }` from the header only; `change`, `module-end` and a missing line read
+  as before (074 tests unchanged, 4/4); a `**Review:**` quote under `## Verify` doesn't change the scope (test AC1 AC2).
+- AC-2: pass — a fork PR passes `103-stacked` by archived `101-cover`'s rounds when that loop ran after its commits, also
+  after archiving, after a later commit owned by a change whose final pass follows it, after the cover's own later commit,
+  and when the cover mentions `## Verify` in prose (5 rows, test AC1 AC2).
+- AC-3: pass — 10 failing rows (test AC3): loop before the change, Verify doesn't name it, cover in base, own rounds,
+  missing, self, unnamed (name on the next line), chain, a code commit after the cover's final pass, and an owner whose
+  final pass came before the commit it claims.
 - AC-4: pass — same-repo PR skips a covered-by change (test AC4).
-- AC-5: pass — `review-gate.test.ts` 4/4 and `review-gate-covered.test.ts` 3/3; shared fixture in `review-gate-fixture.ts`.
-- AC-6: pass — AGENTS.md "Review scope" and `.specclaw/context.md` (Constraints) document `covered-by`, its honesty rule
-  and no chains.
-- AC-7: fail — `node scripts/check-review-gate.mjs --base upstream/main --fork true` exits 1. 070–077 pass (074–077 as
-  covered by 073), but 078 itself fails: "no final review round (review/ has 0 rounds)". 073's loop didn't review 078,
-  so it needs its own specclaw-review loop. Output: `shots/gate-output.txt`.
+- AC-5: pass — `review-gate.test.ts` 4/4, `review-gate-covered.test.ts` 16/16.
+- AC-6: pass — AGENTS.md "Review scope" and `.specclaw/context.md` document `covered-by` and its checks.
+- AC-7: pass — the gate in fork mode over this branch with the review records exits 0: 070–073 on their own loops,
+  074–077 "covered by 073-time-workflow-enhancements", 078 "final round 4/5 escalate, 0 blockers, head 3df8db9 in PR"
+  (`shots/gate-output.txt`; the committed `check-review-gate.mjs` confirms once the records are committed).
+
+**Review loop (specclaw-review, cap of 5 passes), 2026-10-30.** Local copy of the reviewer (working-tree diff, base
+`97269e03`, `PYTHONUTF8=1` on this Windows host). Round 1 not_run (cp1252 decode gave an empty diff), not counted.
+
+- Round 2 (1 blocker, 1 major): an archived change with a clean loop could cover anything. Fixed: the cover's final pass
+  must sit on the PR's branch after the change's commits, its `## Verify` must name the change, no own rounds.
+- Round 3 (2 majors): later commits weren't all checked; archived history was lost. Fixed.
+- Round 4 (5 majors): only commits touching the change dir were checked; subject-only ownership; `## Verify` matched in
+  prose; git failures read as answers. Fixed, with the product owner's choice that a covered change is trusted exactly
+  as far as its cover (merges and the cover's own later commits are excused; 073's fixes landed in `ea706ae4` after its
+  recorded head).
+- Round 5, final (escalate, 0 blockers, 3 majors): merge commits' own edits excused; renames read as records-only;
+  no tests for those git edges. Two repeated, so the loop escalated.
+
+**Stop.** The product owner chose to stop after the escalation at 4 counted passes, with 0 blockers and 3 majors open.
+The majors and a redesign (rounds record the commit range they reviewed) are in `follow-ups.md`.
 
 Commands:
 
@@ -82,6 +100,6 @@ Commands:
 - `specclaw-quality-scan . --gate`: exit 126, not_run (jq "Argument list too long", as in 066–074).
 - Screenshots: no app UI. `specclaw-screenshot` failed (Playwright not installed); mock at
   `.specclaw/mock/index.html#078-review-covered-by` not yet compared by eye.
-- specclaw-review: not installed on this host.
+- `pnpm lint` after the review fixes: exit 0 (35/35); gate tests 20/20.
 
-To pass: run a specclaw-review loop on 078 (commit its `review/round-N.json`), compare the mock by eye, re-verify.
+To pass: compare `.specclaw/mock/index.html#078-review-covered-by` by eye and record `compared by eye: <name>`.
