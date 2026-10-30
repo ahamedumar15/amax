@@ -35,8 +35,13 @@ whole module. CI's `review-gate` job (`scripts/check-review-gate.mjs`) checks th
 `review/`. A PR from a fork must carry a finished loop for every change it touches, whatever the scope.
 A same-repo PR needs one only for a `module-end` change. On a stacked branch, where one loop reviewed
 several changes, a change can declare `**Review:** covered-by <NNN-slug>` instead, and the gate judges it by
-that change's final round. Use it only when that loop actually reviewed this change's commits, and say so
-under the covering change's `## Verify`. The named change can't be `covered-by` in turn.
+that change's final round. Use it only when that loop actually reviewed this change's commits. The gate
+checks that the covering change's `## Verify` names this change, that its final pass ran on this PR's branch
+(not in the base) after this change's commits, and that this change has no review rounds of its own. Every
+PR commit after that final pass must touch only `.specclaw/`, be a merge, or name (`specclaw(<NNN-slug>)` or
+`[specclaw] <NNN-slug>` subject) either the covering change or another change in the PR whose own final pass
+came after it. So a covered change is trusted exactly as far as its cover. The named change can't be
+`covered-by` in turn.
 
 ## Core rules
 

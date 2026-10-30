@@ -25,9 +25,16 @@ loop, two pass as `covered-by` it, and one fails because the change it names has
    the PR). The line reads `pass — covered by <NNN-slug>: <that change's reason>` or `fail — covered by <NNN-slug>: <reason>`.
    The named change is read from the PR head whether or not the PR touches it.
 3. **AC-3** A covered-by line fails when the named change doesn't exist at the PR head, names the change itself, or
-   names a change that is itself `covered-by` (no chains).
+   names a change that is itself `covered-by` (no chains). Amended after review round 2 (blocker: an old archived
+   change could cover anything), it also fails when: the named change's `## Verify` doesn't name this change; its final
+   pass is already in the PR's base; its final pass ran before every commit that touches this change's dir (active or
+   archive); any PR commit after that final pass touches files outside `.specclaw/`, isn't a merge, and its subject
+   names neither the covering change nor another change in the PR whose own final pass descends from it; or this
+   change has review rounds of its own that ran. The scope is read from
+   the header only, and `covered-by` takes its name from the same line.
 4. **AC-4** On a same-repo PR a covered-by change skips, as a `change` scope does.
-5. **AC-5** `packages/testing/tests/review-gate.test.ts` covers AC-1 to AC-4; existing tests still pass.
+5. **AC-5** `packages/testing/tests/review-gate-covered.test.ts` covers AC-1 to AC-4, each AC-3 failure as a row of a
+   variant table; `review-gate.test.ts` still passes.
 6. **AC-6** AGENTS.md "Review scope" documents `covered-by`: use it only when the named change's loop actually reviewed
    this change's commits, and say so under that change's `## Verify`.
 7. **AC-7** The headers of 074-dev-demo-data, 075-team-time-status-band, 076-chat-choice-cards and
@@ -49,15 +56,32 @@ loop, two pass as `covered-by` it, and one fails because the change it names has
 
 ## Verify
 
-Build notes, 2026-10-30 (verify not yet run):
+**Verdict:** FAIL
 
-- Built on `specclaw/073-time-workflow-enhancements`, uncommitted (git is read-only for the agent; no build branch).
-- Tests: `review-gate.test.ts` (4) and `review-gate-covered.test.ts` (3) pass; shared git fixture moved to
-  `review-gate-fixture.ts` to stay under 80 lines. Other `@amax/testing` files fail to import `@amax/core/env`
-  (workspace packages not built locally), unrelated.
-- `pnpm lint`: 35/35. `specclaw-preset-check .`: no hits in 078 files. Quality: `specclaw-quality-scan` not_run
-  (jq "Argument list too long", as in 066–074).
-- AC-7 on the working tree (gate rules over the uncommitted change files, fork mode): 070–077 pass, exit 0.
-  `check-review-gate.mjs` reads `HEAD`, so it confirms only once committed.
-- Open: once committed, 078 is itself a touched change on a fork PR and needs its own specclaw-review final round.
-  073's loop didn't review it, so `covered-by` doesn't apply.
+Verified 2026-10-30 at `fa72929f`.
+
+- AC-1: pass — `reviewScope()` returns `{ scope, by }`; `change`, `module-end` and a missing line read as before (074 tests
+  unchanged and passing); `covered-by 101-cover` parses (`review-gate-covered.test.ts` AC1 AC2).
+- AC-2: pass — a fork PR judges `103-stacked` by archived `101-cover`'s rounds, which the PR doesn't touch: "pass — covered
+  by 101-cover: final round 1/5 clean" (test AC1 AC2).
+- AC-3: pass — missing, unnamed, self and chained `covered-by` each fail with their reason (test AC3).
+- AC-4: pass — same-repo PR skips a covered-by change (test AC4).
+- AC-5: pass — `review-gate.test.ts` 4/4 and `review-gate-covered.test.ts` 3/3; shared fixture in `review-gate-fixture.ts`.
+- AC-6: pass — AGENTS.md "Review scope" and `.specclaw/context.md` (Constraints) document `covered-by`, its honesty rule
+  and no chains.
+- AC-7: fail — `node scripts/check-review-gate.mjs --base upstream/main --fork true` exits 1. 070–077 pass (074–077 as
+  covered by 073), but 078 itself fails: "no final review round (review/ has 0 rounds)". 073's loop didn't review 078,
+  so it needs its own specclaw-review loop. Output: `shots/gate-output.txt`.
+
+Commands:
+
+- `pnpm build`: exit 0. `pnpm lint`: exit 0 (35/35). `node scripts/check-review-gate.mjs … --fork false`: exit 0.
+- `pnpm turbo run test --filter @amax/testing`: exit 1, 34 passed, 4 failed, none in 078 files: `ac7-config` ×3 EPERM
+  creating symlinks (Windows without symlink rights), `ac3-boundaries` ×1 5 s timeout on this host.
+- `specclaw-preset-check .`: exit 1 from the repo-wide backlog; none in 078 files.
+- `specclaw-quality-scan . --gate`: exit 126, not_run (jq "Argument list too long", as in 066–074).
+- Screenshots: no app UI. `specclaw-screenshot` failed (Playwright not installed); mock at
+  `.specclaw/mock/index.html#078-review-covered-by` not yet compared by eye.
+- specclaw-review: not installed on this host.
+
+To pass: run a specclaw-review loop on 078 (commit its `review/round-N.json`), compare the mock by eye, re-verify.

@@ -324,6 +324,9 @@ Approved by the product owner, 2026-10-24 ("approve"): the recommended option of
 
 **Review loop (specclaw-review, cap of 5 passes), 2026-10-27/28.** Reviewed against the 072 branch tip (`d3da46bd`) after the stack rebase, so 073's own code plus the 074–077 commits this branch carries (138 files, about 6,900 diff lines). Rounds ran on the working tree with a local, read-only copy of the reviewer (git is read-only for the agent). Round 5 returned not_run (the model's session limit) and doesn't count; round 6 is the fifth pass.
 
+This loop is the review evidence for 074-dev-demo-data, 075-team-time-status-band, 076-chat-choice-cards and
+077-time-requests-history: each declares `**Review:** covered-by 073-time-workflow-enhancements` (078, 2026-10-30).
+
 - Round 1 (2 blockers, 6 majors): reminder tables had no retention entries; who is expected to log read Allocations' and HR's tables with raw SQL; two choice-card options confirmed at once could cancel each other; an approver could add hours to a project they don't approve; one failed Not started reminder aborted the card; the sent-back card had no pin; project-row pins named the project. All fixed with variant tests.
 - Round 2 (5 majors): project pins by id end to end (own week, closed and same-named projects); allocations read through contracts as a system read so a PM's allocated people aren't lost; one rule for adding and moving hours; a test for a failed claim.
 - Round 3 (4 majors): remind_missing per-person savepoints; table-driven reminder failure tests; one permission rule (mayFix) for direct and requested moves; a repeat confirm of the same option replays instead of reading as cancelled.

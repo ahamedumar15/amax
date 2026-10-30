@@ -1,24 +1,7 @@
+import { judgeCovered } from "./covered.mjs";
+import { finalRound, judgeEvidence, reviewScope } from "./evidence.mjs";
+
 const CHANGE_DIR = /^\.specclaw\/changes\/(?:archive\/)?(\d{3}-[^/]+)\//;
-const UNCOUNTED = new Set(["not_run"]);
-const NOT_RAN = new Set(["not_run", "skipped"]);
-export const MAX_PASSES = 5;
-
-export function reviewScope(changeMd) {
-  const match = /\*\*Review:\*\*\s*`?(change|module-end|covered-by)`?(?:\s+`?(\d{3}-[\w-]+)`?)?/.exec(changeMd ?? "");
-  return match ? { scope: match[1], by: match[1] === "covered-by" ? match[2] ?? null : null } : { scope: "change", by: null };
-}
-
-function judgeCovered({ name, by, load, isAncestor }) {
-  const fail = (reason) => ({ verdict: "fail", reason: `covered by ${by ?? "(none)"}: ${reason}` });
-  if (!by) return fail("covered-by names no change");
-  if (by === name) return fail("a change can't cover itself");
-  const cover = load(by);
-  if (!cover) return fail("no such change at the PR head");
-  const { scope } = reviewScope(cover.changeMd);
-  if (scope === "covered-by") return fail(`${by} is itself covered-by, no chains`);
-  const result = judgeEvidence({ ...cover, scope, isAncestor });
-  return { verdict: result.verdict, reason: `covered by ${by}: ${result.reason}` };
-}
 
 export function touchedChangeDirs(files) {
   const dirs = new Map();
@@ -33,41 +16,20 @@ export function needsProposal(files) {
   return files.some((file) => !file.startsWith(".specclaw/"));
 }
 
-function verifySection(changeMd) {
-  const at = (changeMd ?? "").indexOf("## Verify");
-  return at < 0 ? "" : changeMd.slice(at);
-}
-
-export function judgeEvidence({ rounds, scope, changeMd, isAncestor }) {
-  const counted = rounds.filter((r) => !UNCOUNTED.has(r.status));
-  const finals = rounds.filter((r) => r.final && !NOT_RAN.has(r.status)).sort((a, b) => a.round - b.round);
-  const last = finals.at(-1);
-  if (!last) return { verdict: "fail", reason: `no final review round (review/ has ${rounds.length} rounds)` };
-  if (counted.length > MAX_PASSES) return { verdict: "fail", reason: `${counted.length} passes, cap is ${MAX_PASSES}` };
-  const blockers = last.counts?.blocker ?? 0;
-  const stop = verifySection(changeMd);
-  if (blockers > 0 && !(/stop/i.test(stop) && /blocker/i.test(stop))) {
-    return { verdict: "fail", reason: `${blockers} open blocker(s) and no stop recorded under ## Verify` };
-  }
-  if (!last.head || !isAncestor(last.head)) return { verdict: "fail", reason: `reviewed head ${last.head ?? "missing"} is not in this PR` };
-  if (scope === "module-end" && !counted.some((r) => r.since)) {
-    return { verdict: "fail", reason: "module-end review has no round run with --since" };
-  }
-  return { verdict: "pass", reason: `final round ${counted.length}/${MAX_PASSES} ${last.status}, ${blockers} blockers, head ${last.head.slice(0, 7)} in PR` };
-}
-
-function judge(change, { fork, load, isAncestor }) {
+function judge(change, { fork, load, repo, owners }) {
   const { scope, by } = reviewScope(change.changeMd);
-  if (fork && scope === "covered-by") return { scope, ...judgeCovered({ name: change.name, by, load, isAncestor }) };
-  if (fork || scope === "module-end") return { scope, ...judgeEvidence({ ...change, scope, isAncestor }) };
+  if (fork && scope === "covered-by") return { scope, ...judgeCovered(change, by, load, repo, owners) };
+  if (fork || scope === "module-end") return { scope, ...judgeEvidence({ ...change, scope, isAncestor: repo.isAncestor }) };
   return { scope, verdict: "skip", reason: "single change, review runs at module end" };
 }
 
-export function gate({ fork, files, changes, isAncestor, load }) {
+export function gate({ fork, files, changes, load, repo }) {
   const lines = [fork ? "fork PR: review evidence required" : "same-repo PR: module cadence"];
   let ok = true;
+  const owners = new Map(changes.filter((c) => reviewScope(c.changeMd).scope !== "covered-by" && finalRound(c.rounds)?.head)
+    .map((c) => [c.name, finalRound(c.rounds).head]));
   for (const change of changes) {
-    const { scope, ...result } = judge(change, { fork, load, isAncestor });
+    const { scope, ...result } = judge(change, { fork, load, repo, owners });
     if (result.verdict === "fail") ok = false;
     lines.push(`${change.name.padEnd(28)} scope=${scope.padEnd(10)} ${result.verdict} — ${result.reason}`);
   }

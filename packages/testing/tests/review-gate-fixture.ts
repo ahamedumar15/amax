@@ -1,8 +1,9 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+export const SUBJECT = "@subject";
 const script = join(__dirname, "../../../scripts/check-review-gate.mjs");
 
 export const round = (n: number, head: string, extra: object = {}) =>
@@ -12,17 +13,21 @@ export function gateRepo() {
   const root = mkdtempSync(join(tmpdir(), "review-gate-"));
   const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 
-  function commit(files: Record<string, string>) {
+  function commit({ [SUBJECT]: subject = "fixture", ...files }: Record<string, string | null>) {
     for (const [path, body] of Object.entries(files)) {
+      if (body === null) {
+        rmSync(join(root, path));
+        continue;
+      }
       mkdirSync(join(root, dirname(path)), { recursive: true });
       writeFileSync(join(root, path), body);
     }
     git("add", "-A");
-    git("commit", "-qm", "fixture");
+    git("commit", "-qm", subject ?? "fixture");
     return git("rev-parse", "HEAD");
   }
 
-  function init(...steps: ((head: string) => Record<string, string>)[]) {
+  function init(...steps: ((head: string) => Record<string, string | null>)[]) {
     git("init", "-q");
     git("config", "user.email", "fixture@example.test");
     git("config", "user.name", "Fixture");
@@ -30,7 +35,7 @@ export function gateRepo() {
     git("branch", "base");
   }
 
-  function branch(name: string, steps: ((head: string) => Record<string, string>)[]) {
+  function branch(name: string, steps: ((head: string) => Record<string, string | null>)[]) {
     git("checkout", "-qb", name, "base");
     return steps.reduce((head, step) => commit(step(head)), git("rev-parse", "HEAD"));
   }
