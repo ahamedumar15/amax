@@ -39,7 +39,7 @@ No screen changes. The mock section notes that.
 
 ## Verify
 
-**Verdict:** FAIL (one item left: the mock compared by eye; everything else passes)
+**Verdict:** PASS
 
 Verified 2026-10-30 at `dc678e29`.
 
@@ -51,7 +51,8 @@ Verified 2026-10-30 at `dc678e29`.
   review gate over this branch exits 0, all 10 changes pass, 079 "final round 2/5 clean". `specclaw-review verdict`:
   "CLEAN — 2 rounds, final pass dc678e29c3".
 - Final pass round 2: clean, 0/0/1. The minor (no `pushSpecclaw` out-of-order case) is in `follow-ups.md`.
-- Screenshots: no app UI; the mock section only notes that.
+- Screenshots: no app UI; the mock section only notes that. Mock `#079-ci-test-fixes`: compared by eye: Umar Ahamed,
+  2026-10-30.
 
 Build notes, 2026-10-30:
 

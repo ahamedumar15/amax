@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-10-30 13:07 UTC
+**Last Updated:** 2026-10-30 13:17 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -25,7 +25,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
-- 📝 **079-ci-test-fixes** — tasks done | 2/3 tasks (66%) | 0 failed | PR #command requires
+- 🔍 **079-ci-test-fixes** — verify done | 2/3 tasks (66%) | 0 failed | PR #command requires
 - 🔀 **eval** — PR #command requires
 
 ## Pending Proposals
