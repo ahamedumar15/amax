@@ -9,6 +9,13 @@ The PR's `test` job fails in `@amax/delivery` (run 41046160367). `sync-import.te
 stored ones, which come back sorted by ref, so 070 reads as changed on every run. `chat.test.ts` AC-5 still expects the
 tools `whoami, search`; 076 AC-1 added `offer_choices` to every chat turn and missed this test.
 
+**Amendment 1, 2026-10-30** (product owner: "approve"). The next run fails in `e2e:auth` (run 41062118793), two tests
+073 never ran (it ran only the time e2e). The Settings hub lists 073's per-entity reminder schedules, which wait for a
+fixture entity's time zone ("2 schedules wait for an entity's time zone"); `admin.spec.ts` expects the old count. And 073
+gave time cards their own confirm label and receipt ("Submit", "Submitted 2026-W42 · 29 h"); the shared e2e helper
+`askAndConfirm` only clicks "Add it" and expects "Done:". The `FATAL: role "root"` lines are the `pg_isready` health
+check, not the failure.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`079-ci-test-fixes`](../../mock/index.html#079-ci-test-fixes)
@@ -26,6 +33,10 @@ No screen changes. The mock section notes that.
    `whoami, search, offer_choices`, matching 076 AC-1.
 3. **AC-3** `pnpm turbo run test --filter @amax/delivery` passes against local Postgres, and the fork-PR review gate
    still exits 0 with 079's own final review round.
+4. **AC-4** (amendment 1) `askAndConfirm` (`apps/web/tests/e2e/ask.ts`) takes an optional `confirm` label and `done`
+   text, defaulting to "Add it" and "Done:"; chat-first's submit test passes "Submit" and "Submitted 2026-W42".
+5. **AC-5** (amendment 1) `admin.spec.ts` 047 AC1 expects the schedules item in the hub's lede for both roles. The full
+   `pnpm --filter @amax/web e2e:auth` passes locally, including the 12 tests the failed run never reached.
 
 ## Tasks
 
@@ -36,10 +47,12 @@ No screen changes. The mock section notes that.
 - [ ] `T3` — Run the delivery tests on local Postgres and the review gate (AC-3)
   Files: .specclaw/changes/079-ci-test-fixes/change.md
   Depends: T1, T2
+- [x] `T4` — e2e helper takes the card's own confirm label and receipt; admin hub expects the schedules item (AC-4, AC-5)
+  Files: apps/web/tests/e2e/ask.ts, apps/web/tests/e2e/chat-first.spec.ts, apps/web/tests/e2e/admin.spec.ts
 
 ## Verify
 
-**Verdict:** PASS
+**Verdict:** FAIL (amendment 1: AC-4 and AC-5 wait for CI's `e2e:auth`; AC-1 to AC-3 pass)
 
 Verified 2026-10-30 at `dc678e29`.
 
@@ -53,6 +66,13 @@ Verified 2026-10-30 at `dc678e29`.
 - Final pass round 2: clean, 0/0/1. The minor (no `pushSpecclaw` out-of-order case) is in `follow-ups.md`.
 - Screenshots: no app UI; the mock section only notes that. Mock `#079-ci-test-fixes`: compared by eye: Umar Ahamed,
   2026-10-30.
+
+Amendment 1 build notes, 2026-10-30 (AC-4, AC-5 not yet verified):
+
+- `pnpm lint`: exit 0 (35/35), including `tsc` over the edited e2e files.
+- `e2e:auth` can't run on this Windows host: the built app answers 404 for every module page under `next start`
+  ("does not work with output: standalone"), so the suite fails at the first sign-in. No change in this stack ran
+  `e2e:auth` locally (only 074-fork-pr-review-gate, from upstream). CI's Linux run is the check for AC-4 and AC-5.
 
 Build notes, 2026-10-30:
 
