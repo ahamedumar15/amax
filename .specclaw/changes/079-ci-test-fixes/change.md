@@ -44,7 +44,7 @@ No screen changes. The mock section notes that.
   Files: modules/delivery/sync/import.ts, modules/delivery/tests/sync-import.test.ts
 - [x] `T2` — Delivery chat test expects `offer_choices` (AC-2)
   Files: modules/delivery/tests/chat.test.ts
-- [ ] `T3` — Run the delivery tests on local Postgres and the review gate (AC-3)
+- [x] `T3` — Run the delivery tests on local Postgres and the review gate (AC-3)
   Files: .specclaw/changes/079-ci-test-fixes/change.md
   Depends: T1, T2
 - [x] `T4` — e2e helper takes the card's own confirm label and receipt; admin hub expects the schedules item (AC-4, AC-5)
@@ -52,7 +52,16 @@ No screen changes. The mock section notes that.
 
 ## Verify
 
-**Verdict:** FAIL (amendment 1: AC-4 and AC-5 wait for CI's `e2e:auth`; AC-1 to AC-3 pass)
+**Verdict:** PASS
+
+Amendment 1 verified 2026-10-30 at `4e4e9444`, in WSL Ubuntu set up as CI's runner (Node 24.22.2, pnpm 9.15.9, a
+fresh `postgres:16-alpine`, a clean `git archive` of HEAD, which holds all of upstream/main; `CI=1`):
+
+- AC-4: pass — `e2e:auth` chat-first "054 AC5 time: pin the week, ask amax to submit it" passes with `confirm: "Submit"`.
+- AC-5: pass — `admin.spec.ts` 047 AC1 passes as Admin and IT Admin. `pnpm --filter @amax/web e2e` 8/8 and
+  `pnpm --filter @amax/web e2e:auth` **82 passed, 0 failed**, including the 12 tests CI's failed run never reached.
+- Final pass round 3 (over all of 079, head `4e4e9444`): clean, 0/0/0. Review gate (fork mode) with it: exit 0,
+  every change passes.
 
 Verified 2026-10-30 at `dc678e29`.
 

@@ -8,4 +8,4 @@ fork PR: review evidence required
 076-chat-choice-cards        scope=covered-by pass — covered by 073-time-workflow-enhancements: final round 5/5 open, 1 blockers, head 5056a50 in PR
 077-time-requests-history    scope=covered-by pass — covered by 073-time-workflow-enhancements: final round 5/5 open, 1 blockers, head 5056a50 in PR
 078-review-covered-by        scope=change     pass — final round 4/5 escalate, 0 blockers, head 3df8db9 in PR
-079-ci-test-fixes            scope=change     pass — final round 2/5 clean, 0 blockers, head dc678e2 in PR
+079-ci-test-fixes            scope=change     pass — final round 3/5 clean, 0 blockers, head 4e4e944 in PR
