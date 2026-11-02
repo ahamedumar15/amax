@@ -1,0 +1,75 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 0,
+  "minor": 1
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/admin.spec.ts",
+  "apps/web/tests/e2e/ask.ts",
+  "apps/web/tests/e2e/chat-first.spec.ts",
+  "modules/allocations/tests/chat-first.test.ts",
+  "modules/career/tests/career.test.ts",
+  "modules/delivery/sync/import.ts",
+  "modules/delivery/tests/chat.test.ts",
+  "modules/delivery/tests/sync-import.test.ts",
+  "modules/delivery/tests/sync-task-order.test.ts",
+  "modules/onboarding/tests/onboarding.test.ts",
+  "modules/recruitment/tests/pipeline.test.ts"
+ ],
+ "final": true,
+ "findings": [
+  {
+   "file": "modules/delivery/tests/sync-import.test.ts",
+   "fp": "69cc016be9f8",
+   "in_delta": true,
+   "line": 309,
+   "message": "The task-order fix is in the shared `fingerprint`, which has two callers: `syncSpecclaw` (import.ts:59) and the push path's stale comparison (server/push.ts:63, built from `desired` at push.ts:87). The new integration test only runs the import path. The table-driven unit test in sync-task-order.test.ts sorts the stored side in JS instead of reading it back from `storedSpecRows`. Nothing runs a push with out-of-order tasks (T26 before T25, T10 before T9) against stored rows to show it is reported unchanged. Fix: add a push-path variant to the integration test, or run the existing variants through it.",
+   "original_severity": "minor",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B2",
+   "scenario": "If the push path later stops using the shared `fingerprint`, or reorders tasks before calling it, a push listing `T2, T10, T1` would rewrite an unchanged proposal on every push and no test would fail.",
+   "severity": "minor"
+  }
+ ],
+ "head": "0611f646d0f149f59aeff3083f5c46efa6215f91",
+ "impact": [
+  "apps/web/app/signin/page.tsx",
+  "apps/web/auth.ts",
+  "apps/web/tests/e2e/ai-usage.spec.ts",
+  "apps/web/tests/e2e/ai.spec.ts",
+  "apps/web/tests/e2e/api.spec.ts",
+  "apps/web/tests/e2e/audit.spec.ts",
+  "apps/web/tests/e2e/backups-visual.spec.ts",
+  "apps/web/tests/e2e/backups.spec.ts",
+  "apps/web/tests/e2e/chat.spec.ts",
+  "apps/web/tests/e2e/delivery-visual.spec.ts",
+  "apps/web/tests/e2e/delivery.spec.ts",
+  "apps/web/tests/e2e/notifications.spec.ts",
+  "apps/web/tests/e2e/pins.spec.ts",
+  "apps/web/tests/e2e/releases.spec.ts",
+  "apps/web/tests/e2e/retention-visual.spec.ts",
+  "apps/web/tests/e2e/retention.spec.ts",
+  "apps/web/tests/e2e/secrets.spec.ts",
+  "apps/web/tests/e2e/sections.spec.ts",
+  "apps/web/tests/e2e/suggestions.spec.ts",
+  "apps/web/tests/e2e/workflows.spec.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 63448,
+ "round": 5,
+ "since": null,
+ "status": "clean",
+ "system_chars": 42403,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1793591787,
+ "ts_start": 1793591718
+}

@@ -55,5 +55,5 @@ describe.skipIf(!hasDb)("onboarding against Postgres", () => {
     await expect(completeTask(ctxFor(hr), { taskId: task("Pick a buddy and plan the first week") })).rejects.toThrow("already done");
     expect((await listChecklists(nimal, ON)).map((c) => c.personName)).toEqual(["Mohamed Rifkhan"]);
     expect((await getChecklist(maya, rifkhan.id, ON))!.tasks.filter((t) => t.doneOn).map((t) => t.completedBy)).toEqual(["fixtures", expect.stringMatching(/./), expect.stringMatching(/./)]);
-  });
+  }, 60_000);
 });

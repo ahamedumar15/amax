@@ -38,7 +38,7 @@ describe.skipIf(!hasDb)("career reads and the one write (Postgres)", () => {
     const nimal = await career({ employeeNo: "LL-0233" });
     const cert = nimal.events.find((e) => e.kind === "certification" && e.name === "CKA Kubernetes Administrator")!;
     const live = await db.call<CareerEventView>("maya", "get_career_event", { personId: nimal.person.id, eventId: cert.id });
-    expect(live.trace.lines[2]).toEqual(["Recorded by", expect.stringMatching(/^Maya Fernando, Oct \d+, 20\d\d$/)]);
+    expect(live.trace.lines[2]).toEqual(["Recorded by", expect.stringMatching(/^Maya Fernando, [A-Z][a-z]{2} \d{1,2}, 20\d\d$/)]);
     expect(nimal.events[0]).toMatchObject({ kind: "joined", on: "2020-06-01", grade: "E5", department: "Engineering" });
   });
 
