@@ -85,10 +85,10 @@ export default defineModule({
     emits: Object.values(EVENTS),
     payloads: {
       [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
-      [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain" }),
+      [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
       [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain" }),
-      [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
+      [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.commitTime]: declarePayload<CommitTime>({ userId: "plain", projectId: "plain", projectKey: "plain", proposalKey: "plain", day: "plain", hours: "plain", commit: "plain" }),
     },
   },
@@ -97,6 +97,11 @@ export default defineModule({
     { id: "delivery.release-rolled-back", event: EVENTS.releaseDeployed, when: { status: "rolled-back" }, category: "releases", urgency: "urgent",
       to: [{ role: "PM" }], permission: "delivery:deployment:record", scope: { projectId: "projectId" },
       title: "Release {version} rolled back in {environment}", href: "/delivery/releases" },
+    // 081 AC-19: a proposal's owner hears when someone else moves or releases it, or finishes one of its tasks.
+    { id: "delivery.proposal-phase", event: EVENTS.proposalPhaseChanged, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "{key} moved from {from} to {to}", href: "/delivery/proposals/{key}" },
+    { id: "delivery.proposal-task-done", event: EVENTS.taskDone, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "Task {task} of {key} is done", href: "/delivery/proposals/{key}" },
   ],
   fixtures: [deliveryFixtures],
 });

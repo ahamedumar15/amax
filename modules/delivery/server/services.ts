@@ -56,7 +56,7 @@ async function releaseOf(tx: Tx, projectId: unknown, version: string) {
 
 const phaseEvent = (p: Record<string, unknown>, to: Phase, ctx: ServiceContext): Emitted => ({
   name: EVENTS.proposalPhaseChanged,
-  payload: { proposalId: p.id as string, key: p.key as string, projectId: p.project_id as string, from: p.phase as Phase, to, by: by(ctx) } satisfies ProposalPhaseChanged,
+  payload: { proposalId: p.id as string, key: p.key as string, projectId: p.project_id as string, from: p.phase as Phase, to, by: by(ctx), ownerUserId: (p.owner_user_id as string | null) ?? null } satisfies ProposalPhaseChanged,
 });
 
 export { createProjectService as createProject } from "./project-create";

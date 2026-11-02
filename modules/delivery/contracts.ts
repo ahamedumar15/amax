@@ -14,7 +14,8 @@ export type ProjectRef = { id: string; key: string; name: string; client: string
 /** Emitted when a deployment is recorded. `released` is true when the environment is Prod. */
 export type ReleaseDeployed = { releaseId: string; projectId: string; version: string; environment: string; status: "deployed" | "testing" | "rolled-back"; released: boolean };
 /** Emitted on every phase change, from a board move, a sync or a Prod deployment. */
-export type ProposalPhaseChanged = { proposalId: string; key: string; projectId: string; from: Phase; to: Phase; by: string };
+/** 081: `ownerUserId` is the proposal's owner, told about changes others make (null when it has none). */
+export type ProposalPhaseChanged = { proposalId: string; key: string; projectId: string; from: Phase; to: Phase; by: string; ownerUserId?: string | null };
 
 /** A proposal made by hand moved to the hand-made series because a spec change owns its old key. */
 export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
@@ -60,7 +61,7 @@ export async function getProposalRef(tx: Tx, keyOrId: string): Promise<ProposalR
 export type CommitTime = { userId: string; projectId: string; projectKey: string; proposalKey: string; day: string; hours: number; commit: string };
 
 /** 008: a proposal task was closed (by a commit, CI or a person). `by` is the actor, "… for user:…" when acting for someone. */
-export type TaskDone = { proposalId: string; key: string; task: string; projectId: string; by: string };
+export type TaskDone = { proposalId: string; key: string; task: string; projectId: string; by: string; ownerUserId?: string | null };
 
 const toRef = (r: Record<string, unknown>): ProjectRef => ({
   id: r.id as string, key: r.key as string, name: r.name as string, client: r.client as string,

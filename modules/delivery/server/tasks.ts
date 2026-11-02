@@ -35,7 +35,7 @@ export const markTaskDone = defineService({
   scoped: true,
   input: z.object({ key: z.string(), task: z.string().regex(/^T\d+$/), commit: z.string().max(64).optional() }),
   async run(tx, input, ctx) {
-    const [p] = await tx.execute(sql`select id, key, title, project_id from delivery.proposal where key = ${input.key} for update`);
+    const [p] = await tx.execute(sql`select id, key, title, project_id, owner_user_id from delivery.proposal where key = ${input.key} for update`);
     if (!p) throw new Error(`no proposal ${input.key}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:task:done", { projectId: p.project_id as string });
@@ -52,7 +52,7 @@ export const markTaskDone = defineService({
       resourceId: t.id as string,
       before: { done: false },
       after: { done: true, commit: input.commit ?? null },
-      events: [{ name: EVENTS.taskDone, payload: { proposalId: p.id as string, key: p.key as string, task: input.task, projectId: p.project_id as string, by: byOf(ctx) } satisfies TaskDone }],
+      events: [{ name: EVENTS.taskDone, payload: { proposalId: p.id as string, key: p.key as string, task: input.task, projectId: p.project_id as string, by: byOf(ctx), ownerUserId: (p.owner_user_id as string | null) ?? null } satisfies TaskDone }],
     };
   },
 });
