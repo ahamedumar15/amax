@@ -205,3 +205,7 @@
 .proposal-time .gbar{height:12px;border-radius:6px;background:var(--sunken);overflow:hidden;margin-bottom:12px}
 .proposal-time .gbar i{display:block;height:100%;border-radius:6px}
 @media (max-width:860px){.proposal-time .big{font-size:22px}}
+/* 081 AC-16: the proposals search box sits with the filters. */
+.card-head .search{display:inline-flex}
+.card-head .search input{height:36px;min-width:180px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;padding:0 10px;font:inherit}
+@media (max-width:860px){.card-head .search,.card-head .search input{width:100%}}

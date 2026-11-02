@@ -17,7 +17,7 @@ export const deliveryPerformance = (v: Viewer) =>
     const now = await clockOf(tx);
     const [m] = await tx.execute(sql`select count(*) filter (where released_at >= ${monthStart(now)} and released_at < ${endOfDay(now)})::int as this_month,
         count(*) filter (where released_at >= ${monthStart(now, -1)} and released_at < ${monthStart(now)})::int as last_month
-      from delivery.proposal p where p.phase = 'released' and ${ACTIVE}`);
+      from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.phase = 'released' and pr.status = 'active' and ${ACTIVE}`);
     const [top] = await tx.execute(sql`select u.name, count(*)::int as tasks, count(*) filter (where t.done_by not like 'user:%')::int as by_agents
       from delivery.task t join auth.user u on u.id::text = substring(t.done_by from 'user:([0-9a-f-]{36})')
       where t.done_at >= ${monthStart(now)} and t.done_at < ${endOfDay(now)} group by u.id, u.name order by tasks desc, u.name limit 1`);
@@ -43,7 +43,7 @@ function stageNote(r: ReleaseRow) {
 async function proposalsToApprove(tx: Tx, v: Viewer): Promise<OverviewWaiting[]> {
   const rows = await tx.execute(sql`select p.id, p.key, p.title, p.project_id, p.created_at, p.estimate_hours, p.agent, p.owner_name, pr.name as project_name,
       p.tasks_total as tasks
-    from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.phase = 'proposed' and ${ACTIVE} order by p.created_at limit 20`);
+    from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.phase = 'proposed' and pr.status = 'active' and ${ACTIVE} order by p.created_at limit 20`);
   return rows.filter((r) => can(v, "delivery:proposal:move", { projectId: r.project_id as string })).map((r) => ({
     id: `delivery:proposal:${r.id as string}`, title: `Approve proposal ${r.key as string} ${r.title as string}`,
     detail: [Number(r.tasks) ? `${Number(r.tasks)} tasks` : null, r.estimate_hours ? `estimated ${Number(r.estimate_hours)} h` : null].filter(Boolean).join(", ") || null,

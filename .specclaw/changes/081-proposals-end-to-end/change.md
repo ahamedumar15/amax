@@ -131,7 +131,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T5` — Phase 5 (creation and chat): New proposal on the global page, project-carrying intent button, Delivery `chatSuggestions`, create card inputs (AC-13, AC-14)
   Files: packages/ui/src/components/PinButton.tsx, modules/delivery/chat.ts, modules/delivery/chat-suggestions.ts, modules/delivery/module.ts, modules/delivery/mcp.ts, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/tests/chat-081.test.ts
   Depends: T4
-- [ ] `T6` — Phase 6 (filters, metrics, pins, export): Planned filter, closed-project and project-filter consistency, search, 20 a page, `get_proposal_metrics` and its pins (AC-15..AC-17)
+- [x] `T6` — Phase 6 (filters, metrics, pins, export): Planned filter, closed-project and project-filter consistency, search, 20 a page, `get_proposal_metrics` and its pins (AC-15..AC-17)
   Files: modules/delivery/server/queries.ts, modules/delivery/mcp.ts, modules/delivery/pins.ts, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/tests/proposal-metrics.test.ts
   Depends: T5
 - [ ] `T7` — Phase 7 (notifications and lifecycle consistency): owner notifications for phase changes and tasks done by others; regression tests for release, void, sync and push rules with withdrawn rows (AC-18, AC-19, AC-20)

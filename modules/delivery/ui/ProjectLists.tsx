@@ -12,7 +12,7 @@ export function ProjectProposals(props: ScreenProps) {
   const asked = Math.max(1, Number(props.searchParams?.page ?? 1) || 1);
   return (
     <ProjectSectionPage {...props} section="proposals" title="Proposals">
-      {async (p) => <ProposalsTable rows={await listProposals(viewer!, { phase, projectKey: p.key })} phase={phase} root={projectHref(p.key, "proposals")} page={asked} title="Proposals" />}
+      {async (p) => <ProposalsTable rows={await listProposals(viewer!, { phase, projectKey: p.key, q: props.searchParams?.q })} phase={phase} root={projectHref(p.key, "proposals")} q={props.searchParams?.q} page={asked} title="Proposals" />}
     </ProjectSectionPage>
   );
 }

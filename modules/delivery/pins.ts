@@ -14,6 +14,9 @@ type Proposal = { id: string; key: string; title: string };
 type Deployment = { id: string; projectKey: string; version: string; environment: string; at: string };
 
 export const projectPin = (p: { id: string; name: string }): PinRef => ({ label: p.name, tool: "get_project", args: { projectId: p.id } });
+/** 081 AC-17: a Proposals metric card, for one project or all active ones. */
+export const metricsPin = (label: string, project?: { key: string; name: string }): PinRef =>
+  ({ label: project ? `${project.name} ${label.toLowerCase()}` : label, tool: "get_proposal_metrics", args: project ? { projectKey: project.key } : {} });
 export const proposalPin = (p: Proposal): PinRef => ({ label: `${p.key} ${p.title}`, tool: "get_proposal", args: { proposalId: p.id } });
 export const releasePin = (r: Release): PinRef => ({ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } });
 export const historyPin = (r: Omit<Release, "projectName">): PinRef => ({ label: `${r.projectKey} ${r.version}`, tool: "get_release_history", args: { releaseId: r.id } });

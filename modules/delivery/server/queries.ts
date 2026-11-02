@@ -61,13 +61,21 @@ const PROPOSALS = sql`
 // Withdrawn: by the repo (meta.withdrawn, spec proposals) or by hand (withdrawn_at, 081).
 export const ACTIVE = sql`(p.withdrawn_at is null and coalesce(p.meta->>'withdrawn', 'false') <> 'true')`;
 
-export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: string } = {}) =>
-  read(v, async (tx) => {
-    // Withdrawn spec proposals (their folder is gone) are history, not work: never in lists or counts.
-    const where = [ACTIVE, opts.phase ? sql`p.phase = ${opts.phase}` : undefined, opts.projectKey ? sql`pr.key = ${opts.projectKey}` : undefined].filter(Boolean);
-    const filter = where.length ? sql`where ${sql.join(where as ReturnType<typeof sql>[], sql` and `)}` : sql``;
-    return (await tx.execute(sql`${PROPOSALS} ${filter} order by p.updated_at desc, p.key desc`)).map(proposal);
-  });
+export type ProposalFilter = { phase?: Phase; projectKey?: string; q?: string };
+
+/**
+ * 081 AC-16: the one rule lists, counts and charts share. Never withdrawn; a project's own views show it whatever its
+ * status, the portfolio shows active projects only (as listProjects does); `q` matches key or title.
+ */
+const scope = (f: ProposalFilter) => {
+  const like = f.q?.trim() ? `%${f.q.trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
+  const where = [ACTIVE, f.projectKey ? sql`pr.key = ${f.projectKey}` : sql`pr.status = 'active'`, f.phase ? sql`p.phase = ${f.phase}` : undefined,
+    like ? sql`(p.key ilike ${like} or p.title ilike ${like})` : undefined].filter(Boolean);
+  return sql.join(where as ReturnType<typeof sql>[], sql` and `);
+};
+
+export const listProposals = (v: Viewer, opts: ProposalFilter = {}) =>
+  read(v, async (tx) => (await tx.execute(sql`${PROPOSALS} where ${scope(opts)} order by p.updated_at desc, p.key desc`)).map(proposal));
 
 /** One project by key, or by id (059: pins use the id; a key given with it only narrows). */
 export const getProject = (v: Viewer, key: string | undefined, projectId?: string) =>
@@ -123,25 +131,33 @@ export const weeklyThroughput = (v: Viewer, now?: Date) =>
  * Proposals that reached Prod per ISO week, from proposal.released_at: the same source as
  * phaseCounts' "Released this month", so the two never disagree (review round 1).
  */
-export const shippedPerWeek = (v: Viewer, now?: Date) =>
+export const shippedPerWeek = (v: Viewer, now?: Date, f: Pick<ProposalFilter, "projectKey"> = {}) =>
   read(v, async (tx) => {
     const at = now ?? (await clockOf(tx));
     const weeks = lastWeeks(at);
-    const rows = await tx.execute(sql`select date_trunc('week', released_at at time zone 'UTC')::date::text as week, count(*)::int as n
-      from delivery.proposal p where p.phase = 'released' and released_at >= ${`${weeks[0].monday}T00:00:00Z`} and released_at < ${endOfDay(at)} and ${ACTIVE} group by 1`);
+    const rows = await tx.execute(sql`select date_trunc('week', p.released_at at time zone 'UTC')::date::text as week, count(*)::int as n
+      from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+      where p.phase = 'released' and p.released_at >= ${`${weeks[0].monday}T00:00:00Z`} and p.released_at < ${endOfDay(at)} and ${scope(f)} group by 1`);
     return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
   });
 
 // In flight = not released; released this month = reached Prod since the 1st (UTC).
-export const phaseCounts = (v: Viewer, at?: Date) =>
+export const phaseCounts = (v: Viewer, at?: Date, f: Pick<ProposalFilter, "projectKey"> = {}) =>
   read(v, async (tx) => {
     const now = at ?? (await clockOf(tx));
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const rows = await tx.execute(sql`select phase, count(*)::int as n, count(*) filter (where released_at >= ${month} and released_at < ${endOfDay(now)})::int as this_month from delivery.proposal p where ${ACTIVE} group by phase`);
+    const rows = await tx.execute(sql`select p.phase, count(*)::int as n, count(*) filter (where p.released_at >= ${month} and p.released_at < ${endOfDay(now)})::int as this_month
+      from delivery.proposal p join delivery.project pr on pr.id = p.project_id where ${scope(f)} group by p.phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
     const counts = { proposed: Number(get("proposed")?.n ?? 0), planned: Number(get("planned")?.n ?? 0), building: Number(get("building")?.n ?? 0), verified: Number(get("verified")?.n ?? 0) };
     return { ...counts, inFlight: counts.proposed + counts.planned + counts.building + counts.verified, releasedThisMonth: Number(get("released")?.this_month ?? 0) };
   });
+
+/** 081 AC-17: the Proposals page's two metric cards as one read, for their pins and for chat. */
+export const proposalMetrics = async (v: Viewer, f: Pick<ProposalFilter, "projectKey"> = {}) => {
+  const [counts, shipped] = await Promise.all([phaseCounts(v, undefined, f), shippedPerWeek(v, undefined, f)]);
+  return { projectKey: f.projectKey ?? null, ...counts, shippedPerWeek: shipped };
+};
 
 export type ReleaseRow = {
   id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt?: string | null;

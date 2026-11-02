@@ -14,7 +14,7 @@ import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, proposeCreate } from "./server/proposal-card";
-import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
+import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -36,8 +36,11 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ id: z.string().uuid() }), run: (v, a) => getActivity(v, a.id) }),
   tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_project", description: "One project and its proposals, by projectId or by project key such as CON or AMX.",
     input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
-  tool({ ...read, pin: view, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),
+  tool({ ...read, pin: view, name: "list_proposals", description: "Proposals (specclaw and hand-made), newest change first, optionally filtered by phase, project key or text in the key or title (q). Without a project key, only active projects; withdrawn ones never.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional(), q: z.string().max(100).optional() }),
     run: (v, a) => listProposals(v, a) }),
+  // 081 AC-17: the Proposals page's metric cards: counts by phase, released this month, and shipped to Prod per week.
+  tool({ ...read, pin: view, name: "get_proposal_metrics", description: "Proposal counts by phase (in flight and released this month) and proposals shipped to Prod per ISO week for the last 8 weeks, across active projects or for one project key.",
+    input: z.object({ projectKey: z.string().optional() }), run: (v, a) => proposalMetrics(v, a) }),
   tool({ ...read, pin: { id: "proposalId", of: pinOf.proposal }, name: "get_proposal", description: "One proposal by proposalId, or by key such as CON-012 (a key given with an id only narrows): phase, owner, description, approved hours against the estimate, tasks, its release and the environments it reached, and its history. A withdrawn proposal is still found, marked withdrawn.",
     input: z.object({ proposalId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => proposalDetail(v, a) }),
   tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
