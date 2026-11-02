@@ -6,6 +6,7 @@ import { appendAudit, defineService, type Emitted, type ServiceContext } from "@
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
+import { ownerFor } from "./owner";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -71,22 +72,28 @@ async function nextHandKey(tx: Tx, projectId: string, projectKey: string, syncin
   return synced || syncing ? `${projectKey}-H${String(Number(hand) + 1).padStart(3, "0")}` : `${projectKey}-${String(Number(num) + 1).padStart(3, "0")}`;
 }
 
+export const ProposalCreateInput = z.object({ projectKey: z.string(), title: z.string().trim().min(1).max(200), description: z.string().trim().max(4000).optional(),
+  estimateHours: z.number().nonnegative().max(10_000).optional(), ownerUserId: z.string().uuid().optional() });
+
 export const createProposal = defineService({
   scoped: true,
   name: "delivery.proposal.create",
   action: "delivery:proposal:create",
   resource: "delivery.proposal",
-  input: z.object({ projectKey: z.string(), title: z.string().min(1), estimateHours: z.number().nonnegative().optional(), ownerName: z.string().optional() }),
+  input: ProposalCreateInput,
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:create", project.id as string);
+    if (project.status !== "active") throw new Error(`${input.projectKey} is closed; reopen it before adding proposals`);
+    // 081 AC-5: the owner is the one named, else the person acting (an agent's or credential's person).
+    const owner = await ownerFor(tx, ctx, input.ownerUserId);
     // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
     // creates, so two of them can't compute the same key (review round 1, B7).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const key = await nextHandKey(tx, project.id as string, project.key as string);
-    const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, estimate_hours, owner_name)
-      values (${ctx.tenantId}, ${project.id}, ${key}, ${input.title}, ${input.estimateHours ?? null}, ${input.ownerName ?? null}) returning id`);
-    return { result: { id: p.id as string, key }, resourceId: p.id as string, after: { key, ...input } };
+    const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, description, estimate_hours, owner_user_id, owner_name)
+      values (${ctx.tenantId}, ${project.id}, ${key}, ${input.title}, ${input.description ?? null}, ${input.estimateHours ?? null}, ${owner?.id ?? null}, ${owner?.name ?? null}) returning id`);
+    return { result: { id: p.id as string, key, owner: owner?.name ?? null }, resourceId: p.id as string, after: { key, ...input, ownerUserId: owner?.id ?? null } };
   },
 });
 
@@ -271,10 +278,15 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     }
     const before = rekeyed ? undefined : found;
     const meta = JSON.stringify(input.meta);
-    const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, updated_at)
+    // 081 AC-5: a spec proposal is owned by the person it was synced or pushed for. A later sync fills a missing owner
+    // but never replaces one, so a reassignment in amax stands; a bare CI credential names nobody.
+    const owner = await ownerFor(tx, ctx);
+    const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
-              ${input.releasedAt}, ${meta}::jsonb, now())
+              ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())
       on conflict (tenant_id, key) do update set title = excluded.title,
+        owner_name = case when delivery.proposal.owner_user_id is null and delivery.proposal.owner_name is null then excluded.owner_name else delivery.proposal.owner_name end,
+        owner_user_id = coalesce(delivery.proposal.owner_user_id, case when delivery.proposal.owner_name is null then excluded.owner_user_id end),
         phase = case when delivery.proposal.phase = 'released' then 'released' else excluded.phase end, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
         source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
         where delivery.proposal.source = excluded.source

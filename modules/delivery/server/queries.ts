@@ -34,13 +34,15 @@ export const listProjects = (v: Viewer, status: "active" | "closed" = "active") 
 
 export type ProposalRow = {
   id: string; key: string; title: string; phase: Phase; tasksDone: number; tasksTotal: number; hours: number; estimateHours: number | null;
-  ownerName: string | null; agent: string | null; projectKey: string; projectName: string; projectColor: string;
+  ownerName: string | null; ownerUserId: string | null; description: string | null; withdrawn: boolean; agent: string | null; projectKey: string; projectName: string; projectColor: string;
   release: string | null; shippedTo: string | null; shippedStatus: string | null; source: string | null; meta: Record<string, unknown>; createdAt: string | null;
 };
 
 const proposal = (r: Record<string, unknown>): ProposalRow => ({
   id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total),
-  hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: (r.owner_name as string | null) ?? null, agent: (r.agent as string | null) ?? null,
+  hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: (r.owner_name as string | null) ?? null,
+  ownerUserId: (r.owner_user_id as string | null) ?? null, description: (r.description as string | null) ?? null,
+  withdrawn: Boolean(r.withdrawn_at) || (r.meta as { withdrawn?: boolean } | null)?.withdrawn === true, agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
   release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
   source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {}, createdAt: iso(r.created_at),
@@ -56,7 +58,8 @@ const PROPOSALS = sql`
     select e.name, d.status from delivery.deployment d join delivery.environment e on e.id = d.environment_id
     where d.release_id = p.release_id and d.voided_at is null order by e.position desc, d.at desc limit 1) last on true`;
 
-export const ACTIVE = sql`coalesce(p.meta->>'withdrawn', 'false') <> 'true'`;
+// Withdrawn: by the repo (meta.withdrawn, spec proposals) or by hand (withdrawn_at, 081).
+export const ACTIVE = sql`(p.withdrawn_at is null and coalesce(p.meta->>'withdrawn', 'false') <> 'true')`;
 
 export const listProposals = (v: Viewer, opts: { phase?: Phase; projectKey?: string } = {}) =>
   read(v, async (tx) => {

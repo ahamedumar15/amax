@@ -12,7 +12,7 @@ import { getRepoSync, getSyncPush, linkProjectRepo } from "./server/repo-sync";
 import { PushInput, pushSpecclaw } from "./server/push";
 import { RepoUrl } from "./sync/repo-url";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
-import { createProject, createProposal, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
+import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
 // Chat (005) runs read tools directly and turns write tools into a confirm card first.
@@ -45,8 +45,8 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "create_project", description: "Create a project. Key: 2-10 capitals, e.g. CON.", scope: "write", permission: "delivery:project:create",
     input: z.object({ key: z.string(), name: z.string(), client: z.string(), billing: z.enum(["fixed", "t&m", "retainer", "internal"]) }),
     service: createProject, run: (v, a, s = "mcp") => createProject(ctxFor(v, s), a) }),
-  tool({ name: "create_proposal", description: "Add a proposal to a project's board (it starts as Proposed).", scope: "write", permission: "delivery:proposal:create",
-    input: z.object({ projectKey: z.string(), title: z.string(), estimateHours: z.number().nonnegative().optional() }),
+  tool({ name: "create_proposal", description: "Add a proposal made by hand to a project's board (it starts as Proposed). The owner is you, or the person you act for, unless ownerUserId names another active person.", scope: "write", permission: "delivery:proposal:create",
+    input: ProposalCreateInput,
     service: createProposal, run: (v, a, s = "mcp") => createProposal(ctxFor(v, s), a) }),
   tool({ name: "move_proposal", description: "Move a proposal on the board (proposed, planned, building, verified). Released only comes from a Prod deployment.", scope: "write",
     permission: "delivery:proposal:move", input: z.object({ key: z.string(), to: z.enum(["proposed", "planned", "building", "verified"]) }),

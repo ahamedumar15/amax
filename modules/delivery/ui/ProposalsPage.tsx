@@ -84,7 +84,7 @@ export function ProposalsTable({ rows, phase, root, project, page: asked, projec
                   <td data-label="Time" className="num">{p.hours.toFixed(1)} h</td>
                   <td data-label="Release">{p.release ?? <span className="muted">None</span>}</td>
                   <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
-                  <td data-label="Owner">{p.ownerName ?? "–"}<PinButton pin={proposalPin(p)} /></td>
+                  <td data-label="Owner">{p.ownerName ?? <span className="muted">Unassigned</span>}<PinButton pin={proposalPin(p)} /></td>
                 </tr>
               );
             })}

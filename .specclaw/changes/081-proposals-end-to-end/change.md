@@ -119,10 +119,10 @@ Order follows the commit phases (backend before UI, because the screens read the
 
 - [x] `T1` — Phase 1 (data model and contracts): migrations `time.entry.proposal_id`, `delivery.proposal.owner_user_id`, `withdrawn_at`/`withdrawn_by`/`withdraw_reason`, `description`, drop `hours`; Delivery contract `getProposalRef`, `proposalHref`, `ProposalWithdrawn` event; Time contract `proposalHours` (AC-1, AC-4, AC-5, AC-7, AC-10)
   Files: modules/time/db/migrations/0009_entry_proposal.sql, modules/delivery/db/migrations/0019_proposal_lifecycle.sql, modules/delivery/contracts.ts, modules/time/contracts.ts, modules/time/server/totals.ts, modules/delivery/fixtures/index.ts, modules/time/fixtures/*, modules/time/tests/contracts.test.ts, modules/delivery/tests/proposal-contract.test.ts
-- [ ] `T2` — Phase 2 (time association and ownership): `log_time`/`correct_time_entry` take `proposalKey`; commit draft keeps it; Delivery reads hours via `proposalHours`; owners on create, sync and push; retention (AC-1..AC-5, AC-8)
+- [x] `T2` — Phase 2 (time association and ownership): `log_time`/`correct_time_entry` take `proposalKey`; commit draft keeps it; owners on create, sync and push; retention (AC-1..AC-5)
   Files: modules/time/server/log.ts, modules/time/server/correct.ts, modules/time/suggestions.ts, modules/time/mcp.ts, modules/delivery/server/queries.ts, modules/delivery/server/services.ts, modules/delivery/server/push.ts, modules/delivery/mcp.ts, modules/delivery/module.ts, modules/time/tests/proposal-time.test.ts, modules/delivery/tests/proposal-owner.test.ts
   Depends: T1
-- [ ] `T3` — Phase 3 (detail page and navigation): `/delivery/proposals/:key` page with history from the audit log; links from lists, board, search, `get_proposal` (AC-6, AC-7, AC-8)
+- [ ] `T3` — Phase 3 (detail page and navigation): `/delivery/proposals/:key` page with history from the audit log; links from lists, board, search; `get_proposal` reads one row (AC-6, AC-7, AC-8)
   Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/server/proposal-detail.ts, modules/delivery/module.ts, modules/delivery/mcp.ts, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/proposal-detail.test.ts
   Depends: T2
 - [ ] `T4` — Phase 4 (lifecycle): `update_proposal`, `withdraw_proposal`, `add_proposal_task` services and tools; withdrawn excluded everywhere; detail-page actions (AC-9..AC-12, AC-18)

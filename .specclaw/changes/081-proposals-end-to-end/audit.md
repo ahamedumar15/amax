@@ -71,7 +71,7 @@ Each finding below was checked against the code. Where a path is cited, it was r
 ## Progress
 
 - [x] Phase 1: data model and contracts: migrations (delivery 0019, time 0009); Delivery `getProposalRef`, `setProposalHours`, `proposalHref`, `proposal.withdrawn` event; Time `refreshProposalHours` and its handlers. Decision: Time pushes approved totals to Delivery (R5 forbids Delivery → Time)
-- [ ] Phase 2: time association and ownership
+- [x] Phase 2: time association and ownership: `log_time`, `correct_time_entry` (and change requests) take `proposalKey`, checked through `getProposalRef`; commit drafts keep it (unless withdrawn since); owners from the acting person on create, sync and push (a later sync fills a missing owner, never replaces one); "Unassigned" shown; creating in a closed project is refused
 - [ ] Phase 3: detail page and navigation
 - [ ] Phase 4: update, withdraw and add-task
 - [ ] Phase 5: creation and chat
