@@ -1,6 +1,7 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { facet, PinButton } from "@amax/ui";
+import { proposalHref } from "../contracts";
 import { deploymentPin, historyPin, proposalPin } from "../pins";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { AskButton } from "./AskButton";
@@ -27,7 +28,7 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
         <div className="card pinnable">
           <div className="card-head"><h2>Tag and proposals</h2>{pin("proposals")}</div>
           <ul aria-label="Proposals in this release" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6, margin: "14px 0", maxHeight: 280, overflow: "auto" }}>
-            {included.map((p) => <li key={p.key} className="pinnable"><b>{p.key}</b> {p.title} <PhaseChip phase={p.phase} /><PinButton pin={proposalPin(p)} /></li>)}
+            {included.map((p) => <li key={p.key} className="pinnable"><a href={proposalHref(p.key)}><b>{p.key}</b> {p.title}</a> <PhaseChip phase={p.phase} /><PinButton pin={proposalPin(p)} /></li>)}
             {included.length === 0 && <li className="muted">No proposals yet.</li>}
           </ul>
           {canEdit && <div className="actions">

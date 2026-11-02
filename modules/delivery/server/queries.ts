@@ -35,7 +35,7 @@ export const listProjects = (v: Viewer, status: "active" | "closed" = "active") 
 export type ProposalRow = {
   id: string; key: string; title: string; phase: Phase; tasksDone: number; tasksTotal: number; hours: number; estimateHours: number | null;
   ownerName: string | null; ownerUserId: string | null; description: string | null; withdrawn: boolean; agent: string | null; projectKey: string; projectName: string; projectColor: string;
-  release: string | null; shippedTo: string | null; shippedStatus: string | null; source: string | null; meta: Record<string, unknown>; createdAt: string | null;
+  release: string | null; shippedTo: string | null; shippedStatus: string | null; source: string | null; meta: Record<string, unknown>; createdAt: string | null; updatedAt: string | null;
 };
 
 const proposal = (r: Record<string, unknown>): ProposalRow => ({
@@ -45,7 +45,7 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
   withdrawn: Boolean(r.withdrawn_at) || (r.meta as { withdrawn?: boolean } | null)?.withdrawn === true, agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
   release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
-  source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {}, createdAt: iso(r.created_at),
+  source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {}, createdAt: iso(r.created_at), updatedAt: iso(r.updated_at),
 });
 
 // The furthest environment each release reached, for "Shipped to".
@@ -246,12 +246,19 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
 // One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.
 /**
  * One proposal by id, or by key (CON-12), or null. The specclaw sync can move a key to another
- * proposal (ProposalRekeyed), so pins use the id (059); a key given with it only narrows.
+ * proposal (ProposalRekeyed), so pins use the id (059); a key given with it only narrows. 081 AC-8: one row,
+ * read directly; a withdrawn proposal is still found (marked `withdrawn`), since its page and pins stay.
  */
-export const getProposal = async (v: Viewer, ref: { proposalId?: string; key?: string }) => {
+export const getProposal = (v: Viewer, ref: { proposalId?: string; key?: string }) => {
   if (!ref.proposalId && !ref.key) throw new Error("say which proposal: a proposalId or a key");
-  return (await listProposals(v)).find((p) => (!ref.proposalId || p.id === ref.proposalId) && (!ref.key || p.key === ref.key)) ?? null;
+  return read(v, (tx) => proposalWhere(tx, ref));
 };
+
+export async function proposalWhere(tx: Tx, ref: { proposalId?: string; key?: string }) {
+  const where = sql.join([ref.proposalId ? sql`p.id::text = ${ref.proposalId}` : undefined, ref.key ? sql`p.key = ${ref.key}` : undefined].filter((x) => x !== undefined), sql` and `);
+  const [r] = await tx.execute(sql`${PROPOSALS} where ${where}`);
+  return r ? proposal(r) : null;
+}
 
 /**
  * One environment by id, or by project key and name, or null (057). The id survives a rename, so row

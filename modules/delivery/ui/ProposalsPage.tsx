@@ -1,12 +1,13 @@
 import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
-import { PHASES, type Phase } from "../contracts";
+import { PHASES, proposalHref, type Phase } from "../contracts";
 import { proposalPin } from "../pins";
 import { listProjects, listProposals, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
 import { BarChart } from "./charts";
 import { csvHref } from "./csv";
 import { FilterMenu } from "./FilterMenu";
 import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk } from "./parts";
+import { ProposalPage } from "./ProposalPage";
 
 const FILTERS: (Phase | "all")[] = ["all", "proposed", "building", "verified", "released"];
 const PAGE = 5;
@@ -15,6 +16,8 @@ const PAGE = 5;
 export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Proposals</h1><SignInFirst /></>;
+  // 081: /delivery/proposals/:key shares the segment with the phase filter; anything that isn't a phase is a key.
+  if (params.phase && !(PHASES as readonly string[]).includes(params.phase)) return ProposalPage({ viewer, proposalKey: decodeURIComponent(params.phase) });
   const phase = (PHASES as readonly string[]).includes(params.phase ?? "") ? (params.phase as Phase) : undefined;
   const asked = Math.max(1, Number(searchParams.page ?? 1) || 1);
   const [counts, rows, shipped, projects] = await Promise.all([phaseCounts(viewer), listProposals(viewer, { phase, projectKey: searchParams.project }), shippedPerWeek(viewer), listProjects(viewer, "active")]);
@@ -77,7 +80,7 @@ export function ProposalsTable({ rows, phase, root, project, page: asked, projec
               const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
               return (
                 <tr key={p.id} className="pinnable">
-                  <td data-label="Proposal"><b>{p.key}</b> {p.title}</td>
+                  <td data-label="Proposal"><a href={proposalHref(p.key)}><b>{p.key}</b> {p.title}</a></td>
                   <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} />{p.projectName}</td>
                   <td data-label="Phase"><PhaseChip phase={p.phase} /></td>
                   <td data-label="Tasks">{p.tasksTotal && p.phase !== "proposed" ? <div className="meter" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, background: pct === 100 ? "var(--mint)" : "var(--violet)" }} /></div> : <span className="muted">–</span>}</td>

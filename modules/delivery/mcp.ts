@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
-import { PHASES } from "./contracts";
+import { PHASES, proposalHref } from "./contracts";
 import { pinOf } from "./pins";
 import { ctxFor } from "./server/context";
 import { getActivity, listActivity } from "./server/activity";
@@ -11,7 +11,8 @@ import { syncProposal } from "./server/services";
 import { getRepoSync, getSyncPush, linkProjectRepo } from "./server/repo-sync";
 import { PushInput, pushSpecclaw } from "./server/push";
 import { RepoUrl } from "./sync/repo-url";
-import { checkReleaseRef, getDeployment, getEnvironment, getProject, getProposal, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
+import { proposalDetail } from "./server/proposal-detail";
+import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -35,8 +36,8 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
   tool({ ...read, pin: view, name: "list_proposals", description: "specclaw proposals, optionally filtered by phase or project key.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional() }),
     run: (v, a) => listProposals(v, a) }),
-  tool({ ...read, pin: { id: "proposalId", of: pinOf.proposal }, name: "get_proposal", description: "One proposal by proposalId, or by key such as CON-12 (a key given with an id only narrows): phase, owner, tasks, hours and release.",
-    input: z.object({ proposalId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProposal(v, a) }),
+  tool({ ...read, pin: { id: "proposalId", of: pinOf.proposal }, name: "get_proposal", description: "One proposal by proposalId, or by key such as CON-012 (a key given with an id only narrows): phase, owner, description, approved hours against the estimate, tasks, its release and the environments it reached, and its history. A withdrawn proposal is still found, marked withdrawn.",
+    input: z.object({ proposalId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => proposalDetail(v, a) }),
   tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => listReleases(v, a) }),
   tool({ ...read, pin: { id: "releaseId", of: pinOf.release }, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",
@@ -109,6 +110,6 @@ export async function search(viewer: Viewer, query: string): Promise<SearchHit[]
   const [projects, proposals] = await Promise.all([listProjects(viewer), listProposals(viewer)]);
   return [
     ...projects.filter((p) => `${p.key} ${p.name} ${p.client}`.toLowerCase().includes(q)).map((p) => ({ type: "project", id: p.key, title: p.name, url: `/delivery/p/${p.key}`, summary: `${p.client}, ${p.health}` })),
-    ...proposals.filter((p) => `${p.key} ${p.title}`.toLowerCase().includes(q)).map((p) => ({ type: "proposal", id: p.key, title: `${p.key} ${p.title}`, url: `/delivery/p/${p.projectKey}`, summary: `${p.phase} in ${p.projectName}` })),
+    ...proposals.filter((p) => `${p.key} ${p.title}`.toLowerCase().includes(q)).map((p) => ({ type: "proposal", id: p.key, title: `${p.key} ${p.title}`, url: proposalHref(p.key), summary: `${p.phase} in ${p.projectName}` })),
   ].slice(0, 20);
 }

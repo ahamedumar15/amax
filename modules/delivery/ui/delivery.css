@@ -200,3 +200,8 @@
 .filtermenu nav a[aria-current="true"]{color:var(--chip-agent);font-weight:600}
 .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
 .empty{margin:0;padding:48px 0;text-align:center}
+/* 081: the proposal page's Time card: approved hours against the estimate. */
+.proposal-time .big{font-size:30px;font-weight:600;letter-spacing:-.02em;margin:6px 0 14px}
+.proposal-time .gbar{height:12px;border-radius:6px;background:var(--sunken);overflow:hidden;margin-bottom:12px}
+.proposal-time .gbar i{display:block;height:100%;border-radius:6px}
+@media (max-width:860px){.proposal-time .big{font-size:22px}}

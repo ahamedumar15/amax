@@ -1,7 +1,7 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
-import { PHASES, type Phase } from "../contracts";
+import { PHASES, proposalHref, type Phase } from "../contracts";
 import { proposalPin } from "../pins";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
 import { AskButton } from "./AskButton";
@@ -44,7 +44,7 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
     <div className="tcard pinnable">
       <PinButton pin={pin} />
       <div className="id">{p.key}</div>
-      <p>{p.title}</p>
+      <p><a href={proposalHref(p.key)}>{p.title}</a></p>
       {p.phase !== "proposed" && p.phase !== "released" && <div className="prog"><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
       <div className="foot">
         {p.phase === "released" ? <span className="chip">{p.release ?? "Released"}</span>
