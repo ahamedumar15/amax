@@ -18,7 +18,7 @@ export async function writeTasks(tx: Tx, tenantId: string, proposalId: string, t
   return countTasks(tx, proposalId);
 }
 
-async function countTasks(tx: Tx, proposalId: string) {
+export async function countTasks(tx: Tx, proposalId: string) {
   const [c] = await tx.execute(sql`update delivery.proposal p set tasks_done = c.done, tasks_total = c.total, updated_at = now()
     from (select count(*) filter (where done)::int as done, count(*)::int as total from delivery.task where proposal_id = ${proposalId}) c
     where p.id = ${proposalId} returning c.done, c.total`);

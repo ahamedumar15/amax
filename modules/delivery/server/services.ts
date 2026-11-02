@@ -37,8 +37,9 @@ async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, k
   await lockProposals(tx, sql`project_id = ${projectId} and key = any(${textArray(keys)})`);
   for (const key of keys) {
     // Locked above, so the phase read here is the committed one.
-    const [p] = await tx.execute(sql`select id, phase, release_id from delivery.proposal where key = ${key} and project_id = ${projectId}`);
+    const [p] = await tx.execute(sql`select id, phase, release_id, withdrawn_at, meta from delivery.proposal where key = ${key} and project_id = ${projectId}`);
     if (!p) throw new Error(`no proposal ${key} in this project`);
+    if (p.withdrawn_at || (p.meta as { withdrawn?: boolean } | null)?.withdrawn) throw new Error(`${key} was withdrawn; it can't go in a release`);
     if (p.phase === "released" && p.release_id !== releaseId) throw new Error(`${key} already shipped in another release`);
     if (Number(live) > 0 && p.release_id !== releaseId) throw new Error(`this release is already live in Prod; put ${key} in a new release`);
     await tx.execute(sql`update delivery.proposal set release_id = ${releaseId} where id = ${p.id}`);
@@ -110,6 +111,7 @@ export const moveProposal = defineService({
     if (!p) throw new Error(`no proposal ${input.key}`);
     scoped(ctx, "delivery:proposal:move", p.project_id as string);
     if (p.phase === "released") throw new Error(`${input.key} is in Prod; it can't move back on the board`);
+    if (p.withdrawn_at) throw new Error(`${input.key} was withdrawn; it stays where it was`);
     if (p.source !== null) throw new Error(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
     if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
     await tx.execute(sql`update delivery.proposal set phase = ${input.to}, updated_at = now() where id = ${p.id}`);
@@ -173,7 +175,8 @@ export const recordDeployment = defineService({
       // Lock, then read, then update: the rows (and, through releaseOf, the release) are held, so the
       // set read here is exactly the set released, and each event matches a row that changed (round 20).
       await lockProposals(tx, sql`release_id = ${release.id}`);
-      const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released'`);
+      // 081 AC-18: a withdrawn proposal still listed in the release (a spec folder removed after it was assigned) isn't released.
+      const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released' and withdrawn_at is null and coalesce(meta->>'withdrawn', 'false') <> 'true'`);
       const done = await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now()
         where id = any(${uuidArray(moved.map((p) => p.id as string))}) returning id`);
       if (done.length !== moved.length) throw new Error("proposals changed while being released");
