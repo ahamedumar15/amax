@@ -70,7 +70,7 @@ Each finding below was checked against the code. Where a path is cited, it was r
 
 ## Progress
 
-- [ ] Phase 1: data model and contracts (migrations, Delivery `getProposalRef`/`proposalHref`, Time `proposalHours`)
+- [x] Phase 1: data model and contracts: migrations (delivery 0019, time 0009); Delivery `getProposalRef`, `setProposalHours`, `proposalHref`, `proposal.withdrawn` event; Time `refreshProposalHours` and its handlers. Decision: Time pushes approved totals to Delivery (R5 forbids Delivery → Time)
 - [ ] Phase 2: time association and ownership
 - [ ] Phase 3: detail page and navigation
 - [ ] Phase 4: update, withdraw and add-task

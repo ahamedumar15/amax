@@ -27,9 +27,14 @@ button and linked rows. Board cards and search link to the detail page.
 2. **AC-2** A commit-time suggestion keeps its `proposalKey`, and accepting it logs the entry with that proposal's id.
 3. **AC-3** `correct_time_entry` keeps the entry's proposal on the same project, clears it when the project changes,
    and accepts an explicit `proposalKey`. A deleted entry never counts.
-4. **AC-4** The Time contract `proposalHours(tx, proposalIds)` returns approved hours per proposal: totals only, approved
-   weeks only, no deleted entries. Delivery reads hours only through it. List, board, detail, CSV and `get_proposal`
-   all show the same number. Migration drops the dead `delivery.proposal.hours` column (fixtures write time entries instead).
+4. **AC-4** A proposal's hours are its approved time: totals only, from approved weeks only, no deleted entries.
+   Amended during T1 (build): Delivery can't import Time, because Time depends on Delivery and the graph check
+   (R5) refuses cycles. So the direction is inverted, the way presales uses `createProject`. Time recomputes the
+   totals for whole projects whenever a week is approved or reopened, or an approved week's entry changes. It hands
+   them to Delivery's contract `setProposalHours`, which is the only writer of `delivery.proposal.hours` (widened to
+   numeric(10,2)). Delivery never reads Time tables. List, board, detail, CSV and `get_proposal` all show that one
+   number. Fixtures no longer invent hours: they start at 0, and Time's week-42 fixture entries name their
+   proposals, so approving a demo week shows its hours.
 
 ### Owners
 
@@ -112,7 +117,7 @@ button and linked rows. Board cards and search link to the detail page.
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
 
-- [ ] `T1` — Phase 1 (data model and contracts): migrations `time.entry.proposal_id`, `delivery.proposal.owner_user_id`, `withdrawn_at`/`withdrawn_by`/`withdraw_reason`, `description`, drop `hours`; Delivery contract `getProposalRef`, `proposalHref`, `ProposalWithdrawn` event; Time contract `proposalHours` (AC-1, AC-4, AC-5, AC-7, AC-10)
+- [x] `T1` — Phase 1 (data model and contracts): migrations `time.entry.proposal_id`, `delivery.proposal.owner_user_id`, `withdrawn_at`/`withdrawn_by`/`withdraw_reason`, `description`, drop `hours`; Delivery contract `getProposalRef`, `proposalHref`, `ProposalWithdrawn` event; Time contract `proposalHours` (AC-1, AC-4, AC-5, AC-7, AC-10)
   Files: modules/time/db/migrations/0009_entry_proposal.sql, modules/delivery/db/migrations/0019_proposal_lifecycle.sql, modules/delivery/contracts.ts, modules/time/contracts.ts, modules/time/server/totals.ts, modules/delivery/fixtures/index.ts, modules/time/fixtures/*, modules/time/tests/contracts.test.ts, modules/delivery/tests/proposal-contract.test.ts
 - [ ] `T2` — Phase 2 (time association and ownership): `log_time`/`correct_time_entry` take `proposalKey`; commit draft keeps it; Delivery reads hours via `proposalHours`; owners on create, sync and push; retention (AC-1..AC-5, AC-8)
   Files: modules/time/server/log.ts, modules/time/server/correct.ts, modules/time/suggestions.ts, modules/time/mcp.ts, modules/delivery/server/queries.ts, modules/delivery/server/services.ts, modules/delivery/server/push.ts, modules/delivery/mcp.ts, modules/delivery/module.ts, modules/time/tests/proposal-time.test.ts, modules/delivery/tests/proposal-owner.test.ts

@@ -19,7 +19,39 @@ export type ProposalPhaseChanged = { proposalId: string; key: string; projectId:
 /** A proposal made by hand moved to the hand-made series because a spec change owns its old key. */
 export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", taskDone: "delivery.task.done", commitTime: "delivery.commit.time" } as const;
+/** 081: a proposal made by hand was withdrawn (never deleted). `by` is the actor, "… for user:…" when acting for someone. */
+export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string };
+
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", commitTime: "delivery.commit.time" } as const;
+
+/**
+ * 081: a proposal's page. It shares the `proposals/:phase` segment: a phase name (lowercase) is the list, anything
+ * else is a key (CON-014, AMX-H001). Keys are unique per tenant; a rekey moves the page, pins follow the id.
+ */
+export const proposalHref = (key: string) => `/delivery/proposals/${encodeURIComponent(key)}`;
+
+/** 081: one proposal for another module (Time names one on an entry). `withdrawn` covers both a hand withdrawal and a spec folder that went away. */
+export type ProposalRef = { id: string; key: string; title: string; phase: Phase; projectId: string; projectKey: string; withdrawn: boolean };
+
+/**
+ * 081 AC-4: Time's approved hours per proposal, for whole projects at a time: every proposal in `projectIds` takes its
+ * total from `totals`, or 0. Time owns the entries and their rules and is the only caller; nothing else writes `hours`.
+ * Derived figures, so no audit row; `updated_at` stays, since hours approved later don't make a proposal "updated".
+ */
+export async function setProposalHours(tx: Tx, projectIds: string[], totals: Map<string, number>) {
+  if (!projectIds.length) return;
+  const json = JSON.stringify(Object.fromEntries(totals));
+  await tx.execute(sql`update delivery.proposal p set hours = round(coalesce((${json}::jsonb ->> p.id::text)::numeric, 0), 2)
+    where p.project_id::text in (${sql.join(projectIds.map((id) => sql`${id}`), sql`, `)})
+      and p.hours is distinct from round(coalesce((${json}::jsonb ->> p.id::text)::numeric, 0), 2)`);
+}
+
+export async function getProposalRef(tx: Tx, keyOrId: string): Promise<ProposalRef | null> {
+  const [r] = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.project_id, pr.key as project_key,
+      (p.withdrawn_at is not null or coalesce(p.meta->>'withdrawn', 'false') = 'true') as withdrawn
+    from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.key = ${keyOrId} or p.id::text = ${keyOrId}`);
+  return r ? { id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, projectId: r.project_id as string, projectKey: r.project_key as string, withdrawn: Boolean(r.withdrawn) } : null;
+}
 
 /**
  * 008 AC-3: hours a person's commit says they spent, for the time module to draft on their timesheet as a

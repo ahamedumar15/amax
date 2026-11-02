@@ -5,7 +5,7 @@ import { mcpTools, search } from "./mcp";
 import { listActivity } from "./server/activity";
 import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
-import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed, type TaskDone, type CommitTime } from "./contracts";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ReleaseDeployed, type TaskDone, type CommitTime } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -62,7 +62,7 @@ export default defineModule({
     // no change, which covers withdrawn and abandoned ones. A project's starts when it's closed: an
     // open project is in use, so its manager stays named.
     { table: "delivery.project", label: "Project managers", subject: ["id", "manager_user_id"], subjectName: ["manager_name"], entity: "legal_entity_id", fields: ["manager_name", "manager_user_id"], class: "personal", period: "P7Y", start: { at: ["closed_at"] }, action: "anonymise" },
-    { table: "delivery.proposal", label: "Proposal owners", subject: ["project_id"], subjectName: ["owner_name"], fields: ["owner_name"], keep: { meta: "sync state the board reads (withdrawn, sha, pr, verdict); emptying it breaks the board and the sync. Personal keys are a 070 follow-up" }, class: "personal", period: "P7Y", start: { at: ["released_at"], idle: "P1Y" }, action: "anonymise" },
+    { table: "delivery.proposal", label: "Proposal owners", subject: ["owner_user_id", "withdrawn_by", "project_id"], subjectName: ["owner_name"], fields: ["owner_name", "owner_user_id", "withdrawn_by", "withdraw_reason"], keep: { meta: "sync state the board reads (withdrawn, sha, pr, verdict); emptying it breaks the board and the sync. Personal keys are a 070 follow-up", description: "what the change does, written for the project, the way its title is" }, class: "personal", period: "P7Y", start: { at: ["released_at"], idle: "P1Y" }, action: "anonymise" },
     { table: "delivery.deployment", label: "Who recorded a deployment", subject: ["recorded_by"], fields: ["recorded_by", "note"], keep: { prior_phases: "the release's phase states before it, no person in them" }, class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
     // The voider's clock starts at the void, which can be years after the deployment (final review).
     { table: "delivery.deployment", label: "Who voided a deployment", subject: ["voided_by"], fields: ["voided_by", "void_reason"], class: "personal", period: "P7Y", start: { at: ["voided_at"] }, action: "anonymise" },
@@ -84,6 +84,7 @@ export default defineModule({
       [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
       [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain" }),
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
+      [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain" }),
       [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
       [EVENTS.commitTime]: declarePayload<CommitTime>({ userId: "plain", projectId: "plain", projectKey: "plain", proposalKey: "plain", day: "plain", hours: "plain", commit: "plain" }),
     },

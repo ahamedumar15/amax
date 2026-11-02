@@ -7,6 +7,7 @@ import { timeFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
 import { timeOverview } from "./server/overview";
 import { commitDraft, commitTimeHandler } from "./suggestions";
+import { proposalHoursHandlers } from "./server/proposal-hours";
 import { reminderSchedules, reminderWorkflows } from "./server/reminder-jobs";
 import { RequestsPage } from "./ui/RequestsPage";
 import { MyPage } from "./ui/MyPage";
@@ -122,8 +123,9 @@ export default defineModule({
     [EVENTS.changeDecided]: declarePayload<ChangeDecided>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain", entryId: "plain", projectName: "plain", dayLabel: "plain", decision: "plain", by: "plain", note: "plain", kind: "plain" }),
     [EVENTS.changeCompleted]: declarePayload<ChangeCompleted>({ requestId: "plain", weekId: "plain", userId: "plain", week: "plain" }),
   },
-  // 008 AC-3: a commit's hours become a draft suggestion on the person's own timesheet.
-  handles: [commitTimeHandler] },
+  // 008 AC-3: a commit's hours become a draft suggestion on the person's own timesheet. 081 AC-4: approved hours per
+  // proposal are handed to Delivery whenever an approved week changes.
+  handles: [commitTimeHandler, ...proposalHoursHandlers] },
   suggestions: [commitDraft],
   fixtures: [timeFixtures],
 });
