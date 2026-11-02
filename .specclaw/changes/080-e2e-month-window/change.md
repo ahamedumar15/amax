@@ -38,6 +38,23 @@ No screen changes. The mock section notes that.
 
 ## Verify
 
+**Verdict:** PASS
+
+Verified 2026-11-02 at `603e504c`. The review verdict is ESCALATE (non-zero); PASS is recorded on the product owner's
+decision to ship bounded with 0 blockers open, as for 078.
+
+- AC-1: pass — the prompt matches by shape and only for a first month 2026-09 to 2027-01 (a 9-case month table:
+  2026-08, 2027-02, 2027-11, 2028-01 refused; 2026-09 to 2027-01 accepted); the replace text is December 2026.
+- AC-2: pass — January is found by the grid's "Jan" header (`janColumn > 1`, so a missing column fails), 0% before
+  the copy and not 0% after.
+- AC-3: pass — Docker replica of CI's checks job e2e steps on a `git archive` of `603e504c` (`node:24-bookworm`, fresh
+  `postgres:16-alpine`, `CI=1`): install, `db:migrate`, `pnpm build` exit 0; `e2e` 8 passed; `e2e:auth` 82 passed,
+  0 failed, none skipped.
+- `pnpm lint`: exit 0, 35/35. `specclaw-preset-check .`: exit 1 from the repo-wide backlog (3151); none in
+  `chat-first.spec.ts`. `specclaw-quality-scan`: not_run (jq "Argument list too long").
+- Screenshot: `shots/mock.png` — the mock section reads "No screen changes" with the bounded range; 080 changes no
+  screen.
+
 Review loop, 2026-11-02 (`specclaw-review`, opus; base set for each run to `14873d51`, scoped to 080's two files):
 
 - Round 1 (`3ea3e3ea`): open, 0/1/0 — the grid's headers carry no year while the copy text fixes January 2027, and the

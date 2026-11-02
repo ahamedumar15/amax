@@ -1,9 +1,10 @@
 {
   "change": "080-e2e-month-window",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-11-02T05:16:59Z"},
-    "tasks": {"status":"done","at":"2026-11-02T05:17:51Z"}
+    "tasks": {"status":"done","at":"2026-11-02T05:17:51Z"},
+    "verify": {"status":"done","at":"2026-11-02T06:35:43Z"}
   }
 }
