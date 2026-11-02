@@ -90,7 +90,18 @@ Amendment 2 verified 2026-11-02 (working tree on `13b026cd`), Windows 11, Docker
 - `specclaw-preset-check .`: exit 1 from the repo-wide backlog (3151); none on lines 079 adds (the four in
   `onboarding.test.ts` are its existing comments). `specclaw-quality-scan . --gate`: exit 126, not_run (jq "Argument
   list too long", as in 066–078).
-- Local review: not run; `specclaw-review` isn't on PATH and its MCP server failed to connect this session.
+- Review loop, passes 4 and 5 of 5 (`specclaw-review` CLI from the plugin cache, `PYTHONUTF8=1`: without it the run
+  crashed reading git's output as cp1252, before any review, so not counted):
+  - Pass 4 (final, opus, head `0611f646`): open, 1/3/3. It ran on the wrong scope: with `git.base_branch` blank the
+    base fell back to `origin/main`, this fork's Oct 19 main, so it reviewed all 426 files of the 070–079 stack.
+    None of its findings is in a 079 file: finance `time-sync.ts` weekend months, career `module.ts` `keep`
+    exemptions (blocker), time `decide-card.ts` day limit, time `request.ts` add-request routing (073 and 070), plus
+    three minors in chat and the time README. They belong to those changes; 073's Verify already records open majors
+    from its final pass. Recorded in `review/round-4.json`; not fixed here.
+  - Pass 5 (final, opus, head `0611f646`), base set for the run to 078's head `51b65787` (as rounds 1–3 were
+    scoped: 079's own 12 files), then restored: **clean, 0/0/1**. The minor (no push-path out-of-order case) repeats
+    round 2's and is in `follow-ups.md`. `specclaw-review verdict`: "CLEAN — 5 rounds, final pass 0611f646d0".
+  - The five-pass cap is reached; no further rounds for 079.
 - Screenshot: `shots/mock.png` (repo Playwright, `apps/web`): the mock section still reads "No screen changes"; 079
   changes no screen.
 
