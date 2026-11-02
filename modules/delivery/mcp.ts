@@ -13,6 +13,7 @@ import { PushInput, pushSpecclaw } from "./server/push";
 import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
+import { createProposalCard, proposeCreate } from "./server/proposal-card";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -48,7 +49,7 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ key: z.string(), name: z.string(), client: z.string(), billing: z.enum(["fixed", "t&m", "retainer", "internal"]) }),
     service: createProject, run: (v, a, s = "mcp") => createProject(ctxFor(v, s), a) }),
   tool({ name: "create_proposal", description: "Add a proposal made by hand to a project's board (it starts as Proposed). The owner is you, or the person you act for, unless ownerUserId names another active person.", scope: "write", permission: "delivery:proposal:create",
-    input: ProposalCreateInput,
+    input: ProposalCreateInput, propose: proposeCreate, card: createProposalCard,
     service: createProposal, run: (v, a, s = "mcp") => createProposal(ctxFor(v, s), a) }),
   // 081 AC-9 to AC-11: a hand-made proposal's lifecycle. A spec proposal changes in its repo; only its owner is set here.
   tool({ name: "update_proposal", description: "Edit a proposal made by hand that isn't released or withdrawn: its title, description, estimate (null clears it) or owner (an active person's ownerUserId). A spec proposal's content comes from its repo; only its owner can be changed here.", scope: "write",

@@ -1,10 +1,11 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
-import { IntentButton, PinButton } from "@amax/ui";
+import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
-import { proposalPin } from "../pins";
+import { projectPin, proposalPin } from "../pins";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
 import { AskButton } from "./AskButton";
+import { NewProposalButton } from "./NewProposalButton";
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
 import { getRepoSync } from "../server/repo-sync";
@@ -88,7 +89,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
         </div>
         <div className="actions">
           {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
-          <IntentButton intent="delivery.new-proposal" label="New proposal" />
+          {can(viewer, "delivery:proposal:create", { projectId: project.id }) && <NewProposalButton project={{ pin: projectPin(project), name: project.name }} />}
         </div>
       </div>
       <ProjectTabs projectKey={project.key} current="" />

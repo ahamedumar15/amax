@@ -74,7 +74,7 @@ Each finding below was checked against the code. Where a path is cited, it was r
 - [x] Phase 2: time association and ownership: `log_time`, `correct_time_entry` (and change requests) take `proposalKey`, checked through `getProposalRef`; commit drafts keep it (unless withdrawn since); owners from the acting person on create, sync and push (a later sync fills a missing owner, never replaces one); "Unassigned" shown; creating in a closed project is refused
 - [x] Phase 3: detail page and navigation: `/delivery/proposals/:key` (shares the `:phase` segment; a non-phase is a key), history from `core.audit_event` + `proposal.phase_changed` events, linked from list rows, board cards, release page, search; `get_proposal` reads one row and returns tasks, stages, history and `href`
 - [x] Phase 4: update, withdraw and add-task: `update_proposal`, `withdraw_proposal` (destructive, reason, leaves its release; release row locked first), `add_proposal_task`; spec proposals refused except owner; withdrawn ones refused by move, release assignment and Prod release; page actions by permission
-- [ ] Phase 5: creation and chat
+- [x] Phase 5: creation and chat: New proposal on the global page (carries a filtered project) and the project page (carries the project, shown only to who may create there); intent asks no project when one is pinned; Delivery `chatSuggestions` and `pageLabel`; `create_proposal` gets `propose` (no card for unknown, closed or out-of-scope projects) and a card with project, title, description, estimate, owner
 - [ ] Phase 6: filters, metrics, pins, export
 - [ ] Phase 7: notifications and lifecycle consistency
 - [ ] Phase 8: tests, verification, docs

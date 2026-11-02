@@ -1,11 +1,13 @@
 import type { ScreenProps } from "@amax/core";
+import { canEver } from "@amax/auth";
 import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
-import { proposalPin } from "../pins";
+import { projectPin, proposalPin } from "../pins";
 import { listProjects, listProposals, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
 import { BarChart } from "./charts";
 import { csvHref } from "./csv";
 import { FilterMenu } from "./FilterMenu";
+import { NewProposalButton } from "./NewProposalButton";
 import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk } from "./parts";
 import { ProposalPage } from "./ProposalPage";
 
@@ -24,10 +26,13 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const bar: [Phase, number, string][] = [["proposed", counts.proposed, "Proposed"], ["planned", counts.planned, "Planned"], ["building", counts.building, "Building"], ["verified", counts.verified, "Verified"], ["released", counts.releasedThisMonth, "Released this month"]];
   const recent = shipped.values.slice(-4).reduce((a, b) => a + b, 0), prior = shipped.values.slice(0, 4).reduce((a, b) => a + b, 0);
   const trend = prior ? ((recent - prior) / prior) * 100 : null;
+  const filtered = projects.find((p) => p.key === searchParams.project);
   return (
     <>
-      <h1>Proposals</h1>
-      <p className="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p>
+      <div className="row head">
+        <div><h1>Proposals</h1><p className="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p></div>
+        {canEver(viewer, "delivery:proposal:create") && <div className="actions"><NewProposalButton project={filtered ? { pin: projectPin(filtered), name: filtered.name } : undefined} /></div>}
+      </div>
       <div className="cols even" style={{ marginBottom: 28 }}>
         <div className="card pinnable">
           <div className="card-head"><h2>Proposals by phase</h2><PinButton inline pin={{ label: "Proposals by phase", tool: "list_proposals", args: {} }} /><span className="muted" style={{ fontSize: 13 }}>{counts.inFlight} in flight</span></div>

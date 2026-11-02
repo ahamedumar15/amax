@@ -4,7 +4,7 @@ export const chatIntents = [
   { id: "delivery.new-project", label: "New project", tool: "create_project", required: ["key", "name", "client", "billing"],
     fields: [{ name: "name", ask: "What's the project called?" }, { name: "client", ask: "Which client?" }, { name: "key", ask: "Short key for proposal ids, e.g. CON" }, { name: "billing", ask: "Fixed price, time and materials, or retainer?", options: ["fixed", "t&m", "retainer"] }] },
   { id: "delivery.new-proposal", label: "New proposal", tool: "create_proposal", required: ["projectKey", "title"],
-    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "title", ask: "What's the change?" }, { name: "estimateHours", ask: "Roughly how many hours?" }] },
+    fields: [{ name: "projectKey", ask: "Which project? (When a project is pinned, it's that one: use its key and don't ask.)" }, { name: "title", ask: "What's the change?" }, { name: "description", ask: "Anything to add about it, in a sentence or two? (optional)" }, { name: "estimateHours", ask: "Roughly how many hours? (optional)" }] },
   { id: "delivery.new-release", label: "New release", tool: "create_release", required: ["projectKey", "version"],
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Version, e.g. v2.5.0" }] },
   { id: "delivery.link-repo", label: "Link a repo", tool: "link_project_repo", required: ["projectKey", "repoUrl", "defaultBranch"],
