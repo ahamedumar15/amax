@@ -38,6 +38,17 @@ No screen changes. The mock section notes that.
 
 ## Verify
 
+Review loop, 2026-11-02 (`specclaw-review`, opus; base set for each run to `14873d51`, scoped to 080's two files):
+
+- Round 1 (`3ea3e3ea`): open, 0/1/0 — the grid's headers carry no year while the copy text fixes January 2027, and the
+  mock's "holds in any month" overclaimed. Fixed in `603e504c`: the prompt must name a first month from 2026-09 to
+  2027-01, and the mock and AC-1 state that range.
+- Round 2 (`--since 3ea3e3ea`): open, 0/1/0 — the same root cause: the test is bounded, not fixed, and fails from
+  2027-02-01.
+- Round 3 (final, `603e504c`): escalate, 0/1/0, the same finding. `specclaw-review verdict`: "ESCALATE — 3 rounds".
+- Stop: the product owner chose to ship 080 bounded to unblock CI and file the class fix (fixture month-shift as in
+  presales, or a platform clock) as a change of its own; see `follow-ups.md`. 3 of 5 passes used; 0 blockers open.
+
 Build notes, 2026-11-02:
 
 - T1: `pnpm --filter @amax/web exec tsc --noEmit -p .` exit 0. A missing "Jan" header fails the test

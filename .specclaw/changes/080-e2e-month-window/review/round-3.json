@@ -1,0 +1,67 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [
+  "7c6f959b6213"
+ ],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/chat-first.spec.ts"
+ ],
+ "final": true,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/chat-first.spec.ts",
+   "fp": "7c6f959b6213",
+   "in_delta": true,
+   "line": 27,
+   "message": "This finding from round 2 is still open at the same head (603e504c). The test still assumes particular calendar months. The grid's window comes from the real clock: `windowMonths(today, 5)` in modules/allocations/server/months.ts:6, and the `CopyMonth` prompt uses `months[0]` (modules/allocations/ui/CopyMonth.tsx:7). But the replace text is hard-coded to 'December (2026-12)', and the prompt regex only accepts a first month from 2026-09 to 2027-01. The test now finds the January column more reliably, but it stops working on 2027-02-01. The mock lede at apps/mock/public/mock/index.html:1019 describes the accepted range but does not say the test will start failing. Fix it in one of two ways. Option 1: pin the clock to a date inside the fixtures' window, either in the browser (Playwright `page.clock.setFixedTime`) or with a server-side 'today' override like the existing `AMAX_TODAY` or presales' `FIXTURE_DAY`/`shiftDays`. That way the window, the January column and the 2026-12 \u2192 2027-01 copy always line up. Option 2: build the replace text and the expected values from the month just before the grid's January column, with its year, and seed or shift the fixtures so that month has data.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "CI runs on 2027-02-01 \u2192 the grid shows Feb\u2013Jun 2027 \u2192 no header starts with 'Jan' \u2192 janColumn = -1 \u2192 `expect(janColumn).toBeGreaterThan(1)` fails. CI runs on 2027-09-01 \u2192 the window is Sep 2027\u2013Jan 2028 \u2192 the prompt '\u2026September (2027-09)\u2026' doesn't match the 2026-09..2027-01 regex \u2192 the test fails. In both cases it fails on every branch even though the product hasn't changed.",
+   "severity": "major"
+  }
+ ],
+ "head": "603e504cf5207b504fa36ad56ca045307f71a63d",
+ "impact": [
+  "apps/web/scripts/demo-extras.ts",
+  "apps/web/tests/admin/api-reveal.test.ts",
+  "apps/web/tests/dev-seed.test.ts",
+  "apps/web/tests/e2e/api-seed.ts",
+  "apps/web/tests/e2e/suggestions.spec.ts",
+  "modules/allocations/tests/row.test.ts",
+  "modules/allocations/tests/suggestions.test.ts",
+  "modules/career/fixtures/index.ts",
+  "modules/career/tests/access.test.ts",
+  "modules/career/tests/career.test.ts",
+  "modules/career/tests/contracts.test.ts",
+  "modules/career/tests/layout.test.ts",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/tests/sync-push.test.ts",
+  "modules/expenses/fixtures/data.ts",
+  "modules/expenses/tests/claims.test.ts",
+  "modules/expenses/tests/contracts.test.ts",
+  "modules/expenses/tests/e2e/expenses.spec.ts",
+  "modules/expenses/tests/receipts.test.ts",
+  "modules/experience/tests/collect.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 51197,
+ "round": 3,
+ "since": null,
+ "status": "escalate",
+ "system_chars": 42427,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1793600463,
+ "ts_start": 1793600397
+}

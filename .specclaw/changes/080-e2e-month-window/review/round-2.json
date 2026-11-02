@@ -1,0 +1,44 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/chat-first.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/chat-first.spec.ts",
+   "fp": "328f73516d6d",
+   "in_delta": true,
+   "line": 27,
+   "message": "This fix narrows the test instead of fixing it. It no longer passes wrongly on a drifted window. But it now only works while the grid's first month (windowMonths(today, 5), modules/allocations/server/months.ts:6) falls between 2026-09 and 2027-01. The hard-coded 'December (2026-12)' replace text is still fixed to the fixtures' January 2027. That is the same root cause the round-1 finding named, and the test now has an expiry date. From 2027-02-01 it fails on every branch even when the product is correct. The mock lede (apps/mock/public/mock/index.html:1019) describes the narrowed range but doesn't say the test will start failing. Class fix: fix the page's clock to a date inside the fixtures' window (Playwright page.clock.install / setFixedTime, or a server-side 'today' override), so the window, the January column and the 2026-12 \u2192 2027-01 copy can't drift apart. Or build the replace text from the month just before the January column, with its year, and check that the fixtures have data there.",
+   "original_severity": "major",
+   "pass": "design",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "CI runs on 2027-02-01 \u2192 the grid shows Feb\u2013Jun 2027 with no 'Jan' header \u2192 janColumn is -1 and expect(janColumn).toBeGreaterThan(1) fails. On 2027-09-01 the grid shows Sep 2027 to Jan 2028 \u2192 janColumn is found, but the prompt '\u2026September (2027-09)\u2026' doesn't match the 2026-09..2027-01 regex \u2192 the test fails. Either way it is red with no product change.",
+   "severity": "major"
+  }
+ ],
+ "head": "603e504cf5207b504fa36ad56ca045307f71a63d",
+ "impact": [],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 46645,
+ "round": 2,
+ "since": "3ea3e3ea",
+ "status": "open",
+ "system_chars": 42436,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1793599634,
+ "ts_start": 1793599574
+}
