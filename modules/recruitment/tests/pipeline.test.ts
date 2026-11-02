@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { isMasked } from "@amax/auth";
 import { getApplication, pipelineView } from "../server/queries";
@@ -9,6 +9,8 @@ describe.skipIf(!hasDb)("recruitment pipeline (Postgres)", () => {
   const use = sharedDb(true);
 
   it("AC1 roles, candidates, applications, interviews and offers give fixtures.md's numbers; candidate fields are HR's alone; writes are audited tools", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-16T06:00:00Z") });
+    onTestFinished(() => { vi.useRealTimers(); });
     const db = use();
     const [hr, admin, leadership, nimal] = [await db.as("maya", "HR"), await db.as("sahan"), await db.as("maya", "Leadership"), await db.as("nimal")];
     const p = await pipelineView(hr);

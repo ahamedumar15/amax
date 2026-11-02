@@ -16,6 +16,15 @@ gave time cards their own confirm label and receipt ("Submit", "Submitted 2026-W
 `askAndConfirm` only clicks "Add it" and expects "Done:". The `FATAL: role "root"` lines are the `pg_isready` health
 check, not the failure.
 
+**Amendment 2, 2026-11-02** (product owner: "fix this and run the test locally"). The `test` job fails in
+`@amax/career` at `career.test.ts:41`: AC4 records a certification now and expects its "Recorded by" line to read
+`Maya Fernando, Oct …`. Written in October, it fails from Nov 1 (received "Maya Fernando, Nov 2, 2026"). CI stops at
+the first failing package; a local full run finds a second test that broke on Nov 1: `recruitment` `pipeline.test.ts`
+AC1 expects hires for May–Oct, but the screen counts the six months and the quarter up to now, and the fixtures sit in
+Q4 2026 (received Jun–Nov). The product owner's uncached full run adds a third: `allocations` `chat-first.test.ts`
+AC3 expects `get_allocation`'s five months to start in October (received `[20, 20, null, null, null]`). In one run
+`onboarding` AC-1 also hit Vitest's 5-second default; it is the module's only Postgres test without a timeout.
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`079-ci-test-fixes`](../../mock/index.html#079-ci-test-fixes)
@@ -37,6 +46,12 @@ No screen changes. The mock section notes that.
    text, defaulting to "Add it" and "Done:"; chat-first's submit test passes "Submit" and "Submitted 2026-W42".
 5. **AC-5** (amendment 1) `admin.spec.ts` 047 AC1 expects the schedules item in the hub's lede for both roles. The full
    `pnpm --filter @amax/web e2e:auth` passes locally, including the 12 tests the failed run never reached.
+6. **AC-6** (amendment 2) `career.test.ts` AC4 matches any month in "Recorded by" (`Maya Fernando, Mmm d, 20yy`), so
+   it passes whatever the date; no other test asserts the current month.
+7. **AC-7** (amendment 2) `recruitment` `pipeline.test.ts` AC1 reads the screen on the fixtures' day (`Date` faked to
+   2026-10-16, timers real, restored when the test ends), so its month and quarter numbers hold after October.
+8. **AC-8** (amendment 2) `allocations` `chat-first.test.ts` AC3 reads `get_allocation` on the fixtures' `TODAY` the
+   same way, and `onboarding` AC-1 takes the 60-second timeout the other Postgres tests use.
 
 ## Tasks
 
@@ -49,10 +64,35 @@ No screen changes. The mock section notes that.
   Depends: T1, T2
 - [x] `T4` — e2e helper takes the card's own confirm label and receipt; admin hub expects the schedules item (AC-4, AC-5)
   Files: apps/web/tests/e2e/ask.ts, apps/web/tests/e2e/chat-first.spec.ts, apps/web/tests/e2e/admin.spec.ts
+- [x] `T5` — Career AC4 test doesn't assume the current month (AC-6)
+  Files: modules/career/tests/career.test.ts
+- [x] `T6` — Recruitment AC1 reads the pipeline on the fixtures' day (AC-7)
+  Files: modules/recruitment/tests/pipeline.test.ts
+- [x] `T7` — Allocations AC3 reads on the fixtures' day; onboarding AC-1 gets a 60-second timeout (AC-8)
+  Files: modules/allocations/tests/chat-first.test.ts, modules/onboarding/tests/onboarding.test.ts
 
 ## Verify
 
 **Verdict:** PASS
+
+Amendment 2 verified 2026-11-02 (working tree on `13b026cd`), Windows 11, Docker `amax-dev-postgres`,
+`DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`, on the date CI failed:
+
+- AC-6: pass — `@amax/career` 8/8; AC4's "Recorded by" passes as "Maya Fernando, Nov 2, 2026".
+- AC-7: pass — `@amax/recruitment` 8/8; pipeline AC1 reads May–Oct on 2026-10-16 and the clock is restored after.
+- AC-8: pass — `@amax/allocations` 38/38 (chat-first AC3 `[20, 20, 20, null, null]`), `@amax/onboarding` 6/6.
+- `pnpm turbo run test --force --concurrency=2 --continue`: exit 1, 30/35 tasks. All four packages above pass. The five
+  that fail are this host's, untouched by 079 and green on CI's Linux runner: `@amax/core` ac5-adapters and
+  `@amax/delivery` releases (backslash paths), `@amax/testing` ac7-config (symlink EPERM), `@amax/workflows` kill
+  (`spawn npx ENOENT`), and 5-second timeouts in `@amax/delivery` create-project-surfaces and `@amax/experience` pulse,
+  both passing alone.
+- `pnpm lint`: exit 0, 35/35. `pnpm build`: exit 0, 2/2.
+- `specclaw-preset-check .`: exit 1 from the repo-wide backlog (3151); none on lines 079 adds (the four in
+  `onboarding.test.ts` are its existing comments). `specclaw-quality-scan . --gate`: exit 126, not_run (jq "Argument
+  list too long", as in 066–078).
+- Local review: not run; `specclaw-review` isn't on PATH and its MCP server failed to connect this session.
+- Screenshot: `shots/mock.png` (repo Playwright, `apps/web`): the mock section still reads "No screen changes"; 079
+  changes no screen.
 
 Amendment 1 verified 2026-10-30 at `4e4e9444`, in WSL Ubuntu set up as CI's runner (Node 24.22.2, pnpm 9.15.9, a
 fresh `postgres:16-alpine`, a clean `git archive` of HEAD, which holds all of upstream/main; `CI=1`):
@@ -75,6 +115,19 @@ Verified 2026-10-30 at `dc678e29`.
 - Final pass round 2: clean, 0/0/1. The minor (no `pushSpecclaw` out-of-order case) is in `follow-ups.md`.
 - Screenshots: no app UI; the mock section only notes that. Mock `#079-ci-test-fixes`: compared by eye: Umar Ahamed,
   2026-10-30.
+
+Amendment 2 build notes, 2026-11-02 (Windows 11,
+`DATABASE_MIGRATE_URL=postgres://amax:amax@127.0.0.1:5440/amax`):
+
+- `@amax/career` 8/8 and `@amax/recruitment` 8/8 on Nov 2, 2026, the date CI failed on.
+- `pnpm turbo run test --force` over career, allocations, onboarding and recruitment: 4/4 tasks, 60 tests pass. My
+  first full run took allocations from turbo's cache (a pre-November pass), so it missed AC3; the product owner's
+  uncached run found it. `pnpm lint` 35/35 (the first try failed `tsc`: an arrow cleanup returned `vi`; now a block body).
+- Full `pnpm turbo run test --concurrency=2 --continue`: 27/35 tasks pass. No other failure is date-related. Each one
+  that failed on a timeout passes alone: `@amax/time` (10 files' setup hooks and AC-23's 2-second budget), `@amax/web`
+  agents-tools, pin-refs and baseurl, `@amax/delivery` create-project-surfaces, `@amax/core` secrets-ac2-leaks,
+  `@amax/experience` pulse. The rest are Windows-only and untouched here: `@amax/core` ac5-adapters and `@amax/delivery`
+  releases (backslash paths), `@amax/testing` ac7-config (symlink EPERM), `@amax/workflows` kill (`spawn npx ENOENT`).
 
 Amendment 1 build notes, 2026-10-30 (AC-4, AC-5 not yet verified):
 

@@ -1,14 +1,14 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { createRegistry } from "@amax/mcp";
 import { chatTurn, confirmAction } from "@amax/chat";
 import manifest from "../module";
-import { allocationsDatabase, T } from "./setup";
+import { allocationsDatabase, T, TODAY } from "./setup";
 
 const root = join(import.meta.dirname, "..");
 
@@ -48,6 +48,8 @@ describe.skipIf(!hasDb)("054 copy month waits for chat's confirm; a grid row pin
   }, 60_000);
 
   it("AC3 get_allocation resolves a grid row to exactly that person and project, and a total row to the person", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: TODAY });
+    onTestFinished(() => { vi.useRealTimers(); });
     const maya = await db.as("maya", "PM");
     const [con] = await db.tx((tx) => tx.execute(sql`select id from delivery.project where key = 'CON'`));
     const row = await registry.call(maya, "get_allocation", { person: "LL-0417", projectId: con.id }, { source: "chat" });
