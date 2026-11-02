@@ -1,0 +1,65 @@
+{
+ "counts": {
+  "blocker": 0,
+  "major": 1,
+  "minor": 0
+ },
+ "escalated": [],
+ "files": [
+  "apps/mock/public/mock/index.html",
+  "apps/web/tests/e2e/chat-first.spec.ts"
+ ],
+ "final": false,
+ "findings": [
+  {
+   "file": "apps/web/tests/e2e/chat-first.spec.ts",
+   "fp": "11d8ec8d7f1a",
+   "in_delta": true,
+   "line": 27,
+   "message": "The fix only works for the month it was tested in. The test finds the January column by matching 'Jan' in the header. The grid shows five months starting from today (windowMonths(today, 5) in modules/allocations/server/grid.ts:52), and its headers have no year (monthLabel is month-only). But the chat text that runs the copy is still fixed to 'from December (2026-12)', so the write always lands on 2027-01, whichever January the grid shows. The mock's new lede (apps/mock/public/mock/index.html:1019) says the test 'holds in any month', which isn't true. Fix: take the source month from the grid's own months. Use the month just before the January column, with its year, from the button's own prompt or the page data, and build the replacement text from it. Or fix the page's clock to a set date (Playwright page.clock / a server 'today' override) so the window and the copy target can't drift apart.",
+   "original_severity": "major",
+   "pass": "review",
+   "pre_existing": false,
+   "rule": "B1",
+   "scenario": "Run in 2027-02: the grid shows Feb\u2013Jun 2027 with no 'Jan' header, so findIndex returns -1 and the test fails at line 23. Run in 2027-10: the grid shows Oct 2027\u2013Feb 2028, so the 'Jan' column is 2028-01. Chat copies 2026-12 into 2027-01, the 2028-01 cell stays at 0%, and the not.toHaveText(/^0%/) check at line 28 fails.",
+   "severity": "major"
+  }
+ ],
+ "head": "3ea3e3ea0a8866563b8ca7b6b94da773d993f3df",
+ "impact": [
+  "apps/web/scripts/demo-extras.ts",
+  "apps/web/tests/admin/api-reveal.test.ts",
+  "apps/web/tests/dev-seed.test.ts",
+  "apps/web/tests/e2e/api-seed.ts",
+  "apps/web/tests/e2e/suggestions.spec.ts",
+  "modules/allocations/tests/row.test.ts",
+  "modules/allocations/tests/suggestions.test.ts",
+  "modules/career/fixtures/index.ts",
+  "modules/career/tests/access.test.ts",
+  "modules/career/tests/career.test.ts",
+  "modules/career/tests/contracts.test.ts",
+  "modules/career/tests/layout.test.ts",
+  "modules/delivery/fixtures/index.ts",
+  "modules/delivery/tests/sync-push.test.ts",
+  "modules/expenses/fixtures/data.ts",
+  "modules/expenses/tests/claims.test.ts",
+  "modules/expenses/tests/contracts.test.ts",
+  "modules/expenses/tests/e2e/expenses.spec.ts",
+  "modules/expenses/tests/receipts.test.ts",
+  "modules/experience/tests/collect.test.ts"
+ ],
+ "model": "opus",
+ "passes": [
+  "review",
+  "design"
+ ],
+ "prompt_chars": 51123,
+ "round": 1,
+ "since": null,
+ "status": "open",
+ "system_chars": 42432,
+ "tier": "review",
+ "tools": "Read,Grep,Glob",
+ "ts_end": 1793599236,
+ "ts_start": 1793599172
+}

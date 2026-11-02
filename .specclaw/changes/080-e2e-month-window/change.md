@@ -19,7 +19,10 @@ No screen changes. The mock section notes that.
 ## Acceptance Criteria
 
 1. **AC-1** `chat-first.spec.ts` "054 AC5 allocations" matches the copy prompt by its shape (`Copy Delivery team
-   allocations from <Month> (<yyyy-mm>) to the next month`), not by one month, then replaces it with December as before.
+   allocations from <Month> (<yyyy-mm>) to the next month`), not by one month, then replaces it with December 2026 as
+   before. The prompt's first month must be 2026-09 to 2027-01: the windows whose "Jan" column is the fixtures' January
+   2027, the month the December 2026 copy writes. Outside it the test fails on the prompt, naming the month. (Review
+   round 1: the grid's headers carry no year, so without this the "Jan" read and the write could be different years.)
 2. **AC-2** The test finds Kasun's January total by the grid's "Jan" column header, not by position, and checks it reads
    0% before the copy and not 0% after.
 3. **AC-3** `pnpm --filter @amax/web e2e:auth` passes on Linux as CI runs it (the Docker replica of the `checks` job),
