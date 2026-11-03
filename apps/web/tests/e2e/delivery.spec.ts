@@ -126,9 +126,9 @@ test("081 a proposal opens from the list and the board, with its time, release, 
   await expect(page).toHaveURL(/\/delivery\/proposals\/planned$/);
   await page.getByRole("navigation", { name: "Phase" }).getByRole("link", { name: "All" }).click();
   // The e2e tenant also holds AMX's imported specs, which fill the first page: search finds the row (AC-16).
-  await page.getByLabel(/Search proposals by key or title/).fill("CON-014");
+  await page.getByLabel(/Search proposals by key or title/).fill("Invoice export");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/delivery\/proposals\?q=CON-014$/);
+  await expect(page).toHaveURL(/\/delivery\/proposals\?q=Invoice(\+|%20)export/);
   await page.getByRole("link", { name: /CON-014 Invoice export to PDF/ }).click();
   await expect(page).toHaveURL(/\/delivery\/proposals\/CON-014$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("CON-014 Invoice export to PDF");
@@ -142,4 +142,23 @@ test("081 a proposal opens from the list and the board, with its time, release, 
   await expect(page).toHaveURL(/\/delivery\/proposals\/CON-014$/);
   await page.goto("/delivery/proposals/CON-404");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Proposal not found");
+
+  // Emptying the search box (its ✕) goes back to the list without a search, keeping the project filter.
+  await page.goto("/delivery/proposals?project=CON&q=CON-014", { waitUntil: "networkidle" });
+  await page.getByLabel(/Search proposals by key or title/).fill("");
+  await expect(page).toHaveURL(/\/delivery\/proposals\?project=CON$/);
+
+  // Typing completes in the box from the filtered proposals, the guess selected: Backspace drops it, Tab keeps it.
+  const search = page.getByLabel(/Search proposals by key or title/);
+  await expect(search).toHaveAttribute("aria-autocomplete", "inline");
+  await search.pressSequentially("inv");
+  await expect(search).toHaveValue("invoice export to PDF");
+  await page.keyboard.press("Backspace");
+  await expect(search).toHaveValue("inv");
+  await search.pressSequentially("o");
+  await page.keyboard.press("Tab");
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/delivery\/proposals\?project=CON&q=invoice(\+|%20)export(\+|%20)to(\+|%20)PDF$/);
+  await expect(page.locator('td[data-label="Proposal"]')).toHaveText(["CON-014 Invoice export to PDF"]);
 });

@@ -77,7 +77,7 @@ export function ProposalsTable({ rows, phase, root, project, q, page: asked, pro
         </nav>
         <div className="actions">
           {projects && <FilterMenu label="Filter by project" options={[{ key: "", name: "All projects" }, ...projects].map((p) => ({ text: p.name, current: (project ?? "") === p.key, href: `${base}${query({ project: p.key, q })}` }))} />}
-          <ProposalSearch base={base} project={project} q={q} />
+          <ProposalSearch base={base} project={project} q={q} options={rows.map((p) => ({ key: p.key, title: p.title }))} />
           <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", p.phase === "released" ? "Prod" : p.shippedTo ?? "", p.ownerName ?? ""])])} download="proposals.csv">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export
           </a>

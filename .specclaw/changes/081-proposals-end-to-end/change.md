@@ -90,6 +90,9 @@ it against that section within 2% per region; only its header and the table's fi
 16. **AC-16** Global counts, list, shipped-per-week and Released this month exclude closed projects and withdrawn
     proposals, follow the project filter, and agree with each other. The list sorts by most recently updated, has a
     title/key search box (`?q=`), and pages 20 to a page. CSV exports the filtered rows, all pages.
+    Amended after T8 (asked and agreed, 2026-11-03): emptying the search box goes back to the list without `q`, and the
+    box completes what you type in place from the filtered proposals (a key first, then a title), the guessed part
+    selected: Tab or → keeps it, typing on or Backspace drops it, Enter searches. No dropdown.
 17. **AC-17** A read tool `get_proposal_metrics` (phase counts, released this month, shipped per week, optional
     project) backs both metric cards and their pins. The shipped-per-week pin opens that metric, not the list.
 
@@ -170,6 +173,12 @@ working tree at T8.
   now finds it through the new search.
 - Host-only on Windows, passing on Linux: Delivery `releases.test` (backslash paths), Notifications `time-routing`
   (other modules' agents never settle), and graph check R7 on `packages/testing/boundaries`.
+- After T8 (product owner walkthrough, 2026-11-03): clearing the search box with its ✕ left the list searched, because
+  only Enter navigated. Emptying the box while a search is on now goes back to the list without `q`, keeping the phase
+  and project filters (`ProposalSearch.tsx`); the 081 e2e test checks it. Checked in Chromium against `dev`: ✕, clearing
+  by hand, and an empty box with no search on (stays). Then, asked and agreed (AC-16 amended), the box completes typing in place
+  (a native `<datalist>` was tried first and dropped: the product owner wants no dropdown). The 081 e2e test types
+  `inv`, gets "invoice export to PDF" with the guess selected, Backspace drops it, Tab keeps it, Enter searches. `e2e:auth` not rerun yet.
 - Review loop: not run. The specclaw-review MCP server didn't connect this session; run `/specclaw:verify` (or the
   review loop) before the PR.
 
