@@ -59,6 +59,15 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
  * The proposals table with its phase filters, export and pages (051): the global list and a
  * project's Proposals section share it. `root` is the list's path; `projects` adds the project filter.
  */
+/** 081 AC-16: the project the list is filtered to, beside Filter; its ✕ goes back to all projects, keeping phase and search. */
+function FilterChip({ name, href }: { name: string; href: string }) {
+  return (
+    <a className="filter-chip" href={href} aria-label={`Filtered to ${name}. Remove this filter to show all projects`}>
+      {name}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+    </a>
+  );
+}
+
 export function ProposalsTable({ rows, phase, root, project, q, page: asked, projects, title }: { rows: ProposalRow[]; phase?: Phase; root: string; project?: string; q?: string; page: number; projects?: { key: string; name: string }[]; title?: string }) {
   const page = Math.min(asked, Math.max(1, Math.ceil(rows.length / PAGE)));
   const shown = rows.slice((page - 1) * PAGE, page * PAGE);
@@ -77,6 +86,7 @@ export function ProposalsTable({ rows, phase, root, project, q, page: asked, pro
         </nav>
         <div className="actions">
           {projects && <FilterMenu label="Filter by project" options={[{ key: "", name: "All projects" }, ...projects].map((p) => ({ text: p.name, current: (project ?? "") === p.key, href: `${base}${query({ project: p.key, q })}` }))} />}
+          {projects && project && <FilterChip name={projects.find((p) => p.key === project)?.name ?? project} href={`${base}${query({ q })}`} />}
           <ProposalSearch base={base} project={project} q={q} options={rows.map((p) => ({ key: p.key, title: p.title }))} />
           <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", p.phase === "released" ? "Prod" : p.shippedTo ?? "", p.ownerName ?? ""])])} download="proposals.csv">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export

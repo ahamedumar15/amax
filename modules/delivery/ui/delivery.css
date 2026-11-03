@@ -209,6 +209,11 @@
 .proposal-search{display:inline-flex}
 .proposal-search input{height:36px;width:200px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;padding:0 10px;font:inherit}
 @media (max-width:860px){.proposal-search{flex:1 1 100%;order:3}.proposal-search input{width:100%}}
+/* 081 AC-16: the active project filter as a chip beside Filter; its ✕ clears it. */
+.filter-chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 10px 0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--chip-agent);font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.filter-chip svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.filter-chip:hover{border-color:var(--violet)}
+.filter-chip:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
 /* 081 AC-7: proposal titles link to their page and keep the card's and row's own look; hover and focus show it's a link. */
 .tcard p a,.tbl td[data-label="Proposal"] a{color:inherit;text-decoration:none}
 .tcard p a:hover,.tbl td[data-label="Proposal"] a:hover{text-decoration:underline}

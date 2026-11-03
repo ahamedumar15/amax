@@ -93,6 +93,7 @@ it against that section within 2% per region; only its header and the table's fi
     Amended after T8 (asked and agreed, 2026-11-03): emptying the search box goes back to the list without `q`, and the
     box completes what you type in place from the filtered proposals (a key first, then a title), the guessed part
     selected: Tab or → keeps it, typing on or Backspace drops it, Enter searches. No dropdown.
+    The project filter in use shows as a chip beside Filter; its ✕ goes back to all projects, keeping phase and search.
 17. **AC-17** A read tool `get_proposal_metrics` (phase counts, released this month, shipped per week, optional
     project) backs both metric cards and their pins. The shipped-per-week pin opens that metric, not the list.
 
@@ -178,7 +179,10 @@ working tree at T8.
   and project filters (`ProposalSearch.tsx`); the 081 e2e test checks it. Checked in Chromium against `dev`: ✕, clearing
   by hand, and an empty box with no search on (stays). Then, asked and agreed (AC-16 amended), the box completes typing in place
   (a native `<datalist>` was tried first and dropped: the product owner wants no dropdown). The 081 e2e test types
-  `inv`, gets "invoice export to PDF" with the guess selected, Backspace drops it, Tab keeps it, Enter searches. `e2e:auth` not rerun yet.
+  `inv`, gets "invoice export to PDF" with the guess selected, Backspace drops it, Tab keeps it, Enter searches. Then the project filter chip
+  (asked and agreed): checked in Chromium, it appears after picking Contoso Portal from Filter, its ✕ (keyboard too)
+  goes from `/building?project=CON&q=search` to `/building?q=search`, axe (WCAG 2.2 AA) clean, light and dark checked by
+  eye. The 081 e2e test closes it and runs axe. `e2e:auth` not rerun yet.
 - Review loop: not run. The specclaw-review MCP server didn't connect this session; run `/specclaw:verify` (or the
   review loop) before the PR.
 

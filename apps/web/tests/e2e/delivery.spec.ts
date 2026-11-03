@@ -161,4 +161,10 @@ test("081 a proposal opens from the list and the board, with its time, release, 
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/delivery\/proposals\?project=CON&q=invoice(\+|%20)export(\+|%20)to(\+|%20)PDF$/);
   await expect(page.locator('td[data-label="Proposal"]')).toHaveText(["CON-014 Invoice export to PDF"]);
+
+  // The project filter shows beside Filter; its ✕ goes back to all projects and keeps the search.
+  await page.getByRole("link", { name: /Filtered to Contoso Portal/ }).click();
+  await expect(page).toHaveURL(/\/delivery\/proposals\?q=invoice(\+|%20)export(\+|%20)to(\+|%20)PDF$/);
+  await expect(page.getByRole("link", { name: /Filtered to/ })).toHaveCount(0);
+  expect(await axe(page)).toEqual([]);
 });
