@@ -1043,6 +1043,10 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
   <div class="card flush"><div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false"><b>Planned</b></button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released</button></div><div class="actions"><input class="select" placeholder="Search proposals" aria-label="Search proposals"><button class="btn">Filter</button><button class="btn">Export</button><button class="btn primary">✦ New proposal</button></div></div>
     <p class="muted" style="padding:0 28px 20px;font-size:13px">Rows link to the proposal page. Counts and the chart follow the project filter and leave out closed projects. 20 rows a page. The shipped-per-week pin opens that metric.</p></div>
 </section>
+<section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Dev starts fresh</h1>
+  <p class="lede">No screen changes. <code>pnpm --filter @amax/web dev</code> no longer keeps Turbopack's compile cache between starts, so a leftover <code>apps/web/.next</code> from another branch can't put the browser into a refresh loop. Nobody deletes <code>.next</code> by hand any more.</p>
+</section>
 <!-- ================= 068 Overview deltas ================= -->
 <section data-change="073-time-workflow-enhancements" id="073-time-workflow-enhancements" data-roles="all" data-title="Time: weekend and reminders" data-nav="no" data-parent="001-amax-foundation-time">
   <h1>Time: weekend hours, reminders, This week</h1>
