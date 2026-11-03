@@ -118,3 +118,28 @@ test("062 AC-10 the Repo sync card leads with refused pushes, pins every row, an
   if (process.env.SHOTS_DIR) await card.screenshot({ path: `${process.env.SHOTS_DIR}/app.png` });
   expect(await axe(page)).toEqual([]);
 });
+
+// 081 AC-7, AC-15, AC-21: a proposal opens on its own page from the list and the board, survives a reload, and passes axe.
+test("081 a proposal opens from the list and the board, with its time, release, tasks and history", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/proposals");
+  await page.getByRole("navigation", { name: "Phase" }).getByRole("link", { name: "Planned" }).click();
+  await expect(page).toHaveURL(/\/delivery\/proposals\/planned$/);
+  await page.getByRole("navigation", { name: "Phase" }).getByRole("link", { name: "All" }).click();
+  // The e2e tenant also holds AMX's imported specs, which fill the first page: search finds the row (AC-16).
+  await page.getByLabel(/Search proposals by key or title/).fill("CON-014");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/delivery\/proposals\?q=CON-014$/);
+  await page.getByRole("link", { name: /CON-014 Invoice export to PDF/ }).click();
+  await expect(page).toHaveURL(/\/delivery\/proposals\/CON-014$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("CON-014 Invoice export to PDF");
+  for (const h of ["Time", "Release", "Description", "Tasks", "History"]) await expect(page.getByRole("heading", { name: h, exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("CON-014");
+  expect(await axe(page)).toEqual([]);
+
+  await page.goto("/delivery/p/CON");
+  await page.locator(".tcard", { hasText: "CON-014" }).getByRole("link", { name: "Invoice export to PDF" }).click();
+  await expect(page).toHaveURL(/\/delivery\/proposals\/CON-014$/);
+  await page.goto("/delivery/proposals/CON-404");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Proposal not found");
+});

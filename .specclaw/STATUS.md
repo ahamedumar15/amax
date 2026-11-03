@@ -1,38 +1,37 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-02 15:46 UTC
+**Last Updated:** 2026-11-03 06:57 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
-- 🔀 **015-payroll-sri-lanka** — PR #command requires
-- 🔀 **016-payroll-australia** — PR #command requires
-- 🔀 **019-accounting-journals** — PR #command requires
 - 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed | PR #96 merged
 - 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed | PR #97 merged
 - 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed | PR #98 merged
 - 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed | PR #102 closed
-- 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #command requires
-- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #command requires
-- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed | PR #command requires
-- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed | PR #command requires
-- 🔀 **074-fork-pr-review-gate** — pr raised | PR #command requires
-- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
-- 📝 **081-proposals-end-to-end** — tasks done | 0/8 tasks (0%) | 0 failed | PR #command requires
-- 🔀 **eval** — PR #command requires
+- 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #103 closed
+- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #104 closed
+- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed
+- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
+- 🔀 **074-fork-pr-review-gate** — pr raised
+- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed
+- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
+- 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed
+- 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed
+- 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
+- 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed
+- 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed
+- 📝 **081-proposals-end-to-end** — tasks done | 8/8 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
-_None._
+
+- 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
+- 📋 **016-payroll-australia** — proposal ready, awaiting planning
+- 📋 **019-accounting-journals** — proposal ready, awaiting planning
 
 ## Recently Completed
 
@@ -104,6 +103,6 @@ _None._
 
 ## Stats
 
-- **Total changes:** 85
-- **Active:** 21
+- **Total changes:** 81
+- **Active:** 17
 - **Completed:** 64

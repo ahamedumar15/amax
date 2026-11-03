@@ -7,7 +7,7 @@ export function ProposalSearch({ base, project, q }: { base: string; project?: s
     window.location.assign(`${base}${s ? `?${s}` : ""}`);
   };
   return (
-    <span role="search" className="search">
+    <span role="search" className="proposal-search">
       <input type="search" defaultValue={q ?? ""} placeholder="Search proposals" aria-label="Search proposals by key or title, then press Enter"
         onKeyDown={(e) => { if (e.key === "Enter") go(e.currentTarget.value); }} />
     </span>

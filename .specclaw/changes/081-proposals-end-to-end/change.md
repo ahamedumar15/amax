@@ -17,6 +17,11 @@ What changes on screen, and where to see it: [`081-proposals-end-to-end`](../../
 New proposal detail page (`/delivery/proposals/:key`). The global Proposals page gets a Planned filter, a New proposal
 button and linked rows. Board cards and search link to the detail page.
 
+Amended in T8 (asked and agreed, 2026-11-03): 007's Proposals section
+([`001-amax-foundation-proposals`](../../mock/index.html#001-amax-foundation-proposals)) now has the heading row with
+New proposal, the Planned filter and the search box. The page changed by design, and the delivery visual test compares
+it against that section within 2% per region; only its header and the table's filter bar changed.
+
 ## Acceptance Criteria
 
 ### Time and hours
@@ -135,10 +140,36 @@ Order follows the commit phases (backend before UI, because the screens read the
   Files: modules/delivery/server/queries.ts, modules/delivery/mcp.ts, modules/delivery/pins.ts, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/tests/proposal-metrics.test.ts
   Depends: T5
 - [x] `T7` — Phase 7 (notifications and lifecycle consistency): owner notifications for phase changes and tasks done by others; regression tests for release, void, sync and push rules with withdrawn rows (AC-18, AC-19, AC-20)
-  Files: modules/delivery/contracts.ts, modules/delivery/module.ts, modules/delivery/server/services.ts, modules/delivery/server/tasks.ts, modules/delivery/tests/proposal-notify.test.ts, modules/delivery/tests/proposal-regression.test.ts
+  Files: modules/delivery/contracts.ts, modules/delivery/module.ts, modules/delivery/server/services.ts, modules/delivery/server/tasks.ts, modules/notifications/tests/delivery-routing.test.ts, modules/delivery/tests/proposal-regression.test.ts
   Depends: T6
-- [ ] `T8` — Phase 8 (tests and verification): e2e opens a proposal from the list, board and search; lint, unit tests, build, `e2e:auth` delivery; README and audit progress (AC-21)
-  Files: apps/web/tests/e2e/proposals.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
+- [x] `T8` — Phase 8 (tests and verification): e2e opens a proposal from the list, board and search; lint, unit tests, build, `e2e:auth` delivery; README and audit progress (AC-21)
+  Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, modules/delivery/ui/delivery.css, modules/delivery/ui/ProposalSearch.tsx, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T7
 
 ## Verify
+
+Run 2026-11-03 on Linux: the Docker replica of CI's `checks` job (node:24-bookworm, fresh postgres:16-alpine), over the
+working tree at T8.
+
+| Check | Result |
+|---|---|
+| `pnpm install --frozen-lockfile`, `pnpm db:migrate` (delivery 0019, time 0009) | pass |
+| `pnpm lint` (35 type checks + graph check) | pass |
+| `pnpm turbo run test --concurrency=2` | pass, every package; Delivery 27 files, Time 49, Notifications 6, web 34 |
+| `node scripts/check-module-standard.mjs` | pass (22 modules) |
+| `pnpm build` | pass |
+| `pnpm --filter @amax/web e2e` | pass |
+| `pnpm --filter @amax/web e2e:auth` | 83 passed, including the 081 proposal page test and the delivery visual test |
+
+- First pass: Time's `grid-perf` took 2.23 s against its 2 s limit, with two packages testing at once in Docker on
+  Windows. It passed alone. 081 doesn't change the Team grid's queries.
+- The delivery visual test failed against 007's mock section. The page changed by design, and the section was updated
+  with the product owner's agreement (Mock Delta). The search box's `.search` class also clashed with the shell's top
+  bar; it is now `.proposal-search`.
+- The 081 e2e test first looked for CON-014 on page 1. The e2e tenant's imported AMX specs fill that page, so the test
+  now finds it through the new search.
+- Host-only on Windows, passing on Linux: Delivery `releases.test` (backslash paths), Notifications `time-routing`
+  (other modules' agents never settle), and graph check R7 on `packages/testing/boundaries`.
+- Review loop: not run. The specclaw-review MCP server didn't connect this session; run `/specclaw:verify` (or the
+  review loop) before the PR.
+

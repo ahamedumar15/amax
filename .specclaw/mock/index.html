@@ -733,6 +733,10 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 .bar-partial-lbl{font-size:11px}
 .decide{display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
 .decide .chip{height:26px}
+/* 081: the proposals search box, as delivery.css draws it. */
+.proposal-search{display:inline-flex}
+.proposal-search input{height:36px;width:200px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;padding:0 10px;font:inherit}
+@media (max-width:860px){.proposal-search{flex:1 1 100%;order:3}.proposal-search input{width:100%}}
 </style>
 </head>
 <body>
@@ -1528,8 +1532,11 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
 
 <!-- ================= Proposals ================= -->
 <section data-change="007-delivery-projects" id="001-amax-foundation-proposals" data-roles="admin leadership pm engineer finance" data-title="Proposals" data-icon="doc">
-  <h1>Proposals</h1>
-  <p class="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p>
+  <!-- 081 (asked and agreed): New proposal beside the heading, a Planned filter and the search box, as the app now renders them. -->
+  <div class="row head">
+    <div><h1>Proposals</h1><p class="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p></div>
+    <div class="actions"><button class="btn primary"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:currentColor;stroke:none"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>New proposal</button></div>
+  </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
       <div class="card-head"><h2>Proposals by phase</h2><span class="muted" style="font-size:13px">37 in flight</span></div>
@@ -1542,7 +1549,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released</button></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
+    <div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Planned</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released</button></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><span role="search" class="proposal-search"><input type="search" placeholder="Search proposals" aria-label="Search proposals by key or title, then press Enter"></span><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Tasks</th><th class="num">Time</th><th>Release</th><th>Shipped to</th><th>Owner</th></tr></thead>
       <tbody>
