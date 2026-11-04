@@ -317,6 +317,60 @@ an agent never writes without a person's confirm or accept (BR-5).
 **Not included (needs the product owner):** a "stale proposal, withdraw it?" nudge. Its undo would reinstate a
 withdrawn proposal, which is Q5, still open.
 
+## Amendment 3 (2026-11-04): every Delivery pin suggests its actions
+
+The client asked for every pin in Delivery to offer the actions that fit it, so any Delivery task can be run from a pin:
+pin the record, pick the suggestion, confirm the card. Amendment 2 did this for proposals. This amendment does it for
+every pinnable Delivery record and view, with the same rules:
+- **Fits now:** offers are read when chat asks, from the record as it is now (AC-31).
+- **Allowed only:** each offer appears only if the viewer holds its tool's permission on the record's project.
+- **Confirmed:** a click fills the box, and the write waits for the confirm card (BR-5).
+- **Exact prompts:** each prompt is the text that tool's chat flow already takes.
+- **At most three** per pin.
+
+There is no new tool, permission, table or migration.
+
+| Pinned (read tool) | Offers, when they fit | Write tool |
+|---|---|---|
+| Project (`get_project`) | "New proposal in <Project>"; "Create release <next version> of <KEY>" (next minor after its latest); "Link <KEY>'s repo" when none is linked | create_proposal, create_release, link_project_repo |
+| Proposal (`get_proposal`, AC-30 plus) | AC-30's, plus "Mark T<n> of <key> done" (its first open task), and, Verified and in no release, "Put <key> in <KEY> <version>" (the newest release not yet in Prod) | + mark_task_done, set_release_proposals |
+| Release (`get_release`, `get_release_history`) | "Record a deployment of <KEY> <version> to <next environment>"; "Change the proposals in <KEY> <version>"; "Tag <KEY> <version> as" | record_deployment, set_release_proposals, tag_release |
+| Environment (`get_environment`) | "Make <env> the prod environment of <KEY>" if it isn't; "Rename the <env> environment of <KEY>"; "Remove the <env> environment of <KEY>" if it has no deployments | upsert_environment, remove_environment |
+| Deployment (`get_deployment`) | "Void the <env> deployment of <KEY> <version>" while it is live (the reason is typed on) | void_deployment |
+| Repo sync (`get_repo_sync`) | "Relink <KEY>'s repo" / "Unlink <KEY>'s repo" when linked; "Link <KEY>'s repo" when not | link_project_repo, unlink_project_repo |
+| Proposals views (`list_proposals`, `get_proposal_metrics`) | "New proposal" (in the filtered project when one is named) | create_proposal |
+| Releases views (`list_releases`, `list_environments`) | "Create a release" / "Add an environment to <KEY>" for the named project | create_release, upsert_environment |
+| Projects view (`list_projects`) | "New project" | create_project |
+
+38. **AC-38** Each row above offers exactly what fits its record's state and the viewer's permissions on its project,
+    and nothing else. The views offer only for a project the viewer may write to.
+39. **AC-39** Every offer's prompt runs to a confirm card naming the same record, and confirming makes the write. The
+    scripted e2e model learns the prompts it doesn't parse yet: create release, mark task done, put in a release, link,
+    unlink and relink, rename, new proposal, and new project.
+40. **AC-40** Not offered, with the reason recorded:
+    - `sync_proposal`, `sync_specclaw`: CI and plugin writes, never chat cards.
+    - `set_commit_time_logging`: needs the entity's people told first, an Admin's deliberate act.
+    - `withdraw_proposal`: destructive, so no pin offer. Decided 2026-11-04: it gets a clean, dedicated button
+      instead. On the proposal page, "Withdraw" becomes an outlined danger button (there is no card fold any more, see below),
+      replacing AC-22's quiet underlined link. It still asks for a reason and needs the confirm card.
+    - Activity lines and pushes: news, with nothing to act on.
+41. **AC-41** Tests:
+    - A unit test per row: state, permission, and the exact prompt.
+    - The 081 and 054 chat-first suites stay green.
+    - End to end in the browser: pin a release, then "Record a deployment … to <next>", confirm, and the release map
+      shows it; pin an environment, then "Make … prod" or "Remove", confirm.
+    - A hand walk-through of every row on the running app, with screenshots.
+
+**Decided 2026-11-04: no Actions dropdown on board cards.** AC-22's Actions fold, and the Move button the card had
+before 081, are removed. A board card keeps its title link, its pin (+) and its "amax suggests" chip, and its actions come
+from its pin: pin the card, and chat offers the moves, tasks and owner change that fit it (AC-30, AC-38), each confirmed
+on its card. The proposal page keeps its action buttons. This supersedes AC-22 for the board; on the BRD's FR-14 ("Ask
+amax actions on the board card"), the board's actions are reached through the card's pin.
+
+**Approved 2026-11-04.** **Affected:** `modules/delivery/pin-suggestions.ts` (split by record), `ui/ProposalActions.tsx`, `ui/ProjectPage.tsx` and `ui/delivery.css` (the Withdraw button, no card fold), `module.ts`,
+`packages/ai/src/scripted-writes.ts` (test-only rules, as Amendment 2), tests, `apps/web/tests/e2e/delivery.spec.ts`.
+
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -371,6 +425,13 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T17` — Amendment 2, end to end: scripted e2e rules, browser tests, hand walk-through, READMEs, traceability, CI replica (AC-36, AC-37)
   Files: packages/ai/src/scripted-writes.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T16
+
+- [ ] `T18` — Amendment 3: pin suggestions for projects, releases, environments, deployments, repo sync and views; proposal additions; no Actions fold on cards; a clean Withdraw button (AC-38, AC-40)
+  Depends: T17
+  Files: modules/delivery/pin-suggestions.ts, modules/delivery/pins-offer/*.ts, modules/delivery/module.ts, modules/delivery/tests/pin-offers.test.ts
+- [ ] `T19` — Amendment 3: scripted e2e rules, browser tests, walk-through, docs, CI replica (AC-39, AC-41)
+  Files: packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md
+  Depends: T18
 
 ## Verify
 
