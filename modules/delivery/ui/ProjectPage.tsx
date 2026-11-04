@@ -4,7 +4,7 @@ import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
 import { projectPin, proposalPin } from "../pins";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
-import { AskButton } from "./AskButton";
+import { ProposalActions, proposalActions } from "./ProposalActions";
 import { NewProposalButton } from "./NewProposalButton";
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
@@ -37,7 +37,7 @@ function SpecFacts({ p }: { p: ProposalRow }) {
   );
 }
 
-function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
+function Card({ p, may }: { p: ProposalRow; may: (permission: string) => boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
   const pin = proposalPin(p);
@@ -46,12 +46,12 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
       <PinButton pin={pin} />
       <div className="id">{p.key}</div>
       <p><a href={proposalHref(p.key)}>{p.title}</a></p>
-      {p.phase !== "proposed" && p.phase !== "released" && <div className="prog"><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
+      {p.tasksTotal > 0 && p.phase !== "released" && <div className="prog" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
       <div className="foot">
         {p.phase === "released" ? <span className="chip">{p.release ?? "Released"}</span>
           : p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={p.ownerName ?? "Unassigned"} />}
         <span>
-          {p.phase === "proposed" && (p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`)}
+          {p.phase === "proposed" && `${p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`}${p.tasksTotal ? ` · ${p.tasksDone} of ${p.tasksTotal} tasks` : ""}`}
           {(p.phase === "planned" || p.phase === "building") && `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}`}
           {p.phase === "verified" && p.source !== "specclaw" && <span className="chip">{p.release ?? "No release"}{p.shippedTo ? `, in ${p.shippedTo}` : ""}</span>}
           {p.phase === "verified" && p.source === "specclaw" && `${p.tasksDone} of ${p.tasksTotal} tasks`}
@@ -59,8 +59,9 @@ function Card({ p, canMove }: { p: ProposalRow; canMove: boolean }) {
         </span>
       </div>
       {p.source === "specclaw" && <SpecFacts p={p} />}
-      {canMove && p.phase !== "released" && p.source !== "specclaw" && (
-        <span className="cardmenu"><AskButton label="Move" name={`Move ${p.key}`} prompt={`Move ${p.key} to `} pin={pin} /></span>
+      {proposalActions(p, may, "board").length > 0 && (
+        <details className="cardmenu"><summary className="btn sm" aria-label={`Actions for ${p.key}`}>Actions<span className="chev" aria-hidden="true" /></summary>
+          <div className="cardmenu-list"><ProposalActions p={p} may={may} where="board" /></div></details>
       )}
     </div>
   );
@@ -72,7 +73,8 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   const data = await getProject(viewer, params.key);
   if (!data) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
   const { project, proposals } = data;
-  const canMove = can(viewer, "delivery:proposal:move", { projectId: project.id });
+  // 081 AC-22: the board card offers what the viewer may do on this project, from the same list as the proposal page.
+  const may = (permission: string) => can(viewer, permission, { projectId: project.id });
   const envs = await listEnvironments(viewer, project.key);
   const sync = await getRepoSync(viewer, { projectId: project.id });
 
@@ -99,7 +101,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           return (
             <section className="lane" key={phase} aria-label={`${LANE_LABEL[phase]}, ${cards.length}`}>
               <div className="lane-head"><span className="lh"><Stk phase={phase} />{LANE_LABEL[phase]}</span> <span>{cards.length}</span></div>
-              {cards.map((p) => <Card key={p.id} p={p} canMove={canMove} />)}
+              {cards.map((p) => <Card key={p.id} p={p} may={may} />)}
             </section>
           );
         })}

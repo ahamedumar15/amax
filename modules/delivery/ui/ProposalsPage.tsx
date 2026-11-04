@@ -27,7 +27,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const projectKey = searchParams.project || undefined;
   const [counts, rows, shipped, projects] = await Promise.all([phaseCounts(viewer, undefined, { projectKey }), listProposals(viewer, { phase, projectKey, q: searchParams.q }),
     shippedPerWeek(viewer, undefined, { projectKey }), listProjects(viewer, "active")]);
-  const bar: [Phase, number, string][] = [["proposed", counts.proposed, "Proposed"], ["planned", counts.planned, "Planned"], ["building", counts.building, "Building"], ["verified", counts.verified, "Verified"], ["released", counts.releasedThisMonth, "Released this month"]];
+  const bar: [Phase, number, string][] = [["proposed", counts.proposed, "Proposed"], ["planned", counts.planned, "Planned"], ["building", counts.building, "Building"], ["verified", counts.verified, "Verified"], ["released", counts.releasedThisMonth, `Released in ${counts.month}`]];
   const recent = shipped.values.slice(-4).reduce((a, b) => a + b, 0), prior = shipped.values.slice(0, 4).reduce((a, b) => a + b, 0);
   const trend = prior ? ((recent - prior) / prior) * 100 : null;
   const filtered = projects.find((p) => p.key === searchParams.project);
@@ -81,7 +81,7 @@ export function ProposalsTable({ rows, phase, root, project, q, page: asked, pro
         {title && <h2>{title}</h2>}
         <nav className="seg" aria-label="Phase">
           {FILTERS.map((f) => (
-            <a key={f} href={`${f === "all" ? root : `${root}/${f}`}${query({ project, q })}`} aria-current={(f === "all" ? !phase : phase === f) ? "true" : undefined}>{f === "all" ? "All" : PHASE_UI[f].label}</a>
+            <a key={f} href={`${f === "all" ? root : `${root}/${f}`}${query({ project, q })}`} aria-current={(f === "all" ? !phase : phase === f) ? "true" : undefined}>{f === "all" ? "All" : f === "released" ? "Released, all time" : PHASE_UI[f].label}</a>
           ))}
         </nav>
         <div className="actions">
@@ -105,7 +105,7 @@ export function ProposalsTable({ rows, phase, root, project, q, page: asked, pro
                   <td data-label="Proposal"><a href={proposalHref(p.key)}><b>{p.key}</b> {p.title}</a></td>
                   <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} />{p.projectName}</td>
                   <td data-label="Phase"><PhaseChip phase={p.phase} /></td>
-                  <td data-label="Tasks">{p.tasksTotal && p.phase !== "proposed" ? <div className="meter" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, background: pct === 100 ? "var(--mint)" : "var(--violet)" }} /></div> : <span className="muted">–</span>}</td>
+                  <td data-label="Tasks">{p.tasksTotal > 0 ? <div className="meter" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, background: pct === 100 ? "var(--mint)" : "var(--violet)" }} /></div> : <span className="muted">–</span>}</td>
                   <td data-label="Time" className="num">{Number(p.hours.toFixed(2))} h</td>
                   <td data-label="Release">{p.release ?? <span className="muted">None</span>}</td>
                   <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>

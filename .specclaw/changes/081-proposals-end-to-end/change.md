@@ -142,9 +142,10 @@ database migration and no new module edge. Every earlier AC, decision and busine
     project: `delivery:proposal:create` for Edit, `delivery:task:done` for Add a task, `delivery:proposal:move` for
     Withdraw and Move. A spec proposal's card shows none of them (BR-3). The board and the proposal page draw these
     actions from one component, so the two can't differ.
-23. **AC-23 (FR-13)** A proposal that has tasks shows its task meter (done of total) in every phase but Released: on
-    the global list, the project list and the board card. That includes Proposed. With no tasks, the list shows "–" and
-    the card shows no bar. A released card keeps its release chip.
+23. **AC-23 (FR-13)** A proposal that has tasks shows its task meter (done of total), Proposed included: in every phase
+    on the global and project lists (as Released rows already did), and on the board card in every phase but Released,
+    whose card shows its release chip. With no tasks, the list shows "–" and the card shows no bar. (Amended in T9:
+    the lists keep the meter on Released rows, as the mock and the visual test have it.)
 24. **AC-24 (FR-10a)** The page of a hand-made proposal says what can happen to its key. For example: "Made by hand.
     If this project starts syncing specclaw changes and one of them is numbered CON-019, this proposal moves to the
     hand-made series (for example CON-H001). Its tasks, time, release and history move with it; links by the old key
@@ -248,7 +249,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T8` — Phase 8 (tests and verification): e2e opens a proposal from the list, board and search; lint, unit tests, build, `e2e:auth` delivery; README and audit progress (AC-21)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, modules/delivery/ui/delivery.css, modules/delivery/ui/ProposalSearch.tsx, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T7
-- [ ] `T9` — Amendment 1, board and list: one actions component on the card and the page; task meter in every phase but Released; key note; "Released in <Month>" / "Released, all time" (AC-22 to AC-25)
+- [x] `T9` — Amendment 1, board and list: one actions component on the card and the page; task meter in every phase but Released; key note; "Released in <Month>" / "Released, all time" (AC-22 to AC-25)
   Files: modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/mcp.ts, modules/delivery/tests/proposal-board-081.test.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
   Depends: T8
 - [ ] `T10` — Amendment 1, Log time asks for the proposal (AC-26)

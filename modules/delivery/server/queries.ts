@@ -150,7 +150,9 @@ export const phaseCounts = (v: Viewer, at?: Date, f: Pick<ProposalFilter, "proje
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id where ${scope(f)} group by p.phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
     const counts = { proposed: Number(get("proposed")?.n ?? 0), planned: Number(get("planned")?.n ?? 0), building: Number(get("building")?.n ?? 0), verified: Number(get("verified")?.n ?? 0) };
-    return { ...counts, inFlight: counts.proposed + counts.planned + counts.building + counts.verified, releasedThisMonth: Number(get("released")?.this_month ?? 0) };
+    // 081 AC-25: the month "released this month" counted (UTC, by the tenant's clock), so labels can name it.
+    const monthName = now.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+    return { ...counts, inFlight: counts.proposed + counts.planned + counts.building + counts.verified, releasedThisMonth: Number(get("released")?.this_month ?? 0), month: monthName };
   });
 
 /** 081 AC-17: the Proposals page's two metric cards as one read, for their pins and for chat. */

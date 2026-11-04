@@ -19,7 +19,7 @@ describe.skipIf(!hasDb)("081 proposal lists, counts and metrics agree (Postgres)
 
   it("AC15 the global and project lists filter by every phase, Planned included", async () => {
     const global = await html(ProposalsPage({ viewer: maya, params: {} }));
-    expect([...global.matchAll(/aria-label="Phase">(.*?)<\/nav>/g)][0][1].match(/>([A-Za-z]+)<\/a>/g)).toEqual([">All</a>", ">Proposed</a>", ">Planned</a>", ">Building</a>", ">Verified</a>", ">Released</a>"]);
+    expect([...global.matchAll(/aria-label="Phase">(.*?)<\/nav>/g)][0][1].match(/>([A-Za-z, ]+)<\/a>/g)).toEqual([">All</a>", ">Proposed</a>", ">Planned</a>", ">Building</a>", ">Verified</a>", ">Released, all time</a>"]);
     expect(await html(ProposalsPage({ viewer: maya, params: { phase: "planned" } }))).toContain('href="/delivery/proposals/planned"');
     const planned = await listProposals(maya, { phase: "planned" });
     expect(planned.length).toBeGreaterThan(0);

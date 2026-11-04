@@ -1,0 +1,76 @@
+import { createElement } from "react";
+import { sql } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasDb } from "@amax/db/testdb";
+import type { Viewer } from "@amax/auth";
+import { ctxFor } from "../server/context";
+import { addProposalTask } from "../server/lifecycle";
+import { listProposals, phaseCounts } from "../server/queries";
+import { createProposal, syncProposal } from "../server/services";
+import { ProjectPage } from "../ui/ProjectPage";
+import { KeyNote } from "../ui/ProposalPage";
+import { ProposalsPage } from "../ui/ProposalsPage";
+import { proposalDb, T } from "./proposal-db";
+
+const html = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
+// The buttons in one card's "Ask amax about <key>" group, in order.
+const actionsOf = (page: string, key: string) => {
+  const group = page.match(new RegExp(`aria-label="Ask amax about ${key}">(.*?)</span>`))?.[1] ?? "";
+  return [...group.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]);
+};
+
+describe.skipIf(!hasDb)("081 amendment 1: board card actions, task meters, key note, Released labels (Postgres)", () => {
+  let db: Awaited<ReturnType<typeof proposalDb>>;
+  let maya: Viewer;
+  beforeAll(async () => {
+    db = await proposalDb();
+    maya = await db.as("maya");
+    await db.q(sql`insert into delivery.clock_pin (tenant_id, today) values (${T}, '2026-10-16')`);
+    await syncProposal(ctxFor(maya), { projectKey: "CON", project: { name: "Contoso Portal", client: "Contoso" }, key: "CON-301", title: "Spec change", phase: "building",
+      tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "301-spec", releasedAt: null, meta: {}, committedAt: "2026-10-10T09:00:00Z" });
+  }, 120_000);
+  afterAll(() => db?.t.drop());
+
+  it("AC22 a hand-made card offers Edit, Add a task, Move and Withdraw by permission, as the page does; spec cards and read-only viewers get none", async () => {
+    const board = await html(ProjectPage({ viewer: maya, params: { key: "CON" } }));
+    expect(actionsOf(board, "CON-017")).toEqual(["Edit CON-017", "Add a task to CON-017", "Move CON-017", "Withdraw CON-017"]);
+    expect(board).toContain('class="btn sm primary"');
+    expect(actionsOf(board, "CON-301")).toEqual([]);
+    expect(actionsOf(board, "CON-009")).toEqual([]);
+    const readOnly = await html(ProjectPage({ viewer: await db.as("maya", "Leadership"), params: { key: "CON" } }));
+    expect(readOnly).not.toContain("Ask amax about");
+    const engineer = await html(ProjectPage({ viewer: await db.as("kasun"), params: { key: "CON" } }));
+    expect(engineer).not.toContain("Ask amax about");
+    expect(board).not.toMatch(/<form|<dialog/);
+  });
+
+  it("AC23 a Proposed proposal with tasks shows its meter on the list and the board; with none, the list shows – and the card no bar", async () => {
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
+    const meter = (page: string) => page.includes(`${key}`) && /aria-label="0 of 1 tasks"/.test(page);
+    const before = await html(ProjectPage({ viewer: maya, params: { key: "CON" } }));
+    expect(before).not.toMatch(/aria-label="0 of 1 tasks"/);
+    await addProposalTask(ctxFor(maya), { key, title: "Template" });
+    expect((await listProposals(maya, { projectKey: "CON", phase: "proposed" })).find((p) => p.key === key)).toMatchObject({ tasksTotal: 1, phase: "proposed" });
+    expect(meter(await html(ProjectPage({ viewer: maya, params: { key: "CON" } })))).toBe(true);
+    expect(meter(await html(ProposalsPage({ viewer: maya, params: { phase: "proposed" }, searchParams: { project: "CON" } })))).toBe(true);
+    const released = await html(ProposalsPage({ viewer: maya, params: { phase: "released" }, searchParams: { project: "CON" } }));
+    expect(released).toMatch(/aria-label="8 of 8 tasks"/);
+  });
+
+  it("AC24 a hand-made proposal's page explains its key; one in the -H series says it keeps it; a spec proposal has no note", async () => {
+    const note = (key: string, source: string | null) => html(createElement(KeyNote, { p: { key, source, project: { key: "CON" } } }));
+    expect(await note("CON-019", null)).toMatch(/moves to the hand-made series \(for example CON-H001\)\. Its tasks, time, release and history move with it/);
+    expect(await note("CON-H004", null)).toMatch(/in the hand-made series \(CON-H…\), so a specclaw change synced into CON can(&#x27;|')t take this key/);
+    expect(await note("CON-301", "specclaw")).toBe("");
+  });
+
+  it("AC25 the legend names the month it counts and the filter says all time; neither changes what it counts", async () => {
+    const page = await html(ProposalsPage({ viewer: maya, params: {} }));
+    const counts = await phaseCounts(maya);
+    expect(counts.month).toBe("October");
+    expect(page).toMatch(new RegExp(`Released in October<b>${counts.releasedThisMonth}</b>`));
+    expect(page).toContain(">Released, all time</a>");
+    const all = await listProposals(maya, { phase: "released" });
+    expect(all.length).toBeGreaterThan(counts.releasedThisMonth);
+  });
+});

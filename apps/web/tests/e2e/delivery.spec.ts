@@ -56,6 +56,8 @@ test("AC3 / 054 AC5 Move on the board asks amax with the proposal pinned; confir
   await expect(page.locator("main form, main dialog")).toHaveCount(0);
   const card = page.locator(".tcard", { hasText: "CON-017" });
   await card.hover();
+  // 081 AC-22: a card's actions open from its Actions fold.
+  await card.locator("summary", { hasText: "Actions" }).click();
   await askAndConfirm(page, card.getByRole("button", { name: "Move CON-017", exact: true }), { pin: "CON-017 CSV import for clients", prompt: "Move CON-017 to ", type: "building" });
   await expect.poll(() => lanes(page)).toEqual(["1", "1", "3", "2", "1"]);
   await expect(page.getByRole("button", { name: "Move CON-009", exact: true })).toHaveCount(0);
@@ -65,7 +67,7 @@ test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
   await signIn(page, "maya@lumenlabs.test", "/delivery/proposals");
   const amxInFlight = (await amx()).filter((r) => r.phase !== "released").length;
   await expect(page.getByText(/^\d+ in flight$/)).toHaveText(`${37 + amxInFlight} in flight`);
-  await expect(page.locator(".phase-legend li")).toHaveText([/Proposed\s*\d+/, /Planned\s*\d+/, /Building\s*\d+/, /Verified\s*\d+/, /Released this month\s*\d+/]);
+  await expect(page.locator(".phase-legend li")).toHaveText([/Proposed\s*\d+/, /Planned\s*\d+/, /Building\s*\d+/, /Verified\s*\d+/, /Released in October\s*\d+/]);
   await page.getByRole("link", { name: "Released" }).click();
   await expect(page).toHaveURL(/\/delivery\/proposals\/released$/);
   await expect(page.locator("table.tbl tbody tr").first()).toContainText("Prod");

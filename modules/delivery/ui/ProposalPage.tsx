@@ -71,6 +71,22 @@ function History({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode 
   );
 }
 
+/**
+ * 081 AC-24 (FR-10a): what can happen to a hand-made proposal's key. A spec change synced into the project takes its
+ * number, so a hand-made CON-019 moves to the hand-made series (CON-H001); the proposal itself, by id, keeps everything.
+ */
+export function KeyNote({ p }: { p: { key: string; source: string | null; project: { key: string } } }) {
+  if (p.source !== null) return null;
+  const hand = /-H\d+$/.test(p.key);
+  return (
+    <p className="muted keynote" role="note">
+      {hand
+        ? <>Made by hand, in the hand-made series ({p.project.key}-H…), so a specclaw change synced into {p.project.key} can't take this key.</>
+        : <>Made by hand. If {p.project.key} starts syncing specclaw changes and one of them is numbered like {p.key}, this proposal moves to the hand-made series (for example {p.project.key}-H001). Its tasks, time, release and history move with it; links by the old key stop working.</>}
+    </p>
+  );
+}
+
 /** 081 AC-6: one proposal. Writes happen in chat, from the Ask amax buttons. */
 export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; proposalKey: string }) {
   const p = await proposalDetail(viewer, { key: proposalKey });
@@ -89,6 +105,7 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
           <PinButton inline pin={projectPin(p.project)} />
         </div>
       </div>
+      <KeyNote p={p} />
       {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn.</b> {p.withdrawReason ?? "Its spec change was removed from the repo."} It no longer counts in lists, boards or releases.</p></div>}
       <div className="cols even" style={{ marginBottom: 28 }}><TimeCard p={p} pin={pin} /><ReleaseCard p={p} pin={pin} /></div>
       <div className="card pinnable" style={{ marginBottom: 28 }}>
