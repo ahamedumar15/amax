@@ -31,17 +31,15 @@ describe.skipIf(!hasDb)("081 amendment 1: board card actions, task meters, key n
   }, 120_000);
   afterAll(() => db?.t.drop());
 
-  it("AC22 a hand-made card offers Edit, Add a task, Move and Withdraw by permission, as the page does; spec cards and read-only viewers get none", async () => {
+  it("AC22 (amendment 3) board cards carry no action menu, only their pin; the proposal page keeps its actions, Withdraw as a clean button", async () => {
     const board = await html(ProjectPage({ viewer: maya, params: { key: "CON" } }));
-    expect(actionsOf(board, "CON-017")).toEqual(["Edit CON-017", "Add a task to CON-017", "Move CON-017", "Withdraw CON-017"]);
-    expect(board).toContain('class="btn sm primary"');
-    expect(actionsOf(board, "CON-301")).toEqual([]);
-    expect(actionsOf(board, "CON-009")).toEqual([]);
-    const readOnly = await html(ProjectPage({ viewer: await db.as("maya", "Leadership"), params: { key: "CON" } }));
-    expect(readOnly).not.toContain("Ask amax about");
-    const engineer = await html(ProjectPage({ viewer: await db.as("kasun"), params: { key: "CON" } }));
-    expect(engineer).not.toContain("Ask amax about");
-    expect(board).not.toMatch(/<form|<dialog/);
+    expect(board).not.toContain("Ask amax about");
+    expect(board).not.toMatch(/<details|cardmenu|<form|<dialog/);
+    expect(board).toContain('aria-label="Add CON-017 CSV import for clients to chat"');
+    const page = await html(ProposalsPage({ viewer: maya, params: { phase: "CON-017" } }));
+    expect(actionsOf(page, "CON-017")).toEqual(["Edit CON-017", "Add a task to CON-017", "Move CON-017", "Withdraw CON-017"]);
+    expect(page).toMatch(/class="btn sm withdraw"[^>]*aria-label="Withdraw CON-017"/);
+    expect(actionsOf(await html(ProposalsPage({ viewer: await db.as("maya", "Leadership"), params: { phase: "CON-017" } })), "CON-017")).toEqual([]);
   });
 
   it("AC23 a Proposed proposal with tasks shows its meter on the list and the board; with none, the list shows – and the card no bar", async () => {

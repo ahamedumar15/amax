@@ -4,7 +4,6 @@ import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
 import { projectPin, proposalPin } from "../pins";
 import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
-import { ProposalActions, proposalActions } from "./ProposalActions";
 import { proposalSuggestions } from "./ProposalSuggestions";
 import { NewProposalButton } from "./NewProposalButton";
 import { Avatar } from "./Avatar";
@@ -38,7 +37,7 @@ function SpecFacts({ p }: { p: ProposalRow }) {
   );
 }
 
-function Card({ p, may, suggested }: { p: ProposalRow; may: (permission: string) => boolean; suggested: boolean }) {
+function Card({ p, suggested }: { p: ProposalRow; suggested: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
   const pin = proposalPin(p);
@@ -61,10 +60,6 @@ function Card({ p, may, suggested }: { p: ProposalRow; may: (permission: string)
       </div>
       {suggested && <div className="foot" style={{ marginTop: 8 }}><a className="chip agent" href={proposalHref(p.key)} aria-label={`amax suggests something for ${p.key}: open it`}>amax suggests</a></div>}
       {p.source === "specclaw" && <SpecFacts p={p} />}
-      {proposalActions(p, may, "board").length > 0 && (
-        <details className="cardmenu"><summary className="btn sm" aria-label={`Actions for ${p.key}`}>Actions<span className="chev" aria-hidden="true" /></summary>
-          <div className="cardmenu-list"><ProposalActions p={p} may={may} where="board" /></div></details>
-      )}
     </div>
   );
 }
@@ -75,8 +70,6 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   const data = await getProject(viewer, params.key);
   if (!data) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
   const { project, proposals } = data;
-  // 081 AC-22: the board card offers what the viewer may do on this project, from the same list as the proposal page.
-  const may = (permission: string) => can(viewer, permission, { projectId: project.id });
   // 081 AC-35: a card with an open agent suggestion the viewer may decide says so, and opens the proposal to decide it.
   const suggested = new Set((await proposalSuggestions(viewer, proposals.map((x) => x.id))).open.map((s) => s.target.id));
   const envs = await listEnvironments(viewer, project.key);
@@ -105,7 +98,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           return (
             <section className="lane" key={phase} aria-label={`${LANE_LABEL[phase]}, ${cards.length}`}>
               <div className="lane-head"><span className="lh"><Stk phase={phase} />{LANE_LABEL[phase]}</span> <span>{cards.length}</span></div>
-              {cards.map((p) => <Card key={p.id} p={p} may={may} suggested={suggested.has(p.id)} />)}
+              {cards.map((p) => <Card key={p.id} p={p} suggested={suggested.has(p.id)} />)}
             </section>
           );
         })}

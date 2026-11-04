@@ -426,7 +426,7 @@ Order follows the commit phases (backend before UI, because the screens read the
   Files: packages/ai/src/scripted-writes.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T16
 
-- [ ] `T18` — Amendment 3: pin suggestions for projects, releases, environments, deployments, repo sync and views; proposal additions; no Actions fold on cards; a clean Withdraw button (AC-38, AC-40)
+- [x] `T18` — Amendment 3: pin suggestions for projects, releases, environments, deployments, repo sync and views; proposal additions; no Actions fold on cards; a clean Withdraw button (AC-38, AC-40)
   Depends: T17
   Files: modules/delivery/pin-suggestions.ts, modules/delivery/pins-offer/*.ts, modules/delivery/module.ts, modules/delivery/tests/pin-offers.test.ts
 - [ ] `T19` — Amendment 3: scripted e2e rules, browser tests, walk-through, docs, CI replica (AC-39, AC-41)

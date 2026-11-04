@@ -1,38 +1,24 @@
 import type { PinSuggestion } from "@amax/core";
-import { can, type Viewer } from "@amax/auth";
-import type { Phase } from "./contracts";
-import { getProject, getProposal, type ProposalRow } from "./server/queries";
+import type { Viewer } from "@amax/auth";
+import { deploymentOffers, environmentOffers, projectOffers, proposalOffers, releaseOffers, repoOffers, viewOffers, type Offer } from "./server/pin-offers";
 
-// 081 AC-30, AC-31: a pinned proposal makes chat offer the next step that fits it now, as Time's pinned weeks do (073):
-// two clicks (+, then the suggestion), nothing to type but what the step needs, and still the confirm card. Read when
-// chat asks, so a proposal that moved since the page was drawn offers what fits now; a pin that no longer resolves
-// offers nothing. The prompts are the strings chat's tools take ("Move CON-017 to planned").
-type Offer = { label: string; prompt: string; tool: string };
-const NEXT: Partial<Record<Phase, Phase>> = { proposed: "planned", planned: "building" };
-const label = (p: Phase) => p[0].toUpperCase() + p.slice(1);
-const MAX = 2;
+// 081 amendments 2 and 3 (AC-30, AC-38): every pinnable Delivery record and view offers, in chat, the actions that fit
+// it now, as Time's pinned weeks do (073). Keyed by the read tool its pin resolves through; the offers are in
+// server/pin-offers.ts. Activity lines and pushes are news, with nothing to act on, so they offer nothing (AC-40).
+type Suggest = (v: Viewer, a: Record<string, unknown>) => Promise<Offer[]>;
+const on = (tool: string, suggest: Suggest): PinSuggestion => ({ tool, suggest: suggest as PinSuggestion["suggest"] });
 
-/** What fits this proposal, before permissions: the next move, a first task, an owner. */
-export function offersFor(p: ProposalRow, me: string): (Offer & { permission: string })[] {
-  if (p.withdrawn || p.phase === "released") return [];
-  const owner = p.ownerUserId ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
-  if (p.source !== null) return owner;
-  const allDone = p.phase === "building" && p.tasksTotal > 0 && p.tasksDone === p.tasksTotal;
-  const to = allDone ? "verified" : NEXT[p.phase];
-  const move = to ? [{ label: `Move ${p.key} to ${label(to)}`, prompt: `Move ${p.key} to ${to}`, tool: "move_proposal", permission: "delivery:proposal:move" }] : [];
-  const task = p.tasksTotal === 0 ? [{ label: `Add a task to ${p.key}`, prompt: `Add a task to ${p.key}: `, tool: "add_proposal_task", permission: "delivery:task:done" }] : [];
-  return [...move, ...task, ...owner];
-}
-
-async function suggest(v: Viewer, args: Record<string, unknown>): Promise<Offer[]> {
-  const proposalId = typeof args.proposalId === "string" ? args.proposalId : undefined;
-  const key = typeof args.key === "string" ? args.key : undefined;
-  if (!proposalId && !key) return [];
-  const p = await getProposal(v, { proposalId, key });
-  if (!p) return [];
-  const projectId = (await getProject(v, p.projectKey))?.project.id;
-  if (!projectId) return [];
-  return offersFor(p, v.userId).filter((o) => can(v, o.permission, { projectId })).slice(0, MAX).map(({ label: l, prompt, tool }) => ({ label: l, prompt, tool }));
-}
-
-export const pinSuggestions: PinSuggestion[] = [{ tool: "get_proposal", suggest: suggest as PinSuggestion["suggest"] }];
+export const pinSuggestions: PinSuggestion[] = [
+  on("get_project", projectOffers),
+  on("get_proposal", proposalOffers),
+  on("get_release", releaseOffers),
+  on("get_release_history", releaseOffers),
+  on("get_environment", environmentOffers),
+  on("get_deployment", deploymentOffers),
+  on("get_repo_sync", repoOffers),
+  on("list_proposals", (v, a) => viewOffers(v, a, "proposals")),
+  on("get_proposal_metrics", (v, a) => viewOffers(v, a, "proposals")),
+  on("list_releases", (v, a) => viewOffers(v, a, "releases")),
+  on("list_environments", (v, a) => viewOffers(v, a, "environments")),
+  on("list_projects", (v, a) => viewOffers(v, a, "projects")),
+];

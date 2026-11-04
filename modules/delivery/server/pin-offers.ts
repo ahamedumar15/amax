@@ -1,0 +1,153 @@
+import { sql } from "drizzle-orm";
+import { withTenant, type Tx } from "@amax/db";
+import { can, canEver, type Viewer } from "@amax/auth";
+import { getRuntime } from "@amax/core/server";
+import { getDeployment, getEnvironment, getProposal, listReleases, type ProposalRow } from "./queries";
+
+// 081 amendments 2 and 3 (AC-30, AC-38): what a pinned Delivery record offers in chat. Each offer is the prompt its
+// tool's chat flow takes; a click fills the box, the write waits for the confirm card. Read when chat asks, so the
+// record as it is now decides, and only what the viewer may do on the record's project is offered, three at most.
+export type Offer = { label: string; prompt: string; tool: string };
+type Gated = Offer & { permission: string };
+type Args = Record<string, unknown>;
+const MAX = 3;
+const str = (x: unknown) => (typeof x === "string" && x ? x : undefined);
+const label = (p: string) => p[0].toUpperCase() + p.slice(1);
+const NEXT: Record<string, string> = { proposed: "planned", planned: "building" };
+
+const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => withTenant(getRuntime().db, v.tenantId, fn);
+const allowed = (v: Viewer, offers: Gated[], projectId: string | null) =>
+  offers.filter((o) => (projectId ? can(v, o.permission, { projectId }) : canEver(v, o.permission))).slice(0, MAX).map(({ label: l, prompt, tool }) => ({ label: l, prompt, tool }));
+
+/** The next minor after a project's newest release (v2.5.0 → v2.6.0); v1.0.0 for its first. */
+export function nextVersion(latest: string | null) {
+  const m = latest?.match(/^v?(\d+)\.(\d+)\.\d+$/);
+  return m ? `v${m[1]}.${Number(m[2]) + 1}.0` : "v1.0.0";
+}
+
+async function projectFacts(tx: Tx, where: ReturnType<typeof sql>) {
+  const [p] = await tx.execute(sql`select p.id, p.key, p.name, p.status, p.repo_url,
+      (select r.version from delivery.release r where r.project_id = p.id order by r.created_at desc limit 1) as latest
+    from delivery.project p where ${where}`);
+  return p;
+}
+
+const newProposal = (p: Record<string, unknown>): Gated => ({ label: `New proposal in ${p.name as string}`, prompt: `Add a proposal to ${p.name as string} (${p.key as string}): `, tool: "create_proposal", permission: "delivery:proposal:create" });
+const newRelease = (p: Record<string, unknown>): Gated => {
+  const version = nextVersion((p.latest as string | null) ?? null);
+  return { label: `Create release ${version} of ${p.key as string}`, prompt: `Create release ${version} of ${p.key as string}`, tool: "create_release", permission: "delivery:release:create" };
+};
+const link = (key: string, again: boolean): Gated => ({ label: `${again ? "Relink" : "Link"} ${key}'s repo`, prompt: `Link ${key}'s repo to `, tool: "link_project_repo", permission: "delivery:project:link" });
+
+/** A project: a new proposal, its next release, its repo when none is linked. A closed project offers nothing. */
+export async function projectOffers(v: Viewer, a: Args) {
+  const id = str(a.projectId), key = str(a.key);
+  if (!id && !key || !can(v, "delivery:read")) return [];
+  const p = await read(v, (tx) => projectFacts(tx, id ? sql`p.id::text = ${id}` : sql`p.key = ${key!}`));
+  if (!p || p.status !== "active") return [];
+  return allowed(v, [newProposal(p), newRelease(p), ...(p.repo_url ? [] : [link(p.key as string, false)])], p.id as string);
+}
+
+/** A project's repo sync: link it, or relink and unlink it. */
+export async function repoOffers(v: Viewer, a: Args) {
+  const id = str(a.projectId), key = str(a.projectKey);
+  if (!id && !key || !can(v, "delivery:read")) return [];
+  const p = await read(v, (tx) => projectFacts(tx, id ? sql`p.id::text = ${id}` : sql`p.key = ${key!}`));
+  if (!p) return [];
+  const k = p.key as string;
+  const unlink: Gated = { label: `Unlink ${k}'s repo`, prompt: `Unlink ${k}'s repo`, tool: "unlink_project_repo", permission: "delivery:project:link" };
+  return allowed(v, p.repo_url ? [link(k, true), unlink] : [link(k, false)], p.id as string);
+}
+
+/** A proposal: its next phase (Verified once every task is done), its next open task, a first task, an owner, a release. */
+export async function proposalOffers(v: Viewer, a: Args) {
+  const proposalId = str(a.proposalId), key = str(a.key);
+  if (!proposalId && !key) return [];
+  const p = await getProposal(v, { proposalId, key });
+  if (!p || p.withdrawn || p.phase === "released") return [];
+  const facts = await read(v, async (tx) => {
+    const [x] = await tx.execute(sql`select pr.id as project_id,
+        (select t.ref from delivery.task t where t.proposal_id = p.id and not t.done order by length(t.ref), t.ref limit 1) as open_task
+      from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.id = ${p.id}`);
+    // The newest release of the project not yet live in Prod: where a verified proposal with no release goes.
+    const [r] = p.phase === "verified" && !p.release ? await tx.execute(sql`select r.version, coalesce((select string_agg(q.key, ', ' order by q.key) from delivery.proposal q where q.release_id = r.id), '') as keys
+      from delivery.release r join delivery.project pr on pr.id = r.project_id where pr.key = ${p.projectKey}
+        and not exists (select 1 from delivery.deployment d where d.release_id = r.id and d.released and d.voided_at is null)
+      order by r.created_at desc limit 1`) : [];
+    return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null };
+  });
+  return allowed(v, proposalGated(p, v.userId, facts), facts.projectId);
+}
+
+function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; release: { version: string; keys: string } | null }): Gated[] {
+  const owner: Gated[] = p.ownerUserId ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
+  const task: Gated[] = f.openTask ? [{ label: `Mark ${f.openTask} of ${p.key} done`, prompt: `Mark ${f.openTask} of ${p.key} done`, tool: "mark_task_done", permission: "delivery:task:done" }] : [];
+  const release: Gated[] = f.release ? [{ label: `Put ${p.key} in ${p.projectKey} ${f.release.version}`, prompt: `Set the proposals in ${p.projectKey} ${f.release.version} to: ${[f.release.keys, p.key].filter(Boolean).join(", ")}`,
+    tool: "set_release_proposals", permission: "delivery:release:create" }] : [];
+  if (p.source !== null) return [...task, ...owner, ...release];
+  const allDone = p.phase === "building" && p.tasksTotal > 0 && p.tasksDone === p.tasksTotal;
+  const to = allDone ? "verified" : NEXT[p.phase];
+  const move: Gated[] = to ? [{ label: `Move ${p.key} to ${label(to)}`, prompt: `Move ${p.key} to ${to}`, tool: "move_proposal", permission: "delivery:proposal:move" }] : [];
+  const first: Gated[] = p.tasksTotal === 0 ? [{ label: `Add a task to ${p.key}`, prompt: `Add a task to ${p.key}: `, tool: "add_proposal_task", permission: "delivery:task:done" }] : [];
+  return [...move, ...task, ...first, ...owner, ...release];
+}
+
+/** A release: its next environment, its proposals, its tag. One live in Prod has nothing left to deploy or change. */
+export async function releaseOffers(v: Viewer, a: Args) {
+  const releaseId = str(a.releaseId);
+  if (!releaseId || !can(v, "delivery:read")) return [];
+  const [hit] = await read(v, (tx) => tx.execute(sql`select p.key from delivery.release r join delivery.project p on p.id = r.project_id where r.id::text = ${releaseId}`));
+  const r = hit ? (await listReleases(v, { projectKey: hit.key as string })).find((x) => x.id === releaseId) : undefined;
+  if (!r) return [];
+  const name = `${r.projectKey} ${r.version}`;
+  const stages = [...r.stages].sort((x, y) => x.position - y.position);
+  const live = stages.some((s) => s.isProd && s.status === "deployed");
+  // Reached: deployed or testing there. A rolled-back environment isn't, so its retry is what comes next.
+  const reached = stages.reduce((at, s, i) => (s.status === "deployed" || s.status === "testing" ? i : at), -1);
+  const next = live ? undefined : stages[reached + 1];
+  const keys = await read(v, async (tx) => (await tx.execute(sql`select string_agg(key, ', ' order by key) as keys from delivery.proposal where release_id = ${r.id}`))[0]?.keys as string | null);
+  return allowed(v, [
+    ...(next ? [{ label: `Record a deployment of ${name} to ${next.environment}`, prompt: `Record a deployment of ${name} to ${next.environment}`, tool: "record_deployment", permission: "delivery:deployment:record" }] : []),
+    ...(live ? [] : [{ label: `Change the proposals in ${name}`, prompt: `Set the proposals in ${name} to: ${keys ?? ""}`, tool: "set_release_proposals", permission: "delivery:release:create" }]),
+    { label: `Re-tag ${name}`, prompt: `Tag ${name} as `, tool: "tag_release", permission: "delivery:release:create" },
+  ], r.projectId);
+}
+
+/** An environment: make it Prod, rename it, remove it while it has no deployments. */
+export async function environmentOffers(v: Viewer, a: Args) {
+  const environmentId = str(a.environmentId);
+  if (!environmentId) return [];
+  const e = await getEnvironment(v, { environmentId });
+  if (!e) return [];
+  const [p] = await read(v, (tx) => tx.execute(sql`select id from delivery.project where key = ${e.projectKey}`));
+  const of = `the ${e.name} environment of ${e.projectKey}`;
+  return allowed(v, [
+    ...(e.isProd ? [] : [{ label: `Make ${e.name} the Prod environment of ${e.projectKey}`, prompt: `Make ${e.name} the prod environment of ${e.projectKey}`, tool: "upsert_environment", permission: "delivery:release:create" }]),
+    { label: `Rename ${of}`, prompt: `Rename ${of} to `, tool: "upsert_environment", permission: "delivery:release:create" },
+    ...(e.deployments === 0 ? [{ label: `Remove ${of}`, prompt: `Remove ${of}`, tool: "remove_environment", permission: "delivery:release:create" }] : []),
+  ], (p?.id as string | undefined) ?? null);
+}
+
+/** A deployment: void it while it is live (the reason is typed on). */
+export async function deploymentOffers(v: Viewer, a: Args) {
+  const deploymentId = str(a.deploymentId);
+  if (!deploymentId) return [];
+  const d = await getDeployment(v, deploymentId);
+  if (!d || d.voidedAt) return [];
+  const [p] = await read(v, (tx) => tx.execute(sql`select id from delivery.project where key = ${d.projectKey}`));
+  return allowed(v, [{ label: `Void the ${d.environment} deployment of ${d.projectKey} ${d.version}`, prompt: `Void the ${d.environment} deployment of ${d.projectKey} ${d.version} (id ${d.id}). Reason: `,
+    tool: "void_deployment", permission: "delivery:deployment:record" }], (p?.id as string | undefined) ?? null);
+}
+
+/** The lists: a new record in the named project, or anywhere the viewer may make one. */
+export async function viewOffers(v: Viewer, a: Args, kind: "proposals" | "releases" | "environments" | "projects") {
+  if (kind === "projects") return allowed(v, [{ label: "New project", prompt: "Create a project: ", tool: "create_project", permission: "delivery:project:create" }], null);
+  const key = str(a.projectKey);
+  if (!key) return kind === "proposals" ? allowed(v, [{ label: "New proposal", prompt: "Add a proposal to ", tool: "create_proposal", permission: "delivery:proposal:create" }], null) : [];
+  if (!can(v, "delivery:read")) return [];
+  const p = await read(v, (tx) => projectFacts(tx, sql`p.key = ${key}`));
+  if (!p || p.status !== "active") return [];
+  const offers = kind === "proposals" ? [newProposal(p)] : kind === "releases" ? [newRelease(p)]
+    : [{ label: `Add an environment to ${key}`, prompt: `Add an environment to ${key}: `, tool: "upsert_environment", permission: "delivery:release:create" }];
+  return allowed(v, offers, p.id as string);
+}

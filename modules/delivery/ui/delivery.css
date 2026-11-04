@@ -148,7 +148,6 @@
 .tickets .p{z-index:1}
 .chart{width:100%;height:auto;display:block;overflow:visible}
 .chart .ax{fill:var(--ink-3);font-size:12px;font-family:var(--font)}
-.cardmenu{position:relative;margin-top:10px}
 .map .pill{font:600 12.5px var(--font)}
 .seg{display:flex;padding:5px;border-radius:16px;background:var(--sunken);gap:4px;max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}
 .seg button[aria-pressed="true"],.tabs [aria-pressed="true"],.tabs [aria-current="true"],.tabs [aria-current="page"]{background:var(--card);color:var(--violet);font-weight:600;box-shadow:0 1px 2px rgba(40,30,110,.08),0 4px 12px -6px rgba(40,30,110,.25)}
@@ -159,9 +158,6 @@
 .donut-legend i{width:14px;height:14px;border-radius:4px}
 .donut-legend b{margin-left:auto;font-weight:500;color:var(--ink-3);font-size:12px}
 .tcard{position:relative}
-.tcard .cardmenu{position:absolute;top:10px;right:46px;margin:0;z-index:5;opacity:0;transition:opacity .15s}
-.tcard:hover .cardmenu,.tcard:focus-within .cardmenu{opacity:1}
-@media (hover:none){.tcard .cardmenu{opacity:1}}
 /* the mock's phone rules (041: these had lost their media queries and applied at every width) */
 @media (max-width:860px){
   .row.head>.actions{flex-shrink:1;flex-wrap:wrap;width:100%}
@@ -218,21 +214,15 @@
 .tcard p a,.tbl td[data-label="Proposal"] a{color:inherit;text-decoration:none}
 .tcard p a:hover,.tbl td[data-label="Proposal"] a:hover{text-decoration:underline}
 .tcard p a:focus-visible,.tbl td[data-label="Proposal"] a:focus-visible{outline:2px solid var(--violet);outline-offset:2px;border-radius:4px}
-/* 081 AC-22: a board card's actions open from one button (a native <details>, as Time's folds), so the card stays the
-   mock's size. Tones follow Time: primary with the spark, plain, and a destructive action as a quiet link last. */
-.tcard details.cardmenu>summary{list-style:none;cursor:pointer;gap:6px}
-.tcard details.cardmenu>summary::-webkit-details-marker{display:none}
-.tcard details.cardmenu>summary:focus-visible{outline:2px solid var(--chip-agent);outline-offset:2px}
-.tcard details.cardmenu[open]{opacity:1}
-.chev{width:8px;height:8px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}
-details[open]>summary .chev{transform:rotate(-135deg) translate(-2px,-2px)}
-.tcard .cardmenu-list{position:absolute;right:0;top:40px;min-width:170px;padding:8px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--line)}
-.tcard .cardmenu-list .row-actions{display:grid;gap:6px}
+/* 081: action rows (the proposal page, Suggested by amax). Withdraw is a clean outlined danger button (amendment 3). */
+.row-actions{display:grid;gap:6px}
 .tcard .cardmenu-list .btn{justify-content:flex-start}
 .row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .btn.link{background:none;box-shadow:none;border:0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px}
 .btn.link:hover{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.btn.withdraw{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.btn.withdraw:hover{background:var(--chip-bad-bg)}
+.btn.withdraw:focus-visible{outline:2px solid var(--danger);outline-offset:2px}
 /* 081 AC-24: the key note under a hand-made proposal's heading. */
 .keynote{font-size:13px;margin:-12px 0 24px;max-width:72ch}
 /* 081 AC-35: the agent's suggestions on a proposal, decided in chat. */

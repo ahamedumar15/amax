@@ -29,7 +29,7 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
     await addProposalTask(ctxFor(maya), { key, title: "Template" });
     for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
-    expect(await labels(maya, key)).toEqual([]);
+    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`]);
     await markTaskDone(ctxFor(maya), { key, task: "T1" });
     expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`]);
 
