@@ -14,6 +14,8 @@ import { proposalKinds } from "../server/proposal-kinds";
 import { linkIdentity } from "../suggestions";
 import { createProposal, moveProposal } from "../server/services";
 import { markTaskDone } from "../server/tasks";
+import { ProjectPage } from "../ui/ProjectPage";
+import { ProposalsPage } from "../ui/ProposalsPage";
 import { proposalDb, T } from "./proposal-db";
 
 describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person decides (Postgres)", () => {
@@ -111,5 +113,27 @@ describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person 
     await expect(acceptSuggestion(decide(maya, "chat"), { id: s.id as string })).rejects.toThrow(/is planned now, not Building; nothing was changed/);
     expect(await phase(quiet)).toBe("planned");
     expect((await suggestions(quiet, "delivery.proposal-verify"))[0].status).toBe("open");
+  });
+
+  it("AC35 the proposal page leads with the agent's suggestion and the board card flags it, for those who may decide; accepted, it offers undo", async () => {
+    const html = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
+    const key = await building("Reminders", 1);
+    await markTaskDone(ctxFor(maya), { key, task: "T1" });
+    await runAgent();
+    const [s] = await suggestions(key, "delivery.proposal-verify");
+    const page = await html(ProposalsPage({ viewer: maya, params: { phase: key } }));
+    expect(page).toContain("Suggested by amax");
+    expect(page).toContain(`data-ask="Accept the suggestion &quot;Move ${key} to Verified&quot; (suggestion id ${s.id as string})"`);
+    expect(page).toContain(`aria-label="Dismiss Move ${key} to Verified"`);
+    expect(page.indexOf("Suggested by amax")).toBeLessThan(page.indexOf(">Time</h2>"));
+    expect(await html(ProjectPage({ viewer: maya, params: { key: "CON" } }))).toContain(`aria-label="amax suggests something for ${key}: open it"`);
+    for (const who of [await db.as("maya", "Leadership"), await db.as("kasun")]) {
+      expect(await html(ProposalsPage({ viewer: who, params: { phase: key } }).catch(() => ""))).not.toContain("Suggested by amax");
+    }
+    await acceptSuggestion(decide(maya, "chat"), { id: s.id as string });
+    const after = await html(ProposalsPage({ viewer: maya, params: { phase: key } }));
+    expect(after).toContain(`data-ask="Undo the suggestion &quot;Move ${key} to Verified&quot; (suggestion id ${s.id as string})"`);
+    expect(after).not.toContain("Ask amax to accept");
+    expect(await html(ProjectPage({ viewer: maya, params: { key: "CON" } }))).not.toContain(`amax suggests something for ${key}`);
   });
 });

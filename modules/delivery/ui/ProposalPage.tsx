@@ -7,6 +7,7 @@ import { proposalDetail, type ProposalDetail } from "../server/proposal-detail";
 import { AskButton } from "./AskButton";
 import { COLOR, day, PhaseChip } from "./parts";
 import { ProposalActions } from "./ProposalActions";
+import { proposalSuggestions, ProposalSuggestions } from "./ProposalSuggestions";
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
 
@@ -94,6 +95,8 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
   const ref = proposalPin(p);
   const pin = (label: string) => <PinButton inline pin={facet(ref, ` ${label}`)} />;
   const may = (perm: string) => can(viewer, perm, { projectId: p.project.id });
+  // 081 AC-35: what the agent suggests about this proposal, first, for whoever may decide it (rule 6: attention first).
+  const suggested = await proposalSuggestions(viewer, [p.id]);
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery/proposals">Proposals</a><span>/</span><a href={projectHref(p.project.key, "proposals")}>{p.project.name}</a><span>/</span>{p.key}</nav>
@@ -106,6 +109,7 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
         </div>
       </div>
       <KeyNote p={p} />
+      <ProposalSuggestions {...suggested} />
       {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn.</b> {p.withdrawReason ?? "Its spec change was removed from the repo."} It no longer counts in lists, boards or releases.</p></div>}
       <div className="cols even" style={{ marginBottom: 28 }}><TimeCard p={p} pin={pin} /><ReleaseCard p={p} pin={pin} /></div>
       <div className="card pinnable" style={{ marginBottom: 28 }}>

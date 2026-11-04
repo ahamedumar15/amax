@@ -365,7 +365,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T15` — Amendment 2, the two agent suggestion kinds, their trigger and withdrawals (AC-32 to AC-34)
   Files: modules/delivery/suggestions.ts, modules/delivery/server/agent.ts, modules/delivery/module.ts, modules/delivery/tests/proposal-agent.test.ts
   Depends: T14
-- [ ] `T16` — Amendment 2, the page card and board chip, mock (AC-35)
+- [x] `T16` — Amendment 2, the page card and board chip, mock (AC-35)
   Files: modules/delivery/ui/ProposalSuggestions.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/delivery.css, .specclaw/mock/index.html, apps/mock/public/mock/index.html, modules/delivery/tests/proposal-agent.test.ts
   Depends: T15
 - [ ] `T17` — Amendment 2, end to end: scripted e2e rules, browser tests, hand walk-through, READMEs, traceability, CI replica (AC-36, AC-37)

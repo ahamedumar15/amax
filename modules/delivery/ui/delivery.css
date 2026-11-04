@@ -235,3 +235,9 @@ details[open]>summary .chev{transform:rotate(-135deg) translate(-2px,-2px)}
 @media (prefers-reduced-motion:reduce){.chev{transition:none}}
 /* 081 AC-24: the key note under a hand-made proposal's heading. */
 .keynote{font-size:13px;margin:-12px 0 24px;max-width:72ch}
+/* 081 AC-35: the agent's suggestions on a proposal, decided in chat. */
+.suggested-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.suggested-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line)}
+.suggested-list li:first-child{border-top:0;padding-top:0}
+.suggested-list small{display:block;margin-top:4px}
+.tcard a.chip{text-decoration:none}
