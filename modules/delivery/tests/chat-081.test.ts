@@ -5,6 +5,7 @@ import manifest from "../module";
 import { chatSuggestions } from "../chat-suggestions";
 import { ctxFor } from "../server/context";
 import { createProposalCard, moveCard, proposeCreate, taskCard, updateCard } from "../server/proposal-card";
+import { createReleaseCard, deploymentCard, environmentCard, linkCard, removeEnvironmentCard, taskDoneCard, unlinkCard, voidCard } from "../server/write-cards";
 import { syncProposal } from "../server/services";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
@@ -59,5 +60,19 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     const owner = await updateCard(maya, { key: "CON-017", ownerUserId: maya.userId });
     expect(owner).toMatchObject({ title: "Make Maya Fernando the owner of CON-017", lines: [{ label: "Owner", value: "Nimal Silva → you (Maya Fernando)" }], look: { confirm: "Change owner", done: "Maya Fernando now owns CON-017" } });
     expect((await updateCard(maya, { key: "CON-017", title: "CSV import", estimateHours: 6 })).look).toMatchObject({ confirm: "Save", done: "Updated CON-017" });
+  });
+
+  it("AC39 the cards for the other pins' offers name the change, and their receipts what was done", async () => {
+    expect(await createReleaseCard(maya, { projectKey: "FLT", version: "v1.9.0" })).toMatchObject({ title: "Create release v1.9.0 of FLT", look: { done: "Done: created FLT v1.9.0" } });
+    expect(await deploymentCard(maya, { projectKey: "FLT", version: "v1.9.0", environment: "Dev" })).toMatchObject({ title: "Record FLT v1.9.0 in Dev",
+      lines: [{ label: "Release", value: "FLT v1.9.0" }, { label: "Environment", value: "Dev" }, { label: "Status", value: "deployed" }], look: { done: "Done: recorded FLT v1.9.0 in Dev" } });
+    expect((await voidCard(maya, { projectKey: "FLT", version: "v1.9.0", environment: "Dev", reason: "wrong build" })).lines).toContainEqual({ label: "Reason", value: "wrong build" });
+    expect((await environmentCard(maya, { projectKey: "FLT", name: "QA", isProd: true })).title).toBe("Make QA the Prod environment of FLT");
+    expect((await environmentCard(maya, { projectKey: "FLT", name: "QA", rename: "Test" })).look).toMatchObject({ done: "Done: FLT QA is now Test" });
+    expect(await environmentCard(maya, { projectKey: "FLT", name: "Sandbox" })).toMatchObject({ title: "Add Sandbox to FLT", look: { done: "Done: added Sandbox to FLT" } });
+    expect((await removeEnvironmentCard(maya, { projectKey: "FLT", name: "Sandbox" })).look?.done).toBe("Done: removed FLT Sandbox");
+    expect((await taskDoneCard(maya, { key: "CON-014", task: "T1" })).title).toBe("Mark T1 of CON-014 done");
+    expect((await linkCard(maya, { projectKey: "FLT", repoUrl: "https://github.com/example/fleet", defaultBranch: "main" })).look?.done).toBe("Done: FLT syncs from https://github.com/example/fleet");
+    expect((await unlinkCard(maya, { projectKey: "CON" })).title).toBe("Unlink CON's repo");
   });
 });

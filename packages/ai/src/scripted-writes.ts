@@ -28,6 +28,13 @@ const RULES: Rule[] = [
   [new RegExp(`^add a task to (${KEY.slice(1, -1)}-H?\\d+): (.+)$`, "i"), (m) => [["add_proposal_task", { key: m[1], title: m[2].trim() }]]],
   [new RegExp(`^make me \\(user id ${UUID}\\) the owner of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["update_proposal", { key: m[2], ownerUserId: m[1] }]]],
   [new RegExp(`^(accept|dismiss|undo) the suggestion ".+" \\(suggestion id ${UUID}\\)\\s*$`, "i"), (m) => [[`${m[1].toLowerCase()}_agent_suggestion`, { id: m[2] }]]],
+  // 081 amendment 3: what the other Delivery pins offer.
+  [new RegExp(`^add a proposal to .+? \\(${KEY}\\): (.+)$`, "i"), (m) => [["create_proposal", { projectKey: m[1], title: m[2].trim() }]]],
+  [new RegExp(`^create release (v?\\d+\\.\\d+\\.\\d+) of ${KEY}\\s*$`, "i"), (m) => [["create_release", { projectKey: m[2], version: m[1] }]]],
+  [new RegExp(`^mark (T\\d+) of (${KEY.slice(1, -1)}-H?\\d+) done\\s*$`, "i"), (m) => [["mark_task_done", { key: m[2], task: m[1].toUpperCase() }]]],
+  [new RegExp(`^link ${KEY}'s repo to (\\S+)(?: on (\\S+))?\\s*$`, "i"), (m) => [["link_project_repo", { projectKey: m[1], repoUrl: m[2], ...(m[3] ? { defaultBranch: m[3] } : {}) }]]],
+  [new RegExp(`^unlink ${KEY}'s repo\\s*$`, "i"), (m) => [["unlink_project_repo", { projectKey: m[1] }]]],
+  [new RegExp(`^create a project: (.+?) \\(${KEY}\\) for (.+?), (fixed|t&m|retainer|internal)\\s*$`, "i"), (m) => [["create_project", { name: m[1].trim(), key: m[2], client: m[3].trim(), billing: m[4].toLowerCase() }]]],
   [new RegExp(`^tag ${KEY} (\\S+) as (\\S+)\\s*$`, "i"), (m) => [["tag_release", { projectKey: m[1], version: m[2], newVersion: m[3] }]]],
   [new RegExp(`^set the proposals in ${KEY} (\\S+) to: (.*)$`, "i"), (m) => [["set_release_proposals", { projectKey: m[1], version: m[2], proposalKeys: names(m[3]) }]]],
   [new RegExp(`^void the (.+?) deployment of ${KEY} (\\S+) \\(id ([0-9a-f-]{36})\\)\\. reason: (.+)$`, "i"),

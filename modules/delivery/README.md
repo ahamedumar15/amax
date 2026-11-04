@@ -13,6 +13,16 @@ Projects, each project's board of specclaw proposals, and releases moving throug
 - **Proposals made by hand (081):** an owner (the person acting by default, any active person when named), a description, an estimate, tasks added with `add_proposal_task`, and `withdraw_proposal` (a reason; never deleted; leaves its release; gone from lists, counts and boards, readable by key). A spec proposal's content and withdrawal belong to its repo; only its owner can be set in amax. A synced or pushed proposal's owner is the person it was synced for, and a later sync fills a missing owner but never replaces one.
 - **081 amendment 1:** board cards and the proposal page share one action list (`ui/ProposalActions.tsx`, Time's tones: Edit primary, Withdraw a quiet link), on the card behind an Actions fold; task meters show whenever there are tasks, Proposed included; a hand-made proposal's page explains its key can move to the `-H` series; the phase bar names its month ("Released in October") and the filter says "Released, all time"; the history shows time logged against the proposal from Time's audit rows (`after.proposalId`), to the entry's owner and the project's time approvers only.
 - **Agent-first (081 amendment 2):** a pinned proposal makes chat offer its next step (`pin-suggestions.ts`: the next phase, a first task, "make me the owner"), by the viewer's permissions and the proposal as it is now. The Delivery agent (`server/agent.ts`, on `delivery.task.done`, `proposal.phase_changed` and `proposal.withdrawn`) suggests, never writes: `delivery.proposal-verify` ("Ready to verify", for the project's PMs, when a hand-made Building proposal's last task closes) and `delivery.proposal-owner` ("Suggested owner", when someone closes a task on an ownerless proposal). Kinds are in `server/proposal-kinds.ts`: accepting runs the board move or the owner change as the accepting person, re-checked under the row lock, and undo is its inverse. Stale ones are withdrawn, refused at accept, or expire after 7 days. They show on the proposal page ("Suggested by amax", accept, dismiss, undo), as a board chip, and on the Suggestions screen, only to people who may decide them.
+- **Every pin acts (081 amendment 3):** `pin-suggestions.ts` maps each pinning read tool to its offers in `server/pin-offers.ts`.
+  - A project: new proposal, next release, link a repo.
+  - A proposal: next phase, next open task, first task, owner, the open release.
+  - A release: deploy to the next environment (testing counts as reached, a rollback is retried), change its proposals, re-tag.
+  - An environment: make it Prod, rename, remove when unused. A live deployment: void it.
+  - A repo sync: link, relink, unlink. The lists: new project, proposal, release, environment.
+
+  Offers fit the record as it is now and the viewer's permissions on its project, three at most, each confirmed on its
+  card. Board cards carry no action menu: their pin is how you act on them. The proposal page keeps its buttons, with
+  Withdraw as an outlined danger button.
 - **One filter (081):** lists, phase counts, the shipped chart and the Overview's counts never include withdrawn proposals, and include only active projects unless a project is named.
 - **Viewer scopes:** contributes each user's managed projects, so `@managed` grants work
 - **Ingestion (008):**

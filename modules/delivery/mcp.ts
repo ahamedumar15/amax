@@ -14,6 +14,7 @@ import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, moveCard, proposeCreate, taskCard, updateCard } from "./server/proposal-card";
+import { createReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, unlinkCard, voidCard } from "./server/write-cards";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -67,7 +68,7 @@ export const mcpTools: McpToolDef[] = [
     card: moveCard, service: moveProposal, run: (v, a, s = "mcp") => moveProposal(ctxFor(v, s), a) }),
   tool({ name: "create_release", description: "Create a release (version tag) for a project, optionally with proposal keys.", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()).optional() }),
-    service: createRelease, run: (v, a, s = "mcp") => createRelease(ctxFor(v, s), { ...a, proposalKeys: a.proposalKeys ?? [] }) }),
+    card: createReleaseCard, service: createRelease, run: (v, a, s = "mcp") => createRelease(ctxFor(v, s), { ...a, proposalKeys: a.proposalKeys ?? [] }) }),
   tool({ ...read, pin: view, name: "list_environments", description: "A project's environments in order, which one is Prod, and how many deployments each has.", input: z.object({ projectKey: z.string() }),
     run: (v, a) => listEnvironments(v, a.projectKey) }),
   tool({ ...read, pin: { id: "environmentId", of: pinOf.environment }, name: "get_environment", description: "One environment, by environmentId or by project key and name: its position, whether it is Prod, and how many deployments it has.",
@@ -78,16 +79,16 @@ export const mcpTools: McpToolDef[] = [
     input: releaseRef, run: (v, a) => getRelease(v, a.projectKey, a.version, a.releaseId) }),
   tool({ name: "upsert_environment", description: "Add, rename, reorder or mark an environment as Prod for a project (marking one Prod unmarks the rest).", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), name: z.string(), rename: z.string().optional(), position: z.number().int().min(1).optional(), isProd: z.boolean().optional() }),
-    service: upsertEnvironment, run: (v, a, s = "mcp") => upsertEnvironment(ctxFor(v, s), a) }),
+    card: environmentCard, service: upsertEnvironment, run: (v, a, s = "mcp") => upsertEnvironment(ctxFor(v, s), a) }),
   tool({ name: "remove_environment", description: "Remove an unused environment from a project.", scope: "write", destructive: true, permission: "delivery:release:create",
-    input: z.object({ projectKey: z.string(), name: z.string() }), service: removeEnvironment, run: (v, a, s = "mcp") => removeEnvironment(ctxFor(v, s), a) }),
+    input: z.object({ projectKey: z.string(), name: z.string() }), card: removeEnvironmentCard, service: removeEnvironment, run: (v, a, s = "mcp") => removeEnvironment(ctxFor(v, s), a) }),
   tool({ name: "tag_release", description: "Rename a release's version tag, e.g. v2.5.0 to v2.5.1.", scope: "write", permission: "delivery:release:create",
-    input: z.object({ projectKey: z.string(), version: z.string(), newVersion: z.string() }), service: tagRelease, run: (v, a, s = "mcp") => tagRelease(ctxFor(v, s), a) }),
+    input: z.object({ projectKey: z.string(), version: z.string(), newVersion: z.string() }), card: tagCard, service: tagRelease, run: (v, a, s = "mcp") => tagRelease(ctxFor(v, s), a) }),
   tool({ name: "set_release_proposals", description: "Set which proposals are in a release (replaces the list; released ones stay).", scope: "write", permission: "delivery:release:create",
-    input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()) }), service: setReleaseProposals, run: (v, a, s = "mcp") => setReleaseProposals(ctxFor(v, s), a) }),
+    input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()) }), card: releaseProposalsCard, service: setReleaseProposals, run: (v, a, s = "mcp") => setReleaseProposals(ctxFor(v, s), a) }),
   tool({ name: "void_deployment", description: "Void a deployment of a release, with a reason: the one given by deploymentId, or else the latest live one to the environment. Voiding the only Prod deployment un-releases its proposals.", scope: "write", destructive: true,
     permission: "delivery:deployment:record", input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), deploymentId: z.string().uuid().optional(), reason: z.string() }),
-    service: voidDeployment, run: (v, a, s = "mcp") => voidDeployment(ctxFor(v, s), a) }),
+    card: voidCard, service: voidDeployment, run: (v, a, s = "mcp") => voidDeployment(ctxFor(v, s), a) }),
   // 008 AC-1: what specclaw and CI call, as a person or as a service credential acting for one.
   tool({ name: "sync_proposal", description: "Create or update a specclaw proposal from its spec: title, phase, and tasks by id (T1, T2, …), with the commit time the spec was read at (committedAt). A task once done stays done.", scope: "write", permission: "delivery:proposal:sync",
     input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional(), committedAt: z.string().datetime({ offset: true }) }),
@@ -102,11 +103,11 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: { id: "pushId", of: pinOf.push }, name: "get_sync_push", description: "One specclaw push to a project by pushId: who, branch and commit, counts, and what was skipped or why it was refused.",
     input: z.object({ pushId: z.string().uuid() }), run: (v, a) => getSyncPush(v, a.pushId) }),
   tool({ name: "link_project_repo", description: "Link the one repo a project's specclaw proposals sync from, e.g. https://github.com/example/portal, and its default branch (asked the first time; kept on a relink unless given). Pushes from any other repo are refused; only the default branch's pushes may update every change. PM or Admin.", scope: "write",
-    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: RepoUrl, defaultBranch: z.string().min(1).max(200).optional() }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string(), repoUrl: RepoUrl, defaultBranch: z.string().min(1).max(200).optional() }), card: linkCard, service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), a) }),
   tool({ name: "unlink_project_repo", description: "Unlink a project's repo, so no specclaw push is accepted until one is linked again. PM or Admin.", scope: "write", destructive: true,
-    permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null }) }),
+    permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), card: unlinkCard, service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null }) }),
   tool({ name: "mark_task_done", description: "Mark one task of a proposal done by its id, e.g. CON-014 T3, optionally naming the commit that finished it.", scope: "write", permission: "delivery:task:done",
-    input: z.object({ key: z.string(), task: z.string(), commit: z.string().optional() }), service: markTaskDone, run: (v, a, s = "mcp") => markTaskDone(ctxFor(v, s), a) }),
+    input: z.object({ key: z.string(), task: z.string(), commit: z.string().optional() }), card: taskDoneCard, service: markTaskDone, run: (v, a, s = "mcp") => markTaskDone(ctxFor(v, s), a) }),
   // 008 AC-6: drafting timesheets from commits, per legal entity, Admin only.
   tool({ ...read, permission: COMMIT_TIME_MANAGE, pin: view, name: "get_commit_time_logging", description: "Which legal entities draft timesheet hours from commits, and when their people were told.", input: z.object({}), run: (v) => commitTimeSettings(v) }),
   tool({ name: "set_commit_time_logging", description: "Switch drafting timesheet hours from commits on or off for a legal entity. Switching it on needs peopleNotified: true, after the entity's people were told. Commit data only drafts timesheets, never ratings.", scope: "write", permission: COMMIT_TIME_MANAGE,
@@ -114,7 +115,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "record_deployment", description: "Record that a release reached any environment of its project (by name, as a pipeline reports it). The project's Prod environment releases its proposals. PM or Admin.", scope: "write", destructive: false,
     permission: "delivery:deployment:record",
     input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), status: z.enum(["deployed", "testing", "rolled-back"]).optional(), note: z.string().optional() }),
-    service: recordDeployment, run: (v, a, s = "mcp") => recordDeployment(ctxFor(v, s), a) }),
+    card: deploymentCard, service: recordDeployment, run: (v, a, s = "mcp") => recordDeployment(ctxFor(v, s), a) }),
 ];
 
 // Contribution to the built-in search tool.

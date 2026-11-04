@@ -429,8 +429,8 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T18` — Amendment 3: pin suggestions for projects, releases, environments, deployments, repo sync and views; proposal additions; no Actions fold on cards; a clean Withdraw button (AC-38, AC-40)
   Depends: T17
   Files: modules/delivery/pin-suggestions.ts, modules/delivery/pins-offer/*.ts, modules/delivery/module.ts, modules/delivery/tests/pin-offers.test.ts
-- [ ] `T19` — Amendment 3: scripted e2e rules, browser tests, walk-through, docs, CI replica (AC-39, AC-41)
-  Files: packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md
+- [x] `T19` — Amendment 3: scripted e2e rules, browser tests, walk-through, docs, CI replica (AC-39, AC-41)
+  Files: packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, modules/delivery/server/write-cards.ts, modules/delivery/mcp.ts, modules/delivery/tests/chat-081.test.ts, apps/web/lib/page-context.ts, apps/web/tests/page-context.test.ts
   Depends: T18
 
 ## Verify
@@ -537,4 +537,33 @@ On the way to green, all in the e2e helper and tests:
 - **The pin test checked the wrong text.** It now checks the card's From/To lines.
 
 `auth.spec` AC5 failed once and passed on the rerun; this change doesn't touch it.
+Review loop: still not run (the specclaw-review server isn't connected).
+
+### Amendment 3 verification (2026-11-04)
+
+Hand walk-through on the real app (`next start`, scripted model, as Maya):
+- Each Delivery pin offered its actions: project, release, deployment, environments, one environment, repo sync, a
+  proposal card. Each one ran from chat, and each receipt said what was done ("Done: added Sandbox to FLT").
+- Board cards have no Actions menu. The proposal page shows Withdraw as an outlined danger button.
+- No page errors.
+
+Two fixes came out of it:
+- **A testing release was offered QA again.** Offers now treat a release as reached once it's in testing or deployed.
+- **The environment card said "add or change".** The card now checks whether the environment exists and says which.
+
+After the walk-through, the person reported a console error: "two children with the same key, `New proposal`".
+The pin's offer and the Proposals page's own suggestion had the same label. The shell's page context now shows each
+label once, the pin's (`apps/web/lib/page-context.ts`; the new case is in `apps/web/tests/page-context.test.ts`).
+
+Linux replica of CI's `checks` job over the final tree:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate`, `lint`, `check-module-standard`, `build` | pass |
+| `pnpm turbo run test --concurrency=2 --continue` | pass, every package. New: `pin-offers` (AC38), `chat-081` AC39 cards, `packages/ai` scripted rules |
+| `playwright install` | failed on a Debian download timeout; passed on the retry |
+| `e2e` | 8 passed |
+| `e2e:auth` | 87 passed, including the pin-driven board move and the "081 AC-39" release and environment flows |
+
+The page-context fix came after that run. It's covered by its unit test (2 passed) and the web typecheck.
 Review loop: still not run (the specclaw-review server isn't connected).

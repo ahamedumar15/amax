@@ -51,19 +51,28 @@ test("AC2 the Contoso board matches the mock (released lane and card within 2%)"
   expect(await axe(page)).toEqual([]);
 });
 
-test("AC3 / 054 AC5 Move on the board asks amax with the proposal pinned; confirming moves it", async ({ page }) => {
+test("AC3 / 054 AC5 / 081 a card's pin offers its move; confirming it moves the proposal", async ({ page }) => {
   test.setTimeout(60_000);
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
-  await expect(page.locator("main form, main dialog")).toHaveCount(0);
+  await expect(page.locator("main form, main dialog, main details")).toHaveCount(0);
   const card = page.locator(".tcard", { hasText: "CON-017" });
   await card.hover();
-  // 081 AC-22: a card's actions open from its Actions fold.
-  await card.locator("summary", { hasText: "Actions" }).click();
-  await askAndConfirm(page, card.getByRole("button", { name: "Move CON-017", exact: true }), { pin: "CON-017 CSV import for clients", prompt: "Move CON-017 to ", type: "building", confirm: "Move to Building", done: "Moved CON-017 to Building" });
-  await expect.poll(() => lanes(page)).toEqual(["1", "1", "3", "2", "1"]);
-  await expect(page.getByRole("button", { name: "Move CON-009", exact: true })).toHaveCount(0);
+  await card.getByRole("button", { name: "Add CON-017 CSV import for clients to chat" }).press("Enter");
+  const offers = page.getByRole("list", { name: "Suggestions for this page" });
+  await offers.getByRole("button", { name: "Move CON-017 to Planned" }).click();
+  await expect(page.getByLabel("Message amax")).toHaveValue("Move CON-017 to planned");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.getByRole("button", { name: "Move to Planned" }).click();
+  await expect(confirm).toContainText("Moved CON-017 to Planned");
+  await page.reload();
+  await expect.poll(() => lanes(page)).toEqual(["1", "2", "2", "2", "1"]);
+  // A released proposal's pin offers no move.
+  const released = page.locator(".tcard", { hasText: "CON-009" });
+  await released.hover();
+  await released.getByRole("button", { name: "Add CON-009 Reports v2 to chat" }).press("Enter");
+  await expect(page.getByRole("list", { name: "Suggestions for this page" }).getByRole("button", { name: /^Move CON-009/ })).toHaveCount(0);
 });
-
 test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
   await signIn(page, "maya@lumenlabs.test", "/delivery/proposals");
   const amxInFlight = (await amx()).filter((r) => r.phase !== "released").length;
@@ -172,26 +181,6 @@ test("081 a proposal opens from the list and the board, with its time, release, 
   expect(await axe(page)).toEqual([]);
 });
 
-// 081 amendment 1 AC-22: a hand-made card's Actions fold offers Edit, Add a task, Move and Withdraw (Time's tones: Edit
-// primary, Withdraw a quiet link). Add a task pins the card and fills chat's box; nothing is written until a card is confirmed.
-test("081 AC-22 a board card's actions open from its fold and ask amax with the proposal pinned", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
-  const card = page.locator(".tcard", { hasText: "CON-016" });
-  await card.hover();
-  await card.locator("summary", { hasText: "Actions" }).click();
-  const group = card.getByRole("group", { name: "Ask amax about CON-016" });
-  await expect(group.getByRole("button")).toHaveText(["Edit", "Add a task", "Move", "Withdraw"]);
-  await expect(group.getByRole("button", { name: "Edit CON-016" })).toHaveClass(/primary/);
-  await expect(group.getByRole("button", { name: "Withdraw CON-016" })).toHaveClass(/link/);
-  await group.getByRole("button", { name: "Add a task to CON-016" }).click();
-  await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText("CON-016 Audit trail on approvals");
-  await expect(page.getByLabel("Message amax")).toHaveValue("Add a task to CON-016: ");
-  await page.goto("/delivery/proposals/CON-016");
-  await expect(page.getByRole("heading", { name: "Tasks", exact: true })).toBeVisible();
-  await expect(page.getByText("No tasks yet.")).toBeVisible();
-  expect(await axe(page)).toEqual([]);
-});
-
 // 081 amendment 2 AC-37: agent-first, end to end in the browser. A pinned proposal makes chat offer its next step;
 // sending it shows the confirm card, and confirming moves it on the board.
 test("081 AC-37 pin a proposal: chat offers its next step, and confirming it moves the proposal", async ({ page }) => {
@@ -235,4 +224,54 @@ test("081 AC-37 the agent suggests Ready to verify; accepting it in chat verifie
   await askAndConfirm(page, card.getByRole("button", { name: `Ask amax to undo ${pin}` }),
     { pin, prompt: new RegExp(`^Undo the suggestion "${pin}" \\(suggestion id [0-9a-f-]{36}\\)$`), confirm: "Undo", done: `Undone: ${pin}` });
   await expect(page.locator(".lede .chip").first()).toHaveText("Building");
+});
+
+// 081 amendment 3 AC-39: other pins run their tasks end to end. Fleet Tracker's pin offers its next release; confirming
+// creates it; the new release's pin offers its first environment; confirming records the deployment.
+test("081 AC-39 pin a project, then its new release: create the release and deploy it, each from the pin's offer", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signIn(page, "maya@lumenlabs.test", "/delivery");
+  await page.locator("tr", { hasText: "Fleet Tracker" }).getByRole("button", { name: "Add Fleet Tracker to chat" }).press("Enter");
+  const offers = page.getByRole("list", { name: "Suggestions for this page" });
+  const create = offers.getByRole("button", { name: /^Create release v\d+\.\d+\.0 of FLT$/ });
+  const version = (await create.innerText()).match(/(v\d+\.\d+\.0)/)![1];
+  await create.click();
+  await expect(page.getByLabel("Message amax")).toHaveValue(`Create release ${version} of FLT`);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  let confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.getByRole("button", { name: "Add it" }).click();
+  await expect(confirm).toContainText("Done:");
+  await page.goto("/delivery/p/FLT/releases");
+  await page.getByRole("button", { name: `Add Fleet Tracker ${version} to chat` }).first().press("Enter");
+  await offers.getByRole("button", { name: `Record a deployment of FLT ${version} to Dev` }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.getByRole("button", { name: "Add it" }).click();
+  await expect(confirm).toContainText("Done:");
+  await page.goto(`/delivery/releases/FLT/${version}`);
+  await expect(page.locator("tbody tr", { hasText: "Dev" }).first()).toContainText("deployed");
+});
+
+// An environment's pin: add one from the environments list's pin, then remove it from its own (it has no deployments).
+test("081 AC-39 pin the environments, then the new environment: add it and remove it, each from the pin's offer", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/FLT");
+  const card = page.locator(".card", { has: page.getByRole("heading", { name: "Environments" }) });
+  await card.getByRole("button", { name: "Add FLT environments to chat" }).first().press("Enter");
+  const offers = page.getByRole("list", { name: "Suggestions for this page" });
+  await offers.getByRole("button", { name: "Add an environment to FLT" }).click();
+  await page.getByLabel("Message amax").pressSequentially("Sandbox");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  let confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.getByRole("button", { name: "Add it" }).click();
+  await expect(confirm).toContainText("Done:");
+  await page.reload();
+  await card.locator("tr", { hasText: "Sandbox" }).getByRole("button", { name: "Add FLT Sandbox to chat" }).press("Enter");
+  await offers.getByRole("button", { name: "Remove the Sandbox environment of FLT" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.getByRole("button", { name: "Add it" }).click();
+  await expect(confirm).toContainText("Done:");
+  await page.reload();
+  await expect(card.locator("tr", { hasText: "Sandbox" })).toHaveCount(0);
 });
