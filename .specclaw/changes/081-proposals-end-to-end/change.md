@@ -28,6 +28,9 @@ all time" labels (AC-25). **Agreed 2026-11-04:** the same two labels in 007's Pr
 month" becomes "Released in October", the fixtures' pinned month, and its filter button "Released" becomes "Released,
 all time"), so the delivery visual test still compares like with like.
 
+Amendment 2 (2026-11-04), in 081's section: the "Suggested by amax" card, chat's suggestions for a pinned proposal,
+and the board card's "✦ amax suggests" chip (AC-30, AC-35).
+
 ## Acceptance Criteria
 
 ### Time and hours
@@ -224,6 +227,94 @@ No migrations, permissions, tools or contracts are added; one notification rule 
 | Q7 | Check closed-project counts on real data; 081 is tested on fixtures only | Dev, with production access |
 | Q8 (new) | AC-28's rule: who sees per-person time lines. **Decided 2026-11-04: the entry's owner and holders of `time:approve` on the project** | Product owner (answered) |
 
+## Amendment 2 (2026-11-04): agent-first proposals: pin suggestions and agent suggestions
+
+The client asked for Proposals to be agent-first, like Time: the agent says what to do next, and a person confirms.
+Time does it in three layers. Delivery had only the first (page suggestions, AC-13). This amendment adds the other
+two, using the platform as Time and Allocations do: core's `pinSuggestions` slot, and `@amax/agents` suggestion kinds.
+There is no new table, migration, permission or tool. AC-1 to AC-29, D1 to D3 and BR-1 to BR-6 stand. In particular,
+an agent never writes without a person's confirm or accept (BR-5).
+
+### Pin suggestions (pin a proposal, chat says what fits)
+
+30. **AC-30** Pinning a proposal (its +, a row, a card or an Ask amax button) makes chat offer what fits its state. Up
+    to two suggestions, only for tools the viewer may run on its project, each filling the box with a prompt the person
+    sends and then confirms:
+    - **A hand-made, open proposal:**
+      - Proposed: "Move <key> to Planned". Planned: "Move <key> to Building". Building with every task done: "Move
+        <key> to Verified" (`move_proposal`).
+      - No tasks: "Add a task to <key>" (`add_proposal_task`).
+      - No owner: "Make me the owner of <key>" (`update_proposal`).
+    - **A spec proposal with no owner:** only "Make me the owner of <key>" (BR-3).
+    - **Released or withdrawn:** nothing.
+
+    The prompts are the exact strings chat's tools already parse (e.g. "Move CON-017 to planned"), so the confirm card
+    names the same proposal.
+31. **AC-31** A pin suggestion is checked when chat opens, against the proposal as it is now (not as it was when the
+    page rendered). A proposal that moved, or a permission that changed, offers what fits now. A pin that no longer
+    resolves offers nothing; it doesn't fail.
+
+### Agent suggestions (the agent proposes, a person accepts)
+
+32. **AC-32** Kind `delivery.proposal-verify`, "Ready to verify". When a task closes (`delivery.task.done`) and every
+    task of a hand-made Building proposal is now done, the Delivery agent suggests "Move <key> to Verified":
+    - for the project's PMs, scope `projectId`, permission `delivery:proposal:move`;
+    - evidence: the proposal page and the last task.
+    - Accepting runs the board move as the accepting person, audited and emitting `proposal.phase_changed`, so the
+      owner and PM notifications fire.
+    - Undo puts it back to Building, only while it's still Verified and inside the platform's undo window. A Verified
+      proposal released since can't be undone.
+    - Spec proposals are never suggested (their phase is the repo's, BR-3).
+33. **AC-33** Kind `delivery.proposal-owner`, "Suggested owner". When a task closes on a proposal with no owner and a
+    person closed it (`user:…`, or an agent or credential acting for a person), the agent suggests "Make <person> the
+    owner of <key>":
+    - scope `projectId`, permission `delivery:proposal:create`;
+    - evidence: the task they closed.
+    - Accepting sets the owner (the `update_proposal` rule, valid for spec proposals too); undo clears it again if
+      nothing changed it since.
+    - This suggests, never assigns: it doesn't settle Q3 (backfilling existing owners).
+34. **AC-34** Suggestions don't pile up or go stale:
+    - The platform keeps one open suggestion per kind and proposal.
+    - When the proposal changes so the suggestion no longer fits, the Delivery agent withdraws it with a reason: it
+      moved, was withdrawn or released, got an owner, or a task reopened.
+    - Open suggestions expire after the platform's 7 days.
+    - Accepting a suggestion whose proposal changed since is refused with a clear message, and nothing is written.
+35. **AC-35** Where people see agent suggestions:
+    - **Proposal page:** a "Suggested by amax" card ("An agent suggests, a person decides") with "Ask amax to accept"
+      and "Dismiss" buttons (Ask amax, pinned, confirm card), in the style Allocations and Time use.
+    - **Board card:** a "✦ amax suggests" chip.
+    - **Suggestions inbox:** the platform screen, with accept, query, dismiss and undo.
+
+    Each shows only to viewers who may decide it.
+
+### Verification
+
+36. **AC-36** Tests:
+    - Unit tests for each pin-suggestion state and permission (AC-30, AC-31).
+    - Each kind's trigger, accept, undo, withdraw and stale-refusal (AC-32 to AC-34).
+    - The page card and the board chip by viewer (AC-35).
+    - Notifications fire on an accepted Verify, without duplicates.
+    - The 081 regressions stay green.
+37. **AC-37** End to end in the browser (e2e:auth, CI replica) and by hand:
+    - **Pin flow:** pin CON-017, click "Move CON-017 to Planned", confirm, and the board shows it in Planned.
+    - **Agent flow:** close the last open task of a hand-made Building proposal, see "Ready to verify" on its page,
+      accept in chat, and see Verified, an undo window on the Suggestions screen, and the owner notified.
+    - **Prerequisite:** the scripted e2e chat model learns "Accept the suggestion "…" (suggestion id …)" and "Add a
+      task to <key>: <title>". These are two rules in `packages/ai/src/scripted-writes.ts`, test-only (never in
+      production), and need approval as the one change outside `modules/`.
+    - **By hand:** a walk-through of both flows in a locally running app, with screenshots in the PR.
+
+**Affected:**
+- **Delivery:** `pin-suggestions.ts` (new), `suggestions.ts` (two kinds, the agent's event handler, withdrawals), `module.ts` (`pinSuggestions`, `suggestions`, `events.handles`), `ui/ProposalPage.tsx`, `ui/ProjectPage.tsx`, `ui/ProposalSuggestions.tsx` (new), tests.
+- **Test support:** `packages/ai/src/scripted-writes.ts` (two test-only rules).
+- **Browser test:** `apps/web/tests/e2e/delivery.spec.ts`.
+- **Mock:** the 081 section.
+
+**Decided 2026-11-04:** approved; nudges "Ready to verify" and "Suggested owner"; the two scripted e2e rules in `packages/ai` are approved.
+
+**Not included (needs the product owner):** a "stale proposal, withdraw it?" nudge. Its undo would reinstate a
+withdrawn proposal, which is Q5, still open.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -266,6 +357,18 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T13` — Amendment 1, e2e, READMEs, audit traceability, CI replica (AC-29)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T9, T11, T12
+- [ ] `T14` — Amendment 2, pin suggestions for proposals (AC-30, AC-31)
+  Files: modules/delivery/pin-suggestions.ts, modules/delivery/module.ts, modules/delivery/tests/proposal-suggestions.test.ts
+  Depends: T13
+- [ ] `T15` — Amendment 2, the two agent suggestion kinds, their trigger and withdrawals (AC-32 to AC-34)
+  Files: modules/delivery/suggestions.ts, modules/delivery/server/agent.ts, modules/delivery/module.ts, modules/delivery/tests/proposal-agent.test.ts
+  Depends: T14
+- [ ] `T16` — Amendment 2, the page card and board chip, mock (AC-35)
+  Files: modules/delivery/ui/ProposalSuggestions.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/delivery.css, .specclaw/mock/index.html, apps/mock/public/mock/index.html, modules/delivery/tests/proposal-agent.test.ts
+  Depends: T15
+- [ ] `T17` — Amendment 2, end to end: scripted e2e rules, browser tests, hand walk-through, READMEs, traceability, CI replica (AC-36, AC-37)
+  Files: packages/ai/src/scripted-writes.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
+  Depends: T16
 
 ## Verify
 
