@@ -100,6 +100,10 @@ export default defineModule({
     // 081 AC-19: a proposal's owner hears when someone else moves or releases it, or finishes one of its tasks.
     { id: "delivery.proposal-phase", event: EVENTS.proposalPhaseChanged, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "{key} moved from {from} to {to}", href: "/delivery/proposals/{key}" },
+    // 081 AC-27 (FR-18): the project's PMs (who may create its releases) hear a proposal is ready to ship. One notification
+    // per person per event (the platform's unique key), so a PM who is also the owner gets one.
+    { id: "delivery.proposal-verified", event: EVENTS.proposalPhaseChanged, when: { to: "verified" }, category: "releases", to: [{ role: "PM" }], except: "by",
+      permission: "delivery:release:create", scope: { projectId: "projectId" }, title: "{key} is verified and ready for a release", href: "/delivery/proposals/{key}" },
     { id: "delivery.proposal-task-done", event: EVENTS.taskDone, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "Task {task} of {key} is done", href: "/delivery/proposals/{key}" },
   ],

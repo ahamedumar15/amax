@@ -165,7 +165,8 @@ database migration and no new module edge. Every earlier AC, decision and busine
     without a proposal works exactly as before, and an unknown, other-project or withdrawn proposal is refused before
     any card appears (AC-1's rule).
 27. **AC-27 (FR-18)** A new notification rule tells the project's PMs (people holding `delivery:release:create` on
-    that project, the managed scope) when a proposal reaches Verified: "<key> is verified in <project>", linking the
+    that project, the managed scope) when a proposal reaches Verified: "<key> is verified and ready for a release" (the
+    key names the project, so the payload needs no new field; amended in T11), linking the
     proposal page. It fires on Verified from a board move or a sync, never for the PM's own action, and never twice to
     one person for one event. The platform keeps one notification per person per event, so a PM who is also the owner
     gets one (that is a test). The owner rules from AC-19 are unchanged.
@@ -255,7 +256,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T10` — Amendment 1, Log time asks for the proposal (AC-26)
   Files: modules/time/chat.ts, modules/time/tests/proposal-time.test.ts, modules/time/tests/contracts.test.ts
   Depends: T8
-- [ ] `T11` — Amendment 1, PM hears of Verified (AC-27)
+- [x] `T11` — Amendment 1, PM hears of Verified (AC-27)
   Files: modules/delivery/module.ts, modules/notifications/tests/delivery-routing.test.ts
   Depends: T8
 - [ ] `T12` — Amendment 1, time in the proposal's history, by id, for whom may see it (AC-28)
