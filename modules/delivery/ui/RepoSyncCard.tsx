@@ -1,4 +1,4 @@
-import { PinButton } from "@amax/ui";
+import { PinButton, Since } from "@amax/ui";
 import { pushPin, repoSyncPin } from "../pins";
 import type { PushRow } from "../server/repo-sync";
 import { AskButton } from "./AskButton";
@@ -10,13 +10,22 @@ const result = (p: PushRow) => p.outcome === "refused" ? p.reason ?? "refused"
 type Props = { projectKey: string; projectId: string; repoUrl: string | null; last: PushRow | null; recent: PushRow[]; canLink: boolean };
 
 // 062 AC-10: refused pushes first, since they need someone to act; linking happens in chat.
+// 081 amendment 4 (AC-44): the card folds to one row (a native <details>), open by default when a push was refused.
+// The heading stays in the <summary>; the pin and the Ask amax button sit outside it, so no control nests in another.
 export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, canLink }: Props) {
   const pin = repoSyncPin({ id: projectId, key: projectKey });
   const rows = [...recent.filter((p) => p.outcome === "refused"), ...recent.filter((p) => p.outcome === "applied")].slice(0, 8);
   const refused = recent.filter((p) => p.outcome === "refused").length;
   return (
-    <div className="card flush pinnable" style={{ marginTop: 28 }}>
-      <div className="card-head"><h2>Repo sync</h2><PinButton inline pin={pin} />
+    <div className="card flush pinnable dv-foldwrap dv-sync" style={{ marginTop: 28 }}>
+      <details className="dv-fold" open={refused > 0}>
+      <summary>
+        <h2>Repo sync</h2>
+        {refused > 0 ? <span className="chip warn">{refused} {refused === 1 ? "push" : "pushes"} refused</span> : !repoUrl && <span className="chip warn">No repo linked</span>}
+        {last && <small className="muted">last sync <Since at={last.at} /></small>}
+        <span className="dv-chev" aria-hidden="true" />
+      </summary>
+      <div className="card-head">
         <span className="muted" style={{ fontSize: 13 }}>{repoUrl ? `From ${repoUrl}` : "No repo linked: specclaw pushes are refused"}</span>
         {canLink && <div className="actions"><AskButton spark label={repoUrl ? "Ask amax to change the linked repo" : "Ask amax to link a repo"}
           prompt={repoUrl ? `Change the repo ${projectKey} syncs from to ` : `Link ${projectKey} to the repo `} pin={pin} /></div>}</div>
@@ -41,6 +50,8 @@ export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, can
           </tbody>
         </table></div>
       )}
+      </details>
+      <PinButton inline pin={pin} />
     </div>
   );
 }

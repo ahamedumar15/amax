@@ -12,6 +12,8 @@ import { getRepoSync } from "../server/repo-sync";
 import { RepoSyncCard } from "./RepoSyncCard";
 import { initials, needViewer, SignInFirst, Stk } from "./parts";
 import { ProjectTabs } from "./ProjectSections";
+import { BoardBand } from "./BoardBand";
+import { NeedsYou } from "./NeedsYou";
 
 const D = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
 // "Sprint 18 runs Mon Oct 12 to Fri Oct 23. 9 of 16 tasks done, on track for v2.5.0. "
@@ -69,9 +71,10 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   if (!viewer) return <><h1>Project</h1><SignInFirst /></>;
   const data = await getProject(viewer, params.key);
   if (!data) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
-  const { project, proposals } = data;
+  const { project, proposals, closedBy } = data;
   // 081 AC-35: a card with an open agent suggestion the viewer may decide says so, and opens the proposal to decide it.
-  const suggested = new Set((await proposalSuggestions(viewer, proposals.map((x) => x.id))).open.map((s) => s.target.id));
+  const open = (await proposalSuggestions(viewer, proposals.map((x) => x.id))).open;
+  const suggested = new Set(open.map((s) => s.target.id));
   const envs = await listEnvironments(viewer, project.key);
   const sync = await getRepoSync(viewer, { projectId: project.id });
 
@@ -92,6 +95,11 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
         </div>
       </div>
       <ProjectTabs projectKey={project.key} current="" />
+      {/* 081 amendment 4 (AC-43, AC-42): what waits for this viewer, then the project at a glance, then the board. */}
+      <NeedsYou projectKey={project.key}
+        suggestions={open.flatMap((s) => { const p = proposals.find((x) => x.id === s.target.id); return p ? [{ ...s, proposal: { key: p.key, title: p.title } }] : []; })}
+        refused={sync && can(viewer, "delivery:project:link", { projectId: project.id }) ? sync.recent.filter((p) => p.outcome === "refused") : []} />
+      <BoardBand project={{ key: project.key, pin: projectPin(project) }} proposals={proposals} done={done} total={total} closedBy={closedBy} />
       <div className="board">
         {PHASES.map((phase) => {
           const cards = proposals.filter((p) => p.phase === phase);

@@ -454,7 +454,7 @@ Overview already counts it).
 
 **Approved 2026-11-04.** **Affected:**
 - **Delivery UI:** `modules/delivery/ui/ProjectPage.tsx`, `ProposalPage.tsx`, `ProposalActions.tsx` and
-  `RepoSyncCard.tsx`, new `ui/Band.tsx`, `ui/NeedsYou.tsx` and `ui/Stepper.tsx`, and `ui/delivery.css`.
+  `RepoSyncCard.tsx`, new `ui/BoardBand.tsx`, `ui/NeedsYou.tsx` and `ui/Stepper.tsx`, and `ui/delivery.css`.
 - **Delivery server:** `modules/delivery/server/queries.ts` (tasks closed by agents and by people, and phase dates).
 - **Shared:** `packages/ui` (`ago` and `Since`), and `modules/time/ui` (imports only).
 - **Tests:** unit tests and `apps/web/tests/e2e/delivery.spec.ts`.
@@ -525,8 +525,8 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T20` — Amendment 4 groundwork: `ago` and `Since` move to @amax/ui (Time imports them); the board's band figures (proposals by phase, tasks closed by agents and by people) and the proposal's phase dates read on the server, with unit tests (AC-42, AC-47, AC-52)
   Files: packages/ui/src/age.ts, packages/ui/src/components/Since.tsx, packages/ui/src/index.ts, packages/ui/tests/age.test.ts (moved from modules/time), modules/time/ui/RequestFold.tsx, modules/time/ui/SentBack.tsx, modules/time/ui/Timesheets.tsx, modules/delivery/server/queries.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/ui/band.ts, modules/delivery/tests/board-band-081.test.ts, modules/delivery/tests/proposal-detail.test.ts
   Depends: T19
-- [ ] `T21` — Amendment 4, the board: status band, Needs you, folded repo sync (AC-42 to AC-45)
-  Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/Band.tsx, modules/delivery/ui/NeedsYou.tsx, modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/delivery.css
+- [x] `T21` — Amendment 4, the board: status band, Needs you, folded repo sync (AC-42 to AC-45)
+  Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/NeedsYou.tsx, modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/board-a4.test.ts, modules/delivery/tests/proposal-board-081.test.ts
   Depends: T20
 - [ ] `T22` — Amendment 4, the proposal page: header, stepper, suggestions first, Time band, history timeline, folded done tasks (AC-46 to AC-51)
   Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/Stepper.tsx, modules/delivery/ui/delivery.css

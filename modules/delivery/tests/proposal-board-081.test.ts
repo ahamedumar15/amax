@@ -34,7 +34,10 @@ describe.skipIf(!hasDb)("081 amendment 1: board card actions, task meters, key n
   it("AC22 (amendment 3) board cards carry no action menu, only their pin; the proposal page keeps its actions, Withdraw as a clean button", async () => {
     const board = await html(ProjectPage({ viewer: maya, params: { key: "CON" } }));
     expect(board).not.toContain("Ask amax about");
-    expect(board).not.toMatch(/<details|cardmenu|<form|<dialog/);
+    expect(board).not.toMatch(/cardmenu|<form|<dialog/);
+    // Amendment 4 folds Needs you and Repo sync (AC-43, AC-44); the board's cards still fold nothing.
+    const lanes = board.slice(board.indexOf('class="board"'), board.indexOf("dv-sync") === -1 ? undefined : board.indexOf("dv-sync"));
+    expect(lanes).not.toContain("<details");
     expect(board).toContain('aria-label="Add CON-017 CSV import for clients to chat"');
     const page = await html(ProposalsPage({ viewer: maya, params: { phase: "CON-017" } }));
     expect(actionsOf(page, "CON-017")).toEqual(["Edit CON-017", "Add a task to CON-017", "Move CON-017", "Withdraw CON-017"]);
