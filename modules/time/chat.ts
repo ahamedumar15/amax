@@ -1,7 +1,9 @@
 export const chatIntents = [
   { id: "time.log", label: "Log time", tool: "log_time", required: ["projectKey", "hours", "day"],
     fields: [{ name: "projectKey", ask: "Which project?" }, { name: "hours", ask: "How many hours?" }, { name: "day", ask: "Which day (YYYY-MM-DD)? For a Saturday or Sunday, confirm it was weekend work." },
-      { name: "billable", ask: "Is it billable to the client?", options: ["yes", "no"] }] },
+      { name: "billable", ask: "Is it billable to the client?", options: ["yes", "no"] },
+      // 081 AC-26 (FR-03): optional, asked once when the person hasn't named one; a proposal they gave is used as is.
+      { name: "proposalKey", ask: "Which proposal is it for? A proposal on that project, e.g. CON-014, or none (optional; don't ask again if they named one or said none)." }] },
   { id: "time.correct", label: "Fix hours", tool: "correct_time_entry", required: ["entryId"],
     fields: [{ name: "entryId", ask: "Which entry? Pick it from your timesheet." }, { name: "hours", ask: "How many hours should it be?" }] },
   { id: "time.request", label: "Ask for a change", tool: "request_time_change", required: ["entryId", "reason"],

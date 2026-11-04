@@ -5,6 +5,12 @@ import { hasDb } from "@amax/db/testdb";
 import { contextForViewer, setGrants } from "@amax/auth";
 import { agentsPlatform } from "@amax/agents/module";
 import { acceptSuggestion, setSuggestionKinds } from "@amax/agents/server";
+import { configureAi } from "@amax/ai";
+import { fakeProvider } from "@amax/ai/fake";
+import { chatTurn, confirmAction } from "@amax/chat";
+import { createRegistry } from "@amax/mcp";
+import { chatIntents } from "../chat";
+import { proposeLog } from "../server/entry-card";
 import { EVENTS as DELIVERY, type CommitTime } from "@amax/delivery/contracts";
 import { ctxFor } from "../server/context";
 import { correctEntry } from "../server/correct";
@@ -54,4 +60,29 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     await correctEntry(nimal, { entryId: e.id, projectKey: "FLT" });
     expect(await proposalOf(e.id)).toBeNull();
   });
+
+  it("AC26 Log time asks which proposal (optional); the card shows it; the entry keeps its id; none and other-project proposals behave", async () => {
+    const intent = chatIntents.find((i) => i.id === "time.log")!;
+    expect(intent.required).not.toContain("proposalKey");
+    expect(intent.fields.map((f) => f.name)).toContain("proposalKey");
+    const nimal = await db.as("nimal");
+    await expect(proposeLog(nimal, { projectKey: "FLT", proposalKey: "CON-014", day: "2026-10-26", hours: 1 })).rejects.toThrow(/belongs to CON, not FLT/);
+    await db.t.owner`insert into ai.settings (tenant_id, zdr_confirmed) values (${T}, true) on conflict do nothing`;
+    const registry = createRegistry(await installedModules());
+    const log = async (input: Record<string, unknown>) => {
+      const provider = fakeProvider([() => ({ toolCalls: [{ type: "tool_use", id: "c1", name: "log_time", input }] }), () => ({ text: "Log it?" })]);
+      configureAi({ provider, db: db.app, model: "claude-haiku-5-5" });
+      const turn = await chatTurn(db.app, registry, nimal, { text: "log 2 h on CON-014", intent: intent as never });
+      expect(provider.calls[0].system).toContain("proposalKey: Which proposal is it for?");
+      expect(turn.pending.map((p) => p.tool)).toEqual(["log_time"]);
+      const { result } = await confirmAction(db.app, registry, nimal, turn.conversationId, turn.pending[0].id);
+      return { card: turn.pending[0].lines ?? [], id: (result as { id: string }).id };
+    };
+    const withIt = await log({ projectKey: "CON", proposalKey: "CON-014", day: "2026-10-27", hours: 2 });
+    expect(withIt.card).toContainEqual({ label: "Proposal", value: "CON-014 Invoice export to PDF" });
+    expect(await proposalOf(withIt.id)).toBe("CON-014");
+    const without = await log({ projectKey: "CON", day: "2026-10-28", hours: 1 });
+    expect(without.card.map((l) => l.label)).not.toContain("Proposal");
+    expect(await proposalOf(without.id)).toBeNull();
+  }, 60_000);
 });

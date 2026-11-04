@@ -252,7 +252,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T9` — Amendment 1, board and list: one actions component on the card and the page; task meter in every phase but Released; key note; "Released in <Month>" / "Released, all time" (AC-22 to AC-25)
   Files: modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/mcp.ts, modules/delivery/tests/proposal-board-081.test.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
   Depends: T8
-- [ ] `T10` — Amendment 1, Log time asks for the proposal (AC-26)
+- [x] `T10` — Amendment 1, Log time asks for the proposal (AC-26)
   Files: modules/time/chat.ts, modules/time/tests/proposal-time.test.ts, modules/time/tests/contracts.test.ts
   Depends: T8
 - [ ] `T11` — Amendment 1, PM hears of Verified (AC-27)
