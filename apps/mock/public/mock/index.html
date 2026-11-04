@@ -1026,7 +1026,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
   <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-proposals">Proposals</a><span>/</span>CON-H003</nav>
   <div class="row head">
     <div><h1>CON-H003 Invoice reminders</h1><p class="lede"><span class="dot" style="background:var(--violet)"></span><a href="#001-amax-foundation-project">Contoso Portal</a> · <span class="chip agent">Building</span> · Owner Nimal Silva · made by hand Oct 2, updated Oct 15</p></div>
-    <div class="actions"><button class="btn">✦ Edit</button><button class="btn">✦ Add a task</button><button class="btn">✦ Move</button><button class="btn">✦ Withdraw</button></div>
+    <div class="actions"><button class="btn">✦ Ask amax</button><button class="btn" style="background:transparent;border:1px solid var(--danger,#D64545);color:var(--danger,#D64545)">Withdraw</button></div>
   </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card pinnable"><div class="card-head"><h2>Time</h2></div><div class="big">11.5 h <span class="muted" style="font-size:15px;font-weight:500">approved, of 16 h estimated</span></div><div class="gbar"><i style="width:72%;background:var(--violet)"></i></div><p class="muted" style="font-size:13px">From approved timesheet entries logged against CON-H003.</p></div>
@@ -1061,6 +1061,52 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
   <h2 style="margin-top:32px">Proposals list changes</h2>
   <div class="card flush"><div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false"><b>Planned</b></button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released, all time</button></div><div class="actions"><input class="select" placeholder="Search proposals" aria-label="Search proposals"><button class="btn">Filter</button><button class="btn">Export</button><button class="btn primary">✦ New proposal</button></div></div>
     <p class="muted" style="padding:0 28px 20px;font-size:13px">Amendment 1 (AC-25): the phase bar's legend reads "Released in November"; the filter reads "Released, all time". Rows link to the proposal page. Counts and the chart follow the project filter and leave out closed projects. 20 rows a page. The shipped-per-week pin opens that metric.</p></div>
+  <h2 style="margin-top:32px">Amendment 4: interactive like Time (proposal page)</h2>
+  <p class="muted" style="font-size:13px">The header keeps <b>Ask amax</b> and the outlined <b>Withdraw</b> (AC-46). Edit, Add a task and Move come from the pin. Under the header: the stage stepper (AC-47), then the agent's suggestions (AC-48).</p>
+  <ol class="card pinnable" aria-label="Stage" style="display:flex;gap:0;list-style:none;padding:18px 22px;margin:0 0 20px">
+    <li style="flex:1;display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--mint);padding-top:10px"><b>✓ Proposed</b><span class="muted" style="font-size:12.5px">Oct 2</span></li>
+    <li style="flex:1;display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--mint);padding-top:10px"><b>✓ Planned</b><span class="muted" style="font-size:12.5px">Oct 9</span></li>
+    <li aria-current="step" style="flex:1;display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--violet);padding-top:10px"><b style="color:var(--violet)">● Building</b><span class="muted" style="font-size:12.5px">since Oct 15 · now</span></li>
+    <li style="flex:1;display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--line,#E4E1F0);padding-top:10px;color:var(--ink-3,#8A86A0)">○ Verified</li>
+    <li style="flex:1;display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--line,#E4E1F0);padding-top:10px;color:var(--ink-3,#8A86A0)">○ Released</li>
+  </ol>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card pinnable"><div class="k" style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Time</div>
+      <div class="big">18 h <span class="muted" style="font-size:15px;font-weight:500">of 16 h estimated</span></div>
+      <div style="display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken,#F1EFF8);margin:10px 0"><i style="flex-grow:16;background:var(--violet)"></i><i style="flex-grow:2;background:#D64545"></i></div>
+      <p style="font-size:13px"><span class="chip">● 16 h within estimate</span> <span class="chip warn">▲ 2 h over</span></p>
+      <p class="muted" style="font-size:12.5px">With no estimate: "11.5 h approved · no estimate" (AC-49).</p></div>
+    <div class="card flush pinnable"><div class="card-head"><h2>History</h2></div>
+      <ul style="list-style:none;margin:0;padding:0 28px 20px">
+        <li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line,#E4E1F0)"><span aria-hidden="true">⏱</span><span style="flex:1">Nimal Silva logged 3 h for Oct 21</span><span class="muted" title="Wed Nov 4, 12:10">2 h ago</span></li>
+        <li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line,#E4E1F0)"><span aria-hidden="true">✓</span><span style="flex:1">T2 Email template done · Claude for Nimal Silva</span><span class="muted" title="Tue Nov 3, 16:40">21 h ago</span></li>
+        <li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line,#E4E1F0)"><span aria-hidden="true">→</span><span style="flex:1">Moved Planned → Building · Nimal Silva</span><span class="muted" title="Thu Oct 15, 09:02">20 d ago</span></li>
+        <li style="display:flex;gap:10px;padding:8px 0"><span aria-hidden="true">＋</span><span style="flex:1">Created, estimate 16 h · Claude for Nimal Silva</span><span class="muted" title="Fri Oct 2, 10:30">33 d ago</span></li>
+      </ul></div>
+  </div>
+  <div class="card flush pinnable" style="margin-bottom:28px;max-width:560px"><div class="card-head"><h2>Tasks</h2><span class="muted" style="font-size:13px">2 of 3 done</span></div>
+    <table class="tbl"><tbody><tr><td><b>T3</b> Opt-out link</td><td class="muted">Open</td></tr></tbody></table>
+    <details style="padding:10px 28px 18px"><summary style="cursor:pointer"><span class="chip good">✓ 2 done</span></summary><p><b>T1</b> Reminder schedule · <b>T2</b> Email template</p></details></div>
+
+  <h2 style="margin-top:32px">Amendment 4: the project board (Contoso Portal)</h2>
+  <p class="muted" style="font-size:13px">These sit between the tabs and the board. The lanes and cards don't change (AC-45).</p>
+  <div class="card pinnable" style="margin-bottom:20px;padding:0">
+    <details open style="padding:14px 22px"><summary style="cursor:pointer;font-weight:700">Needs you · 2</summary>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+        <details class="pinnable" style="background:var(--sunken,#F1EFF8);border-radius:12px;padding:8px 14px"><summary style="cursor:pointer"><span class="chip agent">✦ Ready to verify</span> CON-012 SSO token refresh <span class="muted">· suggested 2 h ago</span></summary><p style="font-size:13px">All 4 tasks are done (T4 closed by CI, Nov 4). Delivery agent. <a href="#">Open CON-012 to decide</a></p></details>
+        <details class="pinnable" style="background:var(--sunken,#F1EFF8);border-radius:12px;padding:8px 14px"><summary style="cursor:pointer"><span class="chip warn">▲ Push refused</span> change 042 has no project key <span class="muted">· 3 h ago</span></summary><p style="font-size:13px">From Kasun Dias, commit a1b2c3d. Ask amax to relink the repo, or fix the change and push again.</p></details>
+      </div></details></div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px">
+    <section class="card pinnable"><div class="k" style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Proposals</div>
+      <div class="big">7 <span class="muted" style="font-size:15px;font-weight:500">in flight</span></div>
+      <div role="img" aria-label="7 proposals in flight: 2 proposed, 1 planned, 2 building, 2 verified" style="display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;margin:10px 0"><i style="flex-grow:2;background:#F5B82E"></i><i style="flex-grow:1;background:#3BB5E8"></i><i style="flex-grow:2;background:var(--violet)"></i><i style="flex-grow:2;background:var(--mint)"></i></div>
+      <p style="display:flex;gap:6px;flex-wrap:wrap"><a class="chip" href="#">💡 2 proposed</a><a class="chip" href="#">▦ 1 planned</a><a class="chip agent" href="#">&lt;/&gt; 2 building</a><a class="chip good" href="#">✓ 2 verified</a></p></section>
+    <section class="card pinnable"><div class="k" style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Tasks</div>
+      <div class="big">9 <span class="muted" style="font-size:15px;font-weight:500">of 16 done</span></div>
+      <div role="img" aria-label="9 of 16 tasks done: 6 by agents, 3 by people, 7 open" style="display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken,#F1EFF8);margin:10px 0"><i style="flex-grow:6;background:var(--violet)"></i><i style="flex-grow:3;background:var(--mint)"></i><i style="flex-grow:7;background:var(--line,#E4E1F0)"></i></div>
+      <p style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip agent">✦ Agents 6</span><span class="chip good">● People 3</span><span class="chip">○ Open 7</span></p></section>
+  </div>
+  <div class="card pinnable" style="margin-bottom:28px;padding:0"><details style="padding:14px 22px"><summary style="cursor:pointer"><b>Repo sync</b> · <span class="chip warn">2 pushes refused</span> · <span class="muted">last sync 3 h ago</span></summary><p class="muted" style="font-size:13px">Opens to today's push table. It's open by default when a push was refused (AC-44).</p></details></div>
 </section>
 <section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
   <h1>Dev starts fresh</h1>

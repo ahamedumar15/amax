@@ -370,6 +370,95 @@ amax actions on the board card"), the board's actions are reached through the ca
 **Approved 2026-11-04.** **Affected:** `modules/delivery/pin-suggestions.ts` (split by record), `ui/ProposalActions.tsx`, `ui/ProjectPage.tsx` and `ui/delivery.css` (the Withdraw button, no card fold), `module.ts`,
 `packages/ai/src/scripted-writes.ts` (test-only rules, as Amendment 2), tests, `apps/web/tests/e2e/delivery.spec.ts`.
 
+## Amendment 4 (2026-11-04): the board and the proposal page, interactive like Time
+
+The client asked for Delivery to feel as interactive as Time. Time's pages lead with what needs attention:
+- **A status band:** a big figure, a segmented bar and a legend whose parts filter.
+- **Folded rows:** each opens in place.
+- **Live times:** they keep counting.
+- **Icons:** status always has an icon as well as a colour.
+
+The Delivery pages are flat cards of equal weight. This amendment brings Time's patterns to the two pages people use
+most: the project board and the proposal page. Projects, Proposals and Releases follow in a later change (decided
+2026-11-04).
+
+All the rules still hold:
+- Read-only controls only; every write is in chat, after the confirm card.
+- Every new part is pinnable.
+- The new parts are keyboard-complete, work in light and dark themes, and respect reduced motion.
+
+There is no new tool, permission, table or migration. Everything shown is read from data the pages already load, plus
+who closed each task (`delivery.task.done_by`: `user:<id>` for a person, anything else for an agent or CI, as the
+Overview already counts it).
+
+### Project board (`/delivery/p/<KEY>`)
+
+42. **AC-42** A status band sits between the tabs and the board. It has two parts, each pinned to the project
+    (`get_project`), and each shows only when it has something to show:
+    - **Proposals:** "<n> in flight" (Proposed to Verified). The bar has one segment per phase. Each legend item (phase icon, count, name) links
+      to the project's Proposals tab filtered to that phase.
+    - **Tasks:** "<done> of <total> done". The bar splits the done tasks into closed by agents and closed by people,
+      then the open ones. The legend reads "Agents <n> · People <n> · Open <n>".
+
+    A screen reader reads each bar as one sentence, for example "5 proposals in flight: 2 proposed, 1 planned, 2 building".
+43. **AC-43** "Needs you", above the band, appears only when there's something for this viewer. It has one folded row
+    per item, newest first, each with its own pin:
+    - **Agent suggestions:** for each open agent suggestion on this project's proposals that the viewer may decide, the
+      row reads "Ready to verify · CON-012 SSO token refresh · suggested 2 h ago" and opens to the agent's detail and
+      a link to the proposal.
+    - **Refused pushes:** for each refused specclaw push, when the viewer may link the repo, the row reads
+      "Push refused · <reason> · 3 h ago". It opens to the push's details.
+44. **AC-44** Repo sync folds to one row: "Repo sync · <n> pushes refused · last sync <age>" (or "No repo linked").
+    It opens, by click, Enter or Space, to the table it shows today. It is open by default when a push was refused.
+    The row keeps its pin.
+45. **AC-45** The board, its lanes and its cards don't change (Amendment 3), so the 001 mock and its visual test
+    still hold.
+
+### Proposal page (`/delivery/proposals/<key>`)
+
+46. **AC-46** The header keeps two actions:
+    - **"Ask amax"**, with the proposal pinned.
+    - **Withdraw**, the outlined danger button, shown to those who may withdraw and only while the proposal can be
+      withdrawn.
+
+    Edit, Add a task and Move leave the header. Chat offers them from the page's pin (AC-30, AC-38), and the opening
+    prompt of "Ask amax" lists them. This supersedes AC-6's header buttons.
+47. **AC-47** A stage stepper sits under the header: Proposed, Planned, Building, Verified, Released. Each step's state
+    shows as an icon and a word, never by colour alone:
+    - **Done steps:** a tick, and the date the proposal entered that phase (from its history).
+    - **Current step:** marked with `aria-current="step"`.
+    - **Later steps:** muted.
+
+    A withdrawn proposal shows a crossed-out step at the point it was withdrawn. The stepper pins to the proposal.
+48. **AC-48** The agent's open suggestions (AC-35) come right after the stepper, before any other card.
+49. **AC-49** The Time card reads as a band:
+    - The big figure "<approved> h of <estimate> h estimated".
+    - A bar of approved hours against the estimate. Hours over the estimate show as a separate segment, with an over
+      icon and "<n> h over".
+    - With no estimate, the card reads "<n> h approved · no estimate".
+50. **AC-50** History is a timeline, newest first. Each line has an icon for its kind (created, moved, task done, time
+    logged or corrected, released, withdrawn), what happened, who did it (person or "agent for person"), and a live age
+    ("3 h ago") that keeps counting. The exact time is in the tooltip. AC-28's visibility rule for time lines is
+    unchanged.
+51. **AC-51** Tasks lists the open tasks first. The done ones fold into one row, "<n> done", that opens in place.
+    A proposal with every task done shows "All <n> done" open.
+52. **AC-52** The live age is shared: `ago()` and `<Since>` move from `modules/time/ui` to `@amax/ui`. Time imports
+    them from there and its pages don't change.
+53. **AC-53** Tests:
+    - Unit tests: the band figures and their sentences, the needs-you rows (including permission), the stepper states
+      (including withdrawn) and the over-estimate figure.
+    - The 081 chat-first suite stays green, with the header's AC-22 test updated to AC-46.
+    - In the browser: the band's legend opens the filtered Proposals tab; the repo sync row opens with Enter; the
+      stepper marks the current step; Withdraw opens chat with the confirm card; axe finds no violations.
+    - A hand walk-through with screenshots, light and dark.
+
+**Approved 2026-11-04.** **Affected:**
+- **Delivery UI:** `modules/delivery/ui/ProjectPage.tsx`, `ProposalPage.tsx`, `ProposalActions.tsx` and
+  `RepoSyncCard.tsx`, new `ui/Band.tsx`, `ui/NeedsYou.tsx` and `ui/Stepper.tsx`, and `ui/delivery.css`.
+- **Delivery server:** `modules/delivery/server/queries.ts` (tasks closed by agents and by people, and phase dates).
+- **Shared:** `packages/ui` (`ago` and `Since`), and `modules/time/ui` (imports only).
+- **Tests:** unit tests and `apps/web/tests/e2e/delivery.spec.ts`.
+
 
 ## Tasks
 
@@ -432,6 +521,19 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T19` — Amendment 3: scripted e2e rules, browser tests, walk-through, docs, CI replica (AC-39, AC-41)
   Files: packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, modules/delivery/server/write-cards.ts, modules/delivery/mcp.ts, modules/delivery/tests/chat-081.test.ts, apps/web/lib/page-context.ts, apps/web/tests/page-context.test.ts
   Depends: T18
+
+- [x] `T20` — Amendment 4 groundwork: `ago` and `Since` move to @amax/ui (Time imports them); the board's band figures (proposals by phase, tasks closed by agents and by people) and the proposal's phase dates read on the server, with unit tests (AC-42, AC-47, AC-52)
+  Files: packages/ui/src/age.ts, packages/ui/src/components/Since.tsx, packages/ui/src/index.ts, packages/ui/tests/age.test.ts (moved from modules/time), modules/time/ui/RequestFold.tsx, modules/time/ui/SentBack.tsx, modules/time/ui/Timesheets.tsx, modules/delivery/server/queries.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/ui/band.ts, modules/delivery/tests/board-band-081.test.ts, modules/delivery/tests/proposal-detail.test.ts
+  Depends: T19
+- [ ] `T21` — Amendment 4, the board: status band, Needs you, folded repo sync (AC-42 to AC-45)
+  Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/Band.tsx, modules/delivery/ui/NeedsYou.tsx, modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/delivery.css
+  Depends: T20
+- [ ] `T22` — Amendment 4, the proposal page: header, stepper, suggestions first, Time band, history timeline, folded done tasks (AC-46 to AC-51)
+  Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/Stepper.tsx, modules/delivery/ui/delivery.css
+  Depends: T20
+- [ ] `T23` — Amendment 4: browser tests, axe, hand walk-through light and dark, CI replica (AC-53)
+  Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/tests/*.test.ts, .specclaw/changes/081-proposals-end-to-end/audit.md
+  Depends: T21, T22
 
 ## Verify
 

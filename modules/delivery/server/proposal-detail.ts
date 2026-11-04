@@ -9,7 +9,9 @@ import { proposalWhere, type ProposalRow } from "./queries";
 
 export type ProposalTask = { ref: string; title: string; done: boolean; doneAt: string | null };
 export type ProposalStage = { environment: string; isProd: boolean; status: string | null; at: string | null };
-export type ProposalEvent = { at: string; text: string; by: string };
+// 081 amendment 4 (AC-50): each line's kind picks its icon on the timeline; a move also says the phase it entered (AC-47).
+export type EventKind = "created" | "moved" | "task" | "time" | "edited" | "withdrawn" | "synced";
+export type ProposalEvent = { at: string; text: string; by: string; kind: EventKind; to?: string };
 export type ProposalDetail = ProposalRow & {
   href: string;
   project: { id: string; key: string; name: string; status: string };
@@ -34,6 +36,10 @@ const ACTION: Record<string, (a: Record<string, unknown>) => string> = {
   "delivery.proposal.update": (a) => `Edited ${Object.keys(a).join(", ")}`,
   "delivery.proposal.withdraw": (a) => `Withdrawn: ${a.reason as string}`,
   "delivery.task.add": (a) => `Added task ${a.ref as string} ${a.title as string}`,
+};
+const KIND_OF: Record<string, EventKind> = {
+  "delivery.proposal.create": "created", "delivery.proposal.sync": "synced", "delivery.proposal.rekey": "edited", "delivery.proposal.update": "edited",
+  "delivery.proposal.withdraw": "withdrawn", "delivery.task.add": "task",
 };
 const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 
@@ -66,23 +72,30 @@ async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string): Prom
     where resource in ('delivery.proposal', 'delivery.task') and (resource_id = ${id} or (resource = 'delivery.task' and after->>'proposalId' = ${id})) order by occurred_at desc, seq desc limit 100`);
   const moves = await tx.execute(sql`select created_at as at, payload from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'proposalId' = ${id} order by created_at desc limit 100`);
   const time = await timeRows(tx, id, v, projectId);
+  // Closed tasks come from the task rows: who closed each is on the row ("user:…", or "agent:… for user:…").
+  const closed = await tx.execute(sql`select ref, title, done_at as at, done_by from delivery.task where proposal_id = ${id} and done and done_at is not null`);
   const ids = new Set<string>();
   const add = (s: unknown) => { for (const m of String(s ?? "").matchAll(/(?:user|sp):([0-9a-f-]{36})/g)) ids.add(m[1]); };
   for (const a of [...audits, ...time]) { add(a.actor); add(a.on_behalf_of); }
   for (const t of time) add(`user:${(t.after as TimeAfter).userId ?? ""}`);
   for (const m of moves) add((m.payload as { by: string }).by);
+  for (const t of closed) add(t.done_by);
   const names = new Map((await tx.execute(sql`select id::text as id, name from auth.user where id::text in (${sql.join([...ids, ""].map((x) => sql`${x}`), sql`, `)})
     union all select id::text, name from auth.service_principal where id::text in (${sql.join([...ids, ""].map((x) => sql`${x}`), sql`, `)})`)).map((r) => [r.id as string, r.name as string]));
   const lines: ProposalEvent[] = [
-    ...audits.filter((a) => ACTION[a.action as string]).map((a) => ({ at: iso(a.at)!, text: ACTION[a.action as string]((a.after as Record<string, unknown>) ?? {}), by: who(a.actor as string, a.on_behalf_of as string | null, names) })),
+    ...audits.filter((a) => ACTION[a.action as string]).map((a) => ({ at: iso(a.at)!, text: ACTION[a.action as string]((a.after as Record<string, unknown>) ?? {}), by: who(a.actor as string, a.on_behalf_of as string | null, names), kind: KIND_OF[a.action as string] })),
     ...time.map((t) => {
       const after = t.after as TimeAfter;
-      return { at: iso(t.at)!, text: timeText(after, id, names.get(after.userId ?? "") ?? "Someone"), by: who(t.actor as string, t.on_behalf_of as string | null, names) };
+      return { at: iso(t.at)!, text: timeText(after, id, names.get(after.userId ?? "") ?? "Someone"), by: who(t.actor as string, t.on_behalf_of as string | null, names), kind: "time" as const };
     }),
     ...moves.map((m) => {
       const p = m.payload as { from: string; to: string; by: string };
       const [actor, forUser] = p.by.split(" for ");
-      return { at: iso(m.at)!, text: `Moved ${LABEL[p.from] ?? p.from} → ${LABEL[p.to] ?? p.to}`, by: who(actor, forUser ?? null, names) };
+      return { at: iso(m.at)!, text: `Moved ${LABEL[p.from] ?? p.from} → ${LABEL[p.to] ?? p.to}`, by: who(actor, forUser ?? null, names), kind: "moved" as const, to: p.to };
+    }),
+    ...closed.map((t) => {
+      const [actor, forUser] = String(t.done_by ?? "").split(" for ");
+      return { at: iso(t.at)!, text: `${t.ref as string} ${t.title as string} done`, by: who(actor || null, forUser ?? null, names), kind: "task" as const };
     }),
   ];
   return lines.sort((a, b) => b.at.localeCompare(a.at));

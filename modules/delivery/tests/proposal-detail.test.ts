@@ -8,6 +8,8 @@ import type { Viewer } from "@amax/auth";
 import { mcpTools, search } from "../mcp";
 import { ctxFor } from "../server/context";
 import { moveProposal, syncProposal } from "../server/services";
+import { getProject } from "../server/queries";
+import { markTaskDone } from "../server/tasks";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
 import { proposalDb, T } from "./proposal-db";
@@ -73,5 +75,19 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     const [moved] = await db.q(sql`select key from delivery.proposal where id = ${id}`);
     expect(moved.key).toMatch(/^CON-H\d{3}$/);
     expect(await lines(nimal, moved.key as string)).toEqual(want);
+  });
+
+  it("081 amendment 4 AC42 AC47 AC50 history lines carry their kind, a move its phase, a closed task who closed it; the project counts closes by agents and people", async () => {
+    const before = (await getProject(maya, "CON"))!.closedBy;
+    await db.t.owner`insert into delivery.task (tenant_id, proposal_id, ref, title) select tenant_id, id, 'T90', 'Amendment 4 check' from delivery.proposal where key = 'CON-014'`;
+    const open = { ref: "T90" };
+    await markTaskDone(ctxFor(maya), { key: "CON-014", task: open.ref as string });
+    const after = (await getProject(maya, "CON"))!.closedBy;
+    expect(after).toEqual({ agents: before.agents, people: before.people + 1 });
+    const one = (await getProposal(maya, { key: "CON-014" }))! as { history: { kind: string; text: string; by: string; to?: string }[] };
+    expect(one.history.find((h) => h.kind === "task" && h.text.startsWith(`${open.ref as string} `))).toMatchObject({ by: expect.stringContaining("Maya") });
+    const flt = (await getProposal(maya, { key: "FLT-015" }))! as { history: { kind: string; to?: string }[] };
+    expect(flt.history.find((h) => h.kind === "moved")).toMatchObject({ to: "planned" });
+    expect(flt.history.every((h) => ["created", "moved", "task", "time", "edited", "withdrawn", "synced"].includes(h.kind))).toBe(true);
   });
 });

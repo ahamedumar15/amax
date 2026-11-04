@@ -85,7 +85,10 @@ export const getProject = (v: Viewer, key: string | undefined, projectId?: strin
     const [r] = await tx.execute(sql`select * from delivery.project where ${where}`);
     if (!r) return null;
     const proposals = (await tx.execute(sql`${PROPOSALS} where pr.id = ${r.id} and ${ACTIVE} order by p.updated_at desc, p.key desc`)).map(proposal);
-    return { project: project(r), proposals };
+    // 081 amendment 4 (AC-42): who closed the project's recorded tasks, as the Overview counts it: "user:…" is a person.
+    const [c] = await tx.execute(sql`select count(*) filter (where t.done_by like 'user:%')::int as people, count(*) filter (where t.done_by not like 'user:%')::int as agents
+      from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.project_id = ${r.id} and t.done and ${ACTIVE}`);
+    return { project: project(r), proposals, closedBy: { agents: Number(c?.agents ?? 0), people: Number(c?.people ?? 0) } };
   });
 
 /**
