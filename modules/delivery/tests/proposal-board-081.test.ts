@@ -1,4 +1,3 @@
-import { createElement } from "react";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
@@ -8,7 +7,6 @@ import { addProposalTask } from "../server/lifecycle";
 import { listProposals, phaseCounts } from "../server/queries";
 import { createProposal, syncProposal } from "../server/services";
 import { ProjectPage } from "../ui/ProjectPage";
-import { KeyNote } from "../ui/ProposalPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
 import { proposalDb, T } from "./proposal-db";
 
@@ -42,7 +40,8 @@ describe.skipIf(!hasDb)("081 amendment 1: board card actions, task meters, key n
     expect(lanes).not.toContain("<details");
     expect(board).toContain('aria-label="Add CON-017 CSV import for clients to chat"');
     const page = await html(ProposalsPage({ viewer: maya, params: { phase: "CON-017" } }));
-    expect(actionsOf(page, "CON-017")).toEqual(["Edit CON-017", "Add a task to CON-017", "Move CON-017", "Withdraw CON-017"]);
+    // Amendment 4 (AC-46): Withdraw is the page's one lifecycle button; Edit, Move and a task come from the pin.
+    expect(actionsOf(page, "CON-017")).toEqual(["Withdraw CON-017"]);
     expect(page).toMatch(/class="btn sm withdraw"[^>]*aria-label="Withdraw CON-017"/);
     expect(actionsOf(await html(ProposalsPage({ viewer: await db.as("maya", "Leadership"), params: { phase: "CON-017" } })), "CON-017")).toEqual([]);
   });
@@ -60,11 +59,11 @@ describe.skipIf(!hasDb)("081 amendment 1: board card actions, task meters, key n
     expect(released).toMatch(/aria-label="8 of 8 tasks"/);
   });
 
-  it("AC24 a hand-made proposal's page explains its key; one in the -H series says it keeps it; a spec proposal has no note", async () => {
-    const note = (key: string, source: string | null) => html(createElement(KeyNote, { p: { key, source, project: { key: "CON" } } }));
-    expect(await note("CON-019", null)).toMatch(/moves to the hand-made series \(for example CON-H001\)\. Its tasks, time, release and history move with it/);
-    expect(await note("CON-H004", null)).toMatch(/in the hand-made series \(CON-H…\), so a specclaw change synced into CON can(&#x27;|')t take this key/);
-    expect(await note("CON-301", "specclaw")).toBe("");
+  it("AC24 (revised 2026-11-04) the page no longer explains a hand-made key: no key note on any proposal", async () => {
+    for (const key of ["CON-017", "CON-014"]) {
+      const page = await html(ProposalsPage({ viewer: maya, params: { phase: key } }));
+      expect(page).not.toMatch(/hand-made series|keynote/);
+    }
   });
 
   it("AC25 the legend names the month it counts and the filter says all time; neither changes what it counts", async () => {

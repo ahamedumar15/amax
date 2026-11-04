@@ -23,15 +23,17 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
   it("AC30 each state offers what fits, as prompts chat's tools take, only with the viewer's permission", async () => {
     expect(await suggest(maya, { proposalId: await id("CON-017") })).toEqual([
       { label: "Move CON-017 to Planned", prompt: "Move CON-017 to planned", tool: "move_proposal" },
+      // Amendment 4 (AC-46): Edit left the page's header, so the pin offers it.
+      { label: "Edit CON-017", prompt: "Change CON-017: ", tool: "update_proposal" },
       { label: "Add a task to CON-017", prompt: "Add a task to CON-017: ", tool: "add_proposal_task" }]);
-    expect(await labels(maya, "CON-013")).toEqual(["Move CON-013 to Building"]);
+    expect(await labels(maya, "CON-013")).toEqual(["Move CON-013 to Building", "Edit CON-013"]);
 
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
     await addProposalTask(ctxFor(maya), { key, title: "Template" });
     for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
-    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`]);
+    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`, `Edit ${key}`]);
     await markTaskDone(ctxFor(maya), { key, task: "T1" });
-    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`]);
+    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`, `Edit ${key}`]);
 
     await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
     expect(await suggest(maya, { proposalId: await id(key) })).toContainEqual({ label: `Make me the owner of ${key}`, prompt: `Make me (user id ${maya.userId}) the owner of ${key}`, tool: "update_proposal" });

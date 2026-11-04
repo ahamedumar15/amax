@@ -1025,14 +1025,18 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
 <section data-change="081-proposals-end-to-end" id="081-proposals-end-to-end" data-roles="admin leadership pm engineer finance" data-title="CON-H003 Invoice reminders" data-nav="no" data-parent="001-amax-foundation-proposals">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-proposals">Proposals</a><span>/</span>CON-H003</nav>
   <div class="row head">
-    <div><h1>CON-H003 Invoice reminders</h1><p class="lede"><span class="dot" style="background:var(--violet)"></span><a href="#001-amax-foundation-project">Contoso Portal</a> · <span class="chip agent">Building</span> · Owner Nimal Silva · made by hand Oct 2, updated Oct 15</p></div>
+    <div><h1>CON-H003 Invoice reminders</h1><dl style="display:flex;flex-wrap:wrap;gap:10px 28px;margin:4px 0 0">
+      <div><dt style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3,#8A86A0)">Project</dt><dd style="margin:4px 0 0"><span class="dot" style="background:var(--violet)"></span><a href="#001-amax-foundation-project">Contoso Portal</a></dd></div>
+      <div><dt style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3,#8A86A0)">Owner</dt><dd style="margin:4px 0 0"><b>Nimal Silva</b></dd></div>
+      <div><dt style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3,#8A86A0)">Made by hand</dt><dd style="margin:4px 0 0"><b>Oct 2</b></dd></div>
+      <div><dt style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3,#8A86A0)">Updated</dt><dd style="margin:4px 0 0"><b>Oct 15</b> <small class="muted">20 d ago</small></dd></div>
+    </dl></div>
     <div class="actions"><button class="btn">✦ Ask amax</button><button class="btn" style="background:transparent;border:1px solid var(--danger,#D64545);color:var(--danger,#D64545)">Withdraw</button></div>
   </div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card pinnable"><div class="card-head"><h2>Time</h2></div><div class="big">11.5 h <span class="muted" style="font-size:15px;font-weight:500">approved, of 16 h estimated</span></div><div class="gbar"><i style="width:72%;background:var(--violet)"></i></div><p class="muted" style="font-size:13px">From approved timesheet entries logged against CON-H003.</p></div>
-    <div class="card pinnable"><div class="card-head"><h2>Release</h2></div><p><b>v2.5.0</b> · furthest: <span class="chip">QA</span></p><p class="muted" style="font-size:13px">Released when v2.5.0 reaches Prod.</p></div>
+    <div class="card pinnable"><div class="card-head"><h2>Release</h2></div><p><a href="#"><b>v2.5.0</b></a></p><ol aria-label="Environments" style="display:flex;gap:4px;list-style:none;margin:8px 0 0;padding:0;font-size:13px"><li style="flex:1;border-top:6px solid var(--mint);padding-top:8px"><b>✓ Dev</b><br><small class="muted">Deployed, Oct 8</small></li><li style="flex:1;border-top:6px solid var(--violet);padding-top:8px"><b>● QA</b><br><small class="muted">Testing, Oct 12</small></li><li style="flex:1;border-top:6px solid var(--line,#E4E1F0);padding-top:8px"><b>○ UAT</b><br><small class="muted">Not yet</small></li><li style="flex:1;border-top:6px solid var(--line,#E4E1F0);padding-top:8px"><b>○ Prod</b><br><small class="muted">Not yet</small></li></ol></div>
   </div>
-  <p class="muted" style="font-size:13px;margin:0 0 20px">Made by hand, in the hand-made series (CON-H…), so a synced specclaw change can't take its key. (A hand-made key like CON-019 in a project that starts syncing moves to this series; its tasks, time, release and history move with it.) <i>(Amendment 1, AC-24)</i></p>
   <div class="card pinnable" style="margin-bottom:28px"><div class="card-head"><h2>Description</h2></div><p>Email clients a reminder 3 days before an invoice is due, then on the due date.</p></div>
   <div class="cols even">
     <div class="card flush pinnable"><div class="card-head"><h2>Tasks</h2><span class="muted" style="font-size:13px">2 of 3 done</span></div>

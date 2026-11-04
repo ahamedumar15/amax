@@ -89,7 +89,9 @@ function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null;
   const to = allDone ? "verified" : NEXT[p.phase];
   const move: Gated[] = to ? [{ label: `Move ${p.key} to ${label(to)}`, prompt: `Move ${p.key} to ${to}`, tool: "move_proposal", permission: "delivery:proposal:move" }] : [];
   const first: Gated[] = p.tasksTotal === 0 ? [{ label: `Add a task to ${p.key}`, prompt: `Add a task to ${p.key}: `, tool: "add_proposal_task", permission: "delivery:task:done" }] : [];
-  return [...move, ...task, ...first, ...owner, ...release];
+  // 081 amendment 4 (AC-46): the page's header no longer has an Edit button, so the pin offers it.
+  const edit: Gated[] = [{ label: `Edit ${p.key}`, prompt: `Change ${p.key}: `, tool: "update_proposal", permission: "delivery:proposal:create" }];
+  return [...move, ...task, ...edit, ...first, ...owner, ...release];
 }
 
 /** A release: its next environment, its proposals, its tag. One live in Prod has nothing left to deploy or change. */

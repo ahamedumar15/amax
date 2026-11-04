@@ -149,7 +149,9 @@ database migration and no new module edge. Every earlier AC, decision and busine
     on the global and project lists (as Released rows already did), and on the board card in every phase but Released,
     whose card shows its release chip. With no tasks, the list shows "–" and the card shows no bar. (Amended in T9:
     the lists keep the meter on Released rows, as the mock and the visual test have it.)
-24. **AC-24 (FR-10a)** The page of a hand-made proposal says what can happen to its key. For example: "Made by hand.
+24. **AC-24 (FR-10a)** ~~The page of a hand-made proposal says what can happen to its key.~~ **Revised 2026-11-04 (Amendment 4,
+    the client): the page no longer shows this note.** The rekey itself is unchanged, and the history records it ("Renamed to …").
+    The original text: For example: "Made by hand.
     If this project starts syncing specclaw changes and one of them is numbered CON-019, this proposal moves to the
     hand-made series (for example CON-H001). Its tasks, time, release and history move with it; links by the old key
     stop working." A proposal already in the `-H` series says it is in the hand-made series and keeps its key. Spec
@@ -433,8 +435,18 @@ Overview already counts it).
     - **Withdraw**, the outlined danger button, shown to those who may withdraw and only while the proposal can be
       withdrawn.
 
-    Edit, Add a task and Move leave the header. Chat offers them from the page's pin (AC-30, AC-38), and the opening
-    prompt of "Ask amax" lists them. This supersedes AC-6's header buttons.
+    Edit, Add a task and Move leave the header. Chat offers them from the proposal's pin: Move and a first task already
+    (AC-30), and now **"Edit <key>"** too, for an open hand-made proposal (built 2026-11-04, since Edit had no other
+    one-click way in). This supersedes AC-6's header buttons.
+
+    **Facts (2026-11-04, the client: "names and important dates highlighted"):** the line under the title becomes labelled
+    facts, each a small label over its value: **Project** (its colour and link), **Owner** (the name, no avatar, or an
+    "Unassigned" chip), **Made by hand** or **Synced** (the date, and the spec it came from), and **Updated** (the date and
+    a live age); the project's pin sits beside its link, so the header's buttons line up with the cards. History lines set the person's name off the same way. The AC-24 key note is no longer on the page.
+
+    In the same spirit (said once): the facts line under the title drops its phase and Withdrawn chips (the stepper
+    says both), and the Release card names its release and shows its environments as the board's track, without the
+    "furthest" chip and "In Prod since" line it repeated.
 47. **AC-47** A stage stepper sits under the header: Proposed, Planned, Building, Verified, Released. Each step's state
     shows as an icon and a word, never by colour alone:
     - **Done steps:** a tick, and the date the proposal entered that phase (from its history).
@@ -540,8 +552,8 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T21` — Amendment 4, the board: status band, folded repo sync, first when a push was refused (AC-42 to AC-45; AC-43 dropped)
   Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/board-a4.test.ts, modules/delivery/tests/proposal-board-081.test.ts
   Depends: T20
-- [ ] `T22` — Amendment 4, the proposal page: header, stepper, suggestions first, Time band, history timeline, folded done tasks (AC-46 to AC-51)
-  Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/Stepper.tsx, modules/delivery/ui/delivery.css
+- [x] `T22` — Amendment 4, the proposal page: header, stepper, suggestions first, Time band, history timeline, folded done tasks (AC-46 to AC-51)
+  Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/Stepper.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/delivery.css, modules/delivery/server/pin-offers.ts, modules/delivery/tests/proposal-page-a4.test.ts, modules/delivery/tests/proposal-detail.test.ts, modules/delivery/tests/proposal-board-081.test.ts, modules/delivery/tests/proposal-suggestions.test.ts
   Depends: T20
 - [ ] `T23` — Amendment 4: browser tests, axe, hand walk-through light and dark, CI replica (AC-53)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/tests/*.test.ts, .specclaw/changes/081-proposals-end-to-end/audit.md

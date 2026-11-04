@@ -28,8 +28,11 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     const page = await html(ProposalsPage({ viewer: maya, params: { phase: "FLT-015" } }));
     expect(page).toContain("FLT-015 Bulk upload");
     expect(page).toContain('href="/delivery/p/FLT"');
-    expect(page).toContain("Owner Kasun Dias");
-    expect(page).toMatch(/Moved Proposed → Planned<\/td><td>Maya/);
+    expect(page).toMatch(/<dt>Owner<\/dt><dd>.*?<b>Kasun Dias<\/b><\/dd>/);
+    // Amendment 4 (AC-50): history is a timeline: what happened, then who, then a live age.
+    expect(page).toMatch(/<li class="moved"><svg[^>]*>.*?<\/svg><span>Moved Proposed → Planned<small class="muted"><b>Maya/);
+    // AC-47: the stepper says the phase, marking the current step.
+    expect(page).toMatch(/<li class="current" aria-current="step"><svg[^>]*>.*?<\/svg><b>Planned<\/b>/);
     const con = await html(ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }));
     expect(con).toMatch(/v2\.5\.0/);
     expect(con).toMatch(/<b>T1<\/b>/);

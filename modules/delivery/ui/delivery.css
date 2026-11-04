@@ -223,8 +223,6 @@
 .btn.withdraw{background:transparent;border:1px solid var(--danger);color:var(--danger)}
 .btn.withdraw:hover{background:var(--chip-bad-bg)}
 .btn.withdraw:focus-visible{outline:2px solid var(--danger);outline-offset:2px}
-/* 081 AC-24: the key note under a hand-made proposal's heading. */
-.keynote{font-size:13px;margin:-12px 0 24px;max-width:72ch}
 /* 081 AC-35: the agent's suggestions on a proposal, decided in chat. */
 .suggested-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .suggested-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line)}
@@ -281,3 +279,59 @@
 .dv-track .todo svg{color:var(--ink-3)}
 @media (prefers-reduced-motion:no-preference){.dv-chev{transition:transform .15s}.dv-band .legend a{transition:box-shadow .15s}}
 @media (max-width:600px){.dv-band .fig{font-size:26px}.dv-sync>.dv-fold>summary{padding:16px 56px 16px 20px}}
+/* 081 amendment 4: the proposal page. The stepper says the phase once; Time reads as a band; history is a timeline. */
+.dv-steps-card{position:relative;padding:18px 22px 16px;margin:0 0 24px}
+.dv-steps-card>.pin{top:50%;margin-top:-15px}
+.dv-steps{display:flex;gap:6px;margin:0;padding:0;list-style:none}
+.dv-steps li{flex:1 1 0;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:2px;align-items:center;padding-top:10px;border-top:5px solid var(--c);border-radius:3px 3px 0 0}
+.dv-steps li svg{width:16px;height:16px;color:var(--c);grid-row:span 2}
+.dv-steps li b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv-steps li small{font-size:12.5px;color:var(--ink-2)}
+.dv-steps .done{--c:var(--chip-good)}
+.dv-steps .current{--c:var(--chip-agent)}
+.dv-steps .current b{color:var(--chip-agent)}
+.dv-steps .withdrawn{--c:var(--chip-bad)}
+.dv-steps .todo{--c:var(--line-2)}
+.dv-steps .todo b,.dv-steps .todo svg{color:var(--ink-3)}
+.dv-time .fig{margin:0 0 12px;font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.dv-time .fig span{font-size:14.5px;font-weight:500;color:var(--ink-2);margin-left:4px}
+.dv-time .bar{display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken)}
+.dv-time .bar i{display:block;min-width:6px;border-radius:999px}
+.dv-time .bar .within{background:var(--chip-agent)}
+.dv-time .bar .over{background:var(--chip-bad)}
+.dv-time .bar .left{background:var(--line-2)}
+.dv-time-legend{margin:12px 0 0}
+.dv-time-legend span{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;font-size:13px;background:var(--sunken)}
+.dv-time-legend .over{background:var(--chip-bad-bg,var(--sunken));color:var(--chip-bad)}
+.dv-time-legend svg{width:13px;height:13px;fill:currentColor}
+.dv-time .note{font-size:13px;margin:12px 0 0}
+.dv-list{list-style:none;margin:0;padding:0}
+.dv-list li{padding:10px 0;border-top:1px solid var(--line)}
+.dv-list li:first-child{border-top:0}
+.dv-done{margin-top:8px}
+.dv-done>summary{padding:6px 2px}
+.dv-done .dv-list li:first-child{border-top:1px solid var(--line)}
+.dv-timeline{list-style:none;margin:0;padding:0}
+.dv-timeline li{display:grid;grid-template-columns:16px 1fr auto;gap:12px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.dv-timeline li:first-child{border-top:0}
+.dv-timeline svg{width:16px;height:16px;margin-top:2px;color:var(--ink-3)}
+.dv-timeline .moved svg{color:var(--chip-agent)}
+.dv-timeline .task svg{color:var(--chip-good)}
+.dv-timeline .withdrawn svg{color:var(--chip-bad)}
+.dv-timeline li>span small{display:block;margin-top:2px;font-size:12.5px}
+.dv-timeline li>small{white-space:nowrap;font-size:12.5px}
+@media (max-width:600px){.dv-steps{flex-direction:column;gap:10px}.dv-steps li{border-top:0;border-left:5px solid var(--c);padding:0 0 0 10px}}
+/* The proposal's facts: a small label over each name or date, the value set off. */
+.dv-facts{display:flex;flex-wrap:wrap;gap:10px 32px;margin:12px 0 0}
+.dv-facts dd{min-height:24px}
+.dv-facts>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dv-facts dt{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.dv-facts dd{margin:0;display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink)}
+.dv-facts dd b{font-weight:600}
+.dv-facts dd small{font-size:12.5px}
+.dv-facts .pin.inline{width:24px;height:24px;margin:0 0 0 2px}
+.dv-facts .pinnable:hover .pin,.dv-facts .pinnable:focus-within .pin{opacity:1;transform:none}
+.dv-facts .dot{flex:none}
+.dv-timeline li>span small b{color:var(--ink);font-weight:600}
+.dv-facts a,.dv-rel a{color:var(--chip-agent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.dv-rel{margin:0 0 12px;font-size:18px}

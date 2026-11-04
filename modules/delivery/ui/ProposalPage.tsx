@@ -1,35 +1,51 @@
 import type { ReactNode } from "react";
 import { can, type Viewer } from "@amax/auth";
-import { facet, PinButton } from "@amax/ui";
+import { facet, PinButton, Since } from "@amax/ui";
 import { projectHref, releaseHref } from "../contracts";
 import { projectPin, proposalPin } from "../pins";
-import { proposalDetail, type ProposalDetail } from "../server/proposal-detail";
+import { proposalDetail, type EventKind, type ProposalDetail } from "../server/proposal-detail";
 import { AskButton } from "./AskButton";
-import { COLOR, day, PhaseChip } from "./parts";
+import { timeBand } from "./band";
+import { COLOR, day } from "./parts";
 import { ProposalActions } from "./ProposalActions";
 import { proposalSuggestions, ProposalSuggestions } from "./ProposalSuggestions";
+import { Stepper } from "./Stepper";
+import { Glyph, STAGE_WORD } from "./BoardBand";
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
 
+// 081 amendment 4 (revised 2026-11-04, the client): who and when, as labelled facts with the names and dates set off,
+// rather than one run-on sentence.
 function Facts({ p }: { p: ProposalDetail }) {
-  const made = p.source === "specclaw" ? `synced from ${p.sourceRef ?? "the repo"}` : "made by hand";
+  const made = p.source === "specclaw" ? "Synced" : "Made by hand";
   return (
-    <p className="lede">
-      <span className="dot" style={{ background: COLOR[p.projectColor] }} /><a href={projectHref(p.project.key)}>{p.project.name}</a>
-      {" · "}<PhaseChip phase={p.phase} />{p.withdrawn && <> <span className="chip warn">Withdrawn</span></>}
-      {" · "}Owner {p.ownerName ?? "Unassigned"}{" · "}{made}{p.createdAt ? `, ${day(p.createdAt)}` : ""}{p.updatedAt ? `, updated ${day(p.updatedAt)}` : ""}
-    </p>
+    <dl className="dv-facts">
+      <div className="pinnable"><dt>Project</dt><dd><span className="dot" style={{ background: COLOR[p.projectColor] }} /><a href={projectHref(p.project.key)}>{p.project.name}</a><PinButton inline pin={projectPin(p.project)} /></dd></div>
+      <div><dt>Owner</dt><dd>{p.ownerName ? <b>{p.ownerName}</b> : <span className="chip warn">Unassigned</span>}</dd></div>
+      <div><dt>{made}</dt><dd>{p.createdAt ? <b><time dateTime={p.createdAt}>{day(p.createdAt)}</time></b> : "–"}{p.source === "specclaw" && p.sourceRef && <small className="muted"> from <code>{p.sourceRef}</code></small>}</dd></div>
+      {p.updatedAt && <div><dt>Updated</dt><dd><b><time dateTime={p.updatedAt}>{day(p.updatedAt)}</time></b> <small className="muted"><Since at={p.updatedAt} /></small></dd></div>}
+    </dl>
   );
 }
 
+// AC-49: approved hours against the estimate, as a band. Hours past the estimate are their own part, never folded into 100%.
 function TimeCard({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode }) {
-  const pct = p.estimateHours ? Math.min(100, Math.round((p.hours / p.estimateHours) * 100)) : null;
+  const t = timeBand(p.hours, p.estimateHours);
   return (
-    <div className="card pinnable proposal-time">
+    <div className="card pinnable dv-time">
       <div className="card-head"><h2>Time</h2>{pin("time")}</div>
-      <div className="big">{h(p.hours)} <span className="muted" style={{ fontSize: 15, fontWeight: 500 }}>approved{p.estimateHours !== null ? `, of ${h(p.estimateHours)} estimated` : ", no estimate"}</span></div>
-      {pct !== null && <div className="gbar" role="img" aria-label={`${pct}% of the estimate`}><i style={{ width: `${pct}%`, background: pct >= 100 ? "var(--amber)" : "var(--violet)" }} /></div>}
-      <p className="muted" style={{ fontSize: 13 }}>From approved timesheet entries logged against {p.key}.</p>
+      <p className="fig">{t.figure} <span>{t.rest}</span></p>
+      {t.estimate !== null && (
+        <div className="bar" role="img" aria-label={t.sentence}>
+          {t.within > 0 && <i className="within" style={{ flexGrow: t.within }} />}
+          {t.over > 0 && <i className="over" style={{ flexGrow: t.over }} />}
+          {t.left > 0 && <i className="left" style={{ flexGrow: t.left }} />}
+        </div>
+      )}
+      {t.estimate !== null && <p className="dv-time-legend">{t.over > 0
+        ? <span className="over"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5l6 11H2z" /></svg>{h(t.over)} over the estimate</span>
+        : <span className="left">{h(t.left)} left of the estimate</span>}</p>}
+      <p className="muted note">From approved timesheet entries logged against {p.key}.</p>
     </div>
   );
 }
@@ -39,52 +55,70 @@ function ReleaseCard({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactN
     <div className="card pinnable">
       <div className="card-head"><h2>Release</h2>{pin("release")}</div>
       {p.release ? <>
-        <p><a href={releaseHref({ projectKey: p.project.key, version: p.release })}><b>{p.release}</b></a>{p.phase === "released" ? <> · <span className="chip good">In Prod{p.releasedAt ? ` since ${day(p.releasedAt)}` : ""}</span></> : p.shippedTo ? <> · furthest: <span className="chip">{p.shippedTo}</span></> : " · not deployed yet"}</p>
-        <ul aria-label="Environments" className="row" style={{ listStyle: "none", padding: 0, gap: 8, flexWrap: "wrap" }}>
-          {p.stages.map((s) => <li key={s.environment}><span className={`chip ${s.status === "deployed" ? "good" : s.status === "rolled-back" ? "bad" : s.status ? "info" : ""}`}>{s.environment}{s.isProd ? " (Prod)" : ""}: {s.status ?? "–"}{s.at ? `, ${day(s.at)}` : ""}</span></li>)}
-        </ul>
+        {/* Amendment 4: the stages say how far it got and the stepper when it was released, so this line names the release only. */}
+        <p className="dv-rel"><a href={releaseHref({ projectKey: p.project.key, version: p.release })}>{p.release}</a></p>
+        {/* The same environment track as the board's Next release: a shape and a word per stage, and its date. */}
+        <ol className="dv-track" aria-label={`Environments: ${p.stages.map((s) => `${s.environment} ${STAGE_WORD[s.status ?? "todo"] ?? s.status}`).join(", ")}`}>
+          {p.stages.map((s) => (
+            <li key={s.environment} className={s.status ?? "todo"}>
+              <Glyph kind={s.status ?? "todo"} /><b>{s.environment}{s.isProd && !/^prod/i.test(s.environment) && <small> Prod</small>}</b>
+              <small>{STAGE_WORD[s.status ?? "todo"] ?? s.status}{s.at ? `, ${day(s.at)}` : ""}</small>
+            </li>
+          ))}
+        </ol>
       </> : <p className="muted">Not in a release yet. Released means a release that contains it reached Prod.</p>}
     </div>
   );
 }
 
+// AC-51: open tasks first; the done ones fold into one row, open when every task is done.
 function Tasks({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode }) {
+  const open = p.tasks.filter((t) => !t.done);
+  const done = p.tasks.filter((t) => t.done);
+  const row = (t: ProposalDetail["tasks"][number]) => <li key={t.ref}><b>{t.ref}</b> {t.title}{t.done && t.doneAt && <small className="muted"> · {day(t.doneAt)}</small>}</li>;
   return (
-    <div className="card flush pinnable">
-      <div className="card-head"><h2>Tasks</h2>{pin("tasks")}<span className="muted" style={{ fontSize: 13 }}>{p.tasksDone} of {p.tasksTotal} done</span></div>
-      <table className="tbl"><caption className="sr">Tasks</caption><tbody>
-        {p.tasks.length === 0 && <tr><td className="muted">No tasks yet.</td></tr>}
-        {p.tasks.map((t) => <tr key={t.ref}><td><b>{t.ref}</b> {t.title}</td><td>{t.done ? <span className="chip good">Done{t.doneAt ? `, ${day(t.doneAt)}` : ""}</span> : <span className="muted">Open</span>}</td></tr>)}
-      </tbody></table>
+    <div className="card pinnable dv-tasks">
+      <div className="card-head"><h2>Tasks</h2>{pin("tasks")}{open.length > 0 && <span className="muted" style={{ fontSize: 13 }}>{open.length} open</span>}</div>
+      {p.tasks.length === 0 && <p className="muted">No tasks yet.</p>}
+      {open.length > 0 && <ul className="dv-list">{open.map(row)}</ul>}
+      {done.length > 0 && (
+        <details className="dv-fold dv-done" open={open.length === 0}>
+          <summary><span className="chip good">{open.length === 0 ? `All ${done.length} done` : `${done.length} done`}</span><span className="dv-chev" aria-hidden="true" /></summary>
+          <ul className="dv-list">{done.map(row)}</ul>
+        </details>
+      )}
     </div>
   );
 }
+
+// AC-50: a timeline, newest first: a shape per kind, what happened, who, and an age that keeps counting (the exact
+// time is its tooltip).
+const KIND_SHAPE: Record<EventKind, ReactNode> = {
+  created: <path d="M8 3v10M3 8h10" fill="none" strokeWidth="2" />,
+  moved: <path d="M3 8h9M9 4.5L12.5 8 9 11.5" fill="none" strokeWidth="2" />,
+  task: <path d="M3.5 8.5l3 3 6-7" fill="none" strokeWidth="2.2" />,
+  time: <><circle cx="8" cy="8" r="5.5" fill="none" strokeWidth="1.8" /><path d="M8 5v3.2l2 1.4" fill="none" strokeWidth="1.8" /></>,
+  edited: <path d="M3 13l1-3.5L10.5 3l2.5 2.5L6.5 12z" fill="none" strokeWidth="1.6" />,
+  withdrawn: <path d="M4 4l8 8M12 4l-8 8" fill="none" strokeWidth="2.2" />,
+  synced: <path d="M3 6a5 5 0 0 1 9-1.5M13 10a5 5 0 0 1-9 1.5M12 2v3h-3M4 14v-3h3" fill="none" strokeWidth="1.6" />,
+};
 
 function History({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode }) {
   return (
-    <div className="card flush pinnable">
+    <div className="card pinnable dv-history">
       <div className="card-head"><h2>History</h2>{pin("history")}</div>
-      <table className="tbl"><caption className="sr">History</caption><tbody>
-        {p.history.length === 0 && <tr><td className="muted">Nothing recorded yet.</td></tr>}
-        {p.history.map((e, i) => <tr key={`${e.at}-${i}`}><td>{day(e.at)}</td><td>{e.text}</td><td>{e.by}</td></tr>)}
-      </tbody></table>
+      {p.history.length === 0 ? <p className="muted">Nothing recorded yet.</p> : (
+        <ol className="dv-timeline">
+          {p.history.map((e, i) => (
+            <li key={`${e.at}-${i}`} className={e.kind}>
+              <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">{KIND_SHAPE[e.kind]}</svg>
+              <span>{e.text}<small className="muted"><b>{e.by}</b></small></span>
+              <small className="muted"><Since at={e.at} /></small>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
-  );
-}
-
-/**
- * 081 AC-24 (FR-10a): what can happen to a hand-made proposal's key. A spec change synced into the project takes its
- * number, so a hand-made CON-019 moves to the hand-made series (CON-H001); the proposal itself, by id, keeps everything.
- */
-export function KeyNote({ p }: { p: { key: string; source: string | null; project: { key: string } } }) {
-  if (p.source !== null) return null;
-  const hand = /-H\d+$/.test(p.key);
-  return (
-    <p className="muted keynote" role="note">
-      {hand
-        ? <>Made by hand, in the hand-made series ({p.project.key}-H…), so a specclaw change synced into {p.project.key} can't take this key.</>
-        : <>Made by hand. If {p.project.key} starts syncing specclaw changes and one of them is numbered like {p.key}, this proposal moves to the hand-made series (for example {p.project.key}-H001). Its tasks, time, release and history move with it; links by the old key stop working.</>}
-    </p>
   );
 }
 
@@ -103,12 +137,12 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
       <div className="row head">
         <div className="pinnable"><h1>{p.key} {p.title}<PinButton inline pin={ref} /></h1><Facts p={p} /></div>
         <div className="actions">
-          <ProposalActions p={p} may={may} />
+          {/* AC-46: Ask amax (the pin offers Move, Edit, a task) and Withdraw; nothing else. */}
           <AskButton spark label="Ask amax" prompt={`About ${p.key} ${p.title}: `} pin={ref} />
-          <PinButton inline pin={projectPin(p.project)} />
+          <ProposalActions p={p} may={may} />
         </div>
       </div>
-      <KeyNote p={p} />
+      <Stepper pin={ref} p={p} />
       <ProposalSuggestions {...suggested} />
       {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn.</b> {p.withdrawReason ?? "Its spec change was removed from the repo."} It no longer counts in lists, boards or releases.</p></div>}
       <div className="cols even" style={{ marginBottom: 28 }}><TimeCard p={p} pin={pin} /><ReleaseCard p={p} pin={pin} /></div>

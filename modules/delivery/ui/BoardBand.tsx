@@ -12,7 +12,7 @@ type Props = {
   done: number; total: number; closedBy: { agents: number; people: number };
 };
 
-const STAGE_WORD: Record<string, string> = { deployed: "Deployed", testing: "Testing", "rolled-back": "Rolled back", todo: "Not yet" };
+export const STAGE_WORD: Record<string, string> = { deployed: "Deployed", testing: "Testing", "rolled-back": "Rolled back", todo: "Not yet" };
 
 export function BoardBand({ project, releases, done, total, closedBy }: Props) {
   const r = releaseBand(releases, project.nextRelease, project.health);
