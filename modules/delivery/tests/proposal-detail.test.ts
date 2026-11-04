@@ -86,7 +86,7 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     const open = { ref: "T90" };
     await markTaskDone(ctxFor(maya), { key: "CON-014", task: open.ref as string });
     const after = (await getProject(maya, "CON"))!.closedBy;
-    expect(after).toEqual({ agents: before.agents, people: before.people + 1 });
+    expect(after).toEqual({ agents: before.agents, people: before.people + 1, automation: before.automation });
     const one = (await getProposal(maya, { key: "CON-014" }))! as { history: { kind: string; text: string; by: string; to?: string }[] };
     expect(one.history.find((h) => h.kind === "task" && h.text.startsWith(`${open.ref as string} `))).toMatchObject({ by: expect.stringContaining("Maya") });
     const flt = (await getProposal(maya, { key: "FLT-015" }))! as { history: { kind: string; to?: string }[] };

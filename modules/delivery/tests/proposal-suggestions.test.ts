@@ -26,12 +26,12 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
       // Amendment 4 (AC-46): Edit left the page's header, so the pin offers it.
       { label: "Edit CON-017", prompt: "Change CON-017: ", tool: "update_proposal" },
       { label: "Add a task to CON-017", prompt: "Add a task to CON-017: ", tool: "add_proposal_task" }]);
-    expect(await labels(maya, "CON-013")).toEqual(["Move CON-013 to Building", "Edit CON-013"]);
+    expect(await labels(maya, "CON-013")).toEqual(["Move CON-013 to Building", "Mark T1 of CON-013 done", "Edit CON-013"]);
 
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
     await addProposalTask(ctxFor(maya), { key, title: "Template" });
     for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
-    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`, `Edit ${key}`]);
+    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified (1 task open)`, `Mark T1 of ${key} done`, `Edit ${key}`]);
     await markTaskDone(ctxFor(maya), { key, task: "T1" });
     expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`, `Edit ${key}`]);
 

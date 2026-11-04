@@ -96,11 +96,11 @@ Each finding below was checked against the code. Where a path is cited, it was r
 | FR-08 detail page | Done | AC-6 · `ui/ProposalPage.tsx`, `server/proposal-detail.ts` · `proposal-detail` AC6, e2e 081 |
 | FR-09 rows and search link to it | Done | AC-7 · `proposal-detail` AC7, e2e 081 |
 | FR-10 pinnable, Ask amax | Done | AC-6 · `ProposalPage.tsx` · e2e pins |
-| FR-10a key change explained | Done | AC-24 · `KeyNote` in `ProposalPage.tsx` · `proposal-board-081` AC24 |
+| FR-10a key change explained | Built, then removed at the client's request (Amendment 4, 2026-11-04) | AC-24 revised · the rekey itself is unchanged and its history line stays · `proposal-board-081` AC24 (no note) |
 | FR-11 `update_proposal` | Done | AC-9 · `server/lifecycle.ts` · `proposal-lifecycle` AC9 |
 | FR-12 `withdraw_proposal` | Done | AC-10 · `proposal-lifecycle` AC10 |
 | FR-13 `add_proposal_task`, meter instead of "–" | Done | AC-11, AC-23 · `proposal-lifecycle` AC11, `proposal-board-081` AC23 |
-| FR-14 Ask amax actions on card and page | Done | AC-22 · `ui/ProposalActions.tsx`, `ProjectPage.tsx` · `proposal-board-081` AC22, e2e 081 AC-22 |
+| FR-14 Ask amax actions on card and page | Done, via pins | AC-22, AC-38, AC-46 · the card's and the page's pin offer Move, Edit and tasks; the page keeps Ask amax and Withdraw · `proposal-board-081` AC22, `proposal-suggestions` AC30, e2e amendment 4 |
 | FR-15 Planned filter | Done | AC-15 · `proposal-metrics` AC15 |
 | FR-16 weekly pin opens the weekly metric | Done | AC-17 · `get_proposal_metrics` · `proposal-metrics` AC17 |
 | FR-17 New proposal with the project | Done | AC-13 · `ui/NewProposalButton.tsx`, `chat-suggestions.ts` · `chat-081` AC13 |
@@ -111,6 +111,7 @@ Each finding below was checked against the code. Where a path is cited, it was r
 | Agent-first: pin suggestions (client ask, Amendment 2) | Done | AC-30, AC-31 · `pin-suggestions.ts` · `proposal-suggestions`, e2e "081 AC-37 pin" |
 | Agent-first: agent suggestions (client ask, Amendment 2) | Done | AC-32 to AC-35 · `server/agent.ts`, `server/proposal-kinds.ts`, `ui/ProposalSuggestions.tsx` · `proposal-agent`, e2e "081 AC-37 agent" |
 | Every Delivery pin acts (client ask, Amendment 3) | Done | AC-38 to AC-41 · `server/pin-offers.ts`, `pin-suggestions.ts` · `pin-offers`, e2e "081 AC-39" (release, environment), board move via pin |
+| Interactive board and proposal page (client ask, Amendment 4) | Done | AC-42, AC-44 to AC-53 (AC-43 dropped) · `ui/BoardBand.tsx`, `ui/Stepper.tsx`, `ui/band.ts`, `ProposalPage.tsx`, `RepoSyncCard.tsx` · `board-band-081`, `board-a4`, `proposal-page-a4`, e2e "081 amendment 4" (board, proposal page) |
 | BR-1 to BR-6 | Kept | `proposal-regression` AC18, `releases`, `sync-push`, `chat-first` (no forms), graph check |
 | NFR-1 permissions | Kept; **reuse needs sign-off (Q2)** | AC-12, AC-22 |
 | NFR-2 pins | Done | AC-6, AC-17 |

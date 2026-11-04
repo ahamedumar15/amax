@@ -252,6 +252,17 @@ an agent never writes without a person's confirm or accept (BR-5).
 
     The prompts are the exact strings chat's tools already parse (e.g. "Move CON-017 to planned"), so the confirm card
     names the same proposal.
+
+    **Revised 2026-11-04 (Amendment 4).** The client found that Building and Verified cards offered nothing to move them on:
+    - **Building** always offers "Move <key> to Verified". While tasks are open the label says how many, for example
+      "Move CON-014 to Verified (2 tasks open)". The person decides; the agent's Ready to verify still nudges once all
+      tasks are done (AC-32).
+    - **Verified, in a release not yet live:** Released isn't a board move (it comes from a Prod deployment), so the pin
+      offers that release's next deployment first, for example "Record a deployment of CON v2.4.0 to UAT"
+      (`record_deployment`, with its own permission).
+    - **Demo data:** the open tasks that a hand-made proposal's counters claim now have rows, so "Mark T<n> of <key> done"
+      is offered for them (CON-014: T5).
+    - The pin now offers up to three suggestions (Amendment 3's limit).
 31. **AC-31** A pin suggestion is checked when chat opens, against the proposal as it is now (not as it was when the
     page rendered). A proposal that moved, or a permission that changed, offers what fits now. A pin that no longer
     resolves offers nothing; it doesn't fail.
@@ -405,6 +416,12 @@ Overview already counts it).
       then the open ones. The legend reads "Agents <n> · People <n> · Open <n>". Closes that weren't recorded per task
       (a synced project's counts) show as "Not recorded <n>". It is pinned to the project.
 
+      **Who counts as what (revised 2026-11-04, the client):** git can't say whether a person or an agent wrote a
+      commit, so a task closed by a person's verified commit counts as that person's. **Agents** are only closes an
+      agent made through amax's tools ("Claude for Nimal"). **People** are closes in amax and by a verified commit.
+      Anything else (a CI credential, another job) is **Automation**, its own part. The Overview's "by agents for them"
+      uses the same rule (`server/closed-by.ts`). Reading agent authorship from commit trailers is left for a later change.
+
     A screen reader reads each part as one sentence, for example "v2.5.0, 2 proposals: Dev deployed, QA testing, UAT not
     yet, Prod not yet".
 
@@ -555,8 +572,8 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T22` — Amendment 4, the proposal page: header, stepper, suggestions first, Time band, history timeline, folded done tasks (AC-46 to AC-51)
   Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/Stepper.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/delivery.css, modules/delivery/server/pin-offers.ts, modules/delivery/tests/proposal-page-a4.test.ts, modules/delivery/tests/proposal-detail.test.ts, modules/delivery/tests/proposal-board-081.test.ts, modules/delivery/tests/proposal-suggestions.test.ts
   Depends: T20
-- [ ] `T23` — Amendment 4: browser tests, axe, hand walk-through light and dark, CI replica (AC-53)
-  Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/tests/*.test.ts, .specclaw/changes/081-proposals-end-to-end/audit.md
+- [x] `T23` — Amendment 4: browser tests, axe, hand walk-through light and dark, CI replica (AC-53)
+  Files: apps/web/tests/e2e/delivery.spec.ts, apps/web/tests/e2e/delivery-visual.spec.ts, apps/web/tests/e2e/ai-usage.spec.ts, packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, modules/delivery/server/pin-offers.ts, modules/delivery/server/closed-by.ts, modules/delivery/server/queries.ts, modules/delivery/server/overview.ts, modules/delivery/fixtures/index.ts, modules/delivery/ui/band.ts, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/*.test.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md
   Depends: T21, T22
 
 ## Verify
@@ -692,4 +709,61 @@ Linux replica of CI's `checks` job over the final tree:
 | `e2e:auth` | 87 passed, including the pin-driven board move and the "081 AC-39" release and environment flows |
 
 The page-context fix came after that run. It's covered by its unit test (2 passed) and the web typecheck.
+Review loop: still not run (the specclaw-review server isn't connected).
+
+### Amendment 4 verification (2026-11-04)
+
+**Hand walk-through** on the real app (`next start`, scripted model, as Maya), light and dark:
+- **Board:** Repo sync leads, open, when a push was refused; Enter folds it. Then the band (next release stage by
+  stage, tasks by who closed them), then the unchanged lanes.
+- **Proposal page:** labelled facts, the stepper, Ask amax and Withdraw, the Time band, the release track, folded done
+  tasks and the timeline. Checked on CON-016, CON-014 and CON-009.
+- **Pins:** Building cards offer "Move to Verified (n tasks open)" and the next task. Verified cards in a release offer
+  its next deployment. Both ran end to end: CON-014 moved to Verified, and CON v2.4.0 was recorded in UAT.
+- **Checks:** axe found nothing on any page in either theme, and there were no page errors.
+
+**Found and fixed on the way:**
+- **Board:** Needs you only repeated the page, so AC-43 was dropped and Repo sync leads instead (AC-44 revised).
+- **Duplicate information:** removed where the band repeated it (the page summary, the lane counts, the refused-push
+  line).
+- **Proposal page:**
+  - The key note was removed (AC-24 revised), and the owner avatar dropped.
+  - The facts became labelled names and dates, and header alignment was fixed: the project pin sits in its fact, and
+    wrapped actions stay right-aligned.
+  - Links meet contrast in dark mode.
+- **Pins:** Building and Verified cards offered nothing to move them on (AC-30 revised). The demo data had no rows for
+  the open tasks its counters claimed.
+- **Who counts as an agent:** a person's verified commit was counted as an agent's. Now only closes an agent made
+  through amax's tools count as agents, and CI and other jobs count as Automation (AC-42). The Overview uses the same
+  rule.
+- **Board on whole pixels:** Repo sync and the band ended at fractional heights, so at 390 px the board's lanes
+  rendered half a pixel off the mock. Their heights are now rounded to whole pixels. The board comparisons also use a
+  window tall enough that nothing scrolls.
+
+**Linux replica of CI** over the final tree. The replica creates the `amax_app` role first, as `ci.yml` does:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate`, `lint`, `check-module-standard`, `build` | pass |
+| `pnpm turbo run test` | every package passes except two tests unrelated to 081, below |
+| `playwright install` | pass (the Debian mirror timed out once; passed on retry) |
+| `e2e` | 8 passed |
+| `e2e:auth` | **89 passed**, including "081 amendment 4" for the board and the proposal page, AC-37 (now reading the stepper), and the board and visual comparisons against the 001 mock |
+
+Not caused by 081:
+- `delivery/create-project-surfaces` times out under load (5.4 s against 5 s), as it does on Windows.
+- `notifications/time-routing` fails because its shared setup loads every module's fixtures but not the finance,
+  inbox and recruitment suggestion kinds. Their events retry until the drain loop gives up. It is worth its own small
+  change.
+
+Test-only fix in another change's file:
+- `ai-usage.spec.ts` (048) checked that the "Unknown cost" tile doesn't contain "0 calls". With 081's new chat calls the
+  count reached 20, and "20 calls" contains "0 calls". It now checks that the number of calls isn't zero.
+
+**Plugin check:** the amax plugin (062) was installed from this branch and run as `/amax:sync-specclaw` runs, against a
+local amax, not amaxerp.com:
+- Preview: 1 created, 81 ignored (a branch push covers only its own change).
+- Apply, then a second push: unchanged.
+- AMX-081 shows on the Repo sync card and its page.
+
 Review loop: still not run (the specclaw-review server isn't connected).

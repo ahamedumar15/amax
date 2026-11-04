@@ -147,6 +147,16 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
       values (${tenantId}, ${proposal.id}, ${`T${Math.floor(i / Math.max(1, building.length)) + 1}`}, ${`Fixture task ${i + 1}`}, true, ${new Date(Date.UTC(2026, 9, 1 + (i % 15), 10)).toISOString()}, ${by})
       on conflict (proposal_id, ref) do nothing`);
   }
+  // 081 amendment 4: a hand-made proposal's rows are topped up with open tasks to the total its counters claim (after its
+  // done ones), so its pin can offer "Mark T<n> done" and its page lists them. Counters stay as fixtures.md has them.
+  await tx.execute(sql`insert into delivery.task (tenant_id, proposal_id, ref, title)
+    select p.tenant_id, p.id, 'T' || (coalesce(m.top, 0) + g), 'Open fixture task ' || g
+    from delivery.proposal p
+    left join lateral (select max(substring(t.ref from 2)::int) as top, count(*)::int as n from delivery.task t where t.proposal_id = p.id) m on true
+    cross join lateral generate_series(1, p.tasks_total - coalesce(m.n, 0)) g
+    where p.tenant_id = ${tenantId} and p.source is null and p.phase in ('proposed', 'planned', 'building') and p.tasks_total > p.tasks_done
+      and not exists (select 1 from delivery.task t where t.proposal_id = p.id and not t.done)
+    on conflict (proposal_id, ref) do nothing`);
   // 062: Contoso syncs from its (fictional) repo; the mock's Repo sync card, one push applied and two refused.
   await tx.execute(sql`update delivery.project set repo_url = 'github.com/example/contoso-portal', repo_default_ref = 'main' where id = ${ids.CON} and repo_url is null`);
   const kasun = kasunId;

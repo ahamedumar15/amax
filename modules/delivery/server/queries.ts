@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { BY_AGENT, BY_PERSON } from "./closed-by";
 import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
@@ -85,10 +86,12 @@ export const getProject = (v: Viewer, key: string | undefined, projectId?: strin
     const [r] = await tx.execute(sql`select * from delivery.project where ${where}`);
     if (!r) return null;
     const proposals = (await tx.execute(sql`${PROPOSALS} where pr.id = ${r.id} and ${ACTIVE} order by p.updated_at desc, p.key desc`)).map(proposal);
-    // 081 amendment 4 (AC-42): who closed the project's recorded tasks, as the Overview counts it: "user:…" is a person.
-    const [c] = await tx.execute(sql`select count(*) filter (where t.done_by like 'user:%')::int as people, count(*) filter (where t.done_by not like 'user:%')::int as agents
-      from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.project_id = ${r.id} and t.done and ${ACTIVE}`);
-    return { project: project(r), proposals, closedBy: { agents: Number(c?.agents ?? 0), people: Number(c?.people ?? 0) } };
+    // 081 amendment 4 (AC-42): who closed the project's recorded tasks: agents, people (in amax or by a verified commit),
+    // or automation (server/closed-by.ts).
+    const [c] = await tx.execute(sql`select count(*) filter (where ${BY_AGENT})::int as agents, count(*) filter (where ${BY_PERSON})::int as people,
+        count(*) filter (where not (${BY_AGENT}) and not ${BY_PERSON})::int as automation
+      from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.project_id = ${r.id} and t.done and t.done_by is not null and ${ACTIVE}`);
+    return { project: project(r), proposals, closedBy: { agents: Number(c?.agents ?? 0), people: Number(c?.people ?? 0), automation: Number(c?.automation ?? 0) } };
   });
 
 /**

@@ -74,9 +74,14 @@ export async function proposalOffers(v: Viewer, a: Args) {
       from delivery.release r join delivery.project pr on pr.id = r.project_id where pr.key = ${p.projectKey}
         and not exists (select 1 from delivery.deployment d where d.release_id = r.id and d.released and d.voided_at is null)
       order by r.created_at desc limit 1`) : [];
-    return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null };
+    const [inRelease] = p.phase === "verified" && p.release ? await tx.execute(sql`select release_id from delivery.proposal where id = ${p.id}`) : [];
+    return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null,
+      releaseId: (inRelease?.release_id as string | null) ?? null };
   });
-  return allowed(v, proposalGated(p, v.userId, facts), facts.projectId);
+  // 081 amendment 4 (AC-30 revised): Verified moves to Released only when its release reaches Prod, so a verified
+  // proposal in a release that isn't live offers that release's next deployment, first.
+  const deploy = facts.releaseId ? (await releaseOffers(v, { releaseId: facts.releaseId })).filter((o) => o.tool === "record_deployment") : [];
+  return [...deploy, ...allowed(v, proposalGated(p, v.userId, facts), facts.projectId)].slice(0, MAX);
 }
 
 function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; release: { version: string; keys: string } | null }): Gated[] {
@@ -85,9 +90,12 @@ function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null;
   const release: Gated[] = f.release ? [{ label: `Put ${p.key} in ${p.projectKey} ${f.release.version}`, prompt: `Set the proposals in ${p.projectKey} ${f.release.version} to: ${[f.release.keys, p.key].filter(Boolean).join(", ")}`,
     tool: "set_release_proposals", permission: "delivery:release:create" }] : [];
   if (p.source !== null) return [...task, ...owner, ...release];
-  const allDone = p.phase === "building" && p.tasksTotal > 0 && p.tasksDone === p.tasksTotal;
-  const to = allDone ? "verified" : NEXT[p.phase];
-  const move: Gated[] = to ? [{ label: `Move ${p.key} to ${label(to)}`, prompt: `Move ${p.key} to ${to}`, tool: "move_proposal", permission: "delivery:proposal:move" }] : [];
+  // 081 amendment 4 (AC-30 revised): Building always offers Verified; while tasks are open the label says how many, and
+  // the person decides (the agent's Ready to verify still nudges once they're all done).
+  const open = Math.max(0, p.tasksTotal - p.tasksDone);
+  const to = p.phase === "building" ? "verified" : NEXT[p.phase];
+  const note = to === "verified" && open ? ` (${open} ${open === 1 ? "task" : "tasks"} open)` : "";
+  const move: Gated[] = to ? [{ label: `Move ${p.key} to ${label(to)}${note}`, prompt: `Move ${p.key} to ${to}`, tool: "move_proposal", permission: "delivery:proposal:move" }] : [];
   const first: Gated[] = p.tasksTotal === 0 ? [{ label: `Add a task to ${p.key}`, prompt: `Add a task to ${p.key}: `, tool: "add_proposal_task", permission: "delivery:task:done" }] : [];
   // 081 amendment 4 (AC-46): the page's header no longer has an Edit button, so the pin offers it.
   const edit: Gated[] = [{ label: `Edit ${p.key}`, prompt: `Change ${p.key}: `, tool: "update_proposal", permission: "delivery:proposal:create" }];

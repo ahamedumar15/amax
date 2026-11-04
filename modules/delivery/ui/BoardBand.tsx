@@ -9,7 +9,7 @@ import { releaseBand, tasksBand, type ReleaseLike } from "./band";
 type Props = {
   project: { key: string; name: string; pin: PinRef; nextRelease: string | null; health: string };
   releases: ReleaseLike[];
-  done: number; total: number; closedBy: { agents: number; people: number };
+  done: number; total: number; closedBy: { agents: number; people: number; automation: number };
 };
 
 export const STAGE_WORD: Record<string, string> = { deployed: "Deployed", testing: "Testing", "rolled-back": "Rolled back", todo: "Not yet" };
@@ -42,12 +42,13 @@ export function BoardBand({ project, releases, done, total, closedBy }: Props) {
           <h2 className="k" id="dv-band-tasks">Tasks</h2>
           <p className="fig">{t.done} <span>of {t.total} done</span></p>
           <div className="bar" role="img" aria-label={t.sentence}>
-            {([["agents", t.agents], ["people", t.people], ["unrecorded", t.unrecorded], ["open", t.open]] as const)
+            {([["agents", t.agents], ["people", t.people], ["automation", t.automation], ["unrecorded", t.unrecorded], ["open", t.open]] as const)
               .filter(([, n]) => n > 0).map(([k, n]) => <i key={k} className={k} style={{ flexGrow: n }} />)}
           </div>
           <ul className="legend">
             <li><span className="agents"><Glyph kind="agents" />Agents {t.agents}</span></li>
             <li><span className="people"><Glyph kind="people" />People {t.people}</span></li>
+            {t.automation > 0 && <li><span className="automation"><Glyph kind="automation" />Automation {t.automation}</span></li>}
             {t.unrecorded > 0 && <li><span className="unrecorded"><Glyph kind="unrecorded" />Not recorded {t.unrecorded}</span></li>}
             <li><span className="open"><Glyph kind="open" />Open {t.open}</span></li>
           </ul>
@@ -62,6 +63,7 @@ const SHAPES: Record<string, React.ReactNode> = {
   agents: <path d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z" />,
   people: <circle cx="8" cy="8" r="5" />,
   unrecorded: <path d="M3 8h10" fill="none" strokeWidth="2.2" />,
+  automation: <path d="M3 3h10v10H3z" />,
   open: <circle cx="8" cy="8" r="4.6" fill="none" strokeWidth="1.8" />,
   todo: <circle cx="8" cy="8" r="4.6" fill="none" strokeWidth="1.8" />,
   deployed: <path d="M3.5 8.5l3 3 6-7" fill="none" strokeWidth="2.2" />,

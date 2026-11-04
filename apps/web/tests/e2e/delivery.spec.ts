@@ -35,6 +35,8 @@ test("AC2 portfolio renders the fixture projects from the database", async ({ pa
 });
 
 test("AC2 the Contoso board matches the mock (released lane and card within 2%)", async ({ page, context }) => {
+  // 081 amendment 4: Repo sync and the band push the board below 900 px; a tall window keeps it unscrolled, as the mock's is.
+  await page.setViewportSize({ width: 1440, height: 2000 });
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
   expect(await lanes(page)).toEqual(["2", "1", "2", "2", "1"]);
   const m = await context.newPage();
@@ -216,14 +218,14 @@ test("081 AC-37 the agent suggests Ready to verify; accepting it in chat verifie
   const pin = `Move ${key} to Verified`;
   await askAndConfirm(page, card.getByRole("button", { name: `Ask amax to accept ${pin}` }),
     { pin, prompt: new RegExp(`^Accept the suggestion "${pin}" \\(suggestion id [0-9a-f-]{36}\\)$`), confirm: "Accept", done: `Accepted: ${pin}` });
-  await expect(page.locator(".lede .chip").first()).toHaveText("Verified");
+  await expect(page.locator(".dv-steps")).toHaveAttribute("aria-label", `${key} stage: Verified`);
   await expect(card).toContainText("Accepted");
   await page.goto("/suggestions");
   await expect(page.locator("main")).toContainText(pin);
   await page.goto(`/delivery/proposals/${key}`);
   await askAndConfirm(page, card.getByRole("button", { name: `Ask amax to undo ${pin}` }),
     { pin, prompt: new RegExp(`^Undo the suggestion "${pin}" \\(suggestion id [0-9a-f-]{36}\\)$`), confirm: "Undo", done: `Undone: ${pin}` });
-  await expect(page.locator(".lede .chip").first()).toHaveText("Building");
+  await expect(page.locator(".dv-steps")).toHaveAttribute("aria-label", `${key} stage: Building`);
 });
 
 // 081 amendment 3 AC-39: other pins run their tasks end to end. Fleet Tracker's pin offers its next release; confirming
@@ -274,4 +276,63 @@ test("081 AC-39 pin the environments, then the new environment: add it and remov
   await expect(confirm).toContainText("Done:");
   await page.reload();
   await expect(card.locator("tr", { hasText: "Sandbox" })).toHaveCount(0);
+});
+
+// 081 amendment 4 (AC-42, AC-44, AC-45): the board says each fact once. A refused push puts Repo sync first, open, for
+// whoever can fix it; then the next release, stage by stage, and the tasks; the lanes are unchanged.
+test("081 amendment 4 the board leads with Repo sync when a push was refused, then the next release and the tasks", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const sync = page.locator(".dv-sync");
+  const order = await page.evaluate(() => ["dv-sync", "dv-band", "board"].map((c) => [...document.querySelectorAll("main *")].findIndex((e) => e.classList.contains(c))));
+  expect(order[0]).toBeLessThan(order[1]);
+  expect(order[1]).toBeLessThan(order[2]);
+  await expect(sync.locator("details")).toHaveAttribute("open", "");
+  await expect(sync.locator("summary")).toContainText("2 pushes refused");
+  await sync.locator("summary").press("Enter");
+  await expect(sync.locator("details")).not.toHaveAttribute("open", "");
+  await expect(page.locator(".dv-track")).toHaveAttribute("aria-label", /^v2\.5\.0, \d+ proposals?: Dev /);
+  await expect(page.locator(".dv-band .bar")).toHaveAttribute("aria-label", /^\d+ of \d+ tasks done: \d+ by agents, \d+ by people/);
+  await expect(page.locator(".lede").first()).toHaveText("Sprint 18 runs Mon Oct 12 to Fri Oct 23. Released means it reached Prod.");
+  expect(await axe(page)).toEqual([]);
+  await page.locator(".dv-band .fig a").first().click();
+  await expect(page).toHaveURL(/\/delivery\/releases\/CON\/v2\.5\.0$/);
+});
+
+// 081 amendment 4 (AC-46 to AC-51, AC-24 revised): the proposal page. Labelled facts, the stepper, Ask amax and Withdraw,
+// Withdraw through chat; done tasks fold and open with Enter.
+test("081 amendment 4 the proposal page: facts, stepper, a folded task list, and Withdraw through chat", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signIn(page, "maya@lumenlabs.test", "/delivery/proposals/CON-014");
+  await expect(page.locator(".dv-facts dt")).toHaveText(["Project", "Owner", "Made by hand", "Updated"]);
+  await expect(page.locator(".dv-steps")).toHaveAttribute("aria-label", "CON-014 stage: Building");
+  await expect(page.locator('.dv-steps li[aria-current="step"]')).toContainText("Building");
+  await expect(page.getByText(/hand-made series/)).toHaveCount(0);
+  const done = page.locator(".dv-done");
+  const was = await done.evaluate((d) => (d as HTMLDetailsElement).open);
+  await done.locator("summary").press("Enter");
+  await expect.poll(() => done.evaluate((d) => (d as HTMLDetailsElement).open)).toBe(!was);
+  await expect(page.locator(".dv-timeline li").first()).toBeVisible();
+  expect(await axe(page)).toEqual([]);
+
+  // A throwaway proposal, made in chat, then withdrawn from its page's one lifecycle button.
+  await page.getByRole("button", { name: "Ask amax", exact: true }).first().click();
+  await page.getByLabel("Message amax").fill("Add a proposal to Contoso Portal (CON): Throwaway export");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  let confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.locator("button.btn.primary, button.btn.danger").first().click();
+  await expect(confirm.locator(".cc-receipt")).toBeVisible();
+  const key = (await confirm.locator(".cc-receipt").innerText()).match(/CON-\d+/)![0];
+  await page.goto(`/delivery/proposals/${key}`);
+  const actions = page.locator(".row.head .actions");
+  await expect(actions.getByRole("button")).toHaveText([/Ask amax/, "Withdraw"]);
+  await actions.getByRole("button", { name: `Withdraw ${key}` }).click();
+  await expect(page.getByLabel("Message amax")).toHaveValue(`Withdraw ${key}. Reason: `);
+  await page.getByLabel("Message amax").pressSequentially("made by mistake");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await confirm.locator("button.btn.primary, button.btn.danger").first().click();
+  await expect(confirm.locator(".cc-receipt")).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".dv-steps")).toHaveAttribute("aria-label", `${key} stage: Proposed, withdrawn`);
+  await expect(actions.getByRole("button", { name: `Withdraw ${key}` })).toHaveCount(0);
 });

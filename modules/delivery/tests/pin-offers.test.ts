@@ -48,9 +48,18 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
         and not exists (select 1 from delivery.deployment d where d.release_id = r.id and d.released and d.voided_at is null) order by r.created_at desc limit 1`);
     const got = await offers("get_proposal")(maya, { proposalId: await id(sql`select id from delivery.proposal where key = ${key}`) });
     expect(got).toContainEqual({ label: `Put ${key} in CON ${open.version as string}`, prompt: `Set the proposals in CON ${open.version as string} to: ${[open.keys, key].filter(Boolean).join(", ")}`, tool: "set_release_proposals" });
+    // Amendment 4 (AC-30 revised): Building always offers Verified, saying how many tasks are open; the fixtures give the
+    // rows topped up to the counters' total (CON-014: 5 tasks, T5 open). The label counts open tasks by the counters.
     const p14 = await id(sql`select id from delivery.proposal where key = 'CON-014'`);
-    await db.t.owner`insert into delivery.task (tenant_id, proposal_id, ref, title) select tenant_id, id, 'T9', 'Open one' from delivery.proposal where key = 'CON-014' on conflict do nothing`;
-    expect(await labels("get_proposal", maya, { proposalId: p14 })).toContain("Mark T9 of CON-014 done");
+    expect(await labels("get_proposal", maya, { proposalId: p14 })).toEqual(["Move CON-014 to Verified (2 tasks open)", "Mark T5 of CON-014 done", "Edit CON-014"]);
+  });
+
+  it("AC30 (revised) a verified proposal in a release that isn't live offers that release's next deployment, first", async () => {
+    const p12 = await id(sql`select id from delivery.proposal where key = 'CON-012'`);
+    const got = await labels("get_proposal", maya, { proposalId: p12 });
+    expect(got[0]).toMatch(/^Record a deployment of CON v2\.4\.0 to \w+$/);
+    // Without the deployment permission, it isn't offered.
+    expect((await labels("get_proposal", await db.as("maya", "Leadership"), { proposalId: p12 })).some((l) => l.startsWith("Record a deployment"))).toBe(false);
   });
 
   it("AC38 a release offers its next environment, its proposals and its tag; live in Prod, only the tag", async () => {

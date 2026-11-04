@@ -28,6 +28,8 @@ const RULES: Rule[] = [
   [new RegExp(`^add a task to (${KEY.slice(1, -1)}-H?\\d+): (.+)$`, "i"), (m) => [["add_proposal_task", { key: m[1], title: m[2].trim() }]]],
   [new RegExp(`^make me \\(user id ${UUID}\\) the owner of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["update_proposal", { key: m[2], ownerUserId: m[1] }]]],
   [new RegExp(`^(accept|dismiss|undo) the suggestion ".+" \\(suggestion id ${UUID}\\)\\s*$`, "i"), (m) => [[`${m[1].toLowerCase()}_agent_suggestion`, { id: m[2] }]]],
+  // 081 amendment 4: the proposal page's Withdraw button, with the reason typed on.
+  [new RegExp(`^withdraw (${KEY.slice(1, -1)}-H?\\d+)\\. reason: (.+)$`, "i"), (m) => [["withdraw_proposal", { key: m[1], reason: m[2].trim() }]]],
   // 081 amendment 3: what the other Delivery pins offer.
   [new RegExp(`^add a proposal to .+? \\(${KEY}\\): (.+)$`, "i"), (m) => [["create_proposal", { projectKey: m[1], title: m[2].trim() }]]],
   [new RegExp(`^create release (v?\\d+\\.\\d+\\.\\d+) of ${KEY}\\s*$`, "i"), (m) => [["create_release", { projectKey: m[2], version: m[1] }]]],

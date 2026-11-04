@@ -64,7 +64,7 @@
 .vs .meter{min-width:0}
 .row.head{align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px 24px}
 .row.head .lede{margin:0}
-.row.head>.actions{flex-shrink:0}
+.row.head>.actions{flex-shrink:0;margin-left:auto}
 .card-head{min-height:38px}
 .stat,.app-card,.lane,.ticket,.stage{border-radius:var(--r-card)}
 .tcard{border-radius:18px}
@@ -239,6 +239,7 @@
 .dv-band .bar i{display:block;min-width:6px;border-radius:999px;background:var(--c)}
 .dv-band .agents{--c:var(--chip-agent)}
 .dv-band .people{--c:var(--chip-good)}
+.dv-band .automation{--c:var(--chip-warn)}
 .dv-band .unrecorded{--c:var(--ink-3)}
 .dv-band .open{--c:var(--line-2)}
 .dv-band .legend{display:flex;flex-wrap:wrap;gap:6px 8px;margin:2px 0 0;padding:0;list-style:none}
@@ -335,3 +336,6 @@
 .dv-timeline li>span small b{color:var(--ink);font-weight:600}
 .dv-facts a,.dv-rel a{color:var(--chip-agent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 .dv-rel{margin:0 0 12px;font-size:18px}
+/* 081 amendment 4: Repo sync and the band sit above the board; rounding their heights to whole pixels keeps the board
+   on whole pixels, as it was before them, so its cards render as crisply as the mock's (where supported). */
+.dv-sync,.dv-band{height:calc-size(auto,round(up,size,1px))}

@@ -8,13 +8,14 @@ import type { EventKind } from "../server/proposal-detail";
  * AC-42 Tasks: done of total, the done ones split by who closed them. Only some closes are recorded per task (a synced
  * project's counters come from the repo), so what isn't recorded shows as its own part rather than being guessed.
  */
-export function tasksBand(done: number, total: number, closedBy: { agents: number; people: number }) {
+export function tasksBand(done: number, total: number, closedBy: { agents: number; people: number; automation?: number }) {
   const agents = Math.min(closedBy.agents, done);
   const people = Math.min(closedBy.people, done - agents);
-  const unrecorded = done - agents - people;
+  const automation = Math.min(closedBy.automation ?? 0, done - agents - people);
+  const unrecorded = done - agents - people - automation;
   const open = Math.max(0, total - done);
-  const parts = [`${agents} by agents`, `${people} by people`, ...(unrecorded ? [`${unrecorded} not recorded`] : []), `${open} open`];
-  return { done, total, agents, people, unrecorded, open, sentence: `${done} of ${total} tasks done: ${parts.join(", ")}` };
+  const parts = [`${agents} by agents`, `${people} by people`, ...(automation ? [`${automation} by automation`] : []), ...(unrecorded ? [`${unrecorded} not recorded`] : []), `${open} open`];
+  return { done, total, agents, people, automation, unrecorded, open, sentence: `${done} of ${total} tasks done: ${parts.join(", ")}` };
 }
 
 export type Step = { phase: Phase; state: "done" | "current" | "todo" | "withdrawn"; at: string | null };

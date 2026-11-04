@@ -6,6 +6,9 @@ describe("081 amendment 4: the board's band, the stepper and the Time band", () 
     expect(tasksBand(9, 16, { agents: 6, people: 3 })).toMatchObject({ agents: 6, people: 3, unrecorded: 0, open: 7, sentence: "9 of 16 tasks done: 6 by agents, 3 by people, 7 open" });
     expect(tasksBand(9, 16, { agents: 2, people: 1 })).toMatchObject({ unrecorded: 6, sentence: "9 of 16 tasks done: 2 by agents, 1 by people, 6 not recorded, 7 open" });
     expect(tasksBand(3, 4, { agents: 10, people: 4 })).toMatchObject({ agents: 3, people: 0, unrecorded: 0, open: 1 });
+    // Automation (a CI credential, another job) is its own part, never counted as agents.
+    expect(tasksBand(9, 16, { agents: 2, people: 5, automation: 2 })).toMatchObject({ automation: 2, unrecorded: 0,
+      sentence: "9 of 16 tasks done: 2 by agents, 5 by people, 2 by automation, 7 open" });
   });
 
   const base = { withdrawn: false, createdAt: "2026-10-02T10:30:00.000Z", releasedAt: null, history: [

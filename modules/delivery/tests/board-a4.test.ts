@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
+import { getProject } from "../server/queries";
 import { ProjectPage } from "../ui/ProjectPage";
 import { proposalDb } from "./proposal-db";
 
@@ -23,6 +24,15 @@ describe.skipIf(!hasDb)("081 amendment 4: the board leads like Team time (Postgr
     // The band sits between the tabs and the board (AC-45: the board itself is unchanged).
     expect(page.indexOf("dv-band")).toBeGreaterThan(page.indexOf('aria-label="Project sections"') === -1 ? 0 : page.indexOf('aria-label="Project sections"'));
     expect(page.indexOf("dv-band")).toBeLessThan(page.indexOf('class="board"'));
+  });
+
+  it("AC42 (revised) who closed a task: an agent, a person in amax or by a verified commit, or automation; a commit never counts as an agent", async () => {
+    const before = (await getProject(maya, "FLT"))!.closedBy;
+    const rows = [["T81", "agent:claude for user:00000000-0000-4000-8000-000000000009"], ["T82", "user:00000000-0000-4000-8000-000000000009"],
+      ["T83", "job:delivery.ingest for user:00000000-0000-4000-8000-000000000009"], ["T84", "sp:00000000-0000-4000-8000-0000000000aa for user:00000000-0000-4000-8000-000000000009"]];
+    for (const [ref, by] of rows) await db.t.owner`insert into delivery.task (tenant_id, proposal_id, ref, title, done, done_at, done_by)
+      select tenant_id, id, ${ref}, 'Closed by someone', true, now(), ${by} from delivery.proposal where key = 'FLT-015'`;
+    expect((await getProject(maya, "FLT"))!.closedBy).toEqual({ agents: before.agents + 1, people: before.people + 2, automation: before.automation + 1 });
   });
 
   it("AC43 dropped, AC44 revised: a refused push puts Repo sync first, open, for whoever can fix it; nothing is listed twice", async () => {
