@@ -7,18 +7,19 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "sh
 const result = (p: PushRow) => p.outcome === "refused" ? p.reason ?? "refused"
   : [`${p.created} created`, `${p.updated} updated`, `${p.unchanged} unchanged`, p.skipped.length ? `${p.skipped.length} skipped` : ""].filter(Boolean).join(" · ");
 
-type Props = { projectKey: string; projectId: string; repoUrl: string | null; last: PushRow | null; recent: PushRow[]; canLink: boolean };
+type Props = { projectKey: string; projectId: string; repoUrl: string | null; last: PushRow | null; recent: PushRow[]; canLink: boolean; first?: boolean };
 
 // 062 AC-10: refused pushes first, since they need someone to act; linking happens in chat.
-// 081 amendment 4 (AC-44): the card folds to one row (a native <details>), open by default when a push was refused.
+// 081 amendment 4 (AC-44, revised): the card folds to one row (a native <details>). With `first` (a refused push and a
+// viewer who can fix it) it leads the board, open; otherwise it stays folded below the board.
 // The heading stays in the <summary>; the pin and the Ask amax button sit outside it, so no control nests in another.
-export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, canLink }: Props) {
+export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, canLink, first = false }: Props) {
   const pin = repoSyncPin({ id: projectId, key: projectKey });
   const rows = [...recent.filter((p) => p.outcome === "refused"), ...recent.filter((p) => p.outcome === "applied")].slice(0, 8);
   const refused = recent.filter((p) => p.outcome === "refused").length;
   return (
-    <div className="card flush pinnable dv-foldwrap dv-sync" style={{ marginTop: 28 }}>
-      <details className="dv-fold" open={refused > 0}>
+    <div className="card flush pinnable dv-foldwrap dv-sync" style={first ? { marginBottom: 20 } : { marginTop: 28 }}>
+      <details className="dv-fold" open={first}>
       <summary>
         <h2>Repo sync</h2>
         {refused > 0 ? <span className="chip warn">{refused} {refused === 1 ? "push" : "pushes"} refused</span> : !repoUrl && <span className="chip warn">No repo linked</span>}
@@ -30,7 +31,6 @@ export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, can
         {canLink && <div className="actions"><AskButton spark label={repoUrl ? "Ask amax to change the linked repo" : "Ask amax to link a repo"}
           prompt={repoUrl ? `Change the repo ${projectKey} syncs from to ` : `Link ${projectKey} to the repo `} pin={pin} /></div>}</div>
       <p className="lede" style={{ padding: "0 20px" }}>
-        {refused ? `${refused} recent ${refused === 1 ? "push was" : "pushes were"} refused. ` : ""}
         {last ? `Last sync ${when(last.at)} by ${last.by}: ${result(last)}.` : "No specclaw push applied yet."}
       </p>
       {rows.length > 0 && (

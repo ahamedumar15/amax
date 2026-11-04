@@ -4,17 +4,6 @@ import type { EventKind } from "../server/proposal-detail";
 // 081 amendment 4: the figures behind the board's band, the proposal's stepper and its Time band, kept pure so each is
 // tested on its own and the pages only lay them out.
 
-const NAME: Record<Phase, string> = { proposed: "proposed", planned: "planned", building: "building", verified: "verified", released: "released" };
-const IN_FLIGHT: Phase[] = ["proposed", "planned", "building", "verified"];
-
-/** AC-42 Proposals: what is in flight (Proposed to Verified), per phase, and the bar's sentence for a screen reader. */
-export function proposalsBand(rows: { phase: Phase }[]) {
-  const segments = IN_FLIGHT.map((phase) => ({ phase, count: rows.filter((r) => r.phase === phase).length })).filter((s) => s.count > 0);
-  const total = segments.reduce((n, s) => n + s.count, 0);
-  const sentence = `${total} ${total === 1 ? "proposal" : "proposals"} in flight${total ? `: ${segments.map((s) => `${s.count} ${NAME[s.phase]}`).join(", ")}` : ""}`;
-  return { total, segments, sentence };
-}
-
 /**
  * AC-42 Tasks: done of total, the done ones split by who closed them. Only some closes are recorded per task (a synced
  * project's counters come from the repo), so what isn't recorded shows as its own part rather than being guessed.
@@ -57,4 +46,23 @@ export function timeBand(hours: number, estimate: number | null) {
   const left = Math.max(0, estimate - hours);
   const sentence = over ? `${h(hours)} approved of ${h(estimate)} estimated, ${h(over)} over` : `${h(hours)} approved of ${h(estimate)} estimated, ${h(left)} left`;
   return { hours, estimate, within, over, left, figure: h(hours), rest: `of ${h(estimate)} estimated`, sentence };
+}
+
+type Stage = { environment: string; position: number; isProd: boolean; status: string | null; at: string | null };
+export type ReleaseLike = { id: string; version: string; proposals: number; stages: Stage[] };
+const STATE: Record<string, string> = { deployed: "deployed", testing: "testing", "rolled-back": "rolled back" };
+
+/**
+ * AC-42 (as revised 2026-11-04): the release the sprint is heading for, stage by stage, since the board's lanes already
+ * count proposals per phase. It's the one the project names as next, else the newest one not yet live in Prod; none
+ * when every release is live.
+ */
+export function releaseBand(releases: ReleaseLike[], next: string | null, health: string) {
+  const live = (r: ReleaseLike) => r.stages.some((s) => s.isProd && s.status === "deployed");
+  const named = next?.match(/v\d+(\.\d+)+/)?.[0];
+  const r = releases.find((x) => x.version === named && !live(x)) ?? releases.find((x) => !live(x));
+  if (!r) return null;
+  const stages = [...r.stages].sort((a, b) => a.position - b.position).map((s) => ({ ...s, state: s.status ?? "todo" }));
+  const sentence = `${r.version}, ${r.proposals} ${r.proposals === 1 ? "proposal" : "proposals"}: ${stages.map((s) => `${s.environment} ${STATE[s.status ?? ""] ?? "not yet"}`).join(", ")}`;
+  return { release: r, stages, health: health === "on-track" ? "On track" : "At risk", sentence };
 }

@@ -1,33 +1,39 @@
 import { facet, PinButton, type PinRef } from "@amax/ui";
-import { projectHref, type Phase } from "../contracts";
-import { proposalsBand, tasksBand } from "./band";
-import { PHASE_UI, Stk } from "./parts";
+import { releaseHref } from "../contracts";
+import { releasePin } from "../pins";
+import { releaseBand, tasksBand, type ReleaseLike } from "./band";
 
-// 081 amendment 4 (AC-42): the board leads with two facts as bars, as Team time does: what is in flight, phase by
-// phase, and how far the tasks are, with who closed them. Each legend item of Proposals opens the project's Proposals
-// tab filtered to that phase (a read-only link); each part pins to the project.
-type Props = { project: { key: string; pin: PinRef }; proposals: { phase: Phase }[]; done: number; total: number; closedBy: { agents: number; people: number } };
+// 081 amendment 4 (AC-42, revised 2026-11-04): the board leads with what its lanes don't already say: the release the
+// sprint is heading for, environment by environment, and how far the tasks are, with who closed them. Each part pins;
+// the release part links to its page (a read-only link). Nothing here repeats the page's summary or the lane counts.
+type Props = {
+  project: { key: string; name: string; pin: PinRef; nextRelease: string | null; health: string };
+  releases: ReleaseLike[];
+  done: number; total: number; closedBy: { agents: number; people: number };
+};
 
-export function BoardBand({ project, proposals, done, total, closedBy }: Props) {
-  const p = proposalsBand(proposals);
+const STAGE_WORD: Record<string, string> = { deployed: "Deployed", testing: "Testing", "rolled-back": "Rolled back", todo: "Not yet" };
+
+export function BoardBand({ project, releases, done, total, closedBy }: Props) {
+  const r = releaseBand(releases, project.nextRelease, project.health);
   const t = tasksBand(done, total, closedBy);
-  if (!p.total && !t.total) return null;
-  const href = (phase: Phase) => `${projectHref(project.key, "proposals")}/${phase}`;
+  if (!r && !t.total) return null;
   return (
     <div className="dv-band" role="group" aria-label={`${project.key} at a glance`}>
-      {p.total > 0 && (
-        <section className="card pinnable" aria-labelledby="dv-band-proposals">
-          <PinButton pin={facet(project.pin, " proposals in flight")} />
-          <h2 className="k" id="dv-band-proposals">Proposals</h2>
-          <p className="fig">{p.total} <span>in flight</span></p>
-          <div className="bar" role="img" aria-label={p.sentence}>
-            {p.segments.map((s) => <i key={s.phase} style={{ flexGrow: s.count, background: PHASE_UI[s.phase].color }} />)}
-          </div>
-          <ul className="legend">
-            {p.segments.map((s) => (
-              <li key={s.phase}><a href={href(s.phase)} style={{ ["--c" as string]: PHASE_UI[s.phase].color }}><Stk phase={s.phase} />{s.count} {PHASE_UI[s.phase].label.toLowerCase()}</a></li>
+      {r && (
+        <section className="card pinnable" aria-labelledby="dv-band-release">
+          <PinButton pin={releasePin({ id: r.release.id, version: r.release.version, projectKey: project.key, projectName: project.name })} />
+          <h2 className="k" id="dv-band-release">Next release</h2>
+          <p className="fig"><a href={releaseHref({ projectKey: project.key, version: r.release.version })}>{r.release.version}</a>
+            <span>{r.release.proposals} {r.release.proposals === 1 ? "proposal" : "proposals"}</span>
+            <span className={`chip ${r.health === "On track" ? "good" : "warn"}`}>{r.health}</span></p>
+          <ol className="dv-track" aria-label={r.sentence}>
+            {r.stages.map((s) => (
+              <li key={s.environment} className={s.state}>
+                <Glyph kind={s.state} /><b>{s.environment}{s.isProd && !/^prod/i.test(s.environment) && <small> Prod</small>}</b><small>{STAGE_WORD[s.state] ?? s.state}</small>
+              </li>
             ))}
-          </ul>
+          </ol>
         </section>
       )}
       {t.total > 0 && (
@@ -51,11 +57,15 @@ export function BoardBand({ project, proposals, done, total, closedBy }: Props) 
   );
 }
 
-// A shape per part, so the legend never relies on colour alone.
+// A shape per state, so neither the legend nor the track relies on colour alone.
 const SHAPES: Record<string, React.ReactNode> = {
   agents: <path d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z" />,
   people: <circle cx="8" cy="8" r="5" />,
   unrecorded: <path d="M3 8h10" fill="none" strokeWidth="2.2" />,
   open: <circle cx="8" cy="8" r="4.6" fill="none" strokeWidth="1.8" />,
+  todo: <circle cx="8" cy="8" r="4.6" fill="none" strokeWidth="1.8" />,
+  deployed: <path d="M3.5 8.5l3 3 6-7" fill="none" strokeWidth="2.2" />,
+  testing: <circle cx="8" cy="8" r="4" />,
+  "rolled-back": <path d="M4 4l8 8M12 4l-8 8" fill="none" strokeWidth="2.2" />,
 };
-export const Glyph = ({ kind }: { kind: string }) => <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="currentColor" strokeLinecap="round">{SHAPES[kind]}</svg>;
+export const Glyph = ({ kind }: { kind: string }) => <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">{SHAPES[kind]}</svg>;

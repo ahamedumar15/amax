@@ -54,7 +54,7 @@ test("AC2 the Contoso board matches the mock (released lane and card within 2%)"
 test("AC3 / 054 AC5 / 081 a card's pin offers its move; confirming it moves the proposal", async ({ page }) => {
   test.setTimeout(60_000);
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
-  await expect(page.locator("main form, main dialog, main details")).toHaveCount(0);
+  await expect(page.locator("main form, main dialog, .board details")).toHaveCount(0);
   const card = page.locator(".tcard", { hasText: "CON-017" });
   await card.hover();
   await card.getByRole("button", { name: "Add CON-017 CSV import for clients to chat" }).press("Enter");
@@ -119,7 +119,7 @@ test("062 AC-10 the Repo sync card leads with refused pushes, pins every row, an
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
   const card = page.locator(".card", { has: page.getByRole("heading", { name: "Repo sync" }) });
   await expect(card).toContainText("From github.com/example/contoso-portal");
-  await expect(card).toContainText("2 recent pushes were refused.");
+  await expect(card.locator("summary")).toContainText("2 pushes refused");
   await expect(card).toContainText("by Kasun Dias: 0 created · 3 updated · 14 unchanged");
   const rows = card.locator("tbody tr");
   await expect(rows).toHaveCount(3);

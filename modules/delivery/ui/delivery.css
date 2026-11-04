@@ -231,12 +231,12 @@
 .suggested-list li:first-child{border-top:0;padding-top:0}
 .suggested-list small{display:block;margin-top:4px}
 .tcard a.chip{text-decoration:none}
-/* 081 amendment 4: the board leads like Team time: Needs you, a two-part band, folded rows (Time's .band and .rq-fold). */
+/* 081 amendment 4: the board's two-part band and its folded Repo sync row. */
 .dv-band{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;margin:0 0 24px}
 .dv-band .card{padding:18px 22px 16px;display:flex;flex-direction:column;gap:10px;position:relative;margin:0}
 .dv-band .k{margin:0;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
 .dv-band .fig{margin:0;font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ink)}
-.dv-band .fig span{font-size:14.5px;font-weight:500;color:var(--ink-2);margin-left:4px}
+.dv-band .fig>span:not(.chip){font-size:14.5px;font-weight:500;color:var(--ink-2);margin-left:4px}
 .dv-band .bar{display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken)}
 .dv-band .bar i{display:block;min-width:6px;border-radius:999px;background:var(--c)}
 .dv-band .agents{--c:var(--chip-agent)}
@@ -252,24 +252,32 @@
 .dv-band .legend .stk svg{width:11px;height:11px}
 .dv-band .legend a:hover{box-shadow:inset 0 0 0 1px var(--c)}
 .dv-band .legend a:focus-visible{outline:2px solid var(--chip-agent);outline-offset:2px}
-.dv-needs{margin:0 0 20px}
-.dv-needs ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.dv-needs li{background:var(--sunken);border-radius:14px;padding:8px 14px}
 .dv-foldwrap{position:relative}
 .dv-foldwrap>.pin.inline{position:absolute;top:12px;right:12px;margin:0}
-.dv-needs li>.dv-fold>summary{padding-right:40px}
 .dv-fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;border-radius:12px;padding:4px 44px 4px 2px}
 .dv-fold>summary::-webkit-details-marker{display:none}
 .dv-fold>summary:focus-visible{outline:2px solid var(--chip-agent);outline-offset:2px}
-.dv-fold>summary:hover .dv-title,.dv-fold>summary:hover h2{text-decoration:underline;text-underline-offset:3px}
-.dv-title{flex:1 1 220px;min-width:0;font-weight:600}
+.dv-fold>summary:hover h2{text-decoration:underline;text-underline-offset:3px}
 .dv-chev{width:10px;height:10px;flex:none;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(-45deg);margin:0 6px}
 .dv-fold[open] .dv-chev{transform:rotate(45deg)}
-.dv-body{padding:10px 2px 4px;font-size:14px}
-.dv-body p{margin:0}
 .dv-sync>.dv-fold>summary{padding:18px 64px 18px 28px}
 .dv-sync>.dv-fold>summary h2{margin:0;flex:0 0 auto}
 .dv-sync>.dv-fold>summary small{margin-left:auto}
 .dv-sync>.pin.inline{top:20px;right:22px}
+/* The next release, environment by environment: a step per stage, its state as a shape and a word. */
+.dv-band .fig a{color:inherit;text-decoration:none}
+.dv-band .fig a:hover{text-decoration:underline;text-underline-offset:4px}
+.dv-band .fig .chip{margin-left:10px;vertical-align:middle;font-size:12.5px}
+.dv-track{display:flex;gap:4px;margin:2px 0 0;padding:0;list-style:none}
+.dv-track li{flex:1 1 0;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:6px;align-items:center;padding:8px 0 0;border-top:6px solid var(--c);border-radius:3px 3px 0 0;font-size:13px}
+.dv-track li svg{width:14px;height:14px;color:var(--c);grid-row:span 2}
+.dv-track li b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv-track li b small{font-weight:500;color:var(--ink-3)}
+.dv-track li>small{color:var(--ink-2);font-size:12px}
+.dv-track .deployed{--c:var(--chip-good)}
+.dv-track .testing{--c:var(--chip-agent)}
+.dv-track .rolled-back{--c:var(--chip-bad)}
+.dv-track .todo{--c:var(--line-2)}
+.dv-track .todo svg{color:var(--ink-3)}
 @media (prefers-reduced-motion:no-preference){.dv-chev{transition:transform .15s}.dv-band .legend a{transition:box-shadow .15s}}
 @media (max-width:600px){.dv-band .fig{font-size:26px}.dv-sync>.dv-fold>summary{padding:16px 56px 16px 20px}}

@@ -3,7 +3,7 @@ import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
 import { projectPin, proposalPin } from "../pins";
-import { getProject, listEnvironments, type ProposalRow } from "../server/queries";
+import { getProject, listEnvironments, listReleases, type ProposalRow } from "../server/queries";
 import { proposalSuggestions } from "./ProposalSuggestions";
 import { NewProposalButton } from "./NewProposalButton";
 import { Avatar } from "./Avatar";
@@ -13,15 +13,14 @@ import { RepoSyncCard } from "./RepoSyncCard";
 import { initials, needViewer, SignInFirst, Stk } from "./parts";
 import { ProjectTabs } from "./ProjectSections";
 import { BoardBand } from "./BoardBand";
-import { NeedsYou } from "./NeedsYou";
 
 const D = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
-// "Sprint 18 runs Mon Oct 12 to Fri Oct 23. 9 of 16 tasks done, on track for v2.5.0. "
-function sprintLine(p: { sprint: string | null; sprintStart: string | null; sprintEnd: string | null; health: string; nextRelease: string | null }, done: number, total: number) {
+// "Sprint 18 runs Mon Oct 12 to Fri Oct 23. " The task count, the next release and its health are the band's (081
+// amendment 4), not repeated here.
+function sprintLine(p: { sprint: string | null; sprintStart: string | null; sprintEnd: string | null }) {
   if (!p.sprint) return "";
   const when = p.sprintStart && p.sprintEnd ? ` runs ${D(p.sprintStart, { weekday: "short", month: "short", day: "numeric" }).replace(",", "")} to ${D(p.sprintEnd, { weekday: "short", month: "short", day: "numeric" }).replace(",", "")}` : "";
-  const v = p.nextRelease?.match(/v\d+(\.\d+)+/)?.[0];
-  return `${p.sprint}${when}. ${done} of ${total} tasks done${v ? `, ${p.health === "on-track" ? "on track" : "at risk"} for ${v}` : ""}. `;
+  return `${p.sprint}${when}. `;
 }
 
 const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released to Prod" };
@@ -73,10 +72,13 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   if (!data) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
   const { project, proposals, closedBy } = data;
   // 081 AC-35: a card with an open agent suggestion the viewer may decide says so, and opens the proposal to decide it.
-  const open = (await proposalSuggestions(viewer, proposals.map((x) => x.id))).open;
-  const suggested = new Set(open.map((s) => s.target.id));
+  const suggested = new Set((await proposalSuggestions(viewer, proposals.map((x) => x.id))).open.map((s) => s.target.id));
   const envs = await listEnvironments(viewer, project.key);
+  const releases = await listReleases(viewer, { projectKey: project.key });
   const sync = await getRepoSync(viewer, { projectId: project.id });
+  const canLink = can(viewer, "delivery:project:link", { projectId: project.id });
+  const syncFirst = !!sync && canLink && sync.recent.some((p) => p.outcome === "refused");
+  const repoSync = sync && <RepoSyncCard projectKey={project.key} projectId={project.id} repoUrl={sync.repoUrl} last={sync.lastApplied} recent={sync.recent} canLink={canLink} first={syncFirst} />;
 
   // Synced projects have no sprint counters; their progress is the proposals' tasks.
   const done = project.sprintTotal ? project.sprintDone : proposals.reduce((n, p) => n + p.tasksDone, 0);
@@ -87,7 +89,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
       <div className="row head">
         <div>
           <h1>{project.name}</h1>
-          <p className="lede">{sprintLine(project, done, total)}Released means it reached {envs.find((e) => e.isProd)?.name ?? "Prod"}.</p>
+          <p className="lede">{sprintLine(project)}Released means it reached {envs.find((e) => e.isProd)?.name ?? "Prod"}.</p>
         </div>
         <div className="actions">
           {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
@@ -95,11 +97,10 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
         </div>
       </div>
       <ProjectTabs projectKey={project.key} current="" />
-      {/* 081 amendment 4 (AC-43, AC-42): what waits for this viewer, then the project at a glance, then the board. */}
-      <NeedsYou projectKey={project.key}
-        suggestions={open.flatMap((s) => { const p = proposals.find((x) => x.id === s.target.id); return p ? [{ ...s, proposal: { key: p.key, title: p.title } }] : []; })}
-        refused={sync && can(viewer, "delivery:project:link", { projectId: project.id }) ? sync.recent.filter((p) => p.outcome === "refused") : []} />
-      <BoardBand project={{ key: project.key, pin: projectPin(project) }} proposals={proposals} done={done} total={total} closedBy={closedBy} />
+      {/* 081 amendment 4 (AC-44, revised): a refused push leads the page, open, for whoever can fix it; otherwise Repo
+          sync waits folded at the bottom. Agent suggestions are the cards' "amax suggests" chips. */}
+      {syncFirst && repoSync}
+      <BoardBand project={{ key: project.key, name: project.name, pin: projectPin(project), nextRelease: project.nextRelease, health: project.health }} releases={releases} done={done} total={total} closedBy={closedBy} />
       <div className="board">
         {PHASES.map((phase) => {
           const cards = proposals.filter((p) => p.phase === phase);
@@ -111,7 +112,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           );
         })}
       </div>
-      {sync && <RepoSyncCard projectKey={project.key} projectId={project.id} repoUrl={sync.repoUrl} last={sync.lastApplied} recent={sync.recent} canLink={can(viewer, "delivery:project:link", { projectId: project.id })} />}
+      {!syncFirst && repoSync}
       <EnvironmentsCard projectKey={project.key} envs={envs} canEdit={can(viewer, "delivery:release:create", { projectId: project.id })} />
     </>
   );

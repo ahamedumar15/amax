@@ -1,15 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { proposalsBand, stepsOf, tasksBand, timeBand } from "../ui/band";
+import { releaseBand, stepsOf, tasksBand, timeBand } from "../ui/band";
 
 describe("081 amendment 4: the board's band, the stepper and the Time band", () => {
-  it("AC42 Proposals counts what is in flight per phase, leaves out released, and says it in one sentence", () => {
-    const b = proposalsBand([{ phase: "proposed" }, { phase: "proposed" }, { phase: "planned" }, { phase: "building" }, { phase: "building" }, { phase: "verified" }, { phase: "verified" }, { phase: "released" }]);
-    expect(b.total).toBe(7);
-    expect(b.segments).toEqual([{ phase: "proposed", count: 2 }, { phase: "planned", count: 1 }, { phase: "building", count: 2 }, { phase: "verified", count: 2 }]);
-    expect(b.sentence).toBe("7 proposals in flight: 2 proposed, 1 planned, 2 building, 2 verified");
-    expect(proposalsBand([{ phase: "released" }])).toEqual({ total: 0, segments: [], sentence: "0 proposals in flight" });
-  });
-
   it("AC42 Tasks splits the done ones by who closed them, and never claims more than were done", () => {
     expect(tasksBand(9, 16, { agents: 6, people: 3 })).toMatchObject({ agents: 6, people: 3, unrecorded: 0, open: 7, sentence: "9 of 16 tasks done: 6 by agents, 3 by people, 7 open" });
     expect(tasksBand(9, 16, { agents: 2, people: 1 })).toMatchObject({ unrecorded: 6, sentence: "9 of 16 tasks done: 2 by agents, 1 by people, 6 not recorded, 7 open" });
@@ -44,5 +36,19 @@ describe("081 amendment 4: the board's band, the stepper and the Time band", () 
     expect(timeBand(18, 16)).toMatchObject({ within: 16, over: 2, left: 0, figure: "18 h", rest: "of 16 h estimated", sentence: "18 h approved of 16 h estimated, 2 h over" });
     expect(timeBand(11.5, 16)).toMatchObject({ within: 11.5, over: 0, left: 4.5, sentence: "11.5 h approved of 16 h estimated, 4.5 h left" });
     expect(timeBand(11.5, null)).toMatchObject({ estimate: null, figure: "11.5 h", rest: "approved · no estimate" });
+  });
+
+  it("AC42 (revised) the release band follows the release the sprint is heading for, stage by stage, and hides when all are live", () => {
+    const st = (environment: string, position: number, status: string | null, isProd = false) => ({ environment, position, isProd, status, at: null });
+    const v24 = { id: "a", version: "v2.4.0", proposals: 3, stages: [st("Dev", 1, "deployed"), st("QA", 2, "testing"), st("Prod", 4, null, true), st("UAT", 3, null)] };
+    const v25 = { id: "b", version: "v2.5.0", proposals: 2, stages: [st("Dev", 1, "deployed"), st("Prod", 2, null, true)] };
+    const b = releaseBand([v25, v24], "v2.4.0 on Oct 30", "on-track")!;
+    expect(b.release.version).toBe("v2.4.0");
+    expect(b.stages.map((s) => s.environment)).toEqual(["Dev", "QA", "UAT", "Prod"]);
+    expect(b.sentence).toBe("v2.4.0, 3 proposals: Dev deployed, QA testing, UAT not yet, Prod not yet");
+    expect(b.health).toBe("On track");
+    expect(releaseBand([v25, v24], null, "at-risk")).toMatchObject({ release: { version: "v2.5.0" }, health: "At risk" });
+    const live = { ...v25, stages: [st("Prod", 1, "deployed", true)] };
+    expect(releaseBand([live], "v2.5.0", "on-track")).toBeNull();
   });
 });

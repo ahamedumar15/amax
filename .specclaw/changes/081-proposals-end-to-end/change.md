@@ -393,24 +393,36 @@ Overview already counts it).
 
 ### Project board (`/delivery/p/<KEY>`)
 
-42. **AC-42** A status band sits between the tabs and the board. It has two parts, each pinned to the project
-    (`get_project`), and each shows only when it has something to show:
-    - **Proposals:** "<n> in flight" (Proposed to Verified). The bar has one segment per phase. Each legend item (phase icon, count, name) links
-      to the project's Proposals tab filtered to that phase.
+42. **AC-42** A status band sits between the tabs and the board. It has two parts, and each shows only when it has
+    something to show:
+    - **Next release:** the release the project names as next, else the newest one not yet live in Prod. It shows the
+      version (a link to its page), its proposal count and the project's health ("On track" / "At risk"), then one step
+      per environment in order, each with a shape and a word: Deployed, Testing, Rolled back, Not yet. It is pinned to
+      the release (`get_release`).
     - **Tasks:** "<done> of <total> done". The bar splits the done tasks into closed by agents and closed by people,
-      then the open ones. The legend reads "Agents <n> · People <n> · Open <n>".
+      then the open ones. The legend reads "Agents <n> · People <n> · Open <n>". Closes that weren't recorded per task
+      (a synced project's counts) show as "Not recorded <n>". It is pinned to the project.
 
-    A screen reader reads each bar as one sentence, for example "5 proposals in flight: 2 proposed, 1 planned, 2 building".
-43. **AC-43** "Needs you", above the band, appears only when there's something for this viewer. It has one folded row
-    per item, newest first, each with its own pin:
-    - **Agent suggestions:** for each open agent suggestion on this project's proposals that the viewer may decide, the
-      row reads "Ready to verify · CON-012 SSO token refresh · suggested 2 h ago" and opens to the agent's detail and
-      a link to the proposal.
-    - **Refused pushes:** for each refused specclaw push, when the viewer may link the repo, the row reads
-      "Push refused · <reason> · 3 h ago". It opens to the push's details.
+    A screen reader reads each part as one sentence, for example "v2.5.0, 2 proposals: Dev deployed, QA testing, UAT not
+    yet, Prod not yet".
+
+    **Revised 2026-11-04, at the client's request ("if the bands and the description give the same info, remove the
+    description; use what best suits the module, not Time's exact UI"):**
+    - The page summary under the title keeps only the sprint's dates and "Released means it reached Prod". The task
+      count, the next release and its health are now the band's.
+    - A "Proposals in flight" part, first drafted here, is dropped: the lanes already count each phase. The release part
+      replaces it, since it's what the board couldn't show.
+    - Repo sync no longer repeats "<n> recent pushes were refused"; the row's chip counts them.
+43. **AC-43** ~~"Needs you" above the band~~ **Dropped 2026-11-04** (the client: "needs you is not needed as repo sync
+    already has those"). It only repeated what the page already shows: refused pushes are Repo sync's rows, and agent
+    suggestions are the cards' "amax suggests" chips, decided on the proposal page. AC-44 takes over its one job,
+    putting a refused push first.
 44. **AC-44** Repo sync folds to one row: "Repo sync · <n> pushes refused · last sync <age>" (or "No repo linked").
-    It opens, by click, Enter or Space, to the table it shows today. It is open by default when a push was refused.
-    The row keeps its pin.
+    It opens, by click, Enter or Space, to the table it shows today, and keeps its pin. Revised 2026-11-04, with
+    AC-43 dropped:
+    - **A push was refused, and the viewer may link the repo:** the row leads the board, above the band, open. This
+      is the page's attention-first item (rule 6), shown once.
+    - **Otherwise:** it stays folded below the board.
 45. **AC-45** The board, its lanes and its cards don't change (Amendment 3), so the 001 mock and its visual test
     still hold.
 
@@ -445,7 +457,7 @@ Overview already counts it).
 52. **AC-52** The live age is shared: `ago()` and `<Since>` move from `modules/time/ui` to `@amax/ui`. Time imports
     them from there and its pages don't change.
 53. **AC-53** Tests:
-    - Unit tests: the band figures and their sentences, the needs-you rows (including permission), the stepper states
+    - Unit tests: the band figures and their sentences, where Repo sync sits (including permission), the stepper states
       (including withdrawn) and the over-estimate figure.
     - The 081 chat-first suite stays green, with the header's AC-22 test updated to AC-46.
     - In the browser: the band's legend opens the filtered Proposals tab; the repo sync row opens with Enter; the
@@ -454,7 +466,7 @@ Overview already counts it).
 
 **Approved 2026-11-04.** **Affected:**
 - **Delivery UI:** `modules/delivery/ui/ProjectPage.tsx`, `ProposalPage.tsx`, `ProposalActions.tsx` and
-  `RepoSyncCard.tsx`, new `ui/BoardBand.tsx`, `ui/NeedsYou.tsx` and `ui/Stepper.tsx`, and `ui/delivery.css`.
+  `RepoSyncCard.tsx`, new `ui/BoardBand.tsx` and `ui/Stepper.tsx`, and `ui/delivery.css`.
 - **Delivery server:** `modules/delivery/server/queries.ts` (tasks closed by agents and by people, and phase dates).
 - **Shared:** `packages/ui` (`ago` and `Since`), and `modules/time/ui` (imports only).
 - **Tests:** unit tests and `apps/web/tests/e2e/delivery.spec.ts`.
@@ -525,8 +537,8 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T20` — Amendment 4 groundwork: `ago` and `Since` move to @amax/ui (Time imports them); the board's band figures (proposals by phase, tasks closed by agents and by people) and the proposal's phase dates read on the server, with unit tests (AC-42, AC-47, AC-52)
   Files: packages/ui/src/age.ts, packages/ui/src/components/Since.tsx, packages/ui/src/index.ts, packages/ui/tests/age.test.ts (moved from modules/time), modules/time/ui/RequestFold.tsx, modules/time/ui/SentBack.tsx, modules/time/ui/Timesheets.tsx, modules/delivery/server/queries.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/ui/band.ts, modules/delivery/tests/board-band-081.test.ts, modules/delivery/tests/proposal-detail.test.ts
   Depends: T19
-- [x] `T21` — Amendment 4, the board: status band, Needs you, folded repo sync (AC-42 to AC-45)
-  Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/NeedsYou.tsx, modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/board-a4.test.ts, modules/delivery/tests/proposal-board-081.test.ts
+- [x] `T21` — Amendment 4, the board: status band, folded repo sync, first when a push was refused (AC-42 to AC-45; AC-43 dropped)
+  Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/RepoSyncCard.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/board-a4.test.ts, modules/delivery/tests/proposal-board-081.test.ts
   Depends: T20
 - [ ] `T22` — Amendment 4, the proposal page: header, stepper, suggestions first, Time band, history timeline, folded done tasks (AC-46 to AC-51)
   Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/Stepper.tsx, modules/delivery/ui/delivery.css

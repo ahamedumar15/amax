@@ -1089,24 +1089,23 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     <details style="padding:10px 28px 18px"><summary style="cursor:pointer"><span class="chip good">✓ 2 done</span></summary><p><b>T1</b> Reminder schedule · <b>T2</b> Email template</p></details></div>
 
   <h2 style="margin-top:32px">Amendment 4: the project board (Contoso Portal)</h2>
-  <p class="muted" style="font-size:13px">These sit between the tabs and the board. The lanes and cards don't change (AC-45).</p>
-  <div class="card pinnable" style="margin-bottom:20px;padding:0">
-    <details open style="padding:14px 22px"><summary style="cursor:pointer;font-weight:700">Needs you · 2</summary>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
-        <details class="pinnable" style="background:var(--sunken,#F1EFF8);border-radius:12px;padding:8px 14px"><summary style="cursor:pointer"><span class="chip agent">✦ Ready to verify</span> CON-012 SSO token refresh <span class="muted">· suggested 2 h ago</span></summary><p style="font-size:13px">All 4 tasks are done (T4 closed by CI, Nov 4). Delivery agent. <a href="#">Open CON-012 to decide</a></p></details>
-        <details class="pinnable" style="background:var(--sunken,#F1EFF8);border-radius:12px;padding:8px 14px"><summary style="cursor:pointer"><span class="chip warn">▲ Push refused</span> change 042 has no project key <span class="muted">· 3 h ago</span></summary><p style="font-size:13px">From Kasun Dias, commit a1b2c3d. Ask amax to relink the repo, or fix the change and push again.</p></details>
-      </div></details></div>
+  <p class="muted" style="font-size:13px">These sit between the tabs and the board. The lanes and cards don't change (AC-45). The page summary drops what the band shows (the task count, the next release and its health).</p>
+  <div class="card pinnable" style="margin-bottom:20px;padding:0"><details open style="padding:14px 22px"><summary style="cursor:pointer"><b>Repo sync</b> · <span class="chip warn">2 pushes refused</span> · <span class="muted">last sync 3 h ago</span></summary>
+    <p class="muted" style="font-size:13px">A refused push puts Repo sync first, open, for whoever may link the repo; for everyone else it stays folded below the board (AC-44). Agent suggestions are the cards' "amax suggests" chips (AC-43 dropped).</p></details></div>
   <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px">
-    <section class="card pinnable"><div class="k" style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Proposals</div>
-      <div class="big">7 <span class="muted" style="font-size:15px;font-weight:500">in flight</span></div>
-      <div role="img" aria-label="7 proposals in flight: 2 proposed, 1 planned, 2 building, 2 verified" style="display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;margin:10px 0"><i style="flex-grow:2;background:#F5B82E"></i><i style="flex-grow:1;background:#3BB5E8"></i><i style="flex-grow:2;background:var(--violet)"></i><i style="flex-grow:2;background:var(--mint)"></i></div>
-      <p style="display:flex;gap:6px;flex-wrap:wrap"><a class="chip" href="#">💡 2 proposed</a><a class="chip" href="#">▦ 1 planned</a><a class="chip agent" href="#">&lt;/&gt; 2 building</a><a class="chip good" href="#">✓ 2 verified</a></p></section>
+    <section class="card pinnable"><div class="k" style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Next release</div>
+      <div class="big">v2.5.0 <span class="muted" style="font-size:15px;font-weight:500">2 proposals</span> <span class="chip good">On track</span></div>
+      <ol aria-label="v2.5.0, 2 proposals: Dev deployed, QA testing, UAT not yet, Prod not yet" style="display:flex;gap:4px;list-style:none;margin:10px 0 0;padding:0;font-size:13px">
+        <li style="flex:1;border-top:6px solid var(--mint);padding-top:8px"><b>✓ Dev</b><br><small class="muted">Deployed</small></li>
+        <li style="flex:1;border-top:6px solid var(--violet);padding-top:8px"><b>● QA</b><br><small class="muted">Testing</small></li>
+        <li style="flex:1;border-top:6px solid var(--line,#E4E1F0);padding-top:8px"><b>○ UAT</b><br><small class="muted">Not yet</small></li>
+        <li style="flex:1;border-top:6px solid var(--line,#E4E1F0);padding-top:8px"><b>○ Prod</b><br><small class="muted">Not yet</small></li>
+      </ol></section>
     <section class="card pinnable"><div class="k" style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Tasks</div>
       <div class="big">9 <span class="muted" style="font-size:15px;font-weight:500">of 16 done</span></div>
       <div role="img" aria-label="9 of 16 tasks done: 6 by agents, 3 by people, 7 open" style="display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken,#F1EFF8);margin:10px 0"><i style="flex-grow:6;background:var(--violet)"></i><i style="flex-grow:3;background:var(--mint)"></i><i style="flex-grow:7;background:var(--line,#E4E1F0)"></i></div>
       <p style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip agent">✦ Agents 6</span><span class="chip good">● People 3</span><span class="chip">○ Open 7</span></p></section>
   </div>
-  <div class="card pinnable" style="margin-bottom:28px;padding:0"><details style="padding:14px 22px"><summary style="cursor:pointer"><b>Repo sync</b> · <span class="chip warn">2 pushes refused</span> · <span class="muted">last sync 3 h ago</span></summary><p class="muted" style="font-size:13px">Opens to today's push table. It's open by default when a push was refused (AC-44).</p></details></div>
 </section>
 <section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
   <h1>Dev starts fresh</h1>
@@ -1578,7 +1577,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
 <section data-change="007-delivery-projects" id="001-amax-foundation-project" data-roles="admin leadership pm engineer finance" data-title="Contoso Portal" data-nav="no" data-parent="001-amax-foundation-projects">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-projects">Projects</a><span>/</span>Contoso Portal</nav>
   <div class="row head">
-    <div><h1>Contoso Portal</h1><p class="lede">Sprint 18 runs Mon Oct 12 to Fri Oct 23. 9 of 16 tasks done, on track for v2.5.0. Released means it reached Prod.</p></div>
+    <div><h1>Contoso Portal</h1><p class="lede">Sprint 18 runs Mon Oct 12 to Fri Oct 23. Released means it reached Prod.</p></div>
     <div class="actions"><select class="select" aria-label="Sprint"><option>Sprint 18</option><option>Sprint 17</option></select><button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New proposal</button></div>
   </div>
   <div class="tabs" role="group" aria-label="Sections"><button type="button" class="btn sm" aria-pressed="true">Board</button><a class="btn sm" href="#001-amax-foundation-proposals">Proposals</a><a class="btn sm" href="#001-amax-foundation-releases">Releases</a><button type="button" class="btn sm" aria-pressed="false">Risks and decisions</button><button type="button" class="btn sm" aria-pressed="false">Team</button><a class="btn sm" href="#001-amax-foundation-financials">Contract</a></div>
