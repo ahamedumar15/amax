@@ -1,6 +1,7 @@
 import { declarePayload, defineModule } from "@amax/core";
 import { chatIntents } from "./chat";
 import { chatSuggestions, pageLabel } from "./chat-suggestions";
+import { pinSuggestions } from "./pin-suggestions";
 import { deliveryFixtures } from "./fixtures";
 import { mcpTools, search } from "./mcp";
 import { listActivity } from "./server/activity";
@@ -78,6 +79,7 @@ export default defineModule({
   viewerScopes: async (tx, user) => ({ managedProjects: await managedProjectIds(tx, user.userId) }),
   chatIntents,
   chatSuggestions,
+  pinSuggestions,
   pageLabel,
   jobs: [],
   // 035: outgoing webhooks send only declared fields (review 058).

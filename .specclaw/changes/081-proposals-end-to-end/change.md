@@ -357,7 +357,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T13` — Amendment 1, e2e, READMEs, audit traceability, CI replica (AC-29)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T9, T11, T12
-- [ ] `T14` — Amendment 2, pin suggestions for proposals (AC-30, AC-31)
+- [x] `T14` — Amendment 2, pin suggestions for proposals (AC-30, AC-31)
   Files: modules/delivery/pin-suggestions.ts, modules/delivery/module.ts, modules/delivery/tests/proposal-suggestions.test.ts
   Depends: T13
 - [ ] `T15` — Amendment 2, the two agent suggestion kinds, their trigger and withdrawals (AC-32 to AC-34)
