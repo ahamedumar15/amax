@@ -126,7 +126,7 @@ test("081 a proposal opens from the list and the board, with its time, release, 
   await signIn(page, "maya@lumenlabs.test", "/delivery/proposals");
   await page.getByRole("navigation", { name: "Phase" }).getByRole("link", { name: "Planned" }).click();
   await expect(page).toHaveURL(/\/delivery\/proposals\/planned$/);
-  await page.getByRole("navigation", { name: "Phase" }).getByRole("link", { name: "All" }).click();
+  await page.getByRole("navigation", { name: "Phase" }).getByRole("link", { name: "All", exact: true }).click();
   // The e2e tenant also holds AMX's imported specs, which fill the first page: search finds the row (AC-16).
   await page.getByLabel(/Search proposals by key or title/).fill("Invoice export");
   await page.keyboard.press("Enter");
@@ -168,5 +168,25 @@ test("081 a proposal opens from the list and the board, with its time, release, 
   await page.getByRole("link", { name: /Filtered to Contoso Portal/ }).click();
   await expect(page).toHaveURL(/\/delivery\/proposals\?q=invoice(\+|%20)export(\+|%20)to(\+|%20)PDF$/);
   await expect(page.getByRole("link", { name: /Filtered to/ })).toHaveCount(0);
+  expect(await axe(page)).toEqual([]);
+});
+
+// 081 amendment 1 AC-22: a hand-made card's Actions fold offers Edit, Add a task, Move and Withdraw (Time's tones: Edit
+// primary, Withdraw a quiet link). Add a task pins the card and fills chat's box; nothing is written until a card is confirmed.
+test("081 AC-22 a board card's actions open from its fold and ask amax with the proposal pinned", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const card = page.locator(".tcard", { hasText: "CON-016" });
+  await card.hover();
+  await card.locator("summary", { hasText: "Actions" }).click();
+  const group = card.getByRole("group", { name: "Ask amax about CON-016" });
+  await expect(group.getByRole("button")).toHaveText(["Edit", "Add a task", "Move", "Withdraw"]);
+  await expect(group.getByRole("button", { name: "Edit CON-016" })).toHaveClass(/primary/);
+  await expect(group.getByRole("button", { name: "Withdraw CON-016" })).toHaveClass(/link/);
+  await group.getByRole("button", { name: "Add a task to CON-016" }).click();
+  await expect(page.getByRole("complementary", { name: "amax chat" }).locator(".pinchip > span").last()).toHaveText("CON-016 Audit trail on approvals");
+  await expect(page.getByLabel("Message amax")).toHaveValue("Add a task to CON-016: ");
+  await page.goto("/delivery/proposals/CON-016");
+  await expect(page.getByRole("heading", { name: "Tasks", exact: true })).toBeVisible();
+  await expect(page.getByText("No tasks yet.")).toBeVisible();
   expect(await axe(page)).toEqual([]);
 });

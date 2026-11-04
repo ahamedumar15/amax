@@ -263,7 +263,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T12` — Amendment 1, time in the proposal's history, by id, for whom may see it (AC-28)
   Files: modules/time/server/log.ts, modules/time/server/correct.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/tests/proposal-detail.test.ts, modules/time/tests/proposal-time.test.ts
   Depends: T10
-- [ ] `T13` — Amendment 1, e2e, READMEs, audit traceability, CI replica (AC-29)
+- [x] `T13` — Amendment 1, e2e, READMEs, audit traceability, CI replica (AC-29)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T9, T11, T12
 
@@ -303,3 +303,21 @@ working tree at T8.
 - Review loop: not run. The specclaw-review MCP server didn't connect this session; run `/specclaw:verify` (or the
   review loop) before the PR.
 
+
+### Amendment 1 verification (2026-11-04)
+
+Linux replica of CI's `checks` job over the working tree at T13:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate` (no new migration) | pass |
+| `pnpm lint` (type checks + graph check) | pass |
+| `pnpm turbo run test --concurrency=2 --continue` | pass, every package, Time `grid-perf` included |
+| `check-module-standard` | pass (22 modules) |
+| `pnpm build` | pass |
+| `e2e` | pass |
+| `e2e:auth` | 84 passed after one fix: the 081 list test's `name: "All"` link matched "Released, all time" too; now `exact: true` |
+
+- New tests: `delivery/tests/proposal-board-081.test.ts` (AC-22 to AC-25); AC-26 and AC-28 in `time/tests/proposal-time.test.ts`; AC-27 in `notifications/tests/delivery-routing.test.ts`; AC-28 in `delivery/tests/proposal-detail.test.ts`; e2e "081 AC-22" in `delivery.spec.ts`.
+- Updated for the new labels: `delivery.test` (`month` in `phaseCounts`), `proposal-metrics` AC15, the legend e2e, and the board Move e2e (opens the Actions fold).
+- Review loop: still not run. The specclaw-review MCP server isn't connected; run it before the PR.

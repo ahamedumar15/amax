@@ -78,3 +78,40 @@ Each finding below was checked against the code. Where a path is cited, it was r
 - [x] Phase 6: filters, metrics, pins, export: Planned filter on both lists; one filter (`scope` in queries.ts) for list, counts and shipped chart: never withdrawn, active projects unless a project is named, project filter, `q` search; Overview proposal counts follow it; 20 a page; CSV = every filtered row; `get_proposal_metrics` backs both card pins
 - [x] Phase 7: notifications and lifecycle consistency: `ownerUserId` added to `proposal.phase_changed` and `task.done` payloads; rules `delivery.proposal-phase` and `delivery.proposal-task-done` tell the owner (not when they or an agent for them acted), linking the proposal page; regression test for Prod release, void, sync and withdrawn-in-release. Open: notifications `time-routing.test` fails here on unrelated it-access/recruitment handlers; compare on main in the Linux CI replica (T8)
 - [x] Phase 8: tests, verification, docs: e2e (search, list, board, reload, axe, not found); READMEs; 007's Proposals mock section updated (agreed); search class fix; Linux CI replica all green (see change.md `## Verify`). The notifications `time-routing` open item is closed: it passes on Linux and only fails on Windows
+- [x] Amendment 1 (2026-11-04): T9 board card actions in Time's style, meters while Proposed, key note, Released labels; T10 Log time asks for the proposal; T11 PMs hear Verified; T12 time in the proposal's history; T13 e2e, READMEs, this matrix
+
+## Traceability: Proposals BRD (Nov 3, 2026) → 081
+
+| BRD | Status | Where (AC · code · test) |
+|---|---|---|
+| FR-01 time entry carries a proposal | Done | AC-1 · `time/0009_entry_proposal.sql`, `time/server/log.ts` · `proposal-time` AC1 |
+| FR-02 commit suggestion keeps the proposal | Done | AC-2 · `time/suggestions.ts` · `proposal-time` AC2 |
+| FR-03 log time against a proposal from chat | Done | AC-1, AC-26 · `time/chat.ts`, `entry-card.ts` · `proposal-time` AC26 |
+| FR-04 approved hours on tab and board | Done | AC-4 · `time/server/proposal-hours.ts` · `proposal-hours` AC4 |
+| FR-05 Delivery reads hours through Time's contract | Done, inverted; **needs sign-off** | AC-4 · Time pushes totals to Delivery's `setProposalHours` (graph rule R5 forbids Delivery → Time) |
+| FR-06 owner defaults to the creator | Done | AC-5 · `delivery/server/owner.ts` · `proposal-owner` AC5 |
+| FR-07 owner from the push's person | Done; **rule needs sign-off** | AC-5 · a sync fills a missing owner, never replaces one; a bare CI credential sets none |
+| FR-08 detail page | Done | AC-6 · `ui/ProposalPage.tsx`, `server/proposal-detail.ts` · `proposal-detail` AC6, e2e 081 |
+| FR-09 rows and search link to it | Done | AC-7 · `proposal-detail` AC7, e2e 081 |
+| FR-10 pinnable, Ask amax | Done | AC-6 · `ProposalPage.tsx` · e2e pins |
+| FR-10a key change explained | Done | AC-24 · `KeyNote` in `ProposalPage.tsx` · `proposal-board-081` AC24 |
+| FR-11 `update_proposal` | Done | AC-9 · `server/lifecycle.ts` · `proposal-lifecycle` AC9 |
+| FR-12 `withdraw_proposal` | Done | AC-10 · `proposal-lifecycle` AC10 |
+| FR-13 `add_proposal_task`, meter instead of "–" | Done | AC-11, AC-23 · `proposal-lifecycle` AC11, `proposal-board-081` AC23 |
+| FR-14 Ask amax actions on card and page | Done | AC-22 · `ui/ProposalActions.tsx`, `ProjectPage.tsx` · `proposal-board-081` AC22, e2e 081 AC-22 |
+| FR-15 Planned filter | Done | AC-15 · `proposal-metrics` AC15 |
+| FR-16 weekly pin opens the weekly metric | Done | AC-17 · `get_proposal_metrics` · `proposal-metrics` AC17 |
+| FR-17 New proposal with the project | Done | AC-13 · `ui/NewProposalButton.tsx`, `chat-suggestions.ts` · `chat-081` AC13 |
+| FR-18 notifications (PM at Verified, owner on phase) | Done | AC-19, AC-27 · `module.ts` rules · `notifications/delivery-routing` AC19, AC27 |
+| FR-19 PM approval before Planned | Decided: none (D1) | AC-20 |
+| FR-20 closed projects out of counts | Done on fixtures; **real-data check open (Q7)** | AC-16 · `proposal-metrics` AC16 |
+| FR-21 Released this month vs all | Done | AC-25 · `proposal-board-081` AC25 |
+| BR-1 to BR-6 | Kept | `proposal-regression` AC18, `releases`, `sync-push`, `chat-first` (no forms), graph check |
+| NFR-1 permissions | Kept; **reuse needs sign-off (Q2)** | AC-12, AC-22 |
+| NFR-2 pins | Done | AC-6, AC-17 |
+| NFR-3 audit incl. time logged | Done | AC-28 · `proposal-detail` AC28, `proposal-time` AC28 |
+| NFR-4 design first | Done | mock 081 section; 007 labels (agreed) |
+| NFR-5 tests; fixtures don't fake hours | Done | fixtures write no hours (T1) |
+| Out of scope in the BRD, built anyway | Search box, 20 a page | AC-16 (from the original 081 brief) |
+
+Open for the product owner: Q2, Q3, Q5, FR-05 and FR-07 sign-off, Q7 (see change.md, Amendment 1).
