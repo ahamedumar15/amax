@@ -70,7 +70,7 @@ export async function logEntry(tx: Tx, a: LogInput, ctx: ServiceContext, sourceR
       on conflict (tenant_id, user_id, source_ref) where source_ref is not null and deleted_at is null do nothing returning id`);
     if (!e) throw Object.assign(new Error("already logged from the same source"), { code: "source_taken", retryable: false });
     const payload: EntryLogged = { entryId: e.id as string, weekId: week.id, userId, projectId: project.id, day, hours: a.hours, billable: a.billable, source: a.source, lockedChange, revision: 1 };
-    return { result: { id: e.id as string, week: keyOf(week), day, hours: a.hours, ...(proposal ? { proposalKey: proposal.key } : {}), ...(twin ? { possibleDuplicateOf: twin.id } : {}) }, resourceId: e.id as string, after: { ...a, day }, events: [{ name: EVENTS.entryLogged, payload }] };
+    return { result: { id: e.id as string, week: keyOf(week), day, hours: a.hours, ...(proposal ? { proposalKey: proposal.key } : {}), ...(twin ? { possibleDuplicateOf: twin.id } : {}) }, resourceId: e.id as string, after: { ...a, day, userId, proposalId: proposal?.id ?? null }, events: [{ name: EVENTS.entryLogged, payload }] };
   }
 }
 

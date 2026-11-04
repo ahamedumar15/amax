@@ -3,6 +3,7 @@ import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
 import { EVENTS, proposalHref } from "../contracts";
+import { day } from "../pins";
 import { byLine } from "./activity";
 import { proposalWhere, type ProposalRow } from "./queries";
 
@@ -36,18 +37,48 @@ const ACTION: Record<string, (a: Record<string, unknown>) => string> = {
 };
 const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 
-async function historyOf(tx: Tx, id: string): Promise<ProposalEvent[]> {
+// 081 AC-28 (NFR-3): time logged against the proposal, from Time's own audit rows (log, correct, delete, and a change
+// request applied by an approver), joined on the proposal's id, never its key, so a rekey keeps them. Time writes the
+// entry's proposal, owner, day and hours into each row's `after`. Lines are per person: a viewer sees one only for their
+// own entry or as an approver of the project's time (Q8); everyone else has the approved total (D2).
+type TimeAfter = { proposalId?: string | null; previousProposalId?: string | null; userId?: string; day?: string; hours?: number; deleted?: boolean };
+const hrs = (n: unknown) => `${Number(Number(n).toFixed(2))} h`;
+
+async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string) {
+  const rows = await tx.execute(sql`select occurred_at as at, actor, on_behalf_of, after from core.audit_event
+    where resource in ('time.entry', 'time.change_request') and (after->>'proposalId' = ${id} or after->>'previousProposalId' = ${id})
+    order by occurred_at desc, seq desc limit 100`);
+  const approver = can(v, "time:approve", { projectId });
+  return rows.filter((r) => approver || (r.after as TimeAfter).userId === v.userId);
+}
+
+function timeText(a: TimeAfter, id: string, owner: string) {
+  const when = a.day ? ` for ${day(`${a.day}T12:00:00Z`)}` : "";
+  if (a.deleted) return `Removed ${owner}'s ${hrs(a.hours)}${when}`;
+  if (!("previousProposalId" in a)) return `${owner} logged ${hrs(a.hours)}${when}`;
+  if (a.proposalId !== id) return `Moved ${owner}'s ${hrs(a.hours)}${when} off this proposal`;
+  if (a.previousProposalId !== id) return `Put ${owner}'s ${hrs(a.hours)}${when} on this proposal`;
+  return `Corrected ${owner}'s entry${when} to ${hrs(a.hours)}`;
+}
+
+async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string): Promise<ProposalEvent[]> {
   const audits = await tx.execute(sql`select occurred_at as at, actor, on_behalf_of, action, after from core.audit_event
     where resource in ('delivery.proposal', 'delivery.task') and (resource_id = ${id} or (resource = 'delivery.task' and after->>'proposalId' = ${id})) order by occurred_at desc, seq desc limit 100`);
   const moves = await tx.execute(sql`select created_at as at, payload from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'proposalId' = ${id} order by created_at desc limit 100`);
+  const time = await timeRows(tx, id, v, projectId);
   const ids = new Set<string>();
   const add = (s: unknown) => { for (const m of String(s ?? "").matchAll(/(?:user|sp):([0-9a-f-]{36})/g)) ids.add(m[1]); };
-  for (const a of audits) { add(a.actor); add(a.on_behalf_of); }
+  for (const a of [...audits, ...time]) { add(a.actor); add(a.on_behalf_of); }
+  for (const t of time) add(`user:${(t.after as TimeAfter).userId ?? ""}`);
   for (const m of moves) add((m.payload as { by: string }).by);
   const names = new Map((await tx.execute(sql`select id::text as id, name from auth.user where id::text in (${sql.join([...ids, ""].map((x) => sql`${x}`), sql`, `)})
     union all select id::text, name from auth.service_principal where id::text in (${sql.join([...ids, ""].map((x) => sql`${x}`), sql`, `)})`)).map((r) => [r.id as string, r.name as string]));
   const lines: ProposalEvent[] = [
     ...audits.filter((a) => ACTION[a.action as string]).map((a) => ({ at: iso(a.at)!, text: ACTION[a.action as string]((a.after as Record<string, unknown>) ?? {}), by: who(a.actor as string, a.on_behalf_of as string | null, names) })),
+    ...time.map((t) => {
+      const after = t.after as TimeAfter;
+      return { at: iso(t.at)!, text: timeText(after, id, names.get(after.userId ?? "") ?? "Someone"), by: who(t.actor as string, t.on_behalf_of as string | null, names) };
+    }),
     ...moves.map((m) => {
       const p = m.payload as { from: string; to: string; by: string };
       const [actor, forUser] = p.by.split(" for ");
@@ -73,6 +104,6 @@ export const proposalDetail = (v: Viewer, ref: { proposalId?: string; key?: stri
         where e.project_id = ${p.project_id} order by e.position`)).map((e) => ({ environment: e.name as string, isProd: Boolean(e.is_prod), status: (e.status as string | null) ?? null, at: iso(e.at) })) : [];
     return { ...row, href: proposalHref(row.key), project: { id: p.project_id as string, key: p.key as string, name: p.name as string, status: p.status as string },
       withdrawnAt: iso(p.withdrawn_at), withdrawReason: (p.withdraw_reason as string | null) ?? null, releasedAt: iso(p.released_at), sourceRef: (p.source_ref as string | null) ?? null,
-      tasks, stages, history: await historyOf(tx, row.id) };
+      tasks, stages, history: await historyOf(tx, row.id, v, p.project_id as string) };
   });
 };

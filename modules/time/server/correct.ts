@@ -53,7 +53,7 @@ export async function writeCorrection(tx: Tx, ctx: ServiceContext, { week, entry
   const before = { hours: entry.hours, billable: entry.billable, projectId: entry.project_id };
   const payload: EntryCorrected = { entryId: entry.id, weekId: week.id, userId: entry.user_id, projectId: next.projectId, day: entry.day, hours: next.hours, billable: next.billable, revision: Number(revision), before, lockedChange, week: keyOf(week), dayLabel: dayLabel(entry.day), ...who };
   return { result: { id: entry.id, week: keyOf(week), day: entry.day, hours: next.hours, revision: Number(revision) }, resourceId: entry.id,
-    before: { ...before, note: entry.note, proposalId: entry.proposal_id }, after: { ...next, reason: who.reason }, events: [{ name: EVENTS.entryCorrected, payload }] };
+    before: { ...before, note: entry.note, proposalId: entry.proposal_id, userId: entry.user_id, day: entry.day }, after: { ...next, reason: who.reason, userId: entry.user_id, day: entry.day, previousProposalId: entry.proposal_id }, events: [{ name: EVENTS.entryCorrected, payload }] };
 }
 
 /** The soft delete itself, shared by delete_time_entry and an applied change request. */
@@ -61,7 +61,7 @@ export async function writeDelete(tx: Tx, ctx: ServiceContext, { week, entry, lo
   const [{ revision }] = await tx.execute(sql`update time.entry set deleted_at = now(), deleted_by = ${by(ctx)}, revision = revision + 1 where id = ${entry.id} returning revision`);
   const payload: EntryDeleted = { entryId: entry.id, weekId: week.id, userId: entry.user_id, projectId: entry.project_id, day: entry.day, hours: entry.hours, revision: Number(revision), lockedChange, week: keyOf(week), dayLabel: dayLabel(entry.day), ...who };
   return { result: { id: entry.id, week: keyOf(week), day: entry.day, deleted: true }, resourceId: entry.id,
-    before: { hours: entry.hours, billable: entry.billable, projectId: entry.project_id, day: entry.day }, after: { deleted: true, reason: who.reason }, events: [{ name: EVENTS.entryDeleted, payload }] };
+    before: { hours: entry.hours, billable: entry.billable, projectId: entry.project_id, day: entry.day, proposalId: entry.proposal_id, userId: entry.user_id }, after: { deleted: true, reason: who.reason, hours: entry.hours, day: entry.day, userId: entry.user_id, proposalId: entry.proposal_id }, events: [{ name: EVENTS.entryDeleted, payload }] };
 }
 
 /** 071 AC-11: the owner's own change keeps to the date window; a PM or Admin fix with a reason is exempt. */

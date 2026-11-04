@@ -13,7 +13,7 @@ import { chatIntents } from "../chat";
 import { proposeLog } from "../server/entry-card";
 import { EVENTS as DELIVERY, type CommitTime } from "@amax/delivery/contracts";
 import { ctxFor } from "../server/context";
-import { correctEntry } from "../server/correct";
+import { correctEntry, deleteEntry } from "../server/correct";
 import { logTime } from "../server/log";
 import { commitDraft, commitTimeHandler } from "../suggestions";
 import { installedModules } from "./installed";
@@ -85,4 +85,17 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     expect(without.card.map((l) => l.label)).not.toContain("Proposal");
     expect(await proposalOf(without.id)).toBeNull();
   }, 60_000);
+
+  it("AC28 Time's audit rows for an entry carry its proposal id, owner, day and hours, so Delivery's history can join on the id", async () => {
+    const nimal = ctxFor(await db.as("nimal"));
+    const [p14] = await db.q(sql`select id from delivery.proposal where key = 'CON-014'`);
+    const e = await logTime(nimal, { projectKey: "CON", proposalKey: "CON-014", day: "2026-10-29", hours: 2 });
+    await correctEntry(nimal, { entryId: e.id, hours: 1.5 });
+    await deleteEntry(nimal, { entryId: e.id });
+    const rows = await db.q(sql`select action, after from core.audit_event where resource = 'time.entry' and resource_id = ${e.id} order by seq`);
+    const who = (await db.as("nimal")).userId;
+    expect(rows.map((r) => [r.action, (r.after as Record<string, unknown>).proposalId, (r.after as Record<string, unknown>).userId, (r.after as Record<string, unknown>).day, Number((r.after as Record<string, unknown>).hours)])).toEqual([
+      ["time.entry.log", p14.id, who, "2026-10-29", 2], ["time.entry.correct", p14.id, who, "2026-10-29", 1.5], ["time.entry.delete", p14.id, who, "2026-10-29", 1.5]]);
+    expect((rows[1].after as Record<string, unknown>).previousProposalId).toBe(p14.id);
+  });
 });

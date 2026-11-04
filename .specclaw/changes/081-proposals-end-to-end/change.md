@@ -172,9 +172,10 @@ database migration and no new module edge. Every earlier AC, decision and busine
     gets one (that is a test). The owner rules from AC-19 are unchanged.
 28. **AC-28 (NFR-3)** The proposal's history shows time logged against it, from Time's existing audit rows (no new
     audit write): "<person> logged 2 h for Oct 19", "corrected to 2.5 h", "removed 2 h".
-    - **Join on the id, not the key.** From this amendment on, Time writes the entry's `proposalId` into the audit
-      `after` (log, correct) and `before` (delete, and a correction that moves or clears it). The history joins on that
-      id, so a rekey doesn't lose the lines.
+    - **Join on the id, not the key.** From this amendment on, Time writes the entry's `proposalId`, owner (`userId`),
+      `day` and `hours` into every audit row's `after`: log, correct (plus `previousProposalId`), delete, and a change
+      request an approver applies (audited as `time.change_request`). The history joins on that id, so a rekey doesn't
+      lose the lines. (Amended in T12: all in `after`, so an applied request carries them too.)
     - **Who sees the lines (Q8, decided 2026-11-04).** Time lines are per person, so a viewer sees one only when it is their own entry, or when
       they hold `time:approve` on the proposal's project. Everyone else sees the proposal's approved total only (D2),
       with no per-entry lines.
@@ -259,7 +260,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T11` — Amendment 1, PM hears of Verified (AC-27)
   Files: modules/delivery/module.ts, modules/notifications/tests/delivery-routing.test.ts
   Depends: T8
-- [ ] `T12` — Amendment 1, time in the proposal's history, by id, for whom may see it (AC-28)
+- [x] `T12` — Amendment 1, time in the proposal's history, by id, for whom may see it (AC-28)
   Files: modules/time/server/log.ts, modules/time/server/correct.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/tests/proposal-detail.test.ts, modules/time/tests/proposal-time.test.ts
   Depends: T10
 - [ ] `T13` — Amendment 1, e2e, READMEs, audit traceability, CI replica (AC-29)
