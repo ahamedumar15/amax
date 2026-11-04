@@ -40,3 +40,40 @@ export async function createProposalCard(v: Viewer, a: Create): Promise<ToolCard
     ],
   };
 }
+
+// 081 amendment 2: the cards for the writes a pinned proposal suggests (move, add a task, owner), so the card says what
+// will happen and its receipt says what did ("Moved CON-016 to Planned"), not chat's generic "Done: CON-016 added".
+const PHASE_LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
+const proposalNow = (v: Viewer, key: string) => withTenant(getRuntime().db, v.tenantId, async (tx) =>
+  (await tx.execute(sql`select key, title, phase, owner_name, (select coalesce(max(substring(ref from 2)::int), 0) + 1 from delivery.task t where t.proposal_id = p.id) as next
+    from delivery.proposal p where key = ${key}`))[0]);
+
+export async function moveCard(v: Viewer, a: { key: string; to: string }): Promise<ToolCard> {
+  const p = await proposalNow(v, a.key);
+  const to = PHASE_LABEL[a.to] ?? a.to, from = p ? PHASE_LABEL[p.phase as string] ?? String(p.phase) : "–";
+  return { title: `Move ${a.key} to ${to}`, lines: [{ label: "Proposal", value: p ? `${a.key} ${p.title as string}` : a.key }, { label: "From", value: from }, { label: "To", value: to }],
+    look: { kind: "Move proposal", subject: p ? `${a.key} ${p.title as string}` : a.key, detail: `${from} → ${to}`, confirm: `Move to ${to}`, done: `Moved ${a.key} to ${to}` } };
+}
+
+export async function taskCard(v: Viewer, a: { key: string; title: string }): Promise<ToolCard> {
+  const p = await proposalNow(v, a.key);
+  const ref = p ? `T${Number(p.next)}` : "a new task";
+  return { title: `Add ${ref} to ${a.key}: ${a.title}`, lines: [{ label: "Proposal", value: p ? `${a.key} ${p.title as string}` : a.key }, { label: "Task", value: `${ref} ${a.title}` }],
+    look: { kind: "Add a task", subject: a.title, detail: p ? `${a.key} ${p.title as string}` : a.key, confirm: "Add the task", done: `Added ${ref} to ${a.key}` } };
+}
+
+type Edit = { key: string; title?: string; description?: string | null; estimateHours?: number | null; ownerUserId?: string };
+export async function updateCard(v: Viewer, a: Edit): Promise<ToolCard> {
+  const p = await proposalNow(v, a.key);
+  const owner = a.ownerUserId ? await withTenant(getRuntime().db, v.tenantId, async (tx) => (await tx.execute(sql`select name from auth.user where id::text = ${a.ownerUserId!}`))[0]?.name as string | undefined) : undefined;
+  const who = a.ownerUserId ? (a.ownerUserId === v.userId ? `you (${owner ?? "you"})` : owner ?? "an unknown person") : undefined;
+  const lines = [
+    ...(a.title !== undefined ? [{ label: "Title", value: `${(p?.title as string | undefined) ?? "–"} → ${a.title}` }] : []),
+    ...(a.description !== undefined ? [{ label: "Description", value: a.description ?? "none" }] : []),
+    ...(a.estimateHours !== undefined ? [{ label: "Estimate", value: a.estimateHours === null ? "none" : `${a.estimateHours} h` }] : []),
+    ...(who ? [{ label: "Owner", value: `${(p?.owner_name as string | null) ?? "Unassigned"} → ${who}` }] : []),
+  ];
+  const only = who && lines.length === 1;
+  return { title: only ? `Make ${owner ?? "them"} the owner of ${a.key}` : `Change ${a.key}`, lines,
+    look: { kind: only ? "Change owner" : "Edit proposal", subject: p ? `${a.key} ${p.title as string}` : a.key, confirm: only ? "Change owner" : "Save", done: only ? `${owner ?? "They"} now own${owner ? "s" : ""} ${a.key}` : `Updated ${a.key}` } };
+}

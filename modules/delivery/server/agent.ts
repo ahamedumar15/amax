@@ -33,6 +33,18 @@ async function suggest(tenantId: string, p: Record<string, unknown>, s: { kind: 
   });
 }
 
+/** Whether "Ready to verify" still fits: a hand-made proposal, still work, in Building, with every task done. */
+const readyNow = (p: Record<string, unknown>) => open(p) && p.source === null && p.phase === "building" && Number(p.tasks_total) > 0 && Number(p.tasks_done) === Number(p.tasks_total);
+
+/** Takes back this proposal's open suggestions that no longer fit what it is now. */
+async function tidy(tx: Tx, tenantId: string, proposalId: string) {
+  const p = await proposalOf(tx, proposalId);
+  if (!p) return;
+  const now = !open(p) ? (p.phase === "released" ? "released" : "withdrawn") : String(p.phase);
+  if (!readyNow(p)) await withdraw(tenantId, [readyToVerify.kind], proposalId, `${p.key as string} is ${now} now`);
+  if (!open(p)) await withdraw(tenantId, [suggestedOwner.kind], proposalId, `${p.key as string} was ${now}`);
+}
+
 const withdraw = (tenantId: string, kinds: string[], proposalId: string, reason: string) =>
   Promise.all(kinds.map((kind) => withdrawSuggestions(contextFor.job(tenantId, AGENT), { kind, targetType: TARGET, targetIds: [proposalId], reason })));
 
@@ -45,9 +57,9 @@ export const proposalAgent: EventHandlerDef[] = [
       const p = await proposalOf(tx, e.proposalId);
       if (!p || !open(p)) return;
       const total = Number(p.tasks_total);
-      if (p.source === null && p.phase === "building" && total > 0 && Number(p.tasks_done) === total) {
+      if (readyNow(p)) {
         await suggest(tenantId, p, { kind: readyToVerify.kind, title: `Move ${p.key as string} to Verified`, confidence: 0.9,
-          detail: `All ${total} task${total === 1 ? "" : "s"} of ${p.key as string} are done; ${e.task} was the last.`, proposed: { proposalId: p.id, key: p.key } });
+          detail: total === 1 ? `The only task of ${p.key as string}, ${e.task}, is done.` : `All ${total} tasks of ${p.key as string} are done; ${e.task} was the last.`, proposed: { proposalId: p.id, key: p.key } });
       }
       const person = personIn(e.by);
       if (!p.owner_user_id && person) {
@@ -57,21 +69,9 @@ export const proposalAgent: EventHandlerDef[] = [
       }
     },
   },
-  {
-    id: "delivery.agent.phase",
-    event: EVENTS.proposalPhaseChanged,
-    async handle({ tenantId, event }) {
-      const e = event.payload as ProposalPhaseChanged;
-      if (e.to !== "building") await withdraw(tenantId, [readyToVerify.kind], e.proposalId, `${e.key} moved to ${e.to}`);
-      if (e.to === "released") await withdraw(tenantId, [suggestedOwner.kind], e.proposalId, `${e.key} was released`);
-    },
-  },
-  {
-    id: "delivery.agent.withdrawn",
-    event: EVENTS.proposalWithdrawn,
-    async handle({ tenantId, event }) {
-      const e = event.payload as ProposalWithdrawn;
-      await withdraw(tenantId, [readyToVerify.kind, suggestedOwner.kind], e.proposalId, `${e.key} was withdrawn`);
-    },
-  },
+  // The outbox doesn't promise order (a retry, or one tick delivering several events), so what to take back is decided by
+  // the proposal as it is now, never by what an event says it became: an older "moved to Planned" delivered after the
+  // last task closed must not withdraw a suggestion that still fits (081 amendment 2 walk-through, 2026-11-04).
+  { id: "delivery.agent.phase", event: EVENTS.proposalPhaseChanged, handle: ({ tx, tenantId, event }) => tidy(tx, tenantId, (event.payload as ProposalPhaseChanged).proposalId) },
+  { id: "delivery.agent.withdrawn", event: EVENTS.proposalWithdrawn, handle: ({ tx, tenantId, event }) => tidy(tx, tenantId, (event.payload as ProposalWithdrawn).proposalId) },
 ];

@@ -41,3 +41,22 @@ describe("057 the scripted model matches only the person's own words, not pinned
     expect(r.toolCalls.map((c) => c.name)).toEqual([tool]);
   });
 });
+
+// 081 amendment 2: the e2e chat model takes a proposal's pin suggestions and an agent suggestion's decision as chat
+// writes, by the ids in the prompt, so the browser tests confirm both flows through to the write.
+describe("081 scripted proposal suggestions and suggestion decisions", () => {
+  it.each([
+    ["move a hand-made -H key", "Move CON-H004 to verified", [["move_proposal", { key: "CON-H004", to: "verified" }]]],
+    ["add a task", "Add a task to CON-017: Draft the template", [["add_proposal_task", { key: "CON-017", title: "Draft the template" }]]],
+    ["make me the owner", `Make me (user id ${A}) the owner of CON-016`, [["update_proposal", { key: "CON-016", ownerUserId: A }]]],
+    ["accept", `Accept the suggestion "Move CON-H004 to Verified" (suggestion id ${B})`, [["accept_agent_suggestion", { id: B }]]],
+    ["dismiss", `Dismiss the suggestion "Make Maya Fernando the owner of CON-016" (suggestion id ${C})`, [["dismiss_agent_suggestion", { id: C }]]],
+    ["undo", `Undo the suggestion "Move CON-H004 to Verified" (suggestion id ${B})`, [["undo_agent_suggestion", { id: B }]]],
+  ])("%s", (_n, ask, want) => expect(calls(ask)).toEqual(want));
+
+  it.each([
+    ["an empty task title", "Add a task to CON-017: "],
+    ["a suggestion with no id", `Accept the suggestion "Move CON-H004 to Verified"`],
+    ["owner without an id", "Make me the owner of CON-016"],
+  ])("does nothing for %s", (_n, ask) => expect(scriptedWrite(ask) ?? []).toEqual([]));
+});

@@ -1,30 +1,30 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-04 03:54 UTC
+**Last Updated:** 2026-11-04 05:40 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
-- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed | PR #96 merged
-- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed | PR #97 merged
-- 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed | PR #98 merged
-- 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed | PR #102 closed
-- 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #103 closed
-- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #104 closed
-- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed | PR #105 merged
+- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed
+- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed
+- 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed
+- 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed
+- 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed
+- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed
+- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed
 - 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
-- 🔀 **074-fork-pr-review-gate** — pr raised | PR #108 merged
-- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed | PR #109 merged
+- 🔀 **074-fork-pr-review-gate** — pr raised
+- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed
 - 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
 - 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed
 - 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed
 - 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
 - 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed
 - 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed
-- 📝 **081-proposals-end-to-end** — tasks done | 13/13 tasks (100%) | 0 failed
+- 📝 **081-proposals-end-to-end** — tasks done | 17/17 tasks (100%) | 0 failed
 - 🔍 **082-dev-fresh-cache** — verify complete | 1/1 tasks (100%) | 0 failed
 
 ## Pending Proposals

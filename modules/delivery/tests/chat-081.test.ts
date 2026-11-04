@@ -4,7 +4,7 @@ import type { Viewer } from "@amax/auth";
 import manifest from "../module";
 import { chatSuggestions } from "../chat-suggestions";
 import { ctxFor } from "../server/context";
-import { createProposalCard, proposeCreate } from "../server/proposal-card";
+import { createProposalCard, moveCard, proposeCreate, taskCard, updateCard } from "../server/proposal-card";
 import { syncProposal } from "../server/services";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
@@ -49,5 +49,15 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     await db.t.owner`update delivery.project set status = 'closed' where key = 'HRI'`;
     await expect(proposeCreate(maya, { projectKey: "HRI", title: "x" })).rejects.toThrow(/closed/);
     await expect(proposeCreate(maya, { projectKey: "CON", title: "x" })).resolves.toBeUndefined();
+  });
+
+  it("AC30 the cards for a pinned proposal's suggestions say what will happen, and their receipts what did", async () => {
+    expect(await moveCard(maya, { key: "CON-017", to: "planned" })).toMatchObject({ title: "Move CON-017 to Planned",
+      lines: [{ label: "Proposal", value: "CON-017 CSV import for clients" }, { label: "From", value: "Proposed" }, { label: "To", value: "Planned" }],
+      look: { confirm: "Move to Planned", done: "Moved CON-017 to Planned" } });
+    expect(await taskCard(maya, { key: "CON-017", title: "Draft the importer" })).toMatchObject({ title: "Add T1 to CON-017: Draft the importer", look: { confirm: "Add the task", done: "Added T1 to CON-017" } });
+    const owner = await updateCard(maya, { key: "CON-017", ownerUserId: maya.userId });
+    expect(owner).toMatchObject({ title: "Make Maya Fernando the owner of CON-017", lines: [{ label: "Owner", value: "Nimal Silva → you (Maya Fernando)" }], look: { confirm: "Change owner", done: "Maya Fernando now owns CON-017" } });
+    expect((await updateCard(maya, { key: "CON-017", title: "CSV import", estimateHours: 6 })).look).toMatchObject({ confirm: "Save", done: "Updated CON-017" });
   });
 });

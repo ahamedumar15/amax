@@ -53,13 +53,13 @@ function Card({ p, may, suggested }: { p: ProposalRow; may: (permission: string)
           : p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={p.ownerName ?? "Unassigned"} />}
         <span>
           {p.phase === "proposed" && `${p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`}${p.tasksTotal ? ` · ${p.tasksDone} of ${p.tasksTotal} tasks` : ""}`}
-          {(p.phase === "planned" || p.phase === "building") && `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}`}
+          {(p.phase === "planned" || p.phase === "building") && (p.tasksTotal ? `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}` : `No tasks yet${p.phase === "building" ? `, ${p.hours} h` : ""}`)}
           {p.phase === "verified" && p.source !== "specclaw" && <span className="chip">{p.release ?? "No release"}{p.shippedTo ? `, in ${p.shippedTo}` : ""}</span>}
           {p.phase === "verified" && p.source === "specclaw" && `${p.tasksDone} of ${p.tasksTotal} tasks`}
           {p.phase === "released" && <span className="chip good">In Prod</span>}
         </span>
       </div>
-      {suggested && <div className="foot" style={{ marginTop: 8 }}><a className="chip agent" href={proposalHref(p.key)} aria-label={`amax suggests something for ${p.key}: open it`}>✦ amax suggests</a></div>}
+      {suggested && <div className="foot" style={{ marginTop: 8 }}><a className="chip agent" href={proposalHref(p.key)} aria-label={`amax suggests something for ${p.key}: open it`}>amax suggests</a></div>}
       {p.source === "specclaw" && <SpecFacts p={p} />}
       {proposalActions(p, may, "board").length > 0 && (
         <details className="cardmenu"><summary className="btn sm" aria-label={`Actions for ${p.key}`}>Actions<span className="chev" aria-hidden="true" /></summary>

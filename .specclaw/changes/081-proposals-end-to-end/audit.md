@@ -78,6 +78,7 @@ Each finding below was checked against the code. Where a path is cited, it was r
 - [x] Phase 6: filters, metrics, pins, export: Planned filter on both lists; one filter (`scope` in queries.ts) for list, counts and shipped chart: never withdrawn, active projects unless a project is named, project filter, `q` search; Overview proposal counts follow it; 20 a page; CSV = every filtered row; `get_proposal_metrics` backs both card pins
 - [x] Phase 7: notifications and lifecycle consistency: `ownerUserId` added to `proposal.phase_changed` and `task.done` payloads; rules `delivery.proposal-phase` and `delivery.proposal-task-done` tell the owner (not when they or an agent for them acted), linking the proposal page; regression test for Prod release, void, sync and withdrawn-in-release. Open: notifications `time-routing.test` fails here on unrelated it-access/recruitment handlers; compare on main in the Linux CI replica (T8)
 - [x] Phase 8: tests, verification, docs: e2e (search, list, board, reload, axe, not found); READMEs; 007's Proposals mock section updated (agreed); search class fix; Linux CI replica all green (see change.md `## Verify`). The notifications `time-routing` open item is closed: it passes on Linux and only fails on Windows
+- [x] Amendment 2 (2026-11-04): T14 pin suggestions; T15 the Delivery agent's two kinds; T16 page card and board chip; T17 scripted e2e rules, browser tests, hand walk-through, CI replica
 - [x] Amendment 1 (2026-11-04): T9 board card actions in Time's style, meters while Proposed, key note, Released labels; T10 Log time asks for the proposal; T11 PMs hear Verified; T12 time in the proposal's history; T13 e2e, READMEs, this matrix
 
 ## Traceability: Proposals BRD (Nov 3, 2026) → 081
@@ -106,6 +107,8 @@ Each finding below was checked against the code. Where a path is cited, it was r
 | FR-19 PM approval before Planned | Decided: none (D1) | AC-20 |
 | FR-20 closed projects out of counts | Done on fixtures; **real-data check open (Q7)** | AC-16 · `proposal-metrics` AC16 |
 | FR-21 Released this month vs all | Done | AC-25 · `proposal-board-081` AC25 |
+| Agent-first: pin suggestions (client ask, Amendment 2) | Done | AC-30, AC-31 · `pin-suggestions.ts` · `proposal-suggestions`, e2e "081 AC-37 pin" |
+| Agent-first: agent suggestions (client ask, Amendment 2) | Done | AC-32 to AC-35 · `server/agent.ts`, `server/proposal-kinds.ts`, `ui/ProposalSuggestions.tsx` · `proposal-agent`, e2e "081 AC-37 agent" |
 | BR-1 to BR-6 | Kept | `proposal-regression` AC18, `releases`, `sync-push`, `chat-first` (no forms), graph check |
 | NFR-1 permissions | Kept; **reuse needs sign-off (Q2)** | AC-12, AC-22 |
 | NFR-2 pins | Done | AC-6, AC-17 |

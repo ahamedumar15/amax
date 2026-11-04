@@ -115,6 +115,19 @@ describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person 
     expect((await suggestions(quiet, "delivery.proposal-verify"))[0].status).toBe("open");
   });
 
+  it("AC34 out of order: an older phase event delivered after the last task closed doesn't take back a suggestion that still fits", async () => {
+    await runAgent();
+    const key = await building("Out of order", 1);
+    await markTaskDone(ctxFor(maya), { key, task: "T1" });
+    // One tick can hand the agent these newest first (found in the 081 walk-through): the task closed, then the moves.
+    const events = await db.q(sql`select id, name, payload from core.event where name like 'delivery.%' and payload->>'key' = ${key} order by created_at desc, id desc`);
+    for (const e of events) for (const h of proposalAgent.filter((x) => x.event === e.name)) {
+      await withTenant(db.app, T, (tx) => h.handle({ tx, tenantId: T, event: { id: e.id as string, name: e.name as string, payload: e.payload as Record<string, unknown> } }));
+    }
+    seen += events.length;
+    expect((await suggestions(key, "delivery.proposal-verify")).map((s) => s.status)).toEqual(["open"]);
+  });
+
   it("AC35 the proposal page leads with the agent's suggestion and the board card flags it, for those who may decide; accepted, it offers undo", async () => {
     const html = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
     const key = await building("Reminders", 1);

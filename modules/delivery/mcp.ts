@@ -13,7 +13,7 @@ import { PushInput, pushSpecclaw } from "./server/push";
 import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
-import { createProposalCard, proposeCreate } from "./server/proposal-card";
+import { createProposalCard, moveCard, proposeCreate, taskCard, updateCard } from "./server/proposal-card";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -57,14 +57,14 @@ export const mcpTools: McpToolDef[] = [
   // 081 AC-9 to AC-11: a hand-made proposal's lifecycle. A spec proposal changes in its repo; only its owner is set here.
   tool({ name: "update_proposal", description: "Edit a proposal made by hand that isn't released or withdrawn: its title, description, estimate (null clears it) or owner (an active person's ownerUserId). A spec proposal's content comes from its repo; only its owner can be changed here.", scope: "write",
     permission: "delivery:proposal:create", input: z.object({ key: z.string(), title: z.string().optional(), description: z.string().nullable().optional(), estimateHours: z.number().nonnegative().nullable().optional(), ownerUserId: z.string().uuid().optional() }),
-    service: updateProposal, run: (v, a, s = "mcp") => updateProposal(ctxFor(v, s), a) }),
+    card: updateCard, service: updateProposal, run: (v, a, s = "mcp") => updateProposal(ctxFor(v, s), a) }),
   tool({ name: "withdraw_proposal", description: "Withdraw a proposal made by hand that isn't released, with a reason. Nothing is deleted: it leaves lists, counts, the board and its release, and its page and history stay. A spec proposal is withdrawn by removing it from its repo.", scope: "write", destructive: true,
     permission: "delivery:proposal:move", input: z.object({ key: z.string(), reason: z.string() }), service: withdrawProposal, run: (v, a, s = "mcp") => withdrawProposal(ctxFor(v, s), a) }),
   tool({ name: "add_proposal_task", description: "Add the next task (T1, T2, …) to a proposal made by hand that isn't released or withdrawn. Close it later with mark_task_done.", scope: "write",
-    permission: "delivery:task:done", input: z.object({ key: z.string(), title: z.string() }), service: addProposalTask, run: (v, a, s = "mcp") => addProposalTask(ctxFor(v, s), a) }),
+    permission: "delivery:task:done", input: z.object({ key: z.string(), title: z.string() }), card: taskCard, service: addProposalTask, run: (v, a, s = "mcp") => addProposalTask(ctxFor(v, s), a) }),
   tool({ name: "move_proposal", description: "Move a proposal on the board (proposed, planned, building, verified). Released only comes from a Prod deployment.", scope: "write",
     permission: "delivery:proposal:move", input: z.object({ key: z.string(), to: z.enum(["proposed", "planned", "building", "verified"]) }),
-    service: moveProposal, run: (v, a, s = "mcp") => moveProposal(ctxFor(v, s), a) }),
+    card: moveCard, service: moveProposal, run: (v, a, s = "mcp") => moveProposal(ctxFor(v, s), a) }),
   tool({ name: "create_release", description: "Create a release (version tag) for a project, optionally with proposal keys.", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()).optional() }),
     service: createRelease, run: (v, a, s = "mcp") => createRelease(ctxFor(v, s), { ...a, proposalKeys: a.proposalKeys ?? [] }) }),

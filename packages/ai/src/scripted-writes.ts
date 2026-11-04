@@ -23,7 +23,11 @@ const RULES: Rule[] = [
   [new RegExp(`^log time on ${WEEK}: ([\\d.]+) h(?:ours)? on ${KEY} on (\\d{4}-\\d{2}-\\d{2})`, "i"), (m) => [["log_time", { hours: Number(m[2]), projectKey: m[3], day: m[4] }]]],
   [/^copy (.+?) allocations from .*?\((\d{4}-\d{2})\) to the next month/i, (m) => [["copy_allocations_to_next_month", { team: m[1], from: m[2] }]]],
   [new RegExp(`^record a deployment of ${KEY} (\\S+) to (\\S+)\\s*$`, "i"), (m) => [["record_deployment", { projectKey: m[1], version: m[2], environment: m[3] }]]],
-  [new RegExp(`^move (${KEY.slice(1, -1)}-\\d+) to (proposed|planned|building|verified)\\s*$`, "i"), (m) => [["move_proposal", { key: m[1], to: m[2].toLowerCase() }]]],
+  [new RegExp(`^move (${KEY.slice(1, -1)}-H?\\d+) to (proposed|planned|building|verified)\\s*$`, "i"), (m) => [["move_proposal", { key: m[1], to: m[2].toLowerCase() }]]],
+  // 081 amendment 2: a proposal's pin suggestions, and deciding an agent suggestion from where it is shown.
+  [new RegExp(`^add a task to (${KEY.slice(1, -1)}-H?\\d+): (.+)$`, "i"), (m) => [["add_proposal_task", { key: m[1], title: m[2].trim() }]]],
+  [new RegExp(`^make me \\(user id ${UUID}\\) the owner of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["update_proposal", { key: m[2], ownerUserId: m[1] }]]],
+  [new RegExp(`^(accept|dismiss|undo) the suggestion ".+" \\(suggestion id ${UUID}\\)\\s*$`, "i"), (m) => [[`${m[1].toLowerCase()}_agent_suggestion`, { id: m[2] }]]],
   [new RegExp(`^tag ${KEY} (\\S+) as (\\S+)\\s*$`, "i"), (m) => [["tag_release", { projectKey: m[1], version: m[2], newVersion: m[3] }]]],
   [new RegExp(`^set the proposals in ${KEY} (\\S+) to: (.*)$`, "i"), (m) => [["set_release_proposals", { projectKey: m[1], version: m[2], proposalKeys: names(m[3]) }]]],
   [new RegExp(`^void the (.+?) deployment of ${KEY} (\\S+) \\(id ([0-9a-f-]{36})\\)\\. reason: (.+)$`, "i"),

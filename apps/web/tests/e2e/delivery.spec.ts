@@ -4,6 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { askAndConfirm } from "./ask";
 import { capture, diffRatio } from "./diff";
+import { lastTaskClosedByCi } from "./proposal-agent";
 
 const mock = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
 
@@ -58,7 +59,7 @@ test("AC3 / 054 AC5 Move on the board asks amax with the proposal pinned; confir
   await card.hover();
   // 081 AC-22: a card's actions open from its Actions fold.
   await card.locator("summary", { hasText: "Actions" }).click();
-  await askAndConfirm(page, card.getByRole("button", { name: "Move CON-017", exact: true }), { pin: "CON-017 CSV import for clients", prompt: "Move CON-017 to ", type: "building" });
+  await askAndConfirm(page, card.getByRole("button", { name: "Move CON-017", exact: true }), { pin: "CON-017 CSV import for clients", prompt: "Move CON-017 to ", type: "building", confirm: "Move to Building", done: "Moved CON-017 to Building" });
   await expect.poll(() => lanes(page)).toEqual(["1", "1", "3", "2", "1"]);
   await expect(page.getByRole("button", { name: "Move CON-009", exact: true })).toHaveCount(0);
 });
@@ -189,4 +190,49 @@ test("081 AC-22 a board card's actions open from its fold and ask amax with the 
   await expect(page.getByRole("heading", { name: "Tasks", exact: true })).toBeVisible();
   await expect(page.getByText("No tasks yet.")).toBeVisible();
   expect(await axe(page)).toEqual([]);
+});
+
+// 081 amendment 2 AC-37: agent-first, end to end in the browser. A pinned proposal makes chat offer its next step;
+// sending it shows the confirm card, and confirming moves it on the board.
+test("081 AC-37 pin a proposal: chat offers its next step, and confirming it moves the proposal", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const card = page.locator(".tcard", { hasText: "CON-016" });
+  await card.hover();
+  await card.getByRole("button", { name: "Add CON-016 Audit trail on approvals to chat" }).press("Enter");
+  const offers = page.getByRole("list", { name: "Suggestions for this page" });
+  await expect(offers.getByRole("button", { name: "Add a task to CON-016" })).toBeVisible();
+  await offers.getByRole("button", { name: "Move CON-016 to Planned" }).click();
+  await expect(page.getByLabel("Message amax")).toHaveValue("Move CON-016 to planned");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
+  await expect(confirm).toContainText(/From\s*Proposed\s*To\s*Planned/);
+  await confirm.getByRole("button", { name: "Move to Planned" }).click();
+  await expect(confirm).toContainText("Moved CON-016 to Planned");
+  await page.reload();
+  await expect(page.locator('section.lane[aria-label^="Planned"] .tcard', { hasText: "CON-016" })).toBeVisible();
+});
+
+// 081 amendment 2 AC-37: CI closes a proposal's last task; the Delivery agent suggests Ready to verify; the PM sees it on
+// the board and the proposal, accepts it in chat, sees it Verified and undoable, and undoes it.
+test("081 AC-37 the agent suggests Ready to verify; accepting it in chat verifies the proposal, and undo puts it back", async ({ page }) => {
+  test.setTimeout(90_000);
+  const key = await lastTaskClosedByCi("Agent flow check");
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  await expect(page.locator(".tcard", { hasText: key }).getByRole("link", { name: `amax suggests something for ${key}: open it` })).toBeVisible();
+  await page.goto(`/delivery/proposals/${key}`);
+  const card = page.locator(".card", { has: page.getByRole("heading", { name: "Suggested by amax" }) });
+  await expect(card).toContainText(`Move ${key} to Verified`);
+  expect(await axe(page)).toEqual([]);
+  const pin = `Move ${key} to Verified`;
+  await askAndConfirm(page, card.getByRole("button", { name: `Ask amax to accept ${pin}` }),
+    { pin, prompt: new RegExp(`^Accept the suggestion "${pin}" \\(suggestion id [0-9a-f-]{36}\\)$`), confirm: "Accept", done: `Accepted: ${pin}` });
+  await expect(page.locator(".lede .chip").first()).toHaveText("Verified");
+  await expect(card).toContainText("Accepted");
+  await page.goto("/suggestions");
+  await expect(page.locator("main")).toContainText(pin);
+  await page.goto(`/delivery/proposals/${key}`);
+  await askAndConfirm(page, card.getByRole("button", { name: `Ask amax to undo ${pin}` }),
+    { pin, prompt: new RegExp(`^Undo the suggestion "${pin}" \\(suggestion id [0-9a-f-]{36}\\)$`), confirm: "Undo", done: `Undone: ${pin}` });
+  await expect(page.locator(".lede .chip").first()).toHaveText("Building");
 });

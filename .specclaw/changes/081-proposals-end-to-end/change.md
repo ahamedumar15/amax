@@ -368,7 +368,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T16` — Amendment 2, the page card and board chip, mock (AC-35)
   Files: modules/delivery/ui/ProposalSuggestions.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/delivery.css, .specclaw/mock/index.html, apps/mock/public/mock/index.html, modules/delivery/tests/proposal-agent.test.ts
   Depends: T15
-- [ ] `T17` — Amendment 2, end to end: scripted e2e rules, browser tests, hand walk-through, READMEs, traceability, CI replica (AC-36, AC-37)
+- [x] `T17` — Amendment 2, end to end: scripted e2e rules, browser tests, hand walk-through, READMEs, traceability, CI replica (AC-36, AC-37)
   Files: packages/ai/src/scripted-writes.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T16
 
@@ -426,3 +426,54 @@ Linux replica of CI's `checks` job over the working tree at T13:
 - New tests: `delivery/tests/proposal-board-081.test.ts` (AC-22 to AC-25); AC-26 and AC-28 in `time/tests/proposal-time.test.ts`; AC-27 in `notifications/tests/delivery-routing.test.ts`; AC-28 in `delivery/tests/proposal-detail.test.ts`; e2e "081 AC-22" in `delivery.spec.ts`.
 - Updated for the new labels: `delivery.test` (`month` in `phaseCounts`), `proposal-metrics` AC15, the legend e2e, and the board Move e2e (opens the Actions fold).
 - Review loop: still not run. The specclaw-review MCP server isn't connected; run it before the PR.
+
+### Amendment 2: what the hand walk-through found (2026-11-04)
+
+The production build was run against a freshly seeded database (`amax_walk`) and driven as Maya in Chromium, with the
+real job tick (`POST /api/jobs/tick`, a `CRON_SECRET` set for that run only) delivering the outbox, as production's cron
+does. CI's side (closing a task from a commit) went through Delivery's services as a credential acting for a person.
+- **Bug, fixed:** the tick delivered an older "moved to Planned" event after the "last task done" event, and the agent
+  withdrew a "Ready to verify" that still fitted. The outbox doesn't promise order. The withdraw handlers now re-read
+  the proposal and take back only what no longer fits it. There's a regression test (AC34 out of order).
+- **Fixed:** a move confirmed from a pin suggestion said "Done: CON-016 added." Delivery's move, add-task and edit
+  tools now have cards: "Move to Planned" → "Moved CON-016 to Planned", "Add the task" → "Added T1 to CON-018", and
+  "Change owner" → "Kasun Dias now owns CON-019".
+- **Fixed (approved, in `packages/agents`):** accepting a suggestion showed "Accept an agent suggestion: runs its
+  change: <uuid>" with an "Add it" button. The four decision tools now show the suggestion's title, kind, agent and
+  why, with Accept, Dismiss, Undo or Ask the agent on the button and in the receipt. It applies to every module's
+  suggestions. Test: `packages/agents/tests/cards.test.ts`.
+- **Fixed:** a double spark on the board chip, "0 of 0 tasks" on a Planned card with no tasks (now "No tasks yet"),
+  and "All 1 task … are done" (now "The only task of CON-018, T1, is done").
+- **Final pass, clean:**
+  - Pin CON-016, then "Move CON-016 to Planned", confirm, and it's in Planned.
+  - New proposal CON-018: Add a task, Planned and Building, all through pin suggestions.
+  - CI closes the task; the tick runs the agent; the board shows the "amax suggests" chip and the page "Ready to
+    verify".
+  - Accept in chat makes it Verified, the Suggestions screen shows it undoable, and Undo puts it back in Building.
+  - CI creates an ownerless CON-019 and Kasun's CI closes its task; the agent suggests Kasun as owner; accepting makes
+    him the owner.
+  - No page errors.
+- **Not changed:** chat's "Here's what I'll add" line comes from the scripted e2e model; real Claude writes its own.
+
+### Amendment 2 verification (2026-11-04)
+
+Linux replica of CI's `checks` job over the final tree:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate` (no new migration), `lint`, `check-module-standard` (22 modules), `build` | pass |
+| `pnpm turbo run test --concurrency=2 --continue` | pass, every package. New: `proposal-suggestions` (AC30, AC31), `proposal-agent` (AC32 to AC35, plus out of order), `chat-081` AC30 cards, `packages/agents/tests/cards.test.ts`, `packages/ai` scripted rules |
+| `e2e` | pass |
+| `e2e:auth` | 86 passed, including "081 AC-37 pin a proposal" and "081 AC-37 the agent suggests Ready to verify" |
+
+On the way to green, all in the e2e helper and tests:
+- **The spec didn't load.** The helper imported the module manifest, which pulls in its CSS; Playwright can't load
+  that, so it now imports only server code.
+- **The agent test hung.** The helper's pool had one connection, and the agent handler's transaction blocked
+  `createSuggestion`'s; it now has four.
+- **The Overview feed test failed.** The helper's CI task close left its feed line, which the Overview e2e then
+  read; the helper now removes it.
+- **The pin test checked the wrong text.** It now checks the card's From/To lines.
+
+`auth.spec` AC5 failed once and passed on the rerun; this change doesn't touch it.
+Review loop: still not run (the specclaw-review server isn't connected).
