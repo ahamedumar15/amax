@@ -1032,6 +1032,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     <div class="card pinnable"><div class="card-head"><h2>Time</h2></div><div class="big">11.5 h <span class="muted" style="font-size:15px;font-weight:500">approved, of 16 h estimated</span></div><div class="gbar"><i style="width:72%;background:var(--violet)"></i></div><p class="muted" style="font-size:13px">From approved timesheet entries logged against CON-H003.</p></div>
     <div class="card pinnable"><div class="card-head"><h2>Release</h2></div><p><b>v2.5.0</b> · furthest: <span class="chip">QA</span></p><p class="muted" style="font-size:13px">Released when v2.5.0 reaches Prod.</p></div>
   </div>
+  <p class="muted" style="font-size:13px;margin:0 0 20px">Made by hand, in the hand-made series (CON-H…), so a synced specclaw change can't take its key. (A hand-made key like CON-019 in a project that starts syncing moves to this series; its tasks, time, release and history move with it.) <i>(Amendment 1, AC-24)</i></p>
   <div class="card pinnable" style="margin-bottom:28px"><div class="card-head"><h2>Description</h2></div><p>Email clients a reminder 3 days before an invoice is due, then on the due date.</p></div>
   <div class="cols even">
     <div class="card flush pinnable"><div class="card-head"><h2>Tasks</h2><span class="muted" style="font-size:13px">2 of 3 done</span></div>
@@ -1039,9 +1040,21 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     <div class="card flush pinnable"><div class="card-head"><h2>History</h2></div>
       <table class="tbl"><tbody><tr><td>Oct 15</td><td>Moved Planned → Building</td><td>Nimal Silva</td></tr><tr><td>Oct 9</td><td>Moved Proposed → Planned</td><td>Ayesha Rahman</td></tr><tr><td>Oct 2</td><td>Created, estimate 16 h</td><td>Claude for Nimal Silva</td></tr></tbody></table></div>
   </div>
+  <h2 style="margin-top:32px">Board card (Amendment 1, AC-22 and AC-23)</h2>
+  <div class="tcard pinnable" style="max-width:300px"><div class="id">CON-H004</div><p>Dunning emails</p><div class="prog"><i style="width:33%"></i></div>
+    <div class="foot"><span class="av sm a2">MF</span><span>est. 12 h · 1 of 3 tasks</span></div>
+    <div class="actions" style="margin-top:10px"><button class="btn sm">✦ Edit</button><button class="btn sm">✦ Add a task</button><button class="btn sm">✦ Move</button><button class="btn sm">✦ Withdraw</button></div></div>
+  <p class="muted" style="font-size:13px">A Proposed card with tasks shows its meter. Each action pins the card and fills a prompt in chat; nothing changes until the card is confirmed. Spec cards show none of them.</p>
+  <h2 style="margin-top:32px">History with time (Amendment 1, AC-28)</h2>
+  <div class="card flush"><table class="tbl"><tbody><tr><td>Oct 21</td><td>Nimal Silva logged 3 h for Oct 21</td><td>Nimal</td></tr><tr><td>Oct 22</td><td>Corrected to 2.5 h</td><td>Nimal</td></tr></tbody></table>
+    <p class="muted" style="padding:0 28px 20px;font-size:13px">Shown to the person who logged it and to approvers of the project; everyone else sees the approved total only.</p></div>
   <h2 style="margin-top:32px">Proposals list changes</h2>
-  <div class="card flush"><div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false"><b>Planned</b></button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released</button></div><div class="actions"><input class="select" placeholder="Search proposals" aria-label="Search proposals"><button class="btn">Filter</button><button class="btn">Export</button><button class="btn primary">✦ New proposal</button></div></div>
-    <p class="muted" style="padding:0 28px 20px;font-size:13px">Rows link to the proposal page. Counts and the chart follow the project filter and leave out closed projects. 20 rows a page. The shipped-per-week pin opens that metric.</p></div>
+  <div class="card flush"><div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false"><b>Planned</b></button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released, all time</button></div><div class="actions"><input class="select" placeholder="Search proposals" aria-label="Search proposals"><button class="btn">Filter</button><button class="btn">Export</button><button class="btn primary">✦ New proposal</button></div></div>
+    <p class="muted" style="padding:0 28px 20px;font-size:13px">Amendment 1 (AC-25): the phase bar's legend reads "Released in November"; the filter reads "Released, all time". Rows link to the proposal page. Counts and the chart follow the project filter and leave out closed projects. 20 rows a page. The shipped-per-week pin opens that metric.</p></div>
+</section>
+<section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Dev starts fresh</h1>
+  <p class="lede">No screen changes. <code>pnpm --filter @amax/web dev</code> no longer keeps Turbopack's compile cache between starts, so a leftover <code>apps/web/.next</code> from another branch can't put the browser into a refresh loop. Nobody deletes <code>.next</code> by hand any more.</p>
 </section>
 <!-- ================= 068 Overview deltas ================= -->
 <section data-change="073-time-workflow-enhancements" id="073-time-workflow-enhancements" data-roles="all" data-title="Time: weekend and reminders" data-nav="no" data-parent="001-amax-foundation-time">
@@ -1541,7 +1554,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     <div class="card">
       <div class="card-head"><h2>Proposals by phase</h2><span class="muted" style="font-size:13px">37 in flight</span></div>
       <div class="phasebar"><i style="flex:6;background:#F7D65A"></i><i style="flex:4;background:#5CC8F0"></i><i style="flex:18;background:#7B61FF"></i><i style="flex:9;background:#2FCB8C"></i><i style="flex:5;background:#F48B9B"></i></div>
-      <ul class="phase-legend"><li><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>Proposed<b>6</b></li><li><span class="stk" data-i="map" style="--c:#5CC8F0"></span>Planned<b>4</b></li><li><span class="stk" data-i="code" style="--c:#7B61FF"></span>Building<b>18</b></li><li><span class="stk" data-i="check" style="--c:#2FCB8C"></span>Verified<b>9</b></li><li><span class="stk" data-i="rocket" style="--c:#F48B9B"></span>Released this month<b>5</b></li></ul>
+      <ul class="phase-legend"><li><span class="stk" data-i="bulb" style="--c:#F7D65A"></span>Proposed<b>6</b></li><li><span class="stk" data-i="map" style="--c:#5CC8F0"></span>Planned<b>4</b></li><li><span class="stk" data-i="code" style="--c:#7B61FF"></span>Building<b>18</b></li><li><span class="stk" data-i="check" style="--c:#2FCB8C"></span>Verified<b>9</b></li><li><span class="stk" data-i="rocket" style="--c:#F48B9B"></span>Released in October<b>5</b></li></ul>
     </div>
     <div class="card">
       <div class="card-head"><h2>Shipped to Prod per week</h2><span class="up">↑ 12.6%</span></div>
@@ -1549,7 +1562,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Planned</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released</button></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><span role="search" class="proposal-search"><input type="search" placeholder="Search proposals" aria-label="Search proposals by key or title, then press Enter"></span><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
+    <div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Planned</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released, all time</button></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><span role="search" class="proposal-search"><input type="search" placeholder="Search proposals" aria-label="Search proposals by key or title, then press Enter"></span><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Tasks</th><th class="num">Time</th><th>Release</th><th>Shipped to</th><th>Owner</th></tr></thead>
       <tbody>

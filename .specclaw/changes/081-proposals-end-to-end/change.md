@@ -22,6 +22,12 @@ Amended in T8 (asked and agreed, 2026-11-03): 007's Proposals section
 New proposal, the Planned filter and the search box. The page changed by design, and the delivery visual test compares
 it against that section within 2% per region; only its header and the table's filter bar changed.
 
+Amendment 1 (2026-11-04), in 081's section: a board card with its actions and its meter while Proposed (AC-22, AC-23),
+the key note on the proposal page (AC-24), time lines in the history (AC-28), and the "Released in <Month>" / "Released,
+all time" labels (AC-25). **Agreed 2026-11-04:** the same two labels in 007's Proposals section (its legend item "Released this
+month" becomes "Released in October", the fixtures' pinned month, and its filter button "Released" becomes "Released,
+all time"), so the delivery visual test still compares like with like.
+
 ## Acceptance Criteria
 
 ### Time and hours
@@ -122,6 +128,99 @@ it against that section within 2% per region; only its header and the table's fi
 - **D3 Closed projects (AC-16):** excluded from global counts and lists, the way `listProjects` already does it. A
   closed project's own page still shows its proposals.
 
+## Amendment 1 (2026-11-04): close the gaps against the Proposals BRD
+
+The product owner's BRD (Proposals Module, Nov 3, 2026) was checked against 081 at `2424743b`. It found seven gaps: FR-14,
+FR-13, FR-18, FR-03, FR-10a, FR-21 and NFR-3. This amendment closes them inside 081 (no 074/075 changes), with no
+database migration and no new module edge. Every earlier AC, decision and business rule (BR-1 to BR-6) stands.
+
+### Board, list and page
+
+22. **AC-22 (FR-14)** A board card for a hand-made, unreleased, not-withdrawn proposal offers Edit, Add a task and
+    Withdraw next to Move. Each is an Ask amax button: it pins the proposal and fills a prompt, and chat writes only
+    after the person confirms the card. Each button shows only when the viewer holds its tool's permission on the card's
+    project: `delivery:proposal:create` for Edit, `delivery:task:done` for Add a task, `delivery:proposal:move` for
+    Withdraw and Move. A spec proposal's card shows none of them (BR-3). The board and the proposal page draw these
+    actions from one component, so the two can't differ.
+23. **AC-23 (FR-13)** A proposal that has tasks shows its task meter (done of total) in every phase but Released: on
+    the global list, the project list and the board card. That includes Proposed. With no tasks, the list shows "–" and
+    the card shows no bar. A released card keeps its release chip.
+24. **AC-24 (FR-10a)** The page of a hand-made proposal says what can happen to its key. For example: "Made by hand.
+    If this project starts syncing specclaw changes and one of them is numbered CON-019, this proposal moves to the
+    hand-made series (for example CON-H001). Its tasks, time, release and history move with it; links by the old key
+    stop working." A proposal already in the `-H` series says it is in the hand-made series and keeps its key. Spec
+    proposals show no note.
+25. **AC-25 (FR-21)** The time period is visible in both places, and neither one's meaning changes. The phase bar's
+    legend reads "Released in <Month>" (e.g. "Released in November"), counting proposals released since the 1st, as
+    before. The Released filter tab reads "Released, all time" and still lists every released proposal. The
+    `get_proposal_metrics` field keeps its name (`releasedThisMonth`) and its description says "this calendar month
+    (UTC)".
+
+### Time and notifications
+
+26. **AC-26 (FR-03)** Time's "Log time" chat flow asks "Which proposal is it for?" as an optional field, saying a
+    proposal on the chosen project or "none". A `proposalKey` the person already gave is used, not asked again. The
+    confirm card shows the proposal (key and title) when there is one. The saved entry carries that proposal's id. A log
+    without a proposal works exactly as before, and an unknown, other-project or withdrawn proposal is refused before
+    any card appears (AC-1's rule).
+27. **AC-27 (FR-18)** A new notification rule tells the project's PMs (people holding `delivery:release:create` on
+    that project, the managed scope) when a proposal reaches Verified: "<key> is verified in <project>", linking the
+    proposal page. It fires on Verified from a board move or a sync, never for the PM's own action, and never twice to
+    one person for one event. The platform keeps one notification per person per event, so a PM who is also the owner
+    gets one (that is a test). The owner rules from AC-19 are unchanged.
+28. **AC-28 (NFR-3)** The proposal's history shows time logged against it, from Time's existing audit rows (no new
+    audit write): "<person> logged 2 h for Oct 19", "corrected to 2.5 h", "removed 2 h".
+    - **Join on the id, not the key.** From this amendment on, Time writes the entry's `proposalId` into the audit
+      `after` (log, correct) and `before` (delete, and a correction that moves or clears it). The history joins on that
+      id, so a rekey doesn't lose the lines.
+    - **Who sees the lines (Q8, decided 2026-11-04).** Time lines are per person, so a viewer sees one only when it is their own entry, or when
+      they hold `time:approve` on the proposal's project. Everyone else sees the proposal's approved total only (D2),
+      with no per-entry lines.
+    - **Older entries.** Entries logged before this amendment carry no `proposalId` in their audit row and get no
+      history line; their approved hours still count (AC-4).
+
+### Verification
+
+29. **AC-29** The tests below pass. `pnpm lint`, `check-module-standard`, `pnpm build` and the Linux CI replica
+    (unit tests and `e2e` / `e2e:auth`) pass. The delivery visual test passes against the mock after AC-25's label
+    change (see Mock Delta).
+
+| AC | Tests |
+|---|---|
+| AC-22 | Board card renders Edit, Add a task, Withdraw for Maya (PM) on a hand-made card. An Engineer not assigned sees none, a Leadership viewer sees none, a spec card shows none. The e2e clicks Add a task on a card, sees the pinned prompt, and nothing is written until confirm. |
+| AC-23 | List and card show a meter for a Proposed proposal after `add_proposal_task`, "–" with no tasks, and the chip on a released card. |
+| AC-24 | Page text for a hand-made key, an `-H` key, and a spec proposal (none). |
+| AC-25 | Legend reads "Released in November" with the clock pinned to Oct/Nov fixtures. The filter reads "Released, all time" and lists every released proposal. The counts match `phaseCounts`. |
+| AC-26 | The intent declares `proposalKey`. The log card shows the proposal line. `propose` refuses another project's proposal. A chat turn (fake provider) with "log 2 h on CON-014" yields a card with the proposal and an entry with its id. A log without one is unchanged. |
+| AC-27 | A Verified move by an Engineer notifies the CON PM and not an unrelated PM. A move by the PM themselves notifies no PM. A PM who owns the proposal gets exactly one notification. A Planned move notifies no PM. |
+| AC-28 | Log, correct and delete against CON-014 appear in its history for the owner and for an approver, and not for Leadership or another engineer. The proposal is rekeyed (a spec sync takes its key) and the lines remain under the new key. Approved hours are unchanged. |
+| Regressions | The existing 081 suites (AC-1 to AC-21), BR-1/BR-2 (`proposal-regression`), owner rules (`proposal-owner`), and approved-hours (`proposal-hours`) stay green. |
+
+**Affected:**
+- **Delivery:** `ui/ProjectPage.tsx`, `ui/ProposalActions.tsx`, `ui/ProposalsPage.tsx`, `ui/ProposalPage.tsx`, `server/proposal-detail.ts`, `server/queries.ts`, `mcp.ts` (description), `module.ts` (rule), tests.
+- **Time:** `chat.ts` (intent field), `server/log.ts`, `server/correct.ts` (audit carries `proposalId`), tests.
+- **Notifications:** one test.
+- **Mock:** 081 section; 007's Proposals legend and filter label (agreed 2026-11-04).
+
+No migrations, permissions, tools or contracts are added; one notification rule is added.
+
+**Risks:**
+- **Per-person time lines (AC-28).** The access rule above is a decision for the product owner (Q8 below).
+- **Reading another module's audit rows.** Reading Time's audit rows from `core.audit_event` is a read of the platform audit log, not of Time's tables. Delivery already reads its own rows there.
+- **Mock change.** The label change touches 007's mock section again.
+
+### Still open (not resolved by this amendment)
+
+| # | Question | Owner |
+|---|---|---|
+| Q2 | Sign-off for the permission reuse: Edit `delivery:proposal:create`, Withdraw `delivery:proposal:move`, Add task `delivery:task:done` | Product owner |
+| Q3 | Backfill missing owners on existing proposals, and from what source (today they show "Unassigned") | Product owner |
+| Q5 | Can a withdrawn proposal be reinstated (no tool today) | Product owner |
+| FR-05 | Accept the inverted contract: Time pushes approved totals to Delivery's `setProposalHours` (R5 forbids Delivery → Time) | Product owner, architect |
+| FR-07 | Accept the owner rule: a sync fills a missing owner and never replaces one; a bare CI credential sets none | Product owner |
+| Q7 | Check closed-project counts on real data; 081 is tested on fixtures only | Dev, with production access |
+| Q8 (new) | AC-28's rule: who sees per-person time lines. **Decided 2026-11-04: the entry's owner and holders of `time:approve` on the project** | Product owner (answered) |
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -149,6 +248,21 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T8` — Phase 8 (tests and verification): e2e opens a proposal from the list, board and search; lint, unit tests, build, `e2e:auth` delivery; README and audit progress (AC-21)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, modules/delivery/ui/delivery.css, modules/delivery/ui/ProposalSearch.tsx, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
   Depends: T7
+- [ ] `T9` — Amendment 1, board and list: one actions component on the card and the page; task meter in every phase but Released; key note; "Released in <Month>" / "Released, all time" (AC-22 to AC-25)
+  Files: modules/delivery/ui/ProposalActions.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/mcp.ts, modules/delivery/tests/proposal-board-081.test.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+  Depends: T8
+- [ ] `T10` — Amendment 1, Log time asks for the proposal (AC-26)
+  Files: modules/time/chat.ts, modules/time/tests/proposal-time.test.ts, modules/time/tests/contracts.test.ts
+  Depends: T8
+- [ ] `T11` — Amendment 1, PM hears of Verified (AC-27)
+  Files: modules/delivery/module.ts, modules/notifications/tests/delivery-routing.test.ts
+  Depends: T8
+- [ ] `T12` — Amendment 1, time in the proposal's history, by id, for whom may see it (AC-28)
+  Files: modules/time/server/log.ts, modules/time/server/correct.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/tests/proposal-detail.test.ts, modules/time/tests/proposal-time.test.ts
+  Depends: T10
+- [ ] `T13` — Amendment 1, e2e, READMEs, audit traceability, CI replica (AC-29)
+  Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, modules/time/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md, .specclaw/changes/081-proposals-end-to-end/change.md
+  Depends: T9, T11, T12
 
 ## Verify
 
