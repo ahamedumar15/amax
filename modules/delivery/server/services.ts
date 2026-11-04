@@ -100,29 +100,38 @@ export const createProposal = defineService({
 
 // The board's explicit Move action. Released is reached only through a Prod deployment. A proposal
 // synced from a repo takes its phase from the repo, its one owner before Released (044 AC-2).
+const MoveInput = z.object({ key: z.string(), to: z.enum(PHASES.filter((p) => p !== "released") as [Phase, ...Phase[]]) });
+
+/**
+ * The board move in the caller's transaction, on the locked row: moveProposal, and an accepted delivery suggestion
+ * (081 amendment 2), whose `guard` re-checks under the lock that the suggestion still fits.
+ */
+export async function moveIn(tx: Tx, ctx: ServiceContext, input: z.infer<typeof MoveInput>, guard: (p: Record<string, unknown>) => void = () => {}) {
+  const [p] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key} for update`);
+  if (!p) throw new Error(`no proposal ${input.key}`);
+  scoped(ctx, "delivery:proposal:move", p.project_id as string);
+  if (p.phase === "released") throw new Error(`${input.key} is in Prod; it can't move back on the board`);
+  if (p.withdrawn_at) throw new Error(`${input.key} was withdrawn; it stays where it was`);
+  if (p.source !== null) throw new Error(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
+  guard(p);
+  if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
+  await tx.execute(sql`update delivery.proposal set phase = ${input.to}, updated_at = now() where id = ${p.id}`);
+  return {
+    result: { key: input.key, phase: input.to },
+    resourceId: p.id as string,
+    before: { phase: p.phase },
+    after: { phase: input.to },
+    events: [phaseEvent(p, input.to, ctx)],
+  };
+}
+
 export const moveProposal = defineService({
   scoped: true,
   name: "delivery.proposal.move",
   action: "delivery:proposal:move",
   resource: "delivery.proposal",
-  input: z.object({ key: z.string(), to: z.enum(PHASES.filter((p) => p !== "released") as [Phase, ...Phase[]]) }),
-  async run(tx, input, ctx) {
-    const [p] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
-    if (!p) throw new Error(`no proposal ${input.key}`);
-    scoped(ctx, "delivery:proposal:move", p.project_id as string);
-    if (p.phase === "released") throw new Error(`${input.key} is in Prod; it can't move back on the board`);
-    if (p.withdrawn_at) throw new Error(`${input.key} was withdrawn; it stays where it was`);
-    if (p.source !== null) throw new Error(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
-    if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
-    await tx.execute(sql`update delivery.proposal set phase = ${input.to}, updated_at = now() where id = ${p.id}`);
-    return {
-      result: { key: input.key, phase: input.to },
-      resourceId: p.id as string,
-      before: { phase: p.phase },
-      after: { phase: input.to },
-      events: [phaseEvent(p, input.to, ctx)],
-    };
-  },
+  input: MoveInput,
+  run: (tx, input, ctx) => moveIn(tx, ctx, input),
 });
 
 export const createRelease = defineService({

@@ -98,3 +98,15 @@ export const addProposalTask = defineService({
     return { result: { key: a.key, task: ref, tasksDone: counts.done, tasksTotal: counts.total }, resourceId: t.id as string, after: { proposalId: p.id as string, ref, title: a.title } };
   },
 });
+
+/**
+ * 081 amendment 2: set or clear a proposal's owner in the caller's transaction, on the locked row: an accepted "Suggested
+ * owner" and its undo. `guard` re-checks under the lock that the suggestion still fits. Any proposal (spec ones too).
+ */
+export async function setOwnerIn(tx: Tx, ctx: ServiceContext, key: string, owner: { id: string; name: string } | null, guard: (p: Record<string, unknown>) => void) {
+  const p = await lockedProposal(tx, ctx, key, "delivery:proposal:create");
+  if (withdrawn(p)) refuse(`${key} was withdrawn; its owner doesn't change`);
+  guard(p);
+  await tx.execute(sql`update delivery.proposal set owner_user_id = ${owner?.id ?? null}, owner_name = ${owner?.name ?? null}, updated_at = now() where id = ${p.id}`);
+  return { resourceId: p.id as string, before: { owner: (p.owner_name as string | null) ?? null }, after: { owner: owner?.name ?? null } };
+}

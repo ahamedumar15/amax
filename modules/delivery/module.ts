@@ -7,6 +7,8 @@ import { mcpTools, search } from "./mcp";
 import { listActivity } from "./server/activity";
 import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
+import { proposalAgent } from "./server/agent";
+import { proposalKinds } from "./server/proposal-kinds";
 import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ReleaseDeployed, type TaskDone, type CommitTime } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
@@ -57,7 +59,7 @@ export default defineModule({
   overview: deliveryOverview as never,
   // 008 AC-2: verified pushes close the tasks their commits name.
   inbound: { providers: ["github", "azure-devops"], handle: ingestPush },
-  suggestions: [linkIdentity],
+  suggestions: [linkIdentity, ...proposalKinds],
   retention: [
     // Delivery evidence is kept seven years, then names are anonymised. A proposal's clock starts
     // when it's released (released_at, cleared again if the release is voided) or after a year with
@@ -85,6 +87,8 @@ export default defineModule({
   // 035: outgoing webhooks send only declared fields (review 058).
   events: {
     emits: Object.values(EVENTS),
+    // 081 amendment 2: the Delivery agent suggests from task and phase events, and takes back what no longer fits.
+    handles: proposalAgent,
     payloads: {
       [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
       [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain", ownerUserId: "plain" }),

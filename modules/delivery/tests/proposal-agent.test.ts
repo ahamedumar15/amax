@@ -1,0 +1,115 @@
+import { sql } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withTenant } from "@amax/db";
+import { hasDb } from "@amax/db/testdb";
+import { contextForViewer, setGrants, type Viewer } from "@amax/auth";
+import { agentsPlatform } from "@amax/agents/module";
+import { acceptSuggestion, setSuggestionKinds, undoSuggestion } from "@amax/agents/server";
+import delivery from "../module";
+import { EVENTS } from "../contracts";
+import { proposalAgent } from "../server/agent";
+import { ctxFor } from "../server/context";
+import { addProposalTask, updateProposal, withdrawProposal } from "../server/lifecycle";
+import { proposalKinds } from "../server/proposal-kinds";
+import { linkIdentity } from "../suggestions";
+import { createProposal, moveProposal } from "../server/services";
+import { markTaskDone } from "../server/tasks";
+import { proposalDb, T } from "./proposal-db";
+
+describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person decides (Postgres)", () => {
+  let db: Awaited<ReturnType<typeof proposalDb>>;
+  let maya: Viewer;
+  beforeAll(async () => {
+    db = await proposalDb();
+    setGrants([delivery, agentsPlatform as never]);
+    setSuggestionKinds([linkIdentity, ...proposalKinds]);
+    maya = await db.as("maya");
+  }, 120_000);
+  afterAll(() => db?.t.drop());
+
+  // The agent reads Delivery's outbox as the platform does: every event since the last call, through its handlers.
+  let seen = 0;
+  const runAgent = async () => {
+    const events = await db.q(sql`select id, name, payload from core.event where name like 'delivery.%' order by created_at, id`);
+    for (const e of events.slice(seen)) {
+      for (const h of proposalAgent.filter((x) => x.event === e.name)) await withTenant(db.app, T, (tx) => h.handle({ tx, tenantId: T, event: { id: e.id as string, name: e.name as string, payload: e.payload as Record<string, unknown> } }));
+    }
+    seen = events.length;
+  };
+  const suggestions = (key: string, kind: string) => db.q(sql`select s.id, s.status, s.title from agents.suggestion s join delivery.proposal p on p.id::text = s.target_id
+    where p.key = ${key} and s.kind = ${kind} order by s.created_at`);
+  const phase = async (key: string) => (await db.row(key)).phase as string;
+  const building = async (title: string, tasks = 2) => {
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title });
+    for (let i = 0; i < tasks; i++) await addProposalTask(ctxFor(maya), { key, title: `Step ${i + 1}` });
+    for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
+    return key;
+  };
+  const decide = contextForViewer;
+
+  it("AC32 the last task of a Building proposal raises Ready to verify; accepting moves it, undo moves it back", async () => {
+    const key = await building("Dunning emails");
+    await markTaskDone(ctxFor(maya), { key, task: "T1" });
+    await runAgent();
+    expect(await suggestions(key, "delivery.proposal-verify")).toEqual([]);
+    await markTaskDone(ctxFor(maya), { key, task: "T2" });
+    await runAgent();
+    await runAgent();
+    const [s] = await suggestions(key, "delivery.proposal-verify");
+    expect(s).toMatchObject({ status: "open", title: `Move ${key} to Verified` });
+    expect((await suggestions(key, "delivery.proposal-verify")).length).toBe(1);
+
+    await expect(acceptSuggestion(decide(await db.as("kasun"), "chat"), { id: s.id as string })).rejects.toThrow();
+    await acceptSuggestion(decide(maya, "chat"), { id: s.id as string });
+    expect(await phase(key)).toBe("verified");
+    expect(await db.q(sql`select payload->>'to' as to, payload->>'ownerUserId' as owner from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'key' = ${key} order by created_at desc limit 1`))
+      .toEqual([{ to: "verified", owner: maya.userId }]);
+    await undoSuggestion(decide(maya, "chat"), { id: s.id as string });
+    expect(await phase(key)).toBe("building");
+  });
+
+  it("AC33 a task closed on an ownerless proposal raises Suggested owner; it is refused once someone else owns it; undo clears it", async () => {
+    const key = await building("Credit notes", 1);
+    await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
+    await markTaskDone(ctxFor(maya), { key, task: "T1" });
+    await runAgent();
+    const [s] = await suggestions(key, "delivery.proposal-owner");
+    expect(s).toMatchObject({ status: "open", title: `Make Maya Fernando the owner of ${key}` });
+
+    await updateProposal(ctxFor(maya), { key, ownerUserId: (await db.as("nimal")).userId });
+    await expect(acceptSuggestion(decide(maya, "chat"), { id: s.id as string })).rejects.toThrow(/has an owner now \(Nimal Silva\); nothing was changed/);
+    expect((await db.row(key)).owner_name).toBe("Nimal Silva");
+
+    await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
+    await acceptSuggestion(decide(maya, "chat"), { id: s.id as string });
+    expect(await db.row(key)).toMatchObject({ owner_user_id: maya.userId, owner_name: "Maya Fernando" });
+    await undoSuggestion(decide(maya, "chat"), { id: s.id as string });
+    expect((await db.row(key)).owner_user_id).toBeNull();
+  });
+
+  it("AC34 a suggestion that no longer fits is withdrawn, or refused at accept with nothing written", async () => {
+    const moved = await building("Late fees", 1);
+    await markTaskDone(ctxFor(maya), { key: moved, task: "T1" });
+    await runAgent();
+    await moveProposal(ctxFor(maya), { key: moved, to: "planned" });
+    await runAgent();
+    expect((await suggestions(moved, "delivery.proposal-verify")).map((s) => s.status)).toEqual(["dismissed"]);
+
+    const gone = await building("Old idea", 1);
+    await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${gone}`;
+    await markTaskDone(ctxFor(maya), { key: gone, task: "T1" });
+    await runAgent();
+    await withdrawProposal(ctxFor(maya), { key: gone, reason: "Client dropped it" });
+    await runAgent();
+    expect([...(await suggestions(gone, "delivery.proposal-verify")), ...(await suggestions(gone, "delivery.proposal-owner"))].map((s) => s.status)).toEqual(["dismissed", "dismissed"]);
+
+    const quiet = await building("Statements", 1);
+    await markTaskDone(ctxFor(maya), { key: quiet, task: "T1" });
+    await runAgent();
+    const [s] = await suggestions(quiet, "delivery.proposal-verify");
+    await db.t.owner`update delivery.proposal set phase = 'planned' where key = ${quiet}`;
+    await expect(acceptSuggestion(decide(maya, "chat"), { id: s.id as string })).rejects.toThrow(/is planned now, not Building; nothing was changed/);
+    expect(await phase(quiet)).toBe("planned");
+    expect((await suggestions(quiet, "delivery.proposal-verify"))[0].status).toBe("open");
+  });
+});

@@ -274,11 +274,13 @@ an agent never writes without a person's confirm or accept (BR-5).
       nothing changed it since.
     - This suggests, never assigns: it doesn't settle Q3 (backfilling existing owners).
 34. **AC-34** Suggestions don't pile up or go stale:
-    - The platform keeps one open suggestion per kind and proposal.
-    - When the proposal changes so the suggestion no longer fits, the Delivery agent withdraws it with a reason: it
-      moved, was withdrawn or released, got an owner, or a task reopened.
-    - Open suggestions expire after the platform's 7 days.
-    - Accepting a suggestion whose proposal changed since is refused with a clear message, and nothing is written.
+    - The platform keeps one open suggestion per kind and proposal (the agent can run twice; one stays).
+    - "Ready to verify" is withdrawn when the proposal leaves Building. Both kinds are withdrawn when the proposal is
+      withdrawn or released. Open suggestions expire after the platform's 7 days.
+    - Accepting one that no longer fits is refused with a clear message, and nothing is written: the proposal moved,
+      or someone else became the owner. (Amended in T15: an owner set by `update_proposal` raises no event, so a
+      "Suggested owner" is refused at accept rather than withdrawn. Tasks never reopen, so there is no reopen
+      trigger.)
 35. **AC-35** Where people see agent suggestions:
     - **Proposal page:** a "Suggested by amax" card ("An agent suggests, a person decides") with "Ask amax to accept"
       and "Dismiss" buttons (Ask amax, pinned, confirm card), in the style Allocations and Time use.
@@ -360,7 +362,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T14` — Amendment 2, pin suggestions for proposals (AC-30, AC-31)
   Files: modules/delivery/pin-suggestions.ts, modules/delivery/module.ts, modules/delivery/tests/proposal-suggestions.test.ts
   Depends: T13
-- [ ] `T15` — Amendment 2, the two agent suggestion kinds, their trigger and withdrawals (AC-32 to AC-34)
+- [x] `T15` — Amendment 2, the two agent suggestion kinds, their trigger and withdrawals (AC-32 to AC-34)
   Files: modules/delivery/suggestions.ts, modules/delivery/server/agent.ts, modules/delivery/module.ts, modules/delivery/tests/proposal-agent.test.ts
   Depends: T14
 - [ ] `T16` — Amendment 2, the page card and board chip, mock (AC-35)
