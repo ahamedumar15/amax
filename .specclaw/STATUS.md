@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-05 11:33 UTC
+**Last Updated:** 2026-11-05 12:23 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -24,8 +24,9 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
 - 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed
 - 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed
-- 📝 **081-proposals-end-to-end** — tasks done | 29/29 tasks (100%) | 0 failed
+- 📝 **081-proposals-end-to-end** — tasks done | 32/32 tasks (100%) | 0 failed
 - 🔍 **082-dev-fresh-cache** — verify complete | 1/1 tasks (100%) | 0 failed
+- 🔨 **083-profile-menu-closes** — build complete | 1/1 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
@@ -104,6 +105,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 82
-- **Active:** 18
+- **Total changes:** 83
+- **Active:** 19
 - **Completed:** 64

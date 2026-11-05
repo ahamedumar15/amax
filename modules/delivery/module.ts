@@ -93,7 +93,7 @@ export default defineModule({
       [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
       [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
-      [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain" }),
+      [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain", ownerUserId: "plain", title: "plain" }),
       [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.taskReopened]: declarePayload<TaskReopened>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
       [EVENTS.ownerChanged]: declarePayload<ProposalOwnerChanged>({ proposalId: "plain", key: "plain", title: "plain", projectId: "plain", from: "plain", to: "plain", toName: "plain", cleared: "plain", by: "plain" }),
@@ -122,6 +122,9 @@ export default defineModule({
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "from", title: "{key} has a new owner: {toName}", href: "/delivery/proposals/{key}" },
     { id: "delivery.proposal-owner-cleared", event: EVENTS.ownerChanged, when: { cleared: true }, category: "releases", to: [{ owner: "from" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "from", title: "{key} no longer has an owner", href: "/delivery/proposals/{key}" },
+    // 081 amendment 7 (AC-74): the owner hears someone else withdrew their proposal; its page stays readable.
+    { id: "delivery.proposal-withdrawn", event: EVENTS.proposalWithdrawn, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "{key} was withdrawn: {reason}", href: "/delivery/proposals/{key}" },
   ],
   fixtures: [deliveryFixtures],
 });

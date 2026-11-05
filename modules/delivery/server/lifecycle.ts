@@ -78,7 +78,8 @@ export const withdrawProposal = defineService({
     if ((p.release_id ?? null) !== (seen?.release_id ?? null)) refuse(`${a.key} moved between releases just now; try again`);
     guardOpen(p, "be withdrawn");
     await tx.execute(sql`update delivery.proposal set withdrawn_at = now(), withdrawn_by = ${by(ctx)}, withdraw_reason = ${a.reason}, release_id = null, updated_at = now() where id = ${p.id}`);
-    const payload: ProposalWithdrawn = { proposalId: p.id as string, key: a.key, projectId: p.project_id as string, by: by(ctx), reason: a.reason };
+    const payload: ProposalWithdrawn = { proposalId: p.id as string, key: a.key, projectId: p.project_id as string, by: by(ctx), reason: a.reason,
+      ownerUserId: (p.owner_user_id as string | null) ?? null, title: p.title as string };
     return { result: { key: a.key, withdrawn: true, leftRelease: (r?.version as string | undefined) ?? null }, resourceId: p.id as string,
       before: { phase: p.phase, release: r?.version ?? null }, after: { reason: a.reason }, events: [{ name: EVENTS.proposalWithdrawn, payload }] };
   },

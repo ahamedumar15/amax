@@ -684,6 +684,52 @@ table, tool or permission; one event and three notification rules are added.
 **Test-only change outside the amendment's code:** Delivery's test database (`tests/proposal-db.ts`) puts Nimal on CON
 and FLT, as Allocations' fixtures have him. Without that, AC-67 would refuse him as an owner in 081's earlier tests.
 
+## Amendment 7 (2026-11-05): every notification scenario covered
+
+The product owner asked whether every notification scenario on this branch was covered, and approved three fixes on
+this branch ("all 3 on this branch"). A review of Delivery's rules found three problems:
+- **Withdrawing tells nobody.** A withdrawal by someone else tells the owner nothing, though their proposal leaves
+  every list.
+- **The rollback rule has no test.** `delivery.release-rolled-back` (030/042) is untested anywhere.
+- **No test runs a real write.** The routing tests insert hand-made events, so no test takes a write through to a
+  notification. Released and a void's way back are never checked.
+
+There's no migration, tool or permission. One payload field and one rule are added.
+
+74. **AC-74** A withdrawal by someone else tells the owner.
+    - **The payload:** `ProposalWithdrawn` gains `ownerUserId` (null for none) and `title`.
+    - **The rule:** `delivery.proposal-withdrawn` tells the owner "<key> was withdrawn: <reason>", linking to the
+      proposal page, which stays readable.
+    - **Never for your own action** (AC-66's rule), an agent's for you included.
+75. **AC-75** The rollback rule is tested as it stands:
+    - **Told:** a release rolled back in an environment reaches the PMs who manage that project, and Admins, who
+      record deployments everywhere, with "Release <version> rolled back in <environment>" (Admins found while testing).
+    - **Not told:** other projects' PMs.
+    - **Nothing:** a deployed or testing status notifies no one.
+76. **AC-76** One test runs real writes, through the MCP tools as Maya, all the way to the bell. Nimal is the owner:
+    1. **Creating** a CON proposal owned by Nimal tells him "You now own …".
+    2. **Moving** it to Planned, Building and Verified tells him each move. Maya, the PM who moved it, gets no "verified".
+    3. **Closing** its task tells him "Task T1 … is done".
+    4. **A Prod deployment** of a release holding it tells him "… moved from verified to released".
+    5. **Voiding** that deployment tells him "… moved from released to verified".
+    6. **Withdrawing** a second proposal he owns tells him "… was withdrawn: …".
+77. **AC-77** Mock: the Amendment 6 bell in 081's section gains the withdrawn line.
+
+**Not changed, recorded (for the product owner, if wanted later):**
+- **Reopening a task** tells nobody.
+- **New agent suggestions** notify no one. That's platform-wide: Suggestions has no rule in any module.
+- **Edits, renames by a sync, and time logged** tell nobody.
+- **The rollback rule has no `except`,** so a PM who records a rollback is told too. Its payload has no `by`, and a
+  rollback usually comes from CI.
+
+**Approved 2026-11-05.**
+
+**Affected:**
+- **Delivery:** `contracts.ts` (the payload), `module.ts` (the payload declaration and the rule),
+  `server/lifecycle.ts` (the withdraw event), `README.md`.
+- **Notifications:** `delivery-routing.test.ts` (AC-74, AC-75) and a new `delivery-flow.test.ts` (AC-76).
+- **Mock:** 081's section and its copy.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -778,6 +824,16 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T29` — Amendment 6, end to end: scripted e2e rules, the browser test, the README, both mock copies, the Linux CI replica (AC-72, AC-73)
   Files: packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, apps/web/tests/e2e/owner-a6.ts, modules/delivery/README.md, .specclaw/mock/index.html, apps/mock/public/mock/index.html
   Depends: T27, T28
+
+- [x] `T30` — Amendment 7, the owner hears of a withdrawal: payload `ownerUserId` and `title`, rule `delivery.proposal-withdrawn`, mock bell line (AC-74, AC-77)
+  Files: modules/delivery/contracts.ts, modules/delivery/module.ts, modules/delivery/server/lifecycle.ts, modules/delivery/README.md, modules/notifications/tests/delivery-routing.test.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+  Depends: T29
+- [x] `T31` — Amendment 7, the rollback rule's test (AC-75)
+  Files: modules/notifications/tests/delivery-routing.test.ts
+  Depends: T29
+- [x] `T32` — Amendment 7, real writes to the bell: create, moves, task, Prod deployment, void, withdraw; then the Linux CI replica (AC-76)
+  Files: modules/notifications/tests/delivery-flow.test.ts
+  Depends: T30
 
 ## Verify
 
@@ -1052,5 +1108,27 @@ Fixed on the way:
 `delivery-routing`. The choice card (AC-69) needs a real model to call `get_project_team` and `offer_choices`. The
 scripted model only takes the owner as a typed id, so AC-69 is checked through the intent's instructions and the
 team's `userId`, not in the browser.
+
+Review loop: still not run (the specclaw-review server isn't connected).
+
+### Amendment 7 verification (2026-11-05)
+
+**Unit tests:**
+- `delivery-routing` AC74 (withdrawal: the owner is told, not for their own action or an agent's for them) and AC75
+  (rollback). The test found that Admins are told of every project's rollback, since they record deployments
+  everywhere, so AC-75 says so.
+- A new `delivery-flow` AC76 runs real writes as Maya through the MCP tools. Nimal hears all seven steps of one
+  proposal (owned, three moves, its task, released, the void's way back), then "You now own" and "was withdrawn" for a
+  second. Maya hears nothing for her own actions.
+- The 081 lifecycle, agent and contract suites stay green.
+
+**Linux replica of CI** over the working tree, with change 083-profile-menu-closes in it too, against a fresh Postgres:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate`, `lint` (graph check: 22 modules, 11 packages), `check-module-standard`, `build` | pass |
+| `pnpm turbo run test` | every package passes except AC76. Its two notifications to Nimal for one proposal were delivered in one pass and compared in order. The check is now order-independent and passes in the replica (`delivery-flow` and `delivery-routing`, 6 of 6) |
+| `e2e` | 8 passed |
+| `e2e:auth` | **93 passed** |
 
 Review loop: still not run (the specclaw-review server isn't connected).

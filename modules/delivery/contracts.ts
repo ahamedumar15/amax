@@ -27,7 +27,8 @@ export type ProposalOwnerChanged = { proposalId: string; key: string; title: str
 export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
 
 /** 081: a proposal made by hand was withdrawn (never deleted). `by` is the actor, "… for user:…" when acting for someone. */
-export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string };
+/** 081 amendment 7 (AC-74): `ownerUserId` (null for none) and `title`, so the owner can be told. */
+export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string; ownerUserId?: string | null; title?: string };
 
 export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed" } as const;
 

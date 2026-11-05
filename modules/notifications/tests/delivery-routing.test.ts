@@ -66,4 +66,35 @@ describe.skipIf(!hasDb)("081 a proposal's owner hears what others do to it (Post
     expect(await bell("kasun", "%CON-605%")).toEqual([]);
     expect(await bell("nimal", "%CON-605%")).toEqual([{ title: "CON-605 has a new owner: Kasun Dias", href: "/delivery/proposals/CON-605" }]);
   }, 120_000);
+
+  it("081 AC74 a withdrawal by someone else tells the owner with the reason; their own, or an agent's for them, doesn't", async () => {
+    const [kasun, maya] = [await db.idOf("kasun"), await db.idOf("maya")];
+    const [con] = await db.q(sql`select id from delivery.project where key = 'CON'`);
+    const withdrawn = (key: string, by: string, owner: string | null) =>
+      db.emit("delivery.proposal.withdrawn", { proposalId: randomUUID(), key, title: "Withdraw test", projectId: con.id as string, by, reason: "Client dropped it", ownerUserId: owner });
+    await withdrawn("CON-701", `user:${maya}`, kasun);
+    await withdrawn("CON-702", `user:${kasun}`, kasun);
+    await withdrawn("CON-703", `agent:claude for user:${kasun}`, kasun);
+    await withdrawn("CON-704", `user:${maya}`, null);
+    await db.drain();
+    expect(await bell("kasun", "CON-70%")).toEqual([{ title: "CON-701 was withdrawn: Client dropped it", href: "/delivery/proposals/CON-701" }]);
+    expect(await bell("maya", "CON-70%")).toEqual([]);
+  }, 120_000);
+
+  it("081 AC75 a rollback reaches the PMs who manage that project (and Admins), not other projects' PMs; a deploy or a test notifies no one", async () => {
+    const nimal = await db.idOf("nimal");
+    await db.t.owner`insert into auth.role_assignment (tenant_id, user_id, role, source) values (${T}, ${nimal}, 'PM', 'manual') on conflict do nothing`;
+    const [con, flt] = await db.q(sql`select id from delivery.project where key in ('CON', 'FLT') order by key`);
+    const deployed = (projectId: string, version: string, status: string) =>
+      db.emit("delivery.release.deployed", { releaseId: randomUUID(), projectId, version, environment: "QA", status, released: false });
+    await deployed(con.id as string, "v8.1.0", "rolled-back");
+    await deployed(flt.id as string, "v8.2.0", "rolled-back");
+    await deployed(flt.id as string, "v8.3.0", "deployed");
+    await deployed(flt.id as string, "v8.4.0", "testing");
+    await db.drain();
+    const heard = async (key: string) => (await bell(key, "Release v8.%")).map((n) => n.title).sort();
+    expect(await heard("nimal")).toEqual(["Release v8.2.0 rolled back in QA"]);
+    expect(await heard("maya")).toEqual(["Release v8.1.0 rolled back in QA", "Release v8.2.0 rolled back in QA"]);
+    expect(await heard("kasun")).toEqual([]);
+  }, 120_000);
 });
