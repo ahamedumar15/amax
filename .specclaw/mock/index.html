@@ -1023,7 +1023,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
   <p class="lede">No screen changes. The allocations copy-month e2e test finds January by the grid's own column and accepts any first month whose window shows the fixtures' January 2027 (September 2026 to January 2027).</p>
 </section>
 <section data-change="081-proposals-end-to-end" id="081-proposals-end-to-end" data-roles="admin leadership pm engineer finance" data-title="CON-H003 Invoice reminders" data-nav="no" data-parent="001-amax-foundation-proposals">
-  <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-proposals">Proposals</a><span>/</span>CON-H003</nav>
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-projects">Projects</a><span>/</span><a href="#001-amax-foundation-project">Contoso Portal</a><span>/</span><a href="#001-amax-foundation-proposals">Proposals</a><span>/</span>CON-H003</nav>
   <div class="row head">
     <div><h1>CON-H003 Invoice reminders</h1><dl style="display:flex;flex-wrap:wrap;gap:10px 28px;margin:4px 0 0">
       <div><dt style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3,#8A86A0)">Project</dt><dd style="margin:4px 0 0"><span class="dot" style="background:var(--violet)"></span><a href="#001-amax-foundation-project">Contoso Portal</a></dd></div>
@@ -1033,6 +1033,7 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     </dl></div>
     <div class="actions"><button class="btn">✦ Ask amax</button><button class="btn" style="background:transparent;border:1px solid var(--danger,#D64545);color:var(--danger,#D64545)">Withdraw</button></div>
   </div>
+  <div class="tabs" role="group" aria-label="Sections" style="margin:0 0 20px"><a class="btn sm" href="#001-amax-foundation-project">Board</a><a class="btn sm" href="#001-amax-foundation-proposals" aria-pressed="true" aria-current="page">Proposals</a><a class="btn sm" href="#001-amax-foundation-releases">Releases</a><a class="btn sm" href="#">Risks and decisions</a><a class="btn sm" href="#">Team</a><a class="btn sm" href="#001-amax-foundation-financials">Contract</a></div>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card pinnable"><div class="card-head"><h2>Time</h2></div><div class="big">11.5 h <span class="muted" style="font-size:15px;font-weight:500">approved, of 16 h estimated</span></div><div class="gbar"><i style="width:72%;background:var(--violet)"></i></div><p class="muted" style="font-size:13px">From approved timesheet entries logged against CON-H003.</p></div>
     <div class="card pinnable"><div class="card-head"><h2>Release</h2></div><p><a href="#"><b>v2.5.0</b></a></p><ol aria-label="Environments" style="display:flex;gap:4px;list-style:none;margin:8px 0 0;padding:0;font-size:13px"><li style="flex:1;border-top:6px solid var(--mint);padding-top:8px"><b>✓ Dev</b><br><small class="muted">Deployed, Oct 8</small></li><li style="flex:1;border-top:6px solid var(--violet);padding-top:8px"><b>● QA</b><br><small class="muted">Testing, Oct 12</small></li><li style="flex:1;border-top:6px solid var(--line,#E4E1F0);padding-top:8px"><b>○ UAT</b><br><small class="muted">Not yet</small></li><li style="flex:1;border-top:6px solid var(--line,#E4E1F0);padding-top:8px"><b>○ Prod</b><br><small class="muted">Not yet</small></li></ol></div>
@@ -1110,6 +1111,11 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
       <div role="img" aria-label="9 of 16 tasks done: 6 by agents, 3 by people, 7 open" style="display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:var(--sunken,#F1EFF8);margin:10px 0"><i style="flex-grow:6;background:var(--violet)"></i><i style="flex-grow:3;background:var(--mint)"></i><i style="flex-grow:7;background:var(--line,#E4E1F0)"></i></div>
       <p style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip agent">✦ Agents 6</span><span class="chip good">● People 3</span><span class="chip">○ Open 7</span></p></section>
   </div>
+  <h2 style="margin-top:32px">Amendment 5: one way through Delivery</h2>
+  <p class="muted" style="font-size:13px">Above, the proposal's trail now runs <b>Projects / Contoso Portal / Proposals / CON-H003</b>, and the project's tabs stay, with Proposals marked, so the board is one click away (AC-54, AC-55). A release page reads <b>Projects / Contoso Portal / Releases / v2.5.0</b>, with Releases marked. In the Proposals and Releases lists, the project and the release are links that look like the text they replace (AC-56).</p>
+  <div class="card flush"><table class="tbl"><thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Release</th></tr></thead><tbody>
+    <tr><td><a href="#"><b>CON-014</b> Invoice export to PDF</a></td><td><span class="dot" style="background:var(--violet)"></span><a href="#001-amax-foundation-project" style="color:inherit;text-decoration:none">Contoso Portal</a></td><td><span class="chip agent">Building</span></td><td><a href="#" style="color:inherit;text-decoration:none">v2.5.0</a></td></tr>
+  </tbody></table></div>
 </section>
 <section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
   <h1>Dev starts fresh</h1>
@@ -1666,8 +1672,8 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
       <thead><tr><th>Release</th><th>Project</th><th class="num">Proposals</th><th>Dev</th><th>QA</th><th>UAT</th><th>Prod</th><th class="num">Action</th></tr></thead>
       <tbody>
       <tr><td><b>v2.5.0</b></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td class="num">3</td><td class="muted">–</td><td class="muted">–</td><td class="muted">–</td><td class="muted">–</td><td class="num muted">Building</td></tr>
-      <tr><td><b>v2.4.0</b></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td class="num">2</td><td>Oct 12</td><td><span class="chip info">Oct 15, testing</span></td><td class="muted">–</td><td class="muted">–</td><td class="num"><button class="btn sm primary">Promote to UAT</button></td></tr>
-      <tr><td><b>v1.8.0</b></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td class="num">5</td><td>Oct 8</td><td>Oct 12</td><td><span class="chip bad">Rolled back Oct 14</span><small>Run 1190, waiting on Maya 2 d</small></td><td class="muted">–</td><td class="num"><button class="btn sm">Retry UAT</button></td></tr>
+      <tr><td><b>v2.4.0</b></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td class="num">2</td><td>Oct 12</td><td><span class="chip info">Oct 15, testing</span></td><td class="muted">–</td><td class="muted">–</td><td class="num muted">Next: UAT</td></tr>
+      <tr><td><b>v1.8.0</b></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td class="num">5</td><td>Oct 8</td><td>Oct 12</td><td><span class="chip bad">Rolled back Oct 14</span><small>Run 1190, waiting on Maya 2 d</small></td><td class="muted">–</td><td class="num muted">Retry UAT</td></tr>
       <tr><td><b>v0.9.2</b></td><td><span class="dot" style="background:var(--pink)"></span>HR Insights</td><td class="num">4</td><td>Sep 22</td><td>Sep 25</td><td>Sep 29</td><td><span class="chip good">Oct 1</span></td><td class="num muted">Live</td></tr>
       </tbody></table></div>
   </div>

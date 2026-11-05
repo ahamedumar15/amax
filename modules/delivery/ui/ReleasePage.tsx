@@ -1,7 +1,8 @@
 import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { facet, PinButton } from "@amax/ui";
-import { proposalHref } from "../contracts";
+import { projectHref, proposalHref } from "../contracts";
+import { ProjectTabs } from "./ProjectSections";
 import { deploymentPin, historyPin, proposalPin } from "../pins";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { AskButton } from "./AskButton";
@@ -22,8 +23,11 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
   const included = release.proposals.filter((p) => p.included);
   return (
     <>
-      <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery/releases">Releases</a><span>/</span><a href={`/delivery/p/${release.projectKey}`}>{release.projectName}</a><span>/</span>{release.version}</nav>
+      {/* 081 amendment 5 (AC-54): the trail follows the project. */}
+      <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery">Projects</a><span>/</span><a href={projectHref(release.projectKey)}>{release.projectName}</a><span>/</span><a href={projectHref(release.projectKey, "releases")}>Releases</a><span>/</span>{release.version}</nav>
       <div className="row head"><div><h1>{release.projectName} {release.version}</h1><p className="lede">{included.length} proposals. Released means it reached {envs.find((e) => e.isProd)?.name ?? "a Prod environment (this project has none)"}. Changes happen in chat.</p></div></div>
+      {/* AC-55: the project's tabs stay, Releases current. */}
+      <ProjectTabs projectKey={release.projectKey} current="releases" />
       <div className="cols even" style={{ marginBottom: 28 }}>
         <div className="card pinnable">
           <div className="card-head"><h2>Tag and proposals</h2>{pin("proposals")}</div>

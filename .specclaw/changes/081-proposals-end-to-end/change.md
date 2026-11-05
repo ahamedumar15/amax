@@ -256,7 +256,8 @@ an agent never writes without a person's confirm or accept (BR-5).
     **Revised 2026-11-04 (Amendment 4).** The client found that Building and Verified cards offered nothing to move them on:
     - **Building** always offers "Move <key> to Verified". While tasks are open the label says how many, for example
       "Move CON-014 to Verified (2 tasks open)". The person decides; the agent's Ready to verify still nudges once all
-      tasks are done (AC-32).
+      tasks are done (AC-32). While a task is open, "Mark T<n> of <key> done" comes **first** and the move second
+      (revised 2026-11-05, after the move was picked by mistake in the client's demo).
     - **Verified, in a release not yet live:** Released isn't a board move (it comes from a Prod deployment), so the pin
       offers that release's next deployment first, for example "Record a deployment of CON v2.4.0 to UAT"
       (`record_deployment`, with its own permission).
@@ -501,6 +502,86 @@ Overview already counts it).
 - **Tests:** unit tests and `apps/web/tests/e2e/delivery.spec.ts`.
 
 
+## Amendment 5 (2026-11-05): one way through Delivery: project, then its proposals and releases
+
+The client asked for a proper flow between a project and its proposals. Today the way back depends on the page:
+- **Proposal page:** the trail starts at the cross-project Proposals list, and its project link opens the project's
+  Proposals tab, not the board.
+- **Release page:** the trail starts at Releases, but its project link opens the board.
+- **Proposal and release pages:** they drop the project's tabs, so going back to the board takes two clicks.
+- **Lists:** they name projects and releases without linking them.
+
+This amendment gives Delivery one hierarchy, the same from wherever a page is opened (the board, a list, search, chat
+or a notification):
+
+```
+Projects ─► Project [ Board | Proposals | Releases | Risks and decisions | Team | Contract ]
+                ├─► Proposal ──► its release
+                └─► Release  ──► its proposals
+```
+
+There are no new screens, writes, tools or tables: it is links, breadcrumbs and the existing tab bar.
+
+54. **AC-54** Breadcrumbs follow the project:
+    - A proposal's page reads "Projects / <Project> / Proposals / <key>".
+    - A release's page reads "Projects / <Project> / Releases / <version>".
+    - Each step is a link: the portfolio, the project's board, and the project's tab.
+
+    "Proposal not found" and "Release not found" keep a single step back to their list. This supersedes AC-6's trail.
+55. **AC-55** Proposal and release pages show the project's tab bar under their heading, with **Proposals** or
+    **Releases** marked as the current tab (`aria-current="page"`), so the board is always one click away.
+56. **AC-56** Lists link what they name:
+    - **Proposals lists** (the portfolio list and a project's Proposals tab): the project links to its board, and the
+      release to its page.
+    - **Releases lists:** the project links to its board.
+
+    The links look like the text they replace (no new colour; underlined on hover and focus), so the 001 mock and its
+    visual test still hold.
+57. **AC-57** The sidebar keeps Projects, Proposals and Releases. The cross-project lists stay portfolio views, and a
+    record opened from them still shows its project's trail and tabs (AC-54, AC-55).
+58. **AC-58** Tests:
+    - **Unit:** the trails and tabs on a proposal and a release page, and the list links.
+    - **Browser:** board → a card → the proposal page → **Board** tab, back on the board. Proposals list → a project
+      link → its board. A release page's trail → the project's Releases tab. Axe passes.
+    - The 001 visual test still passes.
+
+59. **AC-59** **Reopen a task closed by mistake** (added 2026-11-05 at the client's request; approved with "build it").
+    - **In chat:** "Reopen T1 of CON-018" runs a new `reopen_task` tool (permission `delivery:task:done`). It shows a
+      confirm card, "Reopen T1 of CON-018: <title>", with a **Reopen** button and the receipt "Done: reopened T1 of
+      CON-018".
+    - **What it changes:** the task is open again, and the counts and meters fall back. The history gets a "<ref>
+      <title> reopened" line with who did it, and the audit and activity feed record it.
+    - **The agent:** a `delivery.task.reopened` event makes it take back a Ready to verify that no longer fits.
+    - **Where it applies:** only to a hand-made proposal that isn't released or withdrawn; a spec proposal's tasks
+      follow its repo. Reopening an open task changes nothing. A Verified proposal stays Verified, and its card says so.
+    - **From the pin:** a proposal's pin offers "Reopen T<n> of <key>" for the task closed most recently in the last
+      day. With three suggestions at most, "Make me the owner" outranks Edit and Reopen.
+    - **Tests:** `reopen-task-081`: reopen, counts, history, card, pin offer, the agent, and refusals. Plus the scripted
+      chat rule.
+
+60. **AC-60** **An environment's actions come from its pin** (client, 2026-11-05: "build").
+    - **The rows:** the Environments card's rows lose their Rename, Move, Make Prod and Remove buttons, and each row
+      keeps its pin. This is the same rule as board cards: a record's actions are said once, on its pin.
+    - **The pin offers:** Make Prod, or Unmark Prod for the Prod one, then Rename. Third comes Remove while nothing was
+      deployed there, else Move (three suggestions at most). Making an unused environment Prod stays one click, as
+      056's flow needs.
+    - **Adding:** an environment has no row, so the card keeps its one "Ask amax to add an environment". The card's
+      own pin offers it too.
+    - **Tests:** `pin-offers` AC38 covers the new offers; 056's browser test now uses the row's pin.
+
+61. **AC-61** **A release's next deployment comes from its pin** (client, 2026-11-05: "fix that too").
+    - **The Releases table:** rows lose their Promote, Retry and Finish buttons. The last column says what's next as
+      text ("Next: UAT", "Retry UAT", "Finish Prod", "Live", "Building").
+    - **The row's pin:** it offers "Record a deployment of <release> to <environment>", now also for Prod still
+      testing (Finish).
+    - **The 001 mock:** its release rows say the same, the one edit to that change's section, so the visual test
+      holds.
+    - **Not changed:** the release page's own Ask amax buttons and the Overview's "Retry" on its waiting list stay.
+
+**Approved 2026-11-05.** **Affected:** `modules/delivery/ui/ProposalPage.tsx`, `ReleasePage.tsx`, `ProposalsPage.tsx`,
+`ReleasesPage.tsx`, `ProjectSections.tsx` (the tabs take a current section), `delivery.css`, tests, and
+`apps/web/tests/e2e/delivery.spec.ts`.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -575,6 +656,10 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T23` — Amendment 4: browser tests, axe, hand walk-through light and dark, CI replica (AC-53)
   Files: apps/web/tests/e2e/delivery.spec.ts, apps/web/tests/e2e/delivery-visual.spec.ts, apps/web/tests/e2e/ai-usage.spec.ts, packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, modules/delivery/server/pin-offers.ts, modules/delivery/server/closed-by.ts, modules/delivery/server/queries.ts, modules/delivery/server/overview.ts, modules/delivery/fixtures/index.ts, modules/delivery/ui/band.ts, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/*.test.ts, modules/delivery/README.md, .specclaw/changes/081-proposals-end-to-end/audit.md
   Depends: T21, T22
+
+- [x] `T24` — Amendment 5: project-first breadcrumbs, the project's tabs on proposal and release pages, list links, reopen a task, environment and release actions on the pin; unit and browser tests (AC-54 to AC-61)
+  Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/delivery.css, modules/delivery/contracts.ts, modules/delivery/module.ts, modules/delivery/mcp.ts, modules/delivery/server/tasks.ts, modules/delivery/server/agent.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/server/write-cards.ts, modules/delivery/server/pin-offers.ts, modules/delivery/ui/EnvironmentsCard.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/tests/ui-logic.test.ts, .specclaw/mock/index.html, packages/ai/src/scripted-writes.ts, apps/web/tests/e2e/releases.spec.ts, modules/delivery/tests/navigation-081.test.ts, modules/delivery/tests/reopen-task-081.test.ts, apps/web/tests/e2e/delivery.spec.ts
+  Depends: T23
 
 ## Verify
 
@@ -781,5 +866,39 @@ bell. **48 of 48 checks passed**, with axe clean on every page checked and no pa
 - **Next release heading:** its text read "v2.5.03 proposals" to screen readers and copy-paste. It now has spaces.
 - **Demo proposals' dates:** they were dated the day the demo data loads ("Made by hand Nov 5, updated Oct 16"). They
   are now made on Sep 14, before any demo release and before their Oct 16 update.
+
+**Test-only fix in another change's file (2026-11-05):** `modules/compliance/tests/registers.test.ts` AC2 reported a
+breach due 72 h from the real now, then checked its last-week reminder from a fixed Nov 1. From 2026-11-05 that deadline
+fell 8 days after Nov 1, so the test failed on every branch, `main` included (date drift, not 081's code). It now checks
+from 6 days before the breach's own deadline. 5 of 5 pass.
+
+### Amendment 5 verification (2026-11-05)
+
+**On the running app (dev database, read-only checks):**
+- **Trail and tabs:** board → card → proposal (trail "Projects / Contoso Portal / Proposals / CON-014", tabs with
+  Proposals current) → **Board** in one click. A release's trail leads to the project's Releases tab.
+- **Lists:** they link the project and the release, and the links look like the text they replace.
+- **Environments and releases:** the rows have no buttons, and their pins offer the actions (AC-60, AC-61).
+- **Reopen:** a task is reopened from the pin, and the history records it (AC-59).
+- **Checks:** axe clean, no page errors.
+
+**Roles:** with one role per person (Sahan Admin; Maya PM, managing CON and FLT; Kasun, Nimal, Ayesha and Tharushi
+Engineer), each person's pins offer exactly their permissions. The PM gets nothing to deploy on HRI, which she doesn't
+manage. An engineer allocated to CON and FLT can move proposals and close tasks there, but can't deploy. An engineer
+with no allocation gets nothing. Checked in the browser, and confirmed on the server where the dev server was still
+compiling.
+
+**Linux replica of CI** over the final tree:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate`, `lint`, `check-module-standard`, `build`, `e2e` | pass (`e2e` 8 passed) |
+| `pnpm turbo run test` | every package passes except `onboarding/exit` (a 5 s timeout under load), unrelated to 081 |
+| `e2e:auth` | **91 passed**, including "081 amendment 5" (navigation, reopen), the pin-driven release and environment flows, and the 001 visual test |
+
+Fixed on the way:
+- **The navigation browser test** searched the list, because AMX's imported specs fill the first page.
+- **The reopen browser test** now removes its two feed lines, which had displaced the Overview test's demo data.
+- **`auth.spec` AC5** failed once (known flaky) and passed on the rerun.
 
 Review loop: still not run (the specclaw-review server isn't connected).

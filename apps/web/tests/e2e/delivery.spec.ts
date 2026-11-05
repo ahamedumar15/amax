@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { askAndConfirm } from "./ask";
 import { capture, diffRatio } from "./diff";
-import { lastTaskClosedByCi } from "./proposal-agent";
+import { forgetActivity, lastTaskClosedByCi } from "./proposal-agent";
 
 const mock = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
 
@@ -89,10 +89,15 @@ test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
 test("AC2 releases: the map, and a promotion asked of amax reaches the next environment", async ({ page }) => {
   test.setTimeout(60_000);
   await signIn(page, "sahan@lumenlabs.test", "/delivery/releases");
-  await expect(page.getByRole("button", { name: "Retry UAT" })).toBeVisible();
+  // 081 amendment 5 (AC-61): rows say what's next; the row's pin records it.
+  await expect(page.locator("tr", { hasText: "v1.8.0" })).toContainText("Retry UAT");
   const row = page.locator("tr", { hasText: "v2.4.0" });
-  await askAndConfirm(page, row.getByRole("button", { name: "Promote to UAT" }), { pin: "Contoso Portal v2.4.0", prompt: "Record a deployment of CON v2.4.0 to UAT" });
-  await expect(row.getByRole("button", { name: "Promote to Prod" })).toBeVisible();
+  await expect(row).toContainText("Next: UAT");
+  await expect(page.locator(".card.flush tbody tr button:not([data-pin])")).toHaveCount(0);
+  await row.getByRole("button", { name: "Add Contoso Portal v2.4.0 to chat" }).press("Enter");
+  const next = page.getByRole("list", { name: "Suggestions for this page" }).getByRole("button", { name: "Record a deployment of CON v2.4.0 to UAT", exact: true });
+  await askAndConfirm(page, next, { pin: "Contoso Portal v2.4.0", prompt: "Record a deployment of CON v2.4.0 to UAT", confirm: "Record" });
+  await expect(page.locator("tr", { hasText: "v2.4.0" })).toContainText("Next: Prod");
   expect(await axe(page)).toEqual([]);
 });
 
@@ -335,4 +340,59 @@ test("081 amendment 4 the proposal page: facts, stepper, a folded task list, and
   await page.reload();
   await expect(page.locator(".dv-steps")).toHaveAttribute("aria-label", `${key} stage: Proposed, withdrawn`);
   await expect(actions.getByRole("button", { name: `Withdraw ${key}` })).toHaveCount(0);
+});
+
+// 081 amendment 5 (AC-54 to AC-58): one way through Delivery. From the board into a proposal and back with one click;
+// from a list to a project; from a release up its project's trail.
+test("081 amendment 5 the project's trail and tabs lead from the board to a proposal and back, and lists link projects", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  await page.locator(".tcard", { hasText: "CON-014" }).getByRole("link", { name: "Invoice export to PDF" }).click();
+  await expect(page).toHaveURL(/\/delivery\/proposals\/CON-014$/);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(/Projects\s*\/\s*Contoso Portal\s*\/\s*Proposals\s*\/\s*CON-014/);
+  const tabs = page.getByRole("navigation", { name: "Sections" });
+  await expect(tabs.locator('[aria-current="page"]')).toHaveText("Proposals");
+  expect(await axe(page)).toEqual([]);
+  await tabs.getByRole("link", { name: "Board", exact: true }).click();
+  await expect(page).toHaveURL(/\/delivery\/p\/CON$/);
+
+  // The e2e tenant also holds AMX's imported specs, which fill the list's first page: search for the row (AC-16).
+  await page.goto("/delivery/proposals?q=CON-014");
+  await page.locator("tbody tr", { hasText: "CON-014" }).getByRole("link", { name: "Contoso Portal" }).click();
+  await expect(page).toHaveURL(/\/delivery\/p\/CON$/);
+
+  await page.goto("/delivery/releases/CON/v2.4.0");
+  await expect(page.getByRole("navigation", { name: "Sections" }).locator('[aria-current="page"]')).toHaveText("Releases");
+  await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Releases" }).click();
+  await expect(page).toHaveURL(/\/delivery\/p\/CON\/releases$/);
+});
+
+// 081 amendment 5 (AC-59): a task closed by mistake is reopened from the proposal's pin, through its confirm card.
+test("081 amendment 5 a task closed by mistake is reopened from the pin, and the history says so", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const send = async (button: string) => {
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+    const card = page.getByRole("group", { name: /^Confirm:/ }).last();
+    await card.getByRole("button", { name: button, exact: true }).click();
+    await expect(card.locator(".cc-receipt")).toBeVisible();
+    return (await card.locator(".cc-receipt").innerText()).replace(/\s+/g, " ");
+  };
+  await page.getByRole("button", { name: "Ask amax", exact: true }).first().click();
+  await page.getByLabel("Message amax").fill("Add a proposal to Contoso Portal (CON): Reopen check");
+  const key = (await send("Add it")).match(/CON-\d+/)![0];
+  await page.getByLabel("Message amax").fill(`Add a task to ${key}: Draft it`);
+  await send("Add the task");
+  await page.getByLabel("Message amax").fill(`Mark T1 of ${key} done`);
+  await send("Close the task");
+  await page.goto(`/delivery/proposals/${key}`);
+  await page.locator("h1 button[data-pin]").first().press("Enter");
+  const offers = page.getByRole("list", { name: "Suggestions for this page" });
+  await offers.getByRole("button", { name: `Reopen T1 of ${key}`, exact: true }).click();
+  await expect(page.getByLabel("Message amax")).toHaveValue(`Reopen T1 of ${key}`);
+  expect(await send("Reopen")).toContain(`Done: reopened T1 of ${key}`);
+  await page.reload();
+  await expect(page.locator(".dv-timeline li.reopened")).toContainText("T1 Draft it reopened");
+  await expect(page.locator(".dv-tasks .card-head")).toContainText("1 open");
+  // Closing and reopening wrote feed lines, as real use does; the Overview's e2e reads the fixtures' feed.
+  await forgetActivity(`${key} Reopen check`);
 });

@@ -5,7 +5,7 @@ import { PHASES, proposalHref } from "./contracts";
 import { pinOf } from "./pins";
 import { ctxFor } from "./server/context";
 import { getActivity, listActivity } from "./server/activity";
-import { markTaskDone, TaskInput } from "./server/tasks";
+import { markTaskDone, reopenTask, TaskInput } from "./server/tasks";
 import { COMMIT_TIME_MANAGE, commitTimeSettings, setCommitTimeLogging } from "./server/commit-time";
 import { syncProposal } from "./server/services";
 import { getRepoSync, getSyncPush, linkProjectRepo } from "./server/repo-sync";
@@ -14,7 +14,7 @@ import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, moveCard, proposeCreate, taskCard, updateCard } from "./server/proposal-card";
-import { createReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
+import { createReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
 import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
@@ -108,6 +108,9 @@ export const mcpTools: McpToolDef[] = [
     permission: "delivery:project:link", input: z.object({ projectKey: z.string() }), card: unlinkCard, service: linkProjectRepo, run: (v, a, s = "mcp") => linkProjectRepo(ctxFor(v, s), { projectKey: a.projectKey, repoUrl: null }) }),
   tool({ name: "mark_task_done", description: "Mark one task of a proposal done by its id, e.g. CON-014 T3, optionally naming the commit that finished it.", scope: "write", permission: "delivery:task:done",
     input: z.object({ key: z.string(), task: z.string(), commit: z.string().optional() }), card: taskDoneCard, service: markTaskDone, run: (v, a, s = "mcp") => markTaskDone(ctxFor(v, s), a) }),
+  // 081 amendment 5 (AC-59): the undo for a task closed by mistake.
+  tool({ name: "reopen_task", description: "Open again a task closed by mistake, e.g. CON-018 T1, on a proposal made by hand that isn't released or withdrawn. A spec proposal's tasks follow its repo. The proposal doesn't move back a phase.", scope: "write", permission: "delivery:task:done",
+    input: z.object({ key: z.string(), task: z.string() }), card: reopenCard, service: reopenTask, run: (v, a, s = "mcp") => reopenTask(ctxFor(v, s), a) }),
   // 008 AC-6: drafting timesheets from commits, per legal entity, Admin only.
   tool({ ...read, permission: COMMIT_TIME_MANAGE, pin: view, name: "get_commit_time_logging", description: "Which legal entities draft timesheet hours from commits, and when their people were told.", input: z.object({}), run: (v) => commitTimeSettings(v) }),
   tool({ name: "set_commit_time_logging", description: "Switch drafting timesheet hours from commits on or off for a legal entity. Switching it on needs peopleNotified: true, after the entity's people were told. Commit data only drafts timesheets, never ratings.", scope: "write", permission: COMMIT_TIME_MANAGE,

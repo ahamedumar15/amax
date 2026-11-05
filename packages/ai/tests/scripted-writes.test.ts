@@ -67,6 +67,7 @@ describe("081 scripted Delivery pin offers", () => {
     ["new proposal in a project", "Add a proposal to Contoso Portal (CON): Dunning emails", [["create_proposal", { projectKey: "CON", title: "Dunning emails" }]]],
     ["next release", "Create release v2.6.0 of CON", [["create_release", { projectKey: "CON", version: "v2.6.0" }]]],
     ["mark a task done", "Mark T2 of CON-014 done", [["mark_task_done", { key: "CON-014", task: "T2" }]]],
+    ["reopen a task (amendment 5)", "Reopen T1 of CON-018", [["reopen_task", { key: "CON-018", task: "T1" }]]],
     ["withdraw, with the reason typed on (amendment 4)", "Withdraw CON-018. Reason: not needed any more", [["withdraw_proposal", { key: "CON-018", reason: "not needed any more" }]]],
     ["link a repo with its branch", "Link FLT's repo to https://github.com/example/fleet-tracker on main", [["link_project_repo", { projectKey: "FLT", repoUrl: "https://github.com/example/fleet-tracker", defaultBranch: "main" }]]],
     ["relink without a branch", "Link CON's repo to https://github.com/example/contoso-portal", [["link_project_repo", { projectKey: "CON", repoUrl: "https://github.com/example/contoso-portal" }]]],

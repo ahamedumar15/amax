@@ -47,3 +47,17 @@ export async function lastTaskClosedByCi(title: string) {
     await client.end();
   }
 }
+
+/**
+ * 081 amendment 5: a browser test that closes and reopens a task through chat writes Overview feed lines, as real use
+ * does. This removes that run's lines (by their text), so the Overview's own e2e reads the fixtures' feed.
+ */
+export async function forgetActivity(text: string) {
+  const url = Object.assign(new URL(process.env.DATABASE_MIGRATE_URL ?? "postgres://amax:amax@127.0.0.1:5440/amax"), { pathname: `/${process.env.E2E_DB ?? "amax_e2e"}` }).toString();
+  const { db, client } = createDb(url, { max: 1, connection: { options: "-c role=amax_app" } as never });
+  try {
+    await withTenant(db, T, (tx) => tx.execute(sql`delete from delivery.activity where text like ${`%${text}%`}`));
+  } finally {
+    await client.end();
+  }
+}

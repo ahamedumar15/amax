@@ -23,7 +23,7 @@ export type ProposalRekeyed = { proposalId: string; projectId: string; from: str
 /** 081: a proposal made by hand was withdrawn (never deleted). `by` is the actor, "… for user:…" when acting for someone. */
 export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", commitTime: "delivery.commit.time" } as const;
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time" } as const;
 
 /**
  * 081: a proposal's page. It shares the `proposals/:phase` segment: a phase name (lowercase) is the list, anything
@@ -62,6 +62,8 @@ export type CommitTime = { userId: string; projectId: string; projectKey: string
 
 /** 008: a proposal task was closed (by a commit, CI or a person). `by` is the actor, "… for user:…" when acting for someone. */
 export type TaskDone = { proposalId: string; key: string; task: string; projectId: string; by: string; ownerUserId?: string | null };
+/** 081 amendment 5: a task closed by mistake, opened again (a hand-made proposal's). */
+export type TaskReopened = { proposalId: string; key: string; task: string; projectId: string; by: string };
 
 const toRef = (r: Record<string, unknown>): ProjectRef => ({
   id: r.id as string, key: r.key as string, name: r.name as string, client: r.client as string,

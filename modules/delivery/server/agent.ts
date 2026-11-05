@@ -3,7 +3,7 @@ import type { EventHandlerDef } from "@amax/core";
 import type { Tx } from "@amax/db";
 import { contextFor } from "@amax/core/server";
 import { createSuggestion, withdrawSuggestions } from "@amax/agents/server";
-import { EVENTS, proposalHref, type ProposalPhaseChanged, type ProposalWithdrawn, type TaskDone } from "../contracts";
+import { EVENTS, proposalHref, type ProposalPhaseChanged, type ProposalWithdrawn, type TaskReopened, type TaskDone } from "../contracts";
 import { readyToVerify, suggestedOwner } from "./proposal-kinds";
 
 // 081 amendment 2 (AC-32 to AC-34): the Delivery agent. It reads Delivery's own events, suggests (never writes), and
@@ -74,4 +74,6 @@ export const proposalAgent: EventHandlerDef[] = [
   // last task closed must not withdraw a suggestion that still fits (081 amendment 2 walk-through, 2026-11-04).
   { id: "delivery.agent.phase", event: EVENTS.proposalPhaseChanged, handle: ({ tx, tenantId, event }) => tidy(tx, tenantId, (event.payload as ProposalPhaseChanged).proposalId) },
   { id: "delivery.agent.withdrawn", event: EVENTS.proposalWithdrawn, handle: ({ tx, tenantId, event }) => tidy(tx, tenantId, (event.payload as ProposalWithdrawn).proposalId) },
+  // 081 amendment 5 (AC-59): a reopened task makes Ready to verify untrue again.
+  { id: "delivery.agent.reopened", event: EVENTS.taskReopened, handle: ({ tx, tenantId, event }) => tidy(tx, tenantId, (event.payload as TaskReopened).proposalId) },
 ];

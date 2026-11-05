@@ -67,7 +67,8 @@ export async function proposalOffers(v: Viewer, a: Args) {
   if (!p || p.withdrawn || p.phase === "released") return [];
   const facts = await read(v, async (tx) => {
     const [x] = await tx.execute(sql`select pr.id as project_id,
-        (select t.ref from delivery.task t where t.proposal_id = p.id and not t.done order by length(t.ref), t.ref limit 1) as open_task
+        (select t.ref from delivery.task t where t.proposal_id = p.id and not t.done order by length(t.ref), t.ref limit 1) as open_task,
+        (select t.ref from delivery.task t where t.proposal_id = p.id and t.done and t.done_at > now() - interval '1 day' order by t.done_at desc limit 1) as just_closed
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.id = ${p.id}`);
     // The newest release of the project not yet live in Prod: where a verified proposal with no release goes.
     const [r] = p.phase === "verified" && !p.release ? await tx.execute(sql`select r.version, coalesce((select string_agg(q.key, ', ' order by q.key) from delivery.proposal q where q.release_id = r.id), '') as keys
@@ -75,7 +76,7 @@ export async function proposalOffers(v: Viewer, a: Args) {
         and not exists (select 1 from delivery.deployment d where d.release_id = r.id and d.released and d.voided_at is null)
       order by r.created_at desc limit 1`) : [];
     const [inRelease] = p.phase === "verified" && p.release ? await tx.execute(sql`select release_id from delivery.proposal where id = ${p.id}`) : [];
-    return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null,
+    return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, justClosed: (x.just_closed as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null,
       releaseId: (inRelease?.release_id as string | null) ?? null };
   });
   // 081 amendment 4 (AC-30 revised): Verified moves to Released only when its release reaches Prod, so a verified
@@ -84,7 +85,7 @@ export async function proposalOffers(v: Viewer, a: Args) {
   return [...deploy, ...allowed(v, proposalGated(p, v.userId, facts), facts.projectId)].slice(0, MAX);
 }
 
-function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; release: { version: string; keys: string } | null }): Gated[] {
+function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; justClosed?: string | null; release: { version: string; keys: string } | null }): Gated[] {
   const owner: Gated[] = p.ownerUserId ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
   const task: Gated[] = f.openTask ? [{ label: `Mark ${f.openTask} of ${p.key} done`, prompt: `Mark ${f.openTask} of ${p.key} done`, tool: "mark_task_done", permission: "delivery:task:done" }] : [];
   const release: Gated[] = f.release ? [{ label: `Put ${p.key} in ${p.projectKey} ${f.release.version}`, prompt: `Set the proposals in ${p.projectKey} ${f.release.version} to: ${[f.release.keys, p.key].filter(Boolean).join(", ")}`,
@@ -99,7 +100,13 @@ function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null;
   const first: Gated[] = p.tasksTotal === 0 ? [{ label: `Add a task to ${p.key}`, prompt: `Add a task to ${p.key}: `, tool: "add_proposal_task", permission: "delivery:task:done" }] : [];
   // 081 amendment 4 (AC-46): the page's header no longer has an Edit button, so the pin offers it.
   const edit: Gated[] = [{ label: `Edit ${p.key}`, prompt: `Change ${p.key}: `, tool: "update_proposal", permission: "delivery:proposal:create" }];
-  return [...move, ...task, ...edit, ...first, ...owner, ...release];
+  // Building with a task still open: closing it is the next step, so it comes first and the early move second (found in
+  // the client's demo: the move, listed first, was easy to pick by mistake).
+  // 081 amendment 5 (AC-59): a task closed in the last day can be reopened, in case it was closed by mistake.
+  const reopen: Gated[] = f.justClosed ? [{ label: `Reopen ${f.justClosed} of ${p.key}`, prompt: `Reopen ${f.justClosed} of ${p.key}`, tool: "reopen_task", permission: "delivery:task:done" }] : [];
+  // An unowned proposal's "Make me the owner" outranks Edit and Reopen (three suggestions at most).
+  if (p.phase === "building" && task.length) return [...task, ...move, ...owner, ...reopen, ...edit, ...first, ...release];
+  return [...move, ...task, ...owner, ...reopen, ...edit, ...first, ...release];
 }
 
 /** A release: its next environment, its proposals, its tag. One live in Prod has nothing left to deploy or change. */
@@ -114,7 +121,8 @@ export async function releaseOffers(v: Viewer, a: Args) {
   const live = stages.some((s) => s.isProd && s.status === "deployed");
   // Reached: deployed or testing there. A rolled-back environment isn't, so its retry is what comes next.
   const reached = stages.reduce((at, s, i) => (s.status === "deployed" || s.status === "testing" ? i : at), -1);
-  const next = live ? undefined : stages[reached + 1];
+  // Prod still testing is finished in place (the table's "Finish Prod"), so its deployment is what comes next.
+  const next = live ? undefined : stages[reached]?.isProd && stages[reached].status === "testing" ? stages[reached] : stages[reached + 1];
   const keys = await read(v, async (tx) => (await tx.execute(sql`select string_agg(key, ', ' order by key) as keys from delivery.proposal where release_id = ${r.id}`))[0]?.keys as string | null);
   return allowed(v, [
     ...(next ? [{ label: `Record a deployment of ${name} to ${next.environment}`, prompt: `Record a deployment of ${name} to ${next.environment}`, tool: "record_deployment", permission: "delivery:deployment:record" }] : []),
@@ -131,11 +139,16 @@ export async function environmentOffers(v: Viewer, a: Args) {
   if (!e) return [];
   const [p] = await read(v, (tx) => tx.execute(sql`select id from delivery.project where key = ${e.projectKey}`));
   const of = `the ${e.name} environment of ${e.projectKey}`;
-  return allowed(v, [
-    ...(e.isProd ? [] : [{ label: `Make ${e.name} the Prod environment of ${e.projectKey}`, prompt: `Make ${e.name} the prod environment of ${e.projectKey}`, tool: "upsert_environment", permission: "delivery:release:create" }]),
-    { label: `Rename ${of}`, prompt: `Rename ${of} to `, tool: "upsert_environment", permission: "delivery:release:create" },
-    ...(e.deployments === 0 ? [{ label: `Remove ${of}`, prompt: `Remove ${of}`, tool: "remove_environment", permission: "delivery:release:create" }] : []),
-  ], (p?.id as string | undefined) ?? null);
+  // 081 amendment 5 (AC-60): the row's buttons moved here. Prod (make or unmark) and Rename first; the third is Remove
+  // while nothing was deployed there, else Move (three suggestions at most).
+  const prod = e.isProd
+    ? { label: `Unmark ${e.name} as the Prod environment of ${e.projectKey}`, prompt: `Unmark ${e.name} as the prod environment of ${e.projectKey}`, tool: "upsert_environment", permission: "delivery:release:create" }
+    : { label: `Make ${e.name} the Prod environment of ${e.projectKey}`, prompt: `Make ${e.name} the prod environment of ${e.projectKey}`, tool: "upsert_environment", permission: "delivery:release:create" };
+  const third = e.deployments === 0
+    ? { label: `Remove ${of}`, prompt: `Remove ${of}`, tool: "remove_environment", permission: "delivery:release:create" }
+    : { label: `Move ${of} to another position`, prompt: `Move ${of} to position `, tool: "upsert_environment", permission: "delivery:release:create" };
+  return allowed(v, [prod, { label: `Rename ${of}`, prompt: `Rename ${of} to `, tool: "upsert_environment", permission: "delivery:release:create" }, third],
+    (p?.id as string | undefined) ?? null);
 }
 
 /** A deployment: void it while it is live (the reason is typed on). */

@@ -65,3 +65,10 @@ export async function withdrawCard(v: Viewer, a: { key: string; reason: string }
   return card(`Withdraw ${a.key}${p ? ` ${p.title as string}` : ""}`, "Withdraw a proposal", [["Proposal", a.key], ["Reason", a.reason],
     ["Kept", "its page and history stay; it leaves lists, counts, the board and its release"]], `withdrew ${a.key}`, "Withdraw");
 }
+
+/** 081 amendment 5 (AC-59): reopen a task closed by mistake; says what it undoes, and when the proposal won't move back. */
+export async function reopenCard(v: Viewer, a: { key: string; task: string }) {
+  const [t] = await withTenant(getRuntime().db, v.tenantId, (tx) => tx.execute(sql`select t.title, p.phase from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.key = ${a.key} and t.ref = ${a.task}`));
+  return card(`Reopen ${a.task} of ${a.key}${t ? `: ${t.title as string}` : ""}`, "Reopen a task", [["Proposal", a.key], ["Task", a.task],
+    ["Note", t?.phase === "verified" ? `${a.key} stays Verified; move it back yourself if it needs more work` : undefined]], `reopened ${a.task} of ${a.key}`, "Reopen");
+}

@@ -10,6 +10,7 @@ import { COLOR, day } from "./parts";
 import { ProposalActions } from "./ProposalActions";
 import { proposalSuggestions, ProposalSuggestions } from "./ProposalSuggestions";
 import { Stepper } from "./Stepper";
+import { ProjectTabs } from "./ProjectSections";
 import { Glyph, STAGE_WORD } from "./BoardBand";
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
@@ -102,6 +103,7 @@ const KIND_SHAPE: Record<EventKind, ReactNode> = {
   created: <path d="M8 3v10M3 8h10" fill="none" strokeWidth="2" />,
   moved: <path d="M3 8h9M9 4.5L12.5 8 9 11.5" fill="none" strokeWidth="2" />,
   task: <path d="M3.5 8.5l3 3 6-7" fill="none" strokeWidth="2.2" />,
+  reopened: <path d="M12.5 5.5A5 5 0 1 0 13 9M12.5 2v3.5H9" fill="none" strokeWidth="1.8" />,
   time: <><circle cx="8" cy="8" r="5.5" fill="none" strokeWidth="1.8" /><path d="M8 5v3.2l2 1.4" fill="none" strokeWidth="1.8" /></>,
   edited: <path d="M3 13l1-3.5L10.5 3l2.5 2.5L6.5 12z" fill="none" strokeWidth="1.6" />,
   withdrawn: <path d="M4 4l8 8M12 4l-8 8" fill="none" strokeWidth="2.2" />,
@@ -138,7 +140,8 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
   const suggested = await proposalSuggestions(viewer, [p.id]);
   return (
     <>
-      <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery/proposals">Proposals</a><span>/</span><a href={projectHref(p.project.key, "proposals")}>{p.project.name}</a><span>/</span>{p.key}</nav>
+      {/* 081 amendment 5 (AC-54): the trail follows the project, however the page was opened. */}
+      <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery">Projects</a><span>/</span><a href={projectHref(p.project.key)}>{p.project.name}</a><span>/</span><a href={projectHref(p.project.key, "proposals")}>Proposals</a><span>/</span>{p.key}</nav>
       <div className="row head">
         <div className="pinnable"><h1>{p.key} {p.title}<PinButton inline pin={ref} /></h1><Facts p={p} /></div>
         <div className="actions">
@@ -147,6 +150,8 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
           <ProposalActions p={p} may={may} />
         </div>
       </div>
+      {/* AC-55: the project's tabs stay, Proposals current, so the board is one click away. */}
+      <ProjectTabs projectKey={p.project.key} current="proposals" />
       <Stepper pin={ref} p={p} />
       <ProposalSuggestions {...suggested} />
       {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn:</b> {withdrawnBecause(p.withdrawReason)} It no longer counts in lists, boards or releases.</p></div>}

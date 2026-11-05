@@ -51,7 +51,7 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
     // Amendment 4 (AC-30 revised): Building always offers Verified, saying how many tasks are open; the fixtures give the
     // rows topped up to the counters' total (CON-014: 5 tasks, T5 open). The label counts open tasks by the counters.
     const p14 = await id(sql`select id from delivery.proposal where key = 'CON-014'`);
-    expect(await labels("get_proposal", maya, { proposalId: p14 })).toEqual(["Move CON-014 to Verified (2 tasks open)", "Mark T5 of CON-014 done", "Edit CON-014"]);
+    expect(await labels("get_proposal", maya, { proposalId: p14 })).toEqual(["Mark T5 of CON-014 done", "Move CON-014 to Verified (2 tasks open)", "Edit CON-014"]);
   });
 
   it("AC30 (revised) a verified proposal in a release that isn't live offers that release's next deployment, first", async () => {
@@ -75,9 +75,16 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
     expect(await labels("get_release", leadership, { releaseId: await rel("v2.4.0") })).toEqual([]);
   });
 
+  it("AC61 a release still testing in Prod offers finishing it there, as the table's Finish Prod", async () => {
+    const [r] = await db.q(sql`select r.id, r.version from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'CON' and r.version = 'v2.5.0'`);
+    await db.t.owner`insert into delivery.deployment (tenant_id, release_id, environment_id, status, at, recorded_by, released)
+      select r.tenant_id, r.id, e.id, 'testing', now(), 'test', false from delivery.release r join delivery.environment e on e.project_id = r.project_id and e.is_prod where r.id = ${r.id as string}`;
+    expect((await labels("get_release", maya, { releaseId: r.id }))[0]).toBe(`Record a deployment of CON ${r.version as string} to Prod`);
+  });
+
   it("AC38 an environment offers Prod, rename and, while unused, remove; a live deployment offers void, a voided one nothing", async () => {
     const prod = await id(sql`select e.id from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = 'CON' and e.is_prod`);
-    expect(await labels("get_environment", maya, { environmentId: prod })).toEqual(["Rename the Prod environment of CON"]);
+    expect(await labels("get_environment", maya, { environmentId: prod })).toEqual(["Unmark Prod as the Prod environment of CON", "Rename the Prod environment of CON", "Move the Prod environment of CON to another position"]);
     await db.t.owner`insert into delivery.environment (tenant_id, project_id, name, position) select tenant_id, id, 'Staging', 9 from delivery.project where key = 'CON'`;
     const staging = await id(sql`select e.id from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = 'CON' and e.name = 'Staging'`);
     expect(await labels("get_environment", maya, { environmentId: staging })).toEqual(["Make Staging the Prod environment of CON", "Rename the Staging environment of CON", "Remove the Staging environment of CON"]);

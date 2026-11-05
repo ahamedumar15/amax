@@ -9,7 +9,7 @@ import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
 import { proposalAgent } from "./server/agent";
 import { proposalKinds } from "./server/proposal-kinds";
-import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ReleaseDeployed, type TaskDone, type CommitTime } from "./contracts";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -95,6 +95,7 @@ export default defineModule({
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
       [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain" }),
       [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain", ownerUserId: "plain" }),
+      [EVENTS.taskReopened]: declarePayload<TaskReopened>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
       [EVENTS.commitTime]: declarePayload<CommitTime>({ userId: "plain", projectId: "plain", projectKey: "plain", proposalKey: "plain", day: "plain", hours: "plain", commit: "plain" }),
     },
   },

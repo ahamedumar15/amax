@@ -34,6 +34,8 @@ const RULES: Rule[] = [
   [new RegExp(`^add a proposal to .+? \\(${KEY}\\): (.+)$`, "i"), (m) => [["create_proposal", { projectKey: m[1], title: m[2].trim() }]]],
   [new RegExp(`^create release (v?\\d+\\.\\d+\\.\\d+) of ${KEY}\\s*$`, "i"), (m) => [["create_release", { projectKey: m[2], version: m[1] }]]],
   [new RegExp(`^mark (T\\d+) of (${KEY.slice(1, -1)}-H?\\d+) done\\s*$`, "i"), (m) => [["mark_task_done", { key: m[2], task: m[1].toUpperCase() }]]],
+  // 081 amendment 5: reopen a task closed by mistake.
+  [new RegExp(`^reopen (T\\d+) of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["reopen_task", { key: m[2], task: m[1].toUpperCase() }]]],
   [new RegExp(`^link ${KEY}'s repo to (\\S+)(?: on (\\S+))?\\s*$`, "i"), (m) => [["link_project_repo", { projectKey: m[1], repoUrl: m[2], ...(m[3] ? { defaultBranch: m[3] } : {}) }]]],
   [new RegExp(`^unlink ${KEY}'s repo\\s*$`, "i"), (m) => [["unlink_project_repo", { projectKey: m[1] }]]],
   [new RegExp(`^create a project: (.+?) \\(${KEY}\\) for (.+?), (fixed|t&m|retainer|internal)\\s*$`, "i"), (m) => [["create_project", { name: m[1].trim(), key: m[2], client: m[3].trim(), billing: m[4].toLowerCase() }]]],

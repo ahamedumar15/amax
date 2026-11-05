@@ -1,7 +1,7 @@
 import type { ScreenProps } from "@amax/core";
 import { canEver } from "@amax/auth";
 import { PinButton } from "@amax/ui";
-import { PHASES, proposalHref, type Phase } from "../contracts";
+import { PHASES, projectHref, proposalHref, releaseHref, type Phase } from "../contracts";
 import { metricsPin, projectPin, proposalPin } from "../pins";
 import { listProjects, listProposals, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
 import { BarChart } from "./charts";
@@ -103,11 +103,11 @@ export function ProposalsTable({ rows, phase, root, project, q, page: asked, pro
               return (
                 <tr key={p.id} className="pinnable">
                   <td data-label="Proposal"><a href={proposalHref(p.key)}><b>{p.key}</b> {p.title}</a></td>
-                  <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} />{p.projectName}</td>
+                  <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} /><a className="quiet" href={projectHref(p.projectKey)}>{p.projectName}</a></td>
                   <td data-label="Phase"><PhaseChip phase={p.phase} /></td>
                   <td data-label="Tasks">{p.tasksTotal > 0 ? <div className="meter" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, background: pct === 100 ? "var(--mint)" : "var(--violet)" }} /></div> : <span className="muted">–</span>}</td>
                   <td data-label="Time" className="num">{Number(p.hours.toFixed(2))} h</td>
-                  <td data-label="Release">{p.release ?? <span className="muted">None</span>}</td>
+                  <td data-label="Release">{p.release ? <a className="quiet" href={releaseHref({ projectKey: p.projectKey, version: p.release })}>{p.release}</a> : <span className="muted">None</span>}</td>
                   <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
                   <td data-label="Owner">{p.ownerName ?? <span className="muted">Unassigned</span>}<PinButton pin={proposalPin(p)} /></td>
                 </tr>

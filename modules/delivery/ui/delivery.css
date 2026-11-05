@@ -318,6 +318,7 @@
 .dv-timeline svg{width:16px;height:16px;margin-top:2px;color:var(--ink-3)}
 .dv-timeline .moved svg{color:var(--chip-agent)}
 .dv-timeline .task svg{color:var(--chip-good)}
+.dv-timeline .reopened svg{color:var(--chip-warn)}
 .dv-timeline .withdrawn svg{color:var(--chip-bad)}
 .dv-timeline li>span small{display:block;margin-top:2px;font-size:12.5px}
 .dv-timeline li>small{white-space:nowrap;font-size:12.5px}
@@ -339,3 +340,6 @@
 /* 081 amendment 4: Repo sync and the band sit above the board; rounding their heights to whole pixels keeps the board
    on whole pixels, as it was before them, so its cards render as crisply as the mock's (where supported). */
 .dv-sync,.dv-band{height:calc-size(auto,round(up,size,1px))}
+/* 081 amendment 5 (AC-56): a list's project or release is a link that looks like the text it replaces. */
+a.quiet{color:inherit;text-decoration:none}
+a.quiet:hover,a.quiet:focus-visible{text-decoration:underline;text-underline-offset:3px}

@@ -10,7 +10,7 @@ import { proposalWhere, type ProposalRow } from "./queries";
 export type ProposalTask = { ref: string; title: string; done: boolean; doneAt: string | null };
 export type ProposalStage = { environment: string; isProd: boolean; status: string | null; at: string | null };
 // 081 amendment 4 (AC-50): each line's kind picks its icon on the timeline; a move also says the phase it entered (AC-47).
-export type EventKind = "created" | "moved" | "task" | "time" | "edited" | "withdrawn" | "synced";
+export type EventKind = "created" | "moved" | "task" | "reopened" | "time" | "edited" | "withdrawn" | "synced";
 export type ProposalEvent = { at: string; text: string; by: string; kind: EventKind; to?: string };
 export type ProposalDetail = ProposalRow & {
   href: string;
@@ -36,10 +36,11 @@ const ACTION: Record<string, (a: Record<string, unknown>) => string> = {
   "delivery.proposal.update": (a) => `Edited ${Object.keys(a).join(", ")}`,
   "delivery.proposal.withdraw": (a) => `Withdrawn: ${a.reason as string}`,
   "delivery.task.add": (a) => `Added task ${a.ref as string} ${a.title as string}`,
+  "delivery.task.reopen": (a) => `${a.ref as string} ${a.title as string} reopened`,
 };
 const KIND_OF: Record<string, EventKind> = {
   "delivery.proposal.create": "created", "delivery.proposal.sync": "synced", "delivery.proposal.rekey": "edited", "delivery.proposal.update": "edited",
-  "delivery.proposal.withdraw": "withdrawn", "delivery.task.add": "task",
+  "delivery.proposal.withdraw": "withdrawn", "delivery.task.add": "task", "delivery.task.reopen": "reopened",
 };
 const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 

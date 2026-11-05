@@ -31,9 +31,9 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
     await addProposalTask(ctxFor(maya), { key, title: "Template" });
     for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
-    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified (1 task open)`, `Mark T1 of ${key} done`, `Edit ${key}`]);
+    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`, `Move ${key} to Verified (1 task open)`, `Edit ${key}`]);
     await markTaskDone(ctxFor(maya), { key, task: "T1" });
-    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`, `Edit ${key}`]);
+    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`, `Reopen T1 of ${key}`, `Edit ${key}`]);
 
     await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
     expect(await suggest(maya, { proposalId: await id(key) })).toContainEqual({ label: `Make me the owner of ${key}`, prompt: `Make me (user id ${maya.userId}) the owner of ${key}`, tool: "update_proposal" });
