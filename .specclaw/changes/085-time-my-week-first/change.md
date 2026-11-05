@@ -26,6 +26,9 @@ unchanged for those who review time.
    - they can't approve time tenant-wide (Admin);
    - they manage no project whose time they may approve;
    - they have no reports whose time they may approve.
+   - **The current week, not the latest with a timesheet** (found by the product owner, 2026-11-05). An engineer landed on
+     a timesheet two weeks old: with no week asked for, My timesheet opened the person's latest week that has a
+     timesheet. It now opens their current week in their legal entity's time zone, the day Time logs by.
 2. **AC-2** Everyone who reviews time still opens **Team time** at `/time`: a PM managing projects, a manager with
    reports, Leadership, Finance and Admin.
    - **Same rule for everyone:** an engineer who manages a project (FLT's manager in the demo data) also opens Team time.
@@ -38,13 +41,14 @@ unchanged for those who review time.
 ## Tasks
 
 - [x] `T1` — `/time` sends people with nobody to review to My timesheet, this week; reviewers keep Team time (AC-1 to AC-3)
-  Files: modules/time/ui/TeamPage.tsx, modules/time/ui/parts.tsx, modules/time/server/landing.ts, modules/time/tests/landing-085.test.ts
+  Files: modules/time/ui/TeamPage.tsx, modules/time/ui/parts.tsx, modules/time/server/landing.ts, modules/time/server/my.ts, modules/time/tests/landing-085.test.ts
 
 ## Verify
 
 **Windows host, local Postgres** (2026-11-05):
-- **New tests:** `landing-085`, 2 of 2.
-- **Time suite:** 49 files, 227 tests, all pass.
+- **New tests:** `landing-085`, 3 of 3, including the current week.
+- **Time suite:** 49 files, 227 tests, all pass before the current-week fix. After it, a full parallel run had files fail
+  on the shared test Postgres. Each passes alone, and `grid-perf` (the known 2 s timing test) only misses under load.
 - **Type check:** `@amax/time` passes.
 
 The Team tab links to `/time?view=team` when it has no week, so from Requests it still opens Team time for someone
