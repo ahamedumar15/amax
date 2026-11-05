@@ -766,4 +766,10 @@ local amax, not amaxerp.com:
 - Apply, then a second push: unchanged.
 - AMX-081 shows on the Repo sync card and its page.
 
+**Found preparing the demo (2026-11-05):** a dry run of the walk-through showed Withdraw's confirm card fell back to
+chat's generic card: an "Add it" button and a "Done: CON-018 added." receipt. Withdraw now has its own card ("Withdraw
+CON-018 …", button **Withdraw**, receipt "Done: withdrew CON-018"). Amendment 3's cards now name their verb on the
+button (Create, Record, Void, Re-tag, Save, Add, Remove, Close the task, Link, Unlink) instead of "Add it".
+`chat-081` AC39 checks every label; the AC-39 browser tests click them by name.
+
 Review loop: still not run (the specclaw-review server isn't connected).

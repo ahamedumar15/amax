@@ -5,7 +5,7 @@ import manifest from "../module";
 import { chatSuggestions } from "../chat-suggestions";
 import { ctxFor } from "../server/context";
 import { createProposalCard, moveCard, proposeCreate, taskCard, updateCard } from "../server/proposal-card";
-import { createReleaseCard, deploymentCard, environmentCard, linkCard, removeEnvironmentCard, taskDoneCard, unlinkCard, voidCard } from "../server/write-cards";
+import { createReleaseCard, deploymentCard, environmentCard, linkCard, removeEnvironmentCard, taskDoneCard, unlinkCard, voidCard, withdrawCard } from "../server/write-cards";
 import { syncProposal } from "../server/services";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
@@ -74,5 +74,12 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     expect((await taskDoneCard(maya, { key: "CON-014", task: "T1" })).title).toBe("Mark T1 of CON-014 done");
     expect((await linkCard(maya, { projectKey: "FLT", repoUrl: "https://github.com/example/fleet", defaultBranch: "main" })).look?.done).toBe("Done: FLT syncs from https://github.com/example/fleet");
     expect((await unlinkCard(maya, { projectKey: "CON" })).title).toBe("Unlink CON's repo");
+    // Each button names its verb, never chat's generic "Add it" (found preparing the demo).
+    const confirms = await Promise.all([createReleaseCard(maya, { projectKey: "FLT", version: "v1.9.0" }), deploymentCard(maya, { projectKey: "FLT", version: "v1.9.0", environment: "Dev" }),
+      environmentCard(maya, { projectKey: "FLT", name: "Sandbox" }), removeEnvironmentCard(maya, { projectKey: "FLT", name: "Sandbox" }), taskDoneCard(maya, { key: "CON-014", task: "T1" }),
+      linkCard(maya, { projectKey: "FLT", repoUrl: "https://github.com/example/fleet" }), unlinkCard(maya, { projectKey: "CON" })]);
+    expect(confirms.map((c) => c.look?.confirm)).toEqual(["Create", "Record", "Add", "Remove", "Close the task", "Link", "Unlink"]);
+    expect(await withdrawCard(maya, { key: "CON-017", reason: "not needed" })).toMatchObject({ title: "Withdraw CON-017 CSV import for clients",
+      lines: expect.arrayContaining([{ label: "Reason", value: "not needed" }]), look: { confirm: "Withdraw", done: "Done: withdrew CON-017" } });
   });
 });
