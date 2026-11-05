@@ -38,7 +38,12 @@ if typed. First use: "Which project?" for a new proposal, listing the person's o
 3. **AC-3** Delivery's `list_projects` takes `mine: true`: active projects the viewer manages or is assigned to.
 4. **AC-4** A new proposal with no project pinned or named asks "Which project?" with quick replies.
    - **The answers:** the person's own projects (`list_projects` with `mine`), up to six, as "<KEY> · <Name>".
-   - **With none of their own,** the active projects they may add proposals to.
+   - **With exactly one of their own** (revised 2026-11-05, decided by the product owner): that project and
+     **"Another project"**. One click covers the usual case and nothing is picked for them. "Another project", or
+     having none of their own, lists the active projects they may add proposals to, up to six.
+     The end-to-end run showed the alternatives:
+     - **Claude asked in a sentence,** "Add it to Contoso Portal?", which needs typing and has no buttons.
+     - **Claude listed every active project as buttons,** which shows other people's projects.
    - **Where it lives:** `create_proposal`'s description and the New proposal flow both say so, so it holds after the
      first turn (081 AC-82 found that the flow's notes reach the first turn only).
    - **Then** 081's owner step follows as before.

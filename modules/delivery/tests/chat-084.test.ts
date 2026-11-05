@@ -13,6 +13,11 @@ describe("084 the project question", () => {
       expect(text).toMatch(/list_projects with mine true/);
       expect(text).toMatch(/offer_answers/);
       expect(text).toMatch(/<KEY> · <Name>/);
+      // Product owner, 2026-11-05: one project of your own is a button beside "Another project", which then lists the
+      // others you may add to; chat never picks the project for you.
+      expect(text).toMatch(/Exactly one: offer_answers with that one and "Another project"/);
+      expect(text).toMatch(/the user picks Another project: call list_projects without mine/);
+      expect(text).toMatch(/Never pick the project for them/);
     }
     expect(description.indexOf("Which project is it for?")).toBeLessThan(description.indexOf("settle the owner"));
   });
