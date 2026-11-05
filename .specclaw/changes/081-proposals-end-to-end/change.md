@@ -791,7 +791,9 @@ This amendment uses 084's quick replies. There's no migration, table, tool or pe
 84. **AC-84** The question is "Which proposal is it for?" with quick replies.
     - **The answers:** up to five open proposals of that project from `list_proposals` with `likelyForMe`, then
       **None**.
-    - **Each answer:** "<KEY> · <title> (<why>)", at most 60 characters.
+    - **Each answer:** "<proposal key> · <title> (<why>)", at most 60 characters, for example "CON-014 · Invoice export to
+      PDF (yours · Building)". Only the title is shortened. The end-to-end run (2026-11-05) showed "<KEY>" read as the
+      project key ("CON · …"), so the rule now names the full proposal key with an example.
     - **No shortcut** (revised 2026-11-05, the product owner's run). As first built, when exactly one was the person's
       own and Building, chat put it straight on the card. Kasun's "Log 2 hrs on contoso project" went to CON-011
       without a question. Chat now always asks, and the likeliest proposal is the first answer.
@@ -1258,3 +1260,28 @@ Review loop: still not run (the specclaw-review server isn't connected).
 `084-chat-quick-replies` is `**Review:** covered-by 081-proposals-end-to-end`. Its work went into this branch in
 081's commit `5ddc6561` (amendments 8 and 9, with 084), so 081's review loop reviews it, and the review gate judges it
 by 081's final pass.
+
+### Amendments 8 and 9 verification (2026-11-05)
+
+**Linux replica of CI** over commit `5ddc6561` (`git archive HEAD`), against a fresh Postgres with the `amax_app` role:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate`, `lint` (graph check: 22 modules, 11 packages), `check-module-standard`, `build` | pass |
+| `e2e` | 8 passed |
+| `e2e:auth` | **95 passed**, including "081 amendment 9" (My proposals, Your proposals, Yours) and 084's quick replies |
+| `pnpm turbo run test` | every package passes except five that ran out of time under load. Rerun alone in the same image, all pass: Time `utilisation-no-leave` (its 60 s setup) and `grid-perf`, Delivery `create-project-surfaces`, core `ac4-jobs` and `secrets-ac2-leaks` (3, 7 and 9 tests) |
+
+**End to end with real Claude** (2026-11-05): a fresh seeded database, the built app and real Claude, driven in a browser.
+14 of 14 steps and 39 of 39 checks passed. It covered:
+- **Owners and notifications:** creating a proposal with Who owns it?, the refused owner, a change of owner, a withdrawal,
+  and Ready to verify accepted.
+- **Bells:** Nimal's and Kasun's.
+- **084:** Which project?, "today" understood, Which proposal? with quick replies.
+- **Amendment 9:** My proposals, Your proposals and Yours.
+
+It found and fixed one gap: Yours was missing on agent-made cards (AC-90 revised). It also recorded two items:
+- **The proposal buttons when logging time** showed "CON" for the proposal key (a wording fix for `log_time`'s rule).
+- **The one-project case:** Claude widened the buttons to every project. This one is for the product owner.
+
+Review loop: still not run (the specclaw-review server isn't connected).

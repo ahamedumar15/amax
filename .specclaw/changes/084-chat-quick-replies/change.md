@@ -80,4 +80,13 @@ buttons. Before 084 it was the same question in text.
 
 ## Verify
 
-<!-- Filled by verify. -->
+Covered by 081's review loop (`covered-by 081-proposals-end-to-end`); its work is in commit `5ddc6561`.
+
+**Linux replica of CI** over `5ddc6561`:
+- **Passed:** install, migrate, lint, module standard, build, `e2e` (8) and `e2e:auth` (95, including "084 quick replies").
+- **Unit tests:** pass for this change; the five load timeouts in that run pass alone (recorded in 081).
+
+**With real Claude** (081's end-to-end run, 2026-11-05):
+- **Which project?** came with quick replies.
+- **"Log 2 h today on Contoso Portal"** wasn't asked which day.
+- **Which proposal?** came with quick replies and None.

@@ -75,6 +75,9 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
       expect(text).not.toMatch(/use it, and the card shows it/);
       expect(text).toMatch(/offer_answers with "Which proposal is it for\?"/);
       expect(text).toMatch(/then "None"/);
+      // Found in the end-to-end run: "<KEY>" was read as the project key ("CON · …"); it names the proposal key now.
+      expect(text).toMatch(/always the full proposal key the row gives \(CON-014\), never just the project key \(CON\)/);
+      expect(text).toContain('"CON-014 · Invoice export to PDF (yours · Building)"');
     }
     const nimal = await db.as("nimal");
     await expect(proposeLog(nimal, { projectKey: "FLT", proposalKey: "CON-014", day: "2026-10-26", hours: 1 })).rejects.toThrow(/belongs to CON, not FLT/);
