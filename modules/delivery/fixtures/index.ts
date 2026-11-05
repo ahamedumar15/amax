@@ -118,9 +118,12 @@ export const deliveryFixtures: FixtureSeed = async ({ tx, tenantId, shared }) =>
   }
   for (const [i, p] of [...NAMED, ...fillers()].entries()) {
     const project = p.key.split("-")[0];
-    await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, estimate_hours, owner_name, agent, release_id, released_at, updated_at)
+    // 081 (demo prep): made on fixtures' Sep 14, before any fixture release (Sep 30) and the Oct 16 update, not on the
+    // day the fixtures load, so a proposal's page never reads "made Nov 5, updated Oct 16".
+    await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, estimate_hours, owner_name, agent, release_id, released_at, updated_at, created_at)
       values (${tenantId}, ${ids[project]}, ${p.key}, ${p.title}, ${p.phase}, ${p.done ?? 0}, ${p.total ?? 0}, ${p.est ?? null}, ${p.owner ?? null}, ${p.agent ?? null},
-        ${p.release ? releaseIds[p.release] : null}, ${p.releasedAt ?? null}, ${new Date(Date.UTC(2026, 9, 16, 12, 0, 0) - i * 60_000).toISOString()})
+        ${p.release ? releaseIds[p.release] : null}, ${p.releasedAt ?? null}, ${new Date(Date.UTC(2026, 9, 16, 12, 0, 0) - i * 60_000).toISOString()},
+        ${new Date(Date.UTC(2026, 8, 14, 12, 0, 0) - i * 60_000).toISOString()})
       on conflict (tenant_id, key) do nothing`);
   }
   // 081: the fixture owners are people (fixtures.md), so their proposals name them by id too.

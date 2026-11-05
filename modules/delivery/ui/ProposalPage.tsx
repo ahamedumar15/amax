@@ -13,6 +13,11 @@ import { Stepper } from "./Stepper";
 import { Glyph, STAGE_WORD } from "./BoardBand";
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
+// The reason as a sentence of its own: "demo only" reads "Demo only.", never run into the next sentence.
+const withdrawnBecause = (r: string | null) => {
+  const t = (r ?? "its spec change was removed from the repo").trim();
+  return `${t[0].toUpperCase()}${t.slice(1)}${/[.!?]$/.test(t) ? "" : "."}`;
+};
 
 // 081 amendment 4 (revised 2026-11-04, the client): who and when, as labelled facts with the names and dates set off,
 // rather than one run-on sentence.
@@ -144,7 +149,7 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
       </div>
       <Stepper pin={ref} p={p} />
       <ProposalSuggestions {...suggested} />
-      {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn.</b> {p.withdrawReason ?? "Its spec change was removed from the repo."} It no longer counts in lists, boards or releases.</p></div>}
+      {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn:</b> {withdrawnBecause(p.withdrawReason)} It no longer counts in lists, boards or releases.</p></div>}
       <div className="cols even" style={{ marginBottom: 28 }}><TimeCard p={p} pin={pin} /><ReleaseCard p={p} pin={pin} /></div>
       <div className="card pinnable" style={{ marginBottom: 28 }}>
         <div className="card-head"><h2>Description</h2>{pin("description")}</div>

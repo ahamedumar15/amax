@@ -24,8 +24,8 @@ export function BoardBand({ project, releases, done, total, closedBy }: Props) {
         <section className="card pinnable" aria-labelledby="dv-band-release">
           <PinButton pin={releasePin({ id: r.release.id, version: r.release.version, projectKey: project.key, projectName: project.name })} />
           <h2 className="k" id="dv-band-release">Next release</h2>
-          <p className="fig"><a href={releaseHref({ projectKey: project.key, version: r.release.version })}>{r.release.version}</a>
-            <span>{r.release.proposals} {r.release.proposals === 1 ? "proposal" : "proposals"}</span>
+          <p className="fig"><a href={releaseHref({ projectKey: project.key, version: r.release.version })}>{r.release.version}</a>{" "}
+            <span>{r.release.proposals} {r.release.proposals === 1 ? "proposal" : "proposals"}</span>{" "}
             <span className={`chip ${r.health === "On track" ? "good" : "warn"}`}>{r.health}</span></p>
           <ol className="dv-track" aria-label={r.sentence}>
             {r.stages.map((s) => (

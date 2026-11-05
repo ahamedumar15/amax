@@ -772,4 +772,14 @@ CON-018 …", button **Withdraw**, receipt "Done: withdrew CON-018"). Amendment 
 button (Create, Record, Void, Re-tag, Save, Add, Remove, Close the task, Link, Unlink) instead of "Add it".
 `chat-081` AC39 checks every label; the AC-39 browser tests click them by name.
 
+**Full demo rehearsal (2026-11-05):** the person's walk-through script was run step by step in the browser as Maya,
+then Nimal. It covered the board, the pins, the proposal pages, a hand-made proposal from creation to withdrawal (with
+the agent's Ready to verify, accept and undo), the proposals list, releases and environments, the Overview and Nimal's
+bell. **48 of 48 checks passed**, with axe clean on every page checked and no page errors. It found three fixes:
+- **Withdrawn banner:** it ran the reason into the next sentence ("Withdrawn. demo only It no longer…"). It now reads
+  "Withdrawn: Demo only. It no longer…".
+- **Next release heading:** its text read "v2.5.03 proposals" to screen readers and copy-paste. It now has spaces.
+- **Demo proposals' dates:** they were dated the day the demo data loads ("Made by hand Nov 5, updated Oct 16"). They
+  are now made on Sep 14, before any demo release and before their Oct 16 update.
+
 Review loop: still not run (the specclaw-review server isn't connected).
