@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
 import { chatIntents } from "../chat";
+import { mcpTools } from "../mcp";
 import { createProposalCard, updateCard } from "../server/proposal-card";
 import { proposalDb } from "./proposal-db";
 
@@ -13,6 +14,23 @@ describe("081 amendment 6 picking a proposal's owner in chat", () => {
     expect(ask).toMatch(/get_project_team/);
     expect(ask).toMatch(/offer_choices/);
     expect(ask).toMatch(/first "Me"/);
+  });
+
+  it("AC78 AC79 the owner step offers only this month's team, each with their spare capacity", () => {
+    const ask = chatIntents.find((i) => i.id === "delivery.new-proposal")!.fields.find((f) => f.name === "ownerUserId")!.ask;
+    expect(ask).toMatch(/on the project this month/);
+    expect(ask).toMatch(/nobody allocated only in later months/);
+    expect(ask).toMatch(/% free this month/);
+    expect(ask).toMatch(/fully allocated/);
+    expect(ask).toMatch(/over-allocated by/);
+  });
+
+  it("AC82 the owner is settled whether the proposal was started from the button or typed: create_proposal's description says so", () => {
+    const description = mcpTools.find((t) => t.name === "create_proposal")!.description;
+    expect(description).toMatch(/settle the owner unless the user already named one or said me/);
+    expect(description).toMatch(/get_project_team/);
+    expect(description).toMatch(/offer_choices/);
+    expect(chatIntents.find((i) => i.id === "delivery.new-proposal")!.fields.find((f) => f.name === "ownerUserId")!.ask).toMatch(/Always settle this before the card/);
   });
 });
 

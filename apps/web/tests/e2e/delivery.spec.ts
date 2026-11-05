@@ -434,3 +434,29 @@ test("081 amendment 6 a proposal's owner is picked in chat, changed with a card 
   await expect(page.locator("main")).toContainText("Kasun Dias");
   expect(await axe(page)).toEqual([]);
 });
+
+// 081 amendment 9 (AC-87, AC-89, AC-90, AC-91): what Nimal owns. My proposals is second in Filter, its chip clears it;
+// the Overview lists his proposals and links to the same list; his board cards say Yours.
+test("081 amendment 9 an engineer finds what they own: Mine on the list, Your proposals on the Overview, Yours on the board", async ({ page }) => {
+  await signIn(page, "nimal@lumenlabs.test", "/delivery/proposals");
+  const table = page.locator(".card.flush", { has: page.getByRole("table") });
+  await table.locator("summary", { hasText: "Filter" }).click();
+  const menu = page.getByRole("navigation", { name: "Filter by project or owner" });
+  await expect(menu.getByRole("link").nth(1)).toHaveText("My proposals");
+  await menu.getByRole("link", { name: "My proposals" }).click();
+  await expect(page).toHaveURL(/owner=me/);
+  await expect(page.getByRole("link", { name: /Filtered to Mine/ })).toBeVisible();
+  for (const owner of await table.locator('tbody td[data-label="Owner"]').allInnerTexts()) expect(owner).toContain("Nimal Silva");
+  expect(await axe(page)).toEqual([]);
+  await page.getByRole("link", { name: /Filtered to Mine/ }).click();
+  await expect(page).not.toHaveURL(/owner=me/);
+
+  await page.goto("/");
+  const yours = page.locator(".card", { has: page.getByRole("heading", { name: "Your proposals" }) });
+  await expect(yours.locator("li").first()).toBeVisible();
+  await expect(yours.getByRole("link", { name: "All your proposals" })).toHaveAttribute("href", "/delivery/proposals?owner=me");
+
+  await page.goto("/delivery/p/FLT");
+  await expect(page.locator(".tcard .chip.yours").first()).toHaveText("Yours");
+  expect(await axe(page)).toEqual([]);
+});

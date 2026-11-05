@@ -52,7 +52,8 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
     // Amendment 4 (AC-30 revised): Building always offers Verified, saying how many tasks are open; the fixtures give the
     // rows topped up to the counters' total (CON-014: 5 tasks, T5 open). The label counts open tasks by the counters.
     const p14 = await id(sql`select id from delivery.proposal where key = 'CON-014'`);
-    expect(await labels("get_proposal", maya, { proposalId: p14 })).toEqual(["Mark T5 of CON-014 done", "Move CON-014 to Verified (2 tasks open)", "Edit CON-014"]);
+    // 081 amendment 9 (AC-86): Maya, an Admin, may log her own time, so Log time comes second while it's Building.
+    expect(await labels("get_proposal", maya, { proposalId: p14 })).toEqual(["Mark T5 of CON-014 done", "Log time on CON-014", "Move CON-014 to Verified (2 tasks open)"]);
   });
 
   it("AC30 (revised) a verified proposal in a release that isn't live offers that release's next deployment, first", async () => {

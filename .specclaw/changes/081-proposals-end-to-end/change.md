@@ -730,6 +730,114 @@ There's no migration, tool or permission. One payload field and one rule are add
 - **Notifications:** `delivery-routing.test.ts` (AC-74, AC-75) and a new `delivery-flow.test.ts` (AC-76).
 - **Mock:** 081's section and its copy.
 
+## Amendment 8 (2026-11-05): the owner choice offers who can own it now, with their spare capacity
+
+The product owner asked that a new proposal's owner be picked from the project's available team, and approved two
+refinements to AC-69 ("build it").
+
+**The mismatch:** the "Who owns it?" card read `get_project_team`, which lists anyone allocated in this month or the next
+two. AC-67 accepts only people on the project this month, so the card could offer someone it would then refuse.
+
+**What "available" means here:** spare capacity this month is shown on each option, not used to hide people. Someone
+100% on this very project has 0% free, but is often the best owner. Hiding them would drop the likeliest pick, so
+the PM sees the figure and decides (recorded in build, 2026-11-05).
+
+There's no migration, tool, permission or new card.
+
+78. **AC-78** The choice card offers only teammates allocated to the project **this month**, the people AC-67 accepts.
+    Someone allocated only from a later month isn't offered.
+79. **AC-79** Each option shows the person's spare capacity this month:
+    - **The label:** "<name> · <role> · <n>% free this month", "· fully allocated" at 0, or "· over-allocated by
+      <n>%" past it.
+    - **The figure:** their capacity (FTE, from HR) minus all their allocations that month, as the allocations grid
+      counts it.
+    - **The order is unchanged:** the most allocated to this project first.
+80. **AC-80** `get_project_team` rows carry `freeThisMonth` (null when the reader can't see the person's employment),
+    next to AC-69's `userId`.
+81. **AC-81** Tests:
+    - **Allocations' `team` test:** `freeThisMonth` equals capacity minus this month's total, for each person.
+    - **The intent test:** the owner step offers only people allocated this month, and shows the capacity label.
+    - The 081 suites stay green.
+
+82. **AC-82** The owner is asked about every time a proposal is made in chat without one, whether it was started from
+    the New proposal button or typed. Found by the product owner's run (2026-11-05): real Claude skipped the optional
+    step and showed "Owner: You".
+    - **`create_proposal`'s own description** carries the rule, so chat sees it without the button's flow.
+    - **The button's owner step** says to settle the owner even though it defaults.
+    - **Skipped** only when the person named an owner or said "me", or the team can't be read.
+
+**Affected:**
+- **Allocations:** `server/team.ts` and its test.
+- **Delivery:** `chat.ts` (the owner step's instructions), `mcp.ts` (`create_proposal`'s description) and
+  `tests/owner-chat-a6.test.ts`.
+- **Mock:** 081's choice card labels, and its copy.
+
+## Amendment 9 (2026-11-05): my proposals: what I own, and logging time against it
+
+The product owner found two gaps and approved the fix ("ok build it"):
+- **Logging time doesn't ask which proposal.** AC-26's question was optional, in the Log time flow's first turn only,
+  so real Claude skipped it, and a typed "log 2 h on CON" never saw it.
+- **Nowhere says what you own.** An engineer finds out piecemeal: a notification, the Owner column, initials on a
+  card.
+
+This amendment uses 084's quick replies. There's no migration, table, tool or permission.
+
+### Logging time against a proposal
+
+83. **AC-83** Chat asks which proposal every time time is logged without one, whether started from Log time or typed.
+    `log_time`'s own description and the flow both say so.
+    - **It doesn't ask** when the person named a proposal or said "none", a proposal is pinned or its page is open (that
+      one is used), the project has no open proposals, or the entry comes from a commit.
+84. **AC-84** The question is "Which proposal is it for?" with quick replies.
+    - **The answers:** up to five open proposals of that project from `list_proposals` with `likelyForMe`, then
+      **None**.
+    - **Each answer:** "<KEY> · <title> (<why>)", at most 60 characters.
+    - **No shortcut** (revised 2026-11-05, the product owner's run). As first built, when exactly one was the person's
+      own and Building, chat put it straight on the card. Kasun's "Log 2 hrs on contoso project" went to CON-011
+      without a question. Chat now always asks, and the likeliest proposal is the first answer.
+85. **AC-85** `list_proposals` takes two new options:
+    - **`mine`:** the viewer's own proposals.
+    - **`likelyForMe`,** with a project key: its open proposals (not released or withdrawn), most likely first. The
+      order is yours and Building, then yours, then ones you closed a task on in the last 14 days, then Building,
+      Verified, Planned and Proposed. Each row says `why`: "yours · Building", "you closed T3 on Nov 4", or its phase.
+86. **AC-86** A proposal's pin offers **"Log time on <key>"** to anyone who may log their own time, while the proposal
+    is open. It fills "Log time on <key> (<Project>): " for the person to finish, and comes second for a Planned or
+    Building proposal.
+
+### What I own
+
+87. **AC-87** The Proposals list (the portfolio list and a project's Proposals tab) has a **Mine** filter (`?owner=me`).
+    - **It keeps** the phase, project and search filters, and they keep it.
+    - **The portfolio's counts and chart follow it,** as they follow the project filter (AC-16).
+    - **It's a read-only link** in the Filter menu, **second, right below All projects** (product owner, 2026-11-05).
+      A "Mine" chip clears it, so the filter bar is unchanged until it's on.
+88. **AC-88** Chat on the Proposals pages suggests **"What proposals do I own?"**, answered with `list_proposals`
+    using `mine`.
+89. **AC-89** The Overview shows **"Your proposals"** to anyone who owns an open proposal: up to five, what needs them
+    first.
+    - **The order:** ready to verify (Building, every task done), over its estimate, then open tasks.
+    - **Each row** is pinnable.
+    - **It links** to the list with Mine on.
+90. **AC-90** A board card the viewer owns shows a **Yours** marker beside the owner's initials, or beside the agent
+    that made it (an agent-made card shows the agent, not initials; found in the end-to-end demo, 2026-11-05). Nothing else on the
+    board changes, so 001's board comparison (Maya owns no demo proposal) still holds.
+
+### Tests
+
+91. **AC-91** Tests:
+    - **Units:** `likelyForMe`'s order and `why`, `mine`, the Mine filter keeping the other filters and the counts
+      following it, the pin offer and where it sits, the Overview panel and its order, the board marker, and Time's
+      instructions (AC-83, AC-84).
+    - **Browser:** Mine on the Proposals list, the Overview panel as Nimal, axe.
+    - The 081 and 084 suites stay green.
+
+**Affected:**
+- **Delivery:** `server/queries.ts`, `mcp.ts`, `server/overview.ts`, `server/pin-offers.ts`, `chat-suggestions.ts`,
+  `ui/ProposalsPage.tsx`, `ui/ProjectLists.tsx`, `ui/ProjectPage.tsx`, `ui/delivery.css`, `README.md`, tests.
+- **Time:** `chat.ts`, `mcp.ts`, tests.
+- **Mock:** 081's section, and its copy.
+- **Browser tests:** `apps/web/tests/e2e/delivery.spec.ts`.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -834,6 +942,18 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T32` — Amendment 7, real writes to the bell: create, moves, task, Prod deployment, void, withdraw; then the Linux CI replica (AC-76)
   Files: modules/notifications/tests/delivery-flow.test.ts
   Depends: T30
+- [x] `T33` — Amendment 8, the owner choice offers this month's team with their spare capacity: `freeThisMonth` on team rows, the owner step's instructions, the mock labels (AC-78 to AC-82)
+  Files: modules/allocations/server/team.ts, modules/allocations/tests/team.test.ts, modules/delivery/chat.ts, modules/delivery/mcp.ts, modules/delivery/tests/owner-chat-a6.test.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+  Depends: T32
+- [x] `T34` — Amendment 9, reads: `list_proposals` `mine` and `likelyForMe`; the Mine filter on both lists and the counts; Overview "Your proposals"; the board's Yours marker; the "Log time on" pin offer; the "What do I own?" chat suggestion (AC-85 to AC-90)
+  Files: modules/delivery/server/queries.ts, modules/delivery/mcp.ts, modules/delivery/server/overview.ts, modules/delivery/server/pin-offers.ts, modules/delivery/chat-suggestions.ts, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/mine-a9.test.ts
+  Depends: T33
+- [~] `T35` — Amendment 9, Time asks which proposal with quick replies on every log (AC-83, AC-84)
+  Files: modules/time/chat.ts, modules/time/mcp.ts, modules/time/tests/proposal-time.test.ts
+  Depends: T34
+- [ ] `T36` — Amendment 9, browser tests, README, mock, CI replica (AC-91)
+  Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+  Depends: T35
 
 ## Verify
 

@@ -26,23 +26,25 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
       // Amendment 4 (AC-46): Edit left the page's header, so the pin offers it.
       { label: "Edit CON-017", prompt: "Change CON-017: ", tool: "update_proposal" },
       { label: "Add a task to CON-017", prompt: "Add a task to CON-017: ", tool: "add_proposal_task" }]);
-    expect(await labels(maya, "CON-013")).toEqual(["Move CON-013 to Building", "Mark T1 of CON-013 done", "Edit CON-013"]);
+    // 081 amendment 9 (AC-86): Log time second while it's Planned (Maya, an Admin, may log her own time).
+    expect(await labels(maya, "CON-013")).toEqual(["Move CON-013 to Building", "Log time on CON-013", "Mark T1 of CON-013 done"]);
 
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
     await addProposalTask(ctxFor(maya), { key, title: "Template" });
     for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
-    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`, `Move ${key} to Verified (1 task open)`, `Edit ${key}`]);
+    expect(await labels(maya, key)).toEqual([`Mark T1 of ${key} done`, `Log time on ${key}`, `Move ${key} to Verified (1 task open)`]);
     await markTaskDone(ctxFor(maya), { key, task: "T1" });
-    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`, `Reopen T1 of ${key}`, `Edit ${key}`]);
+    expect(await labels(maya, key)).toEqual([`Move ${key} to Verified`, `Log time on ${key}`, `Reopen T1 of ${key}`]);
 
     await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
     expect(await suggest(maya, { proposalId: await id(key) })).toContainEqual({ label: `Make me the owner of ${key}`, prompt: `Make me (user id ${maya.userId}) the owner of ${key}`, tool: "update_proposal" });
 
     await syncProposal(ctxFor(maya), { projectKey: "CON", project: { name: "Contoso Portal", client: "Contoso" }, key: "CON-301", title: "Spec", phase: "proposed",
       tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "301-spec", releasedAt: null, meta: {}, committedAt: "2026-10-10T09:00:00Z" });
-    expect(await labels(maya, "CON-301")).toEqual([]);
+    // 081 amendment 9 (AC-86): time can be logged against a spec proposal too.
+    expect(await labels(maya, "CON-301")).toEqual(["Log time on CON-301"]);
     await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = 'CON-301'`;
-    expect(await labels(maya, "CON-301")).toEqual(["Make me the owner of CON-301"]);
+    expect(await labels(maya, "CON-301")).toEqual(["Make me the owner of CON-301", "Log time on CON-301"]);
 
     expect(await labels(maya, "CON-009")).toEqual([]);
     const gone = (await createProposal(ctxFor(maya), { projectKey: "CON", title: "Dropped" })).key;

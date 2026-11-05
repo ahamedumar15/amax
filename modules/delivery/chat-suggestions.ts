@@ -25,6 +25,8 @@ export const chatSuggestions: ChatSuggestion[] = [
   { routes: PROJECT, label: "New proposal", prompt: "Add a proposal to this project: ", tool: "create_proposal",
     when: when(async (v, p) => { const r = await project(v, p); return Boolean(r && can(v, "delivery:proposal:create", { projectId: r.project.id })); }) },
   { routes: LIST, label: "New proposal", prompt: "Add a proposal to ", tool: "create_proposal", when: when(async (_v, p) => !isKey(p)) },
+  // 081 amendment 9 (AC-88): what you own, read with list_proposals' mine.
+  { routes: [...LIST, "p/:key/proposals", "p/:key/proposals/:phase"], label: "What proposals do I own?", prompt: "What proposals do I own?", tool: "list_proposals", when: when(async (_v, p) => !isKey(p)) },
   { routes: LIST, label: "Add a task", prompt: "Add a task to this proposal: ", tool: "add_proposal_task", when: when((v, p) => openHandMade(v, p, "delivery:task:done")) },
   { routes: LIST, label: "Edit this proposal", prompt: "Change this proposal: ", tool: "update_proposal", when: when((v, p) => openHandMade(v, p, "delivery:proposal:create")) },
   { routes: LIST, label: "Withdraw it", prompt: "Withdraw this proposal. Reason: ", tool: "withdraw_proposal", when: when((v, p) => openHandMade(v, p, "delivery:proposal:move")) },

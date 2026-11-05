@@ -38,7 +38,7 @@ function SpecFacts({ p }: { p: ProposalRow }) {
   );
 }
 
-function Card({ p, suggested }: { p: ProposalRow; suggested: boolean }) {
+function Card({ p, suggested, mine = false }: { p: ProposalRow; suggested: boolean; mine?: boolean }) {
   const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
   const done = p.phase === "verified" || p.phase === "released";
   const pin = proposalPin(p);
@@ -50,7 +50,11 @@ function Card({ p, suggested }: { p: ProposalRow; suggested: boolean }) {
       {p.tasksTotal > 0 && p.phase !== "released" && <div className="prog" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, ...(done ? { background: "var(--mint)" } : {}) }} /></div>}
       <div className="foot">
         {p.phase === "released" ? <span className="chip">{p.release ?? "Released"}</span>
-          : p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={p.ownerName ?? "Unassigned"} />}
+          // 081 amendment 9 (AC-90): your own card says so, beside the initials or the agent that made it (most of an
+          // engineer's proposals are made by an agent for them; found in the end-to-end demo).
+          : mine ? <span className="mine">{p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={p.ownerName ?? "Unassigned"} />}<span className="chip yours">Yours</span></span>
+          : p.agent ? <span className="chip agent">{p.agent}</span>
+          : <Avatar initials={initials(p.ownerName)} name={p.ownerName ?? "Unassigned"} />}
         <span>
           {p.phase === "proposed" && `${p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`}${p.tasksTotal ? ` · ${p.tasksDone} of ${p.tasksTotal} tasks` : ""}`}
           {(p.phase === "planned" || p.phase === "building") && (p.tasksTotal ? `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}` : `No tasks yet${p.phase === "building" ? `, ${p.hours} h` : ""}`)}
@@ -107,7 +111,7 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
           return (
             <section className="lane" key={phase} aria-label={`${LANE_LABEL[phase]}, ${cards.length}`}>
               <div className="lane-head"><span className="lh"><Stk phase={phase} />{LANE_LABEL[phase]}</span> <span>{cards.length}</span></div>
-              {cards.map((p) => <Card key={p.id} p={p} suggested={suggested.has(p.id)} />)}
+              {cards.map((p) => <Card key={p.id} p={p} suggested={suggested.has(p.id)} mine={p.ownerUserId === viewer.userId} />)}
             </section>
           );
         })}

@@ -66,6 +66,7 @@ describe("081 scripted Delivery pin offers", () => {
   it.each([
     ["new proposal in a project", "Add a proposal to Contoso Portal (CON): Dunning emails", [["create_proposal", { projectKey: "CON", title: "Dunning emails" }]]],
     ["081 amendment 6 new proposal with an owner", `Add a proposal to Contoso Portal (CON): Dunning emails, owned by Nimal Silva (user id ${A})`, [["create_proposal", { projectKey: "CON", title: "Dunning emails", ownerUserId: A }]]],
+    ["084 a question with quick replies", "Ask which project for Export invoices", [["offer_answers", { question: "Which project is it for?", answers: ["CON · Contoso Portal", "FLT · Fleet Tracker"] }]]],
     ["081 amendment 6 someone else as owner", `Make Kasun Dias (user id ${A}) the owner of CON-018`, [["update_proposal", { key: "CON-018", ownerUserId: A }]]],
     ["next release", "Create release v2.6.0 of CON", [["create_release", { projectKey: "CON", version: "v2.6.0" }]]],
     ["mark a task done", "Mark T2 of CON-014 done", [["mark_task_done", { key: "CON-014", task: "T2" }]]],

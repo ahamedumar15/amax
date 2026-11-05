@@ -62,7 +62,8 @@ const PROPOSALS = sql`
 // Withdrawn: by the repo (meta.withdrawn, spec proposals) or by hand (withdrawn_at, 081).
 export const ACTIVE = sql`(p.withdrawn_at is null and coalesce(p.meta->>'withdrawn', 'false') <> 'true')`;
 
-export type ProposalFilter = { phase?: Phase; projectKey?: string; q?: string };
+/** 081 amendment 9 (AC-87): `ownerUserId` keeps one person's proposals (the Mine filter). */
+export type ProposalFilter = { phase?: Phase; projectKey?: string; q?: string; ownerUserId?: string };
 
 /**
  * 081 AC-16: the one rule lists, counts and charts share. Never withdrawn; a project's own views show it whatever its
@@ -71,12 +72,34 @@ export type ProposalFilter = { phase?: Phase; projectKey?: string; q?: string };
 const scope = (f: ProposalFilter) => {
   const like = f.q?.trim() ? `%${f.q.trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
   const where = [ACTIVE, f.projectKey ? sql`pr.key = ${f.projectKey}` : sql`pr.status = 'active'`, f.phase ? sql`p.phase = ${f.phase}` : undefined,
-    like ? sql`(p.key ilike ${like} or p.title ilike ${like})` : undefined].filter(Boolean);
+    like ? sql`(p.key ilike ${like} or p.title ilike ${like})` : undefined, f.ownerUserId ? sql`p.owner_user_id = ${f.ownerUserId}` : undefined].filter(Boolean);
   return sql.join(where as ReturnType<typeof sql>[], sql` and `);
 };
 
 export const listProposals = (v: Viewer, opts: ProposalFilter = {}) =>
   read(v, async (tx) => (await tx.execute(sql`${PROPOSALS} where ${scope(opts)} order by p.updated_at desc, p.key desc`)).map(proposal));
+
+/** 081 amendment 9 (AC-85): a project's open proposals, the likeliest for this person first, each saying why. */
+export type LikelyProposal = { key: string; title: string; phase: Phase; mine: boolean; why: string };
+const PHASE_WORD: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
+const shortDay = (d: unknown) => new Date(String(d)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+export const likelyProposals = (v: Viewer, projectKey: string) =>
+  read(v, async (tx) => {
+    const me = v.userId;
+    const rows = await tx.execute(sql`select p.key, p.title, p.phase, coalesce(p.owner_user_id::text = ${me}, false) as mine, w.ref as worked_ref, w.done_at as worked_at
+      from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+      left join lateral (select t.ref, t.done_at from delivery.task t where t.proposal_id = p.id and t.done and t.done_at > now() - interval '14 days'
+        and (t.done_by = ${`user:${me}`} or t.done_by like ${`% for user:${me}`}) order by t.done_at desc limit 1) w on true
+      where pr.key = ${projectKey} and ${ACTIVE} and p.phase <> 'released'
+      order by (coalesce(p.owner_user_id::text = ${me}, false) and p.phase = 'building') desc, coalesce(p.owner_user_id::text = ${me}, false) desc, w.done_at desc nulls last,
+        array_position(array['building', 'verified', 'planned', 'proposed'], p.phase::text), p.updated_at desc, p.key limit 5`);
+    return rows.map((r): LikelyProposal => {
+      const phase = r.phase as Phase, mine = Boolean(r.mine);
+      const why = mine ? `yours · ${PHASE_WORD[phase]}` : r.worked_ref ? `you closed ${r.worked_ref as string} on ${shortDay(r.worked_at)}` : PHASE_WORD[phase];
+      return { key: r.key as string, title: r.title as string, phase, mine, why };
+    });
+  });
 
 /** One project by key, or by id (059: pins use the id; a key given with it only narrows). */
 export const getProject = (v: Viewer, key: string | undefined, projectId?: string) =>
@@ -137,7 +160,7 @@ export const weeklyThroughput = (v: Viewer, now?: Date) =>
  * Proposals that reached Prod per ISO week, from proposal.released_at: the same source as
  * phaseCounts' "Released this month", so the two never disagree (review round 1).
  */
-export const shippedPerWeek = (v: Viewer, now?: Date, f: Pick<ProposalFilter, "projectKey"> = {}) =>
+export const shippedPerWeek = (v: Viewer, now?: Date, f: Pick<ProposalFilter, "projectKey" | "ownerUserId"> = {}) =>
   read(v, async (tx) => {
     const at = now ?? (await clockOf(tx));
     const weeks = lastWeeks(at);
@@ -148,7 +171,7 @@ export const shippedPerWeek = (v: Viewer, now?: Date, f: Pick<ProposalFilter, "p
   });
 
 // In flight = not released; released this month = reached Prod since the 1st (UTC).
-export const phaseCounts = (v: Viewer, at?: Date, f: Pick<ProposalFilter, "projectKey"> = {}) =>
+export const phaseCounts = (v: Viewer, at?: Date, f: Pick<ProposalFilter, "projectKey" | "ownerUserId"> = {}) =>
   read(v, async (tx) => {
     const now = at ?? (await clockOf(tx));
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();

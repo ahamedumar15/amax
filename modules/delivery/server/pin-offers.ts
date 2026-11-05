@@ -82,7 +82,12 @@ export async function proposalOffers(v: Viewer, a: Args) {
   // 081 amendment 4 (AC-30 revised): Verified moves to Released only when its release reaches Prod, so a verified
   // proposal in a release that isn't live offers that release's next deployment, first.
   const deploy = facts.releaseId ? (await releaseOffers(v, { releaseId: facts.releaseId })).filter((o) => o.tool === "record_deployment") : [];
-  return [...deploy, ...allowed(v, proposalGated(p, v.userId, facts), facts.projectId)].slice(0, MAX);
+  const offers = [...deploy, ...allowed(v, proposalGated(p, v.userId, facts), facts.projectId)];
+  // 081 amendment 9 (AC-86): log your own time against it. Time's permission is on your own entries, not the project, so
+  // it's checked here; it comes second while the work is under way (Planned or Building), last otherwise.
+  const log = can(v, "time:log", { ownerUserId: v.userId }) ? [{ label: `Log time on ${p.key}`, prompt: `Log time on ${p.key} (${p.projectName}): `, tool: "log_time" }] : [];
+  const busy = p.phase === "planned" || p.phase === "building";
+  return (busy ? [...offers.slice(0, 1), ...log, ...offers.slice(1)] : [...offers, ...log]).slice(0, MAX);
 }
 
 function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; justClosed?: string | null; release: { version: string; keys: string } | null }): Gated[] {

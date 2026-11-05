@@ -31,6 +31,9 @@
 .tcard .foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-3)}
 .tcard .foot{flex-wrap:wrap;row-gap:6px}
 .tcard .foot>span:last-child{white-space:nowrap}
+/* 081 amendment 9 (AC-90): your own card, marked beside the initials. */
+.tcard .foot .mine{display:inline-flex;align-items:center;gap:6px}
+.tcard .chip.yours{font-size:11px;padding:1px 7px}
 .prog{height:6px;border-radius:6px;background:var(--sunken);margin:0 0 12px;overflow:hidden}
 .prog i{display:block;height:100%;border-radius:6px;background:var(--violet)}
 .map svg{width:100%;max-width:1000px;min-width:760px;height:auto;display:block}

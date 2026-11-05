@@ -8,6 +8,7 @@ import { acceptSuggestion, setSuggestionKinds } from "@amax/agents/server";
 import { configureAi } from "@amax/ai";
 import { fakeProvider } from "@amax/ai/fake";
 import { chatTurn, confirmAction } from "@amax/chat";
+import { mcpTools } from "../mcp";
 import { createRegistry } from "@amax/mcp";
 import { chatIntents } from "../chat";
 import { proposeLog } from "../server/entry-card";
@@ -65,6 +66,16 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     const intent = chatIntents.find((i) => i.id === "time.log")!;
     expect(intent.required).not.toContain("proposalKey");
     expect(intent.fields.map((f) => f.name)).toContain("proposalKey");
+    // 081 amendment 9 (AC-83, AC-84): settled on every log, from the button or typed, with quick replies.
+    for (const text of [intent.fields.find((f) => f.name === "proposalKey")!.ask, mcpTools.find((t) => t.name === "log_time")!.description]) {
+      expect(text).toMatch(/settle which proposal before the card unless they named one or said none/);
+      expect(text).toMatch(/likelyForMe true/);
+      // Product owner, 2026-11-05: never pick for them; the likeliest is the first answer.
+      expect(text).toMatch(/always ask, even when one row is clearly likeliest \(it goes first\)/);
+      expect(text).not.toMatch(/use it, and the card shows it/);
+      expect(text).toMatch(/offer_answers with "Which proposal is it for\?"/);
+      expect(text).toMatch(/then "None"/);
+    }
     const nimal = await db.as("nimal");
     await expect(proposeLog(nimal, { projectKey: "FLT", proposalKey: "CON-014", day: "2026-10-26", hours: 1 })).rejects.toThrow(/belongs to CON, not FLT/);
     await db.t.owner`insert into ai.settings (tenant_id, zdr_confirmed) values (${T}, true) on conflict do nothing`;

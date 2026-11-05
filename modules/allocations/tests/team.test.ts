@@ -40,4 +40,15 @@ describe.skipIf(!hasDb)("project team (Postgres)", () => {
     expect(team!.people.map((p) => p.userId).sort()).toEqual([...(users.ids as (string | null)[])].sort());
     expect(team!.people.some((p) => p.userId)).toBe(true);
   }, 60_000);
+
+  it("081 AC80 each team member carries this month's spare capacity: FTE less every allocation that month, as the grid counts it", async () => {
+    const team = await teamFor(await db.as("maya", "Leadership"), "CON", TODAY);
+    const ids = team!.people.map((p) => p.personId);
+    const rows = await db.tx((tx) => tx.execute(sql`select p.id::text as id,
+        round(coalesce((select e.fte from hr.employment e where e.person_id = p.id and e.starts_on <= ${`${team!.months[0].slice(0, 8)}15`}::date
+          and (e.ends_on is null or e.ends_on >= ${`${team!.months[0].slice(0, 8)}15`}::date) limit 1), 0) * 100)::int
+        - coalesce((select sum(a.percent) from allocations.allocation a where a.person_id = p.id and a.month = ${team!.months[0]}::date), 0)::int as free
+      from hr.person p where p.id::text in (${sql.join(ids.map((i) => sql`${i}`), sql`, `)})`));
+    for (const p of team!.people) expect([p.name, p.freeThisMonth]).toEqual([p.name, rows.find((r) => r.id === p.personId)!.free]);
+  }, 60_000);
 });

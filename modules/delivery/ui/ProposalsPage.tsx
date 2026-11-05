@@ -25,8 +25,11 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const asked = Math.max(1, Number(searchParams.page ?? 1) || 1);
   // 081 AC-16: the cards and the table read through one filter, so they always agree.
   const projectKey = searchParams.project || undefined;
-  const [counts, rows, shipped, projects] = await Promise.all([phaseCounts(viewer, undefined, { projectKey }), listProposals(viewer, { phase, projectKey, q: searchParams.q }),
-    shippedPerWeek(viewer, undefined, { projectKey }), listProjects(viewer, "active")]);
+  // 081 amendment 9 (AC-87): Mine narrows the cards and the table alike, as the project filter does.
+  const mine = searchParams.owner === "me";
+  const ownerUserId = mine ? viewer.userId : undefined;
+  const [counts, rows, shipped, projects] = await Promise.all([phaseCounts(viewer, undefined, { projectKey, ownerUserId }), listProposals(viewer, { phase, projectKey, q: searchParams.q, ownerUserId }),
+    shippedPerWeek(viewer, undefined, { projectKey, ownerUserId }), listProjects(viewer, "active")]);
   const bar: [Phase, number, string][] = [["proposed", counts.proposed, "Proposed"], ["planned", counts.planned, "Planned"], ["building", counts.building, "Building"], ["verified", counts.verified, "Verified"], ["released", counts.releasedThisMonth, `Released in ${counts.month}`]];
   const recent = shipped.values.slice(-4).reduce((a, b) => a + b, 0), prior = shipped.values.slice(0, 4).reduce((a, b) => a + b, 0);
   const trend = prior ? ((recent - prior) / prior) * 100 : null;
@@ -50,7 +53,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
           <BarChart label="Proposals shipped to Prod per week" labels={shipped.labels} values={shipped.values} max={Math.max(8, Math.ceil(Math.max(...shipped.values) / 2) * 2)} />
         </div>
       </div>
-      <ProposalsTable rows={rows} phase={phase} root="/delivery/proposals" project={projectKey} q={searchParams.q} page={asked} projects={projects} />
+      <ProposalsTable rows={rows} phase={phase} root="/delivery/proposals" project={projectKey} q={searchParams.q} page={asked} projects={projects} mine={mine} />
     </>
   );
 }
@@ -60,34 +63,40 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
  * project's Proposals section share it. `root` is the list's path; `projects` adds the project filter.
  */
 /** 081 AC-16: the project the list is filtered to, beside Filter; its ✕ goes back to all projects, keeping phase and search. */
-function FilterChip({ name, href }: { name: string; href: string }) {
+function FilterChip({ name, href, clears = "all projects" }: { name: string; href: string; clears?: string }) {
   return (
-    <a className="filter-chip" href={href} aria-label={`Filtered to ${name}. Remove this filter to show all projects`}>
+    <a className="filter-chip" href={href} aria-label={`Filtered to ${name}. Remove this filter to show ${clears}`}>
       {name}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
     </a>
   );
 }
 
-export function ProposalsTable({ rows, phase, root, project, q, page: asked, projects, title }: { rows: ProposalRow[]; phase?: Phase; root: string; project?: string; q?: string; page: number; projects?: { key: string; name: string }[]; title?: string }) {
+export function ProposalsTable({ rows, phase, root, project, q, page: asked, projects, title, mine = false }: { rows: ProposalRow[]; phase?: Phase; root: string; project?: string; q?: string; page: number; projects?: { key: string; name: string }[]; title?: string; mine?: boolean }) {
   const page = Math.min(asked, Math.max(1, Math.ceil(rows.length / PAGE)));
   const shown = rows.slice((page - 1) * PAGE, page * PAGE);
   const base = phase ? `${root}/${phase}` : root;
   // Filters, search and pages keep each other: a link changes one of them and carries the rest.
-  const query = (o: { project?: string; q?: string; page?: number }) => { const s = new URLSearchParams(Object.entries(o).filter(([, x]) => x).map(([k, x]) => [k, String(x)])).toString(); return s ? `?${s}` : ""; };
-  const href = (p: number) => `${base}${query({ project, q, page: p })}`;
+  // 081 amendment 9 (AC-87): Mine (owner=me) is one more filter the others carry; it lives in the Filter menu, so the
+  // bar itself is unchanged until it's on, when its chip clears it.
+  const owner = mine ? "me" : undefined;
+  const query = (o: { project?: string; q?: string; page?: number; owner?: string }) => { const s = new URLSearchParams(Object.entries(o).filter(([, x]) => x).map(([k, x]) => [k, String(x)])).toString(); return s ? `?${s}` : ""; };
+  const href = (p: number) => `${base}${query({ project, q, owner, page: p })}`;
+  const projectOptions = projects ? [{ key: "", name: "All projects" }, ...projects].map((p) => ({ text: p.name, current: (project ?? "") === p.key, href: `${base}${query({ project: p.key, q, owner })}` })) : [];
   return (
     <div className="card flush pinnable">
       <div className="card-head">
         {title && <h2>{title}</h2>}
         <nav className="seg" aria-label="Phase">
           {FILTERS.map((f) => (
-            <a key={f} href={`${f === "all" ? root : `${root}/${f}`}${query({ project, q })}`} aria-current={(f === "all" ? !phase : phase === f) ? "true" : undefined}>{f === "all" ? "All" : f === "released" ? "Released, all time" : PHASE_UI[f].label}</a>
+            <a key={f} href={`${f === "all" ? root : `${root}/${f}`}${query({ project, q, owner })}`} aria-current={(f === "all" ? !phase : phase === f) ? "true" : undefined}>{f === "all" ? "All" : f === "released" ? "Released, all time" : PHASE_UI[f].label}</a>
           ))}
         </nav>
         <div className="actions">
-          {projects && <FilterMenu label="Filter by project" options={[{ key: "", name: "All projects" }, ...projects].map((p) => ({ text: p.name, current: (project ?? "") === p.key, href: `${base}${query({ project: p.key, q })}` }))} />}
-          {projects && project && <FilterChip name={projects.find((p) => p.key === project)?.name ?? project} href={`${base}${query({ q })}`} />}
-          <ProposalSearch base={base} project={project} q={q} options={rows.map((p) => ({ key: p.key, title: p.title }))} />
+          {/* Product owner, 2026-11-05: "My proposals" second, right below All projects. */}
+          <FilterMenu label={projects ? "Filter by project or owner" : "Filter by owner"} options={[...projectOptions.slice(0, 1), { text: "My proposals", current: mine, href: `${base}${query({ project, q, owner: mine ? undefined : "me" })}` }, ...projectOptions.slice(1)]} />
+          {projects && project && <FilterChip name={projects.find((p) => p.key === project)?.name ?? project} href={`${base}${query({ q, owner })}`} />}
+          {mine && <FilterChip name="Mine" href={`${base}${query({ project, q })}`} clears="everyone's proposals" />}
+          <ProposalSearch base={base} project={project} q={q} owner={owner} options={rows.map((p) => ({ key: p.key, title: p.title }))} />
           <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", p.phase === "released" ? "Prod" : p.shippedTo ?? "", p.ownerName ?? ""])])} download="proposals.csv">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export
           </a>

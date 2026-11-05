@@ -36,7 +36,8 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     expect(await offered(maya, "p/:key", { key: "CON" })).toEqual(["create_proposal"]);
     expect(await offered(maya, "proposals/:phase", { phase: "CON-014" })).toEqual(["add_proposal_task", "update_proposal", "withdraw_proposal"]);
     expect(await offered(maya, "proposals/:phase", { phase: "FLT-301" })).toEqual([]);
-    expect(await offered(maya, "proposals/:phase", { phase: "planned" })).toEqual(["create_proposal"]);
+    // 081 amendment 9 (AC-88): the lists also suggest asking what you own.
+    expect(await offered(maya, "proposals/:phase", { phase: "planned" })).toEqual(["create_proposal", "list_proposals"]);
     expect(manifest.pageLabel?.({ phase: "CON-014" })).toBe("CON-014");
   });
 

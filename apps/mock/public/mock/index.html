@@ -1126,12 +1126,12 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
         <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Choose · New proposal</span><span class="chip">Contoso Portal</span></div>
         <p style="font-weight:600">Who owns it?</p>
         <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83" checked> <span><b>Me</b> · Maya Fernando, PM</span></label>
-        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83"> <span><b>Nimal Silva</b> · Engineer · 80% this month</span></label>
-        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83"> <span><b>Kasun Dias</b> · Engineer · 50% this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83"> <span><b>Nimal Silva</b> · Engineer · 0% free this month <small class="muted">(fully allocated)</small></span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83"> <span><b>Kasun Dias</b> · Engineer · 30% free this month</span></label>
         <label style="display:flex;gap:10px;padding:10px;border:1px dashed #d9d6ea;border-radius:12px"><input type="radio" name="c83"> <span>Something else…</span></label>
         <p style="margin:12px 0 0;font-size:13px">Project <b>Contoso Portal</b> · Title <b>Invoice export to PDF</b> · Estimate <b>16 h</b> · Owner <b>Maya Fernando</b></p>
         <p><span class="btn">Add it</span> &nbsp; Cancel</p>
-        <p class="muted" style="font-size:12px">Nothing is saved until you confirm. Picking someone else adds "They'll be told."</p>
+        <p class="muted" style="font-size:12px">Nothing is saved until you confirm. Picking someone else adds "They'll be told." Amendment 8: only people on the project this month, each with their spare capacity; nobody is hidden for being busy.</p>
       </div>
       <p class="muted">After confirming with Nimal picked: ✓ Created CON-018 · owner Nimal Silva</p>
     </div>
@@ -1159,10 +1159,56 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     </ul>
     <p class="muted" style="padding:0 28px 20px;font-size:13px">Nobody is told about their own action, including making themselves owner or an agent doing it for them.</p>
   </div>
+  <h2 style="margin-top:32px">Amendment 9: my proposals</h2>
+  <p class="muted" style="font-size:13px">What you own, and logging time against it (AC-83 to AC-91). Shown here as Nimal Silva.</p>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Proposals list · Filter</h2></div>
+      <nav aria-label="Filter by project or owner (example)" style="display:flex;flex-direction:column;gap:4px;font-size:14px;max-width:220px">
+        <a href="#" aria-current="true">All projects</a><a href="#"><b>My proposals</b></a><a href="#">Contoso Portal</a><a href="#">Fleet Tracker</a><a href="#">HR Insights</a>
+      </nav>
+      <p style="margin:12px 0 0"><span class="chip">Mine ✕</span> <span class="muted" style="font-size:13px">once it's on; the counts and chart follow it</span></p>
+    </div>
+    <div class="card pinnable">
+      <div class="card-head"><h2>Your proposals</h2><span class="chip">+</span></div>
+      <ul style="list-style:none;margin:0;padding:0">
+        <li style="padding:8px 0;border-bottom:1px solid var(--line,#E4E1F0)"><b>CON-018 Export invoices to PDF</b><br><small class="muted">Ready to verify · Contoso Portal</small></li>
+        <li style="padding:8px 0;border-bottom:1px solid var(--line,#E4E1F0)"><b>FLT-022 Saved filters</b><br><small class="muted">3 h over its 16 h estimate · Fleet Tracker</small></li>
+        <li style="padding:8px 0"><b>CON-014 Invoice export to PDF</b><br><small class="muted">4 of 5 tasks done · Building · Contoso Portal</small></li>
+      </ul>
+      <p><span class="btn sm">All your proposals</span></p>
+    </div>
+  </div>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Chat · Log time</h2></div>
+      <p class="muted" style="margin:0 0 8px">You: Log 2 h today on Contoso Portal</p>
+      <p style="margin:0 0 8px">Which proposal is it for?</p>
+      <div role="group" aria-label="Which proposal is it for? (example)" style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="btn sm">CON-014 · Invoice export to PDF (yours · Building)</span><span class="btn sm">CON-018 · Export invoices (you closed T1 on Nov 4)</span><span class="btn sm">CON-016 · Audit trail (Planned)</span><span class="btn sm">None</span>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:10px">Chat always asks; your likeliest proposal is the first answer. A proposal's pin offers "Log time on CON-014".</p>
+    </div>
+    <div class="tcard pinnable" style="max-width:300px;align-self:start"><div class="id">CON-014</div><p>Invoice export to PDF</p><div class="prog"><i style="width:80%"></i></div>
+      <div class="foot"><span style="display:inline-flex;align-items:center;gap:6px"><span class="av sm a2">NS</span><span class="chip" style="font-size:11px;padding:1px 7px">Yours</span></span><span>4 of 5, 12 h</span></div></div>
+  </div>
 </section>
 <section data-change="083-profile-menu-closes" id="083-profile-menu-closes" data-roles="all" data-title="Profile menu closes" data-nav="no" data-parent="001-amax-foundation">
   <h1>The profile menu closes like a menu</h1>
   <p class="lede">No new screen. The app's profile menu (your name, top right) catches up with this mock's: a click outside it, picking a theme or a View-as role (focus goes back to your name), Tab out of it, or Escape closes it. Try it on the name above.</p>
+</section>
+<section data-change="084-chat-quick-replies" id="084-chat-quick-replies" data-roles="all" data-title="Chat: quick replies" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Chat: quick replies</h1>
+  <p class="lede">A question with a few known answers shows them as buttons; one click sends the answer as if typed. Nothing is written by a click. Fictional data.</p>
+  <div class="card" style="max-width:420px">
+    <p class="muted" style="margin:0 0 8px">You: Export invoices to PDF, estimate 16 h</p>
+    <p style="margin:0 0 8px">Which project is it for?</p>
+    <div role="group" aria-label="Which project is it for?" style="display:flex;flex-wrap:wrap;gap:6px">
+      <button class="btn sm" type="button">CON · Contoso Portal</button>
+      <button class="btn sm" type="button">FLT · Fleet Tracker</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:10px">Only the projects you manage or are assigned to. Clicking one sends it; then "Who owns it?" follows (081). Typing an answer works too.</p>
+  </div>
 </section>
 <section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
   <h1>Dev starts fresh</h1>

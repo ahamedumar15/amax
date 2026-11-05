@@ -33,6 +33,8 @@ const RULES: Rule[] = [
   // 081 amendment 6: a new proposal with an owner picked from the team, and an owner changed to someone else (test-only, by id).
   [new RegExp(`^add a proposal to .+? \\(${KEY}\\): (.+?), owned by .+? \\(user id ${UUID}\\)\\s*$`, "i"), (m) => [["create_proposal", { projectKey: m[1], title: m[2].trim(), ownerUserId: m[3] }]]],
   [new RegExp(`^make .+? \\(user id ${UUID}\\) the owner of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["update_proposal", { key: m[2], ownerUserId: m[1] }]]],
+  // 084: quick replies, test-only: the scripted model asks which project with two answers to click.
+  [/^ask which project for (.+)$/i, () => [["offer_answers", { question: "Which project is it for?", answers: ["CON · Contoso Portal", "FLT · Fleet Tracker"] }]]],
   // 081 amendment 3: what the other Delivery pins offer.
   [new RegExp(`^add a proposal to .+? \\(${KEY}\\): (.+)$`, "i"), (m) => [["create_proposal", { projectKey: m[1], title: m[2].trim() }]]],
   [new RegExp(`^create release (v?\\d+\\.\\d+\\.\\d+) of ${KEY}\\s*$`, "i"), (m) => [["create_release", { projectKey: m[2], version: m[1] }]]],

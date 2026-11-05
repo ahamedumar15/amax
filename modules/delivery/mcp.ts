@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
+import { ToolError } from "@amax/mcp";
 import { PHASES, proposalHref } from "./contracts";
 import { pinOf } from "./pins";
 import { ctxFor } from "./server/context";
@@ -15,7 +16,7 @@ import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, moveCard, proposeCreate, proposeUpdate, taskCard, updateCard } from "./server/proposal-card";
 import { createReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
-import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, listProjects, listProposals, listReleases } from "./server/queries";
+import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -29,7 +30,10 @@ const releaseRef = z.object({ releaseId: z.string().uuid().optional(), projectKe
 const view = "view" as const;
 
 export const mcpTools: McpToolDef[] = [
-  tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release.", input: z.object({}), run: (v) => listProjects(v) }),
+  // 084 AC-3: `mine` keeps the projects the viewer manages or is assigned to (their data scopes), for "which project?".
+  tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release. mine: true keeps only the projects you manage or are assigned to.",
+    input: z.object({ mine: z.boolean().optional() }),
+    run: async (v, a) => { const all = await listProjects(v); return a.mine ? all.filter((p) => v.managedProjects.includes(p.id) || v.assignedProjects.includes(p.id)) : all; } }),
   // 008 AC-4: the Overview's Agent activity feed, and one line of it for its pin.
   tool({ ...read, pin: view, name: "list_activity", description: "What agents, pipelines and people did lately through ingestion, newest first, with who acted for whom.",
     input: z.object({ limit: z.number().int().min(1).max(50).optional() }), run: (v, a) => listActivity(v, a.limit) }),
@@ -37,8 +41,14 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ id: z.string().uuid() }), run: (v, a) => getActivity(v, a.id) }),
   tool({ ...read, pin: { id: "projectId", of: pinOf.project }, name: "get_project", description: "One project and its proposals, by projectId or by project key such as CON or AMX.",
     input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
-  tool({ ...read, pin: view, name: "list_proposals", description: "Proposals (specclaw and hand-made), newest change first, optionally filtered by phase, project key or text in the key or title (q). Without a project key, only active projects; withdrawn ones never.", input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional(), q: z.string().max(100).optional() }),
-    run: (v, a) => listProposals(v, a) }),
+  // 081 amendment 9 (AC-85): `mine` keeps your own proposals; `likelyForMe` (with a project key) lists that project's
+  // open proposals, the likeliest for you first, each with why: what Log time offers as quick replies.
+  tool({ ...read, pin: view, name: "list_proposals", description: "Proposals (specclaw and hand-made), newest change first, optionally filtered by phase, project key or text in the key or title (q). Without a project key, only active projects; withdrawn ones never. mine: true keeps the ones you own. likelyForMe: true with a projectKey lists that project's open proposals (up to five), the likeliest for you first (yours and Building, yours, ones you closed a task on lately, then by phase), each with why.",
+    input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional(), q: z.string().max(100).optional(), mine: z.boolean().optional(), likelyForMe: z.boolean().optional() }),
+    run: async (v, a) => {
+      if (a.likelyForMe && !a.projectKey) throw new ToolError("likelyForMe needs a projectKey", "invalid_input");
+      return a.likelyForMe ? likelyProposals(v, a.projectKey!) : listProposals(v, { phase: a.phase, projectKey: a.projectKey, q: a.q, ownerUserId: a.mine ? v.userId : undefined });
+    } }),
   // 081 AC-17: the Proposals page's metric cards: counts by phase, released this month, and shipped to Prod per week.
   tool({ ...read, pin: view, name: "get_proposal_metrics", description: "Proposal counts by phase (in flight, and releasedThisMonth: released since the 1st of this calendar month, UTC, named in month) and proposals shipped to Prod per ISO week for the last 8 weeks, across active projects or for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => proposalMetrics(v, a) }),
@@ -52,7 +62,7 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "create_project", description: "Create a project. Key: 2-10 capitals, e.g. CON.", scope: "write", permission: "delivery:project:create",
     input: z.object({ key: z.string(), name: z.string(), client: z.string(), billing: z.enum(["fixed", "t&m", "retainer", "internal"]) }),
     service: createProject, run: (v, a, s = "mcp") => createProject(ctxFor(v, s), a) }),
-  tool({ name: "create_proposal", description: "Add a proposal made by hand to a project's board (it starts as Proposed). The owner is you, or the person you act for, unless ownerUserId names another active person.", scope: "write", permission: "delivery:proposal:create",
+  tool({ name: "create_proposal", description: "Add a proposal made by hand to a project's board (it starts as Proposed). The owner is you, or the person you act for, unless ownerUserId names someone on the project. In chat, when no project is pinned or named, ask which one first: call list_projects with mine true (or without it when that's empty, keeping the ones you may add proposals to) and offer_answers with \"Which project is it for?\" and up to six answers \"<KEY> · <Name>\". Then, before proposing it, settle the owner unless the user already named one or said me: call get_project_team for the project, then offer_choices with the question \"Who owns it?\": first \"Me\" (this input without ownerUserId), then up to three teammates on the project this month (their first percent above 0) who have a userId and aren't the user, most allocated first, each labelled \"<name> · <role> · <freeThisMonth>% free this month\" (\"fully allocated\" at 0, \"over-allocated by <n>%\" below it) with ownerUserId their userId. Only when you can't read the team, or nobody else is on it, propose it with the user as owner.", scope: "write", permission: "delivery:proposal:create",
     input: ProposalCreateInput, propose: proposeCreate, card: createProposalCard,
     service: createProposal, run: (v, a, s = "mcp") => createProposal(ctxFor(v, s), a) }),
   // 081 AC-9 to AC-11: a hand-made proposal's lifecycle. A spec proposal changes in its repo; only its owner is set here.

@@ -54,6 +54,27 @@ async function proposalsToApprove(tx: Tx, v: Viewer): Promise<OverviewWaiting[]>
   }));
 }
 
+/**
+ * 081 amendment 9 (AC-89): the open proposals this person owns, what needs them first: ready to verify (Building, every
+ * task done), over the estimate, then open tasks. Empty for someone who owns none, and then the panel isn't shown.
+ */
+export async function yourProposals(tx: Tx, v: Viewer) {
+  const rows = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.hours, p.estimate_hours, pr.name as project_name
+    from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+    where p.owner_user_id::text = ${v.userId} and ${ACTIVE} and p.phase <> 'released' and pr.status = 'active'
+    order by (p.phase = 'building' and p.tasks_total > 0 and p.tasks_done = p.tasks_total) desc,
+      (p.estimate_hours is not null and p.hours > p.estimate_hours) desc, (p.tasks_total - p.tasks_done) desc, p.updated_at desc, p.key limit 5`);
+  return rows.map((r) => {
+    const done = Number(r.tasks_done), total = Number(r.tasks_total), hours = Number(r.hours), est = r.estimate_hours === null ? null : Number(r.estimate_hours);
+    const ready = r.phase === "building" && total > 0 && done === total, over = est !== null && hours > est;
+    const phase = String(r.phase)[0].toUpperCase() + String(r.phase).slice(1);
+    const detail = ready ? `Ready to verify · ${r.project_name as string}` : over ? `${Number((hours - est!).toFixed(2))} h over its ${est} h estimate · ${r.project_name as string}`
+      : `${total ? `${done} of ${total} tasks done` : "No tasks yet"} · ${phase} · ${r.project_name as string}`;
+    return { id: r.id as string, title: `${r.key as string} ${r.title as string}`, detail, tone: (ready ? "attention" : over ? "problem" : "info") as "attention" | "problem" | "info",
+      pin: { label: `${r.key as string} ${r.title as string}`, tool: "get_proposal", args: { proposalId: r.id as string } } };
+  });
+}
+
 const rollbacks = (releases: ReleaseRow[]): OverviewWaiting[] => releases.filter(open).flatMap((r) => {
   const back = rolledBack(r);
   return back ? [{ id: `delivery:release:${r.id}`, title: `${r.version} failed in ${back.environment}`, detail: back.note, context: r.projectName, raisedBy: "Pipeline", agent: false,
@@ -62,7 +83,7 @@ const rollbacks = (releases: ReleaseRow[]): OverviewWaiting[] => releases.filter
 
 // 068: the Proposals ticket, delivery performance, release readiness and the decisions delivery waits on.
 export async function deliveryOverview(v: Viewer): Promise<OverviewPart> {
-  const [counts, perf, releases, toApprove] = await Promise.all([phaseCounts(v), deliveryPerformance(v), listReleases(v), read(v, (tx) => proposalsToApprove(tx, v))]);
+  const [counts, perf, releases, toApprove, mine] = await Promise.all([phaseCounts(v), deliveryPerformance(v), listReleases(v), read(v, (tx) => proposalsToApprove(tx, v)), read(v, (tx) => yourProposals(tx, v))]);
   // Releases that need watching first: a rollback, then the furthest along; never-deployed ones wait their turn.
   const ready = releases.filter((r) => open(r) && r.stages.some((s) => s.status)).sort((a, b) => Number(Boolean(rolledBack(b))) - Number(Boolean(rolledBack(a))) || passed(b) - passed(a)).slice(0, 2);
   const panels: OverviewPanel[] = [
@@ -71,6 +92,8 @@ export async function deliveryOverview(v: Viewer): Promise<OverviewPart> {
       pin: { label: "Proposals shipped", tool: "list_proposals", args: { phase: "released" } } },
     { kind: "progress", key: "delivery.readiness", title: "Release readiness", slot: "aside", order: 40, pin: { label: "Releases", tool: "list_releases", args: {} },
       items: ready.map((r) => ({ id: r.id, label: `${r.projectName.split(" ")[0]} ${r.version}`, done: passed(r), total: r.stages.length, note: stageNote(r), problem: Boolean(rolledBack(r)), pin: releasePin(r) })) },
+    ...(mine.length ? [{ kind: "list" as const, key: "delivery.mine", title: "Your proposals", slot: "aside" as const, order: 10, items: mine,
+      href: "/delivery/proposals?owner=me", hrefLabel: "All your proposals", pin: { label: "Your proposals", tool: "list_proposals", args: { mine: true } } }] : []),
   ];
   return {
     lede: `${counts.inFlight} proposals in flight, ${counts.releasedThisMonth} shipped to Prod this month.`,

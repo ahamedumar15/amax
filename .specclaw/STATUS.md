@@ -1,39 +1,40 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-05 12:23 UTC
+**Last Updated:** 2026-11-05 12:44 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
-- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed
-- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed
-- 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed
-- 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed
-- 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed
-- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed
-- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed
-- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
-- 🔀 **074-fork-pr-review-gate** — pr raised
-- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed
-- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
-- 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed
-- 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
-- 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed
-- 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed
-- 📝 **081-proposals-end-to-end** — tasks done | 32/32 tasks (100%) | 0 failed
-- 🔍 **082-dev-fresh-cache** — verify complete | 1/1 tasks (100%) | 0 failed
-- 🔨 **083-profile-menu-closes** — build complete | 1/1 tasks (100%) | 0 failed
+- 🔀 **015-payroll-sri-lanka** — PR #command requires
+- 🔀 **016-payroll-australia** — PR #command requires
+- 🔀 **019-accounting-journals** — PR #command requires
+- 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed | PR #command requires
+- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **074-fork-pr-review-gate** — pr raised | PR #command requires
+- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
+- 📝 **081-proposals-end-to-end** — tasks done | 33/33 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **082-dev-fresh-cache** — verify complete | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔨 **083-profile-menu-closes** — build complete | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **eval** — PR #command requires
 
 ## Pending Proposals
 
-
-- 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
-- 📋 **016-payroll-australia** — proposal ready, awaiting planning
-- 📋 **019-accounting-journals** — proposal ready, awaiting planning
+_None._
 
 ## Recently Completed
 
@@ -105,6 +106,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 83
-- **Active:** 19
+- **Total changes:** 87
+- **Active:** 23
 - **Completed:** 64
