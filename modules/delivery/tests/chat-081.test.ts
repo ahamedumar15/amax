@@ -44,7 +44,7 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     const nimal = await db.as("nimal");
     const card = await createProposalCard(maya, { projectKey: "CON", title: "Dunning", description: "Remind late payers", estimateHours: 8, ownerUserId: nimal.userId });
     expect(card.lines).toEqual([{ label: "Project", value: "Contoso Portal (CON)" }, { label: "Title", value: "Dunning" }, { label: "Description", value: "Remind late payers" },
-      { label: "Estimate", value: "8 h" }, { label: "Owner", value: "Nimal Silva" }, { label: "Starts as", value: "Proposed" }]);
+      { label: "Estimate", value: "8 h" }, { label: "Owner", value: "Nimal Silva · they'll be told" }, { label: "Starts as", value: "Proposed" }]);
     expect((await createProposalCard(maya, { projectKey: "CON", title: "Mine" })).lines).toContainEqual({ label: "Owner", value: "You" });
     await expect(proposeCreate(maya, { projectKey: "NOPE", title: "x" })).rejects.toThrow(/no project NOPE/);
     await db.t.owner`update delivery.project set status = 'closed' where key = 'HRI'`;
@@ -58,7 +58,7 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
       look: { confirm: "Move to Planned", done: "Moved CON-017 to Planned" } });
     expect(await taskCard(maya, { key: "CON-017", title: "Draft the importer" })).toMatchObject({ title: "Add T1 to CON-017: Draft the importer", look: { confirm: "Add the task", done: "Added T1 to CON-017" } });
     const owner = await updateCard(maya, { key: "CON-017", ownerUserId: maya.userId });
-    expect(owner).toMatchObject({ title: "Make Maya Fernando the owner of CON-017", lines: [{ label: "Owner", value: "Nimal Silva → you (Maya Fernando)" }], look: { confirm: "Change owner", done: "Maya Fernando now owns CON-017" } });
+    expect(owner).toMatchObject({ title: "Make Maya Fernando the owner of CON-017", lines: [{ label: "From", value: "Nimal Silva" }, { label: "To", value: "you (Maya Fernando)" }, { label: "Told", value: "Nimal Silva will be told" }], look: { confirm: "Change owner", done: "Maya Fernando now owns CON-017" } });
     expect((await updateCard(maya, { key: "CON-017", title: "CSV import", estimateHours: 6 })).look).toMatchObject({ confirm: "Save", done: "Updated CON-017" });
   });
 

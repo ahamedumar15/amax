@@ -17,13 +17,19 @@ export type ReleaseDeployed = { releaseId: string; projectId: string; version: s
 /** 081: `ownerUserId` is the proposal's owner, told about changes others make (null when it has none). */
 export type ProposalPhaseChanged = { proposalId: string; key: string; projectId: string; from: Phase; to: Phase; by: string; ownerUserId?: string | null };
 
+/**
+ * 081 amendment 6: a proposal's owner changed: `from` and `to` are user ids (null for none), `cleared` when it now has none. Raised
+ * by create, update_proposal and a "Suggested owner" accept or undo; a sync only fills in the person it acts for.
+ */
+export type ProposalOwnerChanged = { proposalId: string; key: string; title: string; projectId: string; from: string | null; to: string | null; toName: string | null; cleared: boolean; by: string };
+
 /** A proposal made by hand moved to the hand-made series because a spec change owns its old key. */
 export type ProposalRekeyed = { proposalId: string; projectId: string; from: string; to: string };
 
 /** 081: a proposal made by hand was withdrawn (never deleted). `by` is the actor, "… for user:…" when acting for someone. */
 export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time" } as const;
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed" } as const;
 
 /**
  * 081: a proposal's page. It shares the `proposals/:phase` segment: a phase name (lowercase) is the list, anything

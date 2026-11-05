@@ -4,6 +4,7 @@ import { can, type Viewer } from "@amax/auth";
 import type { ToolCard } from "@amax/core";
 import { getRuntime } from "@amax/core/server";
 import { ToolError } from "@amax/mcp";
+import { notOnProject } from "./owner";
 
 type Create = { projectKey: string; title: string; description?: string; estimateHours?: number; ownerUserId?: string };
 
@@ -20,6 +21,20 @@ export async function proposeCreate(v: Viewer, a: Create) {
   if (project.status !== "active") throw new ToolError(`${project.name as string} is closed; reopen it before adding proposals`, "invalid_input");
   if (!can(v, "delivery:proposal:create", { projectId: project.id as string })) throw new ToolError(`you can't add proposals to ${project.name as string}`, "invalid_input");
   if (a.ownerUserId && !owner) throw new ToolError("the owner must be an active person in this workspace", "invalid_input");
+  await refuseOffProject(v, a.ownerUserId, project.id as string);
+}
+
+/** 081 AC-67: no card for an owner who isn't on the proposal's project. */
+async function refuseOffProject(v: Viewer, ownerUserId: string | undefined, projectId: string, key?: string) {
+  if (!ownerUserId) return;
+  const why = await withTenant(getRuntime().db, v.tenantId, (tx) => notOnProject(tx, v.tenantId, ownerUserId, projectId, key));
+  if (why) throw new ToolError(why, "invalid_input");
+}
+
+export async function proposeUpdate(v: Viewer, a: { key: string; ownerUserId?: string }) {
+  if (!a.ownerUserId) return;
+  const [p] = await withTenant(getRuntime().db, v.tenantId, (tx) => tx.execute(sql`select project_id from delivery.proposal where key = ${a.key}`));
+  if (p) await refuseOffProject(v, a.ownerUserId, p.project_id as string, a.key);
 }
 
 /** 081 AC-14: the create card shows what will be written: project, title, description, estimate and owner. */
@@ -35,7 +50,8 @@ export async function createProposalCard(v: Viewer, a: Create): Promise<ToolCard
       { label: "Title", value: a.title },
       ...(a.description ? [{ label: "Description", value: a.description }] : []),
       { label: "Estimate", value: a.estimateHours !== undefined ? `${a.estimateHours} h` : "none" },
-      { label: "Owner", value: who },
+      // 081 AC-70: someone else named as owner hears of it.
+      { label: "Owner", value: who === "You" ? who : `${who} · they'll be told` },
       { label: "Starts as", value: "Proposed" },
     ],
   };
@@ -45,7 +61,7 @@ export async function createProposalCard(v: Viewer, a: Create): Promise<ToolCard
 // will happen and its receipt says what did ("Moved CON-016 to Planned"), not chat's generic "Done: CON-016 added".
 const PHASE_LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 const proposalNow = (v: Viewer, key: string) => withTenant(getRuntime().db, v.tenantId, async (tx) =>
-  (await tx.execute(sql`select key, title, phase, owner_name, (select coalesce(max(substring(ref from 2)::int), 0) + 1 from delivery.task t where t.proposal_id = p.id) as next
+  (await tx.execute(sql`select key, title, phase, owner_name, owner_user_id, (select coalesce(max(substring(ref from 2)::int), 0) + 1 from delivery.task t where t.proposal_id = p.id) as next
     from delivery.proposal p where key = ${key}`))[0]);
 
 export async function moveCard(v: Viewer, a: { key: string; to: string }): Promise<ToolCard> {
@@ -74,6 +90,11 @@ export async function updateCard(v: Viewer, a: Edit): Promise<ToolCard> {
     ...(who ? [{ label: "Owner", value: `${(p?.owner_name as string | null) ?? "Unassigned"} → ${who}` }] : []),
   ];
   const only = who && lines.length === 1;
+  // 081 AC-71: an owner change shows From and To, and who hears of it (never the person confirming).
+  const told = a.ownerUserId && a.ownerUserId !== p?.owner_user_id
+    ? [a.ownerUserId !== v.userId ? owner : null, p?.owner_user_id && p.owner_user_id !== v.userId ? (p.owner_name as string) : null].filter((x): x is string => !!x) : [];
+  if (only) lines.splice(0, 1, { label: "From", value: (p?.owner_name as string | null) ?? "Unassigned" }, { label: "To", value: who! });
+  if (told.length) lines.push({ label: "Told", value: `${told.join(" and ")} will be told` });
   return { title: only ? `Make ${owner ?? "them"} the owner of ${a.key}` : `Change ${a.key}`, lines,
     look: { kind: only ? "Change owner" : "Edit proposal", subject: p ? `${a.key} ${p.title as string}` : a.key, confirm: only ? "Change owner" : "Save", done: only ? `${owner ?? "They"} now own${owner ? "s" : ""} ${a.key}` : `Updated ${a.key}` } };
 }

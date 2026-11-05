@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
-import type { ServiceContext } from "@amax/core/server";
+import { can, viewerForUser } from "@amax/auth";
+import type { Emitted, ServiceContext } from "@amax/core/server";
+import { EVENTS, type ProposalOwnerChanged } from "../contracts";
 
 export type Owner = { id: string; name: string };
 
@@ -26,4 +28,26 @@ export async function ownerFor(tx: Tx, ctx: ServiceContext, userId?: string): Pr
   if (userId) return namedOwner(tx, userId);
   const me = personOf(ctx);
   return me ? activePerson(tx, me) : null;
+}
+
+/** 081 AC-62: the event for a proposal whose owner becomes `to`; none when the owner stays the same. */
+export function ownerChanged(p: Record<string, unknown>, to: Owner | null, by: string): Emitted[] {
+  const from = (p.owner_user_id as string | null) ?? null;
+  if (from === (to?.id ?? null)) return [];
+  const payload: ProposalOwnerChanged = { proposalId: p.id as string, key: p.key as string, title: p.title as string, projectId: p.project_id as string,
+    from, to: to?.id ?? null, toName: to?.name ?? null, cleared: !to, by };
+  return [{ name: EVENTS.ownerChanged, payload }];
+}
+
+/**
+ * 081 AC-67: why this person can't own a proposal on the project, or null when they can. An owner is an active person who
+ * holds delivery:task:done there: a PM who manages it, or an engineer assigned to it (the platform's data scopes, so
+ * Delivery needs no Allocations import).
+ */
+export async function notOnProject(tx: Tx, tenantId: string, userId: string, projectId: string, key?: string): Promise<string | null> {
+  const v = await viewerForUser(tx, tenantId, userId);
+  if (!v) return "the owner must be an active person in this workspace";
+  if (can(v, "delivery:task:done", { projectId })) return null;
+  const [p] = await tx.execute(sql`select name from delivery.project where id = ${projectId}`);
+  return `${v.name} isn't on ${(p?.name as string | undefined) ?? "that project"}, so they can't own ${key ?? "its proposals"}. Pick someone on the project.`;
 }

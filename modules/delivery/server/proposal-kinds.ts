@@ -4,7 +4,7 @@ import type { Tx } from "@amax/db";
 import { defineSuggestionKind } from "@amax/agents";
 import { SuggestionError } from "@amax/agents/server";
 import { setOwnerIn } from "./lifecycle";
-import { namedOwner } from "./owner";
+import { namedOwner, notOnProject } from "./owner";
 import { moveIn } from "./services";
 
 // 081 amendment 2 (AC-32, AC-33): what the Delivery agent may suggest about a proposal. A person accepts it (the
@@ -47,8 +47,12 @@ type Owner = z.infer<typeof Owner>;
 
 const own = async (tx: Tx, ctx: Parameters<typeof setOwnerIn>[1], p: Owner, to: { id: string; name: string } | null, fits: (row: Record<string, unknown>, key: string) => void) => {
   const key = await keyOf(tx, p.proposalId);
+  // 081 AC-68: someone who has left the project since the suggestion was made isn't made its owner.
+  const [row] = await tx.execute(sql`select project_id from delivery.proposal where id = ${p.proposalId}`);
+  const why = to ? await notOnProject(tx, ctx.tenantId, to.id, row.project_id as string, key) : null;
+  if (why) throw new SuggestionError(`${why} Nothing was changed.`);
   const out = await setOwnerIn(tx, ctx, key, to, (row) => fits(row, key));
-  return { applied: { key }, action: "delivery.proposal.update", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after };
+  return { applied: { key }, action: "delivery.proposal.update", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after, events: out.events };
 };
 
 export const suggestedOwner = defineSuggestionKind<Owner, { key: string }>({

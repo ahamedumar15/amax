@@ -65,6 +65,8 @@ describe("081 scripted proposal suggestions and suggestion decisions", () => {
 describe("081 scripted Delivery pin offers", () => {
   it.each([
     ["new proposal in a project", "Add a proposal to Contoso Portal (CON): Dunning emails", [["create_proposal", { projectKey: "CON", title: "Dunning emails" }]]],
+    ["081 amendment 6 new proposal with an owner", `Add a proposal to Contoso Portal (CON): Dunning emails, owned by Nimal Silva (user id ${A})`, [["create_proposal", { projectKey: "CON", title: "Dunning emails", ownerUserId: A }]]],
+    ["081 amendment 6 someone else as owner", `Make Kasun Dias (user id ${A}) the owner of CON-018`, [["update_proposal", { key: "CON-018", ownerUserId: A }]]],
     ["next release", "Create release v2.6.0 of CON", [["create_release", { projectKey: "CON", version: "v2.6.0" }]]],
     ["mark a task done", "Mark T2 of CON-014 done", [["mark_task_done", { key: "CON-014", task: "T2" }]]],
     ["reopen a task (amendment 5)", "Reopen T1 of CON-018", [["reopen_task", { key: "CON-018", task: "T1" }]]],

@@ -6,7 +6,8 @@ import { listAllocations } from "../contracts";
 import { windowMonths } from "./months";
 import { readAlloc } from "./read";
 
-export type TeamMember = { personId: string; employeeNo: string; name: string; role: string; percents: (number | null)[] };
+// 081 amendment 6: `userId` (null for someone with no sign-in) lets chat name a person as a proposal's owner.
+export type TeamMember = { personId: string; userId: string | null; employeeNo: string; name: string; role: string; percents: (number | null)[] };
 export type ProjectTeam = { project: ProjectRef; months: string[]; people: TeamMember[]; hidden: number };
 
 export async function teamIn(tx: Tx, v: Viewer, projectKey: string, today: Date): Promise<ProjectTeam | null> {
@@ -18,7 +19,7 @@ export async function teamIn(tx: Tx, v: Viewer, projectKey: string, today: Date)
   return {
     project, months, hidden,
     people: people.map((p) => ({
-      personId: p.id, employeeNo: p.employeeNo, name: p.name, role: p.title,
+      personId: p.id, userId: p.userId, employeeNo: p.employeeNo, name: p.name, role: p.title,
       percents: months.map((m) => rows.find((r) => r.personId === p.id && r.month === m)?.percent ?? null),
     })).sort((a, b) => (b.percents[0] ?? 0) - (a.percents[0] ?? 0) || a.name.localeCompare(b.name)),
   };

@@ -6,7 +6,7 @@ import { appendAudit, defineService, type Emitted, type ServiceContext } from "@
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
-import { ownerFor } from "./owner";
+import { notOnProject, ownerChanged, ownerFor } from "./owner";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -88,13 +88,16 @@ export const createProposal = defineService({
     if (project.status !== "active") throw new Error(`${input.projectKey} is closed; reopen it before adding proposals`);
     // 081 AC-5: the owner is the one named, else the person acting (an agent's or credential's person).
     const owner = await ownerFor(tx, ctx, input.ownerUserId);
+    const why = owner && input.ownerUserId ? await notOnProject(tx, ctx.tenantId, owner.id, project.id as string) : null;
+    if (why) throw Object.assign(new Error(why), { retryable: false, code: "invalid_input" });
     // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
     // creates, so two of them can't compute the same key (review round 1, B7).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
     const key = await nextHandKey(tx, project.id as string, project.key as string);
     const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, description, estimate_hours, owner_user_id, owner_name)
       values (${ctx.tenantId}, ${project.id}, ${key}, ${input.title}, ${input.description ?? null}, ${input.estimateHours ?? null}, ${owner?.id ?? null}, ${owner?.name ?? null}) returning id`);
-    return { result: { id: p.id as string, key, owner: owner?.name ?? null }, resourceId: p.id as string, after: { key, ...input, ownerUserId: owner?.id ?? null } };
+    const events = ownerChanged({ id: p.id, key, title: input.title, project_id: project.id, owner_user_id: null }, owner, by(ctx));
+    return { result: { id: p.id as string, key, owner: owner?.name ?? null }, resourceId: p.id as string, after: { key, ...input, ownerUserId: owner?.id ?? null }, events };
   },
 });
 

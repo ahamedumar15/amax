@@ -33,4 +33,11 @@ describe.skipIf(!hasDb)("project team (Postgres)", () => {
     expect(limited!.people.length).toBeLessThan(leader!.people.length);
     await expect(teamFor(await db.as("maya", "Engineer"), "CON", TODAY)).rejects.toThrow();
   }, 60_000);
+
+  it("081 AC69 each team member carries their sign-in user id, so chat can name them as a proposal's owner", async () => {
+    const team = await teamFor(await db.as("maya", "Leadership"), "CON", TODAY);
+    const [users] = await db.tx((tx) => tx.execute(sql`select array_agg(p.user_id::text) as ids from hr.person p where p.id::text in (${sql.join(team!.people.map((p) => sql`${p.personId}`), sql`, `)})`));
+    expect(team!.people.map((p) => p.userId).sort()).toEqual([...(users.ids as (string | null)[])].sort());
+    expect(team!.people.some((p) => p.userId)).toBe(true);
+  }, 60_000);
 });

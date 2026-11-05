@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { askAndConfirm } from "./ask";
 import { capture, diffRatio } from "./diff";
 import { forgetActivity, lastTaskClosedByCi } from "./proposal-agent";
+import { ownerChanges, userIdOf } from "./owner-a6";
 
 const mock = (id: string) => `${pathToFileURL(join(import.meta.dirname, "../../../../.specclaw/mock/index.html")).href}#${id}`;
 
@@ -395,4 +396,41 @@ test("081 amendment 5 a task closed by mistake is reopened from the pin, and the
   await expect(page.locator(".dv-tasks .card-head")).toContainText("1 open");
   // Closing and reopening wrote feed lines, as real use does; the Overview's e2e reads the fixtures' feed.
   await forgetActivity(`${key} Reopen check`);
+});
+
+// 081 amendment 6 (AC-67, AC-70, AC-71, AC-73): Maya makes a proposal with Nimal as its owner, then hands it to Kasun. Each card says
+// who will be told, each write raises owner_changed, and someone who isn't on the project is refused before any card.
+test("081 amendment 6 a proposal's owner is picked in chat, changed with a card that says who is told, and only someone on the project", async ({ page }) => {
+  test.setTimeout(90_000);
+  const [nimal, kasun, sarah] = await Promise.all(["nimal", "kasun", "sarah"].map((k) => userIdOf(`${k}@lumenlabs.test`)));
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+  const send = async (text: string) => {
+    await page.getByLabel("Message amax").fill(text);
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+    return page.getByRole("group", { name: /^Confirm:/ }).last();
+  };
+  await page.getByRole("button", { name: "Ask amax", exact: true }).first().click();
+  const create = await send(`Add a proposal to Contoso Portal (CON): Owner handoff check, owned by Nimal Silva (user id ${nimal})`);
+  await expect(create).toContainText("Nimal Silva · they'll be told");
+  await create.getByRole("button", { name: "Add it", exact: true }).click();
+  await expect(create.locator(".cc-receipt")).toBeVisible();
+  const key = (await create.locator(".cc-receipt").innerText()).match(/CON-\d+/)![0];
+
+  const change = await send(`Make Kasun Dias (user id ${kasun}) the owner of ${key}`);
+  await expect(change).toContainText(/From\s*Nimal Silva\s*To\s*Kasun Dias/);
+  await expect(change).toContainText("Kasun Dias and Nimal Silva will be told");
+  await change.getByRole("button", { name: "Change owner", exact: true }).click();
+  await expect(change).toContainText(`Kasun Dias now owns ${key}`);
+  expect(await ownerChanges(key)).toEqual([{ from: null, to: nimal }, { from: nimal, to: kasun }]);
+
+  await page.getByLabel("Message amax").fill(`Make Sarah Chen (user id ${sarah}) the owner of ${key}`);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  // Refused before any card: chat gets a not_proposed note (its wording is AC-6's unit test; the scripted model only
+  // summarises a tool result), so no third card appears and the owner stays Kasun.
+  await expect(page.locator(".m .b").last()).toContainText("update_proposal");
+  await expect(page.getByRole("group", { name: /^Confirm:/ })).toHaveCount(2);
+  expect(await ownerChanges(key)).toHaveLength(2);
+  await page.goto(`/delivery/proposals/${key}`);
+  await expect(page.locator("main")).toContainText("Kasun Dias");
+  expect(await axe(page)).toEqual([]);
 });

@@ -46,4 +46,24 @@ describe.skipIf(!hasDb)("081 a proposal's owner hears what others do to it (Post
     expect(await bell("nimal", "CON-50%")).toEqual([]);
     expect(await bell("nimal", "FLT-505%")).toEqual([{ title: "FLT-505 is verified and ready for a release", href: "/delivery/proposals/FLT-505" }]);
   }, 120_000);
+
+  it("081 AC64 to AC66 a new owner hears it's theirs and the previous owner who has it now; nobody hears of their own action", async () => {
+    const [kasun, maya, nimal] = [await db.idOf("kasun"), await db.idOf("maya"), await db.idOf("nimal")];
+    const [con] = await db.q(sql`select id from delivery.project where key = 'CON'`);
+    const owned = (key: string, from: string | null, to: string | null, toName: string | null, by: string) => db.emit("delivery.proposal.owner_changed",
+      { proposalId: randomUUID(), key, title: "Owner test", projectId: con.id as string, from, to, toName, cleared: !to, by });
+    await owned("CON-601", null, nimal, "Nimal Silva", `user:${maya}`);
+    await owned("CON-602", nimal, kasun, "Kasun Dias", `user:${maya}`);
+    await owned("CON-603", kasun, null, null, `user:${maya}`);
+    await owned("CON-604", null, maya, "Maya Fernando", `user:${maya}`);
+    await owned("CON-605", nimal, kasun, "Kasun Dias", `agent:claude for user:${kasun}`);
+    await db.drain();
+    expect(await bell("nimal", "%CON-601%")).toEqual([{ title: "You now own CON-601: Owner test", href: "/delivery/proposals/CON-601" }]);
+    expect(await bell("kasun", "%CON-602%")).toEqual([{ title: "You now own CON-602: Owner test", href: "/delivery/proposals/CON-602" }]);
+    expect(await bell("nimal", "%CON-602%")).toEqual([{ title: "CON-602 has a new owner: Kasun Dias", href: "/delivery/proposals/CON-602" }]);
+    expect(await bell("kasun", "%CON-603%")).toEqual([{ title: "CON-603 no longer has an owner", href: "/delivery/proposals/CON-603" }]);
+    expect(await bell("maya", "%CON-60%")).toEqual([]);
+    expect(await bell("kasun", "%CON-605%")).toEqual([]);
+    expect(await bell("nimal", "%CON-605%")).toEqual([{ title: "CON-605 has a new owner: Kasun Dias", href: "/delivery/proposals/CON-605" }]);
+  }, 120_000);
 });

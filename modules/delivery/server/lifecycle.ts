@@ -4,7 +4,7 @@ import type { Tx } from "@amax/db";
 import { assertCan, viewerOf } from "@amax/auth";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type ProposalWithdrawn } from "../contracts";
-import { namedOwner } from "./owner";
+import { namedOwner, notOnProject, ownerChanged } from "./owner";
 import { countTasks } from "./tasks";
 
 // 081 AC-9 to AC-11: the lifecycle of a proposal made by hand. A spec proposal belongs to its repo: the sync owns its
@@ -51,13 +51,15 @@ export const updateProposal = defineService({
     if (content) guardOpen(p, "be edited");
     else if (withdrawn(p)) refuse(`${a.key} was withdrawn; it can't be edited`);
     const owner = a.ownerUserId ? await namedOwner(tx, a.ownerUserId) : null;
+    const why = owner ? await notOnProject(tx, ctx.tenantId, owner.id, p.project_id as string, a.key) : null;
+    if (why) refuse(why);
     const next = { title: a.title ?? (p.title as string), description: a.description === undefined ? (p.description as string | null) : a.description,
       estimateHours: a.estimateHours === undefined ? p.estimate_hours : a.estimateHours, ownerUserId: owner?.id ?? (p.owner_user_id as string | null), ownerName: owner?.name ?? (p.owner_name as string | null) };
     await tx.execute(sql`update delivery.proposal set title = ${next.title}, description = ${next.description}, estimate_hours = ${next.estimateHours},
       owner_user_id = ${next.ownerUserId}, owner_name = ${next.ownerName}, updated_at = now() where id = ${p.id}`);
     const changed = Object.fromEntries(Object.entries({ title: a.title, description: a.description, estimateHours: a.estimateHours, owner: owner?.name }).filter(([, x]) => x !== undefined));
     const before = Object.fromEntries(Object.keys(changed).map((k) => [k, { title: p.title, description: p.description, estimateHours: p.estimate_hours === null ? null : Number(p.estimate_hours), owner: p.owner_name }[k]]));
-    return { result: { key: a.key, ...changed }, resourceId: p.id as string, before, after: changed };
+    return { result: { key: a.key, ...changed }, resourceId: p.id as string, before, after: changed, events: owner ? ownerChanged({ ...p, title: next.title }, owner, by(ctx)) : [] };
   },
 });
 
@@ -108,5 +110,5 @@ export async function setOwnerIn(tx: Tx, ctx: ServiceContext, key: string, owner
   if (withdrawn(p)) refuse(`${key} was withdrawn; its owner doesn't change`);
   guard(p);
   await tx.execute(sql`update delivery.proposal set owner_user_id = ${owner?.id ?? null}, owner_name = ${owner?.name ?? null}, updated_at = now() where id = ${p.id}`);
-  return { resourceId: p.id as string, before: { owner: (p.owner_name as string | null) ?? null }, after: { owner: owner?.name ?? null } };
+  return { resourceId: p.id as string, before: { owner: (p.owner_name as string | null) ?? null }, after: { owner: owner?.name ?? null }, events: ownerChanged(p, owner, by(ctx)) };
 }

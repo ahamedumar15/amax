@@ -9,7 +9,7 @@ import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
 import { proposalAgent } from "./server/agent";
 import { proposalKinds } from "./server/proposal-kinds";
-import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime } from "./contracts";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -96,6 +96,7 @@ export default defineModule({
       [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain" }),
       [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.taskReopened]: declarePayload<TaskReopened>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
+      [EVENTS.ownerChanged]: declarePayload<ProposalOwnerChanged>({ proposalId: "plain", key: "plain", title: "plain", projectId: "plain", from: "plain", to: "plain", toName: "plain", cleared: "plain", by: "plain" }),
       [EVENTS.commitTime]: declarePayload<CommitTime>({ userId: "plain", projectId: "plain", projectKey: "plain", proposalKey: "plain", day: "plain", hours: "plain", commit: "plain" }),
     },
   },
@@ -113,6 +114,14 @@ export default defineModule({
       permission: "delivery:release:create", scope: { projectId: "projectId" }, title: "{key} is verified and ready for a release", href: "/delivery/proposals/{key}" },
     { id: "delivery.proposal-task-done", event: EVENTS.taskDone, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "Task {task} of {key} is done", href: "/delivery/proposals/{key}" },
+    // 081 AC-64 to AC-66: a new owner hears the proposal is theirs, and the owner taken off hears who has it now. Never for
+    // their own action (an agent's for them included); the platform keeps one notification per person per event.
+    { id: "delivery.proposal-owner-new", event: EVENTS.ownerChanged, category: "releases", to: [{ owner: "to" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "to", title: "You now own {key}: {title}", href: "/delivery/proposals/{key}" },
+    { id: "delivery.proposal-owner-previous", event: EVENTS.ownerChanged, when: { cleared: false }, category: "releases", to: [{ owner: "from" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "from", title: "{key} has a new owner: {toName}", href: "/delivery/proposals/{key}" },
+    { id: "delivery.proposal-owner-cleared", event: EVENTS.ownerChanged, when: { cleared: true }, category: "releases", to: [{ owner: "from" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "from", title: "{key} no longer has an owner", href: "/delivery/proposals/{key}" },
   ],
   fixtures: [deliveryFixtures],
 });

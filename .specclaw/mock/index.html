@@ -1116,6 +1116,48 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
   <div class="card flush"><table class="tbl"><thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Release</th></tr></thead><tbody>
     <tr><td><a href="#"><b>CON-014</b> Invoice export to PDF</a></td><td><span class="dot" style="background:var(--violet)"></span><a href="#001-amax-foundation-project" style="color:inherit;text-decoration:none">Contoso Portal</a></td><td><span class="chip agent">Building</span></td><td><a href="#" style="color:inherit;text-decoration:none">v2.5.0</a></td></tr>
   </tbody></table></div>
+  <h2 style="margin-top:32px">Amendment 6: proposal owners, picked from the team and told</h2>
+  <p class="muted" style="font-size:13px">Chat and the bell only; no page changes (AC-62 to AC-73).</p>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-head"><h2>Chat, New proposal in Contoso Portal</h2></div>
+      <p class="muted" style="margin:0 0 8px">You: Invoice export to PDF, about 16 h</p>
+      <div class="card" style="padding:16px 18px">
+        <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Choose · New proposal</span><span class="chip">Contoso Portal</span></div>
+        <p style="font-weight:600">Who owns it?</p>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83" checked> <span><b>Me</b> · Maya Fernando, PM</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83"> <span><b>Nimal Silva</b> · Engineer · 80% this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c83"> <span><b>Kasun Dias</b> · Engineer · 50% this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px dashed #d9d6ea;border-radius:12px"><input type="radio" name="c83"> <span>Something else…</span></label>
+        <p style="margin:12px 0 0;font-size:13px">Project <b>Contoso Portal</b> · Title <b>Invoice export to PDF</b> · Estimate <b>16 h</b> · Owner <b>Maya Fernando</b></p>
+        <p><span class="btn">Add it</span> &nbsp; Cancel</p>
+        <p class="muted" style="font-size:12px">Nothing is saved until you confirm. Picking someone else adds "They'll be told."</p>
+      </div>
+      <p class="muted">After confirming with Nimal picked: ✓ Created CON-018 · owner Nimal Silva</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Chat, CON-018 pinned</h2></div>
+      <p class="muted" style="margin:0 0 8px">You: Make Kasun the owner of CON-018</p>
+      <div class="card" style="padding:16px 18px">
+        <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Change owner · CON-018</span></div>
+        <p style="margin:0">From <b>Nimal Silva</b> → To <b>Kasun Dias</b></p>
+        <p class="muted" style="font-size:13px">Kasun Dias will be told, and so will Nimal Silva.</p>
+        <p><span class="btn">Change owner</span> &nbsp; Cancel</p>
+      </div>
+      <p class="muted">Receipt: ✓ Kasun Dias now owns CON-018</p>
+      <p class="muted" style="margin:16px 0 8px">You: Make Tharushi the owner of CON-018</p>
+      <p style="margin:0">Tharushi Wijesinghe isn't on Contoso Portal, so they can't own CON-018. Pick someone on the project.</p>
+      <p class="muted" style="font-size:12px">Refused before any card appears.</p>
+    </div>
+  </div>
+  <div class="card flush" style="max-width:520px">
+    <div class="card-head"><h2>Bell</h2></div>
+    <ul style="list-style:none;margin:0;padding:0 28px 20px">
+      <li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line,#E4E1F0)"><span aria-hidden="true">●</span><span style="flex:1"><b>You now own CON-018:</b> Invoice export to PDF<br><small class="muted">Kasun Dias · Delivery</small></span><span class="muted">just now</span></li>
+      <li style="display:flex;gap:10px;padding:8px 0"><span aria-hidden="true">●</span><span style="flex:1"><b>CON-018 has a new owner:</b> Kasun Dias<br><small class="muted">Nimal Silva · Delivery</small></span><span class="muted">just now</span></li>
+    </ul>
+    <p class="muted" style="padding:0 28px 20px;font-size:13px">Nobody is told about their own action, including making themselves owner or an agent doing it for them.</p>
+  </div>
 </section>
 <section data-change="082-dev-fresh-cache" id="082-dev-fresh-cache" data-roles="all" data-title="Dev starts fresh" data-nav="no" data-parent="001-amax-foundation">
   <h1>Dev starts fresh</h1>

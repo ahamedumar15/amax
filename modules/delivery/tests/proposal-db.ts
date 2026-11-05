@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { withTenant } from "@amax/db";
+import { withTenant, type Tx } from "@amax/db";
 import { migratedDatabase } from "@amax/db/testdb";
 import { configureRuntime } from "@amax/core/server";
 import { applyViewAs, installAuthorizer, loadViewer, setGrants, setViewerScopeResolvers, signInDemo, type Role, type Viewer } from "@amax/auth";
@@ -15,7 +15,11 @@ export async function proposalDb() {
   const app = t.app();
   configureRuntime({ db: app, auditKey: "k".repeat(32) });
   setGrants([delivery]);
-  setViewerScopeResolvers([delivery.viewerScopes!]);
+  // 081 amendment 6: an owner must be on the project. Allocations isn't loaded here, so Nimal (allocated to CON and FLT in its
+  // fixtures) is put on both; the other engineers stay off every project, as 081's permission tests expect.
+  const nimalOn = async (tx: Tx, user: { userId: string }) => ({ assignedProjects: (await tx.execute(sql`select p.id from delivery.project p, auth.user u
+    where u.id = ${user.userId} and u.email = 'nimal@lumenlabs.test' and p.key in ('CON', 'FLT')`)).map((r) => r.id as string) });
+  setViewerScopeResolvers([delivery.viewerScopes!, nimalOn]);
   installAuthorizer();
   await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, delivery], lumen);
   const as = async (key: string, role?: Role): Promise<Viewer> => {

@@ -584,6 +584,106 @@ There are no new screens, writes, tools or tables: it is links, breadcrumbs and 
 `ReleasesPage.tsx`, `ProjectSections.tsx` (the tabs take a current section), `delivery.css`, tests, and
 `apps/web/tests/e2e/delivery.spec.ts`.
 
+## Amendment 6 (2026-11-05): proposal owners: pick from the project team, and tell them
+
+The product owner asked how a proposal is assigned, then had it built. It was first proposed and approved on its own,
+as change 083-proposal-owner-assign, and then folded into 081 at their request (2026-11-05). There's no migration, new
+table, tool or permission; one event and three notification rules are added.
+
+**The gap:**
+- **Owners aren't told.** A PM can set a proposal's owner (AC-5, AC-9), but no write that sets an owner raises an
+  event, so the new owner is never told.
+- **Chat never asks.** The New proposal flow quietly makes the creator the owner.
+- **Anyone can be named.** Any active person in the workspace can be named owner, even someone who isn't on the
+  project and can't act on the proposal.
+
+**Mock Delta**, in 081's section: chat and the bell only, no page changes.
+- **Chat:** a "Who owns it?" choice card (Me first, then the project's team).
+- **Confirm cards:** they say who will be told, and an owner change shows From → To.
+- **Refusal:** naming someone off the project is refused in one sentence.
+- **Bell:** "You now own …" and "… has a new owner".
+
+### Owner changes raise an event
+
+62. **AC-62** Delivery declares a new event, `delivery.proposal.owner_changed` (`ProposalOwnerChanged`), in its
+    contracts. The payload has `proposalId`, `key`, `title`, `projectId`, `from` and `to` (user ids or null), `toName`,
+    `cleared` and `by`. The event is raised:
+    - by `create_proposal` when the proposal gets an owner;
+    - by `update_proposal` when the owner actually changes (the same owner again raises nothing);
+    - when a "Suggested owner" is accepted, and when that accept is undone.
+
+    Syncs and pushes raise nothing. They fill a missing owner only with the person they act for, and AC-66 never tells
+    anyone about their own action.
+63. **AC-63** No migration and no new table. The audit row for each of these writes already records the owner before
+    and after; that doesn't change.
+
+### The owner is told
+
+64. **AC-64** A notification rule tells the **new owner**: "You now own <key>: <title>", linking to the proposal page,
+    in Delivery's `releases` category like its other proposal rules.
+65. **AC-65** The **previous owner** is told "<key> has a new owner: <toName>", or "<key> no longer has an owner" when
+    it's cleared (an undo).
+66. **AC-66** Nobody is told about their own action. That includes making yourself the owner, creating a proposal you
+    own, and an agent acting for you doing either. A person never gets two notifications for one event.
+
+### Only someone on the project can own it
+
+67. **AC-67** On `create_proposal`, `update_proposal` and accepting a "Suggested owner", the named owner must be an
+    active person who holds `delivery:task:done` on the proposal's project: a PM who manages it, or an engineer
+    assigned to it. It's checked with the platform's `viewerForUser`. There's no Allocations import, since
+    Allocations already depends on Delivery.
+    - **Anyone else is refused before a card appears:** "<name> isn't on <Project>, so they can't own <key>. Pick
+      someone on the project."
+    - **Existing owners aren't touched.**
+    - **Syncs and pushes keep AC-5's rule.**
+68. **AC-68** A "Suggested owner" whose person is no longer on the project is refused at accept, with that message, and
+    nothing is written.
+
+### Picking the owner in chat
+
+69. **AC-69** The New proposal chat flow (`delivery.new-proposal`) gets an optional owner step:
+    - **The card:** once the project is known, chat offers the owner on a **choice card** (076's `offer_choices`). The
+      options are **Me** first, then up to three of the project's team, most-allocated first, read with Allocations'
+      `get_project_team`, whose rows now carry `userId`. Then "Something else…".
+    - **The input:** each option is the whole `create_proposal` input with that person's `ownerUserId`.
+    - **No question needed:** if the person already named an owner or said "me", chat doesn't ask.
+    - **No card possible:** with no team the creator can read, the owner is Me, as before.
+70. **AC-70** The `create_proposal` confirm card names the owner. When it's someone else, it adds "they'll be told".
+71. **AC-71** The `update_proposal` confirm card for an owner change shows **From** and **To**, and who will be told (the
+    new and the previous owner, never the person confirming). The receipt reads "<name> now owns <key>".
+
+### Tests
+
+72. **AC-72** Unit tests:
+    - **The event:** raised for each write in AC-62, and not raised for a no-op.
+    - **The rules:** AC-64 to AC-66, including self-assignment and an agent acting for the person.
+    - **The project check:** an engineer assigned to the project and a PM managing it are allowed. An unassigned
+      engineer, Leadership, and an inactive person are refused (AC-67). A stale "Suggested owner" is refused (AC-68).
+    - **Chat:** the intent's owner step (AC-69), the cards (AC-70, AC-71) and the team's `userId`.
+73. **AC-73** End to end (`e2e:auth`, with test-only scripted rules in `packages/ai/src/scripted-writes.ts`):
+    - **The flow:** Maya creates a CON proposal owned by Nimal, then hands it to Kasun. Each card says who will be
+      told, each write raises `owner_changed`, and someone off the project gets no card.
+    - **Not the bell:** the e2e app runs no cron tick, so the bell isn't filled there. AC-64 to AC-66 are proved by
+      notifications' `delivery-routing` test.
+    - **CI:** `pnpm lint` (graph check), `check-module-standard`, `pnpm build` and the 081 suites stay green.
+
+**Decisions (approved 2026-11-05):**
+- **D4** The previous owner is told too (AC-65).
+- **D5** Someone not on the project is refused rather than warned (AC-67).
+- **D6** "On the project" means holding `delivery:task:done` there (AC-67).
+
+**Affected:**
+- **Delivery:** `contracts.ts`, `module.ts`, `chat.ts`, `mcp.ts`, `server/owner.ts`, `server/services.ts`,
+  `server/lifecycle.ts`, `server/proposal-kinds.ts`, `server/proposal-card.ts`, `README.md`, tests.
+- **Allocations:** `server/team.ts` (`userId` on team rows) and its test.
+- **Notifications:** `delivery-routing.test.ts`.
+- **Test support:** `packages/ai/src/scripted-writes.ts` (two test-only rules).
+- **Browser tests:** `apps/web/tests/e2e/delivery.spec.ts` and `owner-a6.ts`.
+- **Mock:** 081's section and its copy.
+
+**Test-only change outside the amendment's code:** Delivery's test database (`tests/proposal-db.ts`) puts Nimal on CON
+and FLT, as Allocations' fixtures have him. Without that, AC-67 would refuse him as an owner in 081's earlier tests.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -662,6 +762,22 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T24` — Amendment 5: project-first breadcrumbs, the project's tabs on proposal and release pages, list links, reopen a task, environment and release actions on the pin; unit and browser tests (AC-54 to AC-61)
   Files: modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/delivery.css, modules/delivery/contracts.ts, modules/delivery/module.ts, modules/delivery/mcp.ts, modules/delivery/server/tasks.ts, modules/delivery/server/agent.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/server/write-cards.ts, modules/delivery/server/pin-offers.ts, modules/delivery/ui/EnvironmentsCard.tsx, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/tests/ui-logic.test.ts, .specclaw/mock/index.html, packages/ai/src/scripted-writes.ts, apps/web/tests/e2e/releases.spec.ts, modules/delivery/tests/navigation-081.test.ts, modules/delivery/tests/reopen-task-081.test.ts, apps/web/tests/e2e/delivery.spec.ts
   Depends: T23
+
+- [x] `T25` — Amendment 6, chat: the owner step on New proposal (a choice card, Me first, then the team), the create card's "they'll be told", the owner-change card's From/To and who's told, and `userId` on Allocations' team rows (AC-69 to AC-71)
+  Files: modules/delivery/chat.ts, modules/delivery/server/proposal-card.ts, modules/allocations/server/team.ts, modules/allocations/tests/team.test.ts, modules/delivery/tests/owner-chat-a6.test.ts, modules/delivery/tests/chat-081.test.ts
+  Depends: T24
+- [x] `T26` — Amendment 6, the `delivery.proposal.owner_changed` event from create, an owner change, and a Suggested owner accept or undo (AC-62, AC-63)
+  Files: modules/delivery/contracts.ts, modules/delivery/module.ts, modules/delivery/server/owner.ts, modules/delivery/server/services.ts, modules/delivery/server/lifecycle.ts, modules/delivery/server/proposal-kinds.ts, modules/delivery/tests/proposal-owner-a6.test.ts, modules/delivery/tests/delivery.test.ts
+  Depends: T25
+- [x] `T27` — Amendment 6, only someone on the project can own a proposal: checked before the card, in the services, and at a Suggested owner's accept (AC-67, AC-68)
+  Files: modules/delivery/server/owner.ts, modules/delivery/server/services.ts, modules/delivery/server/lifecycle.ts, modules/delivery/server/proposal-kinds.ts, modules/delivery/server/proposal-card.ts, modules/delivery/mcp.ts, modules/delivery/tests/proposal-owner-a6.test.ts, modules/delivery/tests/proposal-db.ts
+  Depends: T26
+- [x] `T28` — Amendment 6, the new and previous owner are told, never for their own action (AC-64 to AC-66)
+  Files: modules/delivery/module.ts, modules/notifications/tests/delivery-routing.test.ts
+  Depends: T26
+- [x] `T29` — Amendment 6, end to end: scripted e2e rules, the browser test, the README, both mock copies, the Linux CI replica (AC-72, AC-73)
+  Files: packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, apps/web/tests/e2e/owner-a6.ts, modules/delivery/README.md, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+  Depends: T27, T28
 
 ## Verify
 
@@ -902,5 +1018,39 @@ Fixed on the way:
 - **The navigation browser test** searched the list, because AMX's imported specs fill the first page.
 - **The reopen browser test** now removes its two feed lines, which had displaced the Overview test's demo data.
 - **`auth.spec` AC5** failed once (known flaky) and passed on the rerun.
+
+Review loop: still not run (the specclaw-review server isn't connected).
+
+### Amendment 6 verification (2026-11-05)
+
+Built first as change 083 and folded into 081 the same day. The tests and labels were renamed to 081 amendment 6
+(AC-62 to AC-73) after the full replica run, and then rechecked: Delivery's Amendment 6 suites, the type checks for
+delivery, web and allocations, and the Delivery browser tests.
+
+**Unit tests** (Windows host, local Postgres): `proposal-owner-a6` (AC62, AC67, AC68), `owner-chat-a6` (AC69 to AC71),
+Allocations' `team` (AC69, the team's `userId`), notifications' `delivery-routing` (AC64 to AC66), `packages/ai`'s
+scripted rules, and the 081 owner, lifecycle, agent and chat suites all pass.
+- **Updated for the new rules:** `chat-081` (the cards' From/To and "they'll be told") and `delivery.test` (the event list).
+- **Delivery's test database** puts Nimal on CON and FLT, as Allocations' fixtures do.
+
+**Linux replica of CI** over the working tree, against a fresh Postgres with the `amax_app` role:
+
+| Check | Result |
+|---|---|
+| install, `db:migrate`, `lint` (graph check: 22 modules, 11 packages), `check-module-standard`, `build`, `e2e` | pass |
+| `pnpm turbo run test` | every package passes except three timeouts under load, unrelated to 081: `web` `pin-refs` (30 s), `web` `review-052` (5 s), `experience` `pulse` (5 s). All three pass when rerun alone |
+| `e2e:auth` | **92 passed** on the rerun |
+| `e2e:auth` Delivery, after the renames | 22 passed |
+
+Fixed on the way:
+- **The browser test's refusal check.** A refusal before the card reaches chat as a `not_proposed` note, and the
+  scripted model only summarises tool results. The test now checks that no third card appears and the owner is
+  unchanged. AC-67's wording is checked by its unit test.
+- **`auth.spec` AC5** (known flaky) failed once and passed on the rerun.
+
+**Not covered in the browser:** the bell itself. The e2e app runs no cron tick, so AC-64 to AC-66 rest on
+`delivery-routing`. The choice card (AC-69) needs a real model to call `get_project_team` and `offer_choices`. The
+scripted model only takes the owner as a typed id, so AC-69 is checked through the intent's instructions and the
+team's `userId`, not in the browser.
 
 Review loop: still not run (the specclaw-review server isn't connected).
