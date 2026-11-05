@@ -791,8 +791,9 @@ This amendment uses 084's quick replies. There's no migration, table, tool or pe
 84. **AC-84** The question is "Which proposal is it for?" with quick replies.
     - **The answers:** up to five open proposals of that project from `list_proposals` with `likelyForMe`, then
       **None**.
-    - **Each answer:** "<proposal key> · <title> (<why>)", at most 60 characters, for example "CON-014 · Invoice export to
-      PDF (yours · Building)". Only the title is shortened. The end-to-end run (2026-11-05) showed "<KEY>" read as the
+    - **Each answer:** "<proposal key> · <title>", at most 60 characters, for example "CON-014 · Invoice export to PDF".
+      Only the title is shortened. The why orders the answers and isn't shown (product owner, 2026-11-05; first built
+      with "(yours · Building)" after the title). The end-to-end run (2026-11-05) showed "<KEY>" read as the
       project key ("CON · …"), so the rule now names the full proposal key with an example.
     - **No shortcut** (revised 2026-11-05, the product owner's run). As first built, when exactly one was the person's
       own and Building, chat put it straight on the card. Kasun's "Log 2 hrs on contoso project" went to CON-011
