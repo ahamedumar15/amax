@@ -1,0 +1,9 @@
+{
+  "change": "085-time-my-week-first",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-05T16:23:28Z"},
+    "tasks": {"status":"done","at":"2026-11-05T16:23:29Z"}
+  }
+}
