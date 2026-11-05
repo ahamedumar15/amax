@@ -47,7 +47,8 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
       from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'CON'
         and not exists (select 1 from delivery.deployment d where d.release_id = r.id and d.released and d.voided_at is null) order by r.created_at desc limit 1`);
     const got = await offers("get_proposal")(maya, { proposalId: await id(sql`select id from delivery.proposal where key = ${key}`) });
-    expect(got).toContainEqual({ label: `Put ${key} in CON ${open.version as string}`, prompt: `Set the proposals in CON ${open.version as string} to: ${[open.keys, key].filter(Boolean).join(", ")}`, tool: "set_release_proposals" });
+    // Verified and in no release: putting it in the open release comes first (the PM's next step).
+    expect(got[0]).toEqual({ label: `Put ${key} in CON ${open.version as string}`, prompt: `Set the proposals in CON ${open.version as string} to: ${[open.keys, key].filter(Boolean).join(", ")}`, tool: "set_release_proposals" });
     // Amendment 4 (AC-30 revised): Building always offers Verified, saying how many tasks are open; the fixtures give the
     // rows topped up to the counters' total (CON-014: 5 tasks, T5 open). The label counts open tasks by the counters.
     const p14 = await id(sql`select id from delivery.proposal where key = 'CON-014'`);

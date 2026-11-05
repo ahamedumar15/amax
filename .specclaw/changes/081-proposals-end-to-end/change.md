@@ -258,6 +258,8 @@ an agent never writes without a person's confirm or accept (BR-5).
       "Move CON-014 to Verified (2 tasks open)". The person decides; the agent's Ready to verify still nudges once all
       tasks are done (AC-32). While a task is open, "Mark T<n> of <key> done" comes **first** and the move second
       (revised 2026-11-05, after the move was picked by mistake in the client's demo).
+    - **Verified, in no release:** "Put <key> in <KEY> <version>" comes **first** (revised 2026-11-05, after the role run
+      showed it last of three, where "Make me the owner" could push it out).
     - **Verified, in a release not yet live:** Released isn't a board move (it comes from a Prod deployment), so the pin
       offers that release's next deployment first, for example "Record a deployment of CON v2.4.0 to UAT"
       (`record_deployment`, with its own permission).

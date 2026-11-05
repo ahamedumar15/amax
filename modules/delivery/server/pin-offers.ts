@@ -105,6 +105,9 @@ function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null;
   // 081 amendment 5 (AC-59): a task closed in the last day can be reopened, in case it was closed by mistake.
   const reopen: Gated[] = f.justClosed ? [{ label: `Reopen ${f.justClosed} of ${p.key}`, prompt: `Reopen ${f.justClosed} of ${p.key}`, tool: "reopen_task", permission: "delivery:task:done" }] : [];
   // An unowned proposal's "Make me the owner" outranks Edit and Reopen (three suggestions at most).
+  // Verified and in no release: putting it in the open release is the PM's next step, so it comes first (found in the
+  // role run: last of three, "Make me the owner" could push it out).
+  if (p.phase === "verified" && release.length) return [...release, ...owner, ...reopen, ...edit, ...task, ...first];
   if (p.phase === "building" && task.length) return [...task, ...move, ...owner, ...reopen, ...edit, ...first, ...release];
   return [...move, ...task, ...owner, ...reopen, ...edit, ...first, ...release];
 }
