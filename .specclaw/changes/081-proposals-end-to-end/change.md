@@ -1252,3 +1252,9 @@ Review loop: still not run (the specclaw-review server isn't connected).
 | `e2e:auth` | **93 passed** |
 
 Review loop: still not run (the specclaw-review server isn't connected).
+
+### Covers 084-chat-quick-replies
+
+`084-chat-quick-replies` is `**Review:** covered-by 081-proposals-end-to-end`. Its work went into this branch in
+081's commit `5ddc6561` (amendments 8 and 9, with 084), so 081's review loop reviews it, and the review gate judges it
+by 081's final pass.

@@ -1,6 +1,6 @@
 # Chat quick replies, first used to pick a proposal's project
 
-**Change:** 084-chat-quick-replies · **Created:** 2026-11-05 · **Review:** change
+**Change:** 084-chat-quick-replies · **Created:** 2026-11-05 · **Review:** covered-by 081-proposals-end-to-end
 
 ## Problem
 
