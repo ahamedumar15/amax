@@ -94,3 +94,5 @@ Build notes (2026-11-07, Windows host, local Postgres; not a verdict, `/specclaw
   before it can say "has no task" (AC-2).
 - AC-7 adds `unavailable` to `userFacing` in `@amax/mcp`, so chat and MCP show that refusal's message.
 - Quality: not_run (`specclaw-quality-scan`: jq "Argument list too long" on this host, as in 066–086).
+- CodeQL (PR #113, "missing regular expression anchor"): `navigation-081.test.ts`'s crumb regex now groups its alternation,
+  `(?:…)|(?:…$)`, so the `$` plainly anchors only the last crumb. Same captures, same result (3/3).

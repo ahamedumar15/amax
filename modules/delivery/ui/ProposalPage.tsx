@@ -109,7 +109,7 @@ const KIND_SHAPE: Record<EventKind, ReactNode> = {
   synced: <path d="M3 6a5 5 0 0 1 9-1.5M13 10a5 5 0 0 1-9 1.5M12 2v3h-3M4 14v-3h3" fill="none" strokeWidth="1.6" />,
 };
 
-const TIME_NOTE = { unread: "Time logged against it isn't shown here: Time wasn't asked.", partial: "Only the newest time lines are shown; older ones weren't read." } as const;
+const TIME_NOTE = { unread: "Time logged against it isn't shown here: Time wasn't asked.", partial: "Time logged long ago against it wasn't read, so this history may leave some out." } as const;
 
 function History({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode }) {
   return (

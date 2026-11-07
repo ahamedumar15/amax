@@ -180,15 +180,19 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
 
   // 087 AC-9: the read is bounded. A viewer who may see none of a proposal's many lines gets a partial answer after
   // MAX_BATCHES, never an unbounded scan; someone who sees them all gets the newest MAX_LINES, complete.
-  it("087 AC9 a proposal's time lines are read in at most MAX_BATCHES batches, and say when they stopped early", async () => {
-    const [p] = await db.q(sql`select id, project_id from delivery.proposal where key = 'CON-011'`);
+  it.each([
+    ["one row past the bound", "CON-011", 1, true],
+    ["exactly the bound (the last batch ends on the last row)", "FLT-015", 0, false],
+  ])("087 AC9 a proposal's time lines are read in at most MAX_BATCHES batches: %s → partial %s", async (_label, key, extra, partial) => {
+    const [p] = await db.q(sql`select id, project_id from delivery.proposal where key = ${key}`);
     const proposal = { id: p.id as string, projectId: p.project_id as string };
     const tharushi = await db.as("tharushi");
+    const [{ n }] = await db.q(sql`select count(*)::int as n from core.audit_event where resource in ('time.entry', 'time.change_request') and (after->>'proposalId' = ${proposal.id} or after->>'previousProposalId' = ${proposal.id})`);
     await withTenant(db.app, T, async (tx) => {
-      for (let i = 0; i < BATCH * MAX_BATCHES + 1; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-28", hours: 0.25 } });
+      for (let i = Number(n); i < BATCH * MAX_BATCHES + extra; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-28", hours: 0.25 } });
     });
     const read = async (who: string) => withTenant(db.app, T, async (tx) => proposalTimeLines(tx, await db.as(who), proposal));
-    expect(await read("kasun")).toEqual({ lines: [], partial: true });
+    expect(await read("kasun")).toEqual({ lines: [], partial });
     const maya = await read("maya");
     expect([maya.lines.length, maya.partial]).toEqual([MAX_LINES, false]);
   }, 240_000);

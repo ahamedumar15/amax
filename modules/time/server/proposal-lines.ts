@@ -53,7 +53,9 @@ export const proposalTimeLines: ProposalTimeSource = async (tx, v, proposal, opt
   const out: ProposalTimeLine[] = [];
   let after: { at: unknown; seq: unknown } | null = null;
   for (let batch = 0; out.length < MAX_LINES; batch++) {
-    if (batch === MAX_BATCHES) return { lines: out, partial: true };
+    // 087 review round 1: partial only when a row is really left unread, not when the last batch ended on the last row.
+    if (batch === MAX_BATCHES) return { lines: out, partial: (await tx.execute(sql`select 1 from core.audit_event where ${onProposal(proposal.id)}
+      and (occurred_at, seq) < (${after!.at}::timestamptz, ${after!.seq}::bigint) limit 1`)).length > 0 };
     const page: Row[] = await tx.execute(sql`select seq, occurred_at as at, actor, on_behalf_of, after from core.audit_event where ${onProposal(proposal.id)}
       ${after ? sql`and (occurred_at, seq) < (${after.at}::timestamptz, ${after.seq}::bigint)` : sql``} order by occurred_at desc, seq desc limit ${BATCH}`);
     out.push(...(await visible(tx, v, proposal.projectId, page)));
