@@ -390,7 +390,7 @@ dialog.drawer::backdrop{background:rgba(29,27,46,.3)}
 /* rail: icons collapsed, expands as an overlay on hover or keyboard focus (no reflow) */
 .rail{width:96px;z-index:20;align-items:stretch;transition:width .18s ease,box-shadow .18s ease}
 .rail:hover,.rail:focus-within{width:252px;background:var(--card);box-shadow:16px 0 40px -24px rgba(40,30,110,.45);border-radius:0 var(--r-frame) var(--r-frame) 0}
-.rail .logo{margin:0 0 16px 26px;flex:none}
+.rail .logo{margin:0 0 16px 26px;flex:none;width:44px;height:44px;stroke:none} /* 086: not the icons' 22 px rule */
 .rail a{width:auto;margin:0 20px;height:44px;display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:0 17px;white-space:nowrap;overflow:hidden;text-decoration:none;font-size:14px;font-weight:600;flex:none}
 .rail a svg{flex:none}
 .rail a[aria-current="page"]::before{left:-20px}
@@ -947,6 +947,29 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 </section>
 
 <!-- ================= 077 Time requests history ================= -->
+<section data-change="086-rail-logo-aligned" id="086-rail-logo-aligned" data-roles="all" data-title="Rail logo" data-nav="no" data-parent="001-amax-foundation">
+  <div class="row head"><div><h1>The rail's logo, aligned</h1><p class="lede">The logo is 44 px and centred on the icons' line (the dashed line, 48 px across the 96 px rail). The icons' 22 px rule no longer shrinks or outlines it.</p></div></div>
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+    <figure style="margin:0">
+      <div style="position:relative;width:96px;padding:20px 0 16px;background:var(--card,#fff);border-radius:20px;box-shadow:0 1px 2px rgba(40,30,110,.08)">
+        <span aria-hidden="true" style="position:absolute;left:47.5px;top:0;bottom:0;border-left:1px dashed var(--chip-bad,#D64545)"></span>
+        <div style="margin-left:26px"><svg viewBox="0 0 44 44" style="width:22px;height:22px;display:block;outline:1.7px solid #6A6681;outline-offset:-1px;border-radius:7px" aria-hidden="true"><rect width="44" height="44" rx="14" fill="#7B61FF"/><path d="M12 31 21 13l4 8 7-6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="15" r="3" fill="#F7D65A"/></svg></div>
+        <span style="display:block;width:22px;height:22px;border-radius:6px;background:var(--sunken,#F1EFF8);margin:14px 0 0 37px"></span><span style="display:block;width:22px;height:22px;border-radius:6px;background:var(--sunken,#F1EFF8);margin:14px 0 0 37px"></span><span style="display:block;width:22px;height:22px;border-radius:6px;background:var(--sunken,#F1EFF8);margin:14px 0 0 37px"></span>
+      </div>
+      <figcaption class="muted" style="font-size:13px;margin-top:8px;max-width:200px">Before: 22 px, centred 11 px left of the icons, with the icons' outline.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div style="position:relative;width:96px;padding:20px 0 16px;background:var(--card,#fff);border-radius:20px;box-shadow:0 1px 2px rgba(40,30,110,.08)">
+        <span aria-hidden="true" style="position:absolute;left:47.5px;top:0;bottom:0;border-left:1px dashed var(--chip-bad,#D64545)"></span>
+        <div style="margin-left:26px"><svg viewBox="0 0 44 44" style="width:44px;height:44px;display:block" aria-hidden="true"><rect width="44" height="44" rx="14" fill="#7B61FF"/><path d="M12 31 21 13l4 8 7-6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="15" r="3" fill="#F7D65A"/></svg></div>
+        <span style="display:block;width:22px;height:22px;border-radius:6px;background:var(--sunken,#F1EFF8);margin:14px 0 0 37px"></span><span style="display:block;width:22px;height:22px;border-radius:6px;background:var(--sunken,#F1EFF8);margin:14px 0 0 37px"></span><span style="display:block;width:22px;height:22px;border-radius:6px;background:var(--sunken,#F1EFF8);margin:14px 0 0 37px"></span>
+      </div>
+      <figcaption class="muted" style="font-size:13px;margin-top:8px;max-width:200px">After: 44 px, on the icons' centre line, gradient only (AC-1, AC-2).</figcaption>
+    </figure>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:20px">Every screen's rail above shows the fix. Nothing else in the rail moves; on a phone the logo stays hidden (AC-3).</p>
+</section>
+
 <section data-change="077-time-requests-history" id="077-time-requests-history" data-roles="all" data-title="Time: requests" data-nav="no" data-parent="001-amax-foundation-time">
   <h1>Requests</h1>
   <p class="lede">Every change request and what came of it, for the person who asked and the person who decides. Fictional data.</p>
