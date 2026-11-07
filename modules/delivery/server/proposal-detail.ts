@@ -52,10 +52,14 @@ const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned"
 // everyone else has the approved total (D2). Delivery only words them. Review round 1: no second copy of Time's rule here.
 const hrs = (n: unknown) => `${Number(Number(n).toFixed(2))} h`;
 
-async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string): Promise<ProposalTimeLine[]> {
+async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string, line?: string): Promise<ProposalTimeLine[]> {
   const sources = provided<ProposalTimeSource>(PROPOSAL_TIME_SLOT);
-  return (await Promise.all(sources.map((source) => source(tx, v, { id, projectId })))).flat();
+  return (await Promise.all(sources.map((source) => source(tx, v, { id, projectId }, line ? { line } : undefined)))).flat();
 }
+
+/** Review round 2 (B3): one history line by its kind and id ("audit:12", "event:…", "task:…", "time:…"), read directly. */
+type Only = { kind: "audit" | "event" | "task" | "time"; ref: string };
+const one = (only: Only | undefined, kind: Only["kind"], where: ReturnType<typeof sql>) => (!only ? sql`true` : only.kind === kind ? where : sql`false`);
 
 function timeText(a: ProposalTimeLine, id: string, owner: string) {
   const when = a.day ? ` for ${day(`${a.day}T12:00:00Z`)}` : "";
@@ -66,13 +70,18 @@ function timeText(a: ProposalTimeLine, id: string, owner: string) {
   return `Corrected ${owner}'s entry${when} to ${hrs(a.hours)}`;
 }
 
-async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string): Promise<ProposalEvent[]> {
+// The page shows the newest 100 of each source; `only` reads one line with no window (a pin on an older line still resolves).
+async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string, only?: Only): Promise<ProposalEvent[]> {
+  const ref = only?.ref ?? "";
   const audits = await tx.execute(sql`select seq, occurred_at as at, actor, on_behalf_of, action, after from core.audit_event
-    where resource in ('delivery.proposal', 'delivery.task') and (resource_id = ${id} or (resource = 'delivery.task' and after->>'proposalId' = ${id})) order by occurred_at desc, seq desc limit 100`);
-  const moves = await tx.execute(sql`select id, created_at as at, payload from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'proposalId' = ${id} order by created_at desc limit 100`);
-  const time = await timeRows(tx, id, v, projectId);
+    where resource in ('delivery.proposal', 'delivery.task') and (resource_id = ${id} or (resource = 'delivery.task' and after->>'proposalId' = ${id}))
+      and ${one(only, "audit", sql`seq::text = ${ref}`)} order by occurred_at desc, seq desc limit 100`);
+  const moves = await tx.execute(sql`select id, created_at as at, payload from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'proposalId' = ${id}
+      and ${one(only, "event", sql`id::text = ${ref}`)} order by created_at desc limit 100`);
+  const time = !only || only.kind === "time" ? await timeRows(tx, id, v, projectId, only ? `time:${ref}` : undefined) : [];
   // Closed tasks come from the task rows: who closed each is on the row ("user:…", or "agent:… for user:…").
-  const closed = await tx.execute(sql`select id, ref, title, done_at as at, done_by from delivery.task where proposal_id = ${id} and done and done_at is not null`);
+  const closed = await tx.execute(sql`select id, ref, title, done_at as at, done_by from delivery.task where proposal_id = ${id} and done and done_at is not null
+      and ${one(only, "task", sql`id::text = ${ref}`)}`);
   const ids = new Set<string>();
   const add = (s: unknown) => { for (const m of String(s ?? "").matchAll(/(?:user|sp):([0-9a-f-]{36})/g)) ids.add(m[1]); };
   for (const a of audits) { add(a.actor); add(a.on_behalf_of); }
@@ -98,13 +107,22 @@ async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string): Prom
 }
 
 /**
- * Review 081 round 1 (R3): one line of a proposal's history, for its pin. Read through the whole page as this viewer sees
- * it, so a time line follows Time's rule here too; null when the line isn't there (or isn't theirs to see).
+ * Review 081 round 1 (R3), round 2 (B3): one line of a proposal's history, for its pin, looked up by its kind and id with
+ * no window, worded as the page words it. Null when the proposal or the line is gone; a time line the viewer may not see
+ * is refused by Time (forbidden), so "not yours to see" never reads as "gone".
  */
 export async function proposalEvent(v: Viewer, a: { proposalId: string; line: string }) {
-  const p = await proposalDetail(v, { proposalId: a.proposalId });
-  const e = p?.history.find((h) => h.id === a.line);
-  return p && e ? { ...e, line: e.id, proposalId: p.id, key: p.key, title: p.title } : null;
+  const at = a.line.indexOf(":");
+  const kind = a.line.slice(0, at), ref = a.line.slice(at + 1);
+  if (!["audit", "event", "task", "time"].includes(kind) || !ref) throw invalid("a history line id such as audit:12");
+  if (!can(v, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
+  return withTenant(getRuntime().db, v.tenantId, async (tx) => {
+    const row = await proposalWhere(tx, { proposalId: a.proposalId });
+    if (!row) return null;
+    const [p] = await tx.execute(sql`select project_id from delivery.proposal where id = ${row.id}`);
+    const [e] = await historyOf(tx, row.id, v, p.project_id as string, { kind: kind as Only["kind"], ref });
+    return e && e.id === a.line ? { ...e, line: e.id, proposalId: row.id, key: row.key, title: row.title } : null;
+  });
 }
 
 /** 081 AC-6, AC-8: one proposal with its project, tasks, release stages and history; null when there is none. */

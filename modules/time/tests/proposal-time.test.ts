@@ -14,7 +14,10 @@ import { chatIntents } from "../chat";
 import { proposeLog } from "../server/entry-card";
 import { EVENTS as DELIVERY, PROPOSAL_TIME_SLOT, type CommitTime } from "@amax/delivery/contracts";
 import timeModule from "../module";
-import { proposalTimeLines } from "../server/proposal-lines";
+import { MAX_LINES, proposalTimeLines } from "../server/proposal-lines";
+import { randomUUID } from "node:crypto";
+import { appendAudit, ForbiddenError } from "@amax/core/server";
+import type { Viewer } from "@amax/auth";
 import { ctxFor } from "../server/context";
 import { correctEntry, deleteEntry } from "../server/correct";
 import { logTime } from "../server/log";
@@ -144,4 +147,27 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
       if (scope) await scopeAdmin(null);
     }
   });
+
+  // Review round 2 (B3): the rule applies before the 100-line cap, and one line is read directly for its pin, its owner
+  // getting it, someone else refused (not "gone"), and an unknown line empty.
+  it("review-2 an owner keeps their own line however many newer lines others logged, and a pin's line is read directly", async () => {
+    const nimal = await db.as("nimal");
+    const [p] = await db.q(sql`select id, project_id from delivery.proposal where key = 'CON-012'`);
+    const proposal = { id: p.id as string, projectId: p.project_id as string };
+    await logTime(ctxFor(nimal), { projectKey: "CON", proposalKey: "CON-012", day: "2026-10-26", hours: 1 });
+    const tharushi = await db.as("tharushi");
+    await withTenant(db.app, T, async (tx) => {
+      for (let i = 0; i < MAX_LINES + 50; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-27", hours: 0.25 } });
+    });
+    const lines = (v: Viewer, opts?: { line?: string }) => withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, proposal, opts));
+    const own = (await lines(nimal)).filter((l) => l.userId === nimal.userId && l.day === "2026-10-26");
+    expect(own).toHaveLength(1);
+    expect((await lines(await db.as("maya"))).length).toBe(MAX_LINES);
+    const cases: [string, () => Promise<unknown>, (r: unknown) => void][] = [
+      ["its owner", () => lines(nimal, { line: own[0].id }), (r) => expect(r).toEqual(own)],
+      ["an engineer who approves nothing on the project", async () => lines(await db.as("kasun"), { line: own[0].id }).catch((e: Error) => e), (r) => expect(r).toBeInstanceOf(ForbiddenError)],
+      ["anyone, for a line that isn't there", () => lines(nimal, { line: "time:999999999" }), (r) => expect(r).toEqual([])],
+    ];
+    for (const [label, run, check] of cases) { const r = await run(); try { check(r); } catch (e) { throw new Error(`${label}: ${(e as Error).message}`); } }
+  }, 60_000);
 });

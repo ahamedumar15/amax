@@ -2,10 +2,10 @@ import { sql } from "drizzle-orm";
 import type { EventHandlerDef } from "@amax/core";
 import { contextFor } from "@amax/core/server";
 import type { Tx } from "@amax/db";
-import { setProposalHours } from "@amax/delivery/contracts";
+import { PROPOSAL_HOURS_JOB, setProposalHours } from "@amax/delivery/contracts";
 import { EVENTS, type EntryCorrected } from "../contracts";
 
-export const PROPOSAL_HOURS_JOB = "time.proposal-hours";
+export { PROPOSAL_HOURS_JOB };
 
 /**
  * 081 AC-4: approved hours per proposal, handed to Delivery for its proposal views. Delivery can't read Time (Time

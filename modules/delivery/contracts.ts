@@ -54,10 +54,14 @@ export type ProposalTimeLine = {
   at: string; actor: string; onBehalfOf: string | null; userId: string; day: string | null; hours: number;
   proposalId: string | null; previousProposalId?: string | null; deleted?: boolean;
 };
-export type ProposalTimeSource = (tx: Tx, viewer: Viewer, proposal: { id: string; projectId: string }) => Promise<ProposalTimeLine[]>;
+/**
+ * `opts.line` (review round 2): just that line ("time:<seq>"), read directly with no window, for its pin; a line that exists
+ * but the viewer may not see is refused (ForbiddenError), never returned empty as if it were gone.
+ */
+export type ProposalTimeSource = (tx: Tx, viewer: Viewer, proposal: { id: string; projectId: string }, opts?: { line?: string }) => Promise<ProposalTimeLine[]>;
 
 /** 081 AC-4: Time's approved hours per proposal, a Delivery service Time runs under a job context (see the service). */
-export { setProposalHours } from "./server/proposal-hours";
+export { PROPOSAL_HOURS_JOB, setProposalHours } from "./server/proposal-hours";
 
 export async function getProposalRef(tx: Tx, keyOrId: string): Promise<ProposalRef | null> {
   const [r] = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.project_id, pr.key as project_key,

@@ -1,12 +1,13 @@
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { setProvided } from "@amax/core/server";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { ForbiddenError, setProvided } from "@amax/core/server";
 import { PROPOSAL_TIME_SLOT, type ProposalTimeSource } from "../contracts";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
 import { mcpTools, search } from "../mcp";
 import { ctxFor } from "../server/context";
-import { moveProposal, syncProposal } from "../server/services";
+import { createProposal, moveProposal, syncProposal } from "../server/services";
+import { updateProposal } from "../server/lifecycle";
 import { getProject } from "../server/queries";
 import { markTaskDone } from "../server/tasks";
 import { ProjectPage } from "../ui/ProjectPage";
@@ -21,6 +22,8 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
   let maya: Viewer;
   beforeAll(async () => { db = await proposalDb(); maya = await db.as("maya"); }, 120_000);
   afterAll(() => db?.t.drop());
+  // Review round 2: a test that fills the time slot never leaks it into the next, even when it fails.
+  afterEach(() => setProvided([]));
 
   it("AC6 the page shows the proposal's project, phase, owner, time, release, tasks and history, and says when there's none", async () => {
     await moveProposal(ctxFor(maya), { key: "FLT-015", to: "planned" });
@@ -114,8 +117,30 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     const [moved] = await db.q(sql`select key from delivery.proposal where id = ${id}`);
     expect(moved.key).toMatch(/^CON-H\d{3}$/);
     expect(await lines(nimal, moved.key as string)).toEqual(want);
-    setProvided([]);
   });
+
+  // Review round 2 (B3): a pinned line is read by its kind and id, with no window: one older than the page's newest 100
+  // still resolves, a line that isn't there is null, and a time line the viewer may not see is refused, never "gone".
+  it("review-2 a history line's pin reads that line directly", async () => {
+    const event = mcpTools.find((t) => t.name === "get_proposal_event")!.run as unknown as (v: Viewer, a: object) => Promise<Record<string, unknown> | null>;
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Many edits" });
+    const { id } = (await getProposal(maya, { key }))! as { id: string };
+    const created = ((await getProposal(maya, { key }))!.history as { id: string; kind: string }[]).find((h) => h.kind === "created")!;
+    for (let i = 0; i < 101; i++) await updateProposal(ctxFor(maya), { key, description: `Draft ${i}` });
+    expect(((await getProposal(maya, { key }))!.history as { id: string }[]).some((h) => h.id === created.id)).toBe(false);
+    const refuse: ProposalTimeSource = async (_tx, _v, _p, opts) => { if (opts?.line) throw new ForbiddenError("time:read", "time.entry"); return []; };
+    setProvided([{ id: "time", provides: { [PROPOSAL_TIME_SLOT]: refuse } }]);
+    const cases: [string, object, (r: unknown) => void][] = [
+      ["a created line older than the newest 100", { proposalId: id, line: created.id }, (r) => expect(r).toMatchObject({ kind: "created", line: created.id, key })],
+      ["a line that isn't there", { proposalId: id, line: "audit:999999999" }, (r) => expect(r).toBeNull()],
+      ["a task line on another proposal", { proposalId: id, line: "task:00000000-0000-4000-8000-000000000001" }, (r) => expect(r).toBeNull()],
+      ["a time line this viewer may not see", { proposalId: id, line: "time:1" }, (r) => expect(r).toBeInstanceOf(ForbiddenError)],
+    ];
+    for (const [label, args, check] of cases) {
+      const r = await event(maya, args).catch((e: unknown) => e);
+      try { check(r); } catch (e) { throw new Error(`${label}: ${(e as Error).message}`); }
+    }
+  }, 60_000);
 
   it("081 amendment 4 AC42 AC47 AC50 history lines carry their kind, a move its phase, a closed task who closed it; the project counts closes by agents and people", async () => {
     const before = (await getProject(maya, "CON"))!.closedBy;
