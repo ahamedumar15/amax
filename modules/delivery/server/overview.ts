@@ -5,7 +5,7 @@ import { can, type Viewer } from "@amax/auth";
 import type { OverviewPanel, OverviewPart, OverviewWaiting } from "@amax/core";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
 import { ACTIVE, clockOf, endOfDay, listReleases, phaseCounts, type ReleaseRow } from "./queries";
-import { isReadyToVerify, overEstimate } from "./readiness";
+import { isReadyToVerify, overEstimate, ownerShownIn } from "./readiness";
 import type { Phase } from "../contracts";
 
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => {
@@ -44,7 +44,7 @@ function stageNote(r: ReleaseRow) {
 }
 
 async function proposalsToApprove(tx: Tx, v: Viewer): Promise<OverviewWaiting[]> {
-  const rows = await tx.execute(sql`select p.id, p.key, p.title, p.project_id, p.created_at, p.estimate_hours, p.agent, p.owner_name, pr.name as project_name,
+  const rows = await tx.execute(sql`select p.id, p.key, p.title, p.project_id, p.created_at, p.estimate_hours, p.agent, ${ownerShownIn("p")} as owner_name, pr.name as project_name,
       p.tasks_total as tasks
     from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.phase = 'proposed' and pr.status = 'active' and ${ACTIVE} order by p.created_at limit 20`);
   return rows.filter((r) => can(v, "delivery:proposal:move", { projectId: r.project_id as string })).map((r) => ({

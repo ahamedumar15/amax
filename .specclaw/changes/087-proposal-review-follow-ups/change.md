@@ -110,3 +110,10 @@ Build notes (2026-11-07, Windows host, local Postgres; not a verdict, `/specclaw
   - **Owner name:** one SQL fragment (`ownerShownIn`) for the owner name, with "Unknown person" when an owner user's name
     can't be read.
   Tests: Delivery 384/385 (`releases` is Windows-only).
+- Final pass (pass 4): 2 majors and 3 minors.
+  - **Time off:** with no Time source, the history now says the Time module isn't running, instead of showing no time.
+    It's one rule with the pin's refusal, and the AC-8 test now covers Time off without depending on test order.
+  - **Overview:** "Approve proposal" reads `ownerShownIn`.
+  - **Stale message:** it no longer prints "(null)".
+  - **Left in follow-ups:** the AC-6 test's module-list reset.
+  Tests: Delivery 386/387, web 334/334.

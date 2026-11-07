@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { ForbiddenError, setProvided, slotsSet } from "@amax/core/server";
+import { ForbiddenError, setProvided } from "@amax/core/server";
 import { PROPOSAL_TIME_SLOT, type ProposalTimeSource } from "../contracts";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
@@ -26,15 +26,18 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
   afterEach(() => setProvided([]));
 
   // 087 AC-8, AC-9 (first in the file: slots are still unset here). The page says when time lines may be missing.
-  it("087 AC8 AC9 the history notes time lines Time wasn't asked for, or stopped reading early; none when complete", async () => {
-    const note = async () => ((await getProposal(maya, { key: "CON-014" }))! as { timeNote: string | null }).timeNote;
-    expect(slotsSet()).toBe(false);
-    expect(await note()).toBe("unread");
-    expect(await html(ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }))).toContain("Time wasn&#x27;t asked");
-    for (const [partial, want] of [[true, "partial"], [false, null]] as const) {
-      setProvided([{ id: "time", provides: { [PROPOSAL_TIME_SLOT]: (async () => ({ lines: [], partial })) satisfies ProposalTimeSource } }]);
-      expect(await note()).toBe(want);
-    }
+  // 087 AC-8, AC-9, final pass: one rule. No Time source (slots never set, or Time switched off) reads as "unread" on the
+  // page (and a pin is refused as unavailable, review-2 below); a source that stopped early reads "partial".
+  const answers = (partial: boolean) => [{ id: "time", provides: { [PROPOSAL_TIME_SLOT]: (async () => ({ lines: [], partial })) satisfies ProposalTimeSource } }];
+  it.each([
+    ["Time switched off", [], "unread"],
+    ["Time stopped reading early", answers(true), "partial"],
+    ["Time read every line", answers(false), null],
+  ] as const)("087 AC8 AC9 the history with %s notes %s", async (_label, slots, want) => {
+    setProvided(slots as never);
+    expect(((await getProposal(maya, { key: "CON-014" }))! as { timeNote: string | null }).timeNote).toBe(want);
+    const page = await html(ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }));
+    expect(page.includes("the Time module isn&#x27;t running")).toBe(want === "unread");
   });
 
   it("AC6 the page shows the proposal's project, phase, owner, time, release, tasks and history, and says when there's none", async () => {

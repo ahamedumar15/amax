@@ -53,7 +53,7 @@ const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned"
 const hrs = (n: unknown) => `${Number(Number(n).toFixed(2))} h`;
 
 /**
- * 087 AC-8, AC-9: why the history may not show every time line: "unread" when this process never set its module slots,
+ * 087 AC-8, AC-9: why the history may not show every time line: "unread" when no Time source answered (slots never set, or Time off),
  * "partial" when Time stopped at its bound. Null when it shows them all.
  */
 export type TimeNote = "unread" | "partial" | null;
@@ -61,8 +61,11 @@ export type TimeNote = "unread" | "partial" | null;
 async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string, line?: string): Promise<{ lines: ProposalTimeLine[]; note: TimeNote }> {
   const sources = provided<ProposalTimeSource>(PROPOSAL_TIME_SLOT);
   // Review round 3, 087 AC-7: a pinned time line with no module to ask is unavailable, never "gone" (null).
-  if (line && (!slotsSet() || !sources.length)) throw unavailable("time lines can't be read here: the Time module isn't running");
-  if (!slotsSet()) return { lines: [], note: "unread" };
+  // 087 final pass: one rule for the page and a pin. No Time source (slots never set, or Time switched off) means the time
+  // lines weren't read: a pin is refused as unavailable, the page says so. Never "no time was logged".
+  const asked = slotsSet() && sources.length > 0;
+  if (line && !asked) throw unavailable("time lines can't be read here: the Time module isn't running");
+  if (!asked) return { lines: [], note: "unread" };
   const read = await Promise.all(sources.map((source) => source(tx, v, { id, projectId }, line ? { line } : undefined)));
   return { lines: read.flatMap((r) => r.lines), note: read.some((r) => r.partial) ? "partial" : null };
 }

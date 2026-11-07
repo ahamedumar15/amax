@@ -62,7 +62,7 @@ export const suggestedOwner = defineSuggestionKind<Owner, { key: string }>({
   permission: "delivery:proposal:create",
   proposed: Owner,
   apply: async (tx, ctx, p) => own(tx, ctx, p, await namedOwner(tx, p.userId), (row, key) => {
-    if (!hasNoOwner({ ownerUserId: (row.owner_user_id as string | null) ?? null, ownerName: (row.owner_name as string | null) ?? null })) stale(`${key} has an owner now (${String(row.owner_name)})`);
+    if (!hasNoOwner({ ownerUserId: (row.owner_user_id as string | null) ?? null, ownerName: (row.owner_name as string | null) ?? null })) stale(`${key} has an owner now${row.owner_name ? ` (${String(row.owner_name)})` : ""}`);
   }),
   undo: (tx, ctx, p) => own(tx, ctx, p, null, (row, key) => {
     if (row.owner_user_id !== p.userId) stale(`${key}'s owner changed since; undo only clears ${p.name}`);
