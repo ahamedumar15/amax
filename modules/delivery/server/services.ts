@@ -8,6 +8,7 @@ import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
 import { notOnProject, ownerChanged, ownerFor } from "./owner";
 import { invalid, notFound } from "./refusal";
+import { isWithdrawn, withdrawnIn } from "./readiness";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -40,7 +41,7 @@ async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, k
     // Locked above, so the phase read here is the committed one.
     const [p] = await tx.execute(sql`select id, phase, release_id, withdrawn_at, meta from delivery.proposal where key = ${key} and project_id = ${projectId}`);
     if (!p) throw notFound(`no proposal ${key} in this project`);
-    if (p.withdrawn_at || (p.meta as { withdrawn?: boolean } | null)?.withdrawn) throw invalid(`${key} was withdrawn; it can't go in a release`);
+    if (isWithdrawn(p)) throw invalid(`${key} was withdrawn; it can't go in a release`);
     if (p.phase === "released" && p.release_id !== releaseId) throw invalid(`${key} already shipped in another release`);
     if (Number(live) > 0 && p.release_id !== releaseId) throw invalid(`this release is already live in Prod; put ${key} in a new release`);
     await tx.execute(sql`update delivery.proposal set release_id = ${releaseId} where id = ${p.id}`);
@@ -115,7 +116,7 @@ export async function moveIn(tx: Tx, ctx: ServiceContext, input: z.infer<typeof 
   if (!p) throw notFound(`no proposal ${input.key}`);
   scoped(ctx, "delivery:proposal:move", p.project_id as string);
   if (p.phase === "released") throw invalid(`${input.key} is in Prod; it can't move back on the board`);
-  if (p.withdrawn_at) throw invalid(`${input.key} was withdrawn; it stays where it was`);
+  if (isWithdrawn(p)) throw invalid(`${input.key} was withdrawn; it stays where it was`);
   if (p.source !== null) throw invalid(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
   guard(p);
   if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
@@ -189,7 +190,7 @@ export const recordDeployment = defineService({
       // set read here is exactly the set released, and each event matches a row that changed (round 20).
       await lockProposals(tx, sql`release_id = ${release.id}`);
       // 081 AC-18: a withdrawn proposal still listed in the release (a spec folder removed after it was assigned) isn't released.
-      const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released' and withdrawn_at is null and coalesce(meta->>'withdrawn', 'false') <> 'true'`);
+      const moved = await tx.execute(sql`select * from delivery.proposal where release_id = ${release.id} and phase <> 'released' and not ${withdrawnIn("delivery.proposal")}`);
       const done = await tx.execute(sql`update delivery.proposal set phase = 'released', released_at = now(), updated_at = now()
         where id = any(${uuidArray(moved.map((p) => p.id as string))}) returning id`);
       if (done.length !== moved.length) throw new Error("proposals changed while being released");

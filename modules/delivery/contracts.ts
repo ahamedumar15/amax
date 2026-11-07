@@ -3,6 +3,7 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import type { Viewer } from "@amax/auth";
+import { withdrawnIn } from "./server/readiness";
 
 export const PHASES = ["proposed", "planned", "building", "verified", "released"] as const;
 export type Phase = (typeof PHASES)[number];
@@ -69,7 +70,7 @@ export { PROPOSAL_HOURS_JOB, setProposalHours } from "./server/proposal-hours";
 
 export async function getProposalRef(tx: Tx, keyOrId: string): Promise<ProposalRef | null> {
   const [r] = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.project_id, pr.key as project_key,
-      (p.withdrawn_at is not null or coalesce(p.meta->>'withdrawn', 'false') = 'true') as withdrawn
+      ${withdrawnIn("p")} as withdrawn
     from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.key = ${keyOrId} or p.id::text = ${keyOrId}`);
   return r ? { id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, projectId: r.project_id as string, projectKey: r.project_key as string, withdrawn: Boolean(r.withdrawn) } : null;
 }

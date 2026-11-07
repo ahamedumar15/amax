@@ -109,6 +109,13 @@ describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person 
     await state();
     const row = (await getProposal(maya, { key }))!;
     expect(needsOf(row, new Set()).includes("unassigned")).toBe(unowned);
+    // Review round 2: the screens use the same rule. A user with no stored name shows that user's name.
+    const render = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
+    const page = await render(ProposalsPage({ viewer: maya, params: { phase: key } }));
+    expect(page.includes('<span class="chip warn">Unassigned</span>')).toBe(unowned);
+    if (!unowned) expect(page).toContain("<b>Maya Fernando</b>");
+    const list = await render(ProposalsPage({ viewer: maya, params: {}, searchParams: { q: key } }));
+    expect(list.includes('<td data-label="Owner"><span class="muted">Unassigned</span>')).toBe(unowned);
     // With every task done the pin's three offers are Move, Log time and the owner one (with a task open, it's fourth).
     await markTaskDone(ctxFor(maya), { key, task: "T2" });
     await runAgent();

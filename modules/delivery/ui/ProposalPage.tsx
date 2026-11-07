@@ -5,6 +5,7 @@ import { projectHref, releaseHref } from "../contracts";
 import { eventPin, projectPin, proposalPin, taskPin } from "../pins";
 import { Markdown } from "./Markdown";
 import { proposalDetail, type EventKind, type ProposalDetail } from "../server/proposal-detail";
+import { hasNoOwner } from "../server/readiness";
 import { AskButton } from "./AskButton";
 import { timeBand } from "./band";
 import { COLOR, day } from "./parts";
@@ -28,7 +29,7 @@ function Facts({ p }: { p: ProposalDetail }) {
   return (
     <dl className="dv-facts">
       <div className="pinnable"><dt>Project</dt><dd><span className="dot" style={{ background: COLOR[p.projectColor] }} /><a href={projectHref(p.project.key)}>{p.project.name}</a><PinButton inline pin={projectPin(p.project)} /></dd></div>
-      <div><dt>Owner</dt><dd>{p.ownerName ? <b>{p.ownerName}</b> : <span className="chip warn">Unassigned</span>}</dd></div>
+      <div><dt>Owner</dt><dd>{hasNoOwner(p) ? <span className="chip warn">Unassigned</span> : <b>{p.ownerName}</b>}</dd></div>
       <div><dt>{made}</dt><dd>{p.createdAt ? <b><time dateTime={p.createdAt}>{day(p.createdAt)}</time></b> : "–"}{p.source === "specclaw" && p.sourceRef && <small className="muted"> from <code>{p.sourceRef}</code></small>}</dd></div>
       {p.updatedAt && <div><dt>Updated</dt><dd><b><time dateTime={p.updatedAt}>{day(p.updatedAt)}</time></b> <small className="muted"><Since at={p.updatedAt} /></small></dd></div>}
     </dl>

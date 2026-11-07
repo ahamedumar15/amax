@@ -5,6 +5,7 @@ import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
 import { invalid } from "./refusal";
+import { isWithdrawn, withdrawnIn } from "./readiness";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -42,9 +43,9 @@ export type ProposalRow = {
 
 const proposal = (r: Record<string, unknown>): ProposalRow => ({
   id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total),
-  hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: (r.owner_name as string | null) ?? null,
+  hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: ((r.owner_shown ?? r.owner_name) as string | null) ?? null,
   ownerUserId: (r.owner_user_id as string | null) ?? null, description: (r.description as string | null) ?? null,
-  withdrawn: Boolean(r.withdrawn_at) || (r.meta as { withdrawn?: boolean } | null)?.withdrawn === true, agent: (r.agent as string | null) ?? null,
+  withdrawn: isWithdrawn(r), agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
   release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
   source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {}, createdAt: iso(r.created_at), updatedAt: iso(r.updated_at),
@@ -52,7 +53,8 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
 
 // The furthest environment each release reached, for "Shipped to".
 const PROPOSALS = sql`
-  select p.*, pr.key as project_key, pr.name as project_name, pr.color as project_color, r.version, last.name as shipped_to, last.status as shipped_status
+  select p.*, pr.key as project_key, pr.name as project_name, pr.color as project_color, r.version, last.name as shipped_to, last.status as shipped_status,
+    coalesce(p.owner_name, (select u.name from auth.user u where u.id = p.owner_user_id)) as owner_shown
   from delivery.proposal p
   join delivery.project pr on pr.id = p.project_id
   left join delivery.release r on r.id = p.release_id
@@ -61,7 +63,7 @@ const PROPOSALS = sql`
     where d.release_id = p.release_id and d.voided_at is null order by e.position desc, d.at desc limit 1) last on true`;
 
 // Withdrawn: by the repo (meta.withdrawn, spec proposals) or by hand (withdrawn_at, 081).
-export const ACTIVE = sql`(p.withdrawn_at is null and coalesce(p.meta->>'withdrawn', 'false') <> 'true')`;
+export const ACTIVE = sql`not ${withdrawnIn("p")}`;
 
 /** 081 amendment 9 (AC-87): `ownerUserId` keeps one person's proposals (the Mine filter). */
 export type ProposalFilter = { phase?: Phase; projectKey?: string; q?: string; ownerUserId?: string };

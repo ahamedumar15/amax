@@ -12,6 +12,7 @@ import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk } from "./part
 import { ProposalPage } from "./ProposalPage";
 import { ProposalSearch } from "./ProposalSearch";
 import { attention, isNeed, NEED_LABEL, suggestedIds, type Need } from "../server/attention";
+import { hasNoOwner } from "../server/readiness";
 import { AttentionStrip, listQuery, needPin } from "./Attention";
 
 // 081 AC-15: every phase of the lifecycle, Planned included.
@@ -142,7 +143,7 @@ export function ProposalsTable({ rows: all, needs, need, me, phase, root, projec
                   <td data-label="Time" className="num">{Number(p.hours.toFixed(2))} h</td>
                   <td data-label="Release">{p.release ? <a className="quiet" href={releaseHref({ projectKey: p.projectKey, version: p.release })}>{p.release}</a> : <span className="muted">None</span>}</td>
                   <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
-                  <td data-label="Owner">{p.ownerName ?? <span className="muted">Unassigned</span>}<PinButton pin={proposalPin(p)} /></td>
+                  <td data-label="Owner">{hasNoOwner(p) ? <span className="muted">Unassigned</span> : p.ownerName}<PinButton pin={proposalPin(p)} /></td>
                 </tr>
               );
             })}

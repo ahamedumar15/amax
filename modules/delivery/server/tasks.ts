@@ -6,6 +6,7 @@ import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type TaskDone, type TaskReopened } from "../contracts";
 import { recordActivity } from "./activity";
 import { invalid, notFound } from "./refusal";
+import { isWithdrawn } from "./readiness";
 
 export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean() });
 export type TaskLine = z.infer<typeof TaskInput>;
@@ -41,7 +42,7 @@ export const markTaskDone = defineService({
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:task:done", { projectId: p.project_id as string });
     // 087 AC-2: a withdrawn proposal (by hand, or its spec folder gone from the repo) takes no more writes.
-    if (p.withdrawn_at || (p.meta as { withdrawn?: boolean } | null)?.withdrawn) throw invalid(`${input.key} was withdrawn`);
+    if (isWithdrawn(p)) throw invalid(`${input.key} was withdrawn`);
     const [t] = await tx.execute(sql`select * from delivery.task where proposal_id = ${p.id} and ref = ${input.task}`);
     if (!t) throw invalid(`${input.key} has no task ${input.task}`);
     const result = { key: input.key, task: input.task, done: true };
@@ -72,14 +73,14 @@ export const reopenTask = defineService({
   scoped: true,
   input: z.object({ key: z.string(), task: z.string().regex(/^T\d+$/) }),
   async run(tx, input, ctx) {
-    const [p] = await tx.execute(sql`select id, key, title, project_id, source, phase, withdrawn_at from delivery.proposal where key = ${input.key} for update`);
+    const [p] = await tx.execute(sql`select id, key, title, project_id, source, phase, withdrawn_at, meta from delivery.proposal where key = ${input.key} for update`);
     if (!p) throw notFound(`no proposal ${input.key}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:task:done", { projectId: p.project_id as string });
     const refuse = invalid;
     if (p.source !== null) throw refuse(`${input.key} comes from ${p.source as string}; its tasks follow the repo, so reopen it there`);
     if (p.phase === "released") throw refuse(`${input.key} is released; its tasks stay as they were`);
-    if (p.withdrawn_at) throw refuse(`${input.key} was withdrawn`);
+    if (isWithdrawn(p)) throw refuse(`${input.key} was withdrawn`);
     const [t] = await tx.execute(sql`select * from delivery.task where proposal_id = ${p.id} and ref = ${input.task}`);
     if (!t) throw invalid(`${input.key} has no task ${input.task}`);
     const result = { key: input.key, task: input.task, done: false };

@@ -1,4 +1,14 @@
+import { sql } from "drizzle-orm";
 import type { Phase } from "../contracts";
+
+/**
+ * 087 (review round 2): withdrawn, once: by hand (withdrawn_at), or by its repo (the sync sets meta.withdrawn when a spec
+ * folder goes). The TS form reads meta as the SQL form does (`->> 'withdrawn' = 'true'`), so a string "true" counts in both.
+ */
+export const isWithdrawn = (r: { withdrawn_at?: unknown; meta?: unknown }) =>
+  Boolean(r.withdrawn_at) || String((r.meta as { withdrawn?: unknown } | null)?.withdrawn) === "true";
+/** The same rule in SQL, for a table or alias (`p`, or `delivery.proposal` when unaliased). */
+export const withdrawnIn = (t: "p" | "delivery.proposal") => sql.raw(`(${t}.withdrawn_at is not null or coalesce(${t}.meta->>'withdrawn', 'false') = 'true')`);
 
 /**
  * Review 081 round 1 (B4): the attention rules, once. The list's chips and order (attention.ts), the agent's "Ready to

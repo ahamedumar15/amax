@@ -96,16 +96,25 @@ describe.skipIf(!hasDb)("081 the lifecycle of a hand-made proposal (Postgres)", 
   // 087 AC-2: closing a task is refused on a withdrawn proposal, like every other write; an open one still closes.
   it.each([
     ["withdrawn by hand", async (key: string) => { await withdrawProposal(ctxFor(maya), { key, reason: "Not this quarter" }); }, /was withdrawn/],
-    ["withdrawn by the repo", async (key: string) => { await db.t.owner`update delivery.proposal set meta = '{"withdrawn": true}'::jsonb where key = ${key}`; }, /was withdrawn/],
+    ["withdrawn by the repo", async (key: string) => { await db.t.owner`update delivery.proposal set meta = meta || '{"withdrawn": true}'::jsonb where key = ${key}`; }, /was withdrawn/],
+    // Review round 2: one rule (isWithdrawn) reads meta as SQL does, so a string "true" is withdrawn too.
+    ["withdrawn by the repo, stored as a string", async (key: string) => { await db.t.owner`update delivery.proposal set meta = meta || '{"withdrawn": "true"}'::jsonb where key = ${key}`; }, /was withdrawn/],
     ["open", async () => {}, null],
   ])("087 AC2 mark_task_done on a proposal %s", async (_label, make, refused) => {
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Task after withdrawal" });
     await addProposalTask(ctxFor(maya), { key, title: "Draft it" });
+    await addProposalTask(ctxFor(maya), { key, title: "Ship it" });
+    await markTaskDone(ctxFor(maya), { key, task: "T2" });
     await make(key);
     const out = await markTaskDone(ctxFor(maya), { key, task: "T1" }).then((r) => r, (e: unknown) => e);
     if (refused) expect(out).toMatchObject({ message: expect.stringMatching(refused), code: "invalid_input", retryable: false });
-    else expect(out).toMatchObject({ done: true, tasksDone: 1 });
-    expect((await db.q(sql`select done from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.key = ${key}`))[0].done).toBe(!refused);
+    else expect(out).toMatchObject({ done: true, tasksDone: 2 });
+    expect((await db.q(sql`select done from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.key = ${key} and t.ref = 'T1'`))[0].done).toBe(!refused);
+    // The other writes read the same rule: reopening a task and moving the proposal refuse alike.
+    if (refused) {
+      await expect(reopenTask(ctxFor(maya), { key, task: "T2" })).rejects.toThrow(refused);
+      await expect(moveProposal(ctxFor(maya), { key, to: "planned" })).rejects.toThrow(refused);
+    }
   });
 
   it("AC11 add_proposal_task adds the next task and recounts; mark_task_done closes it; spec proposals take tasks from the repo", async () => {

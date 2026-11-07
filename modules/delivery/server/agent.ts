@@ -5,7 +5,7 @@ import { contextFor } from "@amax/core/server";
 import { createSuggestion, withdrawSuggestions } from "@amax/agents/server";
 import { EVENTS, proposalHref, type Phase, type ProposalPhaseChanged, type ProposalWithdrawn, type TaskReopened, type TaskDone } from "../contracts";
 import { readyToVerify, suggestedOwner } from "./proposal-kinds";
-import { hasNoOwner, isReadyToVerify } from "./readiness";
+import { hasNoOwner, isReadyToVerify, isWithdrawn } from "./readiness";
 
 // 081 amendment 2 (AC-32 to AC-34): the Delivery agent. It reads Delivery's own events, suggests (never writes), and
 // takes back what no longer fits. The platform keeps one open suggestion per kind and proposal, and expires them in 7 days.
@@ -22,7 +22,7 @@ async function proposalOf(tx: Tx, id: string) {
 /** The person behind "user:…", "agent:claude for user:…" or "sp:… for user:…"; null for a bare service or job. */
 const personIn = (by: string) => [...by.matchAll(/user:([0-9a-f-]{36})/g)].at(-1)?.[1] ?? null;
 
-const open = (p: Record<string, unknown>) => !p.withdrawn_at && (p.meta as { withdrawn?: boolean } | null)?.withdrawn !== true && p.phase !== "released";
+const open = (p: Record<string, unknown>) => !isWithdrawn(p) && p.phase !== "released";
 
 async function suggest(tenantId: string, p: Record<string, unknown>, s: { kind: string; title: string; detail: string; proposed: Record<string, unknown>; confidence: number }) {
   // The agent acts for the project's manager, who the suggestion is first for (Allocations' agent does the same).

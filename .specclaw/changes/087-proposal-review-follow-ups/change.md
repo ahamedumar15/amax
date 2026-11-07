@@ -54,8 +54,11 @@ section.
    200). When it stops early, the lines say the history is partial. A test plants more rows than the bound, all of
    them hidden from the viewer, and checks the read stops and reports partial.
 10. **AC-10** Time's migration no longer ties `time.entry.proposal_id` to Delivery's table. A new Time migration drops
-    the foreign key. `getProposalRef` still validates every write, so with Delivery off, Time's migrations and tests
-    still run.
+    the foreign key; `getProposalRef` still validates every write. Amended in review round 2: 0009 itself stays as
+    applied, because the migration runner refuses a changed file once it has run ("add a new file instead"), so 0010
+    drops the key with `if exists`. The original wording also claimed Time then migrates with Delivery off. That was
+    never true: Time declares `dependsOn: ["delivery"]`, and its first migration (0001) references `delivery.project`.
+    That older key is in `follow-ups.md`.
 
 ### Out of scope (stay in follow-ups)
 
@@ -96,3 +99,8 @@ Build notes (2026-11-07, Windows host, local Postgres; not a verdict, `/specclaw
 - Quality: not_run (`specclaw-quality-scan`: jq "Argument list too long" on this host, as in 066–086).
 - CodeQL (PR #113, "missing regular expression anchor"): `navigation-081.test.ts`'s crumb regex now groups its alternation,
   `(?:…)|(?:…$)`, so the `$` plainly anchors only the last crumb. Same captures, same result (3/3).
+- Review round 2 (pass 2): clean on its commit, with three earlier findings raised again.
+  - **Screens:** the screens now use `hasNoOwner` too, and a row with an owner user but no stored name shows that user's name.
+  - **Withdrawn:** one `isWithdrawn` and one SQL form (`withdrawnIn`), used at all ten sites.
+  - **0009's foreign key:** not changed, with the reason under AC-10.
+  Tests: Delivery 378/379 (`releases` is Windows-only).

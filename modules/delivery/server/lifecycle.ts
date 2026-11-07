@@ -7,6 +7,7 @@ import { EVENTS, type ProposalWithdrawn } from "../contracts";
 import { namedOwner, notOnProject, ownerChanged } from "./owner";
 import { countTasks } from "./tasks";
 import { invalid, notFound } from "./refusal";
+import { isWithdrawn } from "./readiness";
 
 // 081 AC-9 to AC-11: the lifecycle of a proposal made by hand. A spec proposal belongs to its repo: the sync owns its
 // title, phase, tasks and withdrawal, so these refuse it (its owner is the one thing amax may set). Released is history.
@@ -23,7 +24,7 @@ async function lockedProposal(tx: Tx, ctx: ServiceContext, key: string, action: 
   return p;
 }
 
-const withdrawn = (p: Record<string, unknown>) => Boolean(p.withdrawn_at) || (p.meta as { withdrawn?: boolean } | null)?.withdrawn === true;
+const withdrawn = isWithdrawn;
 
 /** A hand-made proposal that's still work: not from a repo, not released, not withdrawn. */
 function guardOpen(p: Record<string, unknown>, what: string) {

@@ -61,7 +61,7 @@ export async function createProposalCard(v: Viewer, a: Create): Promise<ToolCard
 // will happen and its receipt says what did ("Moved CON-016 to Planned"), not chat's generic "Done: CON-016 added".
 const PHASE_LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 const proposalNow = (v: Viewer, key: string) => withTenant(getRuntime().db, v.tenantId, async (tx) =>
-  (await tx.execute(sql`select key, title, phase, owner_name, owner_user_id, (select coalesce(max(substring(ref from 2)::int), 0) + 1 from delivery.task t where t.proposal_id = p.id) as next
+  (await tx.execute(sql`select key, title, phase, coalesce(owner_name, (select u.name from auth.user u where u.id = p.owner_user_id)) as owner_name, owner_user_id, (select coalesce(max(substring(ref from 2)::int), 0) + 1 from delivery.task t where t.proposal_id = p.id) as next
     from delivery.proposal p where key = ${key}`))[0]);
 
 export async function moveCard(v: Viewer, a: { key: string; to: string }): Promise<ToolCard> {
