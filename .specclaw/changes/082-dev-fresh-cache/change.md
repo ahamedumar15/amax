@@ -1,6 +1,6 @@
 # Dev starts fresh: no stale Turbopack cache, no refresh loop
 
-**Change:** 082-dev-fresh-cache · **Created:** 2026-11-03 · **Review:** change
+**Change:** 082-dev-fresh-cache · **Created:** 2026-11-03 · **Review:** covered-by 081-proposals-end-to-end
 
 ## Problem
 
@@ -50,3 +50,8 @@ Built on `specclaw/081-proposals-end-to-end` at the product owner's request (202
   load), and switching branches to build a stale cache wasn't possible here. The fix removes the cache that can go
   stale, whatever made it stale. Confirm by switching branches once and running dev without deleting `.next`.
 - Quality: not_run (a two-line config change and one README sentence). Review loop: not run yet.
+
+**Review (2026-11-07):** covered by 081-proposals-end-to-end's loop over the whole stack against `upstream/main`. Its final
+pass (round 6) ran at `0bbdd63c`, after this change's commits, with 0 blockers. It stopped at the five-pass cap with two
+081 majors open; none is in this change's files. See 081's `## Verify`. **Linux replica of CI** over `0bbdd63c`: every
+step passes (35/35 packages, e2e 9, e2e:auth 95).

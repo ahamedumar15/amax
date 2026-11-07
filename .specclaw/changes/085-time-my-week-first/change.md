@@ -1,6 +1,6 @@
 # Time opens your own week first
 
-**Change:** 085-time-my-week-first · **Created:** 2026-11-05 · **Review:** change
+**Change:** 085-time-my-week-first · **Created:** 2026-11-05 · **Review:** covered-by 081-proposals-end-to-end
 
 ## Problem
 
@@ -55,3 +55,8 @@ The Team tab links to `/time?view=team` when it has no week, so from Requests it
 whose Time opens on their own week.
 
 Not yet run in the Linux CI replica. Review loop: not run.
+
+**Review (2026-11-07):** covered by 081-proposals-end-to-end's loop over the whole stack against `upstream/main`. Its final
+pass (round 6) ran at `0bbdd63c`, after this change's commits, with 0 blockers. It stopped at the five-pass cap with two
+081 majors open; none is in this change's files. See 081's `## Verify`. **Linux replica of CI** over `0bbdd63c`: every
+step passes (35/35 packages, e2e 9, e2e:auth 95).

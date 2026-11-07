@@ -1,6 +1,6 @@
 # The profile menu closes like a menu
 
-**Change:** 083-profile-menu-closes · **Created:** 2026-11-05 · **Review:** change
+**Change:** 083-profile-menu-closes · **Created:** 2026-11-05 · **Review:** covered-by 081-proposals-end-to-end
 
 ## Problem
 
@@ -46,3 +46,9 @@ No new screen. The app catches up with 001's mock, whose profile menu already cl
 - **AC-5:** pass.
 
 Review loop: not run (the specclaw-review server isn't connected).
+
+**Review (2026-11-07):** covered by 081-proposals-end-to-end's loop over the whole stack against `upstream/main`. 083's
+work went in with 081's amendment 7 commit `da337a8e`. The final pass (round 6) ran at `0bbdd63c`, after it, with 0
+blockers. It stopped at the five-pass cap with two 081 majors open; none is in this change's files. See 081's `## Verify`.
+**Linux replica of CI** over `0bbdd63c`: every step passes (35/35 packages, e2e 9, e2e:auth 95, including "083 the profile
+menu closes").

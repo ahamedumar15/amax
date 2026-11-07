@@ -75,3 +75,8 @@ Build notes (2026-11-07, Windows host):
 - New `shell.spec.ts` test "086 AC1". It and AC5 couldn't run locally: `pnpm start` serves a stale production build,
   and `.env.local` turns on sign-in, so "/" is the marketing page. Run them in the Linux CI replica.
 - Quality scan skipped: the change is one CSS rule and one test.
+
+**Review (2026-11-07):** covered by 081-proposals-end-to-end's loop over the whole stack against `upstream/main`. Its final
+pass (round 6) ran at `0bbdd63c`, after this change's commits, with 0 blockers. It stopped at the five-pass cap with two
+081 majors open; none is in this change's files. See 081's `## Verify`. **Linux replica of CI** over `0bbdd63c`: every
+step passes (35/35 packages, e2e 9, e2e:auth 95).

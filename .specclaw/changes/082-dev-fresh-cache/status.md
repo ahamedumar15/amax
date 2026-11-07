@@ -13,7 +13,7 @@
 | Design | - | - |
 | Tasks | - | - |
 | Build | - | - |
-| Verify | ✅ Complete |  |
+| Verify | ✅ Done |  |
 
 ## Task Progress
 
