@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { ForbiddenError, setProvided } from "@amax/core/server";
+import { ForbiddenError, setProvided, slotsSet } from "@amax/core/server";
 import { PROPOSAL_TIME_SLOT, type ProposalTimeSource } from "../contracts";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
@@ -24,6 +24,18 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
   afterAll(() => db?.t.drop());
   // Review round 2: a test that fills the time slot never leaks it into the next, even when it fails.
   afterEach(() => setProvided([]));
+
+  // 087 AC-8, AC-9 (first in the file: slots are still unset here). The page says when time lines may be missing.
+  it("087 AC8 AC9 the history notes time lines Time wasn't asked for, or stopped reading early; none when complete", async () => {
+    const note = async () => ((await getProposal(maya, { key: "CON-014" }))! as { timeNote: string | null }).timeNote;
+    expect(slotsSet()).toBe(false);
+    expect(await note()).toBe("unread");
+    expect(await html(ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }))).toContain("Time wasn&#x27;t asked");
+    for (const [partial, want] of [[true, "partial"], [false, null]] as const) {
+      setProvided([{ id: "time", provides: { [PROPOSAL_TIME_SLOT]: (async () => ({ lines: [], partial })) satisfies ProposalTimeSource } }]);
+      expect(await note()).toBe(want);
+    }
+  });
 
   it("AC6 the page shows the proposal's project, phase, owner, time, release, tasks and history, and says when there's none", async () => {
     await moveProposal(ctxFor(maya), { key: "FLT-015", to: "planned" });
@@ -95,12 +107,12 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     const asked: { id: string; projectId: string }[] = [];
     const stub: ProposalTimeSource = async (_tx, v, p) => {
       asked.push(p);
-      if (p.id !== id || ![nimal.userId, maya.userId].includes(v.userId)) return [];
-      return [
+      if (p.id !== id || ![nimal.userId, maya.userId].includes(v.userId)) return { lines: [], partial: false };
+      return { partial: false, lines: [
         { ...base, id: "time:1", at: "2026-10-19T09:00:00.000Z", hours: 2 },
         { ...base, id: "time:2", at: "2026-10-19T10:00:00.000Z", hours: 2.5, previousProposalId: id },
         { ...base, id: "time:3", at: "2026-10-19T11:00:00.000Z", hours: 2.5, deleted: true },
-      ];
+      ] };
     };
     const lines = async (v: Viewer, key = "CON-017") => ((await getProposal(v, { key }))!.history as { text: string }[]).map((h) => h.text).filter((t) => /logged|Corrected|Removed/.test(t));
     const want = ["Removed Nimal Silva's 2.5 h for Oct 19", "Corrected Nimal Silva's entry for Oct 19 to 2.5 h", "Nimal Silva logged 2 h for Oct 19"];
@@ -128,7 +140,7 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     const created = ((await getProposal(maya, { key }))!.history as { id: string; kind: string }[]).find((h) => h.kind === "created")!;
     for (let i = 0; i < 101; i++) await updateProposal(ctxFor(maya), { key, description: `Draft ${i}` });
     expect(((await getProposal(maya, { key }))!.history as { id: string }[]).some((h) => h.id === created.id)).toBe(false);
-    const refuse: ProposalTimeSource = async (_tx, _v, _p, opts) => { if (opts?.line) throw new ForbiddenError("time:read", "time.entry"); return []; };
+    const refuse: ProposalTimeSource = async (_tx, _v, _p, opts) => { if (opts?.line) throw new ForbiddenError("time:read", "time.entry"); return { lines: [], partial: false }; };
     setProvided([{ id: "time", provides: { [PROPOSAL_TIME_SLOT]: refuse } }]);
     const cases: [string, object, (r: unknown) => void][] = [
       ["a created line older than the newest 100", { proposalId: id, line: created.id }, (r) => expect(r).toMatchObject({ kind: "created", line: created.id, key })],
@@ -137,7 +149,7 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
       ["a time line this viewer may not see", { proposalId: id, line: "time:1" }, (r) => expect(r).toBeInstanceOf(ForbiddenError)],
     ];
     // Review round 3 (B3): with Time switched off there is nothing to ask, so a time line is unreadable, not gone.
-    cases.push(["a time line with Time switched off", { proposalId: id, line: "time:1", off: true }, (r) => expect(r).toMatchObject({ code: "invalid_input", message: expect.stringMatching(/Time module isn't running/) })]);
+    cases.push(["a time line with Time switched off", { proposalId: id, line: "time:1", off: true }, (r) => expect(r).toMatchObject({ code: "unavailable", retryable: true, message: expect.stringMatching(/Time module isn't running/) })]);
     for (const [label, args, check] of cases) {
       if ((args as { off?: boolean }).off) setProvided([]);
       const r = await event(maya, args).catch((e: unknown) => e);

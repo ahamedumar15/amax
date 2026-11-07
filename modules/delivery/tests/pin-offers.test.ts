@@ -7,6 +7,7 @@ import { ctxFor } from "../server/context";
 import { nextVersion } from "../server/pin-offers";
 import { createProposal, moveProposal } from "../server/services";
 import { proposalDb } from "./proposal-db";
+import { setInstalledModules } from "@amax/core/server";
 
 type Offer = { label: string; prompt: string; tool: string };
 const offers = (tool: string) => manifest.pinSuggestions!.find((s) => s.tool === tool)!.suggest as unknown as (v: Viewer, a: Record<string, unknown>) => Promise<Offer[]>;
@@ -105,5 +106,26 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
     expect((await labels("list_releases", maya, { projectKey: "CON" }))[0]).toMatch(/^Create release v\d+\.\d+\.0 of CON$/);
     expect(await labels("list_environments", maya, { projectKey: "CON" })).toEqual(["Add an environment to CON"]);
     for (const tool of ["list_projects", "list_proposals", "list_releases", "list_environments"]) expect(await labels(tool, leadership, { projectKey: "CON" })).toEqual([]);
+  });
+
+  // 087 AC-5: the proposal's pin and the task row's pin read one reopen window on the database clock, so they agree.
+  it.each([["23 hours", true], ["25 hours", false]])("087 AC5 a task closed %s ago: reopen offered %s, by both pins", async (ago, offered) => {
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: `Reopen window ${ago}` });
+    await db.t.owner`insert into delivery.task (tenant_id, proposal_id, ref, title, done, done_at, done_by)
+      select tenant_id, id, 'T1', 'Draft', true, now() - ${ago}::interval, 'user:x' from delivery.proposal where key = ${key}`;
+    const [{ pid, tid }] = await db.q(sql`select p.id as pid, t.id as tid from delivery.proposal p join delivery.task t on t.proposal_id = p.id where p.key = ${key}`);
+    const reopen = (ls: string[]) => ls.some((l) => l.startsWith("Reopen T1"));
+    expect(reopen(await labels("get_proposal", maya, { proposalId: pid }))).toBe(offered);
+    expect(reopen(await labels("get_proposal_task", maya, { taskId: tid }))).toBe(offered);
+  });
+
+  // 087 AC-6: "Log time" only while Time is installed.
+  it.each([[["delivery", "time"], true], [["delivery"], false]])("087 AC6 installed %j: Log time offered %s", async (installed, offered) => {
+    setInstalledModules(installed);
+    try {
+      expect((await labels("get_proposal", maya, { key: "CON-014" })).some((l) => l.startsWith("Log time"))).toBe(offered);
+    } finally {
+      setInstalledModules(["delivery", "time"]);
+    }
   });
 });

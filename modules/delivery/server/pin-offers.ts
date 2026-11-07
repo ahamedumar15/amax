@@ -1,8 +1,9 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, canEver, type Viewer } from "@amax/auth";
-import { getRuntime } from "@amax/core/server";
+import { getRuntime, hasModule } from "@amax/core/server";
 import { getDeployment, getEnvironment, getProposal, getProposalTask, listReleases, type ProposalRow } from "./queries";
+import { hasNoOwner } from "./readiness";
 
 // 081 amendments 2 and 3 (AC-30, AC-38): what a pinned Delivery record offers in chat. Each offer is the prompt its
 // tool's chat flow takes; a click fills the box, the write waits for the confirm card. Read when chat asks, so the
@@ -18,6 +19,9 @@ const NEXT: Record<string, string> = { proposed: "planned", planned: "building" 
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => withTenant(getRuntime().db, v.tenantId, fn);
 const allowed = (v: Viewer, offers: Gated[], projectId: string | null) =>
   offers.filter((o) => (projectId ? can(v, o.permission, { projectId }) : canEver(v, o.permission))).slice(0, MAX).map(({ label: l, prompt, tool }) => ({ label: l, prompt, tool }));
+
+/** 087 AC-5: a task closed within a day may be reopened (AC-59's window), on the database clock, for every pin that offers it. */
+const justClosed = sql`t.done and t.done_at > now() - interval '1 day'`;
 
 /** The next minor after a project's newest release (v2.5.0 → v2.6.0); v1.0.0 for its first. */
 export function nextVersion(latest: string | null) {
@@ -68,7 +72,8 @@ export async function proposalOffers(v: Viewer, a: Args) {
   const facts = await read(v, async (tx) => {
     const [x] = await tx.execute(sql`select pr.id as project_id,
         (select t.ref from delivery.task t where t.proposal_id = p.id and not t.done order by length(t.ref), t.ref limit 1) as open_task,
-        (select t.ref from delivery.task t where t.proposal_id = p.id and t.done and t.done_at > now() - interval '1 day' order by t.done_at desc limit 1) as just_closed
+        (select t.ref from delivery.task t where t.proposal_id = p.id and ${justClosed} order by t.done_at desc limit 1) as just_closed,
+        to_regclass('time.entry') is not null as time_tables
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.id = ${p.id}`);
     // The newest release of the project not yet live in Prod: where a verified proposal with no release goes.
     const [r] = p.phase === "verified" && !p.release ? await tx.execute(sql`select r.version, coalesce((select string_agg(q.key, ', ' order by q.key) from delivery.proposal q where q.release_id = r.id), '') as keys
@@ -77,7 +82,7 @@ export async function proposalOffers(v: Viewer, a: Args) {
       order by r.created_at desc limit 1`) : [];
     const [inRelease] = p.phase === "verified" && p.release ? await tx.execute(sql`select release_id from delivery.proposal where id = ${p.id}`) : [];
     return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, justClosed: (x.just_closed as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null,
-      releaseId: (inRelease?.release_id as string | null) ?? null };
+      releaseId: (inRelease?.release_id as string | null) ?? null, timeTables: Boolean(x.time_tables) };
   });
   // 081 amendment 4 (AC-30 revised): Verified moves to Released only when its release reaches Prod, so a verified
   // proposal in a release that isn't live offers that release's next deployment, first.
@@ -85,13 +90,14 @@ export async function proposalOffers(v: Viewer, a: Args) {
   const offers = [...deploy, ...allowed(v, proposalGated(p, v.userId, facts), facts.projectId)];
   // 081 amendment 9 (AC-86): log your own time against it. Time's permission is on your own entries, not the project, so
   // it's checked here; it comes second while the work is under way (Planned or Building), last otherwise.
-  const log = can(v, "time:log", { ownerUserId: v.userId }) ? [{ label: `Log time on ${p.key}`, prompt: `Log time on ${p.key} (${p.projectName}): `, tool: "log_time" }] : [];
+  // 087 AC-6: only when Time is installed; with it switched off, log_time doesn't exist.
+  const log = hasModule("time", facts.timeTables) && can(v, "time:log", { ownerUserId: v.userId }) ? [{ label: `Log time on ${p.key}`, prompt: `Log time on ${p.key} (${p.projectName}): `, tool: "log_time" }] : [];
   const busy = p.phase === "planned" || p.phase === "building";
   return (busy ? [...offers.slice(0, 1), ...log, ...offers.slice(1)] : [...offers, ...log]).slice(0, MAX);
 }
 
 function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; justClosed?: string | null; release: { version: string; keys: string } | null }): Gated[] {
-  const owner: Gated[] = p.ownerUserId ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
+  const owner: Gated[] = !hasNoOwner(p) ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
   const task: Gated[] = f.openTask ? [{ label: `Mark ${f.openTask} of ${p.key} done`, prompt: `Mark ${f.openTask} of ${p.key} done`, tool: "mark_task_done", permission: "delivery:task:done" }] : [];
   const release: Gated[] = f.release ? [{ label: `Put ${p.key} in ${p.projectKey} ${f.release.version}`, prompt: `Set the proposals in ${p.projectKey} ${f.release.version} to: ${[f.release.keys, p.key].filter(Boolean).join(", ")}`,
     tool: "set_release_proposals", permission: "delivery:release:create" }] : [];
@@ -178,7 +184,8 @@ export async function taskOffers(v: Viewer, a: Args) {
   if (!t || t.withdrawn || t.phase === "released") return [];
   const name = `${t.ref} of ${t.proposalKey}`;
   if (!t.done) return allowed(v, [{ label: `Mark ${name} done`, prompt: `Mark ${name} done`, tool: "mark_task_done", permission: "delivery:task:done" }], t.projectId);
-  const recent = t.doneAt !== null && Date.now() - new Date(t.doneAt).getTime() < 24 * 3600 * 1000;
+  const [r] = await read(v, (tx) => tx.execute(sql`select ${justClosed} as recent from delivery.task t where t.id = ${taskId}`));
+  const recent = Boolean(r?.recent);
   return recent ? allowed(v, [{ label: `Reopen ${name}`, prompt: `Reopen ${name}`, tool: "reopen_task", permission: "delivery:task:done" }], t.projectId) : [];
 }
 

@@ -1,0 +1,96 @@
+# Proposals: what 081's review left open
+
+**Change:** 087-proposal-review-follow-ups · **Created:** 2026-11-07 · **Review:** change
+
+## Problem
+
+081's review loop stopped at the five-pass cap (PR #113) with two majors open and minors in its `follow-ups.md`:
+
+- **Two "no owner" rules.** The list calls a proposal unassigned only when it has neither an owner user nor an owner
+  name. The pin's "Make me the owner", the agent's Suggested owner and its accept guard look at the user alone. So on a
+  row with only a name (every hand-made row from before 081, and some synced ones), accepting the suggestion silently
+  replaces the named owner.
+- **`mark_task_done` accepts a withdrawn proposal,** though every other write refuses one.
+- **Seven of the minors are small and touch the same files.** They are fixed here too.
+
+**Depends on:** 081-proposals-end-to-end (PR #113). Build on its branch until it merges.
+
+## Mock Delta
+
+None. No screen changes: the list, the pin's suggestions and the agent behave as the mock already shows. 087 has no
+section.
+
+## Acceptance Criteria
+
+### The two majors
+
+1. **AC-1** One rule decides "has no owner": no owner user **and** no owner name (`hasNoOwner` in
+   `server/readiness.ts`). `needsOf` (the Unassigned chip), the pin's "Make me the owner", the agent's Suggested owner
+   and the suggestion's accept guard all use it. A row with only an owner name counts as owned: nothing replaces a named
+   owner by itself. Linking that owner to a person stays a deliberate `update_proposal`. A table-driven test covers
+   four rows: a user and a name, a name only, a user only, and neither. It checks that the four callers agree on each.
+2. **AC-2** `mark_task_done` refuses a withdrawn proposal, with a refusal that carries a code ("`<key>` was
+   withdrawn"), as `reopen_task` does. A variant test covers withdrawn by hand, withdrawn by the repo (`meta.withdrawn`)
+   and open (still closes).
+
+### Minors from 081's follow-ups
+
+3. **AC-3** A proposal URL with a malformed `%` escape shows "Proposal not found", not a server error. One safe decode
+   serves `pageLabel`, the chat suggestions' proposal lookup and `ProposalsPage`. Tested with `%E0%A4%A`, `%` and a
+   valid encoded key.
+4. **AC-4** The list routes' "New proposal" chat suggestion shows only to someone who may create proposals
+   (`canEver(delivery:proposal:create)`), the same check as the page's button.
+5. **AC-5** "Reopen a task closed in the last day" is one rule, read on the database clock. The proposal's pin and the
+   task row's pin use one helper, so they can't disagree.
+6. **AC-6** "Log time on `<key>`" is offered only when Time is installed (`hasModule('time')`), as well as the
+   permission.
+7. **AC-7** A time-line pin read while Time is switched off is refused as **unavailable**: code `unavailable`,
+   `retryable: true`. It's a new refusal in `server/refusal.ts`, and it is no longer `invalid_input`.
+8. **AC-8** Core tells "slots never set" from "nobody fills this slot", the way `hasModule` keeps its unset list as
+   `null`: `slotsSet()` says whether `setProvided` ran. When it hasn't, a proposal page doesn't claim there's no time:
+   its history notes that time lines weren't read, and a time-line pin is refused as unavailable (AC-7). The app sets
+   slots at boot, so this only shows in a process that never loaded the registry.
+9. **AC-9** A proposal page reads at most a bounded number of Time's audit rows for its time lines (10 batches of
+   200). When it stops early, the lines say the history is partial. A test plants more rows than the bound, all of
+   them hidden from the viewer, and checks the read stops and reports partial.
+10. **AC-10** Time's migration no longer ties `time.entry.proposal_id` to Delivery's table. A new Time migration drops
+    the foreign key. `getProposalRef` still validates every write, so with Delivery off, Time's migrations and tests
+    still run.
+
+### Out of scope (stay in follow-ups)
+
+- **The hours write's second connection** (round 3). Moving the write after the handler's transaction changes the
+  event contract, so it's its own change.
+- **Keying the history-line pin on the line** (round 3). The registry's pin check requires a UUID id, and a line id
+  isn't one. That needs a pin-spec change in `@amax/mcp`.
+
+## Tasks
+
+- [x] `T1` — One "has no owner" rule for the Unassigned chip, the pin's "Make me the owner", the agent's Suggested owner and its accept guard (AC-1)
+  Files: modules/delivery/server/readiness.ts, modules/delivery/server/attention.ts, modules/delivery/server/pin-offers.ts, modules/delivery/server/agent.ts, modules/delivery/server/proposal-kinds.ts, modules/delivery/tests/readiness-081.test.ts, modules/delivery/tests/proposal-agent.test.ts
+- [x] `T2` — `mark_task_done` refuses a withdrawn proposal, by hand or by the repo (AC-2)
+  Files: modules/delivery/server/tasks.ts, modules/delivery/tests/proposal-lifecycle.test.ts
+- [x] `T3` — One safe decode of a proposal key from the URL; "New proposal" in chat gated on the create permission (AC-3, AC-4)
+  Files: modules/delivery/chat-suggestions.ts, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/tests/chat-081.test.ts, modules/delivery/tests/proposal-detail.test.ts
+- [x] `T4` — One reopen-within-a-day rule on the database clock; "Log time" only when Time is installed (AC-5, AC-6)
+  Files: modules/delivery/server/pin-offers.ts, modules/delivery/tests/pin-offers.test.ts
+- [x] `T5` — An `unavailable` refusal for a time-line pin while Time is off; core says whether slots were set, and the history notes unread time lines (AC-7, AC-8)
+  Files: modules/delivery/server/refusal.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/ui/ProposalPage.tsx, packages/core/src/installed.ts, packages/core/src/server.ts, packages/core/tests/installed.test.ts, modules/delivery/tests/proposal-detail.test.ts
+- [x] `T6` — Time's time-line read is bounded (10 batches of 200) and says when it is partial; the page shows it (AC-9)
+  Files: modules/delivery/contracts.ts, modules/time/server/proposal-lines.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/ui/ProposalPage.tsx, modules/time/tests/proposal-time.test.ts
+  Depends: T5
+- [x] `T7` — A Time migration drops `time.entry.proposal_id`'s foreign key into Delivery (AC-10)
+  Files: modules/time/db/migrations/0010_entry_proposal_no_fk.sql, modules/time/tests/proposal-time.test.ts
+
+## Verify
+
+Build notes (2026-11-07, Windows host, local Postgres; not a verdict, `/specclaw:verify` writes that):
+- Each AC has a table-driven test: Delivery `proposal-agent` (AC-1), `proposal-lifecycle` (AC-2), `chat-081` (AC-3, AC-4),
+  `pin-offers` (AC-5, AC-6), `proposal-detail` (AC-7 to AC-9); Time `proposal-time` (AC-9, AC-10); core `installed` (AC-8).
+- Suites: Delivery 376/378, Time 242/243, Notifications 15/15, core 166/167, MCP 20/20, web 334/334; lint and type checks pass.
+  The failures: `releases` and `ac5-adapters` (backslash paths, Windows only), `create-project-surfaces` and `grid-perf`
+  (time limits under load; each passes alone).
+- One older `proposal-lifecycle` case moved to an open proposal: on a withdrawn one, `mark_task_done` now refuses as withdrawn
+  before it can say "has no task" (AC-2).
+- AC-7 adds `unavailable` to `userFacing` in `@amax/mcp`, so chat and MCP show that refusal's message.
+- Quality: not_run (`specclaw-quality-scan`: jq "Argument list too long" on this host, as in 066–086).

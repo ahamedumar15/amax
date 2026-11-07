@@ -14,7 +14,7 @@ import { chatIntents } from "../chat";
 import { proposeLog } from "../server/entry-card";
 import { EVENTS as DELIVERY, PROPOSAL_TIME_SLOT, type CommitTime } from "@amax/delivery/contracts";
 import timeModule from "../module";
-import { BATCH, MAX_LINES, proposalTimeLines } from "../server/proposal-lines";
+import { BATCH, MAX_BATCHES, MAX_LINES, proposalTimeLines } from "../server/proposal-lines";
 import { randomUUID } from "node:crypto";
 import { appendAudit, ForbiddenError } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
@@ -41,6 +41,13 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     await expect(logTime(nimal, { projectKey: "CON", proposalKey: "CON-999", day: "2026-10-19", hours: 1 })).rejects.toThrow(/no proposal CON-999/);
     await db.t.owner`update delivery.proposal set withdrawn_at = now(), withdrawn_by = 'test', withdraw_reason = 'dropped' where key = 'CON-011'`;
     await expect(logTime(nimal, { projectKey: "CON", proposalKey: "CON-011", day: "2026-10-19", hours: 1 })).rejects.toThrow(/withdrawn/);
+  });
+
+  // 087 AC-10: the proposal link 081 added holds no foreign key into Delivery; getProposalRef still refuses a bad one (AC1).
+  it("087 AC10 time.entry.proposal_id has no foreign key into Delivery's proposals", async () => {
+    const fks = await db.q(sql`select n.nspname || '.' || t.relname as target from pg_constraint c join pg_class t on t.oid = c.confrelid join pg_namespace n on n.oid = t.relnamespace
+      where c.contype = 'f' and c.conrelid = 'time.entry'::regclass`);
+    expect(fks.map((k) => k.target)).not.toContain("delivery.proposal");
   });
 
   it("AC2 accepting a commit's hours logs them on the commit's proposal", async () => {
@@ -141,7 +148,7 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     }
     try {
       const v = await db.as(who);
-      const lines = await withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, { id: p.id as string, projectId: p.project_id as string }));
+      const { lines } = await withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, { id: p.id as string, projectId: p.project_id as string }));
       expect(lines.some((l) => l.userId === nimal.userId)).toBe(sees);
     } finally {
       if (scope) await scopeAdmin(null);
@@ -159,7 +166,7 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     await withTenant(db.app, T, async (tx) => {
       for (let i = 0; i < BATCH + 50; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-27", hours: 0.25 } });
     });
-    const lines = (v: Viewer, opts?: { line?: string }) => withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, proposal, opts));
+    const lines = async (v: Viewer, opts?: { line?: string }) => (await withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, proposal, opts))).lines;
     const own = (await lines(nimal)).filter((l) => l.userId === nimal.userId && l.day === "2026-10-26");
     expect(own).toHaveLength(1);
     expect((await lines(await db.as("maya"))).length).toBe(MAX_LINES);
@@ -170,4 +177,19 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     ];
     for (const [label, run, check] of cases) { const r = await run(); try { check(r); } catch (e) { throw new Error(`${label}: ${(e as Error).message}`); } }
   }, 60_000);
+
+  // 087 AC-9: the read is bounded. A viewer who may see none of a proposal's many lines gets a partial answer after
+  // MAX_BATCHES, never an unbounded scan; someone who sees them all gets the newest MAX_LINES, complete.
+  it("087 AC9 a proposal's time lines are read in at most MAX_BATCHES batches, and say when they stopped early", async () => {
+    const [p] = await db.q(sql`select id, project_id from delivery.proposal where key = 'CON-011'`);
+    const proposal = { id: p.id as string, projectId: p.project_id as string };
+    const tharushi = await db.as("tharushi");
+    await withTenant(db.app, T, async (tx) => {
+      for (let i = 0; i < BATCH * MAX_BATCHES + 1; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-28", hours: 0.25 } });
+    });
+    const read = async (who: string) => withTenant(db.app, T, async (tx) => proposalTimeLines(tx, await db.as(who), proposal));
+    expect(await read("kasun")).toEqual({ lines: [], partial: true });
+    const maya = await read("maya");
+    expect([maya.lines.length, maya.partial]).toEqual([MAX_LINES, false]);
+  }, 240_000);
 });

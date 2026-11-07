@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasModule, provided, setInstalledModules, setProvided } from "../src/installed";
+import { hasModule, provided, setInstalledModules, setProvided, slotsSet } from "../src/installed";
 
 // 072 review round 3: the deployment's module list decides; before it's set, the caller's table check does.
 describe("072 hasModule", () => {
@@ -27,5 +27,7 @@ describe("081 provided slots", () => {
   ] as const)("%s", (_, modules, want) => {
     if (modules) setProvided(modules);
     expect(provided("delivery.proposal-time")).toEqual(want);
+    // 087 AC-8: "never set" reads apart from "nobody fills it".
+    expect(slotsSet()).toBe(modules !== null);
   });
 });

@@ -5,5 +5,7 @@ const refusal = (message: string, code: "invalid_input" | "not_found") => Object
 
 /** The request can't be done as asked: `throw invalid("…")`. */
 export const invalid = (message: string) => refusal(message, "invalid_input");
+/** 087 AC-7: the part of amax that answers this is switched off; the same request works again once it's back. */
+export const unavailable = (message: string) => Object.assign(new Error(message), { retryable: true as const, code: "unavailable" as const });
 /** The record it names doesn't exist (or isn't visible): `throw notFound("…")`. */
 export const notFound = (message: string) => refusal(message, "not_found");

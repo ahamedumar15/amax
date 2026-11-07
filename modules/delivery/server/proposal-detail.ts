@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
-import { ForbiddenError, getRuntime, provided } from "@amax/core/server";
+import { ForbiddenError, getRuntime, provided, slotsSet } from "@amax/core/server";
 import { EVENTS, PROPOSAL_TIME_SLOT, proposalHref, type ProposalTimeLine, type ProposalTimeSource } from "../contracts";
 import { day } from "../pins";
 import { byLine } from "./activity";
 import { proposalWhere, type ProposalRow } from "./queries";
-import { invalid } from "./refusal";
+import { invalid, unavailable } from "./refusal";
 
 export type ProposalTask = { id: string; ref: string; title: string; done: boolean; doneAt: string | null };
 export type ProposalStage = { environment: string; environmentId: string; deploymentId: string | null; isProd: boolean; status: string | null; at: string | null };
@@ -18,7 +18,7 @@ export type ProposalDetail = ProposalRow & {
   href: string;
   project: { id: string; key: string; name: string; status: string };
   withdrawnAt: string | null; withdrawReason: string | null; releasedAt: string | null; sourceRef: string | null;
-  tasks: ProposalTask[]; stages: ProposalStage[]; history: ProposalEvent[];
+  tasks: ProposalTask[]; stages: ProposalStage[]; history: ProposalEvent[]; timeNote: TimeNote;
 };
 
 const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
@@ -52,11 +52,19 @@ const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned"
 // everyone else has the approved total (D2). Delivery only words them. Review round 1: no second copy of Time's rule here.
 const hrs = (n: unknown) => `${Number(Number(n).toFixed(2))} h`;
 
-async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string, line?: string): Promise<ProposalTimeLine[]> {
+/**
+ * 087 AC-8, AC-9: why the history may not show every time line: "unread" when this process never set its module slots,
+ * "partial" when Time stopped at its bound. Null when it shows them all.
+ */
+export type TimeNote = "unread" | "partial" | null;
+
+async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string, line?: string): Promise<{ lines: ProposalTimeLine[]; note: TimeNote }> {
   const sources = provided<ProposalTimeSource>(PROPOSAL_TIME_SLOT);
-  // Review round 3 (B3): a pinned time line with no module to ask is unreadable, never "gone" (null).
-  if (line && !sources.length) throw invalid("time lines can't be read here: the Time module isn't running");
-  return (await Promise.all(sources.map((source) => source(tx, v, { id, projectId }, line ? { line } : undefined)))).flat();
+  // Review round 3, 087 AC-7: a pinned time line with no module to ask is unavailable, never "gone" (null).
+  if (line && (!slotsSet() || !sources.length)) throw unavailable("time lines can't be read here: the Time module isn't running");
+  if (!slotsSet()) return { lines: [], note: "unread" };
+  const read = await Promise.all(sources.map((source) => source(tx, v, { id, projectId }, line ? { line } : undefined)));
+  return { lines: read.flatMap((r) => r.lines), note: read.some((r) => r.partial) ? "partial" : null };
 }
 
 /** Review round 2 (B3): one history line by its kind and id ("audit:12", "event:…", "task:…", "time:…"), read directly. */
@@ -73,14 +81,14 @@ function timeText(a: ProposalTimeLine, id: string, owner: string) {
 }
 
 // The page shows the newest 100 of each source; `only` reads one line with no window (a pin on an older line still resolves).
-async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string, only?: Only): Promise<ProposalEvent[]> {
+async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string, only?: Only): Promise<{ events: ProposalEvent[]; timeNote: TimeNote }> {
   const ref = only?.ref ?? "";
   const audits = await tx.execute(sql`select seq, occurred_at as at, actor, on_behalf_of, action, after from core.audit_event
     where resource in ('delivery.proposal', 'delivery.task') and (resource_id = ${id} or (resource = 'delivery.task' and after->>'proposalId' = ${id}))
       and ${one(only, "audit", sql`seq::text = ${ref}`)} order by occurred_at desc, seq desc limit 100`);
   const moves = await tx.execute(sql`select id, created_at as at, payload from core.event where name = ${EVENTS.proposalPhaseChanged} and payload->>'proposalId' = ${id}
       and ${one(only, "event", sql`id::text = ${ref}`)} order by created_at desc limit 100`);
-  const time = !only || only.kind === "time" ? await timeRows(tx, id, v, projectId, only ? `time:${ref}` : undefined) : [];
+  const { lines: time, note: timeNote } = !only || only.kind === "time" ? await timeRows(tx, id, v, projectId, only ? `time:${ref}` : undefined) : { lines: [], note: null };
   // Closed tasks come from the task rows: who closed each is on the row ("user:…", or "agent:… for user:…").
   const closed = await tx.execute(sql`select id, ref, title, done_at as at, done_by from delivery.task where proposal_id = ${id} and done and done_at is not null
       and ${one(only, "task", sql`id::text = ${ref}`)}`);
@@ -105,7 +113,7 @@ async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string, only?
       return { id: `task:${t.id as string}`, at: iso(t.at)!, text: `${t.ref as string} ${t.title as string} done`, by: who(actor || null, forUser ?? null, names), kind: "task" as const };
     }),
   ];
-  return lines.sort((a, b) => b.at.localeCompare(a.at));
+  return { events: lines.sort((a, b) => b.at.localeCompare(a.at)), timeNote };
 }
 
 /**
@@ -122,7 +130,7 @@ export async function proposalEvent(v: Viewer, a: { proposalId: string; line: st
     const row = await proposalWhere(tx, { proposalId: a.proposalId });
     if (!row) return null;
     const [p] = await tx.execute(sql`select project_id from delivery.proposal where id = ${row.id}`);
-    const [e] = await historyOf(tx, row.id, v, p.project_id as string, { kind: kind as Only["kind"], ref });
+    const [e] = (await historyOf(tx, row.id, v, p.project_id as string, { kind: kind as Only["kind"], ref })).events;
     return e && e.id === a.line ? { ...e, line: e.id, proposalId: row.id, key: row.key, title: row.title } : null;
   });
 }
@@ -143,6 +151,6 @@ export const proposalDetail = (v: Viewer, ref: { proposalId?: string; key?: stri
         where e.project_id = ${p.project_id} order by e.position`)).map((e) => ({ environment: e.name as string, environmentId: e.environment_id as string, deploymentId: (e.deployment_id as string | null) ?? null, isProd: Boolean(e.is_prod), status: (e.status as string | null) ?? null, at: iso(e.at) })) : [];
     return { ...row, href: proposalHref(row.key), project: { id: p.project_id as string, key: p.key as string, name: p.name as string, status: p.status as string },
       withdrawnAt: iso(p.withdrawn_at), withdrawReason: (p.withdraw_reason as string | null) ?? null, releasedAt: iso(p.released_at), sourceRef: (p.source_ref as string | null) ?? null,
-      tasks, stages, history: await historyOf(tx, row.id, v, p.project_id as string) };
+      tasks, stages, ...(({ events, timeNote }) => ({ history: events, timeNote }))(await historyOf(tx, row.id, v, p.project_id as string)) };
   });
 };

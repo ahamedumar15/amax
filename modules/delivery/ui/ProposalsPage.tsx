@@ -1,7 +1,7 @@
 import type { ScreenProps } from "@amax/core";
 import { canEver } from "@amax/auth";
 import { PinButton } from "@amax/ui";
-import { PHASES, projectHref, proposalHref, releaseHref, type Phase } from "../contracts";
+import { PHASES, projectHref, proposalHref, proposalKeyFrom, releaseHref, type Phase } from "../contracts";
 import { metricsPin, projectPin, proposalPin } from "../pins";
 import { listProjects, listProposals, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
 import { BarChart } from "./charts";
@@ -24,7 +24,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Proposals</h1><SignInFirst /></>;
   // 081: /delivery/proposals/:key shares the segment with the phase filter; anything that isn't a phase is a key.
-  if (params.phase && !(PHASES as readonly string[]).includes(params.phase)) return ProposalPage({ viewer, proposalKey: decodeURIComponent(params.phase) });
+  if (params.phase && !(PHASES as readonly string[]).includes(params.phase)) return ProposalPage({ viewer, proposalKey: proposalKeyFrom(params.phase) });
   const phase = (PHASES as readonly string[]).includes(params.phase ?? "") ? (params.phase as Phase) : undefined;
   const asked = Math.max(1, Number(searchParams.page ?? 1) || 1);
   // 081 AC-16: the cards and the table read through one filter, so they always agree.

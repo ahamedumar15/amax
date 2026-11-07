@@ -5,7 +5,7 @@ import { contextFor } from "@amax/core/server";
 import { createSuggestion, withdrawSuggestions } from "@amax/agents/server";
 import { EVENTS, proposalHref, type Phase, type ProposalPhaseChanged, type ProposalWithdrawn, type TaskReopened, type TaskDone } from "../contracts";
 import { readyToVerify, suggestedOwner } from "./proposal-kinds";
-import { isReadyToVerify } from "./readiness";
+import { hasNoOwner, isReadyToVerify } from "./readiness";
 
 // 081 amendment 2 (AC-32 to AC-34): the Delivery agent. It reads Delivery's own events, suggests (never writes), and
 // takes back what no longer fits. The platform keeps one open suggestion per kind and proposal, and expires them in 7 days.
@@ -13,7 +13,7 @@ const AGENT = "delivery.proposal-agent";
 const TARGET = "delivery.proposal";
 
 async function proposalOf(tx: Tx, id: string) {
-  const [p] = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.source, p.tasks_done, p.tasks_total, p.owner_user_id, p.withdrawn_at, p.meta,
+  const [p] = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.source, p.tasks_done, p.tasks_total, p.owner_user_id, p.owner_name, p.withdrawn_at, p.meta,
       pr.id as project_id, pr.manager_user_id, pr.legal_entity_id
     from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.id = ${id}`);
   return p;
@@ -64,7 +64,7 @@ export const proposalAgent: EventHandlerDef[] = [
           detail: total === 1 ? `The only task of ${p.key as string}, ${e.task}, is done.` : `All ${total} tasks of ${p.key as string} are done; ${e.task} was the last.`, proposed: { proposalId: p.id, key: p.key } });
       }
       const person = personIn(e.by);
-      if (!p.owner_user_id && person) {
+      if (hasNoOwner({ ownerUserId: (p.owner_user_id as string | null) ?? null, ownerName: (p.owner_name as string | null) ?? null }) && person) {
         const [u] = await tx.execute(sql`select id, name from auth.user where id::text = ${person} and status = 'active'`);
         if (u) await suggest(tenantId, p, { kind: suggestedOwner.kind, title: `Make ${u.name as string} the owner of ${p.key as string}`, confidence: 0.7,
           detail: `${p.key as string} has no owner. ${u.name as string} closed ${e.task}.`, proposed: { proposalId: p.id, key: p.key, userId: u.id, name: u.name } });

@@ -41,6 +41,24 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     expect(manifest.pageLabel?.({ phase: "CON-014" })).toBe("CON-014");
   });
 
+  // 087 AC-3: a malformed escape in a proposal's URL reads as an unknown key, not a server error; a valid one still finds it.
+  it.each([
+    ["a truncated escape", "%E0%A4%A", "Proposal not found"],
+    ["a lone percent sign", "%", "Proposal not found"],
+    ["a valid encoded key", encodeURIComponent("CON-014"), "CON-014"],
+  ])("087 AC3 a proposal URL with %s", async (_label, segment, shows) => {
+    expect(await html(ProposalsPage({ viewer: maya, params: { phase: segment } }))).toContain(shows);
+    expect(manifest.pageLabel?.({ phase: segment })).toBeTruthy();
+    await expect(offered(maya, "proposals/:phase", { phase: segment })).resolves.toBeInstanceOf(Array);
+  });
+
+  // 087 AC-4: on the list routes, chat's "New proposal" shows exactly when the page's own button does.
+  it.each([["maya", undefined], ["maya", "Leadership"], ["kasun", undefined]] as const)("087 AC4 New proposal in chat agrees with the button for %s %s", async (who, role) => {
+    const v = await db.as(who, role);
+    const button = (await html(ProposalsPage({ viewer: v, params: {} }))).includes('data-intent="delivery.new-proposal"');
+    expect((await offered(v, "proposals", {})).includes("create_proposal")).toBe(button);
+  });
+
   it("AC14 the create card shows project, title, description, estimate and owner; no card for a closed or unknown project", async () => {
     const nimal = await db.as("nimal");
     const card = await createProposalCard(maya, { projectKey: "CON", title: "Dunning", description: "Remind late payers", estimateHours: 8, ownerUserId: nimal.userId });

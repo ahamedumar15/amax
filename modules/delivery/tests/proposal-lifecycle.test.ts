@@ -81,7 +81,7 @@ describe.skipIf(!hasDb)("081 the lifecycle of a hand-made proposal (Postgres)", 
     ["a withdrawn proposal moved", (key: string) => moveProposal(ctxFor(maya), { key, to: "planned" }), /was withdrawn/],
     ["a withdrawn proposal put in a release", (key: string) => createRelease(ctxFor(maya), { projectKey: "CON", version: `v8.${Date.now()}`, proposalKeys: [key] }), /was withdrawn/],
     ["a task reopened on a proposal that doesn't exist", () => reopenTask(ctxFor(maya), { key: "CON-999", task: "T1" }), /no proposal CON-999/],
-    ["a task closed that the proposal doesn't have", (key: string) => markTaskDone(ctxFor(maya), { key, task: "T9" }), /has no task T9/],
+    ["a task closed that the proposal doesn't have", () => markTaskDone(ctxFor(maya), { key: "CON-014", task: "T9" }), /has no task T9/],
     ["a proposal in a project that doesn't exist", () => createProposal(ctxFor(maya), { projectKey: "NOPE", title: "x" }), /no project NOPE/],
   ])("review-1 %s is refused with its reason", async (_label, run, message) => {
     const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Refused" });
@@ -91,6 +91,21 @@ describe.skipIf(!hasDb)("081 the lifecycle of a hand-made proposal (Postgres)", 
     expect((e as Error).message).toMatch(message);
     expect(userFacing(e)).toBe(true);
     expect(e).toMatchObject({ retryable: false });
+  });
+
+  // 087 AC-2: closing a task is refused on a withdrawn proposal, like every other write; an open one still closes.
+  it.each([
+    ["withdrawn by hand", async (key: string) => { await withdrawProposal(ctxFor(maya), { key, reason: "Not this quarter" }); }, /was withdrawn/],
+    ["withdrawn by the repo", async (key: string) => { await db.t.owner`update delivery.proposal set meta = '{"withdrawn": true}'::jsonb where key = ${key}`; }, /was withdrawn/],
+    ["open", async () => {}, null],
+  ])("087 AC2 mark_task_done on a proposal %s", async (_label, make, refused) => {
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Task after withdrawal" });
+    await addProposalTask(ctxFor(maya), { key, title: "Draft it" });
+    await make(key);
+    const out = await markTaskDone(ctxFor(maya), { key, task: "T1" }).then((r) => r, (e: unknown) => e);
+    if (refused) expect(out).toMatchObject({ message: expect.stringMatching(refused), code: "invalid_input", retryable: false });
+    else expect(out).toMatchObject({ done: true, tasksDone: 1 });
+    expect((await db.q(sql`select done from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.key = ${key}`))[0].done).toBe(!refused);
   });
 
   it("AC11 add_proposal_task adds the next task and recounts; mark_task_done closes it; spec proposals take tasks from the repo", async () => {

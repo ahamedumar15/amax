@@ -12,6 +12,8 @@ type Row = Record<string, unknown>;
 /** The page shows a proposal's newest 100 time lines the viewer may see. */
 export const MAX_LINES = 100;
 export const BATCH = 200;
+/** 087 AC-9: at most this many batches per page load; beyond it the lines are reported partial. */
+export const MAX_BATCHES = 10;
 
 const onProposal = (id: string) => sql`resource in ('time.entry', 'time.change_request') and (after->>'proposalId' = ${id} or after->>'previousProposalId' = ${id})`;
 
@@ -43,19 +45,20 @@ export const proposalTimeLines: ProposalTimeSource = async (tx, v, proposal, opt
   if (opts?.line) {
     const seq = opts.line.replace(/^time:/, "");
     const rows = await tx.execute(sql`select seq, occurred_at as at, actor, on_behalf_of, after from core.audit_event where ${onProposal(proposal.id)} and seq::text = ${seq}`);
-    if (!rows.length) return [];
+    if (!rows.length) return { lines: [], partial: false };
     const lines = await visible(tx, v, proposal.projectId, rows);
     if (!lines.length) throw new ForbiddenError("time:read", "time.entry");
-    return lines;
+    return { lines, partial: false };
   }
   const out: ProposalTimeLine[] = [];
   let after: { at: unknown; seq: unknown } | null = null;
-  while (out.length < MAX_LINES) {
+  for (let batch = 0; out.length < MAX_LINES; batch++) {
+    if (batch === MAX_BATCHES) return { lines: out, partial: true };
     const page: Row[] = await tx.execute(sql`select seq, occurred_at as at, actor, on_behalf_of, after from core.audit_event where ${onProposal(proposal.id)}
       ${after ? sql`and (occurred_at, seq) < (${after.at}::timestamptz, ${after.seq}::bigint)` : sql``} order by occurred_at desc, seq desc limit ${BATCH}`);
     out.push(...(await visible(tx, v, proposal.projectId, page)));
     if (page.length < BATCH) break;
     after = { at: page.at(-1)!.at, seq: page.at(-1)!.seq };
   }
-  return out.slice(0, MAX_LINES);
+  return { lines: out.slice(0, MAX_LINES), partial: false };
 };

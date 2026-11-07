@@ -14,6 +14,9 @@ import { proposalKinds } from "../server/proposal-kinds";
 import { linkIdentity } from "../suggestions";
 import { createProposal, moveProposal } from "../server/services";
 import { markTaskDone } from "../server/tasks";
+import { needsOf } from "../server/attention";
+import { proposalOffers } from "../server/pin-offers";
+import { getProposal } from "../server/queries";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
 import { proposalDb, T } from "./proposal-db";
@@ -87,6 +90,33 @@ describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person 
     expect(await db.row(key)).toMatchObject({ owner_user_id: maya.userId, owner_name: "Maya Fernando" });
     await undoSuggestion(decide(maya, "chat"), { id: s.id as string });
     expect((await db.row(key)).owner_user_id).toBeNull();
+  });
+
+  // 087 AC-1: one "has no owner" rule. The Unassigned chip, the pin's "Make me the owner", the agent's Suggested owner and
+  // its accept guard agree on every row; a name alone is an owner, so nothing replaces it.
+  it.each([
+    ["a user and a name", true, true, false],
+    ["a name only", false, true, false],
+    ["a user only", true, false, false],
+    ["neither", false, false, true],
+  ])("087 AC1 a proposal with %s: unowned is %s/%s → %s, everywhere", async (_label, withUser, withName, unowned) => {
+    const key = await building(`Owner rule ${String(withUser)} ${String(withName)}`, 2);
+    const state = () => db.t.owner`update delivery.proposal set owner_user_id = ${withUser ? maya.userId : null}, owner_name = ${withName ? "Maya Fernando" : null} where key = ${key}`;
+    await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
+    await markTaskDone(ctxFor(maya), { key, task: "T1" });
+    await runAgent();
+    const [s] = await suggestions(key, "delivery.proposal-owner");
+    await state();
+    const row = (await getProposal(maya, { key }))!;
+    expect(needsOf(row, new Set()).includes("unassigned")).toBe(unowned);
+    // With every task done the pin's three offers are Move, Log time and the owner one (with a task open, it's fourth).
+    await markTaskDone(ctxFor(maya), { key, task: "T2" });
+    await runAgent();
+    expect((await proposalOffers(maya, { key })).some((o) => o.label.startsWith("Make me the owner"))).toBe(unowned);
+    if (!unowned) expect((await suggestions(key, "delivery.proposal-owner")).filter((x) => x.id !== s.id)).toEqual([]);
+    const accepted = await acceptSuggestion(decide(maya, "chat"), { id: s.id as string }).then(() => true, () => false);
+    expect(accepted).toBe(unowned);
+    if (!withUser && withName) expect((await db.row(key)).owner_name).toBe("Maya Fernando");
   });
 
   it("AC34 a suggestion that no longer fits is withdrawn, or refused at accept with nothing written", async () => {

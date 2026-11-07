@@ -39,6 +39,9 @@ export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPh
  */
 export const proposalHref = (key: string) => `/delivery/proposals/${encodeURIComponent(key)}`;
 
+/** 087 AC-3: the key a proposal page's segment names. A malformed escape ("%E0%A4%A") stays as written, so it reads as an unknown key. */
+export const proposalKeyFrom = (segment: string) => { try { return decodeURIComponent(segment); } catch { return segment; } };
+
 /** 081: one proposal for another module (Time names one on an entry). `withdrawn` covers both a hand withdrawal and a spec folder that went away. */
 export type ProposalRef = { id: string; key: string; title: string; phase: Phase; projectId: string; projectKey: string; withdrawn: boolean };
 
@@ -56,9 +59,10 @@ export type ProposalTimeLine = {
 };
 /**
  * `opts.line` (review round 2): just that line ("time:<seq>"), read directly with no window, for its pin; a line that exists
- * but the viewer may not see is refused (ForbiddenError), never returned empty as if it were gone.
+ * but the viewer may not see is refused (ForbiddenError), never returned empty as if it were gone. 087 AC-9: `partial` when the
+ * source stopped at its bound before it had read every line.
  */
-export type ProposalTimeSource = (tx: Tx, viewer: Viewer, proposal: { id: string; projectId: string }, opts?: { line?: string }) => Promise<ProposalTimeLine[]>;
+export type ProposalTimeSource = (tx: Tx, viewer: Viewer, proposal: { id: string; projectId: string }, opts?: { line?: string }) => Promise<{ lines: ProposalTimeLine[]; partial: boolean }>;
 
 /** 081 AC-4: Time's approved hours per proposal, a Delivery service Time runs under a job context (see the service). */
 export { PROPOSAL_HOURS_JOB, setProposalHours } from "./server/proposal-hours";

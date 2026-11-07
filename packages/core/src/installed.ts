@@ -18,7 +18,7 @@ export const hasModule = (id: string, tables: boolean) => tables && (ids === nul
  * once at boot beside setInstalledModules, from the same list, so a switched-off module provides nothing. Before it is
  * set (a test that doesn't), every slot is empty.
  */
-let slots: ReadonlyMap<string, readonly unknown[]> = new Map();
+let slots: ReadonlyMap<string, readonly unknown[]> | null = null;
 
 export const setProvided = (modules: readonly { id: string; provides?: Record<string, unknown> }[]) => {
   const next = new Map<string, unknown[]>();
@@ -26,5 +26,8 @@ export const setProvided = (modules: readonly { id: string; provides?: Record<st
   slots = next;
 };
 
-/** Everything installed modules put in `slot`, in module order; empty when none does. */
-export const provided = <T>(slot: string): readonly T[] => (slots.get(slot) ?? []) as readonly T[];
+/** Everything installed modules put in `slot`, in module order; empty when none does (or before setProvided). */
+export const provided = <T>(slot: string): readonly T[] => (slots?.get(slot) ?? []) as readonly T[];
+
+/** 087 AC-8: whether setProvided ran in this process, so "nobody fills this slot" and "never asked" read differently. */
+export const slotsSet = () => slots !== null;
