@@ -1,0 +1,9 @@
+{
+  "change": "088-notifications-tests-quiet-hours",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-07T16:17:59Z"},
+    "tasks": {"status":"done","at":"2026-11-07T16:18:11Z"}
+  }
+}

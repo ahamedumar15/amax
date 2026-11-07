@@ -13,7 +13,6 @@ describe.skipIf(!hasDb)("081 a proposal's owner hears every step of its life fro
   beforeAll(async () => {
     db = await notificationsDb();
     registry = createRegistry(await installedModules());
-    await db.t.owner`delete from notifications.quiet_hours`;
   }, 120_000);
   afterAll(() => db?.t.drop());
 
