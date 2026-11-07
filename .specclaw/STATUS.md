@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-07 16:20 UTC
+**Last Updated:** 2026-11-07 16:22 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -34,7 +34,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **085-time-my-week-first** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **086-rail-logo-aligned** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **087-proposal-review-follow-ups** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
-- 📝 **088-notifications-tests-quiet-hours** — tasks done | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **088-notifications-tests-quiet-hours** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
 - 🔀 **eval** — PR #command requires
 
 ## Pending Proposals

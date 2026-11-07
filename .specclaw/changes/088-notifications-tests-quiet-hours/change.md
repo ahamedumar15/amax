@@ -40,3 +40,5 @@ None. Tests only; no screen changes. No section.
 Notes:
 - The CI log's "insight … has no source" ERROR is from `insights.test` (line 25), which provokes it on purpose; it
   appears in every run, passing or failing.
+- Review: `Review: CLEAN`, one final pass at `aad6acab` (0/0/0), scoped to 088's three test files (`git.base_branch` set
+  to `53723f9e` for the run, then restored). It came after every commit PR #113 has, so 082 to 087's commits are covered too.
