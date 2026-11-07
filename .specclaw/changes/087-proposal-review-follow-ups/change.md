@@ -87,6 +87,34 @@ section.
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1: pass — Delivery `proposal-agent`, 4 owner rows: chip, list, board card, update card, pin, agent, accept guard.
+- AC-2: pass — `proposal-lifecycle`, withdrawn by hand, by the repo (`true` and `"true"`), and open; plus `reopen_task` and `move_proposal`.
+- AC-3, AC-4: pass — `chat-081`, three URL segments and three viewers.
+- AC-5, AC-6: pass — `pin-offers`, 23 h and 25 h windows; Time installed and not.
+- AC-7: pass — `proposal-detail` (time-line pin refused as `unavailable`); REST `ac1-rest` (503 with `Retry-After`).
+- AC-8: pass — core `installed` (`slotsSet`); `proposal-detail` (Time off, partial, complete).
+- AC-9: pass — Time `proposal-time`, exactly 2,000 hidden rows (not partial) and 2,001 (partial).
+- AC-10: pass — Time `proposal-time`: no key from `time.entry.proposal_id` into `delivery.proposal` after 0010 (0009 stays as applied; see AC-10).
+
+Commands (Linux replica of CI over `7ac4aafe`, the head the final review pass ran on):
+- `pnpm install --frozen-lockfile`, `pnpm db:migrate`, `pnpm lint`, `node scripts/check-module-standard.mjs`, `pnpm build`: exit 0.
+- `pnpm turbo run test --concurrency=2`: exit 0, 35/35 packages.
+- `pnpm --filter @amax/web e2e`: 9 passed. `pnpm --filter @amax/web e2e:auth`: 95 passed.
+
+Notes:
+- Review: `Review: CLEAN — 6 rounds, final pass 7ac4aafedb, models opus/opus; last round 0/0/3 b/M/m`. Five passes, the
+  cap. Round 5 was not_run (the review backend's usage limit), so it doesn't count. Scoped to 087's own commits
+  (`git.base_branch` set to `75dc88c5` for the run, then restored). The final pass at `7ac4aafe` came after every 087
+  commit, so it also covers the commits PR #113 gained after 081's final pass.
+- Open minors (in `follow-ups.md`): note the slot's return-type change in Delivery's README, the AC-6 test's
+  module-list reset, and 0009's key (why it stays is under AC-10).
+- No screen changes beyond the History note when time lines weren't read; no mock section.
+- `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog. `specclaw-quality-scan`: not_run (jq, as in 066–086).
+
+### Build and review notes
+
 Build notes (2026-11-07, Windows host, local Postgres; not a verdict, `/specclaw:verify` writes that):
 - Each AC has a table-driven test: Delivery `proposal-agent` (AC-1), `proposal-lifecycle` (AC-2), `chat-081` (AC-3, AC-4),
   `pin-offers` (AC-5, AC-6), `proposal-detail` (AC-7 to AC-9); Time `proposal-time` (AC-9, AC-10); core `installed` (AC-8).
