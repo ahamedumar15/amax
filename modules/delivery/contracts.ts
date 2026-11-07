@@ -2,6 +2,7 @@
 // tenant and data scope; events are what delivery emits through the outbox.
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
+import type { Viewer } from "@amax/auth";
 
 export const PHASES = ["proposed", "planned", "building", "verified", "released"] as const;
 export type Phase = (typeof PHASES)[number];
@@ -42,17 +43,21 @@ export const proposalHref = (key: string) => `/delivery/proposals/${encodeURICom
 export type ProposalRef = { id: string; key: string; title: string; phase: Phase; projectId: string; projectKey: string; withdrawn: boolean };
 
 /**
- * 081 AC-4: Time's approved hours per proposal, for whole projects at a time: every proposal in `projectIds` takes its
- * total from `totals`, or 0. Time owns the entries and their rules and is the only caller; nothing else writes `hours`.
- * Derived figures, so no audit row; `updated_at` stays, since hours approved later don't make a proposal "updated".
+ * 081 AC-28, review round 1: the slot Time fills with a proposal's time lines (log, correction, removal), each one the
+ * viewer may see by Time's own rule. Delivery formats them into the proposal's history; with Time switched off nothing
+ * fills it, and the history has no time lines. `proposal.projectId` is the proposal's project.
  */
-export async function setProposalHours(tx: Tx, projectIds: string[], totals: Map<string, number>) {
-  if (!projectIds.length) return;
-  const json = JSON.stringify(Object.fromEntries(totals));
-  await tx.execute(sql`update delivery.proposal p set hours = round(coalesce((${json}::jsonb ->> p.id::text)::numeric, 0), 2)
-    where p.project_id::text in (${sql.join(projectIds.map((id) => sql`${id}`), sql`, `)})
-      and p.hours is distinct from round(coalesce((${json}::jsonb ->> p.id::text)::numeric, 0), 2)`);
-}
+export const PROPOSAL_TIME_SLOT = "delivery.proposal-time";
+export type ProposalTimeLine = {
+  /** Stable for this line, unique among the proposal's history (Time uses "time:<audit seq>"); its pin names it. */
+  id: string;
+  at: string; actor: string; onBehalfOf: string | null; userId: string; day: string | null; hours: number;
+  proposalId: string | null; previousProposalId?: string | null; deleted?: boolean;
+};
+export type ProposalTimeSource = (tx: Tx, viewer: Viewer, proposal: { id: string; projectId: string }) => Promise<ProposalTimeLine[]>;
+
+/** 081 AC-4: Time's approved hours per proposal, a Delivery service Time runs under a job context (see the service). */
+export { setProposalHours } from "./server/proposal-hours";
 
 export async function getProposalRef(tx: Tx, keyOrId: string): Promise<ProposalRef | null> {
   const [r] = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.project_id, pr.key as project_key,

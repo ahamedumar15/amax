@@ -8,6 +8,8 @@ import { mcpTools } from "./mcp";
 import { timeOverview } from "./server/overview";
 import { commitDraft, commitTimeHandler } from "./suggestions";
 import { proposalHoursHandlers } from "./server/proposal-hours";
+import { proposalTimeLines } from "./server/proposal-lines";
+import { PROPOSAL_TIME_SLOT } from "@amax/delivery/contracts";
 import { reminderSchedules, reminderWorkflows } from "./server/reminder-jobs";
 import { RequestsPage } from "./ui/RequestsPage";
 import { MyPage } from "./ui/MyPage";
@@ -25,6 +27,8 @@ export default defineModule({
   order: 20,
   dependsOn: ["delivery"],
   integratesWith: ["hr", "leave", "allocations"],
+  // 081 AC-28, review round 1: a proposal's time lines on Delivery's page, under Time's own rule.
+  provides: { [PROPOSAL_TIME_SLOT]: proposalTimeLines },
   permissions: ["time:read", "time:log", "time:submit", "time:approve", "time:team", "time:admin", "time:totals"],
   grants: {
     Leadership: [...APPROVE, "time:team"],

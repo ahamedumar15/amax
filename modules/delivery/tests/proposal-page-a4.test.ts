@@ -49,7 +49,7 @@ describe.skipIf(!hasDb)("081 amendment 4: the proposal page (Postgres)", () => {
     await markTaskDone(ctxFor(maya), { key, task: "T2" });
     p = await page(key);
     expect(p).toMatch(/<details class="dv-fold dv-done" open=""><summary><span class="chip good">All 2 done<\/span>/);
-    expect(p).toMatch(/<li class="task"><svg[^>]*>.*?<\/svg><span>T2 Totals done/);
+    expect(p).toMatch(/<li class="task pinnable"><svg[^>]*>.*?<\/svg><span>T2 Totals done/);
    }, 30_000);
 
   it("AC47 a withdrawn proposal crosses out the step it was in", async () => {

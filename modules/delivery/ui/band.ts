@@ -49,7 +49,7 @@ export function timeBand(hours: number, estimate: number | null) {
   return { hours, estimate, within, over, left, figure: h(hours), rest: `of ${h(estimate)} estimated`, sentence };
 }
 
-type Stage = { environment: string; position: number; isProd: boolean; status: string | null; at: string | null };
+type Stage = { environment: string; environmentId?: string; deploymentId?: string | null; position: number; isProd: boolean; status: string | null; at: string | null };
 export type ReleaseLike = { id: string; version: string; proposals: number; stages: Stage[] };
 const STATE: Record<string, string> = { deployed: "deployed", testing: "testing", "rolled-back": "rolled back" };
 

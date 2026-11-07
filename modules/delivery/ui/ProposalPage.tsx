@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { can, type Viewer } from "@amax/auth";
 import { facet, PinButton, Since } from "@amax/ui";
 import { projectHref, releaseHref } from "../contracts";
-import { projectPin, proposalPin, taskPin } from "../pins";
+import { eventPin, projectPin, proposalPin, taskPin } from "../pins";
 import { Markdown } from "./Markdown";
 import { proposalDetail, type EventKind, type ProposalDetail } from "../server/proposal-detail";
 import { AskButton } from "./AskButton";
@@ -12,7 +12,7 @@ import { ProposalActions } from "./ProposalActions";
 import { proposalSuggestions, ProposalSuggestions } from "./ProposalSuggestions";
 import { Stepper } from "./Stepper";
 import { ProjectTabs } from "./ProjectSections";
-import { Glyph, STAGE_WORD } from "./BoardBand";
+import { STAGE_WORD, StageTrack } from "./BoardBand";
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;
 // The reason as a sentence of its own: "demo only" reads "Demo only.", never run into the next sentence.
@@ -65,14 +65,8 @@ function ReleaseCard({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactN
         {/* Amendment 4: the stages say how far it got and the stepper when it was released, so this line names the release only. */}
         <p className="dv-rel"><a href={releaseHref({ projectKey: p.project.key, version: p.release })}>{p.release}</a></p>
         {/* The same environment track as the board's Next release: a shape and a word per stage, and its date. */}
-        <ol className="dv-track" aria-label={`Environments: ${p.stages.map((s) => `${s.environment} ${STAGE_WORD[s.status ?? "todo"] ?? s.status}`).join(", ")}`}>
-          {p.stages.map((s) => (
-            <li key={s.environment} className={s.status ?? "todo"}>
-              <Glyph kind={s.status ?? "todo"} /><b>{s.environment}{s.isProd && !/^prod/i.test(s.environment) && <small> Prod</small>}</b>
-              <small>{STAGE_WORD[s.status ?? "todo"] ?? s.status}{s.at ? `, ${day(s.at)}` : ""}</small>
-            </li>
-          ))}
-        </ol>
+        <StageTrack projectKey={p.project.key} version={p.release} stages={p.stages} dated
+          label={`Environments: ${p.stages.map((s) => `${s.environment} ${STAGE_WORD[s.status ?? "todo"] ?? s.status}`).join(", ")}`} />
       </> : <p className="muted">Not in a release yet. Released means a release that contains it reached Prod.</p>}
     </div>
   );
@@ -121,11 +115,13 @@ function History({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode 
       <div className="card-head"><h2>History</h2>{pin("history")}</div>
       {p.history.length === 0 ? <p className="muted">Nothing recorded yet.</p> : (
         <ol className="dv-timeline">
-          {p.history.map((e, i) => (
-            <li key={`${e.at}-${i}`} className={e.kind}>
+          {p.history.map((e) => (
+            <li key={e.id} className={`${e.kind} pinnable`}>
               <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">{KIND_SHAPE[e.kind]}</svg>
               <span>{e.text}<small className="muted"><b>{e.by}</b></small></span>
               <small className="muted"><Since at={e.at} /></small>
+              {/* Review round 1 (R3): each line pins itself, through get_proposal_event. */}
+              <PinButton pin={eventPin({ proposalId: p.id, key: p.key, line: e.id, text: e.text })} />
             </li>
           ))}
         </ol>

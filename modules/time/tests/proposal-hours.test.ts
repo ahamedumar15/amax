@@ -7,7 +7,7 @@ import { getProposalRef } from "@amax/delivery/contracts";
 import { EVENTS } from "../contracts";
 import { ctxFor } from "../server/context";
 import { approveWeek } from "../server/decide";
-import { proposalHoursHandlers } from "../server/proposal-hours";
+import { lockProjectHours, PROPOSAL_HOURS_JOB, proposalHoursHandlers, refreshProposalHours } from "../server/proposal-hours";
 import { reopenWeek } from "../server/reopen";
 import { T, timeDb } from "./db";
 
@@ -35,5 +35,40 @@ describe.skipIf(!hasDb)("081 proposal hours (Postgres)", () => {
     await reopenWeek(ctxFor(sahan), { ...ref, reason: "Split Tuesday" });
     await deliver(EVENTS.weekReopened, { weekId });
     expect(await hours("CON-014")).toBe(0);
+  });
+
+  // Review round 1 (blocker): the write is Delivery's service, run as Time's job and audited by count, for every event
+  // that refreshes the totals; an event that changes nothing still leaves its row, and none carries an hours value.
+  it.each([
+    ["a week approved", EVENTS.weekApproved, {}],
+    ["a week reopened", EVENTS.weekReopened, {}],
+    ["an approved week's entry changed", EVENTS.entryLogged, { lockedChange: true }],
+  ])("review-1 %s: Delivery's service writes the hours, audited as the job", async (_label, event, extra) => {
+    const weekId = (await db.q(sql`select id from time.week where person_name = 'Nimal Silva'`))[0].id as string;
+    const before = Number((await db.q(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.hours'`))[0].n);
+    await deliver(event, { weekId, ...extra });
+    const rows = await db.q(sql`select actor, source, after from core.audit_event where action = 'delivery.proposal.hours' order by seq`);
+    expect(rows.length).toBe(before + 1);
+    const last = rows.at(-1)!;
+    expect(last).toMatchObject({ actor: `job:${PROPOSAL_HOURS_JOB}`, source: "job" });
+    expect(Object.keys(last.after as object).sort()).toEqual(["changed", "projects"]);
+  });
+
+  // Review round 1 (B7): a refresh that reads while another holds the project waits for it, so an older total can't land last.
+  it("review-1 two refreshes of one project run one after the other", async () => {
+    const project = (await db.q(sql`select project_id from delivery.proposal where key = 'CON-014'`))[0].project_id as string;
+    let release!: () => void;
+    let locked!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    const isLocked = new Promise<void>((r) => { locked = r; });
+    const first = withTenant(db.app, T, async (tx) => { await lockProjectHours(tx, project); locked(); await held; });
+    await isLocked;
+    let secondDone = false;
+    const second = withTenant(db.app, T, (tx) => refreshProposalHours(tx, T, [project])).then(() => { secondDone = true; });
+    await new Promise((r) => setTimeout(r, 300));
+    expect(secondDone).toBe(false);
+    release();
+    await Promise.all([first, second]);
+    expect(secondDone).toBe(true);
   });
 });

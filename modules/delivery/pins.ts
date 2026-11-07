@@ -24,6 +24,18 @@ export const environmentPin = (e: Environment): PinRef => ({ label: `${e.project
 export const deploymentPin = (d: Deployment): PinRef =>
   ({ label: `${d.projectKey} ${d.version} on ${d.environment}, ${day(d.at)}`, tool: "get_deployment", args: { deploymentId: d.id } });
 
+/**
+ * Review 081 round 1 (R3): one environment step of a release's track. A step the release reached pins its deployment
+ * (the record behind "Deployed, Oct 20"); a step it hasn't reached pins the environment.
+ */
+export const stagePin = (projectKey: string, version: string, s: { environment: string; environmentId?: string; deploymentId?: string | null; at: string | null }): PinRef | null =>
+  s.deploymentId && s.at ? deploymentPin({ id: s.deploymentId, projectKey, version, environment: s.environment, at: s.at })
+    : s.environmentId ? environmentPin({ id: s.environmentId, projectKey, name: s.environment }) : null;
+
+/** Review 081 round 1 (R3): one line of a proposal's history, by the proposal and the line's id ("audit:12", "task:…"). */
+export const eventPin = (e: { proposalId: string; key: string; line: string; text: string }): PinRef =>
+  ({ label: `${e.key} ${e.text}`, tool: "get_proposal_event", args: { proposalId: e.proposalId, line: e.line } });
+
 type Push = { id: string; projectKey: string; sha: string; outcome: string; at: string };
 export const repoSyncPin = (p: { id: string; key: string }): PinRef => ({ label: `${p.key} repo sync`, tool: "get_repo_sync", args: { projectId: p.id } });
 /** 081 amendment 11 (AC-99): one task of a proposal, by its id. */
@@ -44,5 +56,6 @@ export const pinOf = {
   environment: pinned(environmentPin),
   deployment: pinned(deploymentPin),
   push: pinned(pushPin),
+  event: (r: { proposalId: string; key: string; line: string; text: string } | null) => (r ? { id: r.proposalId, label: eventPin(r).label, createdAt: null } : null),
   repoSync: (r: { project: { id: string; key: string } } | null) => pinned(repoSyncPin)(r?.project),
 };

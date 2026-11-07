@@ -1,6 +1,6 @@
 import { facet, PinButton, type PinRef } from "@amax/ui";
 import { releaseHref } from "../contracts";
-import { releasePin } from "../pins";
+import { day, releasePin, stagePin } from "../pins";
 import { releaseBand, tasksBand, type ReleaseLike } from "./band";
 
 // 081 amendment 4 (AC-42, revised 2026-11-04): the board leads with what its lanes don't already say: the release the
@@ -13,6 +13,30 @@ type Props = {
 };
 
 export const STAGE_WORD: Record<string, string> = { deployed: "Deployed", testing: "Testing", "rolled-back": "Rolled back", todo: "Not yet" };
+
+type TrackStage = { environment: string; environmentId?: string; deploymentId?: string | null; isProd: boolean; status: string | null; at: string | null };
+
+/**
+ * A release's environment track: a shape, a name and a word per stage, and its date when `dated`. The board's band and the
+ * proposal page draw the same one. Review 081 round 1 (R3): each step pins its own record (stagePin).
+ */
+export function StageTrack({ projectKey, version, stages, label, dated }: { projectKey: string; version: string; stages: TrackStage[]; label: string; dated?: boolean }) {
+  return (
+    <ol className="dv-track" aria-label={label}>
+      {stages.map((s) => {
+        const state = s.status ?? "todo";
+        const pin = stagePin(projectKey, version, s);
+        return (
+          <li key={s.environment} className={`${state} pinnable`}>
+            <Glyph kind={state} /><b>{s.environment}{s.isProd && !/^prod/i.test(s.environment) && <small> Prod</small>}</b>
+            <small>{STAGE_WORD[state] ?? state}{dated && s.at ? `, ${day(s.at)}` : ""}</small>
+            {pin && <PinButton pin={pin} />}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export function BoardBand({ project, releases, done, total, closedBy }: Props) {
   const r = releaseBand(releases, project.nextRelease, project.health);
@@ -27,13 +51,7 @@ export function BoardBand({ project, releases, done, total, closedBy }: Props) {
           <p className="fig"><a href={releaseHref({ projectKey: project.key, version: r.release.version })}>{r.release.version}</a>{" "}
             <span>{r.release.proposals} {r.release.proposals === 1 ? "proposal" : "proposals"}</span>{" "}
             <span className={`chip ${r.health === "On track" ? "good" : "warn"}`}>{r.health}</span></p>
-          <ol className="dv-track" aria-label={r.sentence}>
-            {r.stages.map((s) => (
-              <li key={s.environment} className={s.state}>
-                <Glyph kind={s.state} /><b>{s.environment}{s.isProd && !/^prod/i.test(s.environment) && <small> Prod</small>}</b><small>{STAGE_WORD[s.state] ?? s.state}</small>
-              </li>
-            ))}
-          </ol>
+          <StageTrack projectKey={project.key} version={r.release.version} stages={r.stages} label={r.sentence} />
         </section>
       )}
       {t.total > 0 && (

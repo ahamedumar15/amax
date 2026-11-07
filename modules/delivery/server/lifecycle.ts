@@ -6,17 +6,18 @@ import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type ProposalWithdrawn } from "../contracts";
 import { namedOwner, notOnProject, ownerChanged } from "./owner";
 import { countTasks } from "./tasks";
+import { invalid, notFound } from "./refusal";
 
 // 081 AC-9 to AC-11: the lifecycle of a proposal made by hand. A spec proposal belongs to its repo: the sync owns its
 // title, phase, tasks and withdrawal, so these refuse it (its owner is the one thing amax may set). Released is history.
 
 const by = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
-const refuse = (message: string): never => { throw Object.assign(new Error(message), { retryable: false, code: "invalid_input" }); };
+const refuse = (message: string): never => { throw invalid(message); };
 
 /** The proposal row, locked, after the viewer's scope check on its project. */
 async function lockedProposal(tx: Tx, ctx: ServiceContext, key: string, action: string) {
   const [p] = await tx.execute(sql`select * from delivery.proposal where key = ${key} for update`);
-  if (!p) throw Object.assign(new Error(`no proposal ${key}`), { retryable: false, code: "not_found" });
+  if (!p) throw notFound(`no proposal ${key}`);
   const v = viewerOf(ctx);
   if (v) assertCan(v, action, { projectId: p.project_id as string });
   return p;

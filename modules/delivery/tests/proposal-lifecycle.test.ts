@@ -1,14 +1,18 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
+import { withTenant } from "@amax/db";
+import { inventoryFor, setPrivacySources } from "@amax/core/privacy";
 import type { Viewer } from "@amax/auth";
+import delivery from "../module";
 import { mcpTools } from "../mcp";
 import { ctxFor } from "../server/context";
 import { addProposalTask, updateProposal, withdrawProposal } from "../server/lifecycle";
 import { getProposal, listProposals, phaseCounts } from "../server/queries";
 import { createProposal, createRelease, moveProposal, syncProposal } from "../server/services";
-import { markTaskDone } from "../server/tasks";
-import { proposalDb } from "./proposal-db";
+import { markTaskDone, reopenTask } from "../server/tasks";
+import { userFacing } from "@amax/mcp";
+import { proposalDb, T } from "./proposal-db";
 
 const spec = { projectKey: "FLT", project: { name: "Fleet Tracker", client: "Northwind" }, key: "FLT-301", title: "Spec change", phase: "building" as const,
   tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "301-spec", releasedAt: null, meta: {}, committedAt: "2026-10-10T09:00:00Z" };
@@ -53,6 +57,40 @@ describe.skipIf(!hasDb)("081 the lifecycle of a hand-made proposal (Postgres)", 
     await expect(moveProposal(ctxFor(maya), { key, to: "planned" })).rejects.toThrow(/withdrawn/);
     await expect(createRelease(ctxFor(maya), { projectKey: "CON", version: "v9.0.1", proposalKeys: [key] })).rejects.toThrow(/withdrawn/);
     await expect(withdrawProposal(ctxFor(maya), { key: "FLT-301", reason: "not wanted" })).rejects.toThrow(/comes from specclaw/);
+  });
+
+  // Review round 1 (B1, checked): `withdrawn_by` holds the actor string, so a privacy request has to find a withdrawal by an
+  // agent or a credential acting for the person too. Retention matches the part after " for " as well (privacy/match.ts).
+  it.each([
+    ["the person themself", (id: string) => `user:${id}`],
+    ["an agent acting for them", (id: string) => `agent:claude for user:${id}`],
+    ["a service credential acting for them", (id: string) => `sp:00000000-0000-4000-8000-000000000009 for user:${id}`],
+  ])("review-1 a withdrawal recorded as %s is found by a privacy request for that person", async (_label, actor) => {
+    setPrivacySources([delivery]);
+    const nimal = await db.as("nimal");
+    const owners = async () => (await withTenant(db.app, T, (tx) => inventoryFor(tx, "nimal@lumenlabs.test"))).items.find((i) => i.label === "Proposal owners")?.n ?? 0;
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Withdrawn for someone" });
+    await withdrawProposal(ctxFor(maya), { key, reason: "Not this quarter" });
+    const before = await owners();
+    await db.t.owner`update delivery.proposal set withdrawn_by = ${actor(nimal.userId)} where key = ${key}`;
+    expect(await owners()).toBe(before + 1);
+  });
+
+  // Review round 1 (B1): a refusal reaches the person with its reason (userFacing), not as an internal-error reference.
+  it.each([
+    ["a withdrawn proposal moved", (key: string) => moveProposal(ctxFor(maya), { key, to: "planned" }), /was withdrawn/],
+    ["a withdrawn proposal put in a release", (key: string) => createRelease(ctxFor(maya), { projectKey: "CON", version: `v8.${Date.now()}`, proposalKeys: [key] }), /was withdrawn/],
+    ["a task reopened on a proposal that doesn't exist", () => reopenTask(ctxFor(maya), { key: "CON-999", task: "T1" }), /no proposal CON-999/],
+    ["a task closed that the proposal doesn't have", (key: string) => markTaskDone(ctxFor(maya), { key, task: "T9" }), /has no task T9/],
+    ["a proposal in a project that doesn't exist", () => createProposal(ctxFor(maya), { projectKey: "NOPE", title: "x" }), /no project NOPE/],
+  ])("review-1 %s is refused with its reason", async (_label, run, message) => {
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Refused" });
+    await withdrawProposal(ctxFor(maya), { key, reason: "Not this quarter" });
+    const e = await run(key).then(() => null, (x: unknown) => x);
+    expect(e).toBeInstanceOf(Error);
+    expect((e as Error).message).toMatch(message);
+    expect(userFacing(e)).toBe(true);
+    expect(e).toMatchObject({ retryable: false });
   });
 
   it("AC11 add_proposal_task adds the next task and recounts; mark_task_done closes it; spec proposals take tasks from the repo", async () => {

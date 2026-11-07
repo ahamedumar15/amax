@@ -25,7 +25,7 @@ describe("pluralise on the same count", () => {
   it.each([[0, "0 clients"], [1, "1 client"], [2, "2 clients"]])("%i", (n, want) => expect(count(n as number, "client")).toBe(want));
 });
 
-const st = (environment: string, position: number, isProd: boolean, status: string | null, at: string | null = null) => ({ environment, position, isProd, status, at, note: null, run: null });
+const st = (environment: string, position: number, isProd: boolean, status: string | null, at: string | null = null) => ({ environment, environmentId: `env-${environment}`, deploymentId: status ? `dep-${environment}` : null, position, isProd, status, at, note: null, run: null });
 const rel = (over: Partial<ReleaseRow>, ...stages: ReturnType<typeof st>[]): ReleaseRow =>
   ({ id: over.version ?? "r", projectId: "p1", version: "v1", projectKey: "CON", projectName: "Contoso", projectColor: "violet", proposals: 1, ...over, stages });
 

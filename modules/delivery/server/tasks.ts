@@ -5,6 +5,7 @@ import { assertCan, viewerOf } from "@amax/auth";
 import { defineService, type ServiceContext } from "@amax/core/server";
 import { EVENTS, type TaskDone, type TaskReopened } from "../contracts";
 import { recordActivity } from "./activity";
+import { invalid, notFound } from "./refusal";
 
 export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean() });
 export type TaskLine = z.infer<typeof TaskInput>;
@@ -36,11 +37,11 @@ export const markTaskDone = defineService({
   input: z.object({ key: z.string(), task: z.string().regex(/^T\d+$/), commit: z.string().max(64).optional() }),
   async run(tx, input, ctx) {
     const [p] = await tx.execute(sql`select id, key, title, project_id, owner_user_id from delivery.proposal where key = ${input.key} for update`);
-    if (!p) throw new Error(`no proposal ${input.key}`);
+    if (!p) throw notFound(`no proposal ${input.key}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:task:done", { projectId: p.project_id as string });
     const [t] = await tx.execute(sql`select * from delivery.task where proposal_id = ${p.id} and ref = ${input.task}`);
-    if (!t) throw new Error(`${input.key} has no task ${input.task}`);
+    if (!t) throw invalid(`${input.key} has no task ${input.task}`);
     const result = { key: input.key, task: input.task, done: true };
     if (t.done) return { result, resourceId: t.id as string };
     await tx.execute(sql`update delivery.task set done = true, done_at = now(), done_by = ${byOf(ctx)} where id = ${t.id}`);
@@ -70,15 +71,15 @@ export const reopenTask = defineService({
   input: z.object({ key: z.string(), task: z.string().regex(/^T\d+$/) }),
   async run(tx, input, ctx) {
     const [p] = await tx.execute(sql`select id, key, title, project_id, source, phase, withdrawn_at from delivery.proposal where key = ${input.key} for update`);
-    if (!p) throw new Error(`no proposal ${input.key}`);
+    if (!p) throw notFound(`no proposal ${input.key}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:task:done", { projectId: p.project_id as string });
-    const refuse = (why: string) => Object.assign(new Error(why), { retryable: false, code: "invalid_input" });
+    const refuse = invalid;
     if (p.source !== null) throw refuse(`${input.key} comes from ${p.source as string}; its tasks follow the repo, so reopen it there`);
     if (p.phase === "released") throw refuse(`${input.key} is released; its tasks stay as they were`);
     if (p.withdrawn_at) throw refuse(`${input.key} was withdrawn`);
     const [t] = await tx.execute(sql`select * from delivery.task where proposal_id = ${p.id} and ref = ${input.task}`);
-    if (!t) throw new Error(`${input.key} has no task ${input.task}`);
+    if (!t) throw invalid(`${input.key} has no task ${input.task}`);
     const result = { key: input.key, task: input.task, done: false };
     if (!t.done) return { result, resourceId: t.id as string };
     await tx.execute(sql`update delivery.task set done = false, done_at = null, done_by = null where id = ${t.id}`);

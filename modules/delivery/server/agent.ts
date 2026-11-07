@@ -3,8 +3,9 @@ import type { EventHandlerDef } from "@amax/core";
 import type { Tx } from "@amax/db";
 import { contextFor } from "@amax/core/server";
 import { createSuggestion, withdrawSuggestions } from "@amax/agents/server";
-import { EVENTS, proposalHref, type ProposalPhaseChanged, type ProposalWithdrawn, type TaskReopened, type TaskDone } from "../contracts";
+import { EVENTS, proposalHref, type Phase, type ProposalPhaseChanged, type ProposalWithdrawn, type TaskReopened, type TaskDone } from "../contracts";
 import { readyToVerify, suggestedOwner } from "./proposal-kinds";
+import { isReadyToVerify } from "./readiness";
 
 // 081 amendment 2 (AC-32 to AC-34): the Delivery agent. It reads Delivery's own events, suggests (never writes), and
 // takes back what no longer fits. The platform keeps one open suggestion per kind and proposal, and expires them in 7 days.
@@ -34,7 +35,8 @@ async function suggest(tenantId: string, p: Record<string, unknown>, s: { kind: 
 }
 
 /** Whether "Ready to verify" still fits: a hand-made proposal, still work, in Building, with every task done. */
-const readyNow = (p: Record<string, unknown>) => open(p) && p.source === null && p.phase === "building" && Number(p.tasks_total) > 0 && Number(p.tasks_done) === Number(p.tasks_total);
+const readyNow = (p: Record<string, unknown>) => open(p) && isReadyToVerify({ phase: p.phase as Phase, source: (p.source as string | null) ?? null,
+  tasksDone: Number(p.tasks_done), tasksTotal: Number(p.tasks_total), withdrawn: false });
 
 /** Takes back this proposal's open suggestions that no longer fit what it is now. */
 async function tidy(tx: Tx, tenantId: string, proposalId: string) {

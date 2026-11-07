@@ -1,6 +1,7 @@
 import type { Viewer } from "@amax/auth";
 import { listSuggestions } from "@amax/agents/server";
 import type { ProposalRow } from "./queries";
+import { isReadyToVerify, overEstimate } from "./readiness";
 
 /**
  * 081 amendment 11 (AC-95): why an open proposal needs someone, in the order the list shows them. One rule for the
@@ -26,8 +27,8 @@ export function needsOf(p: ProposalRow, suggested: Set<string>): Need[] {
   if (p.withdrawn || p.phase === "released") return [];
   const out: Need[] = [];
   if (suggested.has(p.id)) out.push("suggested");
-  if (p.phase === "building" && p.tasksTotal > 0 && p.tasksDone === p.tasksTotal) out.push("ready");
-  if (p.estimateHours !== null && p.hours > p.estimateHours) out.push("over");
+  if (isReadyToVerify(p)) out.push("ready");
+  if (overEstimate(p)) out.push("over");
   if (!p.ownerUserId && !p.ownerName) out.push("unassigned");
   return out;
 }

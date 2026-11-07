@@ -4,6 +4,7 @@ import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
+import { invalid } from "./refusal";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -104,7 +105,7 @@ export const likelyProposals = (v: Viewer, projectKey: string) =>
 /** One project by key, or by id (059: pins use the id; a key given with it only narrows). */
 export const getProject = (v: Viewer, key: string | undefined, projectId?: string) =>
   read(v, async (tx) => {
-    if (!key && !projectId) throw new Error("say which project: a projectId or a key");
+    if (!key && !projectId) throw invalid("say which project: a projectId or a key");
     const where = sql.join([projectId ? sql`id = ${projectId}` : undefined, key ? sql`key = ${key}` : undefined].filter((x) => x !== undefined), sql` and `);
     const [r] = await tx.execute(sql`select * from delivery.project where ${where}`);
     if (!r) return null;
@@ -192,7 +193,7 @@ export const proposalMetrics = async (v: Viewer, f: Pick<ProposalFilter, "projec
 
 export type ReleaseRow = {
   id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt?: string | null;
-  stages: { environment: string; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
+  stages: { environment: string; environmentId: string; deploymentId: string | null; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
 
 export const listReleases = (v: Viewer, opts: { projectKey?: string } = {}) =>
@@ -207,7 +208,7 @@ export const listReleases = (v: Viewer, opts: { projectKey?: string } = {}) =>
       projectColor: r.project_color as string, proposals: Number(r.proposals), createdAt: iso(r.created_at),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
-        return { environment: e.name as string, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,
+        return { environment: e.name as string, environmentId: e.id as string, deploymentId: (d?.id as string | undefined) ?? null, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,
           at: d ? new Date(d.at as string).toISOString() : null, note: (d?.note as string | null) ?? null, run: (d?.pipeline_run as string | null) ?? null };
       }),
     }));
@@ -262,7 +263,7 @@ export type DeploymentRow = { id: string; environment: string; status: string; a
  */
 export type ReleaseRef = { releaseId?: string; projectKey?: string; version?: string };
 export function checkReleaseRef(ref: ReleaseRef) {
-  if (!ref.releaseId && !(ref.projectKey && ref.version)) throw new Error("say which release: a releaseId, or a projectKey and version");
+  if (!ref.releaseId && !(ref.projectKey && ref.version)) throw invalid("say which release: a releaseId, or a projectKey and version");
 }
 export function releaseWhere(ref: ReleaseRef) {
   checkReleaseRef(ref);
@@ -297,7 +298,7 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
  * read directly; a withdrawn proposal is still found (marked `withdrawn`), since its page and pins stay.
  */
 export const getProposal = (v: Viewer, ref: { proposalId?: string; key?: string }) => {
-  if (!ref.proposalId && !ref.key) throw new Error("say which proposal: a proposalId or a key");
+  if (!ref.proposalId && !ref.key) throw invalid("say which proposal: a proposalId or a key");
   return read(v, (tx) => proposalWhere(tx, ref));
 };
 
@@ -312,14 +313,14 @@ export async function proposalWhere(tx: Tx, ref: { proposalId?: string; key?: st
  * pins use it; a project key, when given with an id, only narrows.
  */
 export const getEnvironment = async (v: Viewer, ref: { environmentId?: string; projectKey?: string; name?: string }) => {
-  if (!ref.environmentId && !(ref.projectKey && ref.name)) throw new Error("say which environment: an environmentId, or a projectKey and name");
+  if (!ref.environmentId && !(ref.projectKey && ref.name)) throw invalid("say which environment: an environmentId, or a projectKey and name");
   const [hit] = await read(v, (tx) => tx.execute(ref.environmentId
     ? sql`select p.key from delivery.environment e join delivery.project p on p.id = e.project_id where e.id = ${ref.environmentId}`
     : sql`select p.key from delivery.project p where p.key = ${ref.projectKey!}`));
   if (!hit || (ref.projectKey && ref.projectKey !== hit.key)) return null;
   const e = (await listEnvironments(v, hit.key as string)).find((x) => (ref.environmentId ? x.id === ref.environmentId : x.name === ref.name));
   // An id and a name that point at different environments is a confused call: refuse it, don't pick one (057).
-  if (e && ref.environmentId && ref.name !== undefined && ref.name !== e.name) throw new Error(`say which environment: ${ref.environmentId} is ${e.name}, not ${ref.name}`);
+  if (e && ref.environmentId && ref.name !== undefined && ref.name !== e.name) throw invalid(`say which environment: ${ref.environmentId} is ${e.name}, not ${ref.name}`);
   return e ? { projectKey: hit.key as string, ...e } : null;
 };
 

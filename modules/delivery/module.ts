@@ -31,7 +31,7 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
-  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push"],
+  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push", "delivery:proposal:hours"],
   grants: {
     Leadership: READ,
     Finance: READ,

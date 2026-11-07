@@ -5,6 +5,7 @@ import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { defineService, ForbiddenError, getRuntime } from "@amax/core/server";
 import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { byLine, whoJoins } from "./activity";
+import { invalid, notFound } from "./refusal";
 
 // 062: the one repo a project's specclaw pushes are accepted from (push.ts), and the project's
 // Repo sync card: the linked repo and its recent pushes.
@@ -18,14 +19,14 @@ export const linkProjectRepo = defineService({
   input: z.object({ projectKey: z.string(), repoUrl: RepoUrl.nullable(), defaultBranch: z.string().min(1).max(200).optional() }),
   async run(tx, input, ctx) {
     const [p] = await tx.execute(sql`select id, repo_url, repo_default_ref from delivery.project where key = ${input.projectKey}`);
-    if (!p) throw new Error(`no project ${input.projectKey}`);
+    if (!p) throw notFound(`no project ${input.projectKey}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, "delivery:project:link", { projectId: p.id as string });
     const repoUrl = input.repoUrl ? normaliseRepo(input.repoUrl) : null;
     // The default branch is stored with the link, never taken from a push: it decides which pushes cover every change.
     // A relink to the same repo keeps the stored branch unless one is given; a first link or another repo must name it.
     const defaultRef = repoUrl ? input.defaultBranch ?? (repoUrl === p.repo_url ? (p.repo_default_ref as string | null) : null) : null;
-    if (repoUrl && !defaultRef) throw new Error(`name ${input.projectKey}'s default branch (for example main) when linking its repo`);
+    if (repoUrl && !defaultRef) throw invalid(`name ${input.projectKey}'s default branch (for example main) when linking its repo`);
     await tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${p.id}`);
     return { result: { projectKey: input.projectKey, repoUrl, defaultBranch: defaultRef }, resourceId: p.id as string, before: { repoUrl: p.repo_url, defaultBranch: p.repo_default_ref }, after: { repoUrl, defaultBranch: defaultRef } };
   },

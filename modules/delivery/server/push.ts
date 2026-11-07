@@ -10,6 +10,7 @@ import { forUserOf } from "./activity";
 import { ctxFor } from "./context";
 import { KeyTakenError, markSyncedRows, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
+import { notFound } from "./refusal";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
@@ -164,7 +165,7 @@ const preview = (ctx: ServiceContext, p: Plan) =>
 export async function pushSpecclaw(viewer: Viewer, raw: z.input<typeof PushInput>, source: Source = "mcp"): Promise<PushResult> {
   const input = PushInput.parse(raw);
   const [p] = await getRuntime().db.transaction(async (tx) => { await setTenant(tx, viewer.tenantId); return tx.execute(sql`select id from delivery.project where key = ${input.projectKey}`); });
-  if (!p) throw new Error(`no project ${input.projectKey}: a PM creates it and links its repo first`);
+  if (!p) throw notFound(`no project ${input.projectKey}: a PM creates it and links its repo first`);
   if (!can(viewer, "delivery:proposal:push", { projectId: p.id as string })) throw new ForbiddenError("delivery:proposal:push", `project ${input.projectKey}`);
   const ctx = ctxFor(viewer, source);
   const { dryRun, ...rest } = input;

@@ -3,6 +3,7 @@ import type { Tx } from "@amax/db";
 import { can, viewerForUser } from "@amax/auth";
 import type { Emitted, ServiceContext } from "@amax/core/server";
 import { EVENTS, type ProposalOwnerChanged } from "../contracts";
+import { invalid } from "./refusal";
 
 export type Owner = { id: string; name: string };
 
@@ -19,7 +20,7 @@ async function activePerson(tx: Tx, userId: string): Promise<Owner | null> {
 /** The owner a write names, an active person in the tenant; refused otherwise. */
 export async function namedOwner(tx: Tx, userId: string): Promise<Owner> {
   const owner = await activePerson(tx, userId);
-  if (!owner) throw Object.assign(new Error("the owner must be an active person in this workspace"), { retryable: false, code: "invalid_input" });
+  if (!owner) throw invalid("the owner must be an active person in this workspace");
   return owner;
 }
 

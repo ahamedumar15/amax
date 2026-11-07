@@ -12,7 +12,9 @@ import { mcpTools } from "../mcp";
 import { createRegistry } from "@amax/mcp";
 import { chatIntents } from "../chat";
 import { proposeLog } from "../server/entry-card";
-import { EVENTS as DELIVERY, type CommitTime } from "@amax/delivery/contracts";
+import { EVENTS as DELIVERY, PROPOSAL_TIME_SLOT, type CommitTime } from "@amax/delivery/contracts";
+import timeModule from "../module";
+import { proposalTimeLines } from "../server/proposal-lines";
 import { ctxFor } from "../server/context";
 import { correctEntry, deleteEntry } from "../server/correct";
 import { logTime } from "../server/log";
@@ -113,5 +115,33 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     expect(rows.map((r) => [r.action, (r.after as Record<string, unknown>).proposalId, (r.after as Record<string, unknown>).userId, (r.after as Record<string, unknown>).day, Number((r.after as Record<string, unknown>).hours)])).toEqual([
       ["time.entry.log", p14.id, who, "2026-10-29", 2], ["time.entry.correct", p14.id, who, "2026-10-29", 1.5], ["time.entry.delete", p14.id, who, "2026-10-29", 1.5]]);
     expect((rows[1].after as Record<string, unknown>).previousProposalId).toBe(p14.id);
+  });
+
+  // Review round 1 (B4): Delivery's page gets these lines from Time (PROPOSAL_TIME_SLOT), by Time's rule for an entry:
+  // its owner, or an approver of the project in the owner's legal entity (mayFix, 071 AC-4). Delivery has no copy of it.
+  it.each([
+    ["the entry's owner", "nimal", null, true],
+    ["the project's PM", "maya", null, true],
+    ["an unscoped Admin", "sahan", null, true],
+    ["an Admin scoped to another legal entity", "sahan", "other", false],
+    ["an engineer who approves nothing on the project", "kasun", null, false],
+  ])("review-1 %s sees Nimal's time lines on the proposal: %s", async (_label, who, scope, sees) => {
+    expect(timeModule.provides?.[PROPOSAL_TIME_SLOT]).toBe(proposalTimeLines);
+    const nimal = await db.as("nimal");
+    const [p] = await db.q(sql`select id, project_id from delivery.proposal where key = 'CON-014'`);
+    await logTime(ctxFor(nimal), { projectKey: "CON", proposalKey: "CON-014", day: "2026-10-30", hours: 1 });
+    const scopeAdmin = (ids: string[] | null) => db.t.owner`update auth.role_assignment set legal_entity_ids = ${ids} where role = 'Admin'
+      and user_id = (select id from auth.user where email = 'sahan@lumenlabs.test')`;
+    if (scope) {
+      const [{ id: other }] = await db.q(sql`select id from core.legal_entity where id <> (select legal_entity_id from auth.user where email = 'nimal@lumenlabs.test') limit 1`);
+      await scopeAdmin([other as string]);
+    }
+    try {
+      const v = await db.as(who);
+      const lines = await withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, { id: p.id as string, projectId: p.project_id as string }));
+      expect(lines.some((l) => l.userId === nimal.userId)).toBe(sees);
+    } finally {
+      if (scope) await scopeAdmin(null);
+    }
   });
 });

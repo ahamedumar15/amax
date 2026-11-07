@@ -280,6 +280,8 @@
 .dv-track .testing{--c:var(--chip-agent)}
 .dv-track .rolled-back{--c:var(--chip-bad)}
 .dv-track .todo{--c:var(--line-2)}
+/* Review 081 round 1 (R3): each step and timeline line pins its own record; the pin sits in its top-right corner, shown on hover or focus. */
+.dv-track li.pinnable .pin,.dv-timeline li.pinnable .pin{top:4px;right:0;width:26px;height:26px}
 .dv-track .todo svg{color:var(--ink-3)}
 @media (prefers-reduced-motion:no-preference){.dv-chev{transition:transform .15s}.dv-band .legend a{transition:box-shadow .15s}}
 @media (max-width:600px){.dv-band .fig{font-size:26px}.dv-sync>.dv-fold>summary{padding:16px 56px 16px 20px}}

@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTenant } from "@amax/db";
-import { appendAudit } from "@amax/core/server";
+import { setProvided } from "@amax/core/server";
+import { PROPOSAL_TIME_SLOT, type ProposalTimeSource } from "../contracts";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
 import { mcpTools, search } from "../mcp";
@@ -12,7 +11,7 @@ import { getProject } from "../server/queries";
 import { markTaskDone } from "../server/tasks";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
-import { proposalDb, T } from "./proposal-db";
+import { proposalDb } from "./proposal-db";
 
 const html = async (node: Promise<unknown> | unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
 const getProposal = mcpTools.find((t) => t.name === "get_proposal")!.run as unknown as (v: Viewer, a: object) => Promise<Record<string, unknown> | null>;
@@ -30,7 +29,7 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     expect(page).toContain('href="/delivery/p/FLT"');
     expect(page).toMatch(/<dt>Owner<\/dt><dd>.*?<b>Kasun Dias<\/b><\/dd>/);
     // Amendment 4 (AC-50): history is a timeline: what happened, then who, then a live age.
-    expect(page).toMatch(/<li class="moved"><svg[^>]*>.*?<\/svg><span>Moved Proposed → Planned<small class="muted"><b>Maya/);
+    expect(page).toMatch(/<li class="moved pinnable"><svg[^>]*>.*?<\/svg><span>Moved Proposed → Planned<small class="muted"><b>Maya/);
     // AC-47: the stepper says the phase, marking the current step.
     expect(page).toMatch(/<li class="current" aria-current="step"><svg[^>]*>.*?<\/svg><b>Planned<\/b>/);
     const con = await html(ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }));
@@ -38,6 +37,34 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     expect(con).toMatch(/<b>T1<\/b>/);
     expect(await html(ProposalsPage({ viewer: maya, params: { phase: "CON-404" } }))).toContain("Proposal not found");
     expect(await html(ProposalsPage({ viewer: maya, params: { phase: "planned" } }))).toContain("FLT-015");
+  });
+
+  // Review round 1 (R3, AGENTS rule 2): every stage step and history line pins its own record, and each pin resolves
+  // through its read tool to exactly that record.
+  type Pin = { label: string; tool: string; args: Record<string, string> };
+  const pinsIn = (page: string) => [...page.matchAll(/data-pin="([^"]+)"/g)].map((m) => JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&")) as Pin);
+  const resolve = async (p: Pin) => {
+    const t = mcpTools.find((x) => x.name === p.tool)! as unknown as { run: (v: Viewer, a: object) => Promise<unknown>; pin: { id: string; of: (r: unknown) => { id: string; label: string } | null } };
+    return t.pin.of(await t.run(maya, p.args));
+  };
+  it.each([
+    ["the proposal page's release steps", () => ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }), ["get_deployment", "get_environment"]],
+    ["the proposal page's history lines", () => ProposalsPage({ viewer: maya, params: { phase: "CON-014" } }), ["get_proposal_event"]],
+    ["the board band's release steps", () => ProjectPage({ viewer: maya, params: { key: "CON" } }), ["get_deployment", "get_environment"]],
+  ])("review-1 %s each pin a record their read tool resolves", async (_label, render, tools) => {
+    const page = await html(render());
+    // One pin per step or line, inside the track or the timeline itself.
+    const rows = tools.includes("get_proposal_event") ? page.split('class="dv-timeline"')[1].split("</ol>")[0] : page.split('class="dv-track"')[1].split("</ol>")[0];
+    const pins = pinsIn(rows).filter((p) => tools.includes(p.tool));
+    expect(pins.length).toBeGreaterThan(0);
+    expect(pins.length).toBe((rows.match(/<li /g) ?? []).length);
+    for (const p of pins) {
+      const r = await resolve(p);
+      expect(r, `${p.tool} ${JSON.stringify(p.args)}`).not.toBeNull();
+      const idArg = { get_deployment: "deploymentId", get_environment: "environmentId", get_proposal_event: "proposalId" }[p.tool]!;
+      expect(r!.id).toBe(p.args[idArg]);
+      expect(r!.label).toBe(p.label);
+    }
   });
 
   it("AC7 the list, the board and search all lead to the proposal's page", async () => {
@@ -56,28 +83,38 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
     expect(await getProposal(maya, { key: "CON-011" })).toMatchObject({ withdrawn: true, withdrawReason: "dropped" });
   });
 
-  it("AC28 time logged against the proposal shows in its history for the entry's owner and approvers only, and survives a rekey", async () => {
+  it("AC28 time lines come from whoever fills the slot (Time, under its own rule), by the proposal's id, and survive a rekey", async () => {
     const nimal = await db.as("nimal");
-    const { id } = (await getProposal(maya, { key: "CON-017" }))! as { id: string };
-    const entry = randomUUID();
-    // Time's rows as Time writes them (modules/time/tests/proposal-time.test.ts AC28): the proposal, owner, day and hours in `after`.
-    const audit = (action: string, after: Record<string, unknown>) =>
-      withTenant(db.app, T, (tx) => appendAudit(tx, ctxFor(nimal), { action, resource: "time.entry", resourceId: entry, after }));
-    const base = { userId: nimal.userId, day: "2026-10-19", proposalId: id };
-    await audit("time.entry.log", { ...base, hours: 2 });
-    await audit("time.entry.correct", { ...base, hours: 2.5, previousProposalId: id });
-    await audit("time.entry.delete", { ...base, hours: 2.5, deleted: true });
+    const { id, project: { id: projectId } } = (await getProposal(maya, { key: "CON-017" }))! as { id: string; project: { id: string } };
+    // Review round 1: Delivery no longer reads Time's audit rows or copies its rule. A stand-in for Time fills the slot:
+    // lines for this proposal's id, shown to Nimal and Maya only (Time's real rule is tested in Time, proposal-time.test.ts).
+    const base = { actor: `user:${nimal.userId}`, onBehalfOf: null, userId: nimal.userId, day: "2026-10-19", proposalId: id };
+    const asked: { id: string; projectId: string }[] = [];
+    const stub: ProposalTimeSource = async (_tx, v, p) => {
+      asked.push(p);
+      if (p.id !== id || ![nimal.userId, maya.userId].includes(v.userId)) return [];
+      return [
+        { ...base, id: "time:1", at: "2026-10-19T09:00:00.000Z", hours: 2 },
+        { ...base, id: "time:2", at: "2026-10-19T10:00:00.000Z", hours: 2.5, previousProposalId: id },
+        { ...base, id: "time:3", at: "2026-10-19T11:00:00.000Z", hours: 2.5, deleted: true },
+      ];
+    };
     const lines = async (v: Viewer, key = "CON-017") => ((await getProposal(v, { key }))!.history as { text: string }[]).map((h) => h.text).filter((t) => /logged|Corrected|Removed/.test(t));
     const want = ["Removed Nimal Silva's 2.5 h for Oct 19", "Corrected Nimal Silva's entry for Oct 19 to 2.5 h", "Nimal Silva logged 2 h for Oct 19"];
+    // With Time switched off, nothing fills the slot and there are no time lines.
+    setProvided([]);
+    expect(await lines(nimal)).toEqual([]);
+    setProvided([{ id: "time", provides: { [PROPOSAL_TIME_SLOT]: stub } }]);
     expect(await lines(nimal)).toEqual(want);
     expect(await lines(maya)).toEqual(want);
-    expect(await lines(await db.as("maya", "Leadership"))).toEqual([]);
     expect(await lines(await db.as("kasun"))).toEqual([]);
+    expect(asked.at(-1)).toEqual({ id, projectId });
     await syncProposal(ctxFor(maya), { projectKey: "CON", project: { name: "Contoso Portal", client: "Contoso" }, key: "CON-017", title: "Spec 017", phase: "building",
       tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "017-spec", releasedAt: null, meta: {}, committedAt: "2026-10-12T09:00:00Z" });
     const [moved] = await db.q(sql`select key from delivery.proposal where id = ${id}`);
     expect(moved.key).toMatch(/^CON-H\d{3}$/);
     expect(await lines(nimal, moved.key as string)).toEqual(want);
+    setProvided([]);
   });
 
   it("081 amendment 4 AC42 AC47 AC50 history lines carry their kind, a move its phase, a closed task who closed it; the project counts closes by agents and people", async () => {

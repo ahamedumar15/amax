@@ -7,6 +7,7 @@ import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, typ
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
 import { notOnProject, ownerChanged, ownerFor } from "./owner";
+import { invalid, notFound } from "./refusal";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -18,7 +19,7 @@ function scoped(ctx: ServiceContext, action: string, projectId: string) {
 
 async function projectByKey(tx: Tx, key: string) {
   const [p] = await tx.execute(sql`select * from delivery.project where key = ${key}`);
-  if (!p) throw new Error(`no project ${key}`);
+  if (!p) throw notFound(`no project ${key}`);
   return p;
 }
 
@@ -38,10 +39,10 @@ async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, k
   for (const key of keys) {
     // Locked above, so the phase read here is the committed one.
     const [p] = await tx.execute(sql`select id, phase, release_id, withdrawn_at, meta from delivery.proposal where key = ${key} and project_id = ${projectId}`);
-    if (!p) throw new Error(`no proposal ${key} in this project`);
-    if (p.withdrawn_at || (p.meta as { withdrawn?: boolean } | null)?.withdrawn) throw new Error(`${key} was withdrawn; it can't go in a release`);
-    if (p.phase === "released" && p.release_id !== releaseId) throw new Error(`${key} already shipped in another release`);
-    if (Number(live) > 0 && p.release_id !== releaseId) throw new Error(`this release is already live in Prod; put ${key} in a new release`);
+    if (!p) throw notFound(`no proposal ${key} in this project`);
+    if (p.withdrawn_at || (p.meta as { withdrawn?: boolean } | null)?.withdrawn) throw invalid(`${key} was withdrawn; it can't go in a release`);
+    if (p.phase === "released" && p.release_id !== releaseId) throw invalid(`${key} already shipped in another release`);
+    if (Number(live) > 0 && p.release_id !== releaseId) throw invalid(`this release is already live in Prod; put ${key} in a new release`);
     await tx.execute(sql`update delivery.proposal set release_id = ${releaseId} where id = ${p.id}`);
   }
 }
@@ -50,7 +51,7 @@ async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, k
 // can't interleave: proposals added to a release are either released with it or refused (final review).
 async function releaseOf(tx: Tx, projectId: unknown, version: string) {
   const [r] = await tx.execute(sql`select * from delivery.release where project_id = ${projectId} and version = ${version} for update`);
-  if (!r) throw new Error(`no release ${version}`);
+  if (!r) throw notFound(`no release ${version}`);
   return r;
 }
 
@@ -85,11 +86,11 @@ export const createProposal = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:create", project.id as string);
-    if (project.status !== "active") throw new Error(`${input.projectKey} is closed; reopen it before adding proposals`);
+    if (project.status !== "active") throw invalid(`${input.projectKey} is closed; reopen it before adding proposals`);
     // 081 AC-5: the owner is the one named, else the person acting (an agent's or credential's person).
     const owner = await ownerFor(tx, ctx, input.ownerUserId);
     const why = owner && input.ownerUserId ? await notOnProject(tx, ctx.tenantId, owner.id, project.id as string) : null;
-    if (why) throw Object.assign(new Error(why), { retryable: false, code: "invalid_input" });
+    if (why) throw invalid(why);
     // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
     // creates, so two of them can't compute the same key (review round 1, B7).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
@@ -111,11 +112,11 @@ const MoveInput = z.object({ key: z.string(), to: z.enum(PHASES.filter((p) => p 
  */
 export async function moveIn(tx: Tx, ctx: ServiceContext, input: z.infer<typeof MoveInput>, guard: (p: Record<string, unknown>) => void = () => {}) {
   const [p] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key} for update`);
-  if (!p) throw new Error(`no proposal ${input.key}`);
+  if (!p) throw notFound(`no proposal ${input.key}`);
   scoped(ctx, "delivery:proposal:move", p.project_id as string);
-  if (p.phase === "released") throw new Error(`${input.key} is in Prod; it can't move back on the board`);
-  if (p.withdrawn_at) throw new Error(`${input.key} was withdrawn; it stays where it was`);
-  if (p.source !== null) throw new Error(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
+  if (p.phase === "released") throw invalid(`${input.key} is in Prod; it can't move back on the board`);
+  if (p.withdrawn_at) throw invalid(`${input.key} was withdrawn; it stays where it was`);
+  if (p.source !== null) throw invalid(`${input.key} comes from ${p.source}; its phase follows the repo, so move it there`);
   guard(p);
   if (p.phase === input.to) return { result: { key: input.key, phase: input.to }, resourceId: p.id as string };
   await tx.execute(sql`update delivery.proposal set phase = ${input.to}, updated_at = now() where id = ${p.id}`);
@@ -149,7 +150,7 @@ export const createRelease = defineService({
     // A version that exists (or is being created right now) is refused clearly, not as a raw unique violation.
     const [r] = await tx.execute(sql`insert into delivery.release (tenant_id, project_id, version) values (${ctx.tenantId}, ${project.id}, ${input.version})
       on conflict (project_id, version) do nothing returning id`);
-    if (!r) throw new Error(`${input.projectKey} already has a release ${input.version}`);
+    if (!r) throw invalid(`${input.projectKey} already has a release ${input.version}`);
     await assignProposals(tx, project.id, r.id, input.proposalKeys);
     return { result: { id: r.id as string }, resourceId: r.id as string, after: input };
   },
@@ -175,7 +176,7 @@ export const recordDeployment = defineService({
     const release = await releaseOf(tx, project.id, input.version);
     // 042: any environment of this project, not only the next one; matched by name, as pipelines report it.
     const env = await envByName(tx, project.id, input.environment);
-    if (!env) throw new Error(`${input.projectKey} has no environment ${input.environment}`);
+    if (!env) throw invalid(`${input.projectKey} has no environment ${input.environment}`);
     const released = Boolean(env.is_prod) && input.status === "deployed";
     const [d] = await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, note, pipeline_run, recorded_by, released)
       values (${ctx.tenantId}, ${release.id}, ${env.id}, ${input.status}, ${input.note ?? null}, ${input.pipelineRun ?? null}, ${by(ctx)}, ${released}) returning id`);
@@ -339,7 +340,7 @@ export const upsertEnvironment = defineService({
     scoped(ctx, "delivery:release:create", project.id as string);
     const before = await envByName(tx, project.id, input.name);
     const target = input.rename ? await envByName(tx, project.id, input.rename) : undefined;
-    if (target && target.id !== before?.id) throw new Error(`${input.projectKey} already has an environment called ${target.name}`);
+    if (target && target.id !== before?.id) throw invalid(`${input.projectKey} already has an environment called ${target.name}`);
     if (input.isProd) await tx.execute(sql`update delivery.environment set is_prod = false where project_id = ${project.id}`);
     let row;
     if (before) {
@@ -370,10 +371,10 @@ export const removeEnvironment = defineService({
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);
     const env = await envByName(tx, project.id, input.name);
-    if (!env) throw new Error(`no environment ${input.name}`);
+    if (!env) throw notFound(`no environment ${input.name}`);
     const [{ n }] = await tx.execute(sql`select count(*)::int as n from delivery.deployment where environment_id = ${env.id}`);
     // Voided records stay as history, so they count too.
-    if (Number(n) > 0) throw new Error(`${env.name} has ${n} deployment record${Number(n) === 1 ? "" : "s"} (voided ones included, kept as history), so it stays`);
+    if (Number(n) > 0) throw invalid(`${env.name} has ${n} deployment record${Number(n) === 1 ? "" : "s"} (voided ones included, kept as history), so it stays`);
     await tx.execute(sql`delete from delivery.environment where id = ${env.id}`);
     return { result: { removed: env.name as string }, resourceId: env.id as string, before: { name: env.name } };
   },
@@ -435,7 +436,7 @@ export const voidDeployment = defineService({
       : sql`select d.id from delivery.deployment d join delivery.environment e on e.id = d.environment_id
             where d.release_id = ${release.id} and lower(e.name) = lower(${input.environment}) and d.voided_at is null order by d.at desc limit 1`;
     const [d] = await tx.execute(sql`update delivery.deployment set voided_at = now(), void_reason = ${input.reason}, voided_by = ${by(ctx)} where id = (${target}) returning *`);
-    if (!d) throw new Error(input.deploymentId ? `that deployment isn't a live ${input.environment} record of ${input.version}` : `no deployment of ${input.version} to ${input.environment} to void`);
+    if (!d) throw invalid(input.deploymentId ? `that deployment isn't a live ${input.environment} record of ${input.version}` : `no deployment of ${input.version} to ${input.environment} to void`);
     const events: Emitted[] = [];
     // Only the record that released the proposals can un-release them, and only if no other live
     // record released them too. Voiding a Dev deploy, or one on an environment that has since

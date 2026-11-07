@@ -5,6 +5,8 @@ import { can, type Viewer } from "@amax/auth";
 import type { OverviewPanel, OverviewPart, OverviewWaiting } from "@amax/core";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
 import { ACTIVE, clockOf, endOfDay, listReleases, phaseCounts, type ReleaseRow } from "./queries";
+import { isReadyToVerify, overEstimate } from "./readiness";
+import type { Phase } from "../contracts";
 
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(v, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -59,14 +61,19 @@ async function proposalsToApprove(tx: Tx, v: Viewer): Promise<OverviewWaiting[]>
  * task done), over the estimate, then open tasks. Empty for someone who owns none, and then the panel isn't shown.
  */
 export async function yourProposals(tx: Tx, v: Viewer) {
-  const rows = await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.hours, p.estimate_hours, pr.name as project_name
+  // Every open proposal this person owns (a handful), ranked here by the shared rules (readiness.ts), so the panel and the
+  // list can't disagree on what is ready or over.
+  const all = (await tx.execute(sql`select p.id, p.key, p.title, p.phase, p.source, p.tasks_done, p.tasks_total, p.hours, p.estimate_hours, pr.name as project_name
     from delivery.proposal p join delivery.project pr on pr.id = p.project_id
     where p.owner_user_id::text = ${v.userId} and ${ACTIVE} and p.phase <> 'released' and pr.status = 'active'
-    order by (p.phase = 'building' and p.tasks_total > 0 and p.tasks_done = p.tasks_total) desc,
-      (p.estimate_hours is not null and p.hours > p.estimate_hours) desc, (p.tasks_total - p.tasks_done) desc, p.updated_at desc, p.key limit 5`);
-  return rows.map((r) => {
+    order by p.updated_at desc, p.key`)).map((r) => {
+    const facts = { phase: r.phase as Phase, source: (r.source as string | null) ?? null, tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total), withdrawn: false };
+    const hours = Number(r.hours), estimateHours = r.estimate_hours === null ? null : Number(r.estimate_hours);
+    return { r, ready: isReadyToVerify(facts), over: overEstimate({ hours, estimateHours }), open: facts.tasksTotal - facts.tasksDone };
+  });
+  const rows = all.map((x, i) => ({ ...x, i })).sort((a, b) => Number(b.ready) - Number(a.ready) || Number(b.over) - Number(a.over) || b.open - a.open || a.i - b.i).slice(0, 5);
+  return rows.map(({ r, ready, over }) => {
     const done = Number(r.tasks_done), total = Number(r.tasks_total), hours = Number(r.hours), est = r.estimate_hours === null ? null : Number(r.estimate_hours);
-    const ready = r.phase === "building" && total > 0 && done === total, over = est !== null && hours > est;
     const phase = String(r.phase)[0].toUpperCase() + String(r.phase).slice(1);
     const detail = ready ? `Ready to verify · ${r.project_name as string}` : over ? `${Number((hours - est!).toFixed(2))} h over its ${est} h estimate · ${r.project_name as string}`
       : `${total ? `${done} of ${total} tasks done` : "No tasks yet"} · ${phase} · ${r.project_name as string}`;
