@@ -31,8 +31,10 @@ export async function ReleasePage({ viewer: raw, params }: ScreenProps) {
       <div className="cols even" style={{ marginBottom: 28 }}>
         <div className="card pinnable">
           <div className="card-head"><h2>Tag and proposals</h2>{pin("proposals")}</div>
-          <ul aria-label="Proposals in this release" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6, margin: "14px 0", maxHeight: 280, overflow: "auto" }}>
-            {included.map((p) => <li key={p.key} className="pinnable"><a href={proposalHref(p.key)}><b>{p.key}</b> {p.title}</a> <PhaseChip phase={p.phase} /><PinButton pin={proposalPin(p)} /></li>)}
+          {/* 081 amendment 10 (AC-92 to AC-94): the tag first, then aligned rows with no scroll bar of their own. */}
+          <p className="rel-tag"><span className="k">Tag</span><span className="chip">{release.version}</span><span className="muted">{included.length} {included.length === 1 ? "proposal" : "proposals"}</span></p>
+          <ul className="rel-props" aria-label="Proposals in this release">
+            {included.map((p) => <li key={p.key} className="pinnable"><a href={proposalHref(p.key)}><b>{p.key}</b><span>{p.title}</span></a><PhaseChip phase={p.phase} /><PinButton pin={proposalPin(p)} /></li>)}
             {included.length === 0 && <li className="muted">No proposals yet.</li>}
           </ul>
           {canEdit && <div className="actions">

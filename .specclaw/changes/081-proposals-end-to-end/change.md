@@ -841,6 +841,24 @@ This amendment uses 084's quick replies. There's no migration, table, tool or pe
 - **Mock:** 081's section, and its copy.
 - **Browser tests:** `apps/web/tests/e2e/delivery.spec.ts`.
 
+## Amendment 10 (2026-11-07): the release page's Tag and proposals card, aligned
+
+The product owner found the release page's "Tag and proposals" card (`/delivery/releases/CON/v2.5.0`) looked broken
+and asked for it aligned, without the scroll bar. Three causes:
+- **The list scrolls inside the card:** it was capped at 280 px with its own scroll bar, which also clipped the row pins.
+- **Rows run together:** key, title, phase chip and pin sat inline, so long titles wrapped under the key, and each
+  row's pin (absolutely placed, top right) covered the phase chip.
+- **The tag isn't shown:** the card is called "Tag and proposals", but the tag (the version) appeared only in the title.
+
+92. **AC-92** The card shows the tag first ("Tag", then the version as a chip, then the count of proposals).
+93. **AC-93** The proposals list has no height cap and no scroll bar of its own; the page scrolls.
+94. **AC-94** Each proposal is one aligned row: the key in a fixed column, the title (wrapping within its column), the
+    phase chip on the right, and room saved for the row's pin so it never covers the chip. Rows are divided by a hairline.
+    On a phone the chip drops under the title. The link, its target and the pins are unchanged.
+
+There's no data, tool or permission change. **Affected:** `modules/delivery/ui/ReleasePage.tsx`,
+`modules/delivery/ui/delivery.css`. The mock has no release detail screen, so it's unchanged.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -957,6 +975,10 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [ ] `T36` — Amendment 9, browser tests, README, mock, CI replica (AC-91)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/mock/index.html, apps/mock/public/mock/index.html
   Depends: T35
+
+- [x] `T37` — Amendment 10, the release page's Tag and proposals card: the tag shown, aligned rows, no inner scroll bar (AC-92 to AC-94)
+  Files: modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/delivery.css
+  Depends: T24
 
 ## Verify
 

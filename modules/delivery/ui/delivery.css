@@ -346,3 +346,22 @@
 /* 081 amendment 5 (AC-56): a list's project or release is a link that looks like the text it replaces. */
 a.quiet{color:inherit;text-decoration:none}
 a.quiet:hover,a.quiet:focus-visible{text-decoration:underline;text-underline-offset:3px}
+/* 081 amendment 10 (AC-92 to AC-94): the release page's Tag and proposals card. The tag leads; each proposal is one
+   aligned row (key column, title, phase chip), with room saved on the right for the row's pin. No height cap, so no
+   scroll bar inside the card. */
+.rel-tag{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:-8px 0 14px;font-size:13.5px}
+.rel-tag .k{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.rel-tag .chip{font-variant-numeric:tabular-nums}
+.rel-props{--key:92px;list-style:none;margin:0 0 18px;padding:0;border-top:1px solid var(--line)}
+.rel-props li{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 48px 8px 0;border-bottom:1px solid var(--line)}
+.rel-props li.muted{padding-right:0}
+.rel-props a{flex:1;min-width:0;display:grid;grid-template-columns:var(--key) minmax(0,1fr);column-gap:12px;align-items:baseline;color:var(--ink);text-decoration:none;font-size:14px;line-height:1.4}
+.rel-props a b{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.rel-props a:hover span,.rel-props a:focus-visible span{text-decoration:underline;text-underline-offset:3px}
+.rel-props .chip{flex:none}
+.rel-props li>.pin{top:50%;margin-top:-15px;right:6px}
+@media (max-width:640px){
+  .rel-props li{flex-wrap:wrap;row-gap:6px}
+  .rel-props a{flex-basis:100%}
+  .rel-props .chip{margin-left:calc(var(--key) + 12px)}
+}
