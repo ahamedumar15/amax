@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-07 12:45 UTC
+**Last Updated:** 2026-11-07 13:36 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -27,7 +27,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
-- 🔍 **081-proposals-end-to-end** — verify done | 38/40 tasks (95%) | 0 failed | PR #command requires
+- 🔀 **081-proposals-end-to-end** — pr raised | 38/40 tasks (95%) | 0 failed | PR #command requires
 - 🔍 **082-dev-fresh-cache** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **083-profile-menu-closes** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **084-chat-quick-replies** — verify done | 4/5 tasks (80%) | 0 failed | PR #command requires
