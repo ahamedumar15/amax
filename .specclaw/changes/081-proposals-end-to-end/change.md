@@ -1043,6 +1043,109 @@ Order follows the commit phases (backend before UI, because the screens read the
 
 ## Verify
 
+**Verdict:** PASS
+
+- AC-1 to AC-4 (time and hours): pass — Time `proposal-time`, `proposal-hours`; e2e `delivery.spec`.
+- AC-5, AC-62 to AC-71, AC-78 to AC-82 (owners): pass — `proposal-owner`, `proposal-owner-a6`, `owner-chat-a6`, Allocations `team`.
+- AC-6 to AC-8, AC-46 to AC-53 (proposal page): pass — `proposal-detail`, `proposal-page-a4`; e2e `delivery.spec`, `delivery-visual`.
+- AC-9 to AC-12, AC-18 to AC-20, AC-59 (lifecycle): pass — `proposal-lifecycle`, `reopen-task-081`, `proposal-regression`.
+- AC-13, AC-14, AC-30, AC-31, AC-38 to AC-41 (chat and pin suggestions): pass — `chat-081`, `proposal-suggestions`, `pin-offers`.
+- AC-15 to AC-17 (lists and metrics): pass — `proposal-metrics`; AC-32 to AC-35 (agent): pass — `proposal-agent`.
+- AC-42 to AC-45 (project board): pass — `board-a4`, `board-band-081` (AC-43 dropped 2026-11-04).
+- AC-54 to AC-61 (one way through Delivery): pass — `navigation-081`, `ui-logic`; e2e `delivery.spec`, `releases.spec`.
+- AC-64 to AC-66, AC-74 to AC-77 (notifications): pass — Notifications `delivery-routing`, `delivery-flow`.
+- AC-83 to AC-91 (time against a proposal, what I own): pass — `mine-a9`, Time `proposal-time`; e2e `delivery.spec`.
+- AC-92 to AC-94 (release page card): built in T37; no test names them, and they were not checked again here.
+- AC-95 to AC-104 (attention first, pinnable, aligned): pass — `attention-a11`, `readiness-081`, `proposal-detail`.
+- AC-21 to AC-29, AC-36, AC-37, AC-72, AC-73 (the test plan): pass — the suites above, all passing in the replica below.
+
+Commands (Linux replica of CI over `0bbdd63c`, the head the final review pass ran on):
+- `pnpm install --frozen-lockfile`, `pnpm db:migrate`, `pnpm lint`, `node scripts/check-module-standard.mjs`, `pnpm build`: exit 0.
+- `pnpm turbo run test --concurrency=2`: exit 0, 35/35 packages.
+- `pnpm --filter @amax/web e2e`: 9 passed. `pnpm --filter @amax/web e2e:auth`: 95 passed.
+
+Notes:
+- Also carries, reviewed in the same loop (`covered-by`): 082-dev-fresh-cache, 083-profile-menu-closes,
+  084-chat-quick-replies, 085-time-my-week-first, 086-rail-logo-aligned.
+- Review: one loop over 081 to 086 against `upstream/main`, stopped at the five-pass cap (AGENTS.md) with 0 blockers and
+  2 majors open, both in 081: "has no owner" decided two ways, and `mark_task_done` on a withdrawn proposal. Details below.
+- `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog. `specclaw-quality-scan`: not_run (jq "Argument list
+  too long", as in 066–080).
+
+### Review loop (2026-11-07)
+
+**Stopped with these open**, for a follow-up change (also in `follow-ups.md`):
+- **Major B4:** "has no owner" has two rules. `needsOf` checks `owner_user_id` and `owner_name`. The pin's "Make me the
+  owner", the agent's Suggested owner and its accept guard check `owner_user_id` alone. So a row with only `owner_name`
+  shows a named owner, yet gets a suggestion, and accepting it replaces that owner. Fix: one rule in `readiness.ts` for
+  all four.
+- **Major B1:** `mark_task_done` doesn't refuse a withdrawn proposal, though every other write does. Fix: refuse it as
+  `reopen_task` does, with a variant test.
+- **Minors:**
+  - The list's "New proposal" chat suggestion isn't gated on `delivery:proposal:create`.
+  - The one-day reopen window is written twice, against two clocks.
+  - A malformed `%` escape in a proposal URL gives a server error.
+  - Earlier minors: the time FK into Delivery's schema, and "Log time" offered without `hasModule('time')`.
+  - The hours write uses a second connection.
+  - The unread-slot state.
+  - The unbounded time-line read for a viewer who sees few lines.
+  - The `unavailable` code when Time is off.
+
+**Scope.** One loop over the whole stack against `upstream/main` (`git.base_branch` set for the run, then restored): 081
+and the changes it covers, 082-dev-fresh-cache, 083-profile-menu-closes (its work is in 081's commit `da337a8e`),
+084-chat-quick-replies, 085-time-my-week-first and 086-rail-logo-aligned.
+Each of those declares `**Review:** covered-by 081-proposals-end-to-end` and has no rounds of its own.
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | 1 | whole stack | 1 blocker, 6 majors, 3 minors |
+| 2 | — | `6089b5b6` | not_run (reviewer hit 20 turns; `review.max_turns` raised to 30, as 064 did) |
+| 3 | 2 | `6089b5b6` | 2 majors, 5 minors |
+| 4 | 3 | `5b2b86b7` | 1 major, 3 minors |
+| 5 | 4 | `c48088de` | clean, 1 minor |
+| 6 (final) | 5 | whole stack, head `0bbdd63c` | 2 majors, 3 minors |
+
+`specclaw-review verdict`: `Review: OPEN — 6 rounds, final pass missing, models opus/opus; last round 0/2/3 b/M/m`.
+"Final pass missing" is the plugin's word for a final pass that isn't clean. Per AGENTS.md, the loop stops after five
+passes; no blocker is open, so the PR goes ahead.
+
+**Fixed in the loop** (each with a table-driven variant test):
+- **Round 1:**
+  - Blocker: proposal hours are now Delivery's service `delivery.proposal.hours`, run by Time's job and audited by count.
+  - Hours refreshes for one project no longer race: Time takes a per-project lock.
+  - Delivery's refusals carry their code: one helper, `server/refusal.ts`, over 30 throws.
+  - One readiness rule (`server/readiness.ts`) for the list, the agent and the Overview panel.
+  - Time supplies a proposal's time lines under its own rule, through a new core mechanism: a module fills another
+    module's named slot (`provides`, `setProvided`, `provided`; `docs/architecture.md`, "Module slots").
+  - Every stage step and history line has its own pin; the new read tool is `get_proposal_event`.
+  - The `withdrawn_by` erasure finding was checked and is already handled (retention matches `… for user:<id>`), now
+    covered by a test.
+- **Round 3:**
+  - A pinned history line is read directly, with no window.
+  - An owner's time lines survive the 100-line cap.
+  - Only Time's job may write hours.
+- **Round 4:**
+  - A time-line pin with Time switched off is refused, never "gone".
+  - Other writers of hours are denied with `ForbiddenError`.
+  - The paging test crosses a batch.
+
+**Linux replica of CI** over `0bbdd63c` (`git archive HEAD`, fresh postgres:16-alpine with the `amax_app` role):
+
+| Check | Result |
+|---|---|
+| `pnpm install --frozen-lockfile`, `pnpm db:migrate` | pass |
+| `pnpm lint` | pass |
+| `pnpm turbo run test --concurrency=2` | pass, 35/35 packages |
+| `node scripts/check-module-standard.mjs` | pass |
+| `pnpm build` | pass |
+| `pnpm --filter @amax/web e2e` | 9 passed |
+| `pnpm --filter @amax/web e2e:auth` | 95 passed, including the delivery visual comparison that amendment 11 left to run here |
+
+The replica also passed on `6089b5b6` (before the loop) and `5b2b86b7` (after round 1). The work after round 6 touches
+only `.specclaw/`: these records, and `git.base_branch` set back to `""`.
+
+### Earlier runs
+
 Run 2026-11-03 on Linux: the Docker replica of CI's `checks` job (node:24-bookworm, fresh postgres:16-alpine), over the
 working tree at T8.
 
@@ -1383,78 +1486,3 @@ Review loop: still not run (the specclaw-review server isn't connected).
 - **e2e:** one assertion now reads the Proposal cell's link, not the whole cell, since the cell can carry chips.
   **Not yet run:** `e2e:auth`, including the delivery visual comparison. 001's Proposals mock section now shows the
   strip line, the two-row head and the key column, with the same CSS; run the Linux CI replica to confirm it's within 2%.
-
-### Review loop and final check (2026-11-07)
-
-**Verdict:** PASS. The checks pass at `0bbdd63c`. The review loop stopped at the five-pass cap with 0 blockers and 2
-majors open, listed below.
-
-**Scope.** One loop over the whole stack against `upstream/main` (`git.base_branch` set for the run, then restored): 081
-and the changes it covers, 082-dev-fresh-cache, 083-profile-menu-closes (its work is in 081's commit `da337a8e`),
-084-chat-quick-replies, 085-time-my-week-first and 086-rail-logo-aligned.
-Each of those declares `**Review:** covered-by 081-proposals-end-to-end` and has no rounds of its own.
-
-| Round | Pass | Since | Result |
-|---|---|---|---|
-| 1 | 1 | whole stack | 1 blocker, 6 majors, 3 minors |
-| 2 | — | `6089b5b6` | not_run (reviewer hit 20 turns; `review.max_turns` raised to 30, as 064 did) |
-| 3 | 2 | `6089b5b6` | 2 majors, 5 minors |
-| 4 | 3 | `5b2b86b7` | 1 major, 3 minors |
-| 5 | 4 | `c48088de` | clean, 1 minor |
-| 6 (final) | 5 | whole stack, head `0bbdd63c` | 2 majors, 3 minors |
-
-`specclaw-review verdict`: `Review: OPEN — 6 rounds, final pass missing, models opus/opus; last round 0/2/3 b/M/m`.
-"Final pass missing" is the plugin's word for a final pass that isn't clean. Per AGENTS.md, the loop stops after five
-passes; no blocker is open, so the PR goes ahead.
-
-**Fixed in the loop** (each with a table-driven variant test):
-- **Round 1:**
-  - Blocker: proposal hours are now Delivery's service `delivery.proposal.hours`, run by Time's job and audited by count.
-  - Hours refreshes for one project no longer race: Time takes a per-project lock.
-  - Delivery's refusals carry their code: one helper, `server/refusal.ts`, over 30 throws.
-  - One readiness rule (`server/readiness.ts`) for the list, the agent and the Overview panel.
-  - Time supplies a proposal's time lines under its own rule, through a new core mechanism: a module fills another
-    module's named slot (`provides`, `setProvided`, `provided`; `docs/architecture.md`, "Module slots").
-  - Every stage step and history line has its own pin; the new read tool is `get_proposal_event`.
-  - The `withdrawn_by` erasure finding was checked and is already handled (retention matches `… for user:<id>`), now
-    covered by a test.
-- **Round 3:**
-  - A pinned history line is read directly, with no window.
-  - An owner's time lines survive the 100-line cap.
-  - Only Time's job may write hours.
-- **Round 4:**
-  - A time-line pin with Time switched off is refused, never "gone".
-  - Other writers of hours are denied with `ForbiddenError`.
-  - The paging test crosses a batch.
-
-**Stopped with these open**, for a follow-up change (also in `follow-ups.md`):
-- **Major B4:** "has no owner" has two rules. `needsOf` checks `owner_user_id` and `owner_name`. The pin's "Make me the
-  owner", the agent's Suggested owner and its accept guard check `owner_user_id` alone. So a row with only `owner_name`
-  shows a named owner, yet gets a suggestion, and accepting it replaces that owner. Fix: one rule in `readiness.ts` for
-  all four.
-- **Major B1:** `mark_task_done` doesn't refuse a withdrawn proposal, though every other write does. Fix: refuse it as
-  `reopen_task` does, with a variant test.
-- **Minors:**
-  - The list's "New proposal" chat suggestion isn't gated on `delivery:proposal:create`.
-  - The one-day reopen window is written twice, against two clocks.
-  - A malformed `%` escape in a proposal URL gives a server error.
-  - Earlier minors: the time FK into Delivery's schema, and "Log time" offered without `hasModule('time')`.
-  - The hours write uses a second connection.
-  - The unread-slot state.
-  - The unbounded time-line read for a viewer who sees few lines.
-  - The `unavailable` code when Time is off.
-
-**Linux replica of CI** over `0bbdd63c` (`git archive HEAD`, fresh postgres:16-alpine with the `amax_app` role):
-
-| Check | Result |
-|---|---|
-| `pnpm install --frozen-lockfile`, `pnpm db:migrate` | pass |
-| `pnpm lint` | pass |
-| `pnpm turbo run test --concurrency=2` | pass, 35/35 packages |
-| `node scripts/check-module-standard.mjs` | pass |
-| `pnpm build` | pass |
-| `pnpm --filter @amax/web e2e` | 9 passed |
-| `pnpm --filter @amax/web e2e:auth` | 95 passed, including the delivery visual comparison that amendment 11 left to run here |
-
-The replica also passed on `6089b5b6` (before the loop) and `5b2b86b7` (after round 1). The work after round 6 touches
-only `.specclaw/`: these records, and `git.base_branch` set back to `""`.
