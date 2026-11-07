@@ -5,7 +5,7 @@ import { can, type Viewer } from "@amax/auth";
 import { ForbiddenError, getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
 import { invalid } from "./refusal";
-import { isWithdrawn, withdrawnIn } from "./readiness";
+import { isWithdrawn, ownerShownIn, withdrawnIn } from "./readiness";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -54,7 +54,7 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
 // The furthest environment each release reached, for "Shipped to".
 const PROPOSALS = sql`
   select p.*, pr.key as project_key, pr.name as project_name, pr.color as project_color, r.version, last.name as shipped_to, last.status as shipped_status,
-    coalesce(p.owner_name, (select u.name from auth.user u where u.id = p.owner_user_id)) as owner_shown
+    ${ownerShownIn("p")} as owner_shown
   from delivery.proposal p
   join delivery.project pr on pr.id = p.project_id
   left join delivery.release r on r.id = p.release_id

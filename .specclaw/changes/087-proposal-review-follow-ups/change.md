@@ -104,3 +104,9 @@ Build notes (2026-11-07, Windows host, local Postgres; not a verdict, `/specclaw
   - **Withdrawn:** one `isWithdrawn` and one SQL form (`withdrawnIn`), used at all ten sites.
   - **0009's foreign key:** not changed, with the reason under AC-10.
   Tests: Delivery 378/379 (`releases` is Windows-only).
+- Review round 3 (pass 3): 2 majors and 2 minors, all fixed.
+  - **Tests:** the AC-1 table now also checks the board card and the update card's From line.
+  - **Withdrawn:** the board's spec facts and the sync's withdraw pass use `isWithdrawn`, with a table of which values count.
+  - **Owner name:** one SQL fragment (`ownerShownIn`) for the owner name, with "Unknown person" when an owner user's name
+    can't be read.
+  Tests: Delivery 384/385 (`releases` is Windows-only).

@@ -16,6 +16,7 @@ import { createProposal, moveProposal } from "../server/services";
 import { markTaskDone } from "../server/tasks";
 import { needsOf } from "../server/attention";
 import { proposalOffers } from "../server/pin-offers";
+import { updateCard } from "../server/proposal-card";
 import { getProposal } from "../server/queries";
 import { ProjectPage } from "../ui/ProjectPage";
 import { ProposalsPage } from "../ui/ProposalsPage";
@@ -116,6 +117,15 @@ describe.skipIf(!hasDb)("081 amendment 2: the Delivery agent suggests, a person 
     if (!unowned) expect(page).toContain("<b>Maya Fernando</b>");
     const list = await render(ProposalsPage({ viewer: maya, params: {}, searchParams: { q: key } }));
     expect(list.includes('<td data-label="Owner"><span class="muted">Unassigned</span>')).toBe(unowned);
+    // Review round 3: the board's card and the update card's From line read the same rule and name.
+    const board = await render(ProjectPage({ viewer: maya, params: { key: "CON" } }));
+    const link = `href="/delivery/proposals/${key}"`;
+    const after = board.slice(board.indexOf(link) + link.length);
+    const card = after.slice(0, after.indexOf('href="/delivery/proposals/') === -1 ? after.length : after.indexOf('href="/delivery/proposals/'));
+    expect(card.includes('"Unassigned"')).toBe(unowned);
+    if (!unowned) expect(card).toContain('"Maya Fernando"');
+    const from = (await updateCard(maya, { key, ownerUserId: (await db.as("nimal")).userId })).lines.find((l) => l.label === "From")!.value;
+    expect(from).toBe(unowned ? "Unassigned" : "Maya Fernando");
     // With every task done the pin's three offers are Move, Log time and the owner one (with a task open, it's fourth).
     await markTaskDone(ctxFor(maya), { key, task: "T2" });
     await runAgent();

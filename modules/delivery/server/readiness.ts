@@ -29,5 +29,12 @@ export const isReadyToVerify = (p: ReadinessFacts) =>
  */
 export const hasNoOwner = (p: { ownerUserId: string | null; ownerName: string | null }) => !p.ownerUserId && !p.ownerName;
 
+/**
+ * 087 (review round 3): the owner name a screen or card shows, once, in SQL: the stored name, else the owner user's, else
+ * "Unknown person" for an owner user whose name can't be read. Null only when it has no owner (hasNoOwner).
+ */
+export const ownerShownIn = (t: "p") =>
+  sql.raw(`coalesce(${t}.owner_name, (select u.name from auth.user u where u.id = ${t}.owner_user_id), case when ${t}.owner_user_id is not null then 'Unknown person' end)`);
+
 /** Over the estimate: approved hours above an estimate it has. */
 export const overEstimate = (p: { hours: number; estimateHours: number | null }) => p.estimateHours !== null && p.hours > p.estimateHours;

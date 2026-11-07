@@ -29,7 +29,7 @@ const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Plan
 // Facts the specclaw sync adds (039): lane, queue status, claim, PR.
 function SpecFacts({ p }: { p: ProposalRow }) {
   const m = p.meta as { lane?: string; status?: string; waiting?: string[]; claim?: string | null; pr?: string | null; withdrawn?: boolean };
-  const status = m.withdrawn ? "withdrawn" : m.status === "blocked" ? `blocked on ${m.waiting?.join(", ")}` : m.status === "claimed" ? `claimed by ${m.claim}` : m.status === "ready" ? "ready" : null;
+  const status = p.withdrawn ? "withdrawn" : m.status === "blocked" ? `blocked on ${m.waiting?.join(", ")}` : m.status === "claimed" ? `claimed by ${m.claim}` : m.status === "ready" ? "ready" : null;
   return (
     <div className="foot" style={{ marginTop: 8 }}>
       {m.lane && <span className="chip">{m.lane}</span>}

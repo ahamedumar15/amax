@@ -3,6 +3,7 @@ import { withTenant, type Db, type Tx } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
 import { KeyTakenError, markSynced, syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
+import { isWithdrawn } from "../server/readiness";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -76,7 +77,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
   // Folders that disappeared are marked withdrawn, never deleted.
   for (const [key, cur] of byKey) {
     const meta = cur.meta as Record<string, unknown>;
-    if (meta.withdrawn) continue;
+    if (isWithdrawn(cur)) continue;
     await syncProposal(ctx, {
       projectKey: opts.projectKey, project, key, title: cur.title as string, phase: cur.phase as never, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total),
       source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null, meta: { ...meta, withdrawn: true, sha: opts.sha }, committedAt: opts.committedAt,

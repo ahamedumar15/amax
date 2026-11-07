@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { needsOf } from "../server/attention";
 import type { ProposalRow } from "../server/queries";
-import { isReadyToVerify, overEstimate } from "../server/readiness";
+import { isReadyToVerify, isWithdrawn, overEstimate } from "../server/readiness";
 
 // Review 081 round 1 (B4): "ready to verify" and "over the estimate" are one rule each. The list (needsOf), the agent's
 // suggestion and the Overview panel all ask readiness.ts, so a spec proposal is never shown as ready when the agent
@@ -34,4 +34,16 @@ describe("081 review round 1: one readiness rule", () => {
     expect(overEstimate(h)).toBe(over);
     expect(needsOf(row({ ...h, tasksDone: 1 }), new Set()).includes("over")).toBe(over);
   });
+});
+
+// 087 review rounds 2 and 3: one withdrawn rule for every path (writes, lists, the board, the sync), reading meta as SQL does.
+describe("087 one withdrawn rule", () => {
+  it.each([
+    ["withdrawn by hand", { withdrawn_at: "2026-11-07T10:00:00Z", meta: {} }, true],
+    ["withdrawn by the repo", { withdrawn_at: null, meta: { withdrawn: true } }, true],
+    ["withdrawn by the repo, as a string", { withdrawn_at: null, meta: { withdrawn: "true" } }, true],
+    ["marked false", { withdrawn_at: null, meta: { withdrawn: false } }, false],
+    ["any other truthy value", { withdrawn_at: null, meta: { withdrawn: "yes" } }, false],
+    ["open, no meta", { withdrawn_at: null, meta: null }, false],
+  ])("%s → %s", (_label, row, want) => expect(isWithdrawn(row)).toBe(want));
 });
