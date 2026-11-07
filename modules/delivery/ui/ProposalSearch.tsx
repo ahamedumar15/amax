@@ -8,9 +8,9 @@ import type { ChangeEvent, KeyboardEvent } from "react";
  * the box completes the text in place from the filtered proposals (a key first, then a title), with the guessed part
  * selected: typing on or Backspace drops it, Tab or → keeps it, Enter searches what the box holds.
  */
-export function ProposalSearch({ base, project, q, owner, options = [] }: { base: string; project?: string; q?: string; owner?: string; options?: { key: string; title: string }[] }) {
+export function ProposalSearch({ base, project, q, owner, need, options = [] }: { base: string; project?: string; q?: string; owner?: string; need?: string; options?: { key: string; title: string }[] }) {
   const go = (value: string) => {
-    const s = new URLSearchParams(Object.entries({ project, q: value.trim(), owner }).filter(([, x]) => x) as [string, string][]).toString();
+    const s = new URLSearchParams(Object.entries({ project, q: value.trim(), owner, need }).filter(([, x]) => x) as [string, string][]).toString();
     window.location.assign(`${base}${s ? `?${s}` : ""}`);
   };
   const complete = (typed: string) => {

@@ -16,7 +16,8 @@ import { proposalDetail } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, moveCard, proposeCreate, proposeUpdate, taskCard, updateCard } from "./server/proposal-card";
 import { createReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
-import { checkReleaseRef, getDeployment, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
+import { isNeed, NEEDS, withNeed } from "./server/attention";
+import { checkReleaseRef, getDeployment, getProposalTask, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
@@ -43,17 +44,23 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ projectId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => getProject(v, a.key, a.projectId) }),
   // 081 amendment 9 (AC-85): `mine` keeps your own proposals; `likelyForMe` (with a project key) lists that project's
   // open proposals, the likeliest for you first, each with why: what Log time offers as quick replies.
-  tool({ ...read, pin: view, name: "list_proposals", description: "Proposals (specclaw and hand-made), newest change first, optionally filtered by phase, project key or text in the key or title (q). Without a project key, only active projects; withdrawn ones never. mine: true keeps the ones you own. likelyForMe: true with a projectKey lists that project's open proposals (up to five), the likeliest for you first (yours and Building, yours, ones you closed a task on lately, then by phase), each with why.",
-    input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional(), q: z.string().max(100).optional(), mine: z.boolean().optional(), likelyForMe: z.boolean().optional() }),
+  tool({ ...read, pin: view, name: "list_proposals", description: "Proposals (specclaw and hand-made), newest change first, optionally filtered by phase, project key or text in the key or title (q). Without a project key, only active projects; withdrawn ones never. mine: true keeps the ones you own. need keeps open ones needing attention for one reason: suggested (amax suggests something you may decide), ready (Building, every task done), over (approved hours past the estimate) or unassigned (no owner). likelyForMe: true with a projectKey lists that project's open proposals (up to five), the likeliest for you first (yours and Building, yours, ones you closed a task on lately, then by phase), each with why.",
+    input: z.object({ phase: z.enum(PHASES).optional(), projectKey: z.string().optional(), q: z.string().max(100).optional(), mine: z.boolean().optional(), likelyForMe: z.boolean().optional(), need: z.enum(NEEDS).optional() }),
     run: async (v, a) => {
       if (a.likelyForMe && !a.projectKey) throw new ToolError("likelyForMe needs a projectKey", "invalid_input");
-      return a.likelyForMe ? likelyProposals(v, a.projectKey!) : listProposals(v, { phase: a.phase, projectKey: a.projectKey, q: a.q, ownerUserId: a.mine ? v.userId : undefined });
+      if (a.likelyForMe) return likelyProposals(v, a.projectKey!);
+      const rows = await listProposals(v, { phase: a.phase, projectKey: a.projectKey, q: a.q, ownerUserId: a.mine ? v.userId : undefined });
+      // 081 amendment 11 (AC-96): an attention tile's pin: only the proposals with that reason.
+      return isNeed(a.need) ? withNeed(v, rows, a.need) : rows;
     } }),
   // 081 AC-17: the Proposals page's metric cards: counts by phase, released this month, and shipped to Prod per week.
   tool({ ...read, pin: view, name: "get_proposal_metrics", description: "Proposal counts by phase (in flight, and releasedThisMonth: released since the 1st of this calendar month, UTC, named in month) and proposals shipped to Prod per ISO week for the last 8 weeks, across active projects or for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => proposalMetrics(v, a) }),
   tool({ ...read, pin: { id: "proposalId", of: pinOf.proposal }, name: "get_proposal", description: "One proposal by proposalId, or by key such as CON-012 (a key given with an id only narrows): phase, owner, description, approved hours against the estimate, tasks, its release and the environments it reached, and its history. A withdrawn proposal is still found, marked withdrawn.",
     input: z.object({ proposalId: z.string().uuid().optional(), key: z.string().optional() }), run: (v, a) => proposalDetail(v, a) }),
+  // 081 amendment 11 (AC-99): one task, for its row's pin on the proposal page.
+  tool({ ...read, pin: { id: "taskId", of: pinOf.task }, name: "get_proposal_task", description: "One task of a proposal by taskId: its ref (T3), title, whether it is done and when, and its proposal. A proposal key given with it only narrows.",
+    input: z.object({ taskId: z.string().uuid(), key: z.string().optional() }), run: (v, a) => getProposalTask(v, a.taskId, { key: a.key }) }),
   tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => listReleases(v, a) }),
   tool({ ...read, pin: { id: "releaseId", of: pinOf.release }, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",

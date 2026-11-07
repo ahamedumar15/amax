@@ -1,6 +1,6 @@
 import type { PinSuggestion } from "@amax/core";
 import type { Viewer } from "@amax/auth";
-import { deploymentOffers, environmentOffers, projectOffers, proposalOffers, releaseOffers, repoOffers, viewOffers, type Offer } from "./server/pin-offers";
+import { deploymentOffers, environmentOffers, projectOffers, proposalOffers, releaseOffers, repoOffers, taskOffers, viewOffers, type Offer } from "./server/pin-offers";
 
 // 081 amendments 2 and 3 (AC-30, AC-38): every pinnable Delivery record and view offers, in chat, the actions that fit
 // it now, as Time's pinned weeks do (073). Keyed by the read tool its pin resolves through; the offers are in
@@ -11,6 +11,7 @@ const on = (tool: string, suggest: Suggest): PinSuggestion => ({ tool, suggest: 
 export const pinSuggestions: PinSuggestion[] = [
   on("get_project", projectOffers),
   on("get_proposal", proposalOffers),
+  on("get_proposal_task", taskOffers),
   on("get_release", releaseOffers),
   on("get_release_history", releaseOffers),
   on("get_environment", environmentOffers),

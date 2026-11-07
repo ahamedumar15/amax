@@ -24,7 +24,7 @@ const ask = (verb: string, s: SuggestionView) => `${verb} the suggestion "${s.ti
 export function ProposalSuggestions({ open, undoable }: { open: SuggestionView[]; undoable: SuggestionView[] }) {
   if (!open.length && !undoable.length) return null;
   return (
-    <div className="card pinnable suggested" style={{ marginBottom: 28 }}>
+    <div className="card pinnable suggested gap-below">
       <div className="card-head"><h2>Suggested by amax</h2><span className="chip agent">An agent suggests, a person decides</span><a className="btn sm" href="/suggestions">All suggestions</a></div>
       <ul className="suggested-list">
         {open.map((s) => (

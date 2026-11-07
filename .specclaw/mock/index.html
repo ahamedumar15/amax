@@ -737,6 +737,57 @@ body.picking .pinnable:hover{outline:2px dashed var(--violet);outline-offset:2px
 .proposal-search{display:inline-flex}
 .proposal-search input{height:36px;width:200px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;padding:0 10px;font:inherit}
 @media (max-width:860px){.proposal-search{flex:1 1 100%;order:3}.proposal-search input{width:100%}}
+/* 081 amendment 11, as delivery.css draws it: the proposal screens, attention first and aligned. */
+.gap-below{margin-bottom:28px}
+.muted.small{font-size:13px}
+.pager{padding:14px 28px 24px}
+/* AC-96: the attention strip, before the rest of the list. */
+.attn{margin:0 0 22px}
+.attn ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.attn li{--c:var(--ink-2)}
+.attn a{display:flex;align-items:baseline;gap:10px;padding:14px 48px 14px 18px;border-radius:18px;background:var(--card);border-left:5px solid var(--c);color:var(--ink);text-decoration:none;box-shadow:0 1px 2px rgba(40,30,110,.05)}
+.attn a b{font-size:24px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.attn a span{font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.attn a:hover span,.attn a:focus-visible span{text-decoration:underline;text-underline-offset:3px}
+.attn a:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.attn a[aria-current="true"]{box-shadow:0 0 0 2px var(--c)}
+.attn li>.pin{top:50%;margin-top:-15px}
+.attn .attn-suggested{--c:var(--chip-agent)}
+.attn .attn-ready{--c:var(--chip-good)}
+.attn .attn-over{--c:var(--chip-bad)}
+.attn .attn-unassigned{--c:var(--chip-warn)}
+.attn-none{margin:0;font-size:13.5px;color:var(--ink-3)}
+/* AC-102: the table's head in two rows. */
+.card-head.list-head{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:12px}
+.list-head-top{display:flex;align-items:center;gap:16px;min-width:0}
+.list-head-top h2{margin:0;flex:none}
+.list-head>.actions{justify-content:flex-end;align-items:center}
+.list-head .proposal-search input{box-sizing:border-box;max-width:100%}
+/* AC-97, AC-100: the key in a fixed column, the title beside it; the reasons and Yours under the title. */
+.prop-cell{--key:76px;min-width:300px}
+.prop-cell a{display:grid;grid-template-columns:var(--key) minmax(0,1fr);column-gap:12px;align-items:baseline;color:var(--ink);text-decoration:none}
+.prop-cell a b{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.prop-cell a:hover,.prop-cell a:focus-visible{text-decoration:underline;text-underline-offset:3px}
+.prop-tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0 calc(var(--key) + 12px)}
+.prop-tags .chip{height:22px;font-size:11.5px;padding:0 8px}
+.dv-keyed li{--key:40px;display:grid;grid-template-columns:var(--key) minmax(0,1fr);column-gap:12px;align-items:baseline;padding-right:44px}
+.dv-keyed li>.pin{top:50%;margin-top:-15px;right:0}
+/* AC-98: withdrawn, straight under the title. */
+.dv-withdrawn{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-8px 0 22px;padding:12px 16px;border-radius:14px;background:var(--chip-bad-bg);color:var(--ink)}
+.dv-withdrawn p{margin:0;font-size:14px}
+/* AC-103: a Markdown description. */
+.dv-md>:first-child{margin-top:0}
+.dv-md>:last-child{margin-bottom:0}
+.dv-md h3{font-size:15px;font-weight:700;margin:16px 0 6px}
+.dv-md ul{margin:8px 0;padding-left:20px}
+.dv-md li{margin:2px 0}
+.dv-md code{font-size:.92em;padding:1px 5px;border-radius:6px;background:var(--sunken)}
+@media (max-width:640px){
+  .attn ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .list-head-top{flex-wrap:wrap}
+  .list-head>.actions{justify-content:flex-start}
+  .prop-cell{min-width:0}
+}
 </style>
 </head>
 <body>
@@ -1192,6 +1243,26 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     <div class="tcard pinnable" style="max-width:300px;align-self:start"><div class="id">CON-014</div><p>Invoice export to PDF</p><div class="prog"><i style="width:80%"></i></div>
       <div class="foot"><span style="display:inline-flex;align-items:center;gap:6px"><span class="av sm a2">NS</span><span class="chip" style="font-size:11px;padding:1px 7px">Yours</span></span><span>4 of 5, 12 h</span></div></div>
   </div>
+  <h2 style="margin-top:32px">Amendment 11: attention first, aligned</h2>
+  <p class="muted" style="font-size:13px">The Proposals list (and a project's Proposals tab) opens with what needs attention: one tile per reason, each a read-only link that filters the table and carries its own pin (AC-96). Rows that need attention come first, with their reason and a Yours chip under the title (AC-97). The phase tabs sit on their own row (AC-102).</p>
+  <section class="attn" aria-label="Needs attention"><ul>
+    <li class="pinnable attn-suggested"><a href="#"><b>2</b><span>amax suggests</span></a></li>
+    <li class="pinnable attn-ready"><a href="#" aria-current="true"><b>1</b><span>Ready to verify</span></a></li>
+    <li class="pinnable attn-over"><a href="#"><b>1</b><span>Over the estimate</span></a></li>
+    <li class="pinnable attn-unassigned"><a href="#"><b>3</b><span>Unassigned</span></a></li>
+  </ul></section>
+  <div class="card flush" style="margin-bottom:28px">
+    <div class="card-head list-head"><div class="list-head-top"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Planned</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released, all time</button></div></div>
+      <div class="actions"><button class="btn">Filter</button><a class="filter-chip" href="#">Ready to verify<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a><span role="search" class="proposal-search"><input type="search" placeholder="Search proposals" aria-label="Search proposals"></span><button class="btn">Export</button></div></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Owner</th></tr></thead><tbody>
+      <tr><td class="prop-cell"><a href="#"><b>CON-H004</b> Dunning emails</a><span class="prop-tags"><span class="chip agent">amax suggests</span><span class="chip good">Ready to verify</span><span class="chip yours">Yours</span></span></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip agent">Building</span></td><td>Maya Fernando</td></tr>
+    </tbody></table></div>
+    <p class="muted" style="padding:0 28px 20px;font-size:13px">With nothing matching, one row says so inside the table: "No proposals need this: ready to verify" (AC-101).</p>
+  </div>
+  <p class="muted" style="font-size:13px">The proposal page: a withdrawn one says so straight under its title (AC-98); each task is its own pinnable row, offering "Mark T3 of CON-H003 done" or, for a day after closing, "Reopen" (AC-99); a Markdown description reads as text (AC-103).</p>
+  <div class="dv-withdrawn" role="status"><span class="chip bad">Withdrawn</span><p>Replaced by CON-H006. It no longer counts in lists, boards or releases.</p></div>
+  <div class="card pinnable" style="max-width:560px"><div class="card-head"><h2>Tasks</h2><span class="muted small">1 open</span></div>
+    <ul class="dv-list dv-keyed"><li class="pinnable"><b>T3</b><span>Opt-out link</span></li><li class="pinnable"><b>T12</b><span>A longer task title that wraps beside its ref instead of under it</span></li></ul></div>
 </section>
 <section data-change="083-profile-menu-closes" id="083-profile-menu-closes" data-roles="all" data-title="Profile menu closes" data-nav="no" data-parent="001-amax-foundation">
   <h1>The profile menu closes like a menu</h1>
@@ -1712,11 +1783,14 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
 
 <!-- ================= Proposals ================= -->
 <section data-change="007-delivery-projects" id="001-amax-foundation-proposals" data-roles="admin leadership pm engineer finance" data-title="Proposals" data-icon="doc">
-  <!-- 081 (asked and agreed): New proposal beside the heading, a Planned filter and the search box, as the app now renders them. -->
+  <!-- 081 (asked and agreed): New proposal beside the heading, a Planned filter and the search box, as the app now renders them.
+       081 amendment 11: the attention strip first (the fixtures leave nothing needing Maya), the table's head in two rows,
+       the key in its own column. -->
   <div class="row head">
     <div><h1>Proposals</h1><p class="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p></div>
     <div class="actions"><button class="btn primary"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:currentColor;stroke:none"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8z"/></svg>New proposal</button></div>
   </div>
+  <section class="attn" aria-label="Needs attention"><p class="attn-none">Nothing needs attention here.</p></section>
   <div class="cols even" style="margin-bottom:28px">
     <div class="card">
       <div class="card-head"><h2>Proposals by phase</h2><span class="muted" style="font-size:13px">37 in flight</span></div>
@@ -1729,15 +1803,15 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
     </div>
   </div>
   <div class="card flush">
-    <div class="card-head"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Planned</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released, all time</button></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><span role="search" class="proposal-search"><input type="search" placeholder="Search proposals" aria-label="Search proposals by key or title, then press Enter"></span><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
+    <div class="card-head list-head"><div class="list-head-top"><div class="seg" role="group" aria-label="Phase"><button aria-pressed="true">All</button><button aria-pressed="false">Proposed</button><button aria-pressed="false">Planned</button><button aria-pressed="false">Building</button><button aria-pressed="false">Verified</button><button aria-pressed="false">Released, all time</button></div></div><div class="actions"><button class="btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter</button><span role="search" class="proposal-search"><input type="search" placeholder="Search proposals" aria-label="Search proposals by key or title, then press Enter"></span><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Export</button></div></div>
     <div class="scroll-x"><table class="tbl">
       <thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Tasks</th><th class="num">Time</th><th>Release</th><th>Shipped to</th><th>Owner</th></tr></thead>
       <tbody>
-      <tr><td><b>CON-014</b> Invoice export</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip agent">Building</span></td><td><div class="meter"><i style="width:60%;background:var(--violet)"></i></div></td><td class="num">7.5 h</td><td>v2.5.0</td><td class="muted">Not yet</td><td>Nimal Silva</td></tr>
-      <tr><td><b>CON-012</b> SSO token refresh</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip good">Verified</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">9.0 h</td><td>v2.4.0</td><td>QA</td><td>Ayesha Rahman</td></tr>
-      <tr><td><b>CON-010</b> Email digest</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip good">Verified</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">14.0 h</td><td>v2.4.0</td><td>QA</td><td>Kasun Dias</td></tr>
-      <tr><td><b>CON-009</b> Reports v2</td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip pink">Released</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">22.5 h</td><td>v2.3.0</td><td><span class="chip good">Prod</span></td><td>Nimal Silva</td></tr>
-      <tr><td><b>FLT-015</b> Bulk upload</td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip warn">Proposed</span></td><td class="muted">–</td><td class="num">0.5 h</td><td class="muted">None</td><td class="muted">Not yet</td><td>Kasun Dias</td></tr>
+      <tr><td class="prop-cell"><a href="#081-proposals-end-to-end"><b>CON-014</b> Invoice export</a></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip agent">Building</span></td><td><div class="meter"><i style="width:60%;background:var(--violet)"></i></div></td><td class="num">7.5 h</td><td>v2.5.0</td><td class="muted">Not yet</td><td>Nimal Silva</td></tr>
+      <tr><td class="prop-cell"><a href="#081-proposals-end-to-end"><b>CON-012</b> SSO token refresh</a></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip good">Verified</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">9.0 h</td><td>v2.4.0</td><td>QA</td><td>Ayesha Rahman</td></tr>
+      <tr><td class="prop-cell"><a href="#081-proposals-end-to-end"><b>CON-010</b> Email digest</a></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip good">Verified</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">14.0 h</td><td>v2.4.0</td><td>QA</td><td>Kasun Dias</td></tr>
+      <tr><td class="prop-cell"><a href="#081-proposals-end-to-end"><b>CON-009</b> Reports v2</a></td><td><span class="dot" style="background:var(--violet)"></span>Contoso Portal</td><td><span class="chip pink">Released</span></td><td><div class="meter"><i style="width:100%;background:var(--mint)"></i></div></td><td class="num">22.5 h</td><td>v2.3.0</td><td><span class="chip good">Prod</span></td><td>Nimal Silva</td></tr>
+      <tr><td class="prop-cell"><a href="#081-proposals-end-to-end"><b>FLT-015</b> Bulk upload</a></td><td><span class="dot" style="background:var(--amber)"></span>Fleet Tracker</td><td><span class="chip warn">Proposed</span></td><td class="muted">–</td><td class="num">0.5 h</td><td class="muted">None</td><td class="muted">Not yet</td><td>Kasun Dias</td></tr>
       </tbody></table></div>
   </div>
 </section>

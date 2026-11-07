@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, canEver, type Viewer } from "@amax/auth";
 import { getRuntime } from "@amax/core/server";
-import { getDeployment, getEnvironment, getProposal, listReleases, type ProposalRow } from "./queries";
+import { getDeployment, getEnvironment, getProposal, getProposalTask, listReleases, type ProposalRow } from "./queries";
 
 // 081 amendments 2 and 3 (AC-30, AC-38): what a pinned Delivery record offers in chat. Each offer is the prompt its
 // tool's chat flow takes; a click fills the box, the write waits for the confirm card. Read when chat asks, so the
@@ -168,6 +168,18 @@ export async function deploymentOffers(v: Viewer, a: Args) {
   const [p] = await read(v, (tx) => tx.execute(sql`select id from delivery.project where key = ${d.projectKey}`));
   return allowed(v, [{ label: `Void the ${d.environment} deployment of ${d.projectKey} ${d.version}`, prompt: `Void the ${d.environment} deployment of ${d.projectKey} ${d.version} (id ${d.id}). Reason: `,
     tool: "void_deployment", permission: "delivery:deployment:record" }], (p?.id as string | undefined) ?? null);
+}
+
+/** 081 amendment 11 (AC-99): a task: close it while open, or reopen it within a day of closing (AC-59's window). */
+export async function taskOffers(v: Viewer, a: Args) {
+  const taskId = str(a.taskId);
+  if (!taskId || !can(v, "delivery:read")) return [];
+  const t = await getProposalTask(v, taskId);
+  if (!t || t.withdrawn || t.phase === "released") return [];
+  const name = `${t.ref} of ${t.proposalKey}`;
+  if (!t.done) return allowed(v, [{ label: `Mark ${name} done`, prompt: `Mark ${name} done`, tool: "mark_task_done", permission: "delivery:task:done" }], t.projectId);
+  const recent = t.doneAt !== null && Date.now() - new Date(t.doneAt).getTime() < 24 * 3600 * 1000;
+  return recent ? allowed(v, [{ label: `Reopen ${name}`, prompt: `Reopen ${name}`, tool: "reopen_task", permission: "delivery:task:done" }], t.projectId) : [];
 }
 
 /** The lists: a new record in the named project, or anywhere the viewer may make one. */

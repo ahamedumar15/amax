@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { can, type Viewer } from "@amax/auth";
 import { facet, PinButton, Since } from "@amax/ui";
 import { projectHref, releaseHref } from "../contracts";
-import { projectPin, proposalPin } from "../pins";
+import { projectPin, proposalPin, taskPin } from "../pins";
+import { Markdown } from "./Markdown";
 import { proposalDetail, type EventKind, type ProposalDetail } from "../server/proposal-detail";
 import { AskButton } from "./AskButton";
 import { timeBand } from "./band";
@@ -78,19 +79,23 @@ function ReleaseCard({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactN
 }
 
 // AC-51: open tasks first; the done ones fold into one row, open when every task is done.
+// 081 amendment 11 (AC-99, AC-100): each task its own pinnable row, the ref in a fixed column.
 function Tasks({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode }) {
   const open = p.tasks.filter((t) => !t.done);
   const done = p.tasks.filter((t) => t.done);
-  const row = (t: ProposalDetail["tasks"][number]) => <li key={t.ref}><b>{t.ref}</b> {t.title}{t.done && t.doneAt && <small className="muted"> · {day(t.doneAt)}</small>}</li>;
+  const row = (t: ProposalDetail["tasks"][number]) => (
+    <li key={t.ref} className="pinnable"><b>{t.ref}</b><span>{t.title}{t.done && t.doneAt && <small className="muted"> · {day(t.doneAt)}</small>}</span>
+      <PinButton pin={taskPin({ ...t, proposalKey: p.key })} /></li>
+  );
   return (
     <div className="card pinnable dv-tasks">
-      <div className="card-head"><h2>Tasks</h2>{pin("tasks")}{open.length > 0 && <span className="muted" style={{ fontSize: 13 }}>{open.length} open</span>}</div>
+      <div className="card-head"><h2>Tasks</h2>{pin("tasks")}{open.length > 0 && <span className="muted small">{open.length} open</span>}</div>
       {p.tasks.length === 0 && <p className="muted">No tasks yet.</p>}
-      {open.length > 0 && <ul className="dv-list">{open.map(row)}</ul>}
+      {open.length > 0 && <ul className="dv-list dv-keyed">{open.map(row)}</ul>}
       {done.length > 0 && (
         <details className="dv-fold dv-done" open={open.length === 0}>
           <summary><span className="chip good">{open.length === 0 ? `All ${done.length} done` : `${done.length} done`}</span><span className="dv-chev" aria-hidden="true" /></summary>
-          <ul className="dv-list">{done.map(row)}</ul>
+          <ul className="dv-list dv-keyed">{done.map(row)}</ul>
         </details>
       )}
     </div>
@@ -150,15 +155,17 @@ export async function ProposalPage({ viewer, proposalKey }: { viewer: Viewer; pr
           <ProposalActions p={p} may={may} />
         </div>
       </div>
+      {/* 081 amendment 11 (AC-98): withdrawn is the first thing to know, so it sits under the title, as a warning. */}
+      {p.withdrawn && <div className="dv-withdrawn" role="status"><span className="chip bad">Withdrawn</span><p>{withdrawnBecause(p.withdrawReason)} It no longer counts in lists, boards or releases.</p></div>}
       {/* AC-55: the project's tabs stay, Proposals current, so the board is one click away. */}
       <ProjectTabs projectKey={p.project.key} current="proposals" />
       <Stepper pin={ref} p={p} />
       <ProposalSuggestions {...suggested} />
-      {p.withdrawn && <div className="card" role="status" style={{ marginBottom: 28 }}><p><b>Withdrawn:</b> {withdrawnBecause(p.withdrawReason)} It no longer counts in lists, boards or releases.</p></div>}
-      <div className="cols even" style={{ marginBottom: 28 }}><TimeCard p={p} pin={pin} /><ReleaseCard p={p} pin={pin} /></div>
-      <div className="card pinnable" style={{ marginBottom: 28 }}>
+      <div className="cols even gap-below"><TimeCard p={p} pin={pin} /><ReleaseCard p={p} pin={pin} /></div>
+      <div className="card pinnable gap-below">
         <div className="card-head"><h2>Description</h2>{pin("description")}</div>
-        {p.description ? <p style={{ whiteSpace: "pre-wrap" }}>{p.description}</p> : <p className="muted">{p.source === "specclaw" ? "The spec lives in the repo." : "No description yet."}</p>}
+        {/* AC-103: Markdown reads as text. */}
+        {p.description ? <Markdown text={p.description} /> : <p className="muted">{p.source === "specclaw" ? "The spec lives in the repo." : "No description yet."}</p>}
         {(p.meta as { pr?: string | null }).pr && <p><a href={(p.meta as { pr: string }).pr} rel="noreferrer">Pull request {(p.meta as { pr: string }).pr.split("/").at(-1)}</a></p>}
       </div>
       <div className="cols even"><Tasks p={p} pin={pin} /><History p={p} pin={pin} /></div>

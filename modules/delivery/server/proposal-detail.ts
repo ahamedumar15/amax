@@ -7,7 +7,7 @@ import { day } from "../pins";
 import { byLine } from "./activity";
 import { proposalWhere, type ProposalRow } from "./queries";
 
-export type ProposalTask = { ref: string; title: string; done: boolean; doneAt: string | null };
+export type ProposalTask = { id: string; ref: string; title: string; done: boolean; doneAt: string | null };
 export type ProposalStage = { environment: string; isProd: boolean; status: string | null; at: string | null };
 // 081 amendment 4 (AC-50): each line's kind picks its icon on the timeline; a move also says the phase it entered (AC-47).
 export type EventKind = "created" | "moved" | "task" | "reopened" | "time" | "edited" | "withdrawn" | "synced";
@@ -111,8 +111,8 @@ export const proposalDetail = (v: Viewer, ref: { proposalId?: string; key?: stri
     if (!row) return null;
     const [p] = await tx.execute(sql`select p.project_id, p.release_id, p.withdrawn_at, p.withdraw_reason, p.released_at, p.source_ref, pr.key, pr.name, pr.status
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.id = ${row.id}`);
-    const tasks = (await tx.execute(sql`select ref, title, done, done_at from delivery.task where proposal_id = ${row.id} order by length(ref), ref`))
-      .map((t) => ({ ref: t.ref as string, title: t.title as string, done: Boolean(t.done), doneAt: iso(t.done_at) }));
+    const tasks = (await tx.execute(sql`select id, ref, title, done, done_at from delivery.task where proposal_id = ${row.id} order by length(ref), ref`))
+      .map((t) => ({ id: t.id as string, ref: t.ref as string, title: t.title as string, done: Boolean(t.done), doneAt: iso(t.done_at) }));
     const stages = p.release_id ? (await tx.execute(sql`select e.name, e.is_prod, d.status, d.at from delivery.environment e
         left join lateral (select status, at from delivery.deployment where release_id = ${p.release_id} and environment_id = e.id and voided_at is null order by at desc limit 1) d on true
         where e.project_id = ${p.project_id} order by e.position`)).map((e) => ({ environment: e.name as string, isProd: Boolean(e.is_prod), status: (e.status as string | null) ?? null, at: iso(e.at) })) : [];

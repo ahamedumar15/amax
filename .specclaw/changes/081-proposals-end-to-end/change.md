@@ -859,6 +859,58 @@ and asked for it aligned, without the scroll bar. Three causes:
 There's no data, tool or permission change. **Affected:** `modules/delivery/ui/ReleasePage.tsx`,
 `modules/delivery/ui/delivery.css`. The mock has no release detail screen, so it's unchanged.
 
+## Amendment 11 (2026-11-07): the proposal screens, attention first and aligned
+
+A UI review of the proposal screens found the gaps below, and the product owner asked for all of them fixed in one
+amendment ("fix everything in 081 single amendment").
+
+### What needs attention leads
+
+95. **AC-95** An open proposal (not Released, not withdrawn) **needs attention** for any of four reasons, in this order:
+    **amax suggests** (an open Delivery suggestion the viewer may decide), **Ready to verify** (Building, with every
+    task done), **Over the estimate** (approved hours past it) and **Unassigned** (no owner).
+96. **AC-96** The Proposals list (the portfolio list, before its charts, and a project's Proposals tab, above the table)
+    opens with an **attention strip**: one tile per reason with a count, for the proposals the other filters show.
+    - **A tile** is a read-only link that filters the table to that reason (`?need=suggested|ready|over|unassigned`).
+      The other filters keep it and it keeps them; a chip names it and clears it.
+    - **Each tile is pinnable.** Its pin resolves through `list_proposals`, which takes a new `need` option.
+    - **A reason with none** is left out. When nothing needs attention, the strip says so in one quiet line.
+97. **AC-97** The table puts proposals that need attention first, in AC-95's order, then the rest as before (newest
+    change first). Each Proposal cell shows the reason's chip ("amax suggests", "Ready to verify", "Over the estimate",
+    "Unassigned") and a **Yours** chip on the viewer's own proposals, as the board card does (AC-90).
+98. **AC-98** A withdrawn proposal's page shows a **Withdrawn** band straight under its title, before the tabs, as a
+    warning; it no longer sits after the stepper and suggestions.
+
+### Every record pinnable
+
+99. **AC-99** Each task on the proposal page, open or done, has its own pin. It resolves through a new read tool,
+    **`get_proposal_task`** (by `taskId`; a proposal key only narrows), to that task. The pin offers **"Mark <T> of
+    <key> done"** while it's open, and **"Reopen <T> of <key>"** for a day after it was closed (AC-59's window), to
+    whoever may close tasks on that project.
+
+### Aligned, and no empty tables
+
+100. **AC-100** The key sits in a fixed column, with the title wrapping beside it, in the table's Proposal cell and in
+     the proposal page's task rows, as on the release page (AC-94).
+101. **AC-101** A table that matches nothing shows one row inside it ("No proposals match …", "No proposals need this",
+     "No proposals yet"), as the deployment history does.
+102. **AC-102** The table's head is two rows: the phase tabs on the first, the filter, its chips, search and Export on
+     the second, right-aligned. A project tab's title stays at the start of the first row.
+103. **AC-103** A description written in Markdown reads as text: paragraphs, `-` or `*` lists, `#` headings,
+     `**bold**` and `` `code` `` (rendered as React elements, never as HTML). The page's inline styles move into
+     `delivery.css` classes.
+
+### Tests
+
+104. **AC-104** Unit tests: the four reasons and their order, the tile counts following the filters, `need` on
+     `list_proposals`, the table order and chips, the empty row, `get_proposal_task` and its offers, the Withdrawn band's
+     place, the Markdown rendering. The 081 suites stay green.
+
+There's no migration, write tool or permission. **Affected:** Delivery `server/attention.ts` (new),
+`server/queries.ts`, `server/pin-offers.ts`, `pin-suggestions.ts`, `pins.ts`, `mcp.ts`, `ui/Attention.tsx` (new),
+`ui/ProposalsPage.tsx`, `ui/ProjectLists.tsx`, `ui/ProposalPage.tsx`, `ui/ProposalSearch.tsx`, `ui/ProposalSuggestions.tsx`,
+`ui/Markdown.tsx` (new), `ui/delivery.css`, `README.md`, tests; the mock's 081 section and its copy.
+
 ## Tasks
 
 Order follows the commit phases (backend before UI, because the screens read the new contracts). One commit per phase.
@@ -979,6 +1031,15 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [x] `T37` — Amendment 10, the release page's Tag and proposals card: the tag shown, aligned rows, no inner scroll bar (AC-92 to AC-94)
   Files: modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/delivery.css
   Depends: T24
+- [x] `T38` — Amendment 11, reads: the four reasons, `need` on `list_proposals`, `get_proposal_task` and its pin offers (AC-95, AC-99)
+  Files: modules/delivery/server/attention.ts, modules/delivery/server/queries.ts, modules/delivery/server/pin-offers.ts, modules/delivery/pin-suggestions.ts, modules/delivery/pins.ts, modules/delivery/mcp.ts, modules/delivery/tests/attention-a11.test.ts
+  Depends: T37
+- [x] `T39` — Amendment 11, screens: the attention strip, table order and chips, two-row head, empty row, key column, Withdrawn band, task pins, Markdown, classes for inline styles; mock (AC-96 to AC-98, AC-100 to AC-103)
+  Files: modules/delivery/ui/Attention.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/ProposalSearch.tsx, modules/delivery/ui/ProposalSuggestions.tsx, modules/delivery/ui/Markdown.tsx, modules/delivery/ui/delivery.css, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+  Depends: T38
+- [x] `T40` — Amendment 11, tests and README (AC-104)
+  Files: modules/delivery/tests/attention-a11.test.ts, modules/delivery/README.md, apps/web/tests/e2e/delivery.spec.ts
+  Depends: T39
 
 ## Verify
 
@@ -1308,3 +1369,17 @@ It found and fixed one gap: Yours was missing on agent-made cards (AC-90 revised
 - **The one-project case:** Claude widened the buttons to every project. This one is for the product owner.
 
 Review loop: still not run (the specclaw-review server isn't connected).
+
+### Amendment 11 verification (2026-11-07, Windows host)
+
+- **Unit tests** against the local dev Postgres (`DATABASE_MIGRATE_URL` set): `attention-a11` 7/7 (AC-95 to AC-104).
+  Delivery, Notifications and the web app's nav and page-context suites: 356 of 357; the one failure is the known
+  host-only backslash path in `releases.test.ts` ("assignProposals ... two call sites"). Web and AI unit suites 416/416.
+- **Type checks:** Delivery and the web app, clean. The graph check finds 0 modules on this host, so it proves nothing
+  here; it runs on Linux CI.
+- **On the running app** as Maya, 1440 and 390 px: the strip (nothing needs Maya in the dev data), the two-row head,
+  the key column, the task rows. The 390 px pass found the two-row head sized to its widest content (it inherited
+  `flex-wrap:wrap`) and the search box overflowing; both fixed.
+- **e2e:** one assertion now reads the Proposal cell's link, not the whole cell, since the cell can carry chips.
+  **Not yet run:** `e2e:auth`, including the delivery visual comparison. 001's Proposals mock section now shows the
+  strip line, the two-row head and the key column, with the same CSS; run the Linux CI replica to confirm it's within 2%.

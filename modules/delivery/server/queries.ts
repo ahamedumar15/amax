@@ -334,3 +334,14 @@ export const getDeployment = async (v: Viewer, deploymentId: string, scope: { pr
   const d = (await getRelease(v, undefined, undefined, hit.release_id as string))?.history.find((x) => x.id === deploymentId);
   return d ? { projectKey: hit.project_key as string, version: hit.version as string, ...d } : null;
 };
+
+/** 081 amendment 11 (AC-99): one task, for its row's pin. By id; a proposal key only narrows (a mismatch is not found). */
+export type ProposalTaskRow = { id: string; ref: string; title: string; done: boolean; doneAt: string | null; proposalId: string; proposalKey: string; proposalTitle: string; projectId: string; phase: Phase; withdrawn: boolean; createdAt: string | null };
+export const getProposalTask = (v: Viewer, taskId: string, scope: { key?: string } = {}) =>
+  read(v, async (tx): Promise<ProposalTaskRow | null> => {
+    const [t] = await tx.execute(sql`select t.id, t.ref, t.title, t.done, t.done_at, p.id as proposal_id, p.key, p.title as proposal_title, p.project_id, p.phase, not ${ACTIVE} as withdrawn
+      from delivery.task t join delivery.proposal p on p.id = t.proposal_id where t.id::text = ${taskId}`);
+    if (!t || (scope.key && scope.key !== t.key)) return null;
+    return { id: t.id as string, ref: t.ref as string, title: t.title as string, done: Boolean(t.done), doneAt: iso(t.done_at), proposalId: t.proposal_id as string,
+      proposalKey: t.key as string, proposalTitle: t.proposal_title as string, projectId: t.project_id as string, phase: t.phase as Phase, withdrawn: Boolean(t.withdrawn), createdAt: null };
+  });

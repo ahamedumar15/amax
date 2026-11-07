@@ -26,6 +26,8 @@ export const deploymentPin = (d: Deployment): PinRef =>
 
 type Push = { id: string; projectKey: string; sha: string; outcome: string; at: string };
 export const repoSyncPin = (p: { id: string; key: string }): PinRef => ({ label: `${p.key} repo sync`, tool: "get_repo_sync", args: { projectId: p.id } });
+/** 081 amendment 11 (AC-99): one task of a proposal, by its id. */
+export const taskPin = (t: { id: string; ref: string; title: string; proposalKey: string }): PinRef => ({ label: `${t.proposalKey} ${t.ref} ${t.title}`, tool: "get_proposal_task", args: { taskId: t.id } });
 export const pushPin = (p: Push): PinRef => ({ label: `${p.projectKey} push ${p.sha.slice(0, 7)} ${p.outcome}, ${day(p.at)}`, tool: "get_sync_push", args: { pushId: p.id } });
 
 // The record a read tool's result is, for its pin: its id, label now and, where the name it was once
@@ -36,6 +38,7 @@ const pinned = <R extends { id: string; createdAt?: string | null }>(pin: (r: R)
 export const pinOf = {
   project: (r: { project: { id: string; name: string } } | null) => pinned(projectPin)(r?.project),
   proposal: pinned(proposalPin),
+  task: pinned(taskPin),
   release: pinned(releasePin),
   history: pinned(historyPin),
   environment: pinned(environmentPin),
