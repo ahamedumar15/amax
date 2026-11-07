@@ -1,9 +1,8 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { defineService } from "@amax/core/server";
-import { invalid } from "./refusal";
+import { defineService, ForbiddenError } from "@amax/core/server";
 
-/** Review round 2: the one job that may write hours, Time's (it imports the name from Delivery's contracts). */
+/** Review round 2 (round 3: a denial, ForbiddenError): the one job that may write hours, Time's (it imports the name from Delivery's contracts). */
 export const PROPOSAL_HOURS_JOB = "time.proposal-hours";
 
 /**
@@ -18,7 +17,7 @@ export const setProposalHours = defineService({
   resource: "delivery.proposal",
   input: z.object({ projectIds: z.array(z.uuid()), totals: z.record(z.uuid(), z.number().min(0)) }),
   async run(tx, input, ctx) {
-    if (ctx.actor.id !== `job:${PROPOSAL_HOURS_JOB}`) throw invalid("a proposal's hours come from Time's approved entries; only Time's job writes them");
+    if (ctx.actor.id !== `job:${PROPOSAL_HOURS_JOB}`) throw new ForbiddenError("delivery:proposal:hours", "delivery.proposal");
     if (!input.projectIds.length) return { result: { changed: 0 }, resourceId: null, after: { projects: 0, changed: 0 } };
     const json = JSON.stringify(input.totals);
     const changed = await tx.execute(sql`update delivery.proposal p set hours = round(coalesce((${json}::jsonb ->> p.id::text)::numeric, 0), 2)

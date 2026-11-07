@@ -11,7 +11,7 @@ type Row = Record<string, unknown>;
 
 /** The page shows a proposal's newest 100 time lines the viewer may see. */
 export const MAX_LINES = 100;
-const BATCH = 200;
+export const BATCH = 200;
 
 const onProposal = (id: string) => sql`resource in ('time.entry', 'time.change_request') and (after->>'proposalId' = ${id} or after->>'previousProposalId' = ${id})`;
 

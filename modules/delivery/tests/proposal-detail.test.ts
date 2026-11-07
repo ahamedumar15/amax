@@ -136,7 +136,10 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
       ["a task line on another proposal", { proposalId: id, line: "task:00000000-0000-4000-8000-000000000001" }, (r) => expect(r).toBeNull()],
       ["a time line this viewer may not see", { proposalId: id, line: "time:1" }, (r) => expect(r).toBeInstanceOf(ForbiddenError)],
     ];
+    // Review round 3 (B3): with Time switched off there is nothing to ask, so a time line is unreadable, not gone.
+    cases.push(["a time line with Time switched off", { proposalId: id, line: "time:1", off: true }, (r) => expect(r).toMatchObject({ code: "invalid_input", message: expect.stringMatching(/Time module isn't running/) })]);
     for (const [label, args, check] of cases) {
+      if ((args as { off?: boolean }).off) setProvided([]);
       const r = await event(maya, args).catch((e: unknown) => e);
       try { check(r); } catch (e) { throw new Error(`${label}: ${(e as Error).message}`); }
     }

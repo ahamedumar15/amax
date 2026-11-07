@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant } from "@amax/db";
 import { hasDb } from "@amax/db/testdb";
 import { getProposalRef, setProposalHours } from "@amax/delivery/contracts";
-import { contextFor } from "@amax/core/server";
+import { contextFor, ForbiddenError } from "@amax/core/server";
 import { EVENTS } from "../contracts";
 import { ctxFor } from "../server/context";
 import { approveWeek } from "../server/decide";
@@ -62,7 +62,7 @@ describe.skipIf(!hasDb)("081 proposal hours (Postgres)", () => {
     ["a person", () => ({ tenantId: T, actor: { id: "user:00000000-0000-4000-8000-000000000009", kind: "user" as const }, source: "ui" as const })],
   ])("review-2 %s can't write a proposal's hours", async (_label, ctx) => {
     const project = (await db.q(sql`select project_id from delivery.proposal where key = 'CON-014'`))[0].project_id as string;
-    await expect(setProposalHours(ctx(), { projectIds: [project], totals: {} })).rejects.toThrow(/only Time's job|forbidden/);
+    await expect(setProposalHours(ctx(), { projectIds: [project], totals: {} })).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   // Review round 1 (B7): a refresh that reads while another holds the project waits for it, so an older total can't land last.

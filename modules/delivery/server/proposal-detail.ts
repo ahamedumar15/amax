@@ -54,6 +54,8 @@ const hrs = (n: unknown) => `${Number(Number(n).toFixed(2))} h`;
 
 async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string, line?: string): Promise<ProposalTimeLine[]> {
   const sources = provided<ProposalTimeSource>(PROPOSAL_TIME_SLOT);
+  // Review round 3 (B3): a pinned time line with no module to ask is unreadable, never "gone" (null).
+  if (line && !sources.length) throw invalid("time lines can't be read here: the Time module isn't running");
   return (await Promise.all(sources.map((source) => source(tx, v, { id, projectId }, line ? { line } : undefined)))).flat();
 }
 

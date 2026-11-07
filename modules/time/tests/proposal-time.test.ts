@@ -14,7 +14,7 @@ import { chatIntents } from "../chat";
 import { proposeLog } from "../server/entry-card";
 import { EVENTS as DELIVERY, PROPOSAL_TIME_SLOT, type CommitTime } from "@amax/delivery/contracts";
 import timeModule from "../module";
-import { MAX_LINES, proposalTimeLines } from "../server/proposal-lines";
+import { BATCH, MAX_LINES, proposalTimeLines } from "../server/proposal-lines";
 import { randomUUID } from "node:crypto";
 import { appendAudit, ForbiddenError } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
@@ -148,7 +148,7 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     }
   });
 
-  // Review round 2 (B3): the rule applies before the 100-line cap, and one line is read directly for its pin, its owner
+  // Review round 2 (B3): the rule applies before the 100-line cap (round 3: past one batch, so the second page runs), and one line is read directly for its pin, its owner
   // getting it, someone else refused (not "gone"), and an unknown line empty.
   it("review-2 an owner keeps their own line however many newer lines others logged, and a pin's line is read directly", async () => {
     const nimal = await db.as("nimal");
@@ -157,7 +157,7 @@ describe.skipIf(!hasDb)("081 time against a proposal (Postgres)", () => {
     await logTime(ctxFor(nimal), { projectKey: "CON", proposalKey: "CON-012", day: "2026-10-26", hours: 1 });
     const tharushi = await db.as("tharushi");
     await withTenant(db.app, T, async (tx) => {
-      for (let i = 0; i < MAX_LINES + 50; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-27", hours: 0.25 } });
+      for (let i = 0; i < BATCH + 50; i++) await appendAudit(tx, ctxFor(tharushi), { action: "time.entry.log", resource: "time.entry", resourceId: randomUUID(), after: { proposalId: proposal.id, userId: tharushi.userId, day: "2026-10-27", hours: 0.25 } });
     });
     const lines = (v: Viewer, opts?: { line?: string }) => withTenant(db.app, T, (tx) => proposalTimeLines(tx, v, proposal, opts));
     const own = (await lines(nimal)).filter((l) => l.userId === nimal.userId && l.day === "2026-10-26");
