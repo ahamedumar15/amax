@@ -89,9 +89,18 @@ describe.skipIf(!hasDb)("089 sync_specclaw: duplicates and withdrawal", () => {
     const all = ["101-export", "102-import", "104-new", "105-a", "106-b", "107-c"];
     await push(all, { committedAt: "2026-10-10T09:00:00Z" });
     const held = await push(["101-export"], { committedAt: "2026-10-10T10:00:00Z", withdrawMissing: true, dryRun: true });
-    expect(held).toMatchObject({ withdrawn: 0, needsReview: true, skipped: [expect.stringMatching(/^FLT: withdrawal held: it would withdraw 5 of 6 proposals .*confirmWithdraw 5$/)] });
+    expect(held).toMatchObject({ withdrawn: 0, needsReview: true, skipped: [expect.stringMatching(/^FLT: withdrawal held: it would withdraw 5 of 6 proposals .*sync again confirming 5 \(/)] });
     expect(await push(["101-export"], { committedAt: "2026-10-10T10:00:00Z", withdrawMissing: true, confirmWithdraw: 4, dryRun: true })).toMatchObject({ withdrawn: 0, needsReview: true });
     expect(await push(["101-export"], { committedAt: "2026-10-10T10:00:00Z", withdrawMissing: true, confirmWithdraw: 5 })).toMatchObject({ outcome: "applied", withdrawn: 5, needsReview: false });
     expect(await row("FLT-107")).toMatchObject({ withdrawn: "true" });
+  });
+
+  it("AC-12 the self-sync holds a mass withdrawal too, and applies it once confirmed with its count (--confirm-withdraw)", async () => {
+    const maya = (await loadViewer(app, T, (await signInDemo(app, T, "maya@lumenlabs.test")).sessionId))!;
+    const sync = (dirs: string[], confirmWithdraw?: number) => syncSpecclaw(app, ctxFor(maya), { projectKey: "SSC", projectName: "Self-sync", client: "x", records: fakeRepo(dirs), sha: "5e1f5e0", committedAt: "2026-10-11T00:00:00Z", confirmWithdraw });
+    await sync(["201-a", "202-b", "203-c", "204-d", "205-e", "206-f"]);
+    expect(await sync(["201-a"])).toMatchObject({ withdrawn: 0, skipped: [expect.stringMatching(/^SSC: withdrawal held: it would withdraw 5 of 6 proposals .*--confirm-withdraw\)$/)] });
+    expect(await sync(["201-a"], 4)).toMatchObject({ withdrawn: 0 });
+    expect(await sync(["201-a"], 5)).toMatchObject({ withdrawn: 5, skipped: [] });
   });
 });

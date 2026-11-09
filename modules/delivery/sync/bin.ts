@@ -1,4 +1,5 @@
 // pnpm --filter @amax/delivery sync:specclaw --repo <path> --sha <commit> [--overlay <path>=<ref@sha>]... [--project AMX]
+//   [--confirm-withdraw <n>]: confirm a held mass withdrawal, naming the count the hold reported (089).
 // Env: DATABASE_URL (the app role), AMAX_SYNC_TOKEN (a service principal with delivery:proposal:sync),
 // AUDIT_HASH_KEY. One-way: it never writes to the repo.
 import { execFileSync } from "node:child_process";
@@ -11,7 +12,7 @@ import { syncSpecclaw } from "./import";
 
 const { values } = parseArgs({
   options: { repo: { type: "string" }, overlay: { type: "string", multiple: true }, project: { type: "string", default: "AMX" }, name: { type: "string", default: "amax" },
-    client: { type: "string", default: "Internal" }, sha: { type: "string" } },
+    client: { type: "string", default: "Internal" }, sha: { type: "string" }, "confirm-withdraw": { type: "string" } },
 });
 const env = process.env;
 for (const k of ["DATABASE_URL", "AMAX_SYNC_TOKEN", "AUDIT_HASH_KEY"]) if (!env[k]) throw new Error(`set ${k}`);
@@ -34,7 +35,8 @@ try {
   const records = readSpecclaw({ dir: values.repo, ref: `main@${values.sha}` }, overlays);
   // 062: the commit's time moves each proposal's stale mark, so a developer's push of an older commit is refused.
   const committedAt = execFileSync("git", ["-C", values.repo, "show", "-s", "--format=%cI", values.sha!], { encoding: "utf8" }).trim();
-  const r = await syncSpecclaw(db, ctx, { projectKey: values.project!, projectName: values.name!, client: values.client!, records, sha: values.sha!, committedAt });
+  const r = await syncSpecclaw(db, ctx, { projectKey: values.project!, projectName: values.name!, client: values.client!, records, sha: values.sha!, committedAt,
+    confirmWithdraw: /^\d+$/.test(values["confirm-withdraw"] ?? "") ? Number(values["confirm-withdraw"]) : undefined });
   console.log(`specclaw sync ${values.sha}: ${records.length} changes, ${r.created} created, ${r.updated} updated, ${r.unchanged} unchanged, ${r.withdrawn} withdrawn${r.skipped.length ? `, ${r.skipped.length} skipped` : ""}`);
   for (const s of r.skipped) console.log(`  skipped ${s}`);
 } finally {

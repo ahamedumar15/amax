@@ -44,7 +44,7 @@ export const storedSpecRows = (tx: Tx, projectKey: string) =>
  * One-way import of a repo's specclaw changes into a delivery project, as a caller of sync_proposal's
  * service (008 AC-7): audited as `ctx`, the sync's service principal, and only for changed rows.
  */
-export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt: string }): Promise<SyncResult> {
+export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt: string; confirmWithdraw?: number }): Promise<SyncResult> {
   const existing = await withTenant(db, ctx.tenantId, (tx) => storedSpecRows(tx, opts.projectKey));
   const stored = new Map(existing.map((e) => [e.key as string, e as Record<string, unknown>]));
   const byKey = new Map(stored);
@@ -80,7 +80,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
   if (same.length) await markSynced(ctx, { projectKey: opts.projectKey, keys: same, committedAt: opts.committedAt });
   // Folders that disappeared are marked withdrawn, never deleted, by the same rule as a push (089 review round 1). It
   // reads main and every specclaw branch at once, so any ref counts.
-  const plan = planWithdrawals(stored, { named: new Set(opts.records.map((r) => `${opts.projectKey}-${r.number}`)), refs: null, committedAt: opts.committedAt, read: opts.records.length });
+  const plan = planWithdrawals(stored, { named: new Set(opts.records.map((r) => `${opts.projectKey}-${r.number}`)), refs: null, committedAt: opts.committedAt, read: opts.records.length, confirm: opts.confirmWithdraw });
   if (plan.held) result.skipped.push(`${opts.projectKey}: ${plan.held}`);
   for (const key of plan.keys) {
     const cur = byKey.get(key)!;

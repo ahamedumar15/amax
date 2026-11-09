@@ -20,7 +20,7 @@ export function planWithdrawals(rows: Map<string, Row>, o: { named: Set<string>;
   if (!keys.length) return { keys, held: null };
   if (!o.read) return { keys: [], held: `withdrawal held: the sync read no changes, so it can't tell which ${keys.length} were deleted` };
   if (keys.length > Math.max(2, Math.floor(eligible.length / 2)) && o.confirm !== keys.length) {
-    return { keys: [], held: `withdrawal held: it would withdraw ${keys.length} of ${eligible.length} proposals (${keys.slice(0, 5).join(", ")}${keys.length > 5 ? ", …" : ""}). Check the checkout; if those folders really were deleted, sync again with confirmWithdraw ${keys.length}` };
+    return { keys: [], held: `withdrawal held: it would withdraw ${keys.length} of ${eligible.length} proposals (${keys.slice(0, 5).join(", ")}${keys.length > 5 ? ", …" : ""}). Check the checkout; if those folders really were deleted, sync again confirming ${keys.length} (sync_specclaw's confirmWithdraw, the CI workflow's confirm_withdraw, or sync:specclaw --confirm-withdraw)` };
   }
   return { keys, held: null };
 }

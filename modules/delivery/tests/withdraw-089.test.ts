@@ -17,7 +17,7 @@ describe("089 planWithdrawals", () => {
   it.each([
     ["a gone folder last synced from the default branch", project(6), first(5), ["main"], ["FLT-105"], null],
     ["the sync read no changes", project(6), [], ["main"], [], /read no changes/],
-    ["it would withdraw most of the project", project(6), first(1), ["main"], [], /withdraw 5 of 6 proposals \(FLT-101, .*confirmWithdraw 5$/],
+    ["it would withdraw most of the project", project(6), first(1), ["main"], [], /withdraw 5 of 6 proposals \(FLT-101, .*sync again confirming 5 \(/],
     ["a long release history doesn't raise the cap", project(4, released(20)), first(1), ["main"], [], /withdraw 3 of 4 proposals/],
     ["branch-synced proposals don't raise the cap", project(4, branchSynced(20)), first(1), ["main"], [], /withdraw 3 of 4 proposals/],
     ["a person confirms the held count", project(6), first(1), ["main"], first(6).slice(1), null, 5],

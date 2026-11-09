@@ -77,6 +77,9 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
    <the held count>`; in CI, by running the specclaw sync workflow by hand with its `confirm_withdraw` input. A wrong
    count stays held, and a sync that read nothing can't be confirmed. The number check (AC-10) leaves out folders the
    PR itself renamed or removed (found with the merge base).
+
+   *Review round 3:* the self-sync takes the same confirmation (`sync:specclaw --confirm-withdraw <n>`), and the hold
+   message names every way to send it.
 7. **AC-7** A withdrawn count shows in the preview and the result (`withdrawn`). The plugin's summary line prints it
    too. A preview never writes, as today.
 
