@@ -141,15 +141,73 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
 
 ## Verify
 
-Quality: not_run (`specclaw-quality-scan`: jq "Argument list too long" on this Windows host, as in 081)
+**Verdict:** PASS
 
-**Linux CI replica (2026-11-09, working tree of `249b7e21`):** node:24-bookworm + fresh postgres:16-alpine, the
-`checks` job's steps. Migrate ✅ (79, incl. `0020_sync_push_withdrawn`), lint ✅ (35/35, graph ok), `turbo run test
---force` ✅ (35/35 packages), module standard ✅ (22), build ✅. `AMAX_TEMPORAL_TESTS=0` (Temporal tests skipped).
-e2e: **not_run**. Playwright's browser download didn't finish inside Docker on this network: a Debian mirror error,
-then 46 minutes stuck at 10%, then three 10-minute tries that reached 30%. CI on the PR runs the full e2e suite. Only
-`delivery.spec.ts` covers the changed screen (062 AC-10, the Repo sync rows); its fixture rows have
-`needs_review = false`, so they still read "Applied".
+- AC-1: pass — `specclaw-sync-ci.test` AC-1 (REST URL, bearer key, `amax-act-for`, the plugin reader's records); the
+  workflow names no database secret.
+- AC-2: pass — `specclaw-sync-ci.test` AC-2 (main whole then each `specclaw/*` branch; 201 changes batch at 200 and don't
+  withdraw).
+- AC-3: pass — `specclaw-sync-ci.test` AC-3 (applies with needsReview, every skip a warning).
+- AC-4: pass — `specclaw-sync-ci.test` AC-4 and its table (none set: notice, passes; partly set, empty key, nothing
+  read: fails without pushing; refused and HTTP 403 fail with the reason).
+- AC-5: pass — read: `plugins/amax/README.md` "Sync on every merge (CI)" and `modules/delivery/README.md` "CI pushes
+  (089)" name the credential (`tools: ["sync_specclaw"]`, `delivery:write`, acting for the PM) and the three secrets.
+- AC-6: pass — `sync-push-089` AC-6 (whole default-branch push withdraws; a batch, a branch, an older commit, an empty
+  read don't; a mass withdrawal is held and applied once confirmed; a newer self-sync leaves a branch-only proposal),
+  `withdraw-089` (13 cases).
+- AC-7: pass — `sync-push-089` AC-7 (preview and result count, the push row carries withdrawn and Needs you);
+  `RepoSyncCard.tsx` shows both; the plugin's summary line prints withdrawn.
+- AC-8: pass — `sync-parse` AC-8 (both folders kept and marked, an overlay of the same folder isn't a duplicate).
+- AC-9: pass — `sync-push-089` AC-9; `sync-import` on this repo (062, 074 and 075 skipped, the rest created).
+- AC-10: pass — `change-numbers.test` (10 cases, judged on the merge result); on this branch: "change numbers: ok".
+- AC-11: pass — `plugins/amax/tests/reader.test` 5/5 (bundle in step with the reader); the 062 `sync-push` suite passes
+  unchanged.
+- AC-12: pass — `sync-push-089` AC-12 (self-sync skips duplicates; holds a mass withdrawal; `--confirm-withdraw`
+  applies it).
+- AC-13: pass — the tests above, in the replica below.
 
-Local (Windows): delivery 390/392; the two failures are host-only (`releases` backslash paths, and
-`create-project-surfaces` under load, which passes alone). Scripts and plugin reader 30/30.
+**Linux CI replica over `8d68b1d7`** (the head of the fifth pass; node:24-bookworm, fresh postgres:16-alpine, the
+`checks` job's steps, `AMAX_TEMPORAL_TESTS=0`):
+- `pnpm install --frozen-lockfile`, `pnpm db:migrate` (79, incl. `0020_sync_push_withdrawn`), `pnpm lint` (35/35, graph
+  ok), `node scripts/check-module-standard.mjs` (22), `pnpm build`: exit 0.
+- `pnpm turbo run test --concurrency=2 --force`: 33/35. The two failures are timing under load, not 089:
+  delivery `create-project-surfaces` AC-3 (6.7 s) and Time `grid-perf` AC23 (2.3 s against 2 s). Both pass alone in
+  the same container (7/7 and 1/1).
+- e2e: **not_run**. Playwright's browser download didn't finish in Docker on this network (a Debian mirror error, then
+  46 minutes at 10%, then three 10-minute tries reaching 30%). CI on the PR runs it. Only `delivery.spec.ts` (062
+  AC-10) covers the changed screen; its fixture rows have `needs_review = false`, so they still read "Applied".
+
+**Screenshots:** `shots/app.png`, `shots/app-dark.png` (CON's Repo sync card, signed in as Maya, dev server) and
+`shots/mock.png` (089's section). The app card renders as before for its existing rows in light and dark; the new
+row states (Needs you, withdrawn count, skip lines) appear only after a CI push with them, which the demo data has
+none of, so AC-7's test is the evidence for them. The mock's 089 section sits inside `048-chat-cost` with 062's and
+028's: an earlier section isn't closed (pre-existing, not 089's to change); the shot lifts it out in the browser only.
+
+**Other checks:** `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog (3,734); in 089's files, the
+same header comments, and `specclaw-sync-ci.mjs` and `sync-push-089.test.ts` a few lines over 80.
+`specclaw-quality-scan`: not_run (jq "Argument list too long" on this host, as in 066–088).
+
+### Review loop (2026-11-09)
+
+Stopped at the five-pass cap (AGENTS.md) with **0 blockers and 2 majors open**, recorded in `follow-ups.md` for a
+follow-up change:
+- **Major B1:** a branch whose own folder reuses a number main already synced under another folder overwrites that
+  proposal (the branch tree holds one folder, so it isn't seen as a duplicate). Fix: treat a stored `source_ref` other
+  than the record's folder as a duplicate, in the push and the self-sync.
+- **Major B6:** `sync:specclaw --sha` isn't validated; a short or non-hex sha stops the self-sync's withdrawals
+  silently. Fix: refuse it as `PushInput` does.
+- Minors in `follow-ups.md`: confirm by key set, not count; `withdrawMissing` on trust; a duplicate pair split across
+  batches; Needs you on every CI push until 062/074/075 are renumbered; an old plugin can't flag duplicates; Refused
+  and Needs you share a colour.
+
+Scope: commits after `7d54c089` (088's head; `git.base_branch` set for each run, then restored).
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | round (opus) | — | 0/4/6: empty read withdraws everything; two withdrawal rules; number check misses main's tip; partial CI setup green |
+| 2 | round (opus) | `249b7e21` | 0/3/0: cap counts unwithdrawable rows; a hold can't be confirmed; number check fails PR renames |
+| 3 | round (opus) | `2d741c29` | 0/1/1: the self-sync can't confirm |
+| 4 | final (opus) | — | escalate 0/2/1: number check (third time); self-sync "any ref" withdraws branch-only proposals. Redesign agreed |
+| 5 | final (opus) | — | 0/2/3: stopped at the cap (above) |
+
+`specclaw-review verdict`: `Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/2/3 b/M/m`.
