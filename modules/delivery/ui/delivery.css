@@ -265,6 +265,7 @@
 .dv-sync>.dv-fold>summary{padding:18px 64px 18px 28px}
 .dv-sync>.dv-fold>summary h2{margin:0;flex:0 0 auto}
 .dv-sync>.dv-fold>summary small{margin-left:auto}
+.dv-sync .dv-skips{display:block;margin-top:4px}
 .dv-sync>.pin.inline{top:20px;right:22px}
 /* The next release, environment by environment: a step per stage, its state as a shape and a word. */
 .dv-band .fig a{color:inherit;text-decoration:none}

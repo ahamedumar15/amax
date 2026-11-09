@@ -32,6 +32,8 @@ export type SpecRecord = {
   source: string;
   /** state.json existed but couldn't be parsed: the record is reported, never synced. */
   unreadable: boolean;
+  /** 089 AC-8: another change folder has the same number, so neither can own the key; both are reported, never synced. */
+  duplicate: boolean;
 };
 
 const RANK: Record<Phase, number> = { proposed: 0, planned: 1, building: 2, verified: 3, released: 4 };
@@ -43,7 +45,7 @@ const json = (p: string): { ok: true; value: Record<string, unknown> } | { ok: f
   try { return { ok: true, value: JSON.parse(text) }; } catch { return { ok: false }; }
 };
 
-type Raw = Omit<SpecRecord, "done" | "status" | "waiting">;
+type Raw = Omit<SpecRecord, "done" | "status" | "waiting" | "duplicate">;
 export type Source = { dir: string; ref: string };
 
 function parse(root: string, dir: string, archived: boolean, ref: string): Raw | null {
@@ -103,23 +105,28 @@ const folders = (root: string, archived: boolean) => {
 export function readSpecclaw(root: string | Source, overlays: (string | Source)[] = []): SpecRecord[] {
   const src = (x: string | Source): Source => (typeof x === "string" ? { dir: x, ref: x } : x);
   const main = src(root);
-  const byNumber = new Map<string, Raw>();
+  // 089 AC-8: copies are merged by folder name, so an overlay of the same folder is the same change, and two folders
+  // that share a number stay two records instead of one silently replacing the other.
+  const byDir = new Map<string, Raw>();
   const take = (r: Raw | null) => {
     if (!r) return;
-    const cur = byNumber.get(r.number);
+    const cur = byDir.get(r.dir);
     // An unreadable copy anywhere (main or an overlay) can't be ranked, so the record is skipped and
     // reported rather than silently kept at another copy's phase (review round 2).
-    if (r.unreadable && cur) { byNumber.set(r.number, { ...cur, unreadable: true, source: r.source }); return; }
+    if (r.unreadable && cur) { byDir.set(r.dir, { ...cur, unreadable: true, source: r.source }); return; }
     if (cur?.unreadable) return;
-    if (!cur || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
+    if (!cur || RANK[r.phase] > RANK[cur.phase] || (RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone)) byDir.set(r.dir, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
   };
   for (const archived of [true, false]) for (const d of folders(main.dir, archived)) take(parse(main.dir, d, archived, main.ref));
-  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(numberOf(d)) || archived) take(parse(o.dir, d, archived, o.ref));
-  const done = new Set([...byNumber.values()].filter((r) => r.phase === "released").map((r) => r.number));
-  return [...byNumber.values()].sort((a, b) => Number(a.number) - Number(b.number)).map((r) => {
+  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byDir.has(d) || archived) take(parse(o.dir, d, archived, o.ref));
+  const all = [...byDir.values()];
+  const perNumber = new Map<string, number>();
+  for (const r of all) perNumber.set(r.number, (perNumber.get(r.number) ?? 0) + 1);
+  const done = new Set(all.filter((r) => r.phase === "released").map((r) => r.number));
+  return all.sort((a, b) => Number(a.number) - Number(b.number) || (a.dir < b.dir ? -1 : 1)).map((r) => {
     const waiting = r.hard.filter((h) => !done.has(h));
     const isDone = done.has(r.number);
     const status = isDone ? "done" : r.claim ? "claimed" : !r.approved ? "not approved" : waiting.length ? "blocked" : "ready";
-    return { ...r, done: isDone, status, waiting };
+    return { ...r, done: isDone, status, waiting, duplicate: perNumber.get(r.number)! > 1 };
   });
 }

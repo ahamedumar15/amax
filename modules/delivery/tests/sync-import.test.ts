@@ -52,7 +52,10 @@ describe.skipIf(!hasDb)("AC-2/AC-3 self-sync import", () => {
   it("imports this repo's changes as project AMX, audited as the principal", async () => {
     const records = readSpecclaw(repoRoot);
     const r = await syncSpecclaw(app, ctx, { projectKey: "AMX", projectName: "amax", client: "Internal", records, sha: "abc123", committedAt: "2026-10-01T00:00:00Z" });
-    expect(r.created).toBe(records.length);
+    // 089 AC-9: this repo has three numbers two folders share (062, 074, 075); those are skipped for a person.
+    const dupes = records.filter((x) => x.duplicate);
+    expect(r.created).toBe(records.length - dupes.length);
+    expect(r.skipped.map((s) => s.split(":")[0])).toEqual([...new Set(dupes.map((x) => `AMX-${x.number}`))]);
     const admin = (await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = 'ops@amax.test'`)))[0].id as string;
     const viewer = (await withTenant(app, T, (tx) => viewerForUser(tx, T, admin)))!;
     const board = (await getProject(viewer, "AMX"))!;

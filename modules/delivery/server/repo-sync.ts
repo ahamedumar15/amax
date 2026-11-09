@@ -40,10 +40,11 @@ const read = <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
 // Who pushed, as recorded: the person by name (their MCP client is not known), or the credential or agent for them.
 const pushBy = (r: Record<string, unknown>) => (r.actor_kind === "user" ? String(r.actor_name ?? "Someone") : byLine(r as never));
 
-export type PushRow = { id: string; at: string; by: string; ref: string; sha: string; outcome: "applied" | "refused"; created: number; updated: number; unchanged: number; skipped: string[]; reason: string | null; projectKey: string };
+export type PushRow = { id: string; at: string; by: string; ref: string; sha: string; outcome: "applied" | "refused"; created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[]; needsReview: boolean; reason: string | null; projectKey: string };
 const push = (r: Record<string, unknown>): PushRow => ({
   id: r.id as string, at: new Date(r.at as string).toISOString(), by: pushBy(r), ref: r.ref as string, sha: r.sha as string, outcome: r.outcome as PushRow["outcome"],
-  created: Number(r.created), updated: Number(r.updated), unchanged: Number(r.unchanged), skipped: r.skipped as string[], reason: (r.reason as string | null) ?? null, projectKey: r.project_key as string,
+  created: Number(r.created), updated: Number(r.updated), unchanged: Number(r.unchanged), withdrawn: Number(r.withdrawn ?? 0), skipped: r.skipped as string[],
+  needsReview: r.needs_review === true, reason: (r.reason as string | null) ?? null, projectKey: r.project_key as string,
 });
 const pushes = (where: ReturnType<typeof sql>, limit: number) => sql`select a.*, pr.key as project_key, au.name as actor_name, sp.name as principal_name, fu.name as for_name
   from delivery.sync_push a join delivery.project pr on pr.id = a.project_id ${whoJoins} where ${where} order by a.at desc limit ${limit}`;

@@ -54,8 +54,25 @@ What amax accepts:
 - **How much:** at most 200 changes per call, inside amax's per-caller rate limit. A push with nothing
   new returns `unchanged`. It adds no row to the Repo sync card, and one audit entry records the commit
   it was read at.
+- **Duplicates:** two change folders with the same number are both skipped ("two changes numbered 074: …") and
+  the push is flagged for a person. Renumber one of them; CI refuses a PR that adds a reused number.
 
 Each project's page in amax shows a **Repo sync** card: the linked repo, the last sync, and refused pushes with their reasons.
+
+## Sync on every merge (CI)
+
+`.github/workflows/specclaw-sync.yml` pushes after every merge to `main` that touches `.specclaw/`, through the same
+`sync_specclaw` tool, so merged changes reach the board without anyone running the skill. It pushes `main` first,
+then each `specclaw/*` branch. When the whole of `main` fits in one push (200 changes or fewer), it also withdraws a
+proposal whose folder was deleted from `main`. To set it up:
+
+1. In amax chat, as an Admin, create a credential for it: "create an API credential named amax CI with scope
+   delivery:write and tools sync_specclaw, acting for <the PM's email>, for 365 days". The key is shown once.
+2. Add three repository secrets: `AMAX_URL` (for example `https://amaxerp.com`), `AMAX_SYNC_API_KEY` (the key) and
+   `AMAX_SYNC_ACT_FOR` (the PM's user id).
+
+Every CI push shows on the Repo sync card as "amax CI for <PM>". Without the secrets the job ends with a notice naming
+them; a refused push fails the job with amax's reason.
 
 ## Sync automatically with a Claude Desktop routine
 

@@ -11,6 +11,8 @@ import { ctxFor } from "./context";
 import { KeyTakenError, markSyncedRows, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
 import { notFound } from "./refusal";
+import { isWithdrawn } from "./readiness";
+import { duplicateNumbers } from "../sync/duplicates";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
@@ -27,6 +29,7 @@ const SpecRecordInput = z.object({
   tasksDone: z.number().int().min(0).max(500), tasksTotal: z.number().int().min(0).max(500), tasks: z.array(TaskInput).max(500), acs: z.number().int().min(0).max(500),
   pr: z.string().url().max(300).nullable(), verdict: text(20).nullable(), done: z.boolean(), status: z.enum(["done", "claimed", "not approved", "blocked", "ready"]),
   waiting: z.array(text(8)).max(50), updatedAt: text(40).nullable(), releasedAt: text(40).nullable(), source: text(300), unreadable: z.boolean(),
+  duplicate: z.boolean().default(false),
 });
 
 export const MAX_PUSH = 200;
@@ -36,12 +39,15 @@ export const PushInput = z.object({
   projectKey: z.string(), repoUrl: RepoUrl, ref: z.string().min(1).max(200), sha: z.string().regex(/^[0-9a-f]{7,40}$/i),
   committedAt: z.string().datetime({ offset: true }).refine((t) => Date.parse(t) <= Date.now() + SKEW_MS, "committedAt is in the future"),
   dryRun: z.boolean().default(true), records: z.array(SpecRecordInput).max(MAX_PUSH),
+  // 089 AC-6: the push carries every change on the default branch (not one batch of several), so a folder it doesn't
+  // name is gone. Off by default: the plugin batches, and a batch can't tell a gone folder from the next batch.
+  withdrawMissing: z.boolean().default(false),
 });
 
 /** Why a record wasn't written. `released` always, and `back` and `stale` on a branch, are standing: they
  * come back every push until main or a Prod deployment catches up. Anything else needs a person. */
-type Code = "released" | "back" | "stale" | "unreadable" | "held" | "nomatch";
-type Counts = { created: number; updated: number; unchanged: number; ignored: number; skipped: string[]; needsReview: boolean };
+type Code = "released" | "back" | "stale" | "unreadable" | "held" | "nomatch" | "duplicate";
+type Counts = { created: number; updated: number; unchanged: number; withdrawn: number; ignored: number; skipped: string[]; needsReview: boolean };
 export type PushResult = Counts & { outcome: "preview" | "applied" | "unchanged" | "refused"; projectKey: string; reason: string | null };
 
 const Plan = PushInput.omit({ dryRun: true }).extend({ projectId: z.string().uuid() });
@@ -60,6 +66,13 @@ function refusal(d: { phase: Phase }, cur: Stored | undefined, committedAt: stri
   return null;
 }
 
+// 089 AC-6: a default-branch push withdraws a proposal whose folder is gone only when that branch last synced it, the
+// push is newer than it, and it isn't Released. A branch's own change, or a stale checkout, withdraws nothing.
+const refOf = (source: unknown) => (typeof source === "string" ? source.replace(/@[0-9a-f]{7,40}$/i, "") : null);
+const withdrawable = (cur: Stored, defaultRef: unknown, committedAt: string) =>
+  !isWithdrawn(cur) && cur.phase !== "released" && refOf((cur.meta as Stored | null)?.source) === defaultRef
+  && (!cur.synced_commit_at || new Date(cur.synced_commit_at as string) < new Date(committedAt));
+
 const unchanged = (cur: Stored, d: Parameters<typeof fingerprint>[0] & { phase: Phase }) =>
   fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Stored }) === fingerprint(d);
 
@@ -73,7 +86,8 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   const own = p.ref.split("/").at(-1);
   const mine = p.records.filter((x) => onDefault || x.dir === own);
   const byKey = new Map((await storedSpecRows(tx, p.projectKey)).map((e) => [e.key as string, e as Stored]));
-  const counts: Counts = { created: 0, updated: 0, unchanged: 0, ignored: p.records.length - mine.length, skipped: [], needsReview: false };
+  const counts: Counts = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, ignored: p.records.length - mine.length, skipped: [], needsReview: false };
+  const dupes = duplicateNumbers(p.records);
   const skip = (key: string, [code, text]: [Code, string]) => {
     counts.skipped.push(`${key}: ${text}`);
     if (!(code === "released" || (!onDefault && (code === "back" || code === "stale")))) counts.needsReview = true;
@@ -85,6 +99,8 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   for (const r of mine) {
     const key = `${p.projectKey}-${r.number}`;
     const cur = byKey.get(key);
+    const dupe = dupes.get(r.number);
+    if (dupe) { if (!counts.skipped.includes(`${key}: ${dupe}`)) skip(key, ["duplicate", dupe]); continue; }
     const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
@@ -104,6 +120,18 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     if (cur) counts.updated++;
     else counts.created++;
   }
+  if (onDefault && p.withdrawMissing) {
+    const named = new Set(p.records.map((r) => `${p.projectKey}-${r.number}`));
+    for (const [key, cur] of byKey) {
+      if (named.has(key) || !withdrawable(cur, project.repo_default_ref, p.committedAt)) continue;
+      const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, key, title: cur.title as string,
+        phase: cur.phase as Phase, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null,
+        meta: { ...(cur.meta as Stored), withdrawn: true, sha: p.sha, source: `${p.ref}@${p.sha}` }, committedAt: p.committedAt }, ctx, project);
+      await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });
+      events.push(...out.events);
+      counts.withdrawn++;
+    }
+  }
   // Read at this commit too, so the mark moves for proposals that didn't change (written ones moved in the upsert).
   if (same.length) await markSyncedRows(tx, sql`project_id = ${p.projectId} and key = any(${textArray(same)})`, p.committedAt);
   return { counts, events };
@@ -114,10 +142,10 @@ const scope = (ctx: ServiceContext, projectId: string) => {
   if (v) assertCan(v, "delivery:proposal:push", { projectId });
 };
 
-const pushRow = (tx: Tx, ctx: ServiceContext, p: Omit<Plan, "records">, c: Omit<Counts, "ignored" | "needsReview">, outcome: "applied" | "refused", reason: string | null) =>
-  tx.execute(sql`insert into delivery.sync_push (tenant_id, project_id, actor_id, actor_kind, for_user_id, repo_url, ref, sha, committed_at, outcome, created, updated, unchanged, skipped, reason)
+const pushRow = (tx: Tx, ctx: ServiceContext, p: Omit<Plan, "records">, c: Omit<Counts, "ignored">, outcome: "applied" | "refused", reason: string | null) =>
+  tx.execute(sql`insert into delivery.sync_push (tenant_id, project_id, actor_id, actor_kind, for_user_id, repo_url, ref, sha, committed_at, outcome, created, updated, unchanged, withdrawn, needs_review, skipped, reason)
     values (${ctx.tenantId}, ${p.projectId}, ${ctx.actor.id}, ${ctx.actor.kind}, ${forUserOf(ctx)}, ${p.repoUrl}, ${p.ref}, ${p.sha}, ${p.committedAt}, ${outcome},
-            ${c.created}, ${c.updated}, ${c.unchanged}, ${JSON.stringify(c.skipped)}::jsonb, ${reason}) returning id`);
+            ${c.created}, ${c.updated}, ${c.unchanged}, ${c.withdrawn}, ${c.needsReview}, ${JSON.stringify(c.skipped)}::jsonb, ${reason}) returning id`);
 
 const applied = defineService({
   scoped: true,
@@ -129,10 +157,10 @@ const applied = defineService({
     scope(ctx, p.projectId);
     const { counts, events } = await applyPush(tx, p, ctx);
     // The Repo sync card lists pushes that changed something or need a person; a no-op is only audited.
-    const listed = Boolean(counts.created || counts.updated || counts.needsReview);
+    const listed = Boolean(counts.created || counts.updated || counts.withdrawn || counts.needsReview);
     const [row] = listed ? await pushRow(tx, ctx, p, counts, "applied", null) : [null];
     return { result: { ...counts, listed }, resourceId: (row?.id as string | undefined) ?? null,
-      after: { projectId: p.projectId, ref: p.ref, sha: p.sha, created: counts.created, updated: counts.updated, unchanged: counts.unchanged, skipped: counts.skipped }, events };
+      after: { projectId: p.projectId, ref: p.ref, sha: p.sha, created: counts.created, updated: counts.updated, unchanged: counts.unchanged, withdrawn: counts.withdrawn, skipped: counts.skipped }, events };
   },
 });
 
@@ -145,7 +173,7 @@ const refused = defineService({
   input: Plan.omit({ records: true }).extend({ reason: z.string() }),
   async run(tx, p, ctx) {
     scope(ctx, p.projectId);
-    const [row] = await pushRow(tx, ctx, p, { created: 0, updated: 0, unchanged: 0, skipped: [] }, "refused", p.reason);
+    const [row] = await pushRow(tx, ctx, p, { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [], needsReview: false }, "refused", p.reason);
     return { result: null, resourceId: row.id as string, after: { ref: p.ref, sha: p.sha, reason: p.reason } };
   },
 });
@@ -181,6 +209,6 @@ export async function pushSpecclaw(viewer: Viewer, raw: z.input<typeof PushInput
     if (!(e instanceof RepoRefused)) throw e;
     const { records: _, ...where } = plan;
     if (!dryRun) await refused(ctx, { ...where, reason: e.message });
-    return result("refused", { created: 0, updated: 0, unchanged: 0, ignored: 0, skipped: [], needsReview: false }, e.message);
+    return result("refused", { created: 0, updated: 0, unchanged: 0, withdrawn: 0, ignored: 0, skipped: [], needsReview: false }, e.message);
   }
 }

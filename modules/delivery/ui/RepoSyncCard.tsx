@@ -5,7 +5,10 @@ import { AskButton } from "./AskButton";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
 const result = (p: PushRow) => p.outcome === "refused" ? p.reason ?? "refused"
-  : [`${p.created} created`, `${p.updated} updated`, `${p.unchanged} unchanged`, p.skipped.length ? `${p.skipped.length} skipped` : ""].filter(Boolean).join(" · ");
+  : [`${p.created} created`, `${p.updated} updated`, p.withdrawn ? `${p.withdrawn} withdrawn` : "", `${p.unchanged} unchanged`, p.skipped.length ? `${p.skipped.length} skipped` : ""].filter(Boolean).join(" · ");
+// 089 AC-7: an applied push with skips a person must act on (a duplicate change number) says so; the skip lines follow.
+const outcomeChip = (p: PushRow) => p.outcome === "refused" ? <span className="chip warn">Refused</span>
+  : p.needsReview ? <span className="chip warn">Needs you</span> : <span className="chip good">Applied</span>;
 
 type Props = { projectKey: string; projectId: string; repoUrl: string | null; last: PushRow | null; recent: PushRow[]; canLink: boolean; first?: boolean };
 
@@ -43,7 +46,7 @@ export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, can
                 <td data-label="When">{when(p.at)}</td>
                 <td data-label="By">{p.by}</td>
                 <td data-label="Commit"><code>{p.ref}@{p.sha.slice(0, 7)}</code></td>
-                <td data-label="Result">{p.outcome === "refused" ? <span className="chip warn">Refused</span> : <span className="chip good">Applied</span>} {result(p)}</td>
+                <td data-label="Result">{outcomeChip(p)} {result(p)}{p.needsReview && p.skipped.length > 0 && <small className="muted dv-skips">{p.skipped.join("; ")}</small>}</td>
                 <td className="num"><PinButton pin={pushPin({ ...p, projectKey })} /></td>
               </tr>
             ))}

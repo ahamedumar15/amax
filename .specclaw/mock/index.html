@@ -3493,6 +3493,35 @@ dry run: 0 created · 3 updated · 14 unchanged · 1 refused
 Apply 3 updates? (y/N)</pre></div>
 </section>
 
+<!-- ================= 089 specclaw sync over MCP ================= -->
+<section data-change="089-specclaw-sync-over-mcp" id="089-specclaw-sync-over-mcp" data-roles="admin leadership pm engineer" data-title="Repo sync (CI)" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span>Contoso Portal (fictional)</nav>
+  <h1>Repo sync</h1>
+  <p class="lede">Merges reach the board on their own: CI pushes after every merge to main, as amax CI acting for Kasun Dias. 1 push needs you: two changes share the number 074.</p>
+  <div class="tickets four">
+    <div class="ticket t-yellow"><div class="k">Needs you <span class="chip">📌</span></div><div class="v">1</div><div class="p">Two changes numbered 074</div></div>
+    <div class="ticket t-mint"><div class="k">Last sync <span class="chip">📌</span></div><div class="v">10:05</div><div class="p">amax CI · for Kasun Dias</div></div>
+    <div class="ticket t-violet"><div class="k">Last push <span class="chip">📌</span></div><div class="v">1 created</div><div class="p">2 updated · 1 withdrawn · 14 unchanged</div></div>
+    <div class="ticket t-mint"><div class="k">Linked repo <span class="chip">📌</span></div><div class="v">contoso-portal</div><div class="p">github.com/example/contoso-portal</div></div>
+  </div>
+  <div class="card flush" style="margin-top:20px"><div class="card-head"><h2>Recent pushes</h2><button class="btn sm">✦ Ask amax to change the linked repo</button></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>When</th><th>By</th><th>Ref</th><th>Result</th><th></th></tr></thead><tbody>
+    <tr><td>10:05</td><td>amax CI · for Kasun Dias</td><td>main 7c1e2d4</td><td><span class="chip warn">Needs you</span> 1 created · 2 updated · 1 withdrawn (CON-029, folder removed) · skipped CON-074: two changes numbered 074: 074-invoice-export, 074-audit-filters</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>10:05</td><td>amax CI · for Kasun Dias</td><td>specclaw/076-late-fees 51b9a07</td><td>1 updated (CON-076 planned → building)</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>09:40</td><td>Nimal Silva</td><td>main 4f2c9a1</td><td><span class="chip bad">Refused</span> stale: last synced from a newer commit</td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="card" style="margin-top:20px;max-width:620px"><div class="card-head"><h2>CI job summary (GitHub Actions)</h2></div>
+<pre style="white-space:pre-wrap;font-size:13px">specclaw sync → https://amax.example/api/v1/tools/sync_specclaw
+main 7c1e2d4 → CON: applied
+  1 created · 2 updated · 1 withdrawn · 14 unchanged · 1 skipped
+  ⚠ CON-074: two changes numbered 074: 074-invoice-export, 074-audit-filters
+specclaw/076-late-fees 51b9a07 → CON: applied
+  1 updated · 0 created · 18 not this branch's
+
+(not configured: "specclaw sync is not set up. Add AMAX_URL, AMAX_SYNC_API_KEY
+ and AMAX_SYNC_ACT_FOR to run it." The job ends neutral, never green-skipped.)</pre></div>
+</section>
+
 <!-- ================= 028 Keyflow sync ================= -->
 <section data-change="028-keyflow-sync" id="028-keyflow-sync" data-roles="admin hr" data-title="Keyflow" data-nav="no" data-parent="038-settings" data-icon="plug">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span><a href="#001-amax-foundation-integrations">Integrations</a><span>/</span>Keyflow</nav>

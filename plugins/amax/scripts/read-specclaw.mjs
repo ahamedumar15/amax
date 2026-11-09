@@ -72,25 +72,28 @@ var folders = (root, archived) => {
 function readSpecclaw(root, overlays = []) {
   const src = (x) => typeof x === "string" ? { dir: x, ref: x } : x;
   const main = src(root);
-  const byNumber = /* @__PURE__ */ new Map();
+  const byDir = /* @__PURE__ */ new Map();
   const take = (r) => {
     if (!r) return;
-    const cur = byNumber.get(r.number);
+    const cur = byDir.get(r.dir);
     if (r.unreadable && cur) {
-      byNumber.set(r.number, { ...cur, unreadable: true, source: r.source });
+      byDir.set(r.dir, { ...cur, unreadable: true, source: r.source });
       return;
     }
     if (cur?.unreadable) return;
-    if (!cur || RANK[r.phase] > RANK[cur.phase] || RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone) byNumber.set(r.number, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
+    if (!cur || RANK[r.phase] > RANK[cur.phase] || RANK[r.phase] === RANK[cur.phase] && r.tasksDone > cur.tasksDone) byDir.set(r.dir, cur ? { ...r, claim: r.claim ?? cur.claim } : r);
   };
   for (const archived of [true, false]) for (const d of folders(main.dir, archived)) take(parse(main.dir, d, archived, main.ref));
-  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byNumber.has(numberOf(d)) || archived) take(parse(o.dir, d, archived, o.ref));
-  const done = new Set([...byNumber.values()].filter((r) => r.phase === "released").map((r) => r.number));
-  return [...byNumber.values()].sort((a, b) => Number(a.number) - Number(b.number)).map((r) => {
+  for (const o of overlays.map(src)) for (const archived of [true, false]) for (const d of folders(o.dir, archived)) if (byDir.has(d) || archived) take(parse(o.dir, d, archived, o.ref));
+  const all = [...byDir.values()];
+  const perNumber = /* @__PURE__ */ new Map();
+  for (const r of all) perNumber.set(r.number, (perNumber.get(r.number) ?? 0) + 1);
+  const done = new Set(all.filter((r) => r.phase === "released").map((r) => r.number));
+  return all.sort((a, b) => Number(a.number) - Number(b.number) || (a.dir < b.dir ? -1 : 1)).map((r) => {
     const waiting = r.hard.filter((h) => !done.has(h));
     const isDone = done.has(r.number);
     const status = isDone ? "done" : r.claim ? "claimed" : !r.approved ? "not approved" : waiting.length ? "blocked" : "ready";
-    return { ...r, done: isDone, status, waiting };
+    return { ...r, done: isDone, status, waiting, duplicate: perNumber.get(r.number) > 1 };
   });
 }
 
