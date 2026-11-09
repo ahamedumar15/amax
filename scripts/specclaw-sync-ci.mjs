@@ -51,11 +51,19 @@ async function pushRef(env, fetchImpl, base, records, onDefault, out) {
 
 export async function run({ env = process.env, root = process.cwd(), fetchImpl = fetch, out }) {
   const missing = SECRETS.filter((k) => !env[k]);
-  if (missing.length) {
-    out.notice(`specclaw sync is not set up. Add ${SECRETS.join(", ")} to run it (missing: ${missing.join(", ")}).`);
+  if (missing.length === SECRETS.length) {
+    out.notice(`specclaw sync is not set up, so nothing was synced. Add ${SECRETS.join(", ")} to run it.`);
     return 0;
   }
+  if (missing.length) {
+    out.error(`specclaw sync is only partly set up: ${missing.join(", ")} missing. Add ${missing.length === 1 ? "it" : "them"} or remove the others.`);
+    return 1;
+  }
   const main = payload(root);
+  if (!main.records.length) {
+    out.error(`read no specclaw changes on ${main.ref}: nothing was pushed, so nothing could be withdrawn by mistake`);
+    return 1;
+  }
   out.line(`specclaw sync → ${env.AMAX_URL.replace(/\/+$/, "")}/api/v1/tools/sync_specclaw`);
   let failed = 0;
   const attempt = async (fn) => { try { await fn(); } catch (e) { failed++; out.error(e.message); } };

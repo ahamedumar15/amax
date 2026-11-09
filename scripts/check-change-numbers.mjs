@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 089 AC-10: a pull request may not add a specclaw change folder whose number another folder already has, on the base
-// branch or in the PR. amax keys a proposal by that number, so two folders can't share it (the sync skips both).
+// branch's tip (even one the PR branch was cut before) or in the PR. amax keys a proposal by that number, so two
+// folders can't share it (the sync skips both).
 // Pairs already on the base branch are reported, not failed: renumbering them is its own decision.
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
@@ -19,7 +20,7 @@ const byNumber = (dirs) => dirs.reduce((m, d) => m.set(d.match(NUMBERED)[1], [..
 export function check(baseDirs, headDirs) {
   const base = new Set(baseDirs);
   const added = headDirs.filter((d) => !base.has(d));
-  const head = byNumber(headDirs);
+  const head = byNumber([...new Set([...baseDirs, ...headDirs])]);
   const failures = added.filter((d) => head.get(d.match(NUMBERED)[1]).length > 1)
     .map((d) => `${d}: number ${d.match(NUMBERED)[1]} is already used by ${head.get(d.match(NUMBERED)[1]).filter((o) => o !== d).join(", ")}; renumber it (specclaw-renumber-changes)`);
   const known = [...byNumber(baseDirs)].filter(([, ds]) => ds.length > 1).map(([n, ds]) => `${n}: ${ds.join(", ")} (already on the base branch)`);

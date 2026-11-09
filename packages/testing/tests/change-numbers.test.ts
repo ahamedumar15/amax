@@ -13,4 +13,14 @@ describe("089 change numbers", () => {
     expect(check(base, [...base, "090-a", "090-b"]).failures).toHaveLength(2);
     expect(check(base, ["073-time", "074-dev-demo-data", "074-fork-pr-review-gate", "088-quiet-hours"]).failures).toEqual([]);
   });
+
+  // 089 review round 1 (B1): the PR branch was cut before main gained a folder; that folder's number is still taken.
+  it.each([
+    ["main gained 089 after the branch was cut", ["088-a", "089-main-only"], ["088-a", "089-mine"], ["089-mine: number 089 is already used by 089-main-only"]],
+    ["main gained 089 and 090; the PR adds 090", ["088-a", "089-x", "090-y"], ["088-a", "090-mine"], ["090-mine: number 090 is already used by 090-y"]],
+    ["main moved on with other numbers", ["088-a", "091-z"], ["088-a", "089-mine"], []],
+  ])("AC-10 %s", async (_, base, head, failures) => {
+    const { check } = (await import(pathToFileURL(join(__dirname, "../../../scripts/check-change-numbers.mjs")).href)) as { check: Check };
+    expect(check(base as string[], head as string[]).failures.map((f) => f.replace(/; renumber.*$/, ""))).toEqual(failures);
+  });
 });

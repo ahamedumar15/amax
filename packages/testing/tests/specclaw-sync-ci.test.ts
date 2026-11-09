@@ -91,12 +91,23 @@ describe("089 CI specclaw sync through sync_specclaw", () => {
   it("AC-4 without secrets it calls nothing and says what to add; a refusal or an HTTP error fails with the reason", async () => {
     const none = fakeAmax(() => ({ body: {} })), o = collect();
     expect(await run({ env: {}, root: repo(["101-export"]), fetchImpl: none.fetchImpl, out: o.out })).toBe(0);
-    expect([none.calls.length, o.notices]).toEqual([0, [expect.stringMatching(/not set up\. Add AMAX_URL, AMAX_SYNC_API_KEY, AMAX_SYNC_ACT_FOR/)]]);
+    expect([none.calls.length, o.notices]).toEqual([0, [expect.stringMatching(/not set up, so nothing was synced\. Add AMAX_URL, AMAX_SYNC_API_KEY, AMAX_SYNC_ACT_FOR/)]]);
     const refused = collect();
     expect(await run({ env: ENV, root: repo(["101-export"]), fetchImpl: fakeAmax(() => ({ body: { result: ok({ outcome: "refused", reason: "repo not linked to FLT" }) } })).fetchImpl, out: refused.out })).toBe(1);
     expect(refused.errors).toEqual([expect.stringMatching(/refused: repo not linked to FLT/)]);
     const broken = collect();
     expect(await run({ env: ENV, root: repo(["101-export"]), fetchImpl: fakeAmax(() => ({ status: 403, body: { error: "forbidden", message: "not allowed to act for this person" } })).fetchImpl, out: broken.out })).toBe(1);
     expect(broken.errors).toEqual(["amax answered 403: not allowed to act for this person"]);
+  });
+
+  // 089 review round 1 (B3, B6): only "nothing set up" passes without syncing; half a setup, or a read of nothing, fails.
+  it.each([
+    ["only some secrets are set", { AMAX_URL: ENV.AMAX_URL }, ["101-export"], /only partly set up: AMAX_SYNC_API_KEY, AMAX_SYNC_ACT_FOR missing/],
+    ["the key is set but empty", { ...ENV, AMAX_SYNC_API_KEY: "" }, ["101-export"], /only partly set up: AMAX_SYNC_API_KEY missing/],
+    ["main has no specclaw changes", ENV, [], /read no specclaw changes on main: nothing was pushed/],
+  ])("AC-4 fails without pushing when %s", async (_, env, dirs, error) => {
+    const { calls, fetchImpl } = fakeAmax(() => ({ body: { result: ok() } })), o = collect();
+    expect(await run({ env: env as Record<string, string>, root: repo(dirs as string[]), fetchImpl, out: o.out })).toBe(1);
+    expect([calls.length, o.errors]).toEqual([0, [expect.stringMatching(error as RegExp)]]);
   });
 });

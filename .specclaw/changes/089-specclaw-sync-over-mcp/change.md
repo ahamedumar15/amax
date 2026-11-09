@@ -54,7 +54,8 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
 6. **AC-6** A push from the project's default branch withdraws a specclaw proposal whose change folder is gone (sets
    `meta.withdrawn`, never deletes), but only when all of these hold:
    - the proposal was last synced from the default branch (its `meta.source` ref is the default ref);
-   - the push's commit is newer than the proposal's `synced_commit_at`;
+   - no newer commit has synced the proposal (its `synced_commit_at` isn't after the push's commit: push.ts's stale
+     rule);
    - the proposal isn't Released.
 
    A proposal created by a branch push stays put until its change lands on the default branch. A stale developer
@@ -64,6 +65,12 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
    of 200, and one batch can't tell a gone folder from the next batch. So CI sets it only when the whole default branch
    fits in one push, and otherwise warns that withdrawal was skipped. The plugin never sets it, so its behaviour is
    unchanged (AC-11).
+
+   *Review round 1:* the rule is one function for the push and the self-sync (`sync/withdraw.ts`, `planWithdrawals`;
+   the self-sync covers any ref, since it reads main and every specclaw branch at once). A sync that read no changes,
+   or that would withdraw more than half of the live proposals (and more than two), withdraws nothing and flags it
+   for a person: an unreadable or wrong checkout looks the same as "every folder was deleted". CI also stops, without
+   pushing, when it reads no changes on `main`.
 7. **AC-7** A withdrawn count shows in the preview and the result (`withdrawn`). The plugin's summary line prints it
    too. A preview never writes, as today.
 
@@ -113,10 +120,21 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
 - [x] `T6` — Docs: the credential to create and the three secrets; the plugin summary prints withdrawn; delivery README on CI pushes, withdrawal and duplicates (AC-5, AC-7)
   Files: plugins/amax/README.md, plugins/amax/skills/sync-specclaw/SKILL.md, modules/delivery/README.md
   Depends: T3, T4
-- [~] `T7` — Tests pass in the Linux CI replica: delivery, plugin reader, scripts (AC-13)
+- [x] `T7` — Tests pass in the Linux CI replica: delivery, plugin reader, scripts (AC-13)
   Files: .specclaw/changes/089-specclaw-sync-over-mcp/change.md
   Depends: T1–T6
 
 ## Verify
 
 Quality: not_run (`specclaw-quality-scan`: jq "Argument list too long" on this Windows host, as in 081)
+
+**Linux CI replica (2026-11-09, working tree of `249b7e21`):** node:24-bookworm + fresh postgres:16-alpine, the
+`checks` job's steps. Migrate ✅ (79, incl. `0020_sync_push_withdrawn`), lint ✅ (35/35, graph ok), `turbo run test
+--force` ✅ (35/35 packages), module standard ✅ (22), build ✅. `AMAX_TEMPORAL_TESTS=0` (Temporal tests skipped).
+e2e: **not_run**. Playwright's browser download didn't finish inside Docker on this network: a Debian mirror error,
+then 46 minutes stuck at 10%, then three 10-minute tries that reached 30%. CI on the PR runs the full e2e suite. Only
+`delivery.spec.ts` covers the changed screen (062 AC-10, the Repo sync rows); its fixture rows have
+`needs_review = false`, so they still read "Applied".
+
+Local (Windows): delivery 390/392; the two failures are host-only (`releases` backslash paths, and
+`create-project-surfaces` under load, which passes alone). Scripts and plugin reader 30/30.

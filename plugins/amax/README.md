@@ -71,8 +71,10 @@ proposal whose folder was deleted from `main`. To set it up:
 2. Add three repository secrets: `AMAX_URL` (for example `https://amaxerp.com`), `AMAX_SYNC_API_KEY` (the key) and
    `AMAX_SYNC_ACT_FOR` (the PM's user id).
 
-Every CI push shows on the Repo sync card as "amax CI for <PM>". Without the secrets the job ends with a notice naming
-them; a refused push fails the job with amax's reason.
+Every CI push shows on the Repo sync card as "amax CI for <PM>". With none of the secrets set, the job passes with a
+notice that nothing was synced. It fails when only some are set, when it reads no changes on `main`, or when amax
+refuses a push (with amax's reason). A push that would withdraw more than half of the project's proposals withdraws
+none and is flagged for a person.
 
 ## Sync automatically with a Claude Desktop routine
 

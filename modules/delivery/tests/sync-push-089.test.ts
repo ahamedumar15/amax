@@ -65,6 +65,7 @@ describe.skipIf(!hasDb)("089 sync_specclaw: duplicates and withdrawal", () => {
     expect(await push(["101-export", "102-import", "104-new"])).toMatchObject({ withdrawn: 0 });
     expect(await push(["101-export", "102-import", "104-new"], { ref: "specclaw/101-export", withdrawMissing: true })).toMatchObject({ withdrawn: 0 });
     expect(await push(["101-export", "102-import", "104-new"], { committedAt: "2026-10-01T00:00:00Z", withdrawMissing: true, dryRun: true })).toMatchObject({ withdrawn: 0 });
+    expect(await push([], { withdrawMissing: true, dryRun: true })).toMatchObject({ withdrawn: 0, needsReview: true, skipped: [expect.stringMatching(/^FLT: withdrawal held: the sync read no changes/)] });
     expect(await push(["101-export", "102-import", "104-new"], { withdrawMissing: true })).toMatchObject({ withdrawn: 1 });
     expect(await row("FLT-103")).toMatchObject({ withdrawn: "true" });
   });

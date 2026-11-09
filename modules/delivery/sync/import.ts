@@ -3,8 +3,8 @@ import { withTenant, type Db, type Tx } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
 import { KeyTakenError, markSynced, syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
-import { isWithdrawn } from "../server/readiness";
 import { duplicateNumbers } from "./duplicates";
+import { planWithdrawals, refOf } from "./withdraw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -29,7 +29,6 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
 // The meta fields that matter for "changed?". The commit sha alone doesn't count as a change, neither
 // as `sha` nor inside `source` ("main@<sha>"): only the ref name is compared (review round 2).
 // Task order isn't a change either: change.md may list T26 before T25, and storage returns its own order (079).
-const refOf = (s: unknown) => (typeof s === "string" ? s.replace(/@[0-9a-f]{7,40}$/i, "") : s);
 const byRef = (a: Task, b: Task) => a.ref.length - b.ref.length || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
 export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
   canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
@@ -47,7 +46,8 @@ export const storedSpecRows = (tx: Tx, projectKey: string) =>
  */
 export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt: string }): Promise<SyncResult> {
   const existing = await withTenant(db, ctx.tenantId, (tx) => storedSpecRows(tx, opts.projectKey));
-  const byKey = new Map(existing.map((e) => [e.key as string, e]));
+  const stored = new Map(existing.map((e) => [e.key as string, e as Record<string, unknown>]));
+  const byKey = new Map(stored);
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
   const project = { name: opts.projectName, client: opts.client };
   const same: string[] = [];
@@ -78,10 +78,13 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     else result.created++;
   }
   if (same.length) await markSynced(ctx, { projectKey: opts.projectKey, keys: same, committedAt: opts.committedAt });
-  // Folders that disappeared are marked withdrawn, never deleted.
-  for (const [key, cur] of byKey) {
+  // Folders that disappeared are marked withdrawn, never deleted, by the same rule as a push (089 review round 1). It
+  // reads main and every specclaw branch at once, so any ref counts.
+  const plan = planWithdrawals(stored, { named: new Set(opts.records.map((r) => `${opts.projectKey}-${r.number}`)), refs: null, committedAt: opts.committedAt, read: opts.records.length });
+  if (plan.held) result.skipped.push(`${opts.projectKey}: ${plan.held}`);
+  for (const key of plan.keys) {
+    const cur = byKey.get(key)!;
     const meta = cur.meta as Record<string, unknown>;
-    if (isWithdrawn(cur)) continue;
     await syncProposal(ctx, {
       projectKey: opts.projectKey, project, key, title: cur.title as string, phase: cur.phase as never, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total),
       source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null, meta: { ...meta, withdrawn: true, sha: opts.sha }, committedAt: opts.committedAt,

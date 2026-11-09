@@ -11,8 +11,8 @@ import { ctxFor } from "./context";
 import { KeyTakenError, markSyncedRows, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
 import { notFound } from "./refusal";
-import { isWithdrawn } from "./readiness";
 import { duplicateNumbers } from "../sync/duplicates";
+import { planWithdrawals } from "../sync/withdraw";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
@@ -66,13 +66,6 @@ function refusal(d: { phase: Phase }, cur: Stored | undefined, committedAt: stri
   return null;
 }
 
-// 089 AC-6: a default-branch push withdraws a proposal whose folder is gone only when that branch last synced it, the
-// push is newer than it, and it isn't Released. A branch's own change, or a stale checkout, withdraws nothing.
-const refOf = (source: unknown) => (typeof source === "string" ? source.replace(/@[0-9a-f]{7,40}$/i, "") : null);
-const withdrawable = (cur: Stored, defaultRef: unknown, committedAt: string) =>
-  !isWithdrawn(cur) && cur.phase !== "released" && refOf((cur.meta as Stored | null)?.source) === defaultRef
-  && (!cur.synced_commit_at || new Date(cur.synced_commit_at as string) < new Date(committedAt));
-
 const unchanged = (cur: Stored, d: Parameters<typeof fingerprint>[0] & { phase: Phase }) =>
   fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Stored }) === fingerprint(d);
 
@@ -120,17 +113,19 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     if (cur) counts.updated++;
     else counts.created++;
   }
-  if (onDefault && p.withdrawMissing) {
-    const named = new Set(p.records.map((r) => `${p.projectKey}-${r.number}`));
-    for (const [key, cur] of byKey) {
-      if (named.has(key) || !withdrawable(cur, project.repo_default_ref, p.committedAt)) continue;
-      const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, key, title: cur.title as string,
-        phase: cur.phase as Phase, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null,
-        meta: { ...(cur.meta as Stored), withdrawn: true, sha: p.sha, source: `${p.ref}@${p.sha}` }, committedAt: p.committedAt }, ctx, project);
-      await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });
-      events.push(...out.events);
-      counts.withdrawn++;
-    }
+  // 089 AC-6: only a push from the default branch that carries every change may withdraw, by the shared rule.
+  const plan = onDefault && p.withdrawMissing
+    ? planWithdrawals(byKey, { named: new Set(p.records.map((r) => `${p.projectKey}-${r.number}`)), refs: new Set([String(project.repo_default_ref)]), committedAt: p.committedAt, read: p.records.length })
+    : { keys: [], held: null };
+  if (plan.held) skip(p.projectKey, ["held", plan.held]);
+  for (const key of plan.keys) {
+    const cur = byKey.get(key)!;
+    const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, key, title: cur.title as string,
+      phase: cur.phase as Phase, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null,
+      meta: { ...(cur.meta as Stored), withdrawn: true, sha: p.sha, source: `${p.ref}@${p.sha}` }, committedAt: p.committedAt }, ctx, project);
+    await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });
+    events.push(...out.events);
+    counts.withdrawn++;
   }
   // Read at this commit too, so the mark moves for proposals that didn't change (written ones moved in the upsert).
   if (same.length) await markSyncedRows(tx, sql`project_id = ${p.projectId} and key = any(${textArray(same)})`, p.committedAt);
