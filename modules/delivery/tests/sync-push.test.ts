@@ -153,12 +153,14 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
 
   it("AC-8 a self-sync from a newer main commit moves the mark, changed or not, so an older push is stale", async () => {
     const maya = (await loadViewer(app, T, (await signInDemo(app, T, "maya@lumenlabs.test")).sessionId))!;
-    const main = readSpecclaw(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" }, "102-import": { title: "Import, renamed on the branch" } }));
+    // 089: the self-sync withdraws only what the refs it read last synced, so its records carry main's ref, as bin.ts's do.
+    const onMain = (dir: string, sha: string) => readSpecclaw({ dir, ref: `main@${sha}` });
+    const main = onMain(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" }, "102-import": { title: "Import, renamed on the branch" } }), "5e1f5e1");
     await syncSpecclaw(app, ctxFor(maya), { projectKey: "FLT", projectName: "Fleet", client: "x", records: main, sha: "5e1f5e1", committedAt: "2026-10-08T12:30:00Z" });
     const r = await push({ sha: "01d0001", committedAt: "2026-10-08T12:25:00Z", records: readSpecclaw(fakeRepo({ "101-export": { title: "Older title" }, "102-import": { title: "Older title" } })) });
     expect(r.skipped).toEqual([expect.stringMatching(/^FLT-101: stale/), expect.stringMatching(/^FLT-102: stale/)]);
     // A change the self-sync withdraws is read at that commit too.
-    await syncSpecclaw(app, ctxFor(maya), { projectKey: "FLT", projectName: "Fleet", client: "x", records: readSpecclaw(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" } })), sha: "5e1f5e2", committedAt: "2026-10-08T12:40:00Z" });
+    await syncSpecclaw(app, ctxFor(maya), { projectKey: "FLT", projectName: "Fleet", client: "x", records: onMain(fakeRepo({ "101-export": { tasks: "- [x] `T1` — one\n- [ ] `T2` — two" } }), "5e1f5e2"), sha: "5e1f5e2", committedAt: "2026-10-08T12:40:00Z" });
     const after = await push({ sha: "01d0002", committedAt: "2026-10-08T12:35:00Z", records: readSpecclaw(fakeRepo({ "102-import": { title: "Older title" } })) });
     expect(after.skipped).toEqual([expect.stringMatching(/^FLT-102: stale: last synced from a newer commit \(2026-10-08T12:40/)]);
   });

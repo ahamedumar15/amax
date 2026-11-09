@@ -269,7 +269,7 @@ describe.skipIf(!hasDb)("sync robustness (review round 1)", () => {
     const metas = await withTenant(app, T, (tx) => tx.execute(sql`select key, meta->>'source' as source from delivery.proposal where key like 'SR-%' order by key`));
     expect(metas).toEqual([{ key: "SR-001", source: "specclaw/001-a@22222222" }, { key: "SR-002", source: "main@11111111" }]);
     rmSync(join(main, ".specclaw/changes/002-b"), { recursive: true });
-    await syncSpecclaw(app, ctx, { projectKey: "SR", projectName: "sr", client: "x", records: readSpecclaw({ dir: main, ref: "main@3" }), sha: "3", committedAt: "2026-10-01T00:00:00Z" });
+    await syncSpecclaw(app, ctx, { projectKey: "SR", projectName: "sr", client: "x", records: readSpecclaw({ dir: main, ref: "main@33333333" }), sha: "33333333", committedAt: "2026-10-01T00:00:00Z" });
     const { listProposals, getProject } = await import("../server/queries");
     expect((await listProposals(ops!, { projectKey: "SR" })).map((p) => p.key)).toEqual(["SR-001"]);
     expect((await getProject(ops!, "SR"))!.proposals.map((p) => p.key)).toEqual(["SR-001"]);

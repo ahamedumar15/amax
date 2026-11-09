@@ -22,6 +22,11 @@ describe("089 change numbers", () => {
     ["main moved on with other numbers", ["088-a", "091-z"], ["088-a", "089-mine"], ["088-a"], []],
     ["the PR renames its own folder", ["088-a", "089-old-name"], ["088-a", "089-new-name"], ["088-a", "089-old-name"], []],
     ["the PR removes a folder and reuses its number", ["088-a", "089-dropped"], ["088-a", "089-reused"], ["088-a", "089-dropped"], []],
+    // 089 final pass: what main did after the branch was cut is main's own, never the PR's.
+    ["main renumbered a pair after the branch was cut", ["074-a", "090-b"], ["074-a", "074-b", "089-mine"], ["074-a", "074-b"], []],
+    ["main removed a folder after the branch was cut", ["074-a"], ["074-a", "075-gone", "089-mine"], ["074-a", "075-gone"], []],
+    ["main renamed a folder and the PR reuses the old number", ["088-a", "089-renamed"], ["088-a", "089-old", "089-mine"], ["088-a", "089-old"], ["089-mine: number 089 is already used by 089-renamed"]],
+    ["a pair on main, untouched, while the PR adds elsewhere", ["074-a", "074-b"], ["074-a", "074-b", "089-mine"], ["074-a", "074-b"], []],
   ])("AC-10 %s", async (_, base, head, mergeBase, failures) => {
     const { check } = (await import(pathToFileURL(join(__dirname, "../../../scripts/check-change-numbers.mjs")).href)) as { check: Check };
     expect(check(base as string[], head as string[], mergeBase as string[]).failures.map((f) => f.replace(/; renumber.*$/, ""))).toEqual(failures);

@@ -24,11 +24,13 @@ const numberOf = (d) => d.match(NUMBERED)[1];
 const byNumber = (dirs) => dirs.reduce((m, d) => m.set(numberOf(d), [...(m.get(numberOf(d)) ?? []), d]), new Map());
 
 /** What the check prints: the PR's new folders that reuse a number (fail), and the base branch's own pairs (known). */
-export function check(baseDirs, headDirs, mergeBaseDirs = []) {
-  const base = new Set(baseDirs), head = new Set(headDirs);
+export function check(baseDirs, headDirs, mergeBaseDirs = baseDirs) {
+  const head = new Set(headDirs), mergeBase = new Set(mergeBaseDirs);
+  // 089 final pass: judge what the merge produces. The PR adds what head has and the merge base didn't, and removes what
+  // the merge base had and head doesn't; whatever main did since (add, rename, remove) is main's own.
+  const added = headDirs.filter((d) => !mergeBase.has(d));
   const removed = new Set(mergeBaseDirs.filter((d) => !head.has(d)));
-  const added = headDirs.filter((d) => !base.has(d));
-  const after = byNumber([...new Set([...baseDirs, ...headDirs])].filter((d) => !removed.has(d)));
+  const after = byNumber([...new Set([...baseDirs.filter((d) => !removed.has(d)), ...added])]);
   const failures = added.filter((d) => after.get(numberOf(d)).length > 1)
     .map((d) => `${d}: number ${numberOf(d)} is already used by ${after.get(numberOf(d)).filter((o) => o !== d).join(", ")}; renumber it (specclaw-renumber-changes)`);
   const known = [...byNumber(baseDirs)].filter(([, ds]) => ds.length > 1).map(([n, ds]) => `${n}: ${ds.join(", ")} (already on the base branch)`);

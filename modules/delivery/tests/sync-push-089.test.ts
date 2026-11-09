@@ -97,10 +97,22 @@ describe.skipIf(!hasDb)("089 sync_specclaw: duplicates and withdrawal", () => {
 
   it("AC-12 the self-sync holds a mass withdrawal too, and applies it once confirmed with its count (--confirm-withdraw)", async () => {
     const maya = (await loadViewer(app, T, (await signInDemo(app, T, "maya@lumenlabs.test")).sessionId))!;
-    const sync = (dirs: string[], confirmWithdraw?: number) => syncSpecclaw(app, ctxFor(maya), { projectKey: "SSC", projectName: "Self-sync", client: "x", records: fakeRepo(dirs), sha: "5e1f5e0", committedAt: "2026-10-11T00:00:00Z", confirmWithdraw });
+    const sync = (dirs: string[], confirmWithdraw?: number) => syncSpecclaw(app, ctxFor(maya), { projectKey: "SSC", projectName: "Self-sync", client: "x", records: fakeRepo(dirs).map((r) => ({ ...r, source: "main@5e1f5e0" })), sha: "5e1f5e0", committedAt: "2026-10-11T00:00:00Z", confirmWithdraw });
     await sync(["201-a", "202-b", "203-c", "204-d", "205-e", "206-f"]);
     expect(await sync(["201-a"])).toMatchObject({ withdrawn: 0, skipped: [expect.stringMatching(/^SSC: withdrawal held: it would withdraw 5 of 6 proposals .*--confirm-withdraw\)$/)] });
     expect(await sync(["201-a"], 4)).toMatchObject({ withdrawn: 0 });
     expect(await sync(["201-a"], 5)).toMatchObject({ withdrawn: 5, skipped: [] });
+  });
+
+  // 089 final pass: the self-sync never reads a change that exists only on a branch, so it can't withdraw the proposal a
+  // branch push made for it, even from a newer main commit; a change it did read from main still can be.
+  it("AC-6 a newer self-sync of main leaves a branch-only proposal alone", async () => {
+    await push(["101-export", "208-branch-only"], { ref: "specclaw/208-branch-only", committedAt: "2026-10-12T00:00:00Z" });
+    expect(await row("FLT-208")).toMatchObject({ withdrawn: null });
+    const maya = (await loadViewer(app, T, (await signInDemo(app, T, "maya@lumenlabs.test")).sessionId))!;
+    const onMain = fakeRepo(["101-export"]).map((r) => ({ ...r, source: "main@7c1e2d4" }));
+    const r = await syncSpecclaw(app, ctxFor(maya), { projectKey: "FLT", projectName: "Fleet", client: "x", records: onMain, sha: "7c1e2d4", committedAt: "2026-10-13T00:00:00Z" });
+    expect(r.withdrawn).toBe(0);
+    expect(await row("FLT-208")).toMatchObject({ withdrawn: null });
   });
 });

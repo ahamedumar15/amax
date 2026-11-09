@@ -80,6 +80,12 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
 
    *Review round 3:* the self-sync takes the same confirmation (`sync:specclaw --confirm-withdraw <n>`), and the hold
    message names every way to send it.
+
+   *Final pass (escalation, redesign agreed 2026-11-09):* the self-sync no longer covers any ref. It withdraws only
+   what a ref it read last synced (its records' refs: main and the branches it took changes from). `readSpecclaw`
+   never reads a change that exists only on a branch, so a proposal a branch push made for one stays put until its
+   change reaches main. The number check (AC-10) now judges what the merge produces: the PR adds what head has and
+   the merge base didn't, removes what the merge base had and head doesn't, and whatever main did since is main's.
 7. **AC-7** A withdrawn count shows in the preview and the result (`withdrawn`). The plugin's summary line prints it
    too. A preview never writes, as today.
 

@@ -78,9 +78,11 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     else result.created++;
   }
   if (same.length) await markSynced(ctx, { projectKey: opts.projectKey, keys: same, committedAt: opts.committedAt });
-  // Folders that disappeared are marked withdrawn, never deleted, by the same rule as a push (089 review round 1). It
-  // reads main and every specclaw branch at once, so any ref counts.
-  const plan = planWithdrawals(stored, { named: new Set(opts.records.map((r) => `${opts.projectKey}-${r.number}`)), refs: null, committedAt: opts.committedAt, read: opts.records.length, confirm: opts.confirmWithdraw });
+  // Folders that disappeared are marked withdrawn, never deleted, by the same rule as a push (089 review). Only the refs
+  // the records came from count: readSpecclaw never reads a change that exists only on a branch, so a proposal a
+  // branch push made for one stays put until its change reaches main.
+  const refs = new Set(opts.records.map((r) => refOf(r.source) as string));
+  const plan = planWithdrawals(stored, { named: new Set(opts.records.map((r) => `${opts.projectKey}-${r.number}`)), refs, committedAt: opts.committedAt, read: opts.records.length, confirm: opts.confirmWithdraw });
   if (plan.held) result.skipped.push(`${opts.projectKey}: ${plan.held}`);
   for (const key of plan.keys) {
     const cur = byKey.get(key)!;

@@ -24,13 +24,13 @@ describe("089 planWithdrawals", () => {
     ["a wrong count stays held", project(6), first(1), ["main"], [], /withdraw 5 of 6/, 4],
     ["nothing read can't be confirmed", project(6), [], ["main"], [], /read no changes/, 6],
     ["last synced from a branch", project(4, { "FLT-200": row({ meta: { source: "specclaw/200-x@51b9a07" } }) }), first(4), ["main"], [], null],
-    ["the self-sync (any ref) takes that branch's gone folder", project(4, { "FLT-200": row({ meta: { source: "specclaw/200-x@51b9a07" } }) }), first(4), null, ["FLT-200"], null],
+    ["a sync that read that branch takes its gone folder", project(4, { "FLT-200": row({ meta: { source: "specclaw/200-x@51b9a07" } }) }), first(4), ["main", "specclaw/200-x"], ["FLT-200"], null],
     ["Released", project(4, { "FLT-200": row({ phase: "released" }) }), first(4), ["main"], [], null],
     ["a newer commit already synced it", project(4, { "FLT-200": row({ synced_commit_at: "2026-10-10T00:00:00Z" }) }), first(4), ["main"], [], null],
     ["already withdrawn", project(4, { "FLT-200": row({ meta: { source: "main@4f2c9a1", withdrawn: true } }) }), first(4), ["main"], [], null],
   ])("%s", (_, rows, read, refs, keys, held, confirm?: number) => {
     const named = new Set([...(read as string[]), ...[...rows.keys()].filter((k) => k.startsWith("FLT-9"))]);
-    const plan = planWithdrawals(rows, { named, refs: refs ? new Set(refs as string[]) : null, committedAt: at, read: (read as string[]).length, confirm });
+    const plan = planWithdrawals(rows, { named, refs: new Set(refs as string[]), committedAt: at, read: (read as string[]).length, confirm });
     expect(plan.keys).toEqual(keys);
     if (held) expect(plan.held).toMatch(held as RegExp); else expect(plan.held).toBeNull();
   });
