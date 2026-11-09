@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
-type Check = (base: string[], head: string[]) => { failures: string[]; known: string[] };
+type Check = (base: string[], head: string[], mergeBase?: string[]) => { failures: string[]; known: string[] };
 
 describe("089 change numbers", () => {
   it("AC-10 fails a PR's new folder that reuses a base or PR number; base pairs and archived moves pass", async () => {
@@ -14,13 +14,16 @@ describe("089 change numbers", () => {
     expect(check(base, ["073-time", "074-dev-demo-data", "074-fork-pr-review-gate", "088-quiet-hours"]).failures).toEqual([]);
   });
 
-  // 089 review round 1 (B1): the PR branch was cut before main gained a folder; that folder's number is still taken.
+  // 089 review rounds 1 and 2 (B1): the PR branch was cut before main gained a folder, so that folder's number is still
+  // taken; a folder the PR itself renamed or removed (in the merge base, gone from the PR) gives its number up.
   it.each([
-    ["main gained 089 after the branch was cut", ["088-a", "089-main-only"], ["088-a", "089-mine"], ["089-mine: number 089 is already used by 089-main-only"]],
-    ["main gained 089 and 090; the PR adds 090", ["088-a", "089-x", "090-y"], ["088-a", "090-mine"], ["090-mine: number 090 is already used by 090-y"]],
-    ["main moved on with other numbers", ["088-a", "091-z"], ["088-a", "089-mine"], []],
-  ])("AC-10 %s", async (_, base, head, failures) => {
+    ["main gained 089 after the branch was cut", ["088-a", "089-main-only"], ["088-a", "089-mine"], ["088-a"], ["089-mine: number 089 is already used by 089-main-only"]],
+    ["main gained 089 and 090; the PR adds 090", ["088-a", "089-x", "090-y"], ["088-a", "090-mine"], ["088-a"], ["090-mine: number 090 is already used by 090-y"]],
+    ["main moved on with other numbers", ["088-a", "091-z"], ["088-a", "089-mine"], ["088-a"], []],
+    ["the PR renames its own folder", ["088-a", "089-old-name"], ["088-a", "089-new-name"], ["088-a", "089-old-name"], []],
+    ["the PR removes a folder and reuses its number", ["088-a", "089-dropped"], ["088-a", "089-reused"], ["088-a", "089-dropped"], []],
+  ])("AC-10 %s", async (_, base, head, mergeBase, failures) => {
     const { check } = (await import(pathToFileURL(join(__dirname, "../../../scripts/check-change-numbers.mjs")).href)) as { check: Check };
-    expect(check(base as string[], head as string[]).failures.map((f) => f.replace(/; renumber.*$/, ""))).toEqual(failures);
+    expect(check(base as string[], head as string[], mergeBase as string[]).failures.map((f) => f.replace(/; renumber.*$/, ""))).toEqual(failures);
   });
 });

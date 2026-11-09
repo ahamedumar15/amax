@@ -41,7 +41,9 @@ async function pushRef(env, fetchImpl, base, records, onDefault, out) {
   for (let i = 0; i < Math.max(records.length, 1); i += MAX_PUSH) batches.push(records.slice(i, i + MAX_PUSH));
   if (onDefault && batches.length > 1) out.warn(`${base.ref}: more than ${MAX_PUSH} changes, so withdrawal is skipped this run`);
   for (const batch of batches) {
-    const r = await call(env, fetchImpl, { ...base, records: batch, dryRun: false, withdrawMissing: onDefault && batches.length === 1 });
+    const whole = onDefault && batches.length === 1;
+    const confirm = whole && /^\d+$/.test(env.AMAX_CONFIRM_WITHDRAW ?? "") ? { confirmWithdraw: Number(env.AMAX_CONFIRM_WITHDRAW) } : {};
+    const r = await call(env, fetchImpl, { ...base, records: batch, dryRun: false, withdrawMissing: whole, ...confirm });
     if (r.outcome === "refused") throw new Error(`${base.ref} ${base.sha.slice(0, 7)} → ${base.projectKey}: refused: ${r.reason}`);
     out.line(`${base.ref} ${base.sha.slice(0, 7)} → ${base.projectKey}: ${r.outcome}`);
     out.line(`  ${r.created} created · ${r.updated} updated · ${r.withdrawn ?? 0} withdrawn · ${r.unchanged} unchanged · ${r.skipped.length} skipped${r.ignored ? ` · ${r.ignored} not this branch's` : ""}`);

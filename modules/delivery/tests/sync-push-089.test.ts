@@ -84,4 +84,14 @@ describe.skipIf(!hasDb)("089 sync_specclaw: duplicates and withdrawal", () => {
     expect(r.skipped).toEqual(["FLT-101: two changes numbered 101: 101-export, 101-exports-v2"]);
     expect(await row("FLT-101")).toMatchObject({ title: "101-export title", withdrawn: null });
   });
+
+  it("AC-6 a mass withdrawal is held for a person, and applied once they confirm its count", async () => {
+    const all = ["101-export", "102-import", "104-new", "105-a", "106-b", "107-c"];
+    await push(all, { committedAt: "2026-10-10T09:00:00Z" });
+    const held = await push(["101-export"], { committedAt: "2026-10-10T10:00:00Z", withdrawMissing: true, dryRun: true });
+    expect(held).toMatchObject({ withdrawn: 0, needsReview: true, skipped: [expect.stringMatching(/^FLT: withdrawal held: it would withdraw 5 of 6 proposals .*confirmWithdraw 5$/)] });
+    expect(await push(["101-export"], { committedAt: "2026-10-10T10:00:00Z", withdrawMissing: true, confirmWithdraw: 4, dryRun: true })).toMatchObject({ withdrawn: 0, needsReview: true });
+    expect(await push(["101-export"], { committedAt: "2026-10-10T10:00:00Z", withdrawMissing: true, confirmWithdraw: 5 })).toMatchObject({ outcome: "applied", withdrawn: 5, needsReview: false });
+    expect(await row("FLT-107")).toMatchObject({ withdrawn: "true" });
+  });
 });

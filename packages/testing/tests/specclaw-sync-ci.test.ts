@@ -110,4 +110,15 @@ describe("089 CI specclaw sync through sync_specclaw", () => {
     expect(await run({ env: env as Record<string, string>, root: repo(dirs as string[]), fetchImpl, out: o.out })).toBe(1);
     expect([calls.length, o.errors]).toEqual([0, [expect.stringMatching(error as RegExp)]]);
   });
+
+  // 089 review round 2: a held withdrawal is confirmed by running the workflow by hand with its count; branches never carry it.
+  it.each([
+    ["the count is given", "5", 5],
+    ["no count", "", undefined],
+    ["not a number", "all", undefined],
+  ])("AC-6 confirm_withdraw reaches main's push only: %s", async (_, given, expected) => {
+    const { calls, fetchImpl } = fakeAmax(() => ({ body: { result: ok() } }));
+    await run({ env: { ...ENV, AMAX_CONFIRM_WITHDRAW: given as string }, root: repo(["101-export"], { name: "specclaw/102-import", dirs: ["101-export", "102-import"] }), fetchImpl, out: collect().out });
+    expect(calls.map((c) => [c.args.ref, c.args.confirmWithdraw])).toEqual([["main", expected], ["specclaw/102-import", undefined]]);
+  });
 });

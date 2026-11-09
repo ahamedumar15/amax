@@ -71,6 +71,12 @@ from the default branch shows as withdrawn. The section also shows the CI job's 
    or that would withdraw more than half of the live proposals (and more than two), withdraws nothing and flags it
    for a person: an unreadable or wrong checkout looks the same as "every folder was deleted". CI also stops, without
    pushing, when it reads no changes on `main`.
+
+   *Review round 2:* the cap counts only proposals the sync could withdraw (not Released, not synced from another
+   ref), so a long release history doesn't raise it. A person confirms a real mass deletion with `confirmWithdraw:
+   <the held count>`; in CI, by running the specclaw sync workflow by hand with its `confirm_withdraw` input. A wrong
+   count stays held, and a sync that read nothing can't be confirmed. The number check (AC-10) leaves out folders the
+   PR itself renamed or removed (found with the merge base).
 7. **AC-7** A withdrawn count shows in the preview and the result (`withdrawn`). The plugin's summary line prints it
    too. A preview never writes, as today.
 

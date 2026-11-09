@@ -42,6 +42,8 @@ export const PushInput = z.object({
   // 089 AC-6: the push carries every change on the default branch (not one batch of several), so a folder it doesn't
   // name is gone. Off by default: the plugin batches, and a batch can't tell a gone folder from the next batch.
   withdrawMissing: z.boolean().default(false),
+  // 089 review round 2: a person confirms a held mass withdrawal by sending the count the hold named.
+  confirmWithdraw: z.number().int().min(1).max(10_000).optional(),
 });
 
 /** Why a record wasn't written. `released` always, and `back` and `stale` on a branch, are standing: they
@@ -115,7 +117,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   }
   // 089 AC-6: only a push from the default branch that carries every change may withdraw, by the shared rule.
   const plan = onDefault && p.withdrawMissing
-    ? planWithdrawals(byKey, { named: new Set(p.records.map((r) => `${p.projectKey}-${r.number}`)), refs: new Set([String(project.repo_default_ref)]), committedAt: p.committedAt, read: p.records.length })
+    ? planWithdrawals(byKey, { named: new Set(p.records.map((r) => `${p.projectKey}-${r.number}`)), refs: new Set([String(project.repo_default_ref)]), committedAt: p.committedAt, read: p.records.length, confirm: p.confirmWithdraw })
     : { keys: [], held: null };
   if (plan.held) skip(p.projectKey, ["held", plan.held]);
   for (const key of plan.keys) {

@@ -74,7 +74,8 @@ proposal whose folder was deleted from `main`. To set it up:
 Every CI push shows on the Repo sync card as "amax CI for <PM>". With none of the secrets set, the job passes with a
 notice that nothing was synced. It fails when only some are set, when it reads no changes on `main`, or when amax
 refuses a push (with amax's reason). A push that would withdraw more than half of the project's proposals withdraws
-none and is flagged for a person.
+none and is flagged for a person. If those folders really were deleted, run the workflow by hand (Actions → specclaw
+sync → Run workflow) with `confirm_withdraw` set to the number the hold named.
 
 ## Sync automatically with a Claude Desktop routine
 
