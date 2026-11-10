@@ -17,11 +17,13 @@ const cases: [string, () => Record<string, string | null>, number, RegExp][] = [
   ["moved with a new file", () => ({ ...gone("074-demo"), ...folder("099-demo"), [`${at("099-demo")}/notes.md`]: "x\n" }), 1, /099-demo\s+scope=covered-by .*fail/],
   ["moved under another slug", () => ({ ...gone("074-demo"), ...folder("099-other") }), 1, /099-other\s+scope=covered-by .*fail/],
   ["moved to two new numbers", () => ({ ...gone("074-demo"), ...folder("099-demo"), ...folder("100-demo") }), 1, /099-demo\s+scope=covered-by .*fail[\s\S]*100-demo\s+scope=covered-by .*fail/],
+  ["matched by two removed folders", () => ({ ...gone("074-demo"), ...gone("080-demo"), ...folder("099-demo") }), 1, /099-demo\s+scope=covered-by .*fail/],
+  ["archived while a renumbered copy appeared", () => ({ ...gone("074-demo"), ...folder("074-demo", { archived: true }), ...folder("099-demo") }), 1, /099-demo\s+scope=covered-by .*fail/],
   ["moved beside a code change", () => ({ ...gone("074-demo"), ...folder("099-demo"), "modules/demo/index.ts": "export const a = 1;\n" }), 1, /propose first/],
 ];
 
 beforeAll(() => {
-  init(() => ({ ...folder("074-demo"), ...folder("062-site", { archived: true }), "modules/demo/index.ts": "export {};\n" }));
+  init(() => ({ ...folder("074-demo"), ...folder("080-demo"), ...folder("062-site", { archived: true }), "modules/demo/index.ts": "export {};\n" }));
   for (const [name, step] of cases) heads[name] = branch(name.replaceAll(" ", "-"), [step]);
 });
 

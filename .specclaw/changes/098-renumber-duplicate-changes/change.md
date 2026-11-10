@@ -51,7 +51,9 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
    and `needsReview` is false unless something else needs a person.
 6. **AC-6** `pnpm lint`, `pnpm test` and `pnpm build` pass.
 7. **AC-7** On a fork PR, the review gate skips a change folder that the PR only moved to a new name. A move means the
-   old folder is gone, the new one has the same slug, and every file matches apart from the change's own name. The gate
+   old folder is gone, the new one has the same slug, and every file matches apart from the change's own name. The
+   pairing is one to one: exactly one removed folder and exactly one new folder carry that slug, otherwise each is
+   judged (amended at review round 3). The gate
    prints `scope=move skip — moved from <old>`. A folder the PR moved *and* changed in any other way is judged as before.
    (Amended at build, 2026-11-10, product owner: the gate couldn't pass the renames. 101-marketing-site has 20 passes
    from before the cap, and covered-by 073 can't see commits made under the new names.)

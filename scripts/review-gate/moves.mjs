@@ -1,10 +1,10 @@
 const NUMBERED = /^(\d{3,})-(.+)$/;
+const slugOf = (dir) => NUMBERED.exec(dir)?.[2];
 const neutral = (text, names) => names.reduce((out, name) => out.split(name).join("\0change\0"), text);
 
 export function movedFrom(name, { baseDirs, headDirs, filesAt }) {
-  const slug = NUMBERED.exec(name)?.[2];
+  const slug = slugOf(name);
   if (!slug || baseDirs.includes(name)) return null;
-  const slugOf = (d) => NUMBERED.exec(d)?.[2];
   const olds = baseDirs.filter((d) => slugOf(d) === slug && !headDirs.includes(d));
   const news = headDirs.filter((d) => slugOf(d) === slug && !baseDirs.includes(d));
   if (olds.length !== 1 || news.length !== 1) return null;
