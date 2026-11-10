@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
 import { listProposals } from "../server/queries";
-import { releasedLabel } from "../ui/released";
+import { releasedLabel, shippedToLabel } from "../ui/released";
+import { ProposalsPage } from "../ui/ProposalsPage";
 import { ProjectPage } from "../ui/ProjectPage";
 import { proposalDb } from "./proposal-db";
 
@@ -57,5 +58,18 @@ describe.skipIf(!hasDb)("092 the Released card's label", () => {
 
   it("AC-5 a finished change brought in from the repo says so", async () => {
     expect(releasedLabel(await released("CON-801"))).toEqual({ text: "Released · from repo", prod: false });
+  });
+
+  // 093 final pass: the Proposals list's "Shipped to" and its CSV follow the same rule as the card.
+  it("AC-5 the Proposals list and its CSV say Prod only for a live Prod deployment", async () => {
+    const rows = await listProposals(maya, { projectKey: "CON", phase: "released" });
+    const history = rows.find((p) => p.key === "CON-801")!;
+    expect(shippedToLabel(history)).toBe("Released · from repo");
+    const page = await html(ProposalsPage({ viewer: maya, params: { phase: "released" }, searchParams: { project: "CON" } }));
+    expect(page).toContain("Released · from repo");
+    const csv = decodeURIComponent(page.match(/href="(data:text\/csv[^"]+)"/)![1]);
+    const line = csv.split("\n").find((l) => l.startsWith('"CON-801"'))!;
+    expect(line).toContain('"Released · from repo"');
+    expect(line).not.toContain('"Prod"');
   });
 });

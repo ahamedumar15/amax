@@ -9,7 +9,7 @@ import { updateProposal } from "../server/lifecycle";
 import { proposeCreate } from "../server/proposal-card";
 import { getProject, manualProjects } from "../server/queries";
 import { createProposal } from "../server/services";
-import { proposalDb } from "./proposal-db";
+import { proposalDb, T } from "./proposal-db";
 
 type Offer = { label: string };
 const pin = (tool: string) => manifest.pinSuggestions!.find((s) => s.tool === tool)!.suggest as unknown as (v: Viewer, a: Record<string, unknown>) => Promise<Offer[]>;
@@ -58,6 +58,31 @@ describe.skipIf(!hasDb)("093 agent-first projects", () => {
     expect((await db.row(handMade.key as string)).title).toBe("Edited after agent-first");
     await db.t.owner`update delivery.project set repo_url = null where key = 'HRI'`;
     await expect(createProposal(ctxFor(maya), { projectKey: "HRI", title: "Manual again" })).resolves.toMatchObject({ key: expect.stringMatching(/^HRI-/) });
+  });
+
+  // 093 final pass: a manual create that starts while a first sync holds the project lock waits for it, then sees the
+  // project as agent-first and is refused (the check runs under the same lock as the sync's writes).
+  it("AC-3 a manual create racing a project's first sync is refused once the sync commits", async () => {
+    await db.t.owner`update delivery.project set repo_url = 'github.com/example/fleet-tracker', repo_default_ref = 'main' where key = 'FLT'`;
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((r) => (locked = r));
+    const sync = db.app.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.tenant_id', ${T}, true)`);
+      await tx.execute(sql`select id from delivery.project where key = 'FLT' for update`);
+      await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, source, source_ref, meta)
+        select tenant_id, id, 'FLT-711', 'First synced', 'proposed', 'specclaw', '711-first', '{}'::jsonb from delivery.project where key = 'FLT'`);
+      locked();
+      await held;
+    });
+    await isLocked;
+    const create = createProposal(ctxFor(maya), { projectKey: "FLT", title: "By hand, mid-sync" });
+    const waited = await Promise.race([create.then(() => false, () => false), new Promise<boolean>((r) => setTimeout(() => r(true), 300))]);
+    release();
+    await sync;
+    expect(waited).toBe(true);
+    await expect(create).rejects.toThrow(/FLT's proposals come from its repo/);
   });
 
   it("AC-2 the global page offers New proposal while some project takes them by hand, and not once none does", async () => {

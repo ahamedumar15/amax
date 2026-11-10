@@ -8,6 +8,7 @@ import { csvHref } from "./csv";
 import { FilterMenu } from "./FilterMenu";
 import { NewProposalButton } from "./NewProposalButton";
 import { AgentFirstLine } from "./AgentFirstLine";
+import { shippedToLabel } from "./released";
 import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk } from "./parts";
 import { ProposalPage } from "./ProposalPage";
 import { ProposalSearch } from "./ProposalSearch";
@@ -119,7 +120,7 @@ export function ProposalsTable({ rows: all, needs, need, me, phase, root, projec
           {mine && <FilterChip name="Mine" href={`${base}${query({ project, q })}`} clears="everyone's proposals" />}
           {need && <FilterChip name={NEED_LABEL[need]} href={`${base}${query({ project, q, owner, need: undefined })}`} clears="every proposal" />}
           <ProposalSearch base={base} project={project} q={q} owner={owner} need={need} options={rows.map((p) => ({ key: p.key, title: p.title }))} />
-          <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", p.phase === "released" ? "Prod" : p.shippedTo ?? "", p.ownerName ?? ""])])} download="proposals.csv">
+          <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", shippedToLabel(p) ?? "", p.ownerName ?? ""])])} download="proposals.csv">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export
           </a>
         </div>
@@ -146,7 +147,7 @@ export function ProposalsTable({ rows: all, needs, need, me, phase, root, projec
                   <td data-label="Tasks">{p.tasksTotal > 0 ? <div className="meter" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, background: pct === 100 ? "var(--mint)" : "var(--violet)" }} /></div> : <span className="muted">–</span>}</td>
                   <td data-label="Time" className="num">{Number(p.hours.toFixed(2))} h</td>
                   <td data-label="Release">{p.release ? <a className="quiet" href={releaseHref({ projectKey: p.projectKey, version: p.release })}>{p.release}</a> : <span className="muted">None</span>}</td>
-                  <td data-label="Shipped to">{p.phase === "released" ? <span className="chip good">Prod</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
+                  <td data-label="Shipped to">{p.phase === "released" ? <span className={shippedToLabel(p) === "Prod" ? "chip good" : "chip"}>{shippedToLabel(p)}</span> : p.shippedTo ? p.shippedTo : <span className="muted">Not yet</span>}</td>
                   <td data-label="Owner">{hasNoOwner(p) ? <span className="muted">Unassigned</span> : p.ownerName}<PinButton pin={proposalPin(p)} /></td>
                 </tr>
               );

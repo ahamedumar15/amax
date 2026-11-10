@@ -92,6 +92,9 @@ describe.skipIf(!hasDb)("092 owners: a person's choice stands under concurrency,
     ["an apostrophe in the address", "**Owner:** o'brien@lumenlabs.test", "o'brien@lumenlabs.test"],
     ["a ! in the address, bracketed", "**Owner:** Ann <a!b@lumenlabs.test>", "a!b@lumenlabs.test"],
     ["a plus tag, quoted", "**Owner:** `first+tag@lumenlabs.test`", "first+tag@lumenlabs.test"],
+    ["single quotes around it", "**Owner:** 'nimal@lumenlabs.test'", "nimal@lumenlabs.test"],
+    ["bold markup around it", "**Owner:** *nimal@lumenlabs.test*", "nimal@lumenlabs.test"],
+    ["italic markup around it", "**Owner:** _nimal@lumenlabs.test_", "nimal@lumenlabs.test"],
   ])("AC-2 the Owner line with %s", (_, line, email) => {
     expect(fakeRepo("611-owner", "Owner", line)[0].owner).toBe(email);
   });
