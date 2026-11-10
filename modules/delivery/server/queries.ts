@@ -173,13 +173,18 @@ export const weeklyThroughput = (v: Viewer, now?: Date) =>
  * Proposals that reached Prod per ISO week, from proposal.released_at: the same source as
  * phaseCounts' "Released this month", so the two never disagree (review round 1).
  */
+// 094 AC-4: shipped to Prod means a Prod deployment released it (deployment.released, not voided), the In Prod rule
+// (092 AC-5). A proposal the repo's archive brought in as Released history (091 AC-4) wasn't shipped by amax, so it
+// isn't counted.
+const shippedToProd = sql`exists (select 1 from delivery.deployment d where d.release_id = p.release_id and d.released and d.voided_at is null)`;
+
 export const shippedPerWeek = (v: Viewer, now?: Date, f: Pick<ProposalFilter, "projectKey" | "ownerUserId"> = {}) =>
   read(v, async (tx) => {
     const at = now ?? (await clockOf(tx));
     const weeks = lastWeeks(at);
     const rows = await tx.execute(sql`select date_trunc('week', p.released_at at time zone 'UTC')::date::text as week, count(*)::int as n
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id
-      where p.phase = 'released' and p.released_at >= ${`${weeks[0].monday}T00:00:00Z`} and p.released_at < ${endOfDay(at)} and ${scope(f)} group by 1`);
+      where p.phase = 'released' and ${shippedToProd} and p.released_at >= ${`${weeks[0].monday}T00:00:00Z`} and p.released_at < ${endOfDay(at)} and ${scope(f)} group by 1`);
     return { labels: weeks.map((w) => w.label), values: weeks.map((w) => Number(rows.find((r) => r.week === w.monday)?.n ?? 0)) };
   });
 
@@ -188,7 +193,7 @@ export const phaseCounts = (v: Viewer, at?: Date, f: Pick<ProposalFilter, "proje
   read(v, async (tx) => {
     const now = at ?? (await clockOf(tx));
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const rows = await tx.execute(sql`select p.phase, count(*)::int as n, count(*) filter (where p.released_at >= ${month} and p.released_at < ${endOfDay(now)})::int as this_month
+    const rows = await tx.execute(sql`select p.phase, count(*)::int as n, count(*) filter (where ${shippedToProd} and p.released_at >= ${month} and p.released_at < ${endOfDay(now)})::int as this_month
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id where ${scope(f)} group by p.phase`);
     const get = (p: Phase) => rows.find((r) => r.phase === p);
     const counts = { proposed: Number(get("proposed")?.n ?? 0), planned: Number(get("planned")?.n ?? 0), building: Number(get("building")?.n ?? 0), verified: Number(get("verified")?.n ?? 0) };

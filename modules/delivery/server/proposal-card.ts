@@ -21,9 +21,10 @@ export async function proposeCreate(v: Viewer, a: Create) {
   const { project, owner } = await facts(v, a);
   if (!project) throw new ToolError(`there's no project ${a.projectKey}; list_projects shows the keys`, "invalid_input");
   if (project.status !== "active") throw new ToolError(`${project.name as string} is closed; reopen it before adding proposals`, "invalid_input");
+  // 094 AC-6: permission first, so a viewer who can't add there isn't told where the project's repo is.
+  if (!can(v, "delivery:proposal:create", { projectId: project.id as string })) throw new ToolError(`you can't add proposals to ${project.name as string}`, "invalid_input");
   // 093 AC-3: no card for an agent-first project; its proposals come from its repo.
   if (project.agent_first) throw new ToolError(agentFirstRefusal(a.projectKey, project.repo_url as string), "invalid_input");
-  if (!can(v, "delivery:proposal:create", { projectId: project.id as string })) throw new ToolError(`you can't add proposals to ${project.name as string}`, "invalid_input");
   if (a.ownerUserId && !owner) throw new ToolError("the owner must be an active person in this workspace", "invalid_input");
   await refuseOffProject(v, a.ownerUserId, project.id as string);
 }

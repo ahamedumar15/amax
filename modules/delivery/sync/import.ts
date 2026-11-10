@@ -24,9 +24,13 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
   tasksTotal: tasks.length || r.tasksTotal,
   tasks,
   releasedAt: r.releasedAt,
+  // 094 AC-1: the repo's created date; null when neither the header, state.json nor git can tell (amax keeps its own).
+  createdAt: r.createdAt ?? null,
   // 091 review round 1: no email in meta. The owner's email is read from the repo on every sync and only resolved
   // to a person then (ownerEmailOf, upsertSpecProposal), so amax never stores a committer's address.
-  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source },
+  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source,
+    // 094 AC-3: when each phase was reached in the repo, for the proposal's history.
+    repoPhases: r.phaseTimes ?? {} },
   };
 };
 
@@ -35,12 +39,27 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
 // Task order isn't a change either: change.md may list T26 before T25, and storage returns its own order (079).
 const byRef = (a: Task, b: Task) => a.ref.length - b.ref.length || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
 export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].map((t) => ({ ref: t.ref, title: t.title, done: t.done })).sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
+
+type Dated = Task & { doneBy?: string | null };
+const differs = (a: unknown, b: string) => !a || Date.parse(String(a)) !== Date.parse(b);
+/**
+ * 094 AC-1, AC-2: whether the repo's dates differ from the stored ones, so a sync must write though nothing else changed:
+ * its created date, or a task the sync closed (no done_by) whose tick the repo dates differently. Unknown dates don't count.
+ */
+export function repoDatesStale(cur: Record<string, unknown>, d: { createdAt: string | null; tasks: Task[] }) {
+  if (d.createdAt && differs(cur.created_at, d.createdAt)) return true;
+  const stored = new Map(((cur.tasks ?? []) as Dated[]).map((t) => [t.ref, t]));
+  return d.tasks.some((t) => {
+    const s = stored.get(t.ref);
+    return Boolean(t.done && t.doneAt && s?.done && !s.doneBy && differs(s.doneAt, t.doneAt));
+  });
+}
 
 /** A project's specclaw proposals as stored, with their tasks, for the "changed?" comparison. */
 export const storedSpecRows = (tx: Tx, projectKey: string) =>
-  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at, p.project_id, p.owner_user_id, p.owner_set_by_person,
-                   (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
+  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at, p.project_id, p.owner_user_id, p.owner_set_by_person, p.created_at,
+                   (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done, 'doneAt', t.done_at, 'doneBy', t.done_by) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
                  from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                  where pr.key = ${projectKey} and p.source = 'specclaw'`);
 
@@ -74,7 +93,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const why = skipReason(r, dupes);
     if (why) { if (!result.skipped.includes(`${d.key}: ${why.text}`)) result.skipped.push(`${d.key}: ${why.text}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
-    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d) && !ownerStale.has(d.key)) {
+    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d) && !ownerStale.has(d.key) && !repoDatesStale(cur, d)) {
       result.unchanged++;
       same.push(d.key);
       continue;

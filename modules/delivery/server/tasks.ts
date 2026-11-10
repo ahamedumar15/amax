@@ -8,14 +8,19 @@ import { recordActivity } from "./activity";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn } from "./readiness";
 
-export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean() });
+// 094 AC-2: doneAt is when the repo ticked the task (git); absent when git couldn't tell.
+export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean(), doneAt: z.string().datetime({ offset: true }).nullable().optional() });
 export type TaskLine = z.infer<typeof TaskInput>;
 
 // A task closed once stays closed: a later sync that still lists it open doesn't reopen it (008).
+// 094 AC-2: a task the sync closes is dated by the commit that ticked it (doneAt), else now. One a commit message or a
+// person closed (done_by set) keeps its date; one a sync closed earlier takes the repo's date once the repo has one.
 export async function writeTasks(tx: Tx, tenantId: string, proposalId: string, tasks: TaskLine[]) {
   for (const t of tasks) {
-    await tx.execute(sql`insert into delivery.task (tenant_id, proposal_id, ref, title, done, done_at) values (${tenantId}, ${proposalId}, ${t.ref}, ${t.title}, ${t.done}, ${t.done ? sql`now()` : null})
-      on conflict (proposal_id, ref) do update set title = excluded.title, done = delivery.task.done or excluded.done, done_at = coalesce(delivery.task.done_at, excluded.done_at)`);
+    const repoAt = t.done && t.doneAt ? t.doneAt : null;
+    await tx.execute(sql`insert into delivery.task (tenant_id, proposal_id, ref, title, done, done_at) values (${tenantId}, ${proposalId}, ${t.ref}, ${t.title}, ${t.done}, ${t.done ? sql`coalesce(${repoAt}::timestamptz, now())` : null})
+      on conflict (proposal_id, ref) do update set title = excluded.title, done = delivery.task.done or excluded.done,
+        done_at = case when delivery.task.done_by is null and ${repoAt}::timestamptz is not null then ${repoAt}::timestamptz else coalesce(delivery.task.done_at, excluded.done_at) end`);
   }
   return countTasks(tx, proposalId);
 }

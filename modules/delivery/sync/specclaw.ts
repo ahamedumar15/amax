@@ -3,6 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Phase } from "../contracts";
+import { ownerFromHeader } from "./owner-line";
 
 export type SpecRecord = {
   number: string;
@@ -18,7 +19,7 @@ export type SpecRecord = {
   tasksDone: number;
   tasksTotal: number;
   /** 008: each task by id, as sync_proposal stores it. */
-  tasks: { ref: string; title: string; done: boolean }[];
+  tasks: { ref: string; title: string; done: boolean; doneAt?: string | null }[];
   acs: number;
   pr: string | null;
   verdict: string | null;
@@ -34,6 +35,10 @@ export type SpecRecord = {
   unreadable: boolean;
   /** 089 AC-8: another change folder has the same number, so neither can own the key; both are reported, never synced. */
   duplicate: boolean;
+  /** 094 AC-1: when the change was written: its `**Created:**` header, else state.json's proposal time; git fills the rest. */
+  createdAt: string | null;
+  /** 094 AC-3: when each phase was reached in the repo (state.json), by phase: proposal, tasks, verify, pr, archived. */
+  phaseTimes: Record<string, string>;
   /** 091 AC-7: the email on the header's `**Owner:**` line, if any. */
   owner: string | null;
   /** 091 AC-7: who added the change's change.md, from git; filled by the plugin's reader and CI, never by this file reader. */
@@ -91,13 +96,28 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
     source: ref,
     unreadable: !parsedState.ok,
-    // 091 final pass, 092 AC-2: the first email anywhere on the header's Owner line (bare, `quoted`, <bracketed>, "Name
-    // <email>", a mailto link), as an address ending in a letter-only domain, so punctuation around it isn't taken in.
-    // 093 final pass: the whole address, starting at a boundary (start, space, < ( [ ` " ' : * _), with the usual special
-    // characters inside it (o'brien, a!b, first+tag) but starting and ending with a letter or digit, so neither a quote
-    // or markup around it is taken in, nor is it cut down to a different address.
-    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?(?:^|[\s<(\[`"':*_])([A-Za-z0-9](?:[A-Za-z0-9.!#$%&'*+/=?^_{|}~-]*[A-Za-z0-9])?@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/)?.[1] ?? null,
+    createdAt: createdOf(change, phases),
+    phaseTimes: phaseTimesOf(phases),
+    // 091 AC-7, 094 AC-5: the email on the header's Owner line, read by tokens (owner-line.ts).
+    owner: ownerFromHeader(change),
   };
+}
+
+// 094 AC-3: the phases a change reached in the repo, and when: approved, tasks planned, verified, PR raised, archived.
+const REACHED: Record<string, string> = { proposal: "approved", tasks: "done", verify: "done", pr: "raised", archived: "done" };
+const isTime = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
+function phaseTimesOf(phases: Record<string, { status?: string; at?: string }>) {
+  const out: Record<string, string> = {};
+  for (const [k, status] of Object.entries(REACHED)) if (phases[k]?.status === status && isTime(phases[k].at)) out[k] = new Date(phases[k].at!).toISOString();
+  return out;
+}
+// 094 AC-1: the header's Created day, else the proposal's time in state.json. The header is only a day, so when
+// state.json's proposal time falls on it, that time says when on the day; otherwise the day reads as midnight UTC.
+function createdOf(change: string, phases: Record<string, { at?: string }>) {
+  const day = change.split(/^## /m)[0].match(/\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  const proposed = isTime(phases.proposal?.at) ? new Date(phases.proposal!.at!).toISOString() : null;
+  if (day && isTime(`${day}T00:00:00Z`)) return proposed?.startsWith(day) ? proposed : `${day}T00:00:00.000Z`;
+  return proposed;
 }
 
 // "042-release-management" is change 042; numbers past 999 keep all their digits (review round 6).

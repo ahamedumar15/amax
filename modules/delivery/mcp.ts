@@ -63,7 +63,7 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ taskId: z.string().uuid(), key: z.string().optional() }), run: (v, a) => getProposalTask(v, a.taskId, { key: a.key }) }),
   // Review 081 round 1 (R3): one line of a proposal's history, for its row's pin on the proposal page.
   tool({ ...read, pin: { id: "proposalId", of: pinOf.event }, name: "get_proposal_event", description: "One line of a proposal's history by proposalId and line (as get_proposal's history gives it, such as audit:12 or task:<id>): what happened, who, and when. A time line shows only to its owner and the project's approvers.",
-    input: z.object({ proposalId: z.string().uuid(), line: z.string().regex(/^(audit|time|event|task):[0-9a-f-]+$/, "a history line id such as audit:12") }), run: (v, a) => proposalEvent(v, a) }),
+    input: z.object({ proposalId: z.string().uuid(), line: z.string().regex(/^(?:(audit|time|event|task):[0-9a-f-]+|repo:(proposal|tasks|verify|pr|archived))$/, "a history line id such as audit:12") }), run: (v, a) => proposalEvent(v, a) }),
   tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
     input: z.object({ projectKey: z.string().optional() }), run: (v, a) => listReleases(v, a) }),
   tool({ ...read, pin: { id: "releaseId", of: pinOf.release }, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",

@@ -4,7 +4,7 @@ import { setTenant, textArray, type Tx } from "@amax/db";
 import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, defineService, ForbiddenError, getRuntime, type Emitted, type ServiceContext, type Source } from "@amax/core/server";
 import { PHASES, type Phase } from "../contracts";
-import { desired, fingerprint, storedSpecRows, type Task } from "../sync/import";
+import { desired, fingerprint, storedSpecRows, type Task, repoDatesStale } from "../sync/import";
 import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { forUserOf } from "./activity";
 import { ctxFor } from "./context";
@@ -35,6 +35,9 @@ const SpecRecordInput = z.object({
   waiting: z.array(text(8)).max(50), updatedAt: text(40).nullable(), releasedAt: text(40).nullable(), source: text(300), unreadable: z.boolean(),
   duplicate: z.boolean().default(false),
   owner: z.string().max(320).nullable().default(null), author: z.string().max(320).nullable().optional(),
+  // 094 AC-1, AC-3: the repo's dates. Absent from an older plugin, so amax keeps the ones it has.
+  createdAt: z.string().datetime({ offset: true }).nullable().default(null),
+  phaseTimes: z.partialRecord(z.enum(["proposal", "tasks", "verify", "pr", "archived"]), z.string().datetime({ offset: true })).default({}),
 });
 
 export const MAX_PUSH = 200;
@@ -102,6 +105,11 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   for (const r of mine) {
     const key = `${p.projectKey}-${r.number}`;
     const cur = byKey.get(key);
+    // 091 AC-2: a branch holds one folder, so it can't see that the key belongs to another; the default branch may
+    // rename a change (its push carries only the new folder).
+    // A withdrawn proposal's folder is gone from the default branch, so its number is free again (final pass).
+    // 094 AC-6: checked first, as 091 did, so a branch's key conflict is reported even when its state.json is unreadable.
+    if (!onDefault && cur?.source_ref && cur.source_ref !== r.dir && !isWithdrawn(cur)) { skip(key, ["duplicate", `two changes numbered ${r.number}: ${String(cur.source_ref)}, ${r.dir}`]); continue; }
     // 092 AC-6: what the sync skips is decided by its own rule (skipReason, shared with the self-sync); the push keeps
     // its codes, and its short wording for an unreadable state.json.
     const skipWhy = skipReason(r, dupes);
@@ -110,10 +118,6 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
       if (!counts.skipped.includes(`${key}: ${text}`)) skip(key, [code, text]);
       continue;
     }
-    // 091 AC-2: a branch holds one folder, so it can't see that the key belongs to another; the default branch may
-    // rename a change (its push carries only the new folder).
-    // A withdrawn proposal's folder is gone from the default branch, so its number is free again (final pass).
-    if (!onDefault && cur?.source_ref && cur.source_ref !== r.dir && !isWithdrawn(cur)) { skip(key, ["duplicate", `two changes numbered ${r.number}: ${String(cur.source_ref)}, ${r.dir}`]); continue; }
     const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
@@ -122,7 +126,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     if (why) { skip(key, why); continue; }
     // 091 AC-7: unchanged files, but the owner the repo names may resolve differently now (a git identity linked since).
     const ownerEmail = ownerEmailOf(r);
-    if (cur && unchanged(cur, d) && !(await repoOwnerStale(tx, ctx.tenantId, cur, ownerEmail))) { counts.unchanged++; same.push(key); continue; }
+    if (cur && unchanged(cur, d) && !repoDatesStale(cur, d) && !(await repoOwnerStale(tx, ctx.tenantId, cur, ownerEmail))) { counts.unchanged++; same.push(key); continue; }
     try {
       const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, source: "specclaw", sourceRef: r.dir, committedAt: p.committedAt, ...d, ownerEmail }, ctx, project);
       await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });

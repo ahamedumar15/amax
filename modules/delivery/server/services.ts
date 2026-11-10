@@ -6,7 +6,7 @@ import { appendAudit, defineService, type Emitted, type ServiceContext } from "@
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
-import { notOnProject, ownerChanged, ownerFor, ownerFromRepo, ownerFrozenSql } from "./owner";
+import { notOnProject, ownerChanged, ownerFor, ownerFromRepo, ownerFrozen } from "./owner";
 import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
@@ -237,6 +237,8 @@ export const SyncInput = z.object({
     // 091 AC-7: the email the repo names the owner by, used for this write only and never stored. null: the repo
     // names nobody; absent: it couldn't be read (a shallow clone, a git failure, a withdrawal), so the owner stays.
     ownerEmail: z.string().max(320).nullable().optional(),
+    // 094 AC-1: when the repo says the change was written; null or absent keeps amax's own created date.
+    createdAt: z.string().datetime({ offset: true }).nullable().optional(),
   });
 export type SyncInput = z.infer<typeof SyncInput>;
 
@@ -312,12 +314,14 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     // repo's answer is unknown (ownerEmail absent), the stored owner stays as it is.
     const owner = await ownerFromRepo(tx, ctx.tenantId, input.ownerEmail, project.id as string);
     // 092 AC-1: decided on the row as locked (`found` above is read `for update`), so an owner a person sets while this
-    // sync runs stands, and the audit's before matches it. Same rule as ownerFrozen (owner.ts).
-    const personSet = ownerFrozenSql(input.ownerEmail);
-    const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
+    // sync runs stands, and the audit's before matches it. 094 AC-6: the one rule, ownerFrozen (owner.ts), on that row.
+    const personSet = sql`${ownerFrozen(before, input.ownerEmail)}`;
+    const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, created_at, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
-              ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())
+              ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, coalesce(${input.createdAt ?? null}::timestamptz, now()), now())
       on conflict (tenant_id, key) do update set title = excluded.title,
+        -- 094 AC-1: a spec proposal is always made by a sync, so the repo's created date replaces the sync's.
+        created_at = coalesce(${input.createdAt ?? null}::timestamptz, delivery.proposal.created_at),
         owner_name = case when ${personSet} then delivery.proposal.owner_name else excluded.owner_name end,
         owner_user_id = case when ${personSet} then delivery.proposal.owner_user_id else excluded.owner_user_id end,
         phase = case when delivery.proposal.phase = 'released' then 'released' else excluded.phase end, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,

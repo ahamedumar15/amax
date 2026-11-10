@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-10 05:10 UTC
+**Last Updated:** 2026-11-10 09:27 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -14,10 +14,10 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed | PR #102 closed
 - 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #103 closed
 - 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #104 closed
-- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed
+- 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed | PR #105 merged
 - 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
-- 🔀 **074-fork-pr-review-gate** — pr raised
-- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed
+- 🔀 **074-fork-pr-review-gate** — pr raised | PR #108 merged
+- 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed | PR #109 merged
 - 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
 - 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed
 - 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed
@@ -35,6 +35,9 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **089-specclaw-sync-over-mcp** — verify done | 7/7 tasks (100%) | 0 failed
 - 🔍 **090-e2e-amx-duplicate-numbers** — verify done | 2/2 tasks (100%) | 0 failed
 - 🔍 **091-ci-sync-demo-fixes** — verify done | 7/7 tasks (100%) | 0 failed
+- 🔍 **092-ci-sync-owner-and-merge-fixes** — verify done | 5/5 tasks (100%) | 0 failed
+- 🔍 **093-agent-first-proposals** — verify done | 3/3 tasks (100%) | 0 failed
+- 📝 **094-sync-repo-dates-and-owner-parser** — tasks done | 5/5 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
@@ -113,6 +116,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 91
-- **Active:** 27
+- **Total changes:** 94
+- **Active:** 30
 - **Completed:** 64

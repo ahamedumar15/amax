@@ -44,6 +44,16 @@ const KIND_OF: Record<string, EventKind> = {
   "delivery.proposal.create": "created", "delivery.proposal.sync": "synced", "delivery.proposal.rekey": "edited", "delivery.proposal.update": "edited",
   "delivery.proposal.withdraw": "withdrawn", "delivery.task.add": "task", "delivery.task.reopen": "reopened",
 };
+// 094 AC-3: the phases a spec change reached in its repo (state.json, kept in meta.repoPhases by the sync).
+const REPO_PHASE: Record<string, string> = { proposal: "Approved", tasks: "Tasks planned", verify: "Verified", pr: "PR raised", archived: "Archived" };
+async function repoLines(tx: Tx, id: string, only?: Only): Promise<ProposalEvent[]> {
+  if (only && only.kind !== "repo") return [];
+  const [p] = await tx.execute(sql`select source, meta->'repoPhases' as phases from delivery.proposal where id = ${id}`);
+  if (!p?.source) return [];
+  return Object.entries((p.phases ?? {}) as Record<string, string>)
+    .filter(([k, at]) => REPO_PHASE[k] && typeof at === "string" && !Number.isNaN(Date.parse(at)) && (!only || only.ref === k))
+    .map(([k, at]) => ({ id: `repo:${k}`, at: iso(at)!, text: `${REPO_PHASE[k]} in the repo`, by: String(p.source), kind: "synced" as const }));
+}
 const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 
 // 081 AC-28 (NFR-3): time logged against the proposal (log, correct, delete, and a change request applied by an approver),
@@ -71,7 +81,7 @@ async function timeRows(tx: Tx, id: string, v: Viewer, projectId: string, line?:
 }
 
 /** Review round 2 (B3): one history line by its kind and id ("audit:12", "event:…", "task:…", "time:…"), read directly. */
-type Only = { kind: "audit" | "event" | "task" | "time"; ref: string };
+type Only = { kind: "audit" | "event" | "task" | "time" | "repo"; ref: string };
 const one = (only: Only | undefined, kind: Only["kind"], where: ReturnType<typeof sql>) => (!only ? sql`true` : only.kind === kind ? where : sql`false`);
 
 function timeText(a: ProposalTimeLine, id: string, owner: string) {
@@ -116,6 +126,7 @@ async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string, only?
       return { id: `task:${t.id as string}`, at: iso(t.at)!, text: `${t.ref as string} ${t.title as string} done`, by: who(actor || null, forUser ?? null, names), kind: "task" as const };
     }),
   ];
+  lines.push(...(await repoLines(tx, id, only)));
   return { events: lines.sort((a, b) => b.at.localeCompare(a.at)), timeNote };
 }
 
@@ -127,7 +138,7 @@ async function historyOf(tx: Tx, id: string, v: Viewer, projectId: string, only?
 export async function proposalEvent(v: Viewer, a: { proposalId: string; line: string }) {
   const at = a.line.indexOf(":");
   const kind = a.line.slice(0, at), ref = a.line.slice(at + 1);
-  if (!["audit", "event", "task", "time"].includes(kind) || !ref) throw invalid("a history line id such as audit:12");
+  if (!["audit", "event", "task", "time", "repo"].includes(kind) || !ref) throw invalid("a history line id such as audit:12");
   if (!can(v, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
   return withTenant(getRuntime().db, v.tenantId, async (tx) => {
     const row = await proposalWhere(tx, { proposalId: a.proposalId });

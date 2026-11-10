@@ -12,6 +12,23 @@ var normaliseRepo = (url) => url.trim().toLowerCase().replace(/^[a-z+]+:\/\//, "
 // modules/delivery/sync/specclaw.ts
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+
+// modules/delivery/sync/owner-line.ts
+var ADDRESS = /^[A-Za-z0-9](?:[A-Za-z0-9.!#$%&'*+/=?^_{|}~-]*[A-Za-z0-9])?@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+var AROUND = /^[`"'*_,;:.!?]+|[`"'*_,;:.!?]+$/g;
+function ownerFromHeader(change) {
+  const header = change.split(/^## /m)[0];
+  const at = header.indexOf("**Owner:**");
+  if (at < 0) return null;
+  const line = header.slice(at + "**Owner:**".length).split("\n")[0];
+  for (const raw of line.split(/[\s<>()[\]]+/)) {
+    const token = raw.replace(AROUND, "").replace(/^mailto:/i, "").replace(AROUND, "");
+    if (ADDRESS.test(token)) return token;
+  }
+  return null;
+}
+
+// modules/delivery/sync/specclaw.ts
 var RANK = { proposed: 0, planned: 1, building: 2, verified: 3, released: 4 };
 var read = (p) => existsSync(p) ? readFileSync(p, "utf8") : "";
 var json = (p) => {
@@ -62,13 +79,24 @@ function parse(root, dir, archived, ref) {
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
     source: ref,
     unreadable: !parsedState.ok,
-    // 091 final pass, 092 AC-2: the first email anywhere on the header's Owner line (bare, `quoted`, <bracketed>, "Name
-    // <email>", a mailto link), as an address ending in a letter-only domain, so punctuation around it isn't taken in.
-    // 093 final pass: the whole address, starting at a boundary (start, space, < ( [ ` " ' : * _), with the usual special
-    // characters inside it (o'brien, a!b, first+tag) but starting and ending with a letter or digit, so neither a quote
-    // or markup around it is taken in, nor is it cut down to a different address.
-    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?(?:^|[\s<(\[`"':*_])([A-Za-z0-9](?:[A-Za-z0-9.!#$%&'*+/=?^_{|}~-]*[A-Za-z0-9])?@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/)?.[1] ?? null
+    createdAt: createdOf(change, phases),
+    phaseTimes: phaseTimesOf(phases),
+    // 091 AC-7, 094 AC-5: the email on the header's Owner line, read by tokens (owner-line.ts).
+    owner: ownerFromHeader(change)
   };
+}
+var REACHED = { proposal: "approved", tasks: "done", verify: "done", pr: "raised", archived: "done" };
+var isTime = (v) => typeof v === "string" && !Number.isNaN(Date.parse(v));
+function phaseTimesOf(phases) {
+  const out = {};
+  for (const [k, status] of Object.entries(REACHED)) if (phases[k]?.status === status && isTime(phases[k].at)) out[k] = new Date(phases[k].at).toISOString();
+  return out;
+}
+function createdOf(change, phases) {
+  const day = change.split(/^## /m)[0].match(/\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  const proposed = isTime(phases.proposal?.at) ? new Date(phases.proposal.at).toISOString() : null;
+  if (day && isTime(`${day}T00:00:00Z`)) return proposed?.startsWith(day) ? proposed : `${day}T00:00:00.000Z`;
+  return proposed;
 }
 var numberOf = (dir) => dir.match(/^(\d{3,})-/)[1];
 var folders = (root, archived) => {
@@ -111,7 +139,7 @@ var SHA = "[0-9a-f]{7,40}";
 var SHA_RE = new RegExp(`^${SHA}$`, "i");
 
 // modules/delivery/sync/authors.ts
-var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 }).trim();
 var AT_SHA = new RegExp(`@(${SHA})$`, "i");
 var isShallow = (root) => {
   try {
@@ -128,12 +156,29 @@ function authorsOf(root, rev, records, only) {
     const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
     try {
       git(root, "cat-file", "-e", `${at}:${path}`);
-      const lines = git(root, "log", at, "--follow", "--diff-filter=A", "--format=%ae", "--", path).split("\n").filter(Boolean);
-      return { ...r, author: lines.at(-1) };
+      const lines = git(root, "log", at, "--follow", "--diff-filter=A", "--format=%ae%x09%aI", "--", path).split("\n").filter(Boolean);
+      const [author, addedAt] = lines.length ? lines[lines.length - 1].split("	") : [void 0, void 0];
+      const createdAt = r.createdAt ?? (addedAt ? new Date(addedAt).toISOString() : r.createdAt);
+      return { ...r, author, createdAt, ...r.tasks ? { tasks: tickDates(root, at, path, r.tasks) } : {} };
     } catch {
       return { ...r, author: void 0 };
     }
   });
+}
+var TICK = /^\+- \[x\] `(T\d+)`/;
+function tickDates(root, at, path, tasks) {
+  if (!tasks.some((t) => t.done)) return tasks;
+  const dated = /* @__PURE__ */ new Map();
+  let when = "";
+  for (const line of git(root, "log", at, "--follow", "--format=@@commit %aI", "-p", "--unified=0", "--", path).split("\n")) {
+    if (line.startsWith("@@commit ")) {
+      when = line.slice("@@commit ".length);
+      continue;
+    }
+    const tick = line.match(TICK);
+    if (tick && when && !dated.has(tick[1])) dated.set(tick[1], new Date(when).toISOString());
+  }
+  return tasks.map((t) => t.done && dated.has(t.ref) ? { ...t, doneAt: dated.get(t.ref) } : t);
 }
 
 // plugins/amax/scripts/src/read-specclaw.ts

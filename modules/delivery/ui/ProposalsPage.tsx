@@ -8,6 +8,7 @@ import { csvHref } from "./csv";
 import { FilterMenu } from "./FilterMenu";
 import { NewProposalButton } from "./NewProposalButton";
 import { AgentFirstLine } from "./AgentFirstLine";
+import { proposalsAction } from "./proposals-action";
 import { shippedToLabel } from "./released";
 import { COLOR, needViewer, PHASE_UI, PhaseChip, SignInFirst, Stk } from "./parts";
 import { ProposalPage } from "./ProposalPage";
@@ -42,6 +43,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const filtered = projects.find((p) => p.key === searchParams.project);
   // 093 AC-2: "New proposal" only where the viewer may create by hand: a project that isn't agent-first.
   const manual = await manualProjects(viewer);
+  const action = proposalsAction(projects, manual.map((p) => p.key), filtered);
   // 081 amendment 11 (AC-96, AC-97): what needs attention leads; its counts follow every filter but need itself.
   const need = isNeed(searchParams.need) ? searchParams.need : undefined;
   const att = attention(rows, await suggestedIds(viewer, rows));
@@ -50,9 +52,8 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
     <>
       <div className="row head">
         <div><h1>Proposals</h1><p className="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p></div>
-        {filtered?.agentFirst && filtered.repoUrl ? <div className="actions"><AgentFirstLine repoUrl={filtered.repoUrl} /></div>
-          : (filtered ? manual.some((p) => p.key === filtered.key) : manual.length > 0)
-            && <div className="actions"><NewProposalButton project={filtered ? { pin: projectPin(filtered), name: filtered.name } : undefined} /></div>}
+        {action.kind === "repo-line" ? <div className="actions"><AgentFirstLine repoUrl={action.repoUrl} />{action.addByHand && <NewProposalButton secondary />}</div>
+          : action.kind === "new-proposal" && <div className="actions"><NewProposalButton project={filtered ? { pin: projectPin(filtered), name: filtered.name } : undefined} /></div>}
       </div>
       <AttentionStrip counts={att.counts} active={need} href={(n) => `${base}${listQuery({ project: projectKey, q: searchParams.q, owner: mine ? "me" : undefined, need: n })}`}
         pin={(n) => needPin(n, { projectKey: filtered?.key, projectName: filtered?.name, mine })} />
