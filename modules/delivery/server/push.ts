@@ -12,6 +12,7 @@ import { KeyTakenError, markSyncedRows, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
 import { notFound } from "./refusal";
 import { repoOwnerStale } from "./owner";
+import { isWithdrawn } from "./readiness";
 import { duplicateNumbers } from "../sync/duplicates";
 import { ownerEmailOf } from "../sync/authors";
 import { SHA_RE } from "../sync/sha";
@@ -105,7 +106,8 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     if (dupe) { if (!counts.skipped.includes(`${key}: ${dupe}`)) skip(key, ["duplicate", dupe]); continue; }
     // 091 AC-2: a branch holds one folder, so it can't see that the key belongs to another; the default branch may
     // rename a change (its push carries only the new folder).
-    if (!onDefault && cur?.source_ref && cur.source_ref !== r.dir) { skip(key, ["duplicate", `two changes numbered ${r.number}: ${String(cur.source_ref)}, ${r.dir}`]); continue; }
+    // A withdrawn proposal's folder is gone from the default branch, so its number is free again (final pass).
+    if (!onDefault && cur?.source_ref && cur.source_ref !== r.dir && !isWithdrawn(cur)) { skip(key, ["duplicate", `two changes numbered ${r.number}: ${String(cur.source_ref)}, ${r.dir}`]); continue; }
     const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.

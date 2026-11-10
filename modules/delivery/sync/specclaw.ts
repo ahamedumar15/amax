@@ -91,7 +91,8 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
     source: ref,
     unreadable: !parsedState.ok,
-    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*\s*`?([^\s`·<>]+@[^\s`·<>]+)`?/)?.[1] ?? null,
+    // 091 final pass: the email anywhere on the header's Owner line: bare, `quoted`, <bracketed> or "Name <email>".
+    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?([^\s`·<>()"']+@[^\s`·<>()"']+\.[^\s`·<>()"']+)/)?.[1] ?? null,
   };
 }
 

@@ -43,8 +43,11 @@ export async function ownerFromRepo(tx: Tx, tenantId: string, email: unknown, pr
  * 091 AC-7: whether a stored spec proposal's owner no longer matches what its repo names, so a sync must rewrite it
  * though nothing in its files changed (say, its author linked their git identity since). Never once a person set it.
  */
+/** 091 AC-7: a sync leaves the stored owner as it is: a person set it, or the repo's answer couldn't be read. */
+export const ownerFrozen = (cur: Record<string, unknown> | undefined, email: unknown) => cur?.owner_set_by_person === true || email === undefined;
+
 export async function repoOwnerStale(tx: Tx, tenantId: string, cur: Record<string, unknown>, email: unknown): Promise<boolean> {
-  if (cur.owner_set_by_person === true || email === undefined) return false;
+  if (ownerFrozen(cur, email)) return false;
   const owner = await ownerFromRepo(tx, tenantId, email, cur.project_id as string);
   return (owner?.id ?? null) !== ((cur.owner_user_id as string | null) ?? null);
 }

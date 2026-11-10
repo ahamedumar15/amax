@@ -74,6 +74,11 @@ holds them. The CI job summary says how many merged or archived branches it left
    emails leaves none in `core.trace_event`). Fixed the round's minors: one shallow check, and a folder not committed at
    the sha read is unknown.
 
+   *Final pass (round 4):* the Owner line takes the email anywhere on it (bare, `quoted`, `<bracketed>`, `Name <email>`);
+   one predicate says when a sync leaves the owner (`ownerFrozen`); `sync_proposal` passes `ownerEmail` through; a
+   withdrawn proposal frees its number for a branch; a squash-merged branch stays merged after main edits its folder;
+   0021 says why its one-time backfill reads the audit log.
+
 ## Tasks
 
 - [x] `T1` — Repo sync card groups skip lines by reason, five keys then "+n more" (AC-5)

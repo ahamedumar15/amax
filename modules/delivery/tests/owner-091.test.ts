@@ -56,9 +56,16 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
   });
   afterAll(() => t?.drop());
 
-  it("AC-7 the reader takes the Owner line from the header only", () => {
-    expect(readSpecclaw(fakeRepo("501-a", "**Owner:** `kasun@lumenlabs.test`"))[0].owner).toBe("kasun@lumenlabs.test");
-    expect(readSpecclaw(fakeRepo("502-b"))[0].owner).toBeNull();
+  // 091 final pass: every way people write the Owner line, and only the header's.
+  let readerRow = 0;
+  it.each([
+    ["a bare email", "**Owner:** kasun@lumenlabs.test", "kasun@lumenlabs.test"],
+    ["a quoted email", "**Owner:** `kasun@lumenlabs.test`", "kasun@lumenlabs.test"],
+    ["a bracketed email, as the README writes it", "**Owner:** <kasun@lumenlabs.test>", "kasun@lumenlabs.test"],
+    ["a name and email", "**Owner:** Kasun Dias <kasun@lumenlabs.test>", "kasun@lumenlabs.test"],
+    ["no Owner line (one in the body doesn't count)", undefined, null],
+  ])("AC-7 the reader takes the Owner line from the header: %s", (_, line, owner) => {
+    expect(readSpecclaw(fakeRepo(`50${++readerRow}-a`, line))[0].owner).toBe(owner);
   });
 
   it.each([

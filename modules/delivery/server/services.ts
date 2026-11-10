@@ -6,7 +6,7 @@ import { appendAudit, defineService, type Emitted, type ServiceContext } from "@
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
-import { notOnProject, ownerChanged, ownerFor, ownerFromRepo } from "./owner";
+import { notOnProject, ownerChanged, ownerFor, ownerFromRepo, ownerFrozen } from "./owner";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 
@@ -304,7 +304,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     // from then on it stands. No owner event: a sync's change notifies nobody, but the audit below records it. When the
     // repo's answer is unknown (ownerEmail absent), the stored owner stays as it is.
     const owner = await ownerFromRepo(tx, ctx.tenantId, input.ownerEmail, project.id as string);
-    const personSet = sql`(delivery.proposal.owner_set_by_person or ${input.ownerEmail === undefined})`;
+    const personSet = sql`${ownerFrozen(found as Record<string, unknown> | undefined, input.ownerEmail)}`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())

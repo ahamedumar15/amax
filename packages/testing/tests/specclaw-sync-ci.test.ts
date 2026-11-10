@@ -151,6 +151,8 @@ describe("089 CI specclaw sync through sync_specclaw", () => {
     // A squash merge: main gets the branch's folder in a commit of its own, so the branch isn't in main's history.
     git("checkout", "-qb", "specclaw/105-squashed"); change("105-squashed"); commit(); remote("specclaw/105-squashed");
     git("checkout", "-q", "main"); change("105-squashed"); commit();
+    // ...and main edits the folder again before archiving it (a verify note): still merged.
+    writeFileSync(join(root, ".specclaw/changes/105-squashed/change.md"), "# 105-squashed\n\n## Verify\n"); commit();
     // A branch named after no change folder (a typo): pushed, so amax flags it, never counted as merged.
     git("checkout", "-qb", "specclaw/106-typo"); change("106-typoo"); commit(); remote("specclaw/106-typo");
     git("checkout", "-q", "main");
