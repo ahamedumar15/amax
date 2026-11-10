@@ -7,7 +7,7 @@ import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 import { repoOwnerStale } from "../server/owner";
 import { ownerEmailOf } from "./authors";
-import { knownTime, phaseTimesOnly, repoInstant, resolveRepoPhases } from "../server/repo-time";
+import { knownTime, phaseTimesOnly, repoInstant, resolveRepoPhases, storedPhasesFor } from "../server/repo-time";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -105,7 +105,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
   const dupes = duplicateNumbers(opts.records);
   for (const r of opts.records) {
     const cur = byKey.get(`${opts.projectKey}-${r.number}`);
-    const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? [], cur?.meta as Record<string, unknown> | undefined);
+    const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? [], { repoPhases: storedPhasesFor(cur, r.dir) });
     byKey.delete(d.key);
     const why = skipReason(r, dupes);
     if (why) { if (!result.skipped.includes(`${d.key}: ${why.text}`)) result.skipped.push(`${d.key}: ${why.text}`); continue; }
@@ -135,7 +135,8 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
   if (plan.held) result.skipped.push(`${opts.projectKey}: ${plan.held}`);
   for (const key of plan.keys) {
     const cur = byKey.get(key)!;
-    const meta = cur.meta as Record<string, unknown>;
+    // 096 final pass: the stored phases aren't sent back (they're entries, not a reader's times); the write keeps them.
+    const { repoPhases: _kept, ...meta } = cur.meta as Record<string, unknown>;
     await syncProposal(ctx, {
       projectKey: opts.projectKey, project, key, title: cur.title as string, phase: cur.phase as never, tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total),
       source: "specclaw", sourceRef: String(cur.source_ref ?? key), releasedAt: null, meta: { ...meta, withdrawn: true, sha: opts.sha }, committedAt: opts.committedAt,

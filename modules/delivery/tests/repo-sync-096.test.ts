@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
 import { ctxFor } from "../server/context";
-import { resolveRepoPhases } from "../server/repo-time";
+import { resolveRepoPhases, storedPhasesFor } from "../server/repo-time";
+import { syncSpecclaw } from "../sync/import";
 import { markSynced, syncProposal } from "../server/services";
 import { pushSpecclaw } from "../server/push";
 import { linkProjectRepo } from "../server/repo-sync";
@@ -132,6 +133,18 @@ describe.skipIf(!hasDb)("096 AC-4 sync_proposal and mark_synced bound their time
     await linkProjectRepo(ctxFor(maya), { projectKey: "FLT", repoUrl: "github.com/example/fleet-tracker", defaultBranch: "main" });
   }, 120_000);
 
+  // Final pass: the self-sync withdraws a proposal that has recorded repo phases (they're not sent back as times).
+  it("the self-sync withdraws a proposal with recorded repo phases, which it keeps", async () => {
+    const ctx = ctxFor(maya);
+    const recs = ["974", "975", "976"].map((n) => ({ ...record(null, n), phase: "verified", done: false, status: "ready", releasedAt: null, phaseTimes: { proposal: past, verify: later } }) as SpecRecord);
+    const base = { projectKey: "FLT", projectName: "Fleet", client: "C", sha: "abc1234" };
+    await syncSpecclaw(db.app, ctx, { ...base, records: recs, committedAt: "2026-10-18T09:00:00.000Z" });
+    const out = await syncSpecclaw(db.app, ctx, { ...base, records: recs.slice(0, 2), committedAt: "2026-10-18T10:00:00.000Z" });
+    expect(out.withdrawn).toBe(1);
+    const [p] = await db.q(sql`select meta from delivery.proposal where key = 'FLT-976'`);
+    expect((p.meta as Record<string, unknown>).repoPhases).toEqual({ proposal: { at: past, source: READ }, verify: { at: later, source: READ } });
+  });
+
   // Review round 1: the push (the main writer) stores the same thing: a default-branch push brings an archived change in
   // as Released history, with its archive date normalised, and a future one as unknown.
   let n = 980;
@@ -159,5 +172,43 @@ describe.skipIf(!hasDb)("096 AC-4 sync_proposal and mark_synced bound their time
     await write(key, { releasedAt });
     const [p] = await db.q(sql`select released_at from delivery.proposal where key = ${key}`);
     expect(p.released_at ? new Date(p.released_at as string).toISOString() : null).toBe(want);
+  });
+});
+
+// 096 final pass: stored phases belong to one change.
+describe("096 stored phases are kept only for the same change", () => {
+  const phases = { verify: { at: past, source: READ } };
+  it.each([
+    ["the same folder, live", { source_ref: "971-a", meta: { repoPhases: phases } }, "971-a", phases],
+    ["another folder took the key", { source_ref: "971-a", meta: { repoPhases: phases } }, "971-b", undefined],
+    ["a withdrawn row coming back", { source_ref: "971-a", withdrawn_at: past, meta: { repoPhases: phases } }, "971-a", undefined],
+    ["withdrawn by its folder going (meta)", { source_ref: "971-a", meta: { withdrawn: true, repoPhases: phases } }, "971-a", undefined],
+    ["no stored row", undefined, "971-a", undefined],
+  ])("%s", (_, row, dir, want) => {
+    expect(storedPhasesFor(row as never, dir)).toEqual(want);
+  });
+
+  it("a new change on a reused key starts from its own read", () => {
+    const d = desired("FLT", { ...record(null, "971"), phase: "verified", phaseTimes: { proposal: later } }, "abc1234", [], { repoPhases: storedPhasesFor({ source_ref: "971-old", meta: { repoPhases: phases } }, "971-released") });
+    expect(d.meta.repoPhases).toEqual({ proposal: later });
+  });
+});
+
+describe("096 phase times are read by instant() on the server", () => {
+  it.each([
+    ["an offset without a colon", "2026-10-17T08:42:41+0530", "2026-10-17T03:12:41.000Z"],
+    ["no offset", "2026-10-17T03:12:41", "2026-10-17T03:12:41.000Z"],
+    ["a day", "2026-10-17", "2026-10-17T00:00:00.000Z"],
+  ])("%s", (_, t, want) => {
+    expect(resolveRepoPhases({ verify: t }, READ, null)?.verify?.at).toBe(want);
+  });
+
+  it("the latest stamp is the latest instant, whatever its form", () => {
+    const root = mkdtempSync(join(tmpdir(), "amax-096s-"));
+    const dir = join(root, ".specclaw/changes/archive/973-done");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "change.md"), "# Done\n\n**Change:** 973-done\n");
+    writeFileSync(join(dir, "state.json"), JSON.stringify({ phases: { proposal: { status: "approved", at: "2026-10-17T09:00:00+05:30" }, verify: { status: "done", at: "2026-10-17T05:00:00Z" }, pr: { status: "raised", at: "Oct 18 2026" } } }));
+    expect(readSpecclaw(root)[0].releasedAt).toBe("2026-10-17T05:00:00.000Z");
   });
 });

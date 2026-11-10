@@ -17,7 +17,7 @@ import { duplicateNumbers, skipReason } from "../sync/duplicates";
 import { ownerEmailOf } from "../sync/authors";
 import { SHA_RE } from "../sync/sha";
 import { planWithdrawals } from "../sync/withdraw";
-import { commitTime, repoPhaseTimes, repoTime } from "./repo-time";
+import { commitTime, repoPhaseTimes, repoTime, storedPhasesFor } from "./repo-time";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
@@ -118,7 +118,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
       continue;
     }
     const prior = (cur?.meta ?? {}) as Stored;
-    const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? [], prior);
+    const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? [], { repoPhases: storedPhasesFor(cur, r.dir) });
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
     const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
     const why = refusal(d, cur, p.committedAt, onDefault);

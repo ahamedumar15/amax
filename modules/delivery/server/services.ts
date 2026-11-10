@@ -11,7 +11,7 @@ import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
-import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolveRepoPhases } from "./repo-time";
+import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolveRepoPhases, storedPhasesFor } from "./repo-time";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -320,7 +320,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     // 094 review round 3: the repo's phase times by the one rule, against the row as locked, whoever writes.
     // 095 AC-1: a future created date is unknown here, the one write every sync path reaches.
     const createdAt = knownTime(input.createdAt);
-    const phases = resolveRepoPhases(input.meta.repoPhases, input.meta.source, (before?.meta as Record<string, unknown> | undefined)?.repoPhases);
+    const phases = resolveRepoPhases(input.meta.repoPhases, input.meta.source, storedPhasesFor(before, input.sourceRef));
     const { repoPhases: _sent, ...rest } = input.meta;
     const meta = JSON.stringify(phases ? { ...rest, repoPhases: phases } : rest);
     // 091 AC-7: a spec proposal's owner comes from its repo (the Owner line, else the change's author), never from who

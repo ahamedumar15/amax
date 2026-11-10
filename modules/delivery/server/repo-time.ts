@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isRead } from "../sync/sha";
 import { instant } from "../sync/instant";
+import { isWithdrawn } from "./readiness";
 
 /** A commit time from a skewed clock or a hand-written payload must not land in the future. */
 export const SKEW_MS = 5 * 60_000;
@@ -24,18 +25,26 @@ export const repoInstant = instant;
 export const knownTime = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 
 const PHASE = z.enum(["proposal", "tasks", "verify", "pr", "archived"]);
+// 096 final pass: a phase time is read by the reader's rule (instant()) on the server too, as releasedAt is.
+const phaseTime = z.string().max(40).refine((v) => instant(v) !== null, "an ISO 8601 date or time");
 /** 094 AC-3: when each phase was reached in the repo, as a reader sends it. Absent: the sender didn't read them. */
-export const repoPhaseTimes = z.partialRecord(PHASE, z.string().datetime({ offset: true })).optional();
+export const repoPhaseTimes = z.partialRecord(PHASE, phaseTime).optional();
 
 /** One phase as stored: when the repo reached it, and the read that said so ("main@<sha>"). */
 export type RepoPhase = { at: string; source: string | null };
-const time = z.string().datetime({ offset: true });
 /**
  * meta.repoPhases as a write carries it: a time per phase. The read each one came from is the write's own (meta.source),
  * never the caller's word (final pass). Times in the future pass here; resolveRepoPhases treats them as unknown, the
  * same on every path (review round 3).
  */
-export const repoPhasesInMeta = z.partialRecord(PHASE, time);
+export const repoPhasesInMeta = z.partialRecord(PHASE, phaseTime);
+
+/**
+ * 096 final pass: the stored phases a write may keep: only the same change's (the row's folder is the one being written)
+ * and only while it isn't withdrawn. Another folder taking the key, or a withdrawn row coming back, starts from its read.
+ */
+export const storedPhasesFor = (row: Record<string, unknown> | undefined, sourceRef: string) =>
+  row && row.source_ref === sourceRef && !isWithdrawn(row) ? (row.meta as Record<string, unknown> | undefined)?.repoPhases : undefined;
 
 /**
  * 094 AC-3, 096 AC-1: the one rule for the phase times a write stores, applied where the write is built (desired(), for
@@ -60,7 +69,6 @@ export function resolveRepoPhases(read: unknown, source: unknown, stored: unknow
 const readOf = (source: unknown) => (isRead(source) ? source : null);
 
 // 096 AC-2: entry by entry, so one malformed entry is skipped and the others stand.
-const isTime = (v: unknown): v is string => time.safeParse(v).success;
 function each(v: unknown, one: (e: unknown) => RepoPhase | null): Record<string, RepoPhase> {
   if (!v || typeof v !== "object" || Array.isArray(v)) return {};
   const out: Record<string, RepoPhase> = {};
@@ -72,15 +80,17 @@ function each(v: unknown, one: (e: unknown) => RepoPhase | null): Record<string,
   return out;
 }
 /** A reader's times (each with this write's read). */
-const times = (v: unknown, source: string | null) => each(v, (e) => (isTime(e) ? { at: e, source } : null));
+const times = (v: unknown, source: string | null) => each(v, (e) => { const at = instant(e); return at ? { at, source } : null; });
 /** As stored: an entry with its read, or a plain time (stored before entries kept their read). Null when none. */
 function entries(v: unknown, source: string | null): Record<string, RepoPhase> | null {
   if (v === undefined || v === null) return null;
   return each(v, (e) => {
-    if (isTime(e)) return { at: e, source };
+    const plain = instant(e);
+    if (plain) return { at: plain, source };
     const o = e as { at?: unknown; source?: unknown } | null;
+    const at = o && typeof o === "object" ? instant(o.at) : null;
     // A stored read is kept as stored (review round 1): only a write's own read is checked.
-    return o && typeof o === "object" && isTime(o.at) ? { at: o.at, source: typeof o.source === "string" ? o.source : null } : null;
+    return at ? { at, source: typeof o!.source === "string" ? o!.source : null } : null;
   });
 }
 

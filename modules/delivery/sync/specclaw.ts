@@ -75,7 +75,8 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
   const tasksDone = tasks.filter((t) => t[1] === "x").length;
   const verified = phases.verify?.status === "done" || phases.pr?.status === "raised";
   const phase: Phase = archived ? "released" : verified ? "verified" : claim || tasksDone > 0 || phases.build ? "building" : approved ? "planned" : "proposed";
-  const stamps = Object.values(phases).map((p) => p.at).filter(Boolean).sort();
+  // 096 final pass: as instants (instant()), so the latest is the latest whatever form each was written in.
+  const stamps = Object.values(phases).map((p) => instant(p.at)).filter((t): t is string => t !== null).sort();
   return {
     number: numberOf(dir),
     dir,
@@ -94,7 +95,7 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     pr: phases.pr?.url ?? status.match(/\|\s*PR\s*\|[^|]*\|\s*(https:\/\/\S+?)\s*\|/)?.[1] ?? null,
     verdict: change.match(/\*\*Verdict:\*\* (\w+)/)?.[1] ?? null,
     updatedAt: stamps.at(-1) ?? null,
-    releasedAt: archived ? instant(phases.archived?.at ?? stamps.at(-1)) : null,
+    releasedAt: archived ? instant(phases.archived?.at) ?? stamps.at(-1) ?? null : null,
     source: ref,
     unreadable: !parsedState.ok,
     createdAt: createdOf(change, phases),
