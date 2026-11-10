@@ -9,3 +9,18 @@ Deferred by the review loop: minors and pre-existing findings.
 - [minor B4] `modules/delivery/server/repo-time.ts:21` The server reads repo times by two rules. `releasedAt` goes through `instant()`, which accepts a bare date, no offset, or `+0530`. Phase times go through `z.string().datetime({ offset: true })`, both in `repoPhasesInMeta` (the SyncInput refine) and in `isTime`. So one hand-written value is accepted in one field and refused or dropped in the other, and offset forms are stored as sent instead of normalised. The comment on `repoInstant` says the server applies the reader's rule, but that holds only for `releasedAt`. Run phase times through `instant()` on the server too. (round 3) <!-- fp:c15e9935cae0 -->
 - [minor docs] `modules/delivery/README.md:47` The README's 096 sentence says a phase the repo reached stays recorded, but it leaves out the final pass's limit: stored phases are kept only while the row holds the same change folder (`source_ref`) and isn't withdrawn. A folder renamed on the default branch, which 091 allows, therefore starts again from its new read. The README should state this rule and its consequence for renames, so the code and the docs agree. (round 4) <!-- fp:471278b859b4 -->
 - [minor B4] `modules/delivery/server/proposal-detail.ts:51` `repoBy` still has its own `@<sha>$` regex for the history line's 'read at …' text. 096 rounds 1–2 made `sync/sha.ts` (`READ` / `readParts`) the one `<ref>@<sha>` rule for every caller. This copy doesn't check the ref part, so a stored read that isn't `<ref>@<sha>` is still shown as one. It should shorten the sha through `readParts` and fall back to plain 'From the repo' when the source isn't a read. (round 4) <!-- fp:fa71f19d8854 -->
+
+## Open at the five-pass cap (2026-11-10)
+
+Fixed in 096: every finding of rounds 1–4 (one releasedAt rule and one time normaliser for reader and server; one
+`<ref>@<sha>` rule; stored reads kept; the self-sync's withdrawal keeps recorded phases; renames keep their phases;
+phase times by `instant()` on the server; the history line by the read rule; DB-backed push tests).
+
+Still open, for the next change:
+
+- [major B1] `modules/delivery/server/repo-time.ts:49` `storedPhasesFor` starts a withdrawn row afresh by `isWithdrawn`,
+  which is also true for a proposal a person withdrew by hand (`withdrawProposal` sets `withdrawn_at`; its folder stays).
+  Every later sync of such a proposal then drops phases a read leaves out, removes `meta.repoPhases` when the sender
+  didn't read them, and replaces each phase's first read. Fix: start afresh only when the folder went (`meta.withdrawn`
+  set by planWithdrawals), not on `withdrawn_at`; correct the README sentence and the doc comment; test a real
+  `withdrawMissing` push and a hand-withdrawn proposal whose folder stays. (round 5)

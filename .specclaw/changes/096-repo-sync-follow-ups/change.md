@@ -47,4 +47,39 @@ A proposal whose verify was re-run and failed in the repo still shows "Verified 
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — `repo-sync-096`: a read that leaves a phase out (moved on, no `state.json`) keeps it; a new time replaces
+  it with this read; the same time keeps its first read; a future time is unknown; not read at all keeps them. Through
+  the real push: the same folder and a rename on the default branch keep their phases; a folder coming back to a
+  withdrawn key, or another folder taking it, starts from its read; the self-sync's withdrawal keeps recorded phases.
+  Open at the cap: a hand-withdrawn proposal whose folder stays is also started afresh (follow-ups).
+- AC-2: pass — a malformed stored entry (bad time, wrong type, unknown phase) hides only itself.
+- AC-3: pass — a phase's read is recorded only from `<ref>@<sha>` by the one rule (`sync/sha.ts`: `READ`/`readParts`),
+  which withdrawal (`refOf`), the author walk and the history line also use; a stored read is kept as stored.
+- AC-4: pass — `sync_proposal` and `mark_synced` refuse a future `committedAt` (`commitTime`, one rule with the push);
+  `releasedAt` and phase times go through one normaliser for reader and server (`sync/instant.ts`: ISO 8601 only, no
+  offset reads as UTC) and a future one is unknown; push and self-sync rows for each form.
+- AC-5: pass — the delivery README says "In Prod" beside the card's release chip, and states 096's rules.
+- AC-6: pass — tables per rule; delivery 622/624 (the two host-only failures, `releases.test.ts` paths and
+  `create-project-surfaces` timing, predate 096); plugin and CI sync 16/16 (bundle rebuilt); review gate 18/18;
+  `tool-schemas` 1/1.
+
+**Other checks:** `specclaw-preset-check`: exit 1 from the repo-wide comment backlog, as before. `specclaw-quality-scan`:
+not_run on this host. Linux CI replica and e2e: not run here; PR #113's CI runs them.
+
+**Screenshots:** none taken; the screen change (a reached phase stays in the history) is covered by the push-path table
+and the mock section `096-repo-sync-follow-ups`.
+
+### Review loop (2026-11-10)
+
+Scope: commits after `0b9a56f6` (095's verify). Stopped at the five-pass cap (AGENTS.md) with **0 blockers, 1 major
+open**, recorded in `follow-ups.md`: a hand-withdrawn proposal whose folder stays is started afresh like a reused key.
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | round (opus) | — | 0/2/1: releasedAt checked two ways; a third `<ref>@<sha>` rule; push rows |
+| 2 | round (opus) | `b07c849c` | 0/1/1: two time normalisers on two hosts; read rule gave two answers |
+| 3 | final (opus) | — | 0/2/2: self-sync withdrawal refused; phases inherited across changes; stamps sort; phase-time rule |
+| 4 | final (opus) | — | 0/2/2: renames lost phases; no push-path test; README; history line rule |
+| 5 | final (opus) | — | 0/1/0: open at the cap (above) |
