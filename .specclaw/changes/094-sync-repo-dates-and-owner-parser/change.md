@@ -67,4 +67,52 @@ shows its repo line.
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — `repo-dates-094`: created from the header, the header's day timed by `state.json` (time zones ahead of and
+  behind UTC), `state.json` alone, or the add commit; a proposal first synced without dates takes the repo's on the next
+  sync; `sync_proposal` takes `createdAt`; a future date is unknown on every path (`desired()`).
+- AC-2: pass — a task is dated by the commit that turns `[ ]` into `[x]` (reworded, reordered and reformatted ticked
+  lines don't re-date it; unticked and ticked again dates from the last tick; a task added already ticked dates from that
+  commit); a task closed by a commit message keeps its date and `done_by`; the audit records the dates a sync changed.
+- AC-3: pass — the proposal page's history shows "Approved / Verified … in the repo" in time order, each naming the read
+  that recorded it and pinning as `repo:<phase>`; one rule (`resolveRepoPhases`) for push, self-sync and `sync_proposal`
+  on the locked row: phases not sent or dated in the future keep the stored ones.
+- AC-4: pass — "Shipped to Prod per week", "Released this month" and the overview's "shipped this month and last" count
+  only what a live Prod deployment released (`server/in-prod.ts`, the one In Prod rule, also used by the CSV, the card,
+  pin offers and voids); an archive-released proposal isn't counted.
+- AC-5: pass — `owner-line-094`: 21 rows, every 091–093 form plus `**Owner:**a@b.test`, `a@b.test.`, `a@b.testx!`.
+- AC-6: pass — `ownerFrozen` is the only definition (table); a branch's key conflict is reported before an unreadable
+  `state.json`; `proposeCreate` refuses an outsider without naming the repo.
+- AC-7: pass — tables per rule; the 089–093 suites green; local demo: the AMX sync (commit `9613db6`) updated 90 proposals,
+  created dates now span 17 Oct to 10 Nov and only the 22 tasks finished today are dated today (495 of 497 ticked tasks
+  dated by git at the time; the two were 094's own, then uncommitted).
+- AC-8: pass — `proposals-action-094` (7 rows); on the dev server the all-projects page leads with "Proposals come from
+  your repos · write one with /specclaw:propose" and a plain "Add by hand"; AMX's tab and the AMX-filtered page show its
+  repo line.
+
+**Commands (Windows host, dev Postgres):** `npx tsc --noEmit` (delivery): exit 0. `vitest` delivery: 550/552; the two
+failures are host-only and predate 094 (`releases.test.ts` backslash paths, `create-project-surfaces` timing under load).
+`packages/testing/tests/specclaw-sync-ci.test.ts` and `plugins/amax/tests/reader.test.ts`: 16/16. Plugin bundle rebuilt
+from source. `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog, as in 066–093. `specclaw-quality-scan`:
+not_run (jq "Argument list too long" on this host). Linux CI replica and e2e: not run here; PR #113's CI runs them.
+
+**Screenshots:** `shots` not taken by the screenshot tool; the dev-server captures of the all-projects page, AMX's
+Proposals tab and AMX-001's page (repo dates and "in the repo" history) were compared by eye with the mock section
+`094-sync-repo-dates-and-owner-parser` during the build and demo.
+
+### Review loop (2026-11-10)
+
+Scope: commits after `ecdedfc8` (093's verify). Stopped at the five-pass cap (AGENTS.md) with **0 blockers, 1 major and
+2 minors open**, recorded in `follow-ups.md` for the next change: a read that leaves out a phase drops its stored entry
+(decide whether phases can be un-reached); one malformed stored phase hides every repo line; `sync_proposal`'s
+`meta.source` becomes a phase's read unchecked.
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | round (opus) | — | 0/5/5: tick on any `+[x]` line; older plugin wipes phases (×2); In Prod copies; no future bound |
+| 2 | round (opus) | `9613db60` | 0/2/1: future phase erases stored; self-sync and `meta` skip the bound; line's read |
+| 3 | round (opus) | `693b7336` | 0/3/0: phase rule in two places; `sync_proposal` wipes or refuses; line names a later read |
+| 4 | final (opus) | — | 0/3/1: overview count and `sync_proposal` `createdAt` (pre-existing); tasks added ticked undated; caller-made read |
+| 5 | final | — | not_run (usage limit); doesn't count |
+| 6 | final (opus) | — | 0/1/2: open at the cap (above) |

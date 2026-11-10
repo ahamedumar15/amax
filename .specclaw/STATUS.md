@@ -1,13 +1,16 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-10 09:27 UTC
+**Last Updated:** 2026-11-10 12:28 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Active Changes
 
 
+- 🔀 **015-payroll-sri-lanka** — PR #command requires
+- 🔀 **016-payroll-australia** — PR #command requires
+- 🔀 **019-accounting-journals** — PR #command requires
 - 🔀 **067-glob-security-bump** — pr raised | 2/2 tasks (100%) | 0 failed | PR #96 merged
 - 🔀 **068-overview-dashboard** — pr raised | 6/6 tasks (100%) | 0 failed | PR #97 merged
 - 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed | PR #98 merged
@@ -15,36 +18,34 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #103 closed
 - 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #104 closed
 - 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed | PR #105 merged
-- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
+- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed | PR #command requires
 - 🔀 **074-fork-pr-review-gate** — pr raised | PR #108 merged
 - 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed | PR #109 merged
-- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
-- 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed
-- 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
-- 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed
-- 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed
-- 🔀 **081-proposals-end-to-end** — pr raised | 38/40 tasks (95%) | 0 failed
-- 🔍 **082-dev-fresh-cache** — verify done | 1/1 tasks (100%) | 0 failed
-- 🔍 **083-profile-menu-closes** — verify done | 1/1 tasks (100%) | 0 failed
-- 🔍 **084-chat-quick-replies** — verify done | 4/5 tasks (80%) | 0 failed
-- 🔍 **085-time-my-week-first** — verify done | 1/1 tasks (100%) | 0 failed
-- 🔍 **086-rail-logo-aligned** — verify done | 2/2 tasks (100%) | 0 failed
-- 🔍 **087-proposal-review-follow-ups** — verify done | 7/7 tasks (100%) | 0 failed
-- 🔍 **088-notifications-tests-quiet-hours** — verify done | 1/1 tasks (100%) | 0 failed
-- 🔍 **089-specclaw-sync-over-mcp** — verify done | 7/7 tasks (100%) | 0 failed
-- 🔍 **090-e2e-amx-duplicate-numbers** — verify done | 2/2 tasks (100%) | 0 failed
-- 🔍 **091-ci-sync-demo-fixes** — verify done | 7/7 tasks (100%) | 0 failed
-- 🔍 **092-ci-sync-owner-and-merge-fixes** — verify done | 5/5 tasks (100%) | 0 failed
-- 🔍 **093-agent-first-proposals** — verify done | 3/3 tasks (100%) | 0 failed
-- 📝 **094-sync-repo-dates-and-owner-parser** — tasks done | 5/5 tasks (100%) | 0 failed
+- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **081-proposals-end-to-end** — pr raised | 38/40 tasks (95%) | 0 failed | PR #113 open
+- 🔍 **082-dev-fresh-cache** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **083-profile-menu-closes** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **084-chat-quick-replies** — verify done | 4/5 tasks (80%) | 0 failed | PR #command requires
+- 🔍 **085-time-my-week-first** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **086-rail-logo-aligned** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **087-proposal-review-follow-ups** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **088-notifications-tests-quiet-hours** — verify done | 1/1 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **089-specclaw-sync-over-mcp** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **090-e2e-amx-duplicate-numbers** — verify done | 2/2 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **091-ci-sync-demo-fixes** — verify done | 7/7 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **092-ci-sync-owner-and-merge-fixes** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **093-agent-first-proposals** — verify done | 3/3 tasks (100%) | 0 failed | PR #command requires
+- 🔍 **094-sync-repo-dates-and-owner-parser** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
+- 🔀 **eval** — PR #command requires
 
 ## Pending Proposals
 
-
-- 📋 **015-payroll-sri-lanka** — proposal ready, awaiting planning
-- 📋 **016-payroll-australia** — proposal ready, awaiting planning
-- 📋 **019-accounting-journals** — proposal ready, awaiting planning
+_None._
 
 ## Recently Completed
 
@@ -116,6 +117,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 94
-- **Active:** 30
+- **Total changes:** 98
+- **Active:** 34
 - **Completed:** 64

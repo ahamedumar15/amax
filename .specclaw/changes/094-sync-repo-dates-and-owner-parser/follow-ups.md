@@ -11,3 +11,21 @@ Deferred by the review loop: minors and pre-existing findings.
 - [major B1] `modules/delivery/server/overview.ts:21` AC-4 limits 'shipped to Prod' to proposals that a Prod deployment released, and in-prod.ts claims to be the only In Prod rule. deliveryPerformance (068 AC-5, 'proposals shipped to Prod this month and last') still counts every row where phase = 'released' by released_at. That includes Released history brought in from the repo's archive (091 AC-4) and proposals whose only Prod deployment has been voided. Fix: add `and ${proposalInProd}` to its where clause, as shippedPerWeek and phaseCounts now do. (round 4) <!-- fp:67040d897b15 -->
 - [major B1] `modules/delivery/mcp.ts:114` AC-1 is applied to SyncInput.createdAt and upsertSpecProposal, but the sync_proposal MCP tool's input schema has no createdAt and does not pass one to syncProposal. The same tool now takes task doneAt (TaskInput) and meta.repoPhases. Zod strips the key, so a credential or agent that syncs through sync_proposal cannot give the repo's created date, and the proposal is dated at the sync time. Fix: add `createdAt: repoTime` to the tool input and forward it. (round 4) <!-- fp:364e0b9b555c -->
 - [minor B5] `modules/delivery/server/repo-time.ts:24` repoPhasesInMeta accepts a caller-supplied `{ at, source }` entry, and resolveRepoPhases keeps that source as the read that recorded the phase. Through sync_proposal, a caller can store any string as the read, and it does not have to match the write's meta.source. The history line then names a read that never happened. Fix: on input, accept only plain times per phase, and set the source from the write's meta.source. Keep stored entries' sources only from the locked row. (round 4) <!-- fp:9e15f0ffbe92 -->
+- [minor B3] `modules/delivery/server/proposal-detail.ts:57` repoLines reads the stored phases through normalise(), which returns null when any entry fails the schema. One malformed entry in meta.repoPhases (for example an old row, or a hand edit) hides every repo history line, with nothing on screen to say they couldn't be read. Fix: parse each entry on its own and drop or flag only the bad one, or surface an 'unreadable' marker. (round 6) <!-- fp:dd1777b94f2c -->
+- [minor B5] `modules/delivery/server/services.ts:319` For sync_proposal, the read that each new phase entry records as its source is `input.meta.source`. That is caller-supplied text that is never checked against the commit-sha rule (sync/sha.ts). The history line then shows it as 'From the repo, read at <text>'. The final-pass comment says the source is 'never the caller's word', but on this path it is. Fix: validate meta.source as `<ref>@<sha>` (SHA_RE) in SyncInput before it can be stored as a phase's pinned read, or store null there. (round 6) <!-- fp:4b9cff74d3dc -->
+
+## Open at the five-pass cap (2026-11-10)
+
+Fixed in 094 already (kept above for the record): round 1's minors (history `by`, mock lines, Created day time zone,
+dated audit, tick-date failure isolated), round 2's minor (the line names its read), round 4's two pre-existing majors
+(overview count, `sync_proposal` `createdAt`) and its minor (phase reads come from the write).
+
+Still open, for the next change:
+
+- [major B3] `modules/delivery/server/repo-time.ts:39` `resolveRepoPhases` drops a stored phase that a read leaves out.
+  `phaseTimesOf` gives `{}` when `state.json` is missing and leaves out a phase whose status moved on (verify `failed`
+  after `done`), so a phase the repo once reached loses its history line and its `repo:<phase>` pin. Decide: phases are
+  never un-reached (merge per phase, keep what the read leaves out), or a re-run un-reaches them (say so and test it). (round 6)
+- [minor B3] `proposal-detail.ts:57` one malformed `meta.repoPhases` entry hides every repo line; parse per entry. (round 6)
+- [minor B5] `services.ts:319` `sync_proposal`'s `meta.source` becomes a phase's read unchecked; validate it as
+  `<ref>@<sha>` (sync/sha.ts) or store null. (round 6)
