@@ -11,7 +11,7 @@ import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
-import { repoTime } from "./repo-time";
+import { repoTime, storedRepoPhases } from "./repo-time";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -231,7 +231,8 @@ export const SyncInput = z.object({
     source: z.string(),
     sourceRef: z.string(),
     releasedAt: z.string().nullable(),
-    meta: z.record(z.string(), z.unknown()),
+    // 094 review round 2: the repo phase times it carries are checked as stored (known phases, none in the future).
+    meta: z.record(z.string(), z.unknown()).refine((m) => m.repoPhases === undefined || storedRepoPhases.safeParse(m.repoPhases).success, "meta.repoPhases: phase times by phase, none in the future"),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
     // 062: the commit time the spec was read at. Every specclaw write moves the stale mark with it.

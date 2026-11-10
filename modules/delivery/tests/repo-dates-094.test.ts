@@ -7,6 +7,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { can, type Viewer } from "@amax/auth";
 import { authorsOf } from "../sync/authors";
+import { desired } from "../sync/import";
+import { SyncInput } from "../server/services";
 import { readSpecclaw, type SpecRecord } from "../sync/specclaw";
 import { ctxFor } from "../server/context";
 import { ownerFrozen } from "../server/owner";
@@ -156,6 +158,7 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
     ["an older plugin's push (no created date, task dates or phase times)", () => undated(dated)],
     ["dates in the future", () => ({ ...dated, createdAt: future, phaseTimes: { ...phases, pr: future }, tasks: dated.tasks.map((t) => ({ ...t, doneAt: future })) })],
     ["phase times in the future only", () => ({ ...dated, phaseTimes: { ...phases, archived: future } })],
+    ["a stored phase arriving dated in the future", () => ({ ...dated, phaseTimes: { ...phases, verify: future } })],
   ])("keeps the stored dates on %s", async (_, record) => {
     expect((await push([record()])).unchanged).toBe(1);
     const [p] = await db.q(sql`select created_at, meta->'repoPhases' as phases from delivery.proposal where key = 'FLT-301'`);
@@ -211,5 +214,31 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
     const refused = proposeCreate(outsider!, { projectKey: "HRI", title: "By hand" });
     await expect(refused).rejects.toThrow(/you can't add proposals to/);
     await expect(refused).rejects.not.toThrow(/hr-intranet/);
+  });
+});
+
+// 094 review round 2: every sync path (push and self-sync) builds its write with desired(), which bounds the repo's dates.
+describe("094 desired() bounds the repo's dates for every path", () => {
+  const future = "2030-01-01T00:00:00.000Z";
+  const past = "2026-10-01T00:00:00.000Z";
+  const record = (over: Partial<SpecRecord>) => ({ number: "301", dir: "301-x", title: "x", lane: "", module: "", phase: "planned", approved: true, claim: null, hard: [], optional: [],
+    tasksDone: 1, tasksTotal: 1, tasks: [{ ref: "T1", title: "t", done: true, doneAt: past }], acs: 0, pr: null, verdict: null, done: false, status: "ready", waiting: [],
+    updatedAt: null, releasedAt: null, source: "main@abc1234", unreadable: false, duplicate: false, owner: null, ...over }) as SpecRecord;
+  const stored = { repoPhases: { proposal: past, verify: past } };
+  it.each([
+    ["a future created date is unknown", record({ createdAt: future }), undefined, { createdAt: null }],
+    ["a known created date stands", record({ createdAt: past }), undefined, { createdAt: past }],
+    ["a future tick is unknown", record({ tasks: [{ ref: "T1", title: "t", done: true, doneAt: future }] }), undefined, { tasks: [{ ref: "T1", title: "t", done: true, doneAt: null }] }],
+    ["phase times not read keep the stored ones", record({}), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
+    ["a phase dated in the future keeps its stored time", record({ phaseTimes: { proposal: past, verify: future } }), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
+    ["a phase dated in the future with none stored is left out", record({ phaseTimes: { proposal: past, pr: future } }), undefined, { meta: expect.objectContaining({ repoPhases: { proposal: past } }) }],
+  ])("%s", (_, r, prior, expected) => {
+    expect(desired("FLT", r, "abc1234", [], prior)).toMatchObject(expected);
+  });
+
+  it("sync_proposal refuses repo phase times in the future in meta", () => {
+    const base = { projectKey: "FLT", project: { name: "F", client: "C" }, key: "FLT-1", title: "x", phase: "planned", tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "1-x", releasedAt: null, committedAt: past };
+    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: future } } }).success).toBe(false);
+    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: past } } }).success).toBe(true);
   });
 });

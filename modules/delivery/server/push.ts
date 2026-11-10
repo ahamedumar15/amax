@@ -4,7 +4,7 @@ import { setTenant, textArray, type Tx } from "@amax/db";
 import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, defineService, ForbiddenError, getRuntime, type Emitted, type ServiceContext, type Source } from "@amax/core/server";
 import { PHASES, type Phase } from "../contracts";
-import { desired, fingerprint, storedSpecRows, type Task, repoDatesStale, keepRepoPhases } from "../sync/import";
+import { desired, fingerprint, storedSpecRows, type Task, repoDatesStale } from "../sync/import";
 import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { forUserOf } from "./activity";
 import { ctxFor } from "./context";
@@ -117,11 +117,10 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
       if (!counts.skipped.includes(`${key}: ${text}`)) skip(key, [code, text]);
       continue;
     }
-    const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
+    const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? [], prior);
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
-    const kept = { ...base, meta: keepRepoPhases(base.meta, prior) };
-    const d = onDefault ? kept : { ...kept, meta: { ...kept.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
+    const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
     const why = refusal(d, cur, p.committedAt, onDefault);
     if (why) { skip(key, why); continue; }
     // 091 AC-7: unchanged files, but the owner the repo names may resolve differently now (a git identity linked since).
