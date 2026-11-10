@@ -3,7 +3,7 @@ import { withTenant, type Db, type Tx } from "@amax/db";
 import { canonical, type ServiceContext } from "@amax/core/server";
 import { KeyTakenError, markSynced, syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
-import { duplicateNumbers } from "./duplicates";
+import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
@@ -57,9 +57,8 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const cur = byKey.get(`${opts.projectKey}-${r.number}`);
     const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? []);
     byKey.delete(d.key);
-    const dupe = dupes.get(r.number);
-    if (dupe) { if (!result.skipped.includes(`${d.key}: ${dupe}`)) result.skipped.push(`${d.key}: ${dupe}`); continue; }
-    if (r.unreadable) { result.skipped.push(`${d.key}: state.json unreadable at ${r.source}`); continue; }
+    const why = skipReason(r, dupes);
+    if (why) { if (!result.skipped.includes(`${d.key}: ${why}`)) result.skipped.push(`${d.key}: ${why}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
       result.unchanged++;

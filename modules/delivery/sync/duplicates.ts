@@ -6,3 +6,16 @@ export function duplicateNumbers(records: { number: string; dir: string; duplica
   const flagged = new Set(records.filter((r) => r.duplicate).map((r) => r.number));
   return new Map([...dirs].filter(([n, d]) => d.size > 1 || flagged.has(n)).map(([n, d]) => [n, `two changes numbered ${n}: ${[...d].sort().join(", ")}`]));
 }
+
+type Readable = { number: string; dir: string; duplicate?: boolean; unreadable: boolean; source: string };
+
+/** 090: why the self-sync skips a record (a shared number, an unreadable state.json), or null when it may write it. */
+export function skipReason(r: Readable, dupes: Map<string, string>) {
+  return dupes.get(r.number) ?? (r.unreadable ? `state.json unreadable at ${r.source}` : null);
+}
+
+/** 090: the records the self-sync writes, by its own rule, for anyone (the e2e board check) that must agree with it. */
+export const onBoard = <T extends Readable>(records: T[]) => {
+  const dupes = duplicateNumbers(records);
+  return records.filter((r) => !skipReason(r, dupes));
+};

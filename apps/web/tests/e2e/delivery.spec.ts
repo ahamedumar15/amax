@@ -22,9 +22,12 @@ const lanes = (page: Page) => page.locator(".board .lane-head > span:last-child"
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
-// The e2e tenant also holds AMX, amax's own specs imported by the 039 sync (see global-auth.ts). 089: two folders that
-// share a number are both skipped by the sync (062, 074 and 075 here), so the board holds only the rest.
-const amx = async () => (await import("../../../../modules/delivery/sync/specclaw")).readSpecclaw(join(import.meta.dirname, "../../../..")).filter((r) => !r.duplicate);
+// The e2e tenant also holds AMX, amax's own specs imported by the 039 sync (see global-auth.ts). 090: the board holds
+// what the sync writes, by the sync's own rule (`onBoard`: no shared number, as 062, 074 and 075 here; readable).
+const amx = async () => {
+  const [{ readSpecclaw }, { onBoard }] = await Promise.all([import("../../../../modules/delivery/sync/specclaw"), import("../../../../modules/delivery/sync/duplicates")]);
+  return onBoard(readSpecclaw(join(import.meta.dirname, "../../../..")));
+};
 
 test("AC2 portfolio renders the fixture projects from the database", async ({ page }) => {
   await signIn(page);
