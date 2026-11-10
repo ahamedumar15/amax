@@ -89,18 +89,49 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
 
 ## Verify
 
-<!-- Filled by verify. Build notes, 2026-11-10 (Windows, working tree, uncommitted): -->
+**Verdict:** PASS. The review stopped at pass 4 of 5 by the product owner's decision, with 0 blockers and 1 major open
+(recorded below).
 
-- Quality: not_run. `specclaw-quality-scan` stops on Windows with jq's "Argument list too long".
-- `pnpm lint`: 35/35 tasks, graph check ok. `node scripts/check-module-standard.mjs`: ok.
-- `pnpm turbo run test --concurrency=2 --continue`: 33/35 packages pass. The two failures are Windows-only and don't
-  involve 098's files. `@amax/core` `ac5-adapters` compares `/` paths against Windows `\` paths. `@amax/testing`
-  `ac7-config` fails with `symlinkSync` EPERM. DB suites were skipped (no `DATABASE_URL`). The Linux CI replica is still
-  to run.
-- The change-number check, `check()` run against the working tree with base `specclaw/081-proposals-end-to-end`, has no
-  failures. Its "known" pairs are the base branch's own until this merges.
-- `movedFrom` on the real folders: 099 → 074-dev-demo-data, 100 → 075-team-time-status-band, 101 → 062-marketing-site,
-  so all three are pure moves. Other folders the PR touches: 073 (final round 6, 1 blocker, stop recorded) passes.
-  098 needs its own review loop.
-- Still open: AC-5 (the sync dry run needs the renames committed, since `read-specclaw` refuses uncommitted
-  `.specclaw` edits), the real `check-review-gate.mjs` run on the committed branch, and `pnpm build`.
+- AC-1: pass. `packages/testing/tests/change-numbers.test.ts` "098 … AC-1" passes on the tree, and it fails with a
+  temporary `099-probe-duplicate` folder (tried, then removed). `read-specclaw` finds no shared number across all 101
+  records.
+- AC-2: pass. The three folders were moved (git sees renames R084–R100). Each one's `change.md` heading, `state.json`
+  `change` and `status.md` use the new name, and the mock `data-change`/`id` and scoped selectors were renamed in both
+  identical mock copies. The mock banner comments read 099/100/101.
+- AC-3: pass. The R4 rule and `STATUS.md` use the new names. The records listed in AC-3 keep the old ones.
+- AC-4: pass. 099 and 100 still declare `covered-by 073-time-workflow-enhancements`.
+  `node scripts/check-review-gate.mjs --base ae0f5eb --head HEAD --fork true` prints `scope=move skip` for 099, 100
+  and 101, and judges 098 by its own loop (its final round 4 has 0 blockers).
+- AC-5: pass, scoped to this branch. The `sync_specclaw` dry run at `25f9d7e` (ref `specclaw/098-…`) returned 0 skipped
+  and `needsReview: false`, with 098 updated and 6 records ignored as not this branch's. amax creates AMX-062, 074,
+  075, 099, 100 and 101 only on the default branch's push after merge, which isn't visible from this branch.
+- AC-6: pass, with Windows host limits. `pnpm lint` 35/35, `pnpm build` 2/2. `pnpm turbo run test --continue`: 33/35
+  packages pass. The two failures are Windows-only and in files 098 doesn't touch: `@amax/core` `ac5-adapters`
+  (backslash paths) and `@amax/testing` `ac7-config` (symlink EPERM). DB suites were skipped (no `DATABASE_URL`).
+  The 098 suites pass: 42 tests in `review-gate*` and `change-numbers`.
+- AC-7: pass. `review-gate-moves.test.ts` has a 9-row table: only moved, an archived folder moved, moved and edited, a
+  new file, another slug, two new numbers, two removed folders, archived while a copy appeared, and beside a code
+  change. Each new guard was checked to fail its row with the guard removed.
+- Quality: `specclaw-quality-scan --gate` passes on `scripts/review-gate` and `packages/testing/tests` (lizard and
+  jscpd ran: 0 duplicated lines, 0 high functions). Over all of `scripts/`, jq hits Windows' "Argument list too long",
+  so lizard was run alone on `scripts/check-review-gate.mjs`, with no warnings. `specclaw-preset-check`: 098 adds no
+  violations (the repo's existing code comments make the whole-repo check fail).
+- `node scripts/check-change-numbers.mjs --base ae0f5eb --head HEAD`: ok.
+
+**Review loop (specclaw-review, opus/opus, base scoped to `ae0f5eb0` for the run, then restored):**
+
+- Round 1 (1 blocker): a moved folder still counted as a change, so a fork PR could rename one folder and carry code
+  with no change judged. Fixed: moves are set aside before owners, judging and the no-change guard.
+- Round 2: clean; its design pass raised a major (two new folders could claim one removed folder). Fixed: one-to-one
+  pairing.
+- Round 3 (1 major): the "exactly one removed folder" guard had no test. Fixed with two more rows; one slug helper;
+  AC-7 states the pairing.
+- Round 4 (final, `e1ed67d`): 0 blockers, 1 major, 2 minors. `specclaw-review verdict`: "OPEN — 4 rounds, final pass
+  missing, models opus/opus; last round 0/1/2 b/M/m".
+- **Stop, with 1 major open (product owner, 2026-11-10).** 099 and 100 still declare `covered-by 073`, while 073's
+  `## Verify` names them by their old names, so a later fork PR that touches 099 or 100 can't pass through 073. This
+  was already true before 098, because 073's reviewed head `5056a50` isn't in this branch since the stack rebase (the
+  gate reported "not in this PR" at verify). Any later fork PR that edits 099 or 100 needs its own review loop and
+  must drop `covered-by`. This is recorded in `follow-ups.md`.
+- Minors from the final pass: the mock banner comments are fixed. The marketing tests titled `062 AC…` are kept as
+  records (AC-3). The shared change-folder pattern and listing is in `follow-ups.md`.
