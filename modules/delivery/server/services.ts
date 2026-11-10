@@ -297,10 +297,10 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     const meta = JSON.stringify(input.meta);
     // 091 AC-7: a spec proposal's owner comes from its repo (the Owner line, else the change's author), never from who
     // pushed: a CI credential acts for the PM, which made the PM own everything. The sync keeps it in step with the
-    // repo until a person sets the owner in amax (update_proposal or a Suggested owner's accept, both audited as
-    // delivery.proposal.update); from then on it stands. No owner event: a sync's change notifies nobody.
+    // repo until a person sets the owner in amax (update_proposal or a Suggested owner: owner_set_by_person, 0021);
+    // from then on it stands. No owner event: a sync's change notifies nobody.
     const owner = await ownerFromRepo(tx, ctx.tenantId, input.meta.ownerEmail, project.id as string);
-    const personSet = sql`exists (select 1 from core.audit_event a where a.resource = 'delivery.proposal' and a.resource_id = delivery.proposal.id::text and a.action = 'delivery.proposal.update')`;
+    const personSet = sql`delivery.proposal.owner_set_by_person`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())

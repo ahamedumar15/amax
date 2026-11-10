@@ -71,6 +71,16 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
     expect(await ownerOf(`FLT-${dir.slice(0, 3)}`)).toBe(owner);
   });
 
+  it("AC-7 a git identity linked after the first sync gives the unchanged change its owner on the next sync", async () => {
+    const r1 = await push("531-linked-later", { author: "nimal.later@example.test" });
+    expect([r1.created, await ownerOf("FLT-531")]).toEqual([1, null]);
+    await withTenant(app, T, (tx) => tx.execute(sql`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
+      select ${T}, id, 'github', 'nimal-later', 'nimal.later@example.test', true from auth.user where email = 'nimal@lumenlabs.test'`));
+    const r2 = await push("531-linked-later", { author: "nimal.later@example.test" });
+    expect([r2.updated, r2.unchanged, await ownerOf("FLT-531")]).toEqual([1, 0, "Nimal Silva"]);
+    expect((await push("531-linked-later", { author: "nimal.later@example.test" })).unchanged).toBe(1);
+  });
+
   it("AC-7 a sync follows the repo until a person sets the owner in amax; then it stands", async () => {
     await push("521-follow", { author: "nimal@lumenlabs.test" });
     expect(await ownerOf("FLT-521")).toBe("Nimal Silva");

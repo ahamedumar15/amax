@@ -5,6 +5,7 @@ import { KeyTakenError, markSynced, syncProposal } from "../server/services";
 import type { SpecRecord } from "./specclaw";
 import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
+import { repoOwnerStale } from "../server/owner";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -37,7 +38,7 @@ export const fingerprint = (d: { title: string; phase: string; tasksDone: number
 
 /** A project's specclaw proposals as stored, with their tasks, for the "changed?" comparison. */
 export const storedSpecRows = (tx: Tx, projectKey: string) =>
-  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at,
+  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at, p.project_id, p.owner_user_id, p.owner_set_by_person,
                    (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
                  from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                  where pr.key = ${projectKey} and p.source = 'specclaw'`);
@@ -47,7 +48,17 @@ export const storedSpecRows = (tx: Tx, projectKey: string) =>
  * service (008 AC-7): audited as `ctx`, the sync's service principal, and only for changed rows.
  */
 export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectKey: string; projectName: string; client: string; records: SpecRecord[]; sha: string; committedAt: string; confirmWithdraw?: number }): Promise<SyncResult> {
-  const existing = await withTenant(db, ctx.tenantId, (tx) => storedSpecRows(tx, opts.projectKey));
+  // 091 AC-7: which stored proposals' owners no longer match what their repo names, read in the same transaction.
+  const { existing, ownerStale } = await withTenant(db, ctx.tenantId, async (tx) => {
+    const rows = await storedSpecRows(tx, opts.projectKey);
+    const byNumber = new Map(rows.map((e) => [e.key as string, e as Record<string, unknown>]));
+    const stale = new Set<string>();
+    for (const r of opts.records) {
+      const cur = byNumber.get(`${opts.projectKey}-${r.number}`);
+      if (cur && await repoOwnerStale(tx, ctx.tenantId, cur, r.owner ?? r.author ?? null)) stale.add(`${opts.projectKey}-${r.number}`);
+    }
+    return { existing: rows, ownerStale: stale };
+  });
   const stored = new Map(existing.map((e) => [e.key as string, e as Record<string, unknown>]));
   const byKey = new Map(stored);
   const result: SyncResult = { created: 0, updated: 0, unchanged: 0, withdrawn: 0, skipped: [] };
@@ -62,7 +73,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const why = skipReason(r, dupes);
     if (why) { if (!result.skipped.includes(`${d.key}: ${why}`)) result.skipped.push(`${d.key}: ${why}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
-    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d)) {
+    if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d) && !ownerStale.has(d.key)) {
       result.unchanged++;
       same.push(d.key);
       continue;

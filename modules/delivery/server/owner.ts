@@ -39,6 +39,16 @@ export async function ownerFromRepo(tx: Tx, tenantId: string, email: unknown, pr
   return (await notOnProject(tx, tenantId, u.id as string, projectId)) ? null : { id: u.id as string, name: u.name as string };
 }
 
+/**
+ * 091 AC-7: whether a stored spec proposal's owner no longer matches what its repo names, so a sync must rewrite it
+ * though nothing in its files changed (say, its author linked their git identity since). Never once a person set it.
+ */
+export async function repoOwnerStale(tx: Tx, tenantId: string, cur: Record<string, unknown>, email: unknown): Promise<boolean> {
+  if (cur.owner_set_by_person === true) return false;
+  const owner = await ownerFromRepo(tx, tenantId, email, cur.project_id as string);
+  return (owner?.id ?? null) !== ((cur.owner_user_id as string | null) ?? null);
+}
+
 /** The owner by default: the named one, else the person acting (none for a bare service). */
 export async function ownerFor(tx: Tx, ctx: ServiceContext, userId?: string): Promise<Owner | null> {
   if (userId) return namedOwner(tx, userId);

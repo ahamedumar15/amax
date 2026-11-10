@@ -58,7 +58,7 @@ export const updateProposal = defineService({
     const next = { title: a.title ?? (p.title as string), description: a.description === undefined ? (p.description as string | null) : a.description,
       estimateHours: a.estimateHours === undefined ? p.estimate_hours : a.estimateHours, ownerUserId: owner?.id ?? (p.owner_user_id as string | null), ownerName: owner?.name ?? (p.owner_name as string | null) };
     await tx.execute(sql`update delivery.proposal set title = ${next.title}, description = ${next.description}, estimate_hours = ${next.estimateHours},
-      owner_user_id = ${next.ownerUserId}, owner_name = ${next.ownerName}, updated_at = now() where id = ${p.id}`);
+      owner_user_id = ${next.ownerUserId}, owner_name = ${next.ownerName}, owner_set_by_person = owner_set_by_person or ${owner !== null}, updated_at = now() where id = ${p.id}`);
     const changed = Object.fromEntries(Object.entries({ title: a.title, description: a.description, estimateHours: a.estimateHours, owner: owner?.name }).filter(([, x]) => x !== undefined));
     const before = Object.fromEntries(Object.keys(changed).map((k) => [k, { title: p.title, description: p.description, estimateHours: p.estimate_hours === null ? null : Number(p.estimate_hours), owner: p.owner_name }[k]]));
     return { result: { key: a.key, ...changed }, resourceId: p.id as string, before, after: changed, events: owner ? ownerChanged({ ...p, title: next.title }, owner, by(ctx)) : [] };
@@ -112,6 +112,7 @@ export async function setOwnerIn(tx: Tx, ctx: ServiceContext, key: string, owner
   const p = await lockedProposal(tx, ctx, key, "delivery:proposal:create");
   if (withdrawn(p)) refuse(`${key} was withdrawn; its owner doesn't change`);
   guard(p);
-  await tx.execute(sql`update delivery.proposal set owner_user_id = ${owner?.id ?? null}, owner_name = ${owner?.name ?? null}, updated_at = now() where id = ${p.id}`);
+  // 091 AC-7: a person decided the owner, so a sync from the repo leaves it from now on.
+  await tx.execute(sql`update delivery.proposal set owner_user_id = ${owner?.id ?? null}, owner_name = ${owner?.name ?? null}, owner_set_by_person = true, updated_at = now() where id = ${p.id}`);
   return { resourceId: p.id as string, before: { owner: (p.owner_name as string | null) ?? null }, after: { owner: owner?.name ?? null }, events: ownerChanged(p, owner, by(ctx)) };
 }
