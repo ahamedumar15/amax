@@ -1024,7 +1024,7 @@ Order follows the commit phases (backend before UI, because the screens read the
 - [~] `T35` — Amendment 9, Time asks which proposal with quick replies on every log (AC-83, AC-84)
   Files: modules/time/chat.ts, modules/time/mcp.ts, modules/time/tests/proposal-time.test.ts
   Depends: T34
-- [ ] `T36` — Amendment 9, browser tests, README, mock, CI replica (AC-91)
+- [x] `T36` — Amendment 9, browser tests, README, mock, CI replica (AC-91)
   Files: apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md, .specclaw/mock/index.html, apps/mock/public/mock/index.html
   Depends: T35
 
