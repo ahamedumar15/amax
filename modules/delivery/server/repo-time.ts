@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SHA } from "../sync/sha";
 
 /** A commit time from a skewed clock or a hand-written payload must not land in the future. */
 export const SKEW_MS = 5 * 60_000;
@@ -10,6 +11,12 @@ export const notFuture = (t: string) => Date.parse(t) <= Date.now() + SKEW_MS;
  * clock) reads as unknown where it's written (knownTime), so amax keeps the date it has rather than storing a future one.
  */
 export const repoTime = z.string().datetime({ offset: true }).nullable().optional();
+/**
+ * 062, 096 AC-4: the commit time a spec was read at, for every writer (sync_specclaw, sync_proposal, mark_synced). One in
+ * the future is refused: it would mark the proposal stale against every real push until the clock caught up. A refine,
+ * so the tool input still converts to JSON Schema.
+ */
+export const commitTime = z.string().datetime({ offset: true }).refine(notFuture, "committedAt is in the future");
 /** A repo date amax may store: null when it's absent or in the future. */
 export const knownTime = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 
@@ -26,36 +33,52 @@ const time = z.string().datetime({ offset: true });
  * same on every path (review round 3).
  */
 export const repoPhasesInMeta = z.partialRecord(PHASE, time);
-// As stored: an entry with its read, or a plain time (stored before entries kept their read).
-const storedPhases = z.partialRecord(PHASE, z.union([time, z.object({ at: time, source: z.string().nullable() })]));
 
 /**
- * 094 AC-3, review rounds 1 to 3: the one rule for the phase times a write stores, applied where the write is built
- * (desired(), for "changed?") and again on the locked row (upsertSpecProposal, for every writer: push, self-sync and
- * sync_proposal). `read` absent: the sender didn't read them, so the stored ones stand. Read: each phase it gives, with
- * the read it came from (a time already stored keeps its first read); one dated in the future is unknown, so its stored
- * entry (and that entry's read) stands. Null:
- * nothing to store, and no key is written.
+ * 094 AC-3, 096 AC-1: the one rule for the phase times a write stores, applied where the write is built (desired(), for
+ * "changed?") and again on the locked row (upsertSpecProposal, for every writer: push, self-sync and sync_proposal).
+ * A phase the repo reached stays recorded: a read that leaves it out (no state.json, a status that moved on) keeps the
+ * stored entry. A read that gives a phase a new time replaces it, with this write's read; the same time keeps the read
+ * that first recorded it; a time in the future is unknown, so the stored entry stands. `read` absent: the sender didn't
+ * read them. Null: nothing to store, and no key is written.
  */
 export function resolveRepoPhases(read: unknown, source: unknown, stored: unknown): Record<string, RepoPhase> | null {
-  const before = normalise(storedPhases, stored, null);
+  const before = entries(stored, null);
   if (read === undefined || read === null) return before;
-  const given = normalise(repoPhasesInMeta, read, typeof source === "string" ? source : null) ?? {};
-  const out: Record<string, RepoPhase> = {};
-  for (const [k, e] of Object.entries(given)) {
-    // The same time as stored keeps its entry, so a phase names the read that first recorded it, not every later one.
-    if (before?.[k] && Date.parse(before[k].at) === Date.parse(e.at)) out[k] = before[k];
-    else if (notFuture(e.at)) out[k] = e;
-    else if (before?.[k]) out[k] = before[k];
+  const out: Record<string, RepoPhase> = { ...before };
+  for (const [k, e] of Object.entries(times(read, readOf(source)))) {
+    if (before?.[k] && Date.parse(before[k].at) === Date.parse(e.at)) continue;
+    if (notFuture(e.at)) out[k] = e;
   }
   return out;
 }
 
-// A time alone (a reader's, or stored before entries kept their read) or a stored entry; anything else is dropped.
-function normalise(schema: z.ZodType<Partial<Record<string, string | RepoPhase>>>, v: unknown, source: string | null): Record<string, RepoPhase> | null {
-  const parsed = schema.safeParse(v);
-  if (!parsed.success) return null;
-  return Object.fromEntries(Object.entries(parsed.data).map(([k, e]) => [k, typeof e === "string" ? { at: e, source } : { at: e!.at, source: e!.source }]));
+// 096 AC-3: a write's read is recorded only when it's "<ref>@<sha>" by the one commit-sha rule; otherwise none.
+const READ = new RegExp(`^[^@\\s]+@${SHA}$`, "i");
+const readOf = (source: unknown) => (typeof source === "string" && READ.test(source) ? source : null);
+
+// 096 AC-2: entry by entry, so one malformed entry is skipped and the others stand.
+const isTime = (v: unknown): v is string => time.safeParse(v).success;
+function each(v: unknown, one: (e: unknown) => RepoPhase | null): Record<string, RepoPhase> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const out: Record<string, RepoPhase> = {};
+  for (const [k, e] of Object.entries(v)) {
+    if (!PHASE.safeParse(k).success) continue;
+    const entry = one(e);
+    if (entry) out[k] = entry;
+  }
+  return out;
+}
+/** A reader's times (each with this write's read). */
+const times = (v: unknown, source: string | null) => each(v, (e) => (isTime(e) ? { at: e, source } : null));
+/** As stored: an entry with its read, or a plain time (stored before entries kept their read). Null when none. */
+function entries(v: unknown, source: string | null): Record<string, RepoPhase> | null {
+  if (v === undefined || v === null) return null;
+  return each(v, (e) => {
+    if (isTime(e)) return { at: e, source };
+    const o = e as { at?: unknown; source?: unknown } | null;
+    return o && typeof o === "object" && isTime(o.at) ? { at: o.at, source: readOf(o.source) } : null;
+  });
 }
 
 /** The phase times alone, by phase: what a write carries in meta and what "changed?" compares. */

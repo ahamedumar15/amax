@@ -19,7 +19,7 @@ import { createReleaseCard, deploymentCard, environmentCard, linkCard, releasePr
 import { isNeed, NEEDS, withNeed } from "./server/attention";
 import { checkReleaseRef, getDeployment, getProposalTask, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
-import { repoTime } from "./server/repo-time";
+import { commitTime, repoTime } from "./server/repo-time";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
 // Chat (005) runs read tools directly and turns write tools into a confirm card first.
@@ -112,7 +112,7 @@ export const mcpTools: McpToolDef[] = [
     card: voidCard, service: voidDeployment, run: (v, a, s = "mcp") => voidDeployment(ctxFor(v, s), a) }),
   // 008 AC-1: what specclaw and CI call, as a person or as a service credential acting for one.
   tool({ name: "sync_proposal", description: "Create or update a specclaw proposal from its spec: title, phase, and tasks by id (T1, T2, …), with the commit time the spec was read at (committedAt). A task once done stays done.", scope: "write", permission: "delivery:proposal:sync",
-    input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional(), committedAt: z.string().datetime({ offset: true }),
+    input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional(), committedAt: commitTime,
       createdAt: repoTime.describe("When the spec says the change was written (its Created header, state.json or the commit that added it); leave it out when unknown"),
       ownerEmail: z.string().max(320).nullable().optional().describe("Who the spec names as owner (its Owner line, else its author); null names nobody, leave it out when unknown so the owner stays") }),
     service: syncProposal, run: (v, a, s = "mcp") => syncProposal(ctxFor(v, s), { projectKey: a.projectKey, project: { name: a.projectName, client: a.client }, key: a.key, title: a.title, phase: a.phase,

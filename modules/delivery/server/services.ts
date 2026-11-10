@@ -11,7 +11,7 @@ import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
-import { knownTime, repoPhasesInMeta, repoTime, resolveRepoPhases } from "./repo-time";
+import { commitTime, knownTime, repoPhasesInMeta, repoTime, resolveRepoPhases } from "./repo-time";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -230,14 +230,15 @@ export const SyncInput = z.object({
     tasksTotal: z.number().int().nonnegative(),
     source: z.string(),
     sourceRef: z.string(),
-    releasedAt: z.string().nullable(),
+    // 096 AC-4: a datetime; one in the future is unknown where it's written (knownTime).
+    releasedAt: z.string().datetime({ offset: true }).nullable(),
     // 094 review round 3: repo phase times, if any, by phase (a time, or a stored entry with its read). One in the future
     // isn't refused: the write treats it as unknown, as every sync path does (resolveRepoPhases).
     meta: z.record(z.string(), z.unknown()).refine((m) => m.repoPhases === undefined || repoPhasesInMeta.safeParse(m.repoPhases).success, "meta.repoPhases: phase times by phase"),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
     // 062: the commit time the spec was read at. Every specclaw write moves the stale mark with it.
-    committedAt: z.string().datetime({ offset: true }),
+    committedAt: commitTime,
     // 091 AC-7: the email the repo names the owner by, used for this write only and never stored. null: the repo
     // names nobody; absent: it couldn't be read (a shallow clone, a git failure, a withdrawal), so the owner stays.
     ownerEmail: z.string().max(320).nullable().optional(),
@@ -278,7 +279,7 @@ export const markSynced = defineService({
   name: "delivery.proposal.mark",
   action: "delivery:proposal:sync",
   resource: "delivery.project",
-  input: z.object({ projectKey: z.string(), keys: z.array(z.string()), committedAt: z.string().datetime({ offset: true }) }),
+  input: z.object({ projectKey: z.string(), keys: z.array(z.string()), committedAt: commitTime }),
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:sync", project.id as string);
@@ -332,7 +333,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     const personSet = sql`${ownerFrozen(before, input.ownerEmail)}`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, created_at, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
-              ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, coalesce(${createdAt}::timestamptz, now()), now())
+              ${knownTime(input.releasedAt)}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, coalesce(${createdAt}::timestamptz, now()), now())
       on conflict (tenant_id, key) do update set title = excluded.title,
         -- 094 AC-1: a spec proposal is always made by a sync, so the repo's created date replaces the sync's.
         created_at = coalesce(${createdAt}::timestamptz, delivery.proposal.created_at),

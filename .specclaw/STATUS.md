@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-10 13:23 UTC
+**Last Updated:** 2026-11-10 14:02 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -24,7 +24,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
 - 🔍 **079-ci-test-fixes** — verify done | 7/7 tasks (100%) | 0 failed
 - 🔍 **080-e2e-month-window** — verify done | 2/2 tasks (100%) | 0 failed
-- 🔀 **081-proposals-end-to-end** — pr raised | 38/40 tasks (95%) | 0 failed
+- 🔀 **081-proposals-end-to-end** — pr raised | 38/40 tasks (95%) | 0 failed | PR #113 open
 - 🔍 **082-dev-fresh-cache** — verify done | 1/1 tasks (100%) | 0 failed
 - 🔍 **083-profile-menu-closes** — verify done | 1/1 tasks (100%) | 0 failed
 - 🔍 **084-chat-quick-replies** — verify done | 4/5 tasks (80%) | 0 failed
@@ -39,6 +39,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **093-agent-first-proposals** — verify done | 3/3 tasks (100%) | 0 failed
 - 🔍 **094-sync-repo-dates-and-owner-parser** — verify done | 5/5 tasks (100%) | 0 failed
 - 🔍 **095-pr-113-ci-green** — verify done | 5/5 tasks (100%) | 0 failed
+- 📝 **096-repo-sync-follow-ups** — tasks done | 3/3 tasks (100%) | 0 failed
 
 ## Pending Proposals
 
@@ -117,6 +118,6 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
 ## Stats
 
-- **Total changes:** 95
-- **Active:** 31
+- **Total changes:** 96
+- **Active:** 32
 - **Completed:** 64

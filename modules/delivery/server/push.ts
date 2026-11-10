@@ -17,7 +17,7 @@ import { duplicateNumbers, skipReason } from "../sync/duplicates";
 import { ownerEmailOf } from "../sync/authors";
 import { SHA_RE } from "../sync/sha";
 import { planWithdrawals } from "../sync/withdraw";
-import { notFuture, repoPhaseTimes, repoTime } from "./repo-time";
+import { commitTime, repoPhaseTimes, repoTime } from "./repo-time";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
@@ -44,7 +44,7 @@ export const MAX_PUSH = 200;
 // A commit time from a skewed clock or a hand-written payload must not make every later push "stale" (SKEW_MS, repo-time.ts).
 export const PushInput = z.object({
   projectKey: z.string(), repoUrl: RepoUrl, ref: z.string().min(1).max(200), sha: z.string().regex(SHA_RE, "sha must be a commit sha (7 to 40 hex characters)"),
-  committedAt: z.string().datetime({ offset: true }).refine(notFuture, "committedAt is in the future"),
+  committedAt: commitTime,
   dryRun: z.boolean().default(true), records: z.array(SpecRecordInput).max(MAX_PUSH),
   // 089 AC-6: the push carries every change on the default branch (not one batch of several), so a folder it doesn't
   // name is gone. Off by default: the plugin batches, and a batch can't tell a gone folder from the next batch.

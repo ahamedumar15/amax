@@ -225,7 +225,8 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
       meta: { ...meta, ...extra }, committedAt: new Date(Date.parse("2026-10-08T09:00:00Z") + ++at * 60_000).toISOString() });
     const now = (await stored("FLT-301")).phases;
     expect(now.verify).toEqual(was.verify);
-    expect(now.proposal).toEqual((extra as { repoPhases?: unknown }).repoPhases ? undefined : was.proposal);
+    // 096 AC-1: a phase the repo reached stays recorded, whether or not this write gives it.
+    expect(now.proposal).toEqual(was.proposal);
   });
 
   it("AC-1 sync_proposal takes the repo's created date", async () => {
