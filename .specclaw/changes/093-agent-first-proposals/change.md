@@ -12,7 +12,8 @@ agent-first, with no manual creation there; other projects keep manual creation,
 proposals yet. "Draft with an agent" from amax comes next, as its own change.
 
 **Agent-first project** (decided 2026-11-10, "linked + synced"): a project with a linked repo that has brought in at
-least one proposal (`source = 'specclaw'`). A freshly linked project keeps manual creation until its first sync. (The demo
+least one proposal (`source = 'specclaw'`). A freshly linked project keeps manual creation until its first sync;
+relinking an agent-first project to another repo keeps it agent-first, since its synced proposals stay (final pass). (The demo
 fixtures' CON has a linked repo but only hand-made proposals, so it stays manual.)
 
 ## Mock Delta

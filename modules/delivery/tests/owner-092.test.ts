@@ -81,14 +81,18 @@ describe.skipIf(!hasDb)("092 owners: a person's choice stands under concurrency,
     expect(audit).toMatchObject({ was: "Nimal Silva", now: "Nimal Silva" });
   });
 
-  // 092 AC-2: the Owner line's email is a clean address, whatever punctuation people put around it.
+  // 092 AC-2: the Owner line's email is a clean address, whatever punctuation people put around it. 093 final pass: and
+  // the whole address, never cut down to a different one when it has an unusual character before the @.
   it.each([
-    ["a trailing comma", "**Owner:** nimal@lumenlabs.test,"],
-    ["a trailing full stop after a bracketed name", "**Owner:** Nimal Silva <nimal@lumenlabs.test>."],
-    ["a markdown mailto link", "**Owner:** [nimal@lumenlabs.test](mailto:nimal@lumenlabs.test)"],
-    ["a semicolon and a note", "**Owner:** nimal@lumenlabs.test; backend lead"],
-    ["inside parentheses", "**Owner:** (nimal@lumenlabs.test)"],
-  ])("AC-2 the Owner line with %s", (_, line) => {
-    expect(fakeRepo("611-owner", "Owner", line)[0].owner).toBe("nimal@lumenlabs.test");
+    ["a trailing comma", "**Owner:** nimal@lumenlabs.test,", "nimal@lumenlabs.test"],
+    ["a trailing full stop after a bracketed name", "**Owner:** Nimal Silva <nimal@lumenlabs.test>.", "nimal@lumenlabs.test"],
+    ["a markdown mailto link", "**Owner:** [nimal@lumenlabs.test](mailto:nimal@lumenlabs.test)", "nimal@lumenlabs.test"],
+    ["a semicolon and a note", "**Owner:** nimal@lumenlabs.test; backend lead", "nimal@lumenlabs.test"],
+    ["inside parentheses", "**Owner:** (nimal@lumenlabs.test)", "nimal@lumenlabs.test"],
+    ["an apostrophe in the address", "**Owner:** o'brien@lumenlabs.test", "o'brien@lumenlabs.test"],
+    ["a ! in the address, bracketed", "**Owner:** Ann <a!b@lumenlabs.test>", "a!b@lumenlabs.test"],
+    ["a plus tag, quoted", "**Owner:** `first+tag@lumenlabs.test`", "first+tag@lumenlabs.test"],
+  ])("AC-2 the Owner line with %s", (_, line, email) => {
+    expect(fakeRepo("611-owner", "Owner", line)[0].owner).toBe(email);
   });
 });

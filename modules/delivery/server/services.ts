@@ -6,7 +6,7 @@ import { appendAudit, defineService, type Emitted, type ServiceContext } from "@
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
-import { notOnProject, ownerChanged, ownerFor, ownerFromRepo } from "./owner";
+import { notOnProject, ownerChanged, ownerFor, ownerFromRepo, ownerFrozenSql } from "./owner";
 import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
@@ -89,9 +89,6 @@ export const createProposal = defineService({
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:create", project.id as string);
     if (project.status !== "active") throw invalid(`${input.projectKey} is closed; reopen it before adding proposals`);
-    // 093 AC-3: an agent-first project's proposals come from its repo, for the API and agents too.
-    const repo = await agentFirstRepo(tx, project.id as string);
-    if (repo) throw invalid(agentFirstRefusal(input.projectKey, repo));
     // 081 AC-5: the owner is the one named, else the person acting (an agent's or credential's person).
     const owner = await ownerFor(tx, ctx, input.ownerUserId);
     const why = owner && input.ownerUserId ? await notOnProject(tx, ctx.tenantId, owner.id, project.id as string) : null;
@@ -99,6 +96,10 @@ export const createProposal = defineService({
     // Next key in the project: CON-018 after CON-017. The project row lock serialises concurrent
     // creates, so two of them can't compute the same key (review round 1, B7).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
+    // 093 AC-3: an agent-first project's proposals come from its repo, for the API and agents too. Checked under the
+    // project lock a sync also takes, so a first sync landing meanwhile is seen.
+    const repo = await agentFirstRepo(tx, project.id as string);
+    if (repo) throw invalid(agentFirstRefusal(input.projectKey, repo));
     const key = await nextHandKey(tx, project.id as string, project.key as string);
     const [p] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, description, estimate_hours, owner_user_id, owner_name)
       values (${ctx.tenantId}, ${project.id}, ${key}, ${input.title}, ${input.description ?? null}, ${input.estimateHours ?? null}, ${owner?.id ?? null}, ${owner?.name ?? null}) returning id`);
@@ -312,7 +313,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     const owner = await ownerFromRepo(tx, ctx.tenantId, input.ownerEmail, project.id as string);
     // 092 AC-1: decided on the row as locked (`found` above is read `for update`), so an owner a person sets while this
     // sync runs stands, and the audit's before matches it. Same rule as ownerFrozen (owner.ts).
-    const personSet = sql`(delivery.proposal.owner_set_by_person or ${input.ownerEmail === undefined})`;
+    const personSet = ownerFrozenSql(input.ownerEmail);
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())

@@ -64,7 +64,9 @@ function parse(root, dir, archived, ref) {
     unreadable: !parsedState.ok,
     // 091 final pass, 092 AC-2: the first email anywhere on the header's Owner line (bare, `quoted`, <bracketed>, "Name
     // <email>", a mailto link), as an address ending in a letter-only domain, so punctuation around it isn't taken in.
-    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/)?.[1] ?? null
+    // 093 final pass: the whole address, starting at a boundary (start, space, < ( [ ` " :), with the usual special
+    // characters before the @ (o'brien, a!b, first+tag), so it's never cut down to a different address.
+    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?(?:^|[\s<(\[`":])([A-Za-z0-9.!#$%&'*+/=?^_{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/)?.[1] ?? null
   };
 }
 var numberOf = (dir) => dir.match(/^(\d{3,})-/)[1];

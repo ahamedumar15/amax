@@ -44,6 +44,8 @@ export async function ownerFromRepo(tx: Tx, tenantId: string, email: unknown, pr
  * (upsertSpecProposal) applies the same rule in SQL on the locked row (092 AC-1).
  */
 export const ownerFrozen = (cur: Record<string, unknown> | undefined, email: unknown) => cur?.owner_set_by_person === true || email === undefined;
+/** The same rule in SQL, on the proposal row an upsert has locked. */
+export const ownerFrozenSql = (email: unknown) => sql`(delivery.proposal.owner_set_by_person or ${email === undefined})`;
 
 /**
  * 091 AC-7: whether a stored spec proposal's owner no longer matches what its repo names, so a sync must rewrite it
