@@ -1,0 +1,9 @@
+{
+  "change": "097-e2e-released-row",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-10T14:54:38Z"},
+    "tasks": {"status":"done","at":"2026-11-10T14:54:39Z"}
+  }
+}

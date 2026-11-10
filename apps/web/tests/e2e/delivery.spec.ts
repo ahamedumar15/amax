@@ -88,8 +88,12 @@ test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
   // 095 AC-3: by its exact name; a synced proposal's title may say "Released" too.
   await page.getByRole("link", { name: "Released, all time", exact: true }).click();
   await expect(page).toHaveURL(/\/delivery\/proposals\/released$/);
-  await expect(page.locator("table.tbl tbody tr").first()).toContainText("Prod");
   expect(await axe(page)).toEqual([]);
+  // 097: by project, not the first row of all: a Prod deployment released Contoso's; AMX's are the repo's archive (091),
+  // which say so (092), and may come first in the list.
+  const shipped = (project: string) => page.goto(`/delivery/proposals/released?project=${project}`).then(() => page.locator("table.tbl tbody tr").first().locator('td[data-label="Shipped to"]'));
+  await expect(await shipped("CON")).toHaveText("Prod");
+  await expect(await shipped("AMX")).toHaveText("Released · from repo");
 });
 
 test("AC2 releases: the map, and a promotion asked of amax reaches the next environment", async ({ page }) => {
