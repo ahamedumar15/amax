@@ -41,7 +41,8 @@ describe("091 authorsOf", () => {
   });
 
   // 092 AC-3: a file in the tree whose add git can't find (here it came in with a merge commit, which git log's
-  // --diff-filter=A doesn't show) is unknown, so the stored owner stays; it isn't "nobody".
+  // --diff-filter=A doesn't show) is unknown, so the stored owner stays; it isn't "nobody". That a push keeps the stored
+  // owner for an unknown author is owner-091's "an author git couldn't read keeps the stored owner".
   it("AC-3 a change that arrived inside a merge commit has an unknown author, not nobody", () => {
     const { root } = repo();
     const git = (...a: string[]) => execFileSync("git", a, { cwd: root, encoding: "utf8" }).trim();

@@ -32,6 +32,22 @@ describe.skipIf(!hasDb)("092 the Released card's label", () => {
     expect(await html(ProjectPage({ viewer: maya, params: { key: "CON" } }))).toContain(`In Prod · ${p.release}`);
   });
 
+  // 093 review round 2: In Prod is what the deployment recorded when it was written (deployment.released), so re-marking
+  // which environment is Prod afterwards doesn't change it.
+  it("AC-5 re-marking which environment is Prod doesn't change what's In Prod", async () => {
+    const [shipped] = await db.q(sql`select p.key from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+      where pr.key = 'CON' and p.phase = 'released' and p.release_id is not null limit 1`);
+    const envs = await db.q(sql`select e.id, e.is_prod from delivery.environment e join delivery.project p on p.id = e.project_id where p.key = 'CON' order by e.position`);
+    const prod = envs.find((e) => e.is_prod)!.id as string, other = envs.find((e) => !e.is_prod)!.id as string;
+    const markProd = async (id: string) => {
+      await db.t.owner`update delivery.environment set is_prod = false where id in (${prod}, ${other})`;
+      await db.t.owner`update delivery.environment set is_prod = true where id = ${id}`;
+    };
+    await markProd(other);
+    expect(releasedLabel(await released(shipped.key as string)).prod).toBe(true);
+    await markProd(prod);
+  });
+
   it("AC-5 a release whose Prod deployment was voided isn't In Prod", async () => {
     const [shipped] = await db.q(sql`select p.key, p.release_id from delivery.proposal p join delivery.project pr on pr.id = p.project_id
       where pr.key = 'CON' and p.phase = 'released' and p.release_id is not null limit 1`);

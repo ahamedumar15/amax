@@ -310,8 +310,8 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     // from then on it stands. No owner event: a sync's change notifies nobody, but the audit below records it. When the
     // repo's answer is unknown (ownerEmail absent), the stored owner stays as it is.
     const owner = await ownerFromRepo(tx, ctx.tenantId, input.ownerEmail, project.id as string);
-    // 092 AC-1: decided on the conflicting row, which Postgres re-reads under its lock, so an owner a person sets while
-    // this sync runs stands; `found` was read before, without a lock. Same rule as ownerFrozen (owner.ts).
+    // 092 AC-1: decided on the row as locked (`found` above is read `for update`), so an owner a person sets while this
+    // sync runs stands, and the audit's before matches it. Same rule as ownerFrozen (owner.ts).
     const personSet = sql`(delivery.proposal.owner_set_by_person or ${input.ownerEmail === undefined})`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},

@@ -52,7 +52,7 @@ describe.skipIf(!hasDb)("092 owners: a person's choice stands under concurrency,
 
   // 092 AC-1: a person sets the owner while a sync of the same proposal is running. The person's transaction holds the
   // row (as update_proposal's does: lifecycle.ts locks the proposal, then writes owner and owner_set_by_person). The
-  // sync reads the row before that commits, then waits at its upsert; deciding on the locked row keeps the person's owner.
+  // sync waits at its locked read of the row, then sees the person's owner and flag, and keeps them.
   it("AC-1 an owner a person sets during a sync stands", async () => {
     await push("601-race", "Race v1", "stranger@example.test");
     expect(await row("FLT-601")).toMatchObject({ owner_name: null });

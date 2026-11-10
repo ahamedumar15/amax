@@ -61,9 +61,9 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
 // The furthest environment each release reached, for "Shipped to".
 const PROPOSALS = sql`
   select p.*, pr.key as project_key, pr.name as project_name, pr.color as project_color, r.version, last.name as shipped_to, last.status as shipped_status,
-    -- 092 AC-5: In Prod means a live (deployed, not voided) deployment of its release to a Prod environment.
-    exists (select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id
-      where d.release_id = p.release_id and e.is_prod and d.status = 'deployed' and d.voided_at is null) as in_prod,
+    -- 092 AC-5: In Prod means a deployment of its release that released it (deployment.released, recorded when it was
+    -- written, 0005, so re-marking which environment is Prod can't change it) and isn't voided.
+    exists (select 1 from delivery.deployment d where d.release_id = p.release_id and d.released and d.voided_at is null) as in_prod,
     ${ownerShownIn("p")} as owner_shown
   from delivery.proposal p
   join delivery.project pr on pr.id = p.project_id
