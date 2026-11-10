@@ -81,7 +81,7 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
 - [x] `T6` — The review gate skips a pure move: `movedFrom` compares the old folder at the merge base with the new one at the head, with both names neutralised; `gate()` prints the move line instead of judging it (AC-7)
   Files: scripts/review-gate/moves.mjs, scripts/review-gate/rules.mjs, scripts/check-review-gate.mjs, packages/testing/tests/review-gate-moves.test.ts
   Depends: T4
-- [~] `T5` — Integration: `check-change-numbers.mjs` and `check-review-gate.mjs` for this branch; `pnpm lint`, `pnpm test`, `pnpm build`; a full-repo `sync_specclaw` dry run showing AMX-062/074/075 and AMX-099/100/101 created with no duplicate skips (AC-4, AC-5, AC-6)
+- [x] `T5` — Integration: `check-change-numbers.mjs` and `check-review-gate.mjs` for this branch; `pnpm lint`, `pnpm test`, `pnpm build`; a full-repo `sync_specclaw` dry run showing AMX-062/074/075 and AMX-099/100/101 created with no duplicate skips (AC-4, AC-5, AC-6)
   Files: (no source files; results go under `## Verify`)
   Depends: T3, T4, T6
 

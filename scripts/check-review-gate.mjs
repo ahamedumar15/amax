@@ -63,8 +63,9 @@ const folderAt = (ref, name) => {
   const dir = [`.specclaw/changes/${name}`, `.specclaw/changes/archive/${name}`].find((d) => lines(must("ls-tree", "--name-only", ref, `${d}/`)).length);
   return new Map(dir ? lines(must("ls-tree", "-r", "--name-only", ref, `${dir}/`)).map((p) => [p.slice(dir.length + 1), must("show", `${ref}:${p}`)]) : []);
 };
+const dirs = { baseDirs: dirsAt(forkPoint), headDirs: dirsAt(head), filesAt: (side, n) => folderAt(side === "base" ? forkPoint : head, n) };
 const repo = {
-  movedFrom: (name) => movedFrom(name, { baseDirs: dirsAt(forkPoint), headDirs: dirsAt(head), filesAt: (side, n) => folderAt(side === "base" ? forkPoint : head, n) }),
+  movedFrom: (name) => movedFrom(name, dirs),
   isAncestor: (sha, of = head) => ancestor(sha, of),
   inBase,
   history: (name) => lines(must("rev-list", `${base}..${head}`, "--", `.specclaw/changes/${name}`, `.specclaw/changes/archive/${name}`)),
