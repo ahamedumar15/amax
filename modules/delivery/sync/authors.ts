@@ -59,6 +59,9 @@ function tickDates<K extends TaskLine>(root: string, at: string, path: string, t
   let log: string;
   try { log = git(root, "log", at, "--follow", "--format=@@commit %aI", "-p", "--unified=0", "--", path); } catch { return tasks; }
   const dated = new Map<string, string>();
+  // Final pass: the oldest commit that adds a task's line. When it adds it already ticked (a squash merge, a change
+  // committed in one go), no commit ever had it open on this history, so that commit is when it was ticked here.
+  const first = new Map<string, { when: string; ticked: boolean }>();
   const commits = log.split("\n@@commit ").map((c) => c.replace(/^@@commit /, ""));
   for (const c of commits) {
     const [when, ...lines] = c.split("\n");
@@ -66,10 +69,17 @@ function tickDates<K extends TaskLine>(root: string, at: string, path: string, t
     for (const line of lines) {
       const m = line.match(LINE);
       if (m?.[1] === "-" && m[2] === " ") opened.add(m[3]);
-      if (m?.[1] === "+" && m[2] === "x") ticked.add(m[3]);
+      if (m?.[1] === "+") {
+        if (m[2] === "x") ticked.add(m[3]);
+        // Newest first, so the last one recorded is the oldest; within a commit, a ticked line wins.
+        const f = first.get(m[3]);
+        if (!f || f.when !== when) first.set(m[3], { when, ticked: m[2] === "x" });
+        else if (m[2] === "x") f.ticked = true;
+      }
     }
     for (const ref of ticked) if (opened.has(ref) && !dated.has(ref)) dated.set(ref, new Date(when).toISOString());
   }
+  for (const [ref, f] of first) if (!dated.has(ref) && f.ticked) dated.set(ref, new Date(f.when).toISOString());
   return tasks.map((t) => (t.done && dated.has(t.ref) ? { ...t, doneAt: dated.get(t.ref)! } : t));
 }
 

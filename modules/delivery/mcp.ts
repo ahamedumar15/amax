@@ -19,6 +19,7 @@ import { createReleaseCard, deploymentCard, environmentCard, linkCard, releasePr
 import { isNeed, NEEDS, withNeed } from "./server/attention";
 import { checkReleaseRef, getDeployment, getProposalTask, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
+import { repoTime } from "./server/repo-time";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
 // Chat (005) runs read tools directly and turns write tools into a confirm card first.
@@ -112,9 +113,10 @@ export const mcpTools: McpToolDef[] = [
   // 008 AC-1: what specclaw and CI call, as a person or as a service credential acting for one.
   tool({ name: "sync_proposal", description: "Create or update a specclaw proposal from its spec: title, phase, and tasks by id (T1, T2, …), with the commit time the spec was read at (committedAt). A task once done stays done.", scope: "write", permission: "delivery:proposal:sync",
     input: z.object({ projectKey: z.string(), projectName: z.string(), client: z.string(), key: z.string(), title: z.string(), phase: z.enum(PHASES), sourceRef: z.string(), tasks: z.array(TaskInput), meta: z.record(z.string(), z.unknown()).optional(), committedAt: z.string().datetime({ offset: true }),
+      createdAt: repoTime.describe("When the spec says the change was written (its Created header, state.json or the commit that added it); leave it out when unknown"),
       ownerEmail: z.string().max(320).nullable().optional().describe("Who the spec names as owner (its Owner line, else its author); null names nobody, leave it out when unknown so the owner stays") }),
     service: syncProposal, run: (v, a, s = "mcp") => syncProposal(ctxFor(v, s), { projectKey: a.projectKey, project: { name: a.projectName, client: a.client }, key: a.key, title: a.title, phase: a.phase,
-      tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks, committedAt: a.committedAt, ownerEmail: a.ownerEmail }) }),
+      tasksDone: a.tasks.filter((t) => t.done).length, tasksTotal: a.tasks.length, source: "specclaw", sourceRef: a.sourceRef, releasedAt: null, meta: a.meta ?? {}, tasks: a.tasks, committedAt: a.committedAt, ownerEmail: a.ownerEmail, createdAt: a.createdAt }) }),
   // 062: the amax plugin's push of a whole repo's specclaw state. Many keyed writes, so never a chat
   // confirm card (service: null); the plugin previews with dryRun and the developer confirms there.
   tool({ name: "sync_specclaw", description: "Push a repo's specclaw changes to its linked project. dryRun (the default) previews created, updated, unchanged and skipped; dryRun false applies. Refused when the repo isn't the project's linked repo or you're not on the project. Per proposal it never moves one to Released (a finished change the default branch brings that amax never stored comes in as Released history), and skips a step back a phase, and anything older than the commit it was last synced from. Two change folders sharing a number are both skipped for a person to fix. A branch can't take over a key the default branch holds for another folder. withdrawMissing (default false; only when one push from the default branch carries every change) withdraws a proposal whose folder is gone, if that branch last synced it, no newer commit has and it isn't Released; one that would withdraw more than half of them is held until confirmWithdraw names the held count. Never creates a project.",

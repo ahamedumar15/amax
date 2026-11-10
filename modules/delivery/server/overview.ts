@@ -7,6 +7,7 @@ import { ForbiddenError, getRuntime } from "@amax/core/server";
 import { ACTIVE, clockOf, endOfDay, listReleases, phaseCounts, type ReleaseRow } from "./queries";
 import { isReadyToVerify, overEstimate, ownerShownIn } from "./readiness";
 import type { Phase } from "../contracts";
+import { proposalInProd } from "./in-prod";
 
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(v, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -14,13 +15,13 @@ const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => {
 };
 const monthStart = (d: Date, by = 0) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + by, 1)).toISOString();
 
-/** 068 AC-5: proposals shipped to Prod this month and last, and who closed most tasks this month (a person, or agents for them). */
+/** 068 AC-5, 094 AC-4: proposals shipped to Prod this month and last (a Prod deployment released them: the In Prod rule), and who closed most tasks this month (a person, or agents for them). */
 export const deliveryPerformance = (v: Viewer) =>
   read(v, async (tx) => {
     const now = await clockOf(tx);
     const [m] = await tx.execute(sql`select count(*) filter (where released_at >= ${monthStart(now)} and released_at < ${endOfDay(now)})::int as this_month,
         count(*) filter (where released_at >= ${monthStart(now, -1)} and released_at < ${monthStart(now)})::int as last_month
-      from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.phase = 'released' and pr.status = 'active' and ${ACTIVE}`);
+      from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.phase = 'released' and ${proposalInProd} and pr.status = 'active' and ${ACTIVE}`);
     const [top] = await tx.execute(sql`select u.name, count(*)::int as tasks, count(*) filter (where ${BY_AGENT})::int as by_agents
       from delivery.task t join auth.user u on u.id::text = substring(t.done_by from 'user:([0-9a-f-]{36})')
       where t.done_at >= ${monthStart(now)} and t.done_at < ${endOfDay(now)} group by u.id, u.name order by tasks desc, u.name limit 1`);

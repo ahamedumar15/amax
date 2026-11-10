@@ -178,6 +178,7 @@ function tickDates(root, at, path, tasks) {
     return tasks;
   }
   const dated = /* @__PURE__ */ new Map();
+  const first = /* @__PURE__ */ new Map();
   const commits = log.split("\n@@commit ").map((c) => c.replace(/^@@commit /, ""));
   for (const c of commits) {
     const [when, ...lines] = c.split("\n");
@@ -185,10 +186,16 @@ function tickDates(root, at, path, tasks) {
     for (const line of lines) {
       const m = line.match(LINE);
       if (m?.[1] === "-" && m[2] === " ") opened.add(m[3]);
-      if (m?.[1] === "+" && m[2] === "x") ticked.add(m[3]);
+      if (m?.[1] === "+") {
+        if (m[2] === "x") ticked.add(m[3]);
+        const f = first.get(m[3]);
+        if (!f || f.when !== when) first.set(m[3], { when, ticked: m[2] === "x" });
+        else if (m[2] === "x") f.ticked = true;
+      }
     }
     for (const ref of ticked) if (opened.has(ref) && !dated.has(ref)) dated.set(ref, new Date(when).toISOString());
   }
+  for (const [ref, f] of first) if (!dated.has(ref) && f.ticked) dated.set(ref, new Date(f.when).toISOString());
   return tasks.map((t) => t.done && dated.has(t.ref) ? { ...t, doneAt: dated.get(t.ref) } : t);
 }
 

@@ -7,8 +7,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { can, type Viewer } from "@amax/auth";
 import { authorsOf } from "../sync/authors";
+import { resolveRepoPhases } from "../server/repo-time";
 import { desired } from "../sync/import";
 import { SyncInput, syncProposal } from "../server/services";
+import { deliveryPerformance } from "../server/overview";
+import { mcpTools } from "../mcp";
 import { readSpecclaw, type SpecRecord } from "../sync/specclaw";
 import { ctxFor } from "../server/context";
 import { ownerFrozen } from "../server/owner";
@@ -36,7 +39,10 @@ function datedRepo() {
   const write = (dir: string, body: string) => { mkdirSync(join(root, ".specclaw/changes", dir), { recursive: true }); writeFileSync(join(root, ".specclaw/changes", dir, "change.md"), body); };
   write("301-dated", header("301-dated", DAY) + tasks(false, false));
   write("302-undated", header("302-undated") + tasks(false, false));
+  // Final pass: a change whose tasks arrive already ticked (a squash merge, or committed in one go).
+  write("305-squashed", header("305-squashed", DAY) + tasks(true, false));
   at("2026-10-01T10:00:00Z", "write 301 and 302");
+  write("305-squashed", header("305-squashed", DAY) + tasks(true, true)); at("2026-10-02T09:00:00Z", "tick 305 T2");
   write("301-dated", header("301-dated", DAY) + tasks(true, false)); at("2026-10-03T09:00:00Z", "tick T1");
   write("301-dated", header("301-dated", DAY) + tasks(true, true)); at("2026-10-05T09:00:00Z", "tick T2");
   write("301-dated", header("301-dated", DAY) + tasks(true, false)); at("2026-10-06T09:00:00Z", "untick T2");
@@ -66,6 +72,13 @@ describe("094 the repo's dates", () => {
     ["unticked and ticked again: its last tick", "T2", "2026-10-07T09:00:00.000Z"],
   ])("AC-2 a task %s is dated by the commit that ticked it", (_, ref, at) => {
     expect(rec("301-dated").tasks.find((t) => t.ref === ref)!.doneAt).toBe(at);
+  });
+
+  it.each([
+    ["a task its first commit adds already ticked is dated by that commit", "T1", "2026-10-01T10:00:00.000Z"],
+    ["one it adds open and that is ticked later is dated by the tick", "T2", "2026-10-02T09:00:00.000Z"],
+  ])("AC-2 %s", (_, ref, at) => {
+    expect(rec("305-squashed").tasks.find((t) => t.ref === ref)!.doneAt).toBe(at);
   });
 
   it("AC-2 an open task has no date", () => {
@@ -215,12 +228,22 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
     expect(now.proposal).toEqual((extra as { repoPhases?: unknown }).repoPhases ? undefined : was.proposal);
   });
 
+  it("AC-1 sync_proposal takes the repo's created date", async () => {
+    const tool = mcpTools.find((t) => t.name === "sync_proposal")! as unknown as { input: { parse: (a: unknown) => unknown }; run: (v: Viewer, a: unknown, s: string) => Promise<unknown> };
+    await tool.run(maya, tool.input.parse({ projectKey: "FLT", projectName: "Fleet", client: "C", key: "FLT-306", title: "Via sync_proposal", phase: "proposed", sourceRef: "306-direct",
+      tasks: [], committedAt: "2026-10-08T09:00:00Z", createdAt: "2026-09-20T08:00:00Z" }), "mcp");
+    expect((await stored("FLT-306")).created).toBe("2026-09-20T08:00:00.000Z");
+  });
+
   it("AC-4 Shipped to Prod counts only what a Prod deployment released, not the repo's archive", async () => {
     const [shipped, month] = [(await shippedPerWeek(maya)).values.reduce((a, b) => a + b, 0), (await phaseCounts(maya)).releasedThisMonth];
+    const overview = (await deliveryPerformance(maya)).thisMonth;
     await db.t.owner`insert into delivery.proposal (tenant_id, project_id, key, title, phase, source, source_ref, released_at, meta)
       select tenant_id, id, 'FLT-801', 'From the archive', 'released', 'specclaw', '801-archived', now(), '{}'::jsonb from delivery.project where key = 'FLT'`;
     expect((await shippedPerWeek(maya)).values.reduce((a, b) => a + b, 0)).toBe(shipped);
     expect((await phaseCounts(maya)).releasedThisMonth).toBe(month);
+    // Final pass: the overview's "shipped to Prod this month" by the same rule.
+    expect((await deliveryPerformance(maya)).thisMonth).toBe(overview);
   });
 
   it("AC-6 a branch's key conflict is reported before its unreadable state.json", async () => {
@@ -260,18 +283,27 @@ describe("094 desired() bounds the repo's dates for every path", () => {
     ["a future created date is unknown", record({ createdAt: future }), undefined, { createdAt: null }],
     ["a known created date stands", record({ createdAt: past }), undefined, { createdAt: past }],
     ["a future tick is unknown", record({ tasks: [{ ref: "T1", title: "t", done: true, doneAt: future }] }), undefined, { tasks: [{ ref: "T1", title: "t", done: true, doneAt: null }] }],
-    ["phase times not read keep the stored ones", record({}), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
-    ["a phase dated in the future keeps its stored time", record({ phaseTimes: { proposal: past, verify: future } }), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
-    ["a phase dated in the future with none stored is left out", record({ phaseTimes: { proposal: past, pr: future } }), undefined, { meta: expect.objectContaining({ repoPhases: { proposal: { at: past, source: "main@abc1234" } } }) }],
-    ["a phase with the same time keeps the read that first recorded it", record({ phaseTimes: { proposal: past, verify: past } }), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
-    ["a phase with a new time names this read", record({ phaseTimes: { proposal: past, verify: later } }), stored, { meta: expect.objectContaining({ repoPhases: { proposal: stored.repoPhases.proposal, verify: { at: later, source: "main@abc1234" } } }) }],
+    ["phase times go as plain times; the write resolves their read", record({ phaseTimes: { proposal: past, verify: future } }), stored, { meta: expect.objectContaining({ repoPhases: { proposal: past, verify: past } }) }],
   ])("%s", (_, r, prior, expected) => {
     expect(desired("FLT", r, "abc1234", [], prior)).toMatchObject(expected);
+  });
+
+  // The one rule (resolveRepoPhases), applied on the locked row for every writer, with the write's own read.
+  it.each([
+    ["phase times not read keep the stored ones", undefined, stored, stored.repoPhases],
+    ["a phase dated in the future keeps its stored time", { proposal: past, verify: future }, stored, stored.repoPhases],
+    ["a phase dated in the future with none stored is left out", { proposal: past, pr: future }, undefined, { proposal: { at: past, source: "main@abc1234" } }],
+    ["a phase with the same time keeps the read that first recorded it", { proposal: past, verify: past }, stored, stored.repoPhases],
+    ["a phase with a new time names this read", { proposal: past, verify: later }, stored, { proposal: stored.repoPhases.proposal, verify: { at: later, source: "main@abc1234" } }],
+  ] as [string, Record<string, string> | undefined, typeof stored | undefined, unknown][])("%s", (_, read, prior, expected) => {
+    expect(resolveRepoPhases(read, "main@abc1234", prior?.repoPhases)).toEqual(expected);
   });
 
   it("sync_proposal takes phase times dated in the future (as unknown) and refuses only a malformed shape", () => {
     const base = { projectKey: "FLT", project: { name: "F", client: "C" }, key: "FLT-1", title: "x", phase: "planned", tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "1-x", releasedAt: null, committedAt: past };
     expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: future } } }).success).toBe(true);
     expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: "yesterday" } } }).success).toBe(false);
+    // Final pass: the read a phase came from is the write's own, never the caller's word.
+    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: { at: past, source: "main@made-up" } } } }).success).toBe(false);
   });
 });

@@ -18,10 +18,13 @@ export const repoPhaseTimes = z.partialRecord(PHASE, z.string().datetime({ offse
 export type RepoPhase = { at: string; source: string | null };
 const time = z.string().datetime({ offset: true });
 /**
- * meta.repoPhases as a write may carry it: a time per phase (a reader's), or a stored entry with its read. Times in the
- * future pass here; resolveRepoPhases treats them as unknown, the same on every path (review round 3).
+ * meta.repoPhases as a write carries it: a time per phase. The read each one came from is the write's own (meta.source),
+ * never the caller's word (final pass). Times in the future pass here; resolveRepoPhases treats them as unknown, the
+ * same on every path (review round 3).
  */
-export const repoPhasesInMeta = z.partialRecord(PHASE, z.union([time, z.object({ at: time, source: z.string().nullable() })]));
+export const repoPhasesInMeta = z.partialRecord(PHASE, time);
+// As stored: an entry with its read, or a plain time (stored before entries kept their read).
+const storedPhases = z.partialRecord(PHASE, z.union([time, z.object({ at: time, source: z.string().nullable() })]));
 
 /**
  * 094 AC-3, review rounds 1 to 3: the one rule for the phase times a write stores, applied where the write is built
@@ -32,9 +35,9 @@ export const repoPhasesInMeta = z.partialRecord(PHASE, z.union([time, z.object({
  * nothing to store, and no key is written.
  */
 export function resolveRepoPhases(read: unknown, source: unknown, stored: unknown): Record<string, RepoPhase> | null {
-  const before = normalise(stored, null);
+  const before = normalise(storedPhases, stored, null);
   if (read === undefined || read === null) return before;
-  const given = normalise(read, typeof source === "string" ? source : null) ?? {};
+  const given = normalise(repoPhasesInMeta, read, typeof source === "string" ? source : null) ?? {};
   const out: Record<string, RepoPhase> = {};
   for (const [k, e] of Object.entries(given)) {
     // The same time as stored keeps its entry, so a phase names the read that first recorded it, not every later one.
@@ -46,8 +49,12 @@ export function resolveRepoPhases(read: unknown, source: unknown, stored: unknow
 }
 
 // A time alone (a reader's, or stored before entries kept their read) or a stored entry; anything else is dropped.
-function normalise(v: unknown, source: string | null): Record<string, RepoPhase> | null {
-  const parsed = repoPhasesInMeta.safeParse(v);
+function normalise(schema: z.ZodType<Partial<Record<string, string | RepoPhase>>>, v: unknown, source: string | null): Record<string, RepoPhase> | null {
+  const parsed = schema.safeParse(v);
   if (!parsed.success) return null;
   return Object.fromEntries(Object.entries(parsed.data).map(([k, e]) => [k, typeof e === "string" ? { at: e, source } : { at: e!.at, source: e!.source }]));
 }
+
+/** The phase times alone, by phase: what a write carries in meta and what "changed?" compares. */
+export const phaseTimesOnly = (v: Record<string, RepoPhase> | null) =>
+  v ? Object.fromEntries(Object.entries(v).map(([k, e]) => [k, new Date(e.at).toISOString()])) : undefined;

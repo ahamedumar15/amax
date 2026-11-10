@@ -7,7 +7,7 @@ import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 import { repoOwnerStale } from "../server/owner";
 import { ownerEmailOf } from "./authors";
-import { notFuture, resolveRepoPhases } from "../server/repo-time";
+import { notFuture, phaseTimesOnly, resolveRepoPhases } from "../server/repo-time";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -17,7 +17,8 @@ const known = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 
 // 094 AC-3: the phase times to store, by the one rule (resolveRepoPhases); none stored and none read: no key.
 const repoPhasesOf = (read: Record<string, string> | undefined, source: string, prior: Record<string, unknown> | undefined) => {
-  const phases = resolveRepoPhases(read, source, prior?.repoPhases);
+  // Plain times: the write resolves them again on the locked row with its own source (upsertSpecProposal).
+  const phases = phaseTimesOnly(resolveRepoPhases(read, source, prior?.repoPhases));
   return phases ? { repoPhases: phases } : {};
 };
 
@@ -51,9 +52,9 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
 // Task order isn't a change either: change.md may list T26 before T25, and storage returns its own order (079).
 const byRef = (a: Task, b: Task) => a.ref.length - b.ref.length || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
 export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].map((t) => ({ ref: t.ref, title: t.title, done: t.done })).sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source), repoPhases: phaseTimesOnly(d.meta.repoPhases) }]);
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].map((t) => ({ ref: t.ref, title: t.title, done: t.done })).sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source), repoPhases: timesOf(d.meta.repoPhases) }]);
 // 094: a phase's time is what changes; the read it names is carried with it (resolveRepoPhases), never a change by itself.
-const phaseTimesOnly = (v: unknown) => (v === undefined ? undefined : Object.fromEntries(Object.entries(resolveRepoPhases(undefined, null, v) ?? {}).map(([k, e]) => [k, new Date(e.at).toISOString()])));
+const timesOf = (v: unknown) => (v === undefined ? undefined : phaseTimesOnly(resolveRepoPhases(undefined, null, v)));
 
 
 type Dated = Task & { doneBy?: string | null };
