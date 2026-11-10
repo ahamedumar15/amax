@@ -7,7 +7,7 @@ import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 import { repoOwnerStale } from "../server/owner";
 import { ownerEmailOf } from "./authors";
-import { notFuture } from "../server/repo-time";
+import { notFuture, resolveRepoPhases } from "../server/repo-time";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -15,21 +15,11 @@ export type Task = SpecRecord["tasks"][number];
 
 const known = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 
-/**
- * 094 AC-3, review rounds 1 and 2: the phase times to store. Not read by the sender (an older plugin): the stored ones
- * stand. Read: each phase the repo reached, with a phase dated in the future keeping its stored time (unknown, not
- * unreached). None stored and none read: no key, so a proposal without them doesn't read as changed.
- */
-function repoPhasesOf(read: Record<string, string> | undefined, prior: Record<string, unknown> | undefined) {
-  const stored = (prior?.repoPhases ?? undefined) as Record<string, string> | undefined;
-  if (!read) return stored ? { repoPhases: stored } : {};
-  const out: Record<string, string> = {};
-  for (const [k, t] of Object.entries(read)) {
-    if (notFuture(t)) out[k] = t;
-    else if (stored?.[k]) out[k] = stored[k];
-  }
-  return { repoPhases: out };
-}
+// 094 AC-3: the phase times to store, by the one rule (resolveRepoPhases); none stored and none read: no key.
+const repoPhasesOf = (read: Record<string, string> | undefined, source: string, prior: Record<string, unknown> | undefined) => {
+  const phases = resolveRepoPhases(read, source, prior?.repoPhases);
+  return phases ? { repoPhases: phases } : {};
+};
 
 // 008: a task a commit closed stays closed, so the repo's open task is merged with the stored one;
 // otherwise every sync would see a "change" it can't make.
@@ -52,7 +42,7 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
   // to a person then (ownerEmailOf, upsertSpecProposal), so amax never stores a committer's address.
   meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source,
     // 094 AC-3: when each phase was reached in the repo, for the proposal's history.
-    ...repoPhasesOf(r.phaseTimes, prior) },
+    ...repoPhasesOf(r.phaseTimes, r.source, prior) },
   };
 };
 
@@ -61,7 +51,9 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
 // Task order isn't a change either: change.md may list T26 before T25, and storage returns its own order (079).
 const byRef = (a: Task, b: Task) => a.ref.length - b.ref.length || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
 export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
-  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].map((t) => ({ ref: t.ref, title: t.title, done: t.done })).sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
+  canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].map((t) => ({ ref: t.ref, title: t.title, done: t.done })).sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source), repoPhases: phaseTimesOnly(d.meta.repoPhases) }]);
+// 094: a phase's time is what changes; the read it names is carried with it (resolveRepoPhases), never a change by itself.
+const phaseTimesOnly = (v: unknown) => (v === undefined ? undefined : Object.fromEntries(Object.entries(resolveRepoPhases(undefined, null, v) ?? {}).map(([k, e]) => [k, new Date(e.at).toISOString()])));
 
 
 type Dated = Task & { doneBy?: string | null };

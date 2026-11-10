@@ -11,7 +11,7 @@ import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
-import { repoTime, storedRepoPhases } from "./repo-time";
+import { repoPhasesInMeta, repoTime, resolveRepoPhases } from "./repo-time";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -231,8 +231,9 @@ export const SyncInput = z.object({
     source: z.string(),
     sourceRef: z.string(),
     releasedAt: z.string().nullable(),
-    // 094 review round 2: the repo phase times it carries are checked as stored (known phases, none in the future).
-    meta: z.record(z.string(), z.unknown()).refine((m) => m.repoPhases === undefined || storedRepoPhases.safeParse(m.repoPhases).success, "meta.repoPhases: phase times by phase, none in the future"),
+    // 094 review round 3: repo phase times, if any, by phase (a time, or a stored entry with its read). One in the future
+    // isn't refused: the write treats it as unknown, as every sync path does (resolveRepoPhases).
+    meta: z.record(z.string(), z.unknown()).refine((m) => m.repoPhases === undefined || repoPhasesInMeta.safeParse(m.repoPhases).success, "meta.repoPhases: phase times by phase"),
     // 008: the spec's tasks by id; when given, they are the source of tasksDone and tasksTotal.
     tasks: z.array(TaskInput).optional(),
     // 062: the commit time the spec was read at. Every specclaw write moves the stale mark with it.
@@ -314,7 +315,10 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
       rekeyed = { from: input.key, to };
     }
     const before = rekeyed ? undefined : found;
-    const meta = JSON.stringify(input.meta);
+    // 094 review round 3: the repo's phase times by the one rule, against the row as locked, whoever writes.
+    const phases = resolveRepoPhases(input.meta.repoPhases, input.meta.source, (before?.meta as Record<string, unknown> | undefined)?.repoPhases);
+    const { repoPhases: _sent, ...rest } = input.meta;
+    const meta = JSON.stringify(phases ? { ...rest, repoPhases: phases } : rest);
     // 091 AC-7: a spec proposal's owner comes from its repo (the Owner line, else the change's author), never from who
     // pushed: a CI credential acts for the PM, which made the PM own everything. The sync keeps it in step with the
     // repo until a person sets the owner in amax (update_proposal or a Suggested owner: owner_set_by_person, 0021);

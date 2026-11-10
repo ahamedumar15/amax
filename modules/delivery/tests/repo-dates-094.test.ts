@@ -8,7 +8,7 @@ import { hasDb } from "@amax/db/testdb";
 import { can, type Viewer } from "@amax/auth";
 import { authorsOf } from "../sync/authors";
 import { desired } from "../sync/import";
-import { SyncInput } from "../server/services";
+import { SyncInput, syncProposal } from "../server/services";
 import { readSpecclaw, type SpecRecord } from "../sync/specclaw";
 import { ctxFor } from "../server/context";
 import { ownerFrozen } from "../server/owner";
@@ -120,6 +120,10 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
       committedAt: new Date(Date.parse("2026-10-08T09:00:00Z") + at * 60_000).toISOString(), records: records as never, dryRun: false });
   const rows = (key: string) => db.q(sql`select t.ref, t.done_at, t.done_by, p.created_at from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.key = ${key} order by t.ref`);
   const iso = (v: unknown) => new Date(v as string).toISOString();
+  const stored = async (key: string) => {
+    const [p] = await db.q(sql`select created_at, meta->'repoPhases' as phases from delivery.proposal where key = ${key}`);
+    return { created: iso(p.created_at), phases: p.phases as Record<string, { at: string; source: string | null }> };
+  };
   const { records } = datedRepo();
   const dated = records.find((r) => r.dir === "301-dated")!;
   // What an older plugin sends: no created date, no task dates, no phase times.
@@ -160,9 +164,12 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
     ["phase times in the future only", () => ({ ...dated, phaseTimes: { ...phases, archived: future } })],
     ["a stored phase arriving dated in the future", () => ({ ...dated, phaseTimes: { ...phases, verify: future } })],
   ])("keeps the stored dates on %s", async (_, record) => {
+    const was = (await stored("FLT-301")).phases;
     expect((await push([record()])).unchanged).toBe(1);
-    const [p] = await db.q(sql`select created_at, meta->'repoPhases' as phases from delivery.proposal where key = 'FLT-301'`);
-    expect({ created: iso(p.created_at), phases: p.phases }).toEqual({ created: "2026-10-01T00:00:00.000Z", phases });
+    const p = await stored("FLT-301");
+    // Each phase keeps its time and the read that recorded it (review round 3).
+    expect({ created: p.created, phases: p.phases }).toEqual({ created: "2026-10-01T00:00:00.000Z", phases: was });
+    expect(Object.fromEntries(Object.entries(p.phases).map(([k, e]) => [k, e.at]))).toEqual(phases);
     expect((await rows("FLT-301")).map((t) => iso(t.done_at))).toEqual(["2026-10-03T09:00:00.000Z", "2026-10-07T09:00:00.000Z"]);
   });
 
@@ -184,6 +191,28 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
     const all = detail.history.map((e) => e.at);
     expect(all).toEqual([...all].sort().reverse());
     expect(await proposalEvent(maya, { proposalId: detail.id, line: "repo:verify" })).toMatchObject({ text: "Verified in the repo" });
+    // Each line names the read that recorded its time, kept through later syncs that carried it forward (review round 3).
+    const read = (await stored("FLT-301")).phases.verify.source!;
+    expect(read).toMatch(/^main@0d0e0f/);
+    expect(repoLines.map((e) => e.by)).toEqual(repoLines.map(() => `From the repo, read at ${read.slice(0, read.indexOf("@") + 8)}`));
+  });
+
+  // Review round 3: sync_proposal writes through the same rule on the locked row: phase times it doesn't send, or sends
+  // dated in the future, keep the stored ones (with their read); it isn't refused for them.
+  it.each([
+    ["no phase times", {}],
+    ["no meta at all but the source", { repoPhases: undefined }],
+    ["a phase dated in the future", { repoPhases: { verify: "2030-01-01T00:00:00.000Z" } }],
+  ])("sync_proposal with %s keeps the stored phase times", async (_, extra) => {
+    const was = (await stored("FLT-301")).phases;
+    const [cur] = await db.q(sql`select title, phase, tasks_done, tasks_total, meta from delivery.proposal where key = 'FLT-301'`);
+    const { repoPhases: _drop, ...meta } = cur.meta as Record<string, unknown>;
+    await syncProposal(ctxFor(maya), { projectKey: "FLT", project: { name: "Fleet", client: "C" }, key: "FLT-301", title: `${cur.title as string}`, phase: cur.phase as never,
+      tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), source: "specclaw", sourceRef: "301-dated", releasedAt: null,
+      meta: { ...meta, ...extra }, committedAt: new Date(Date.parse("2026-10-08T09:00:00Z") + ++at * 60_000).toISOString() });
+    const now = (await stored("FLT-301")).phases;
+    expect(now.verify).toEqual(was.verify);
+    expect(now.proposal).toEqual((extra as { repoPhases?: unknown }).repoPhases ? undefined : was.proposal);
   });
 
   it("AC-4 Shipped to Prod counts only what a Prod deployment released, not the repo's archive", async () => {
@@ -224,21 +253,25 @@ describe("094 desired() bounds the repo's dates for every path", () => {
   const record = (over: Partial<SpecRecord>) => ({ number: "301", dir: "301-x", title: "x", lane: "", module: "", phase: "planned", approved: true, claim: null, hard: [], optional: [],
     tasksDone: 1, tasksTotal: 1, tasks: [{ ref: "T1", title: "t", done: true, doneAt: past }], acs: 0, pr: null, verdict: null, done: false, status: "ready", waiting: [],
     updatedAt: null, releasedAt: null, source: "main@abc1234", unreadable: false, duplicate: false, owner: null, ...over }) as SpecRecord;
-  const stored = { repoPhases: { proposal: past, verify: past } };
+  const read0 = "main@0000000";
+  const stored = { repoPhases: { proposal: { at: past, source: read0 }, verify: { at: past, source: read0 } } };
+  const later = "2026-10-05T00:00:00.000Z";
   it.each([
     ["a future created date is unknown", record({ createdAt: future }), undefined, { createdAt: null }],
     ["a known created date stands", record({ createdAt: past }), undefined, { createdAt: past }],
     ["a future tick is unknown", record({ tasks: [{ ref: "T1", title: "t", done: true, doneAt: future }] }), undefined, { tasks: [{ ref: "T1", title: "t", done: true, doneAt: null }] }],
     ["phase times not read keep the stored ones", record({}), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
     ["a phase dated in the future keeps its stored time", record({ phaseTimes: { proposal: past, verify: future } }), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
-    ["a phase dated in the future with none stored is left out", record({ phaseTimes: { proposal: past, pr: future } }), undefined, { meta: expect.objectContaining({ repoPhases: { proposal: past } }) }],
+    ["a phase dated in the future with none stored is left out", record({ phaseTimes: { proposal: past, pr: future } }), undefined, { meta: expect.objectContaining({ repoPhases: { proposal: { at: past, source: "main@abc1234" } } }) }],
+    ["a phase with the same time keeps the read that first recorded it", record({ phaseTimes: { proposal: past, verify: past } }), stored, { meta: expect.objectContaining({ repoPhases: stored.repoPhases }) }],
+    ["a phase with a new time names this read", record({ phaseTimes: { proposal: past, verify: later } }), stored, { meta: expect.objectContaining({ repoPhases: { proposal: stored.repoPhases.proposal, verify: { at: later, source: "main@abc1234" } } }) }],
   ])("%s", (_, r, prior, expected) => {
     expect(desired("FLT", r, "abc1234", [], prior)).toMatchObject(expected);
   });
 
-  it("sync_proposal refuses repo phase times in the future in meta", () => {
+  it("sync_proposal takes phase times dated in the future (as unknown) and refuses only a malformed shape", () => {
     const base = { projectKey: "FLT", project: { name: "F", client: "C" }, key: "FLT-1", title: "x", phase: "planned", tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "1-x", releasedAt: null, committedAt: past };
-    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: future } } }).success).toBe(false);
-    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: past } } }).success).toBe(true);
+    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: future } } }).success).toBe(true);
+    expect(SyncInput.safeParse({ ...base, meta: { repoPhases: { verify: "yesterday" } } }).success).toBe(false);
   });
 });

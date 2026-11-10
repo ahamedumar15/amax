@@ -7,6 +7,7 @@ import { day } from "../pins";
 import { byLine } from "./activity";
 import { proposalWhere, type ProposalRow } from "./queries";
 import { invalid, unavailable } from "./refusal";
+import { resolveRepoPhases } from "./repo-time";
 
 export type ProposalTask = { id: string; ref: string; title: string; done: boolean; doneAt: string | null };
 export type ProposalStage = { environment: string; environmentId: string; deploymentId: string | null; isProd: boolean; status: string | null; at: string | null };
@@ -50,11 +51,12 @@ const REPO_PHASE: Record<string, string> = { proposal: "Approved", tasks: "Tasks
 const repoBy = (source: unknown) => (typeof source === "string" && source ? `From the repo, read at ${source.replace(/@([0-9a-f]{7})[0-9a-f]*$/i, "@$1")}` : "From the repo");
 async function repoLines(tx: Tx, id: string, only?: Only): Promise<ProposalEvent[]> {
   if (only && only.kind !== "repo") return [];
-  const [p] = await tx.execute(sql`select source, meta->'repoPhases' as phases, meta->>'source' as read_at from delivery.proposal where id = ${id}`);
+  const [p] = await tx.execute(sql`select source, meta->'repoPhases' as phases from delivery.proposal where id = ${id}`);
   if (!p?.source) return [];
-  return Object.entries((p.phases ?? {}) as Record<string, string>)
-    .filter(([k, at]) => REPO_PHASE[k] && typeof at === "string" && !Number.isNaN(Date.parse(at)) && (!only || only.ref === k))
-    .map(([k, at]) => ({ id: `repo:${k}`, at: iso(at)!, text: `${REPO_PHASE[k]} in the repo`, by: repoBy(p.read_at), kind: "synced" as const }));
+  // Each phase names the read that recorded it (review round 3), kept with its time when a later sync carries it forward.
+  return Object.entries(resolveRepoPhases(undefined, null, p.phases) ?? {})
+    .filter(([k]) => REPO_PHASE[k] && (!only || only.ref === k))
+    .map(([k, e]) => ({ id: `repo:${k}`, at: iso(e.at)!, text: `${REPO_PHASE[k]} in the repo`, by: repoBy(e.source), kind: "synced" as const }));
 }
 const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 
