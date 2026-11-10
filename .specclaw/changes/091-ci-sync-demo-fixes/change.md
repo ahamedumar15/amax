@@ -30,6 +30,9 @@ holds them. The CI job summary says how many merged or archived branches it left
    change number the default branch already uses for another folder. amax can't see the default branch's folders
    during a branch push, so AC-2 had no stored row to compare when main skips that number as a duplicate, and
    `specclaw/062-mock-unclosed-sections` created AMX-062. Its PR fails the number check (089 AC-10) anyway.
+
+   *Final pass (round 3):* a branch counts as merged by content only when it has its change folder; a branch named
+   after no folder is still pushed, so amax flags it. `authorsOf` takes the sha by the one rule in `sync/sha.ts`.
 2. **AC-2** A branch push can't take over a key that the default branch holds for another folder. On a ref other than
    the default branch, a record whose stored proposal came from a different folder (`source_ref`) is skipped with
    "two changes numbered NNN: <stored folder>, <this folder>" and sets needsReview. The default branch may still

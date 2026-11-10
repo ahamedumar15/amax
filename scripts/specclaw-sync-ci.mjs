@@ -15,8 +15,14 @@ const SECRETS = ["AMAX_URL", "AMAX_SYNC_API_KEY", "AMAX_SYNC_ACT_FOR"];
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
 // 091 review round 1: merged means in main's history (a merge or fast-forward), or, for a squash or rebase merge whose
-// commits aren't, the branch's change folder already being on main exactly as the branch has it.
-const sameOnMain = (root, b) => { try { git(root, "diff", "--quiet", b, "HEAD", "--", `.specclaw/changes/${b.slice("origin/specclaw/".length)}`); return true; } catch { return false; } };
+// commits aren't, the branch's change folder already being on main exactly as the branch has it. Only when the branch
+// has that folder: a path missing on both sides diffs as equal, and a branch named after no change must still be
+// pushed, so amax flags it ("no change is named …", 091 final pass).
+const sameOnMain = (root, b) => {
+  const path = `.specclaw/changes/${b.slice("origin/specclaw/".length)}`;
+  try { git(root, "cat-file", "-e", `${b}:${path}`); } catch { return false; }
+  try { git(root, "diff", "--quiet", b, "HEAD", "--", path); return true; } catch { return false; }
+};
 const merged = (root, b) => { try { git(root, "merge-base", "--is-ancestor", b, "HEAD"); return true; } catch { return sameOnMain(root, b); } };
 
 /**

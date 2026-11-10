@@ -100,7 +100,14 @@ function readSpecclaw(root, overlays = []) {
 
 // modules/delivery/sync/authors.ts
 import { execFileSync } from "node:child_process";
+
+// modules/delivery/sync/sha.ts
+var SHA = "[0-9a-f]{7,40}";
+var SHA_RE = new RegExp(`^${SHA}$`, "i");
+
+// modules/delivery/sync/authors.ts
 var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+var AT_SHA = new RegExp(`@(${SHA})$`, "i");
 var isShallow = (root) => {
   try {
     return git(root, "rev-parse", "--is-shallow-repository") === "true";
@@ -112,7 +119,7 @@ function authorsOf(root, rev, records, only) {
   const shallow = isShallow(root);
   return records.map((r) => {
     if (shallow || only && r.dir !== only) return { ...r, author: void 0 };
-    const at = r.source?.match(/@([0-9a-f]{7,40})$/i)?.[1] ?? rev;
+    const at = r.source?.match(AT_SHA)?.[1] ?? rev;
     const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
     try {
       git(root, "cat-file", "-e", `${at}:${path}`);

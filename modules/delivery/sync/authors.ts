@@ -3,10 +3,14 @@
 // and amax resolves it to a person at sync time without storing it (the trace keeps a keyed hash of a tool's
 // arguments, never the arguments).
 import { execFileSync } from "node:child_process";
+import { SHA } from "./sha";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 
 type Readable = { dir: string; phase: string; source?: string };
+
+// The sha at the end of a record's source ("main@4f2c9a1"), by the one commit-sha rule (091 AC-3).
+const AT_SHA = new RegExp(`@(${SHA})$`, "i");
 
 /** Whether `root` is a shallow clone, so authors can't be read (the CI job checks out with full history). */
 export const isShallow = (root: string) => { try { return git(root, "rev-parse", "--is-shallow-repository") === "true"; } catch { return true; } };
@@ -22,7 +26,7 @@ export function authorsOf<T extends Readable>(root: string, rev: string, records
   const shallow = isShallow(root);
   return records.map((r) => {
     if (shallow || (only && r.dir !== only)) return { ...r, author: undefined };
-    const at = r.source?.match(/@([0-9a-f]{7,40})$/i)?.[1] ?? rev;
+    const at = r.source?.match(AT_SHA)?.[1] ?? rev;
     const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
     try {
       git(root, "cat-file", "-e", `${at}:${path}`);
