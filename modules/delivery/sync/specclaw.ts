@@ -34,6 +34,10 @@ export type SpecRecord = {
   unreadable: boolean;
   /** 089 AC-8: another change folder has the same number, so neither can own the key; both are reported, never synced. */
   duplicate: boolean;
+  /** 091 AC-7: the email on the header's `**Owner:**` line, if any. */
+  owner: string | null;
+  /** 091 AC-7: who added the change's change.md, from git; filled by the plugin's reader and CI, never by this file reader. */
+  author?: string | null;
 };
 
 const RANK: Record<Phase, number> = { proposed: 0, planned: 1, building: 2, verified: 3, released: 4 };
@@ -87,6 +91,7 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
     source: ref,
     unreadable: !parsedState.ok,
+    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*\s*`?([^\s`·<>]+@[^\s`·<>]+)`?/)?.[1] ?? null,
   };
 }
 

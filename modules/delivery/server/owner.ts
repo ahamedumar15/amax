@@ -24,6 +24,21 @@ export async function namedOwner(tx: Tx, userId: string): Promise<Owner> {
   return owner;
 }
 
+/**
+ * 091 AC-7: the person a repo names for a spec proposal (its Owner line, else the author of its change.md): a verified
+ * git identity with that email, else an active person whose work email it is, and only when they're on the project.
+ * Null when nobody fits, so the proposal stays Unassigned.
+ */
+export async function ownerFromRepo(tx: Tx, tenantId: string, email: unknown, projectId: string): Promise<Owner | null> {
+  if (typeof email !== "string" || !email.includes("@")) return null;
+  const [u] = await tx.execute(sql`select u.id, u.name from auth.user u where u.status = 'active' and (
+      exists (select 1 from auth.git_identity g where g.user_id = u.id and g.email_verified and lower(g.email) = lower(${email}))
+      or lower(u.email) = lower(${email}))
+    order by exists (select 1 from auth.git_identity g where g.user_id = u.id and g.email_verified and lower(g.email) = lower(${email})) desc limit 1`);
+  if (!u) return null;
+  return (await notOnProject(tx, tenantId, u.id as string, projectId)) ? null : { id: u.id as string, name: u.name as string };
+}
+
 /** The owner by default: the named one, else the person acting (none for a bare service). */
 export async function ownerFor(tx: Tx, ctx: ServiceContext, userId?: string): Promise<Owner | null> {
   if (userId) return namedOwner(tx, userId);

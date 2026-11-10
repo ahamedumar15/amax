@@ -6,7 +6,7 @@ import { appendAudit, defineService, type Emitted, type ServiceContext } from "@
 import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, type ProposalRekeyed, type ReleaseDeployed } from "../contracts";
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
-import { notOnProject, ownerChanged, ownerFor } from "./owner";
+import { notOnProject, ownerChanged, ownerFor, ownerFromRepo } from "./owner";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 
@@ -295,15 +295,18 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     }
     const before = rekeyed ? undefined : found;
     const meta = JSON.stringify(input.meta);
-    // 081 AC-5: a spec proposal is owned by the person it was synced or pushed for. A later sync fills a missing owner
-    // but never replaces one, so a reassignment in amax stands; a bare CI credential names nobody.
-    const owner = await ownerFor(tx, ctx);
+    // 091 AC-7: a spec proposal's owner comes from its repo (the Owner line, else the change's author), never from who
+    // pushed: a CI credential acts for the PM, which made the PM own everything. The sync keeps it in step with the
+    // repo until a person sets the owner in amax (update_proposal or a Suggested owner's accept, both audited as
+    // delivery.proposal.update); from then on it stands. No owner event: a sync's change notifies nobody.
+    const owner = await ownerFromRepo(tx, ctx.tenantId, input.meta.ownerEmail, project.id as string);
+    const personSet = sql`exists (select 1 from core.audit_event a where a.resource = 'delivery.proposal' and a.resource_id = delivery.proposal.id::text and a.action = 'delivery.proposal.update')`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())
       on conflict (tenant_id, key) do update set title = excluded.title,
-        owner_name = case when delivery.proposal.owner_user_id is null and delivery.proposal.owner_name is null then excluded.owner_name else delivery.proposal.owner_name end,
-        owner_user_id = coalesce(delivery.proposal.owner_user_id, case when delivery.proposal.owner_name is null then excluded.owner_user_id end),
+        owner_name = case when ${personSet} then delivery.proposal.owner_name else excluded.owner_name end,
+        owner_user_id = case when ${personSet} then delivery.proposal.owner_user_id else excluded.owner_user_id end,
         phase = case when delivery.proposal.phase = 'released' then 'released' else excluded.phase end, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,
         source_ref = excluded.source_ref, released_at = coalesce(delivery.proposal.released_at, excluded.released_at), meta = excluded.meta, updated_at = now()
         where delivery.proposal.source = excluded.source

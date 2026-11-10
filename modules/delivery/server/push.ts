@@ -31,6 +31,7 @@ const SpecRecordInput = z.object({
   pr: z.string().url().max(300).nullable(), verdict: text(20).nullable(), done: z.boolean(), status: z.enum(["done", "claimed", "not approved", "blocked", "ready"]),
   waiting: z.array(text(8)).max(50), updatedAt: text(40).nullable(), releasedAt: text(40).nullable(), source: text(300), unreadable: z.boolean(),
   duplicate: z.boolean().default(false),
+  owner: z.string().max(320).nullable().default(null), author: z.string().max(320).nullable().optional(),
 });
 
 export const MAX_PUSH = 200;

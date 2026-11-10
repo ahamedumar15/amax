@@ -61,7 +61,8 @@ function parse(root, dir, archived, ref) {
     updatedAt: stamps.at(-1) ?? null,
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
     source: ref,
-    unreadable: !parsedState.ok
+    unreadable: !parsedState.ok,
+    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*\s*`?([^\s`·<>]+@[^\s`·<>]+)`?/)?.[1] ?? null
   };
 }
 var numberOf = (dir) => dir.match(/^(\d{3,})-/)[1];
@@ -105,6 +106,19 @@ var projectOf = (root, flag) => {
   const m = existsSync2(config) ? readFileSync2(config, "utf8").match(/^amax:\s*\n\s+project:\s*["']?([A-Z][A-Z0-9]{1,9})["']?\s*$/m) : null;
   return m?.[1] ?? null;
 };
+function authorsOf(root, rev, records, only) {
+  return records.map((r) => {
+    if (only && r.dir !== only) return { ...r, author: null };
+    const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
+    let out = "";
+    try {
+      out = git(root, "log", rev, "--follow", "--diff-filter=A", "--format=%ae", "--", path);
+    } catch {
+      out = "";
+    }
+    return { ...r, author: out.split("\n").filter(Boolean).at(-1) ?? null };
+  });
+}
 function payload(cwd, flag) {
   const root = git(cwd, "rev-parse", "--show-toplevel");
   const projectKey = projectOf(root, flag);
@@ -119,7 +133,7 @@ function payload(cwd, flag) {
     ref,
     sha,
     committedAt: git(root, "show", "-s", "--format=%cI", "HEAD"),
-    records: readSpecclaw({ dir: root, ref: `${ref}@${sha}` })
+    records: authorsOf(root, sha, readSpecclaw({ dir: root, ref: `${ref}@${sha}` }))
   };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -133,6 +147,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
 }
 export {
+  authorsOf,
   normaliseRepo,
   payload,
   projectOf,

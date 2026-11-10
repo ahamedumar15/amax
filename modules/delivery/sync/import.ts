@@ -22,7 +22,9 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
   tasksTotal: tasks.length || r.tasksTotal,
   tasks,
   releasedAt: r.releasedAt,
-  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source },
+  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source,
+    // 091 AC-7: who the repo says owns the change (its Owner line, else its author); an owner change is a change.
+    ownerEmail: r.owner ?? r.author ?? null },
   };
 };
 

@@ -41,8 +41,9 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
 
     await syncProposal(ctxFor(maya), { projectKey: "CON", project: { name: "Contoso Portal", client: "Contoso" }, key: "CON-301", title: "Spec", phase: "proposed",
       tasksDone: 0, tasksTotal: 0, source: "specclaw", sourceRef: "301-spec", releasedAt: null, meta: {}, committedAt: "2026-10-10T09:00:00Z" });
-    // 081 amendment 9 (AC-86): time can be logged against a spec proposal too.
-    expect(await labels(maya, "CON-301")).toEqual(["Log time on CON-301"]);
+    // 081 amendment 9 (AC-86): time can be logged against a spec proposal too. 091 AC-7: its repo names no owner, so it
+    // starts unowned (never the person who ran the sync) and the pin offers "Make me the owner".
+    expect(await labels(maya, "CON-301")).toEqual(["Make me the owner of CON-301", "Log time on CON-301"]);
     await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = 'CON-301'`;
     expect(await labels(maya, "CON-301")).toEqual(["Make me the owner of CON-301", "Log time on CON-301"]);
 

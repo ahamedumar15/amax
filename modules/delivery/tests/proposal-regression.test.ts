@@ -30,6 +30,7 @@ describe.skipIf(!hasDb)("081 AC-18 release, rollback and sync rules hold with ow
     await syncProposal(ctxFor(maya), spec);
     await db.t.owner`update delivery.proposal set phase = 'released', released_at = now() where key = 'FLT-401'`;
     await syncProposal(ctxFor(maya), { ...spec, phase: "building", title: "Spec v2", committedAt: "2026-10-11T09:00:00Z" });
-    expect(await db.row("FLT-401")).toMatchObject({ phase: "released", title: "Spec v2", owner_user_id: maya.userId });
+    // 091 AC-7: the owner comes from the repo (none named here), never from who ran the sync.
+    expect(await db.row("FLT-401")).toMatchObject({ phase: "released", title: "Spec v2", owner_user_id: null });
   });
 });

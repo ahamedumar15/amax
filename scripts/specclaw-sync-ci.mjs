@@ -8,7 +8,7 @@ import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { payload, readSpecclaw } from "../plugins/amax/scripts/read-specclaw.mjs";
+import { authorsOf, payload, readSpecclaw } from "../plugins/amax/scripts/read-specclaw.mjs";
 
 export const MAX_PUSH = 200;
 const SECRETS = ["AMAX_URL", "AMAX_SYNC_API_KEY", "AMAX_SYNC_ACT_FOR"];
@@ -40,7 +40,7 @@ function branches(root, main, out) {
     const dir = mkdtempSync(join(tmpdir(), "specclaw-branch-"));
     execFileSync("tar", ["-x", "-C", dir], { input: execFileSync("git", ["archive", b, ".specclaw"], { cwd: root, maxBuffer: 256 * 1024 * 1024 }) });
     const sha = git(root, "rev-parse", b), ref = b.slice("origin/".length);
-    return [{ ref, sha, committedAt: git(root, "show", "-s", "--format=%cI", b), records: readSpecclaw({ dir, ref: `${ref}@${sha}` }), dir }];
+    return [{ ref, sha, committedAt: git(root, "show", "-s", "--format=%cI", b), records: authorsOf(root, sha, readSpecclaw({ dir, ref: `${ref}@${sha}` }), ref.slice("specclaw/".length)), dir }];
   });
 }
 

@@ -21,10 +21,11 @@ describe.skipIf(!hasDb)("081 AC-5 proposal owners (Postgres)", () => {
     expect(await db.row(theirs.key)).toMatchObject({ owner_user_id: nimal.userId, owner_name: "Nimal Silva", description: "Partial refunds" });
     await expect(createProposal(ctxFor(maya), { projectKey: "CON", title: "Ghost", ownerUserId: "00000000-0000-4000-8000-000000000000" })).rejects.toThrow(/active person/);
 
+    // 091 AC-7: a synced one is owned by who its repo names, never by who ran the sync (owner-091.test covers the rest).
     const sahan = await db.as("sahan");
     await syncProposal(ctxFor(sahan), spec("FLT-201"));
-    expect(await db.row("FLT-201")).toMatchObject({ owner_user_id: sahan.userId });
+    expect(await db.row("FLT-201")).toMatchObject({ owner_user_id: null });
     await syncProposal(ctxFor(await db.as("maya")), { ...spec("FLT-201"), title: "Spec change v2", committedAt: "2026-10-11T09:00:00Z" });
-    expect(await db.row("FLT-201")).toMatchObject({ owner_user_id: sahan.userId, title: "Spec change v2" });
+    expect(await db.row("FLT-201")).toMatchObject({ owner_user_id: null, title: "Spec change v2" });
   });
 });

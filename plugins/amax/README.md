@@ -55,6 +55,8 @@ What amax accepts:
 - **How much:** at most 200 changes per call, inside amax's per-caller rate limit. A push with nothing
   new returns `unchanged`. It adds no row to the Repo sync card, and one audit entry records the commit
   it was read at.
+- **Owner:** a proposal's owner is the person the repo names: an `**Owner:** <email>` line in the change's header, else
+  whoever added its `change.md`, matched to someone on the project in amax. Never just whoever pushed.
 - **Duplicates:** two change folders with the same number are both skipped ("two changes numbered 074: …") and
   the push is flagged for a person. Renumber one of them; CI refuses a PR that adds a reused number.
 

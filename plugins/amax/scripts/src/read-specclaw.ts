@@ -20,6 +20,20 @@ export const projectOf = (root: string, flag?: string) => {
   return m?.[1] ?? null;
 };
 
+/**
+ * 091 AC-7: each change's author, the email on the commit that first added its change.md at `rev` (following the move
+ * to archive/), so amax can make them its owner. Only the email is sent. `only` limits it to one folder (a branch's own).
+ */
+export function authorsOf<T extends { dir: string; phase: string }>(root: string, rev: string, records: T[], only?: string): (T & { author: string | null })[] {
+  return records.map((r) => {
+    if (only && r.dir !== only) return { ...r, author: null };
+    const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
+    let out = "";
+    try { out = git(root, "log", rev, "--follow", "--diff-filter=A", "--format=%ae", "--", path); } catch { out = ""; }
+    return { ...r, author: out.split("\n").filter(Boolean).at(-1) ?? null };
+  });
+}
+
 export function payload(cwd: string, flag?: string) {
   const root = git(cwd, "rev-parse", "--show-toplevel");
   const projectKey = projectOf(root, flag);
@@ -32,7 +46,7 @@ export function payload(cwd: string, flag?: string) {
     // Only the repo's normalised name is sent: a remote URL can carry a token, and amax never needs it.
     projectKey, repoUrl: normaliseRepo(git(root, "remote", "get-url", "origin")), ref, sha,
     committedAt: git(root, "show", "-s", "--format=%cI", "HEAD"),
-    records: readSpecclaw({ dir: root, ref: `${ref}@${sha}` }),
+    records: authorsOf(root, sha, readSpecclaw({ dir: root, ref: `${ref}@${sha}` })),
   };
 }
 
