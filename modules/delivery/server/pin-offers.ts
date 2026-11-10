@@ -2,7 +2,8 @@ import { sql } from "drizzle-orm";
 import { withTenant, type Tx } from "@amax/db";
 import { can, canEver, type Viewer } from "@amax/auth";
 import { getRuntime, hasModule } from "@amax/core/server";
-import { getDeployment, getEnvironment, getProposal, getProposalTask, listReleases, type ProposalRow } from "./queries";
+import { getDeployment, getEnvironment, getProposal, getProposalTask, listReleases, manualProjects, type ProposalRow } from "./queries";
+import { agentFirstSql } from "./agent-first";
 import { hasNoOwner } from "./readiness";
 
 // 081 amendments 2 and 3 (AC-30, AC-38): what a pinned Delivery record offers in chat. Each offer is the prompt its
@@ -30,12 +31,14 @@ export function nextVersion(latest: string | null) {
 }
 
 async function projectFacts(tx: Tx, where: ReturnType<typeof sql>) {
-  const [p] = await tx.execute(sql`select p.id, p.key, p.name, p.status, p.repo_url,
+  const [p] = await tx.execute(sql`select p.id, p.key, p.name, p.status, p.repo_url, ${agentFirstSql(sql`p`)} as agent_first,
       (select r.version from delivery.release r where r.project_id = p.id order by r.created_at desc limit 1) as latest
     from delivery.project p where ${where}`);
   return p;
 }
 
+// 093 AC-4: never on an agent-first project, whose proposals come from its repo.
+const newProposals = (p: Record<string, unknown>): Gated[] => (p.agent_first ? [] : [newProposal(p)]);
 const newProposal = (p: Record<string, unknown>): Gated => ({ label: `New proposal in ${p.name as string}`, prompt: `Add a proposal to ${p.name as string} (${p.key as string}): `, tool: "create_proposal", permission: "delivery:proposal:create" });
 const newRelease = (p: Record<string, unknown>): Gated => {
   const version = nextVersion((p.latest as string | null) ?? null);
@@ -49,7 +52,7 @@ export async function projectOffers(v: Viewer, a: Args) {
   if (!id && !key || !can(v, "delivery:read")) return [];
   const p = await read(v, (tx) => projectFacts(tx, id ? sql`p.id::text = ${id}` : sql`p.key = ${key!}`));
   if (!p || p.status !== "active") return [];
-  return allowed(v, [newProposal(p), newRelease(p), ...(p.repo_url ? [] : [link(p.key as string, false)])], p.id as string);
+  return allowed(v, [...newProposals(p), newRelease(p), ...(p.repo_url ? [] : [link(p.key as string, false)])], p.id as string);
 }
 
 /** A project's repo sync: link it, or relink and unlink it. */
@@ -193,11 +196,11 @@ export async function taskOffers(v: Viewer, a: Args) {
 export async function viewOffers(v: Viewer, a: Args, kind: "proposals" | "releases" | "environments" | "projects") {
   if (kind === "projects") return allowed(v, [{ label: "New project", prompt: "Create a project: ", tool: "create_project", permission: "delivery:project:create" }], null);
   const key = str(a.projectKey);
-  if (!key) return kind === "proposals" ? allowed(v, [{ label: "New proposal", prompt: "Add a proposal to ", tool: "create_proposal", permission: "delivery:proposal:create" }], null) : [];
+  if (!key) return kind === "proposals" && (await manualProjects(v)).length ? allowed(v, [{ label: "New proposal", prompt: "Add a proposal to ", tool: "create_proposal", permission: "delivery:proposal:create" }], null) : [];
   if (!can(v, "delivery:read")) return [];
   const p = await read(v, (tx) => projectFacts(tx, sql`p.key = ${key}`));
   if (!p || p.status !== "active") return [];
-  const offers = kind === "proposals" ? [newProposal(p)] : kind === "releases" ? [newRelease(p)]
+  const offers = kind === "proposals" ? newProposals(p) : kind === "releases" ? [newRelease(p)]
     : [{ label: `Add an environment to ${key}`, prompt: `Add an environment to ${key}: `, tool: "upsert_environment", permission: "delivery:release:create" }];
   return allowed(v, offers, p.id as string);
 }

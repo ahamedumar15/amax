@@ -47,14 +47,15 @@ describe.skipIf(!hasDb)("081 amendment 1: board card actions, task meters, key n
   });
 
   it("AC23 a Proposed proposal with tasks shows its meter on the list and the board; with none, the list shows – and the card no bar", async () => {
-    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Statements" });
+    // 093: CON's linked repo has synced a spec proposal earlier in this file, so it's agent-first; FLT has no repo.
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "FLT", title: "Statements" });
     const meter = (page: string) => page.includes(`${key}`) && /aria-label="0 of 1 tasks"/.test(page);
-    const before = await html(ProjectPage({ viewer: maya, params: { key: "CON" } }));
+    const before = await html(ProjectPage({ viewer: maya, params: { key: "FLT" } }));
     expect(before).not.toMatch(/aria-label="0 of 1 tasks"/);
     await addProposalTask(ctxFor(maya), { key, title: "Template" });
-    expect((await listProposals(maya, { projectKey: "CON", phase: "proposed" })).find((p) => p.key === key)).toMatchObject({ tasksTotal: 1, phase: "proposed" });
-    expect(meter(await html(ProjectPage({ viewer: maya, params: { key: "CON" } })))).toBe(true);
-    expect(meter(await html(ProposalsPage({ viewer: maya, params: { phase: "proposed" }, searchParams: { project: "CON" } })))).toBe(true);
+    expect((await listProposals(maya, { projectKey: "FLT", phase: "proposed" })).find((p) => p.key === key)).toMatchObject({ tasksTotal: 1, phase: "proposed" });
+    expect(meter(await html(ProjectPage({ viewer: maya, params: { key: "FLT" } })))).toBe(true);
+    expect(meter(await html(ProposalsPage({ viewer: maya, params: { phase: "proposed" }, searchParams: { project: "FLT" } })))).toBe(true);
     const released = await html(ProposalsPage({ viewer: maya, params: { phase: "released" }, searchParams: { project: "CON" } }));
     expect(released).toMatch(/aria-label="8 of 8 tasks"/);
   });

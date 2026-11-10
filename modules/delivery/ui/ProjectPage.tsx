@@ -8,6 +8,7 @@ import { getProject, listEnvironments, listReleases, type ProposalRow } from "..
 import { hasNoOwner } from "../server/readiness";
 import { proposalSuggestions } from "./ProposalSuggestions";
 import { NewProposalButton } from "./NewProposalButton";
+import { AgentFirstLine } from "./AgentFirstLine";
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
 import { getRepoSync } from "../server/repo-sync";
@@ -99,7 +100,8 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
         </div>
         <div className="actions">
           {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
-          {can(viewer, "delivery:proposal:create", { projectId: project.id }) && <NewProposalButton project={{ pin: projectPin(project), name: project.name }} />}
+          {project.agentFirst && project.repoUrl ? <AgentFirstLine repoUrl={project.repoUrl} />
+            : can(viewer, "delivery:proposal:create", { projectId: project.id }) && <NewProposalButton project={{ pin: projectPin(project), name: project.name }} />}
         </div>
       </div>
       <ProjectTabs projectKey={project.key} current="" />

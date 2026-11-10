@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { agentFirstRefusal, agentFirstSql } from "./agent-first";
 import { withTenant } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
 import type { ToolCard } from "@amax/core";
@@ -10,7 +11,7 @@ import { ownerShownIn } from "./readiness";
 type Create = { projectKey: string; title: string; description?: string; estimateHours?: number; ownerUserId?: string };
 
 const facts = (v: Viewer, a: Create) => withTenant(getRuntime().db, v.tenantId, async (tx) => {
-  const [project] = await tx.execute(sql`select id, name, status from delivery.project where key = ${a.projectKey}`);
+  const [project] = await tx.execute(sql`select p.id, p.name, p.status, p.repo_url, ${agentFirstSql(sql`p`)} as agent_first from delivery.project p where p.key = ${a.projectKey}`);
   const [owner] = await tx.execute(sql`select name from auth.user where id::text = ${a.ownerUserId ?? v.userId} and status = 'active'`);
   return { project, owner: (owner?.name as string | undefined) ?? null };
 });
@@ -20,6 +21,8 @@ export async function proposeCreate(v: Viewer, a: Create) {
   const { project, owner } = await facts(v, a);
   if (!project) throw new ToolError(`there's no project ${a.projectKey}; list_projects shows the keys`, "invalid_input");
   if (project.status !== "active") throw new ToolError(`${project.name as string} is closed; reopen it before adding proposals`, "invalid_input");
+  // 093 AC-3: no card for an agent-first project; its proposals come from its repo.
+  if (project.agent_first) throw new ToolError(agentFirstRefusal(a.projectKey, project.repo_url as string), "invalid_input");
   if (!can(v, "delivery:proposal:create", { projectId: project.id as string })) throw new ToolError(`you can't add proposals to ${project.name as string}`, "invalid_input");
   if (a.ownerUserId && !owner) throw new ToolError("the owner must be an active person in this workspace", "invalid_input");
   await refuseOffProject(v, a.ownerUserId, project.id as string);

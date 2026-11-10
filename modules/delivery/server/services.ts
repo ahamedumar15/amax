@@ -7,6 +7,7 @@ import { EVENTS, PHASES, releaseHref, type Phase, type ProposalPhaseChanged, typ
 import { ensureEnvironments } from "./project-create";
 import { TaskInput, writeTasks } from "./tasks";
 import { notOnProject, ownerChanged, ownerFor, ownerFromRepo } from "./owner";
+import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 
@@ -88,6 +89,9 @@ export const createProposal = defineService({
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:proposal:create", project.id as string);
     if (project.status !== "active") throw invalid(`${input.projectKey} is closed; reopen it before adding proposals`);
+    // 093 AC-3: an agent-first project's proposals come from its repo, for the API and agents too.
+    const repo = await agentFirstRepo(tx, project.id as string);
+    if (repo) throw invalid(agentFirstRefusal(input.projectKey, repo));
     // 081 AC-5: the owner is the one named, else the person acting (an agent's or credential's person).
     const owner = await ownerFor(tx, ctx, input.ownerUserId);
     const why = owner && input.ownerUserId ? await notOnProject(tx, ctx.tenantId, owner.id, project.id as string) : null;

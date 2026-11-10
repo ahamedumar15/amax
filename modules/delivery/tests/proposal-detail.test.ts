@@ -138,7 +138,8 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
   // still resolves, a line that isn't there is null, and a time line the viewer may not see is refused, never "gone".
   it("review-2 a history line's pin reads that line directly", async () => {
     const event = mcpTools.find((t) => t.name === "get_proposal_event")!.run as unknown as (v: Viewer, a: object) => Promise<Record<string, unknown> | null>;
-    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: "Many edits" });
+    // 093: a project without a repo (CON's has synced a spec proposal earlier in this file, so it's agent-first).
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "FLT", title: "Many edits" });
     const { id } = (await getProposal(maya, { key }))! as { id: string };
     const created = ((await getProposal(maya, { key }))!.history as { id: string; kind: string }[]).find((h) => h.kind === "created")!;
     for (let i = 0; i < 101; i++) await updateProposal(ctxFor(maya), { key, description: `Draft ${i}` });

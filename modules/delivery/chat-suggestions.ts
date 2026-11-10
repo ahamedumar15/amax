@@ -1,7 +1,7 @@
 import type { ChatSuggestion } from "@amax/core";
 import { can, canEver, type Viewer } from "@amax/auth";
 import { PHASES, proposalKeyFrom } from "./contracts";
-import { getProject, getProposal } from "./server/queries";
+import { getProject, getProposal, manualProjects } from "./server/queries";
 
 // 081 AC-13: what chat offers on Delivery's pages, each only when the viewer can do it there. A suggestion fills the
 // message box; chat still confirms the write.
@@ -23,8 +23,9 @@ const LIST = ["proposals", "proposals/:phase"];
 
 export const chatSuggestions: ChatSuggestion[] = [
   { routes: PROJECT, label: "New proposal", prompt: "Add a proposal to this project: ", tool: "create_proposal",
-    when: when(async (v, p) => { const r = await project(v, p); return Boolean(r && can(v, "delivery:proposal:create", { projectId: r.project.id })); }) },
-  { routes: LIST, label: "New proposal", prompt: "Add a proposal to ", tool: "create_proposal", when: when(async (v, p) => !isKey(p) && canEver(v, "delivery:proposal:create")) },
+    // 093 AC-4: never on an agent-first project, whose proposals come from its repo.
+    when: when(async (v, p) => { const r = await project(v, p); return Boolean(r && !r.project.agentFirst && can(v, "delivery:proposal:create", { projectId: r.project.id })); }) },
+  { routes: LIST, label: "New proposal", prompt: "Add a proposal to ", tool: "create_proposal", when: when(async (v, p) => !isKey(p) && canEver(v, "delivery:proposal:create") && (await manualProjects(v)).length > 0) },
   // 081 amendment 9 (AC-88): what you own, read with list_proposals' mine.
   { routes: [...LIST, "p/:key/proposals", "p/:key/proposals/:phase"], label: "What proposals do I own?", prompt: "What proposals do I own?", tool: "list_proposals", when: when(async (_v, p) => !isKey(p)) },
   { routes: LIST, label: "Add a task", prompt: "Add a task to this proposal: ", tool: "add_proposal_task", when: when((v, p) => openHandMade(v, p, "delivery:task:done")) },

@@ -48,7 +48,8 @@ describe.skipIf(!hasDb)("081 amendment 2: a pinned proposal offers the next step
     expect(await labels(maya, "CON-301")).toEqual(["Make me the owner of CON-301", "Log time on CON-301"]);
 
     expect(await labels(maya, "CON-009")).toEqual([]);
-    const gone = (await createProposal(ctxFor(maya), { projectKey: "CON", title: "Dropped" })).key;
+    // 093: CON is agent-first since CON-301 synced above; a hand-made proposal goes to FLT, which has no repo.
+    const gone = (await createProposal(ctxFor(maya), { projectKey: "FLT", title: "Dropped" })).key;
     await withdrawProposal(ctxFor(maya), { key: gone, reason: "Not needed" });
     expect(await labels(maya, gone)).toEqual([]);
 

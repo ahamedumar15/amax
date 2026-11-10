@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { agentFirstSql } from "./agent-first";
 import { BY_AGENT, BY_PERSON } from "./closed-by";
 import { withTenant, type Tx } from "@amax/db";
 import { can, type Viewer } from "@amax/auth";
@@ -22,6 +23,8 @@ export type ProjectRow = {
   sprint: string | null; sprintDone: number; sprintTotal: number; health: string; riskPct: number | null;
   marginPct: number | null; contractValue: number | null; invoiced: number | null; nextRelease: string | null;
   sprintStart: string | null; sprintEnd: string | null;
+  /** 093: the linked repo, and whether it's agent-first (the repo has brought in proposals; no manual creation). */
+  repoUrl: string | null; agentFirst: boolean;
 };
 
 const project = (r: Record<string, unknown>): ProjectRow => ({
@@ -30,10 +33,14 @@ const project = (r: Record<string, unknown>): ProjectRow => ({
   sprintDone: Number(r.sprint_done), sprintTotal: Number(r.sprint_total), health: r.health as string, riskPct: num(r.risk_pct),
   marginPct: num(r.margin_pct), contractValue: num(r.contract_value), invoiced: num(r.invoiced), nextRelease: (r.next_release as string | null) ?? null,
   sprintStart: isoDate(r.sprint_start), sprintEnd: isoDate(r.sprint_end),
+  repoUrl: (r.repo_url as string | null) ?? null, agentFirst: r.agent_first === true,
 });
 
 export const listProjects = (v: Viewer, status: "active" | "closed" = "active") =>
-  read(v, async (tx) => (await tx.execute(sql`select * from delivery.project where status = ${status} order by created_at, name`)).map(project));
+  read(v, async (tx) => (await tx.execute(sql`select *, ${agentFirstSql(sql`delivery.project`)} as agent_first from delivery.project where status = ${status} order by created_at, name`)).map(project));
+
+/** 093 AC-2: the active projects the viewer may add proposals to by hand (not agent-first). */
+export const manualProjects = async (v: Viewer) => (await listProjects(v, "active")).filter((x) => !x.agentFirst && can(v, "delivery:proposal:create", { projectId: x.id }));
 
 export type ProposalRow = {
   id: string; key: string; title: string; phase: Phase; tasksDone: number; tasksTotal: number; hours: number; estimateHours: number | null;
@@ -109,7 +116,7 @@ export const getProject = (v: Viewer, key: string | undefined, projectId?: strin
   read(v, async (tx) => {
     if (!key && !projectId) throw invalid("say which project: a projectId or a key");
     const where = sql.join([projectId ? sql`id = ${projectId}` : undefined, key ? sql`key = ${key}` : undefined].filter((x) => x !== undefined), sql` and `);
-    const [r] = await tx.execute(sql`select * from delivery.project where ${where}`);
+    const [r] = await tx.execute(sql`select *, ${agentFirstSql(sql`delivery.project`)} as agent_first from delivery.project where ${where}`);
     if (!r) return null;
     const proposals = (await tx.execute(sql`${PROPOSALS} where pr.id = ${r.id} and ${ACTIVE} order by p.updated_at desc, p.key desc`)).map(proposal);
     // 081 amendment 4 (AC-42): who closed the project's recorded tasks: agents, people (in amax or by a verified commit),
