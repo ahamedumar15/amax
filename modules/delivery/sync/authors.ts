@@ -45,21 +45,30 @@ export function authorsOf<T extends Readable>(root: string, rev: string, records
   });
 }
 
-const TICK = /^\+- \[x\] `(T\d+)`/;
+const LINE = /^([+-])- \[( |x)\] `(T\d+)`/;
 
 /**
- * 094 AC-2: each ticked task's date, from the newest commit whose diff of change.md adds its ticked line, following the
- * move to archive/. Newest first, so a task unticked and ticked again dates from its last tick. A task git can't date
- * keeps none, and amax keeps the date it has.
+ * 094 AC-2: each ticked task's date: the newest commit whose diff of change.md both removes the task's open line and adds
+ * its ticked one, following the move to archive/. Only that is a tick: a commit that rewords, reorders or rewrites an
+ * already-ticked task adds its ticked line without removing an open one, and doesn't count. Newest first, so a task
+ * unticked and ticked again dates from its last tick. A task git can't date keeps none, and amax keeps the date it has;
+ * a failed walk dates nothing and leaves the author alone (review round 1).
  */
 function tickDates<K extends TaskLine>(root: string, at: string, path: string, tasks: K[]): K[] {
   if (!tasks.some((t) => t.done)) return tasks;
+  let log: string;
+  try { log = git(root, "log", at, "--follow", "--format=@@commit %aI", "-p", "--unified=0", "--", path); } catch { return tasks; }
   const dated = new Map<string, string>();
-  let when = "";
-  for (const line of git(root, "log", at, "--follow", "--format=@@commit %aI", "-p", "--unified=0", "--", path).split("\n")) {
-    if (line.startsWith("@@commit ")) { when = line.slice("@@commit ".length); continue; }
-    const tick = line.match(TICK);
-    if (tick && when && !dated.has(tick[1])) dated.set(tick[1], new Date(when).toISOString());
+  const commits = log.split("\n@@commit ").map((c) => c.replace(/^@@commit /, ""));
+  for (const c of commits) {
+    const [when, ...lines] = c.split("\n");
+    const opened = new Set<string>(), ticked = new Set<string>();
+    for (const line of lines) {
+      const m = line.match(LINE);
+      if (m?.[1] === "-" && m[2] === " ") opened.add(m[3]);
+      if (m?.[1] === "+" && m[2] === "x") ticked.add(m[3]);
+    }
+    for (const ref of ticked) if (opened.has(ref) && !dated.has(ref)) dated.set(ref, new Date(when).toISOString());
   }
   return tasks.map((t) => (t.done && dated.has(t.ref) ? { ...t, doneAt: dated.get(t.ref)! } : t));
 }

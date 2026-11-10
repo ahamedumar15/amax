@@ -39,6 +39,10 @@ function datedRepo() {
   write("301-dated", header("301-dated", DAY) + tasks(true, true)); at("2026-10-05T09:00:00Z", "tick T2");
   write("301-dated", header("301-dated", DAY) + tasks(true, false)); at("2026-10-06T09:00:00Z", "untick T2");
   write("301-dated", header("301-dated", DAY) + tasks(true, true)); at("2026-10-07T09:00:00Z", "tick T2 again");
+  // Review round 1: commits that re-emit a ticked line without ticking anything don't date a task.
+  const edited = header("301-dated", DAY) + "- [x] `T2` — second\n- [x] `T1` — first, reworded\n";
+  write("301-dated", edited); at("2026-10-09T09:00:00Z", "reword T1 and reorder");
+  write("301-dated", edited.replace(/ — /g, " - ")); at("2026-10-10T09:00:00Z", "reformat every task line");
   const sha = git({}, "rev-parse", "HEAD");
   return { root, sha, records: authorsOf(root, sha, readSpecclaw({ dir: root, ref: `main@${sha}` })) };
 }
@@ -56,7 +60,7 @@ describe("094 the repo's dates", () => {
   });
 
   it.each([
-    ["ticked once", "T1", "2026-10-03T09:00:00.000Z"],
+    ["ticked once, then reworded, reordered and rewritten", "T1", "2026-10-03T09:00:00.000Z"],
     ["unticked and ticked again: its last tick", "T2", "2026-10-07T09:00:00.000Z"],
   ])("AC-2 a task %s is dated by the commit that ticked it", (_, ref, at) => {
     expect(rec("301-dated").tasks.find((t) => t.ref === ref)!.doneAt).toBe(at);
@@ -75,6 +79,8 @@ describe("094 the repo's dates", () => {
   };
   it.each([
     ["the header's day, timed by state.json when it's the same day", { proposal: { status: "approved", at: "2026-10-01T05:46:46Z" } }, DAY, "2026-10-01T05:46:46.000Z"],
+    ["the header's day, timed by state.json in a time zone ahead of UTC", { proposal: { status: "approved", at: "2026-09-30T20:00:00Z" } }, DAY, "2026-09-30T20:00:00.000Z"],
+    ["the header's day, timed by state.json in a time zone behind UTC", { proposal: { status: "approved", at: "2026-10-02T03:00:00Z" } }, DAY, "2026-10-02T03:00:00.000Z"],
     ["the header's day at midnight when state.json says another day", { proposal: { status: "approved", at: "2026-10-04T05:00:00Z" } }, DAY, "2026-10-01T00:00:00.000Z"],
     ["state.json's proposal time without a header", { proposal: { status: "approved", at: "2026-10-04T05:00:00Z" } }, undefined, "2026-10-04T05:00:00.000Z"],
     ["neither: unknown here (git fills it)", {}, undefined, null],
@@ -115,7 +121,7 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
   const { records } = datedRepo();
   const dated = records.find((r) => r.dir === "301-dated")!;
   // What an older plugin sends: no created date, no task dates, no phase times.
-  const undated = (r: SpecRecord): SpecRecord => ({ ...r, createdAt: null, phaseTimes: {}, tasks: r.tasks.map(({ doneAt: _, ...t }) => t) });
+  const undated = (r: SpecRecord): SpecRecord => ({ ...r, createdAt: undefined, phaseTimes: undefined, tasks: r.tasks.map(({ doneAt: _, ...t }) => t) });
 
   beforeAll(async () => {
     db = await proposalDb();
@@ -135,6 +141,26 @@ describe.skipIf(!hasDb)("094 the repo's dates in amax", () => {
     expect(after.map((t) => iso(t.done_at))).toEqual(["2026-10-03T09:00:00.000Z", "2026-10-07T09:00:00.000Z"]);
     // Nothing differs now, so the next sync writes nothing.
     expect((await push([{ ...dated, phaseTimes: { proposal: "2026-10-01T05:00:00.000Z", verify: "2026-10-07T10:00:00.000Z" } }])).unchanged).toBe(1);
+    // Review round 1: the dates the sync corrected are on its audit.
+    const [audit] = await db.q(sql`select before, after from core.audit_event a join delivery.proposal p on a.resource_id = p.id::text
+      where p.key = 'FLT-301' and a.action = 'delivery.proposal.sync' order by a.seq desc limit 1`);
+    expect((audit.before as Record<string, unknown>).createdAt).not.toBe("2026-10-01T00:00:00.000Z");
+    expect(audit.after).toMatchObject({ createdAt: "2026-10-01T00:00:00.000Z", taskDates: { T1: "2026-10-03T09:00:00.000Z", T2: "2026-10-07T09:00:00.000Z" } });
+  });
+
+  // Review round 1: what a sender didn't read, or dates it from a clock in the future, is unknown: amax keeps what it has,
+  // and the push is no change.
+  const phases = { proposal: "2026-10-01T05:00:00.000Z", verify: "2026-10-07T10:00:00.000Z" };
+  const future = "2030-01-01T00:00:00.000Z";
+  it.each([
+    ["an older plugin's push (no created date, task dates or phase times)", () => undated(dated)],
+    ["dates in the future", () => ({ ...dated, createdAt: future, phaseTimes: { ...phases, pr: future }, tasks: dated.tasks.map((t) => ({ ...t, doneAt: future })) })],
+    ["phase times in the future only", () => ({ ...dated, phaseTimes: { ...phases, archived: future } })],
+  ])("keeps the stored dates on %s", async (_, record) => {
+    expect((await push([record()])).unchanged).toBe(1);
+    const [p] = await db.q(sql`select created_at, meta->'repoPhases' as phases from delivery.proposal where key = 'FLT-301'`);
+    expect({ created: iso(p.created_at), phases: p.phases }).toEqual({ created: "2026-10-01T00:00:00.000Z", phases });
+    expect((await rows("FLT-301")).map((t) => iso(t.done_at))).toEqual(["2026-10-03T09:00:00.000Z", "2026-10-07T09:00:00.000Z"]);
   });
 
   it("AC-2 a task a commit message closed keeps its own date and who closed it", async () => {

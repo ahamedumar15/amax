@@ -29,8 +29,9 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
   // 091 review round 1: no email in meta. The owner's email is read from the repo on every sync and only resolved
   // to a person then (ownerEmailOf, upsertSpecProposal), so amax never stores a committer's address.
   meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source,
-    // 094 AC-3: when each phase was reached in the repo, for the proposal's history.
-    repoPhases: r.phaseTimes ?? {} },
+    // 094 AC-3: when each phase was reached in the repo, for the proposal's history. Left out when the sender didn't read
+    // them (an older plugin), so the caller keeps the stored ones (keepRepoPhases).
+    ...(r.phaseTimes ? { repoPhases: r.phaseTimes } : {}) },
   };
 };
 
@@ -40,6 +41,10 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
 const byRef = (a: Task, b: Task) => a.ref.length - b.ref.length || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
 export const fingerprint = (d: { title: string; phase: string; tasksDone: number; tasksTotal: number; tasks: Task[]; meta: Record<string, unknown> }) =>
   canonical([d.title, d.phase, d.tasksDone, d.tasksTotal, [...d.tasks].map((t) => ({ ref: t.ref, title: t.title, done: t.done })).sort(byRef), { ...d.meta, sha: null, source: refOf(d.meta.source) }]);
+
+/** 094 review round 1: phase times the sender didn't read are unknown, not empty: the stored ones stand. */
+export const keepRepoPhases = <M extends Record<string, unknown>>(meta: M, prior: Record<string, unknown> | undefined): M =>
+  "repoPhases" in meta || !prior?.repoPhases ? meta : { ...meta, repoPhases: prior.repoPhases };
 
 type Dated = Task & { doneBy?: string | null };
 const differs = (a: unknown, b: string) => !a || Date.parse(String(a)) !== Date.parse(b);

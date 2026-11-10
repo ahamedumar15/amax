@@ -4,7 +4,7 @@ import { setTenant, textArray, type Tx } from "@amax/db";
 import { assertCan, can, viewerOf, type Viewer } from "@amax/auth";
 import { appendAudit, defineService, ForbiddenError, getRuntime, type Emitted, type ServiceContext, type Source } from "@amax/core/server";
 import { PHASES, type Phase } from "../contracts";
-import { desired, fingerprint, storedSpecRows, type Task, repoDatesStale } from "../sync/import";
+import { desired, fingerprint, storedSpecRows, type Task, repoDatesStale, keepRepoPhases } from "../sync/import";
 import { normaliseRepo, RepoUrl } from "../sync/repo-url";
 import { forUserOf } from "./activity";
 import { ctxFor } from "./context";
@@ -17,6 +17,7 @@ import { duplicateNumbers, skipReason } from "../sync/duplicates";
 import { ownerEmailOf } from "../sync/authors";
 import { SHA_RE } from "../sync/sha";
 import { planWithdrawals } from "../sync/withdraw";
+import { notFuture, repoPhaseTimes, repoTime } from "./repo-time";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
 // accepts: the project's linked repo only, a person on the project (delivery:proposal:push, not the
@@ -35,17 +36,15 @@ const SpecRecordInput = z.object({
   waiting: z.array(text(8)).max(50), updatedAt: text(40).nullable(), releasedAt: text(40).nullable(), source: text(300), unreadable: z.boolean(),
   duplicate: z.boolean().default(false),
   owner: z.string().max(320).nullable().default(null), author: z.string().max(320).nullable().optional(),
-  // 094 AC-1, AC-3: the repo's dates. Absent from an older plugin, so amax keeps the ones it has.
-  createdAt: z.string().datetime({ offset: true }).nullable().default(null),
-  phaseTimes: z.partialRecord(z.enum(["proposal", "tasks", "verify", "pr", "archived"]), z.string().datetime({ offset: true })).default({}),
+  // 094 AC-1, AC-3: the repo's dates. Absent from an older plugin (or in the future), so amax keeps the ones it has.
+  createdAt: repoTime, phaseTimes: repoPhaseTimes,
 });
 
 export const MAX_PUSH = 200;
-// A commit time from a skewed clock or a hand-written payload must not make every later push "stale".
-const SKEW_MS = 5 * 60_000;
+// A commit time from a skewed clock or a hand-written payload must not make every later push "stale" (SKEW_MS, repo-time.ts).
 export const PushInput = z.object({
   projectKey: z.string(), repoUrl: RepoUrl, ref: z.string().min(1).max(200), sha: z.string().regex(SHA_RE, "sha must be a commit sha (7 to 40 hex characters)"),
-  committedAt: z.string().datetime({ offset: true }).refine((t) => Date.parse(t) <= Date.now() + SKEW_MS, "committedAt is in the future"),
+  committedAt: z.string().datetime({ offset: true }).refine(notFuture, "committedAt is in the future"),
   dryRun: z.boolean().default(true), records: z.array(SpecRecordInput).max(MAX_PUSH),
   // 089 AC-6: the push carries every change on the default branch (not one batch of several), so a folder it doesn't
   // name is gone. Off by default: the plugin batches, and a batch can't tell a gone folder from the next batch.
@@ -121,7 +120,8 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
-    const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
+    const kept = { ...base, meta: keepRepoPhases(base.meta, prior) };
+    const d = onDefault ? kept : { ...kept, meta: { ...kept.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
     const why = refusal(d, cur, p.committedAt, onDefault);
     if (why) { skip(key, why); continue; }
     // 091 AC-7: unchanged files, but the owner the repo names may resolve differently now (a git identity linked since).

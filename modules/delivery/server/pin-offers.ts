@@ -5,6 +5,7 @@ import { getRuntime, hasModule } from "@amax/core/server";
 import { getDeployment, getEnvironment, getProposal, getProposalTask, listReleases, manualProjects, type ProposalRow } from "./queries";
 import { agentFirstSql } from "./agent-first";
 import { hasNoOwner } from "./readiness";
+import { liveProdDeployments } from "./in-prod";
 
 // 081 amendments 2 and 3 (AC-30, AC-38): what a pinned Delivery record offers in chat. Each offer is the prompt its
 // tool's chat flow takes; a click fills the box, the write waits for the confirm card. Read when chat asks, so the
@@ -81,7 +82,7 @@ export async function proposalOffers(v: Viewer, a: Args) {
     // The newest release of the project not yet live in Prod: where a verified proposal with no release goes.
     const [r] = p.phase === "verified" && !p.release ? await tx.execute(sql`select r.version, coalesce((select string_agg(q.key, ', ' order by q.key) from delivery.proposal q where q.release_id = r.id), '') as keys
       from delivery.release r join delivery.project pr on pr.id = r.project_id where pr.key = ${p.projectKey}
-        and not exists (select 1 from delivery.deployment d where d.release_id = r.id and d.released and d.voided_at is null)
+        and not exists (${liveProdDeployments(sql`r.id`)})
       order by r.created_at desc limit 1`) : [];
     const [inRelease] = p.phase === "verified" && p.release ? await tx.execute(sql`select release_id from delivery.proposal where id = ${p.id}`) : [];
     return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, justClosed: (x.just_closed as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null,

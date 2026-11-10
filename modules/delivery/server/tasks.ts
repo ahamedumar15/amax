@@ -7,9 +7,10 @@ import { EVENTS, type TaskDone, type TaskReopened } from "../contracts";
 import { recordActivity } from "./activity";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn } from "./readiness";
+import { repoTime } from "./repo-time";
 
 // 094 AC-2: doneAt is when the repo ticked the task (git); absent when git couldn't tell.
-export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean(), doneAt: z.string().datetime({ offset: true }).nullable().optional() });
+export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean(), doneAt: repoTime });
 export type TaskLine = z.infer<typeof TaskInput>;
 
 // A task closed once stays closed: a later sync that still lists it open doesn't reopen it (008).

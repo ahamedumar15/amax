@@ -7,6 +7,7 @@ import { ForbiddenError, getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
 import { invalid } from "./refusal";
 import { isWithdrawn, ownerShownIn, withdrawnIn } from "./readiness";
+import { proposalInProd } from "./in-prod";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -63,7 +64,7 @@ const PROPOSALS = sql`
   select p.*, pr.key as project_key, pr.name as project_name, pr.color as project_color, r.version, last.name as shipped_to, last.status as shipped_status,
     -- 092 AC-5: In Prod means a deployment of its release that released it (deployment.released, recorded when it was
     -- written, 0005, so re-marking which environment is Prod can't change it) and isn't voided.
-    exists (select 1 from delivery.deployment d where d.release_id = p.release_id and d.released and d.voided_at is null) as in_prod,
+    ${proposalInProd} as in_prod,
     ${ownerShownIn("p")} as owner_shown
   from delivery.proposal p
   join delivery.project pr on pr.id = p.project_id
@@ -176,7 +177,7 @@ export const weeklyThroughput = (v: Viewer, now?: Date) =>
 // 094 AC-4: shipped to Prod means a Prod deployment released it (deployment.released, not voided), the In Prod rule
 // (092 AC-5). A proposal the repo's archive brought in as Released history (091 AC-4) wasn't shipped by amax, so it
 // isn't counted.
-const shippedToProd = sql`exists (select 1 from delivery.deployment d where d.release_id = p.release_id and d.released and d.voided_at is null)`;
+const shippedToProd = proposalInProd;
 
 export const shippedPerWeek = (v: Viewer, now?: Date, f: Pick<ProposalFilter, "projectKey" | "ownerUserId"> = {}) =>
   read(v, async (tx) => {

@@ -36,9 +36,9 @@ export type SpecRecord = {
   /** 089 AC-8: another change folder has the same number, so neither can own the key; both are reported, never synced. */
   duplicate: boolean;
   /** 094 AC-1: when the change was written: its `**Created:**` header, else state.json's proposal time; git fills the rest. */
-  createdAt: string | null;
+  createdAt?: string | null;
   /** 094 AC-3: when each phase was reached in the repo (state.json), by phase: proposal, tasks, verify, pr, archived. */
-  phaseTimes: Record<string, string>;
+  phaseTimes?: Record<string, string>;
   /** 091 AC-7: the email on the header's `**Owner:**` line, if any. */
   owner: string | null;
   /** 091 AC-7: who added the change's change.md, from git; filled by the plugin's reader and CI, never by this file reader. */
@@ -111,13 +111,17 @@ function phaseTimesOf(phases: Record<string, { status?: string; at?: string }>) 
   for (const [k, status] of Object.entries(REACHED)) if (phases[k]?.status === status && isTime(phases[k].at)) out[k] = new Date(phases[k].at!).toISOString();
   return out;
 }
-// 094 AC-1: the header's Created day, else the proposal's time in state.json. The header is only a day, so when
-// state.json's proposal time falls on it, that time says when on the day; otherwise the day reads as midnight UTC.
+// 094 AC-1: the header's Created day, else the proposal's time in state.json. The header is only a day, in its author's
+// time zone, so when state.json's proposal time falls on that day anywhere on Earth (UTC-12 to UTC+14), that time says
+// when on the day; otherwise the day reads as midnight UTC.
+const HOUR = 3_600_000;
 function createdOf(change: string, phases: Record<string, { at?: string }>) {
   const day = change.split(/^## /m)[0].match(/\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})\b/)?.[1];
   const proposed = isTime(phases.proposal?.at) ? new Date(phases.proposal!.at!).toISOString() : null;
-  if (day && isTime(`${day}T00:00:00Z`)) return proposed?.startsWith(day) ? proposed : `${day}T00:00:00.000Z`;
-  return proposed;
+  if (!day || !isTime(`${day}T00:00:00Z`)) return proposed;
+  const midnight = Date.parse(`${day}T00:00:00Z`);
+  const onDay = proposed !== null && Date.parse(proposed) >= midnight - 14 * HOUR && Date.parse(proposed) < midnight + 36 * HOUR;
+  return onDay ? proposed : `${day}T00:00:00.000Z`;
 }
 
 // "042-release-management" is change 042; numbers past 999 keep all their digits (review round 6).

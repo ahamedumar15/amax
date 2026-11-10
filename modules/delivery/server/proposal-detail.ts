@@ -46,13 +46,15 @@ const KIND_OF: Record<string, EventKind> = {
 };
 // 094 AC-3: the phases a spec change reached in its repo (state.json, kept in meta.repoPhases by the sync).
 const REPO_PHASE: Record<string, string> = { proposal: "Approved", tasks: "Tasks planned", verify: "Verified", pr: "PR raised", archived: "Archived" };
+// Rule 4: the repo's own record, not amax's; who worked on the change shows as the proposal's owner and its tasks.
+const REPO_BY = "From the repo";
 async function repoLines(tx: Tx, id: string, only?: Only): Promise<ProposalEvent[]> {
   if (only && only.kind !== "repo") return [];
   const [p] = await tx.execute(sql`select source, meta->'repoPhases' as phases from delivery.proposal where id = ${id}`);
   if (!p?.source) return [];
   return Object.entries((p.phases ?? {}) as Record<string, string>)
     .filter(([k, at]) => REPO_PHASE[k] && typeof at === "string" && !Number.isNaN(Date.parse(at)) && (!only || only.ref === k))
-    .map(([k, at]) => ({ id: `repo:${k}`, at: iso(at)!, text: `${REPO_PHASE[k]} in the repo`, by: String(p.source), kind: "synced" as const }));
+    .map(([k, at]) => ({ id: `repo:${k}`, at: iso(at)!, text: `${REPO_PHASE[k]} in the repo`, by: REPO_BY, kind: "synced" as const }));
 }
 const LABEL: Record<string, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released" };
 

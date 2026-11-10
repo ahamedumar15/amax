@@ -10,6 +10,8 @@ import { notOnProject, ownerChanged, ownerFor, ownerFromRepo, ownerFrozen } from
 import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
+import { liveProdDeployments } from "./in-prod";
+import { repoTime } from "./repo-time";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -36,7 +38,7 @@ async function projectByKey(tx: Tx, key: string) {
 const lockProposals = (tx: Tx, where: ReturnType<typeof sql>) => tx.execute(sql`select id from delivery.proposal where ${where} order by id for update`);
 
 async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, keys: string[]) {
-  const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${releaseId} and released and voided_at is null`);
+  const [{ live }] = await tx.execute(sql`select count(*)::int as live from (${liveProdDeployments(sql`${releaseId}`)}) x`);
   await lockProposals(tx, sql`project_id = ${projectId} and key = any(${textArray(keys)})`);
   for (const key of keys) {
     // Locked above, so the phase read here is the committed one.
@@ -238,7 +240,7 @@ export const SyncInput = z.object({
     // names nobody; absent: it couldn't be read (a shallow clone, a git failure, a withdrawal), so the owner stays.
     ownerEmail: z.string().max(320).nullable().optional(),
     // 094 AC-1: when the repo says the change was written; null or absent keeps amax's own created date.
-    createdAt: z.string().datetime({ offset: true }).nullable().optional(),
+    createdAt: repoTime,
   });
 export type SyncInput = z.infer<typeof SyncInput>;
 
@@ -282,6 +284,11 @@ export const markSynced = defineService({
     return { result: { marked: input.keys.length }, resourceId: project.id as string, after: { keys: input.keys.length, committedAt: input.committedAt } };
   },
 });
+
+const isoOf = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
+/** Each closed task's done date by its id (T3), for a sync's audit. */
+const taskDates = async (tx: Tx, proposalId: string) => Object.fromEntries((await tx.execute(sql`select ref, done_at from delivery.task where proposal_id = ${proposalId} and done_at is not null order by ref`))
+  .map((t) => [t.ref as string, isoOf(t.done_at)]));
 
 /** One spec change's proposal row and tasks, in the caller's transaction (syncProposal, and 062's push). */
 export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceContext, project: Record<string, unknown>) {
@@ -329,7 +336,10 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
         where delivery.proposal.source = excluded.source
       returning *`);
     if (!row) throw new Error(`${input.key} could not be synced`);
+    // 094 review round 1: the dates a sync may correct are on record too: created, and each task's done date.
+    const datesBefore = before ? await taskDates(tx, before.id as string) : {};
     if (input.tasks) await writeTasks(tx, ctx.tenantId, row.id as string, input.tasks);
+    const datesAfter = await taskDates(tx, row.id as string);
     await markSyncedRows(tx, sql`id = ${row.id}`, input.committedAt);
     // Released belongs to Prod deployments: a sync never takes a proposal back out of it (044 AC-2).
     if (before && before.phase !== row.phase) events.push(phaseEvent(before, row.phase as Phase, ctx));
@@ -337,8 +347,8 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
       result: { key: input.key, created: !before, phaseChanged: events.some((e) => e.name === EVENTS.proposalPhaseChanged) },
       resourceId: row.id as string,
       // 091 review round 1: the owner too, so a sync that changes or clears it is on record (rule 4).
-      before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title, owner: (before.owner_name as string | null) ?? null, ownerUserId: (before.owner_user_id as string | null) ?? null } : null,
-      after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, owner: (row.owner_name as string | null) ?? null, ownerUserId: (row.owner_user_id as string | null) ?? null, ...(rekeyed ? { rekeyed } : {}) },
+      before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title, owner: (before.owner_name as string | null) ?? null, ownerUserId: (before.owner_user_id as string | null) ?? null, createdAt: isoOf(before.created_at), taskDates: datesBefore } : null,
+      after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, owner: (row.owner_name as string | null) ?? null, ownerUserId: (row.owner_user_id as string | null) ?? null, createdAt: isoOf(row.created_at), taskDates: datesAfter, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
 }
@@ -463,7 +473,7 @@ export const voidDeployment = defineService({
     // Only the record that released the proposals can un-release them, and only if no other live
     // record released them too. Voiding a Dev deploy, or one on an environment that has since
     // stopped being Prod, leaves Released alone.
-    const [{ live }] = await tx.execute(sql`select count(*)::int as live from delivery.deployment where release_id = ${release.id} and released and voided_at is null`);
+    const [{ live }] = await tx.execute(sql`select count(*)::int as live from (${liveProdDeployments(sql`${release.id}`)}) x`);
     if (d.released && Number(live) === 0) {
       // Each proposal goes back to the phase it had when a record of this release released it (044
       // AC-1); one released before that phase was recorded goes back to Verified.

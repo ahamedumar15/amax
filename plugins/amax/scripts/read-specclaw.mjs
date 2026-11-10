@@ -92,11 +92,14 @@ function phaseTimesOf(phases) {
   for (const [k, status] of Object.entries(REACHED)) if (phases[k]?.status === status && isTime(phases[k].at)) out[k] = new Date(phases[k].at).toISOString();
   return out;
 }
+var HOUR = 36e5;
 function createdOf(change, phases) {
   const day = change.split(/^## /m)[0].match(/\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})\b/)?.[1];
   const proposed = isTime(phases.proposal?.at) ? new Date(phases.proposal.at).toISOString() : null;
-  if (day && isTime(`${day}T00:00:00Z`)) return proposed?.startsWith(day) ? proposed : `${day}T00:00:00.000Z`;
-  return proposed;
+  if (!day || !isTime(`${day}T00:00:00Z`)) return proposed;
+  const midnight = Date.parse(`${day}T00:00:00Z`);
+  const onDay = proposed !== null && Date.parse(proposed) >= midnight - 14 * HOUR && Date.parse(proposed) < midnight + 36 * HOUR;
+  return onDay ? proposed : `${day}T00:00:00.000Z`;
 }
 var numberOf = (dir) => dir.match(/^(\d{3,})-/)[1];
 var folders = (root, archived) => {
@@ -165,18 +168,26 @@ function authorsOf(root, rev, records, only) {
     }
   });
 }
-var TICK = /^\+- \[x\] `(T\d+)`/;
+var LINE = /^([+-])- \[( |x)\] `(T\d+)`/;
 function tickDates(root, at, path, tasks) {
   if (!tasks.some((t) => t.done)) return tasks;
+  let log;
+  try {
+    log = git(root, "log", at, "--follow", "--format=@@commit %aI", "-p", "--unified=0", "--", path);
+  } catch {
+    return tasks;
+  }
   const dated = /* @__PURE__ */ new Map();
-  let when = "";
-  for (const line of git(root, "log", at, "--follow", "--format=@@commit %aI", "-p", "--unified=0", "--", path).split("\n")) {
-    if (line.startsWith("@@commit ")) {
-      when = line.slice("@@commit ".length);
-      continue;
+  const commits = log.split("\n@@commit ").map((c) => c.replace(/^@@commit /, ""));
+  for (const c of commits) {
+    const [when, ...lines] = c.split("\n");
+    const opened = /* @__PURE__ */ new Set(), ticked = /* @__PURE__ */ new Set();
+    for (const line of lines) {
+      const m = line.match(LINE);
+      if (m?.[1] === "-" && m[2] === " ") opened.add(m[3]);
+      if (m?.[1] === "+" && m[2] === "x") ticked.add(m[3]);
     }
-    const tick = line.match(TICK);
-    if (tick && when && !dated.has(tick[1])) dated.set(tick[1], new Date(when).toISOString());
+    for (const ref of ticked) if (opened.has(ref) && !dated.has(ref)) dated.set(ref, new Date(when).toISOString());
   }
   return tasks.map((t) => t.done && dated.has(t.ref) ? { ...t, doneAt: dated.get(t.ref) } : t);
 }
