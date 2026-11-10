@@ -8,7 +8,12 @@ import { markSynced, syncProposal } from "../server/services";
 import { pushSpecclaw } from "../server/push";
 import { linkProjectRepo } from "../server/repo-sync";
 import { desired } from "../sync/import";
-import { AT_SHA, isRead } from "../sync/sha";
+import { isRead } from "../sync/sha";
+import { instant } from "../sync/instant";
+import { readSpecclaw } from "../sync/specclaw";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { SpecRecord } from "../sync/specclaw";
 import { refOf } from "../sync/withdraw";
 import { proposalDb } from "./proposal-db";
@@ -69,10 +74,10 @@ describe("096 AC-3 a phase's read", () => {
   });
 
   it.each([
-    ["main@4f2c9a1", true], ["feat@v2@4f2c9a1", true], ["@4f2c9a1", false], ["main@", false], ["main@zz", false], ["main", false],
-  ])("isRead(%s) is %s, the rule refOf and the author walk use", (source, want) => {
+    ["main@4f2c9a1", true], ["feat@v2@4f2c9a1", true], ["@4f2c9a1", false], ["main x@4f2c9a1", false], ["main@", false], ["main@zz", false], ["main", false],
+  ])("isRead(%s) is %s, and refOf (withdrawal) agrees", (source, want) => {
     expect(isRead(source)).toBe(want);
-    expect(refOf(source) !== source).toBe(AT_SHA.test(source));
+    expect(refOf(source) !== source).toBe(want);
   });
 });
 
@@ -83,10 +88,29 @@ const record = (releasedAt: string | null, n = "971") => ({ number: n, dir: `${n
   releasedAt, source: "main@abc1234", unreadable: false, duplicate: false, owner: null }) as SpecRecord;
 const RELEASED: [string, string | null, string | null][] = [
   ["a time with an offset", "2026-10-17T03:12:41Z", "2026-10-17T03:12:41.000Z"],
-  ["a time with no offset", "2026-10-17T03:12:41", new Date("2026-10-17T03:12:41").toISOString()],
+  ["a time with no offset, read as UTC on any host", "2026-10-17T03:12:41", "2026-10-17T03:12:41.000Z"],
+  ["a time with a +05:30 offset", "2026-10-17T08:42:41+05:30", "2026-10-17T03:12:41.000Z"],
   ["a day only", "2026-10-17", "2026-10-17T00:00:00.000Z"],
+  ["a legacy (non-ISO) format", "Oct 17 2026 03:12:41", null],
+  ["a date that doesn't exist", "2026-02-30", null],
   ["not a time", "soon", null],
 ];
+// Review round 2: one normaliser (sync/instant.ts) for the reader and the server: the reader's phase times and release
+// time and the server's normalising of a sent one give the same instant.
+describe("096 the reader and the server read a repo time the same way", () => {
+  it.each(RELEASED)("%s", (_, t, want) => {
+    expect(instant(t)).toBe(want);
+    const root = mkdtempSync(join(tmpdir(), "amax-096-"));
+    const dir = join(root, ".specclaw/changes/archive/972-done");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "change.md"), "# Done\n\n**Change:** 972-done\n");
+    writeFileSync(join(dir, "state.json"), JSON.stringify({ phases: { archived: { status: "done", at: t } } }));
+    const [r] = readSpecclaw(root);
+    expect(r.phaseTimes?.archived ?? null).toBe(want);
+    expect(r.releasedAt).toBe(want);
+  });
+});
+
 describe("096 releasedAt normalised where the write is built", () => {
   it.each(RELEASED)("%s", (_, t, want) => {
     expect(desired("FLT", record(t), "abc1234").releasedAt).toBe(want);

@@ -28,6 +28,20 @@ function ownerFromHeader(change) {
   return null;
 }
 
+// modules/delivery/sync/instant.ts
+var ISO = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})?)?$/i;
+function instant(v) {
+  if (typeof v !== "string") return null;
+  const m = ISO.exec(v.trim());
+  if (!m) return null;
+  const [, y, mo, d, h = "00", mi = "00", s = "00", frac = "", zone] = m;
+  const day = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)));
+  if (day.getUTCFullYear() !== Number(y) || day.getUTCMonth() !== Number(mo) - 1 || day.getUTCDate() !== Number(d)) return null;
+  const offset = !zone || zone.toUpperCase() === "Z" ? "Z" : zone.includes(":") ? zone : `${zone.slice(0, 3)}:${zone.slice(3)}`;
+  const t = Date.parse(`${y}-${mo}-${d}T${h}:${mi}:${s}${frac.slice(0, 4)}${offset}`);
+  return Number.isNaN(t) ? null : new Date(t).toISOString();
+}
+
 // modules/delivery/sync/specclaw.ts
 var RANK = { proposed: 0, planned: 1, building: 2, verified: 3, released: 4 };
 var read = (p) => existsSync(p) ? readFileSync(p, "utf8") : "";
@@ -76,7 +90,7 @@ function parse(root, dir, archived, ref) {
     pr: phases.pr?.url ?? status.match(/\|\s*PR\s*\|[^|]*\|\s*(https:\/\/\S+?)\s*\|/)?.[1] ?? null,
     verdict: change.match(/\*\*Verdict:\*\* (\w+)/)?.[1] ?? null,
     updatedAt: stamps.at(-1) ?? null,
-    releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
+    releasedAt: archived ? instant(phases.archived?.at ?? stamps.at(-1)) : null,
     source: ref,
     unreadable: !parsedState.ok,
     createdAt: createdOf(change, phases),
@@ -86,20 +100,23 @@ function parse(root, dir, archived, ref) {
   };
 }
 var REACHED = { proposal: "approved", tasks: "done", verify: "done", pr: "raised", archived: "done" };
-var isTime = (v) => typeof v === "string" && !Number.isNaN(Date.parse(v));
 function phaseTimesOf(phases) {
   const out = {};
-  for (const [k, status] of Object.entries(REACHED)) if (phases[k]?.status === status && isTime(phases[k].at)) out[k] = new Date(phases[k].at).toISOString();
+  for (const [k, status] of Object.entries(REACHED)) {
+    const at = phases[k]?.status === status ? instant(phases[k].at) : null;
+    if (at) out[k] = at;
+  }
   return out;
 }
 var HOUR = 36e5;
 function createdOf(change, phases) {
   const day = change.split(/^## /m)[0].match(/\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})\b/)?.[1];
-  const proposed = isTime(phases.proposal?.at) ? new Date(phases.proposal.at).toISOString() : null;
-  if (!day || !isTime(`${day}T00:00:00Z`)) return proposed;
-  const midnight = Date.parse(`${day}T00:00:00Z`);
+  const proposed = instant(phases.proposal?.at);
+  const dayAt = instant(day);
+  if (!dayAt) return proposed;
+  const midnight = Date.parse(dayAt);
   const onDay = proposed !== null && Date.parse(proposed) >= midnight - 14 * HOUR && Date.parse(proposed) < midnight + 36 * HOUR;
-  return onDay ? proposed : `${day}T00:00:00.000Z`;
+  return onDay ? proposed : dayAt;
 }
 var numberOf = (dir) => dir.match(/^(\d{3,})-/)[1];
 var folders = (root, archived) => {
@@ -140,7 +157,11 @@ import { execFileSync } from "node:child_process";
 // modules/delivery/sync/sha.ts
 var SHA = "[0-9a-f]{7,40}";
 var SHA_RE = new RegExp(`^${SHA}$`, "i");
-var AT_SHA = new RegExp(`@(${SHA})$`, "i");
+var READ = new RegExp(`^(\\S+)@(${SHA})$`, "i");
+var readParts = (source) => {
+  const m = typeof source === "string" ? READ.exec(source) : null;
+  return m ? { ref: m[1], sha: m[2] } : null;
+};
 
 // modules/delivery/sync/authors.ts
 var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 }).trim();
@@ -155,7 +176,7 @@ function authorsOf(root, rev, records, only) {
   const shallow = isShallow(root);
   return records.map((r) => {
     if (shallow || only && r.dir !== only) return { ...r, author: void 0 };
-    const at = r.source?.match(AT_SHA)?.[1] ?? rev;
+    const at = readParts(r.source)?.sha ?? rev;
     const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
     try {
       git(root, "cat-file", "-e", `${at}:${path}`);

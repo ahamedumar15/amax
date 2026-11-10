@@ -1,10 +1,10 @@
 import { isWithdrawn } from "../server/readiness";
-import { AT_SHA } from "./sha";
+import { readParts } from "./sha";
 
 type Row = Record<string, unknown>;
 
 /** "main@4f2c9a1" → "main": the ref a record or proposal was read from, without its commit. Anything else unchanged. */
-export const refOf = (source: unknown) => (typeof source === "string" ? source.replace(AT_SHA, "") : source);
+export const refOf = (source: unknown) => readParts(source)?.ref ?? source;
 
 // 089 review: one rule for every specclaw writer (sync_specclaw's push and the self-sync) on which proposals a sync
 // withdraws. A proposal is eligible when it isn't withdrawn or Released, the sync read the ref that last synced it

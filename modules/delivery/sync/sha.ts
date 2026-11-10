@@ -10,9 +10,14 @@ export function assertSha(sha: string, where: string) {
 }
 
 /**
- * 096 review round 1: the one "<ref>@<sha>" rule for a read (a record's or proposal's `source`): any ref (git allows
- * `@` in one) then `@` and a commit sha. Capture 1 is the sha. Withdrawal (refOf), the author walk and a repo phase's
- * read all use it.
+ * 096 review rounds 1 and 2: the one "<ref>@<sha>" rule for a read (a record's or proposal's `source`): a ref with no
+ * blank in it (git allows `@`), then `@` and a commit sha. Capture 1 is the ref, 2 the sha. Withdrawal (refOf), the
+ * author walk and a repo phase's read all use it, so each gives the same answer.
  */
-export const AT_SHA = new RegExp(`@(${SHA})$`, "i");
-export const isRead = (source: unknown): source is string => typeof source === "string" && AT_SHA.test(source) && source.search(AT_SHA) > 0;
+export const READ = new RegExp(`^(\\S+)@(${SHA})$`, "i");
+export const isRead = (source: unknown): source is string => typeof source === "string" && READ.test(source);
+/** The ref and sha of a read; null when it isn't one. */
+export const readParts = (source: unknown) => {
+  const m = typeof source === "string" ? READ.exec(source) : null;
+  return m ? { ref: m[1], sha: m[2] } : null;
+};

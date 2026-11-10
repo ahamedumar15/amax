@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isRead } from "../sync/sha";
+import { instant } from "../sync/instant";
 
 /** A commit time from a skewed clock or a hand-written payload must not land in the future. */
 export const SKEW_MS = 5 * 60_000;
@@ -17,11 +18,8 @@ export const repoTime = z.string().datetime({ offset: true }).nullable().optiona
  * so the tool input still converts to JSON Schema.
  */
 export const commitTime = z.string().datetime({ offset: true }).refine(notFuture, "committedAt is in the future");
-/**
- * 096 review round 1: a repo time as the reader found it (a state.json `at` may lack an offset, or be only a day): an
- * instant in ISO when it parses, else null. One rule where the write is built (desired()) and where it's stored.
- */
-export const repoInstant = (t: unknown) => (typeof t === "string" && t && !Number.isNaN(Date.parse(t)) ? new Date(t).toISOString() : null);
+/** 096 review rounds 1 and 2: a repo time as sent, as an instant: the reader's own rule (sync/instant.ts), on the server. */
+export const repoInstant = instant;
 /** A repo date amax may store: null when it's absent or in the future. */
 export const knownTime = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 

@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Phase } from "../contracts";
 import { ownerFromHeader } from "./owner-line";
+import { instant } from "./instant";
 
 export type SpecRecord = {
   number: string;
@@ -93,7 +94,7 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     pr: phases.pr?.url ?? status.match(/\|\s*PR\s*\|[^|]*\|\s*(https:\/\/\S+?)\s*\|/)?.[1] ?? null,
     verdict: change.match(/\*\*Verdict:\*\* (\w+)/)?.[1] ?? null,
     updatedAt: stamps.at(-1) ?? null,
-    releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
+    releasedAt: archived ? instant(phases.archived?.at ?? stamps.at(-1)) : null,
     source: ref,
     unreadable: !parsedState.ok,
     createdAt: createdOf(change, phases),
@@ -105,10 +106,13 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
 
 // 094 AC-3: the phases a change reached in the repo, and when: approved, tasks planned, verified, PR raised, archived.
 const REACHED: Record<string, string> = { proposal: "approved", tasks: "done", verify: "done", pr: "raised", archived: "done" };
-const isTime = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
+// 096 review round 2: every repo time goes through instant(), the rule the server applies too.
 function phaseTimesOf(phases: Record<string, { status?: string; at?: string }>) {
   const out: Record<string, string> = {};
-  for (const [k, status] of Object.entries(REACHED)) if (phases[k]?.status === status && isTime(phases[k].at)) out[k] = new Date(phases[k].at!).toISOString();
+  for (const [k, status] of Object.entries(REACHED)) {
+    const at = phases[k]?.status === status ? instant(phases[k].at) : null;
+    if (at) out[k] = at;
+  }
   return out;
 }
 // 094 AC-1: the header's Created day, else the proposal's time in state.json. The header is only a day, in its author's
@@ -117,11 +121,12 @@ function phaseTimesOf(phases: Record<string, { status?: string; at?: string }>) 
 const HOUR = 3_600_000;
 function createdOf(change: string, phases: Record<string, { at?: string }>) {
   const day = change.split(/^## /m)[0].match(/\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})\b/)?.[1];
-  const proposed = isTime(phases.proposal?.at) ? new Date(phases.proposal!.at!).toISOString() : null;
-  if (!day || !isTime(`${day}T00:00:00Z`)) return proposed;
-  const midnight = Date.parse(`${day}T00:00:00Z`);
+  const proposed = instant(phases.proposal?.at);
+  const dayAt = instant(day);
+  if (!dayAt) return proposed;
+  const midnight = Date.parse(dayAt);
   const onDay = proposed !== null && Date.parse(proposed) >= midnight - 14 * HOUR && Date.parse(proposed) < midnight + 36 * HOUR;
-  return onDay ? proposed : `${day}T00:00:00.000Z`;
+  return onDay ? proposed : dayAt;
 }
 
 // "042-release-management" is change 042; numbers past 999 keep all their digits (review round 6).
