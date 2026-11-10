@@ -1,6 +1,6 @@
 # Team time status band
 
-**Change:** 075-team-time-status-band · **Created:** 2026-10-25 · **Review:** covered-by 073-time-workflow-enhancements
+**Change:** 100-team-time-status-band · **Created:** 2026-10-25 · **Review:** covered-by 073-time-workflow-enhancements
 
 ## Problem
 
@@ -22,7 +22,7 @@ sits high against the title's letters. AC-10 and AC-11 cover these.
 
 ## Mock Delta
 
-What changes on screen, and where to see it: [`075-team-time-status-band`](../../mock/index.html#075-team-time-status-band)
+What changes on screen, and where to see it: [`100-team-time-status-band`](../../mock/index.html#100-team-time-status-band)
 
 Team time's header sentence is replaced by a status band of two bars: **Submissions** ("3 of 6", one segment per status)
 and **Who logged it** (agents vs people, with the agents' share). Each status in the legend links to the grid filtered

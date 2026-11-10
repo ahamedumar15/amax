@@ -1,6 +1,6 @@
 # Dev demo data in the main database
 
-**Change:** 074-dev-demo-data · **Created:** 2026-10-25 · **Review:** covered-by 073-time-workflow-enhancements
+**Change:** 099-dev-demo-data · **Created:** 2026-10-25 · **Review:** covered-by 073-time-workflow-enhancements
 
 ## Problem
 
@@ -15,7 +15,7 @@ Production has a worker (`scripts/worker.mjs`) that ticks every minute; `dev` st
 
 ## Mock Delta
 
-What changes on screen, and where to see it: [`074-dev-demo-data`](../../mock/index.html#074-dev-demo-data)
+What changes on screen, and where to see it: [`099-dev-demo-data`](../../mock/index.html#099-dev-demo-data)
 
 No app screen changes. The mock shows the terminal output of `pnpm --filter @amax/web dev` on a fresh database (the
 demo seed runs, then Next starts) and on a second start (nothing new to add), plus Team time for week 43 showing the
@@ -81,7 +81,7 @@ demo data.
   Files: README.md, docs/demo/time-070-073.md, .specclaw/changes/073-time-workflow-enhancements/demo/setup-demo.ps1, .specclaw/changes/073-time-workflow-enhancements/demo/demo-extras.sql, .specclaw/changes/073-time-workflow-enhancements/demo/DEMO.md, .git/info/exclude
   Depends: T1
 - [x] `T4` — Drop the stray local databases and run the live check from the five commands (AC-7, AC-8)
-  Files: .specclaw/changes/074-dev-demo-data/change.md
+  Files: .specclaw/changes/099-dev-demo-data/change.md
   Depends: T1, T3
 - [x] `T5` — `dev` starts the jobs tick beside Next, with the same local guard, a quiet log, and worker.mjs's Windows check (AC-9, AC-10)
   Files: apps/web/scripts/dev.ts, apps/web/scripts/dev-tick.ts, apps/web/scripts/dev-seed.ts, apps/web/scripts/worker.mjs, apps/web/package.json
@@ -89,7 +89,7 @@ demo data.
   Files: apps/web/tests/dev-tick.test.ts
   Depends: T5
 - [x] `T7` — README and demo guide without the manual tick; live check that a bell arrives with no manual tick (AC-11)
-  Files: README.md, docs/demo/time-070-073.md, .specclaw/changes/074-dev-demo-data/change.md
+  Files: README.md, docs/demo/time-070-073.md, .specclaw/changes/099-dev-demo-data/change.md
   Depends: T5
 
 ## Verify

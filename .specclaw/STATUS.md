@@ -15,10 +15,10 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #103 closed
 - 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #104 closed
 - 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed | PR #105 merged
-- 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
+- 📝 **099-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
 - 🔀 **074-fork-pr-review-gate** — pr raised | PR #108 merged
 - 🔀 **075-amaxerp-url** — pr raised | 1/1 tasks (100%) | 0 failed | PR #109 merged
-- 🔍 **075-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
+- 🔍 **100-team-time-status-band** — verify done | 4/4 tasks (100%) | 0 failed
 - 🔍 **076-chat-choice-cards** — verify done | 5/5 tasks (100%) | 0 failed
 - 🔍 **077-time-requests-history** — verify done | 3/3 tasks (100%) | 0 failed
 - 🔍 **078-review-covered-by** — verify done | 4/4 tasks (100%) | 0 failed
@@ -110,7 +110,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - ✅ **059-stable-pins**
 - ✅ **060-privacy-api-hardening**
 - ✅ **061-ci-test-load**
-- ✅ **062-marketing-site**
+- ✅ **101-marketing-site**
 - ✅ **062-specclaw-sync-plugin**
 - ✅ **063-public-assets-in-image**
 - ✅ **064-marketing-revamp**

@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -30,5 +31,14 @@ describe("089 change numbers", () => {
   ])("AC-10 %s", async (_, base, head, mergeBase, failures) => {
     const { check } = (await import(pathToFileURL(join(__dirname, "../../../scripts/check-change-numbers.mjs")).href)) as { check: Check };
     expect(check(base as string[], head as string[], mergeBase as string[]).failures.map((f) => f.replace(/; renumber.*$/, ""))).toEqual(failures);
+  });
+});
+
+describe("098 change numbers", () => {
+  it("AC-1 no two change folders, active or archived, share a number", () => {
+    const root = join(__dirname, "../../../.specclaw/changes");
+    const folders = [...readdirSync(root), ...readdirSync(join(root, "archive"))].filter((d) => /^\d{3,}-/.test(d));
+    const byNumber = folders.reduce((m, d) => m.set(d.match(/^\d+/)![0], [...(m.get(d.match(/^\d+/)![0]) ?? []), d]), new Map<string, string[]>());
+    expect([...byNumber.values()].filter((ds) => ds.length > 1)).toEqual([]);
   });
 });

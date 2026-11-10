@@ -35,6 +35,11 @@ export function gate({ fork, files, changes, load, repo }) {
     if (scope === "covered-by" && by && owners.has(by) && !owners.has(c.name)) owners.set(c.name, owners.get(by));
   }
   for (const change of changes) {
+    const moved = repo.movedFrom?.(change.name);
+    if (moved) {
+      lines.push(`${change.name.padEnd(28)} scope=${"move".padEnd(10)} skip — moved from ${moved}, nothing else changed`);
+      continue;
+    }
     const { scope, ...result } = judge(change, { fork, load, repo, owners });
     if (result.verdict === "fail") ok = false;
     lines.push(`${change.name.padEnd(28)} scope=${scope.padEnd(10)} ${result.verdict} — ${result.reason}`);

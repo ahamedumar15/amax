@@ -1,6 +1,6 @@
 # Marketing site: a public landing page that sells amax, with a short product video
 
-**Change:** 062-marketing-site · **Created:** 2026-10-18
+**Change:** 101-marketing-site · **Created:** 2026-10-18
 **Lane:** Platform · **Module:** `apps/web (public route, proxy), packages/auth (public paths)` · **Depends on:** [001](../archive/001-amax-foundation/change.md)
 
 ## Problem
@@ -9,7 +9,7 @@ A signed-out visitor who opens amax lands on the sign-in screen. Nothing tells a
 
 ## Mock Delta
 
-What changes on screen, and where to see it: [`062-marketing-site`](../../mock/index.html#062-marketing-site)
+What changes on screen, and where to see it: [`101-marketing-site`](../../mock/index.html#101-marketing-site)
 
 A new public page with no app navigation: no rail, top bar or chat launcher. Top bar: logo, Features, How it works, Security, Sign in, "Book a demo". Hero: "Agents keep the records. People decide." with a 40-second product video (poster, play button, captions). Then: the problem (busywork in incumbent tools), how it works in three steps (agents write through MCP, amax asks before it changes anything, people review and decide), a feature grid by area (Delivery, People and payroll, Finance and sales, Operations, Platform), a trust band (every write attributed and audited, role-scoped MCP, region pinning, WCAG 2.2 AA), an "Ask amax" chat preview, and a closing call to action. All sample data is fictional. No testimonials, logos or numbers we don't have.
 
@@ -77,4 +77,4 @@ Commands (in the worktree):
 
 Quality: 360 → 354 duplicated lines
 
-Screenshots: `.specclaw/changes/062-marketing-site/shots/app.png`, `.specclaw/changes/062-marketing-site/shots/mock.png`
+Screenshots: `.specclaw/changes/101-marketing-site/shots/app.png`, `.specclaw/changes/101-marketing-site/shots/mock.png`
