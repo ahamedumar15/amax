@@ -101,25 +101,6 @@ function readSpecclaw(root, overlays = []) {
 // modules/delivery/sync/authors.ts
 import { execFileSync } from "node:child_process";
 var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-function authorsOf(root, rev, records, only) {
-  let shallow = true;
-  try {
-    shallow = git(root, "rev-parse", "--is-shallow-repository") === "true";
-  } catch {
-    shallow = true;
-  }
-  return records.map((r) => {
-    if (shallow || only && r.dir !== only) return { ...r, author: void 0 };
-    const at = r.source?.match(/@([0-9a-f]{7,40})$/i)?.[1] ?? rev;
-    const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
-    try {
-      const lines = git(root, "log", at, "--follow", "--diff-filter=A", "--format=%ae", "--", path).split("\n").filter(Boolean);
-      return { ...r, author: lines.at(-1) ?? null };
-    } catch {
-      return { ...r, author: void 0 };
-    }
-  });
-}
 var isShallow = (root) => {
   try {
     return git(root, "rev-parse", "--is-shallow-repository") === "true";
@@ -127,6 +108,21 @@ var isShallow = (root) => {
     return true;
   }
 };
+function authorsOf(root, rev, records, only) {
+  const shallow = isShallow(root);
+  return records.map((r) => {
+    if (shallow || only && r.dir !== only) return { ...r, author: void 0 };
+    const at = r.source?.match(/@([0-9a-f]{7,40})$/i)?.[1] ?? rev;
+    const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
+    try {
+      git(root, "cat-file", "-e", `${at}:${path}`);
+      const lines = git(root, "log", at, "--follow", "--diff-filter=A", "--format=%ae", "--", path).split("\n").filter(Boolean);
+      return { ...r, author: lines.at(-1) ?? null };
+    } catch {
+      return { ...r, author: void 0 };
+    }
+  });
+}
 
 // plugins/amax/scripts/src/read-specclaw.ts
 var git2 = (cwd, ...args) => execFileSync2("git", args, { cwd, encoding: "utf8" }).trim();

@@ -26,10 +26,18 @@ describe("091 authorsOf", () => {
   it.each([
     ["the author of an open change, not a later editor", { dir: "101-open", phase: "planned" }, "first@example.test"],
     ["the author of an archived change, across the move", { dir: "102-done", phase: "released" }, "second@example.test"],
-    ["a folder git has never seen", { dir: "199-missing", phase: "planned" }, null],
+    ["a folder git has never seen", { dir: "199-missing", phase: "planned" }, undefined],
   ])("AC-7 %s", (_, record, author) => {
     const { root, sha } = repo();
     expect(authorsOf(root, sha, [record])[0].author).toBe(author);
+  });
+
+  // 091 review round 2: a folder in the working tree but not committed at the sha read is unknown, not "nobody".
+  it("AC-7 an uncommitted folder is unknown, so it can't clear an owner", () => {
+    const { root, sha } = repo();
+    mkdirSync(join(root, ".specclaw/changes/103-draft"), { recursive: true });
+    writeFileSync(join(root, ".specclaw/changes/103-draft/change.md"), "# 103\n");
+    expect(authorsOf(root, sha, [{ dir: "103-draft", phase: "proposed" }])[0].author).toBeUndefined();
   });
 
   it("AC-7 a shallow clone can't tell who added a change, so every author is unknown", () => {

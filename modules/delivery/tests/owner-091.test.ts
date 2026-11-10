@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
-import { configureRuntime } from "@amax/core/server";
+import { configureRuntime, traceStep, withTrace } from "@amax/core/server";
 import { installAuthorizer, loadViewer, setGrants, setViewerScopeResolvers, signInDemo, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
@@ -99,6 +99,15 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
     expect(await ownerOf("FLT-541")).toBe("Nimal Silva");
     const stored = await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from delivery.proposal where meta::text ~ '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}' or meta ? 'ownerEmail'`));
     expect(stored[0].n).toBe(0);
+  });
+
+  // 091 review round 2: both transports trace a tool call through traceStep (packages/mcp/src/server.ts,
+  // packages/api/src/rest.ts), which keeps a keyed hash of the arguments, so the emails a sync carries aren't stored.
+  it("AC-7 a sync_specclaw call's trace holds no author email", async () => {
+    const records = readSpecclaw(fakeRepo("561-traced", "**Owner:** traced.owner@example.test")).map((r) => ({ ...r, author: "traced.author@example.test" }));
+    await withTrace({ tenantId: T, actor: `user:${nimal.userId}`, source: "api" }, () => traceStep({ kind: "mcp_call", tool: "sync_specclaw", args: { projectKey: "FLT", records } }));
+    const rows = await withTenant(app, T, (tx) => tx.execute(sql`select count(*) filter (where tool = 'sync_specclaw')::int as calls, count(*) filter (where t::text like '%traced.%@example.test%')::int as leaks from core.trace_event t`));
+    expect(rows[0]).toEqual({ calls: 1, leaks: 0 });
   });
 
   // 091 review round 1: every way a person sets an owner stops the sync from changing it, and so does an owner a person

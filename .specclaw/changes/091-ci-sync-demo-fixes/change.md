@@ -65,6 +65,12 @@ holds them. The CI job summary says how many merged or archived branches it left
    (`sync/authors.ts`); an owner change is audited. AC-1 also leaves out a squash- or rebase-merged branch (its change
    folder already on main as it is).
 
+   *Review round 2:* the blocker that author emails reach `core.trace_event` through the traced arguments was checked
+   and doesn't hold: both transports trace through `traceStep`, which stores `args_key = keyed(args)` (a keyed hash,
+   `packages/core/src/trace.ts`), never the arguments; `owner-091` proves it (a `sync_specclaw` trace step carrying
+   emails leaves none in `core.trace_event`). Fixed the round's minors: one shallow check, and a folder not committed at
+   the sha read is unknown.
+
 ## Tasks
 
 - [x] `T1` — Repo sync card groups skip lines by reason, five keys then "+n more" (AC-5)
