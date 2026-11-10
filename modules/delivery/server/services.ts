@@ -320,7 +320,7 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     // 094 review round 3: the repo's phase times by the one rule, against the row as locked, whoever writes.
     // 095 AC-1: a future created date is unknown here, the one write every sync path reaches.
     const createdAt = knownTime(input.createdAt);
-    const phases = resolveRepoPhases(input.meta.repoPhases, input.meta.source, storedPhasesFor(before, input.sourceRef));
+    const phases = resolveRepoPhases(input.meta.repoPhases, input.meta.source, storedPhasesFor(before));
     const { repoPhases: _sent, ...rest } = input.meta;
     const meta = JSON.stringify(phases ? { ...rest, repoPhases: phases } : rest);
     // 091 AC-7: a spec proposal's owner comes from its repo (the Owner line, else the change's author), never from who

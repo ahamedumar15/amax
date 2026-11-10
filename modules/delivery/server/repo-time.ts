@@ -40,11 +40,14 @@ export type RepoPhase = { at: string; source: string | null };
 export const repoPhasesInMeta = z.partialRecord(PHASE, phaseTime);
 
 /**
- * 096 final pass: the stored phases a write may keep: only the same change's (the row's folder is the one being written)
- * and only while it isn't withdrawn. Another folder taking the key, or a withdrawn row coming back, starts from its read.
+ * 096 final passes: the stored phases a write may keep: the row's, while it's live. A live row is this change, under any
+ * folder name: the default branch may rename a change (091 AC-2, its push carries the new folder), and a branch can't
+ * take a key another folder holds (skipped as "two changes numbered"). A key is reused only once its proposal is
+ * withdrawn (its folder gone), so a withdrawn row, whether its folder comes back or another takes the number, starts from
+ * its read.
  */
-export const storedPhasesFor = (row: Record<string, unknown> | undefined, sourceRef: string) =>
-  row && row.source_ref === sourceRef && !isWithdrawn(row) ? (row.meta as Record<string, unknown> | undefined)?.repoPhases : undefined;
+export const storedPhasesFor = (row: Record<string, unknown> | undefined) =>
+  row && !isWithdrawn(row) ? (row.meta as Record<string, unknown> | undefined)?.repoPhases : undefined;
 
 /**
  * 094 AC-3, 096 AC-1: the one rule for the phase times a write stores, applied where the write is built (desired(), for

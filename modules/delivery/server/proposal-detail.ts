@@ -8,6 +8,7 @@ import { byLine } from "./activity";
 import { proposalWhere, type ProposalRow } from "./queries";
 import { invalid, unavailable } from "./refusal";
 import { resolveRepoPhases } from "./repo-time";
+import { readParts } from "../sync/sha";
 
 export type ProposalTask = { id: string; ref: string; title: string; done: boolean; doneAt: string | null };
 export type ProposalStage = { environment: string; environmentId: string; deploymentId: string | null; isProd: boolean; status: string | null; at: string | null };
@@ -48,7 +49,11 @@ const KIND_OF: Record<string, EventKind> = {
 // 094 AC-3: the phases a spec change reached in its repo (state.json, kept in meta.repoPhases by the sync).
 const REPO_PHASE: Record<string, string> = { proposal: "Approved", tasks: "Tasks planned", verify: "Verified", pr: "PR raised", archived: "Archived" };
 // Rule 4: the repo's own record, not amax's; who worked on the change shows as the proposal's owner and its tasks.
-const repoBy = (source: unknown) => (typeof source === "string" && source ? `From the repo, read at ${source.replace(/@([0-9a-f]{7})[0-9a-f]*$/i, "@$1")}` : "From the repo");
+// 096: by the one read rule (sync/sha.ts); a stored source that isn't a read shows as plain "From the repo".
+const repoBy = (source: unknown) => {
+  const read = readParts(source);
+  return read ? `From the repo, read at ${read.ref}@${read.sha.slice(0, 7)}` : "From the repo";
+};
 async function repoLines(tx: Tx, id: string, only?: Only): Promise<ProposalEvent[]> {
   if (only && only.kind !== "repo") return [];
   const [p] = await tx.execute(sql`select source, meta->'repoPhases' as phases from delivery.proposal where id = ${id}`);

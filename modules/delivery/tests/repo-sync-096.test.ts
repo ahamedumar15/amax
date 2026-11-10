@@ -133,6 +133,28 @@ describe.skipIf(!hasDb)("096 AC-4 sync_proposal and mark_synced bound their time
     await linkProjectRepo(ctxFor(maya), { projectKey: "FLT", repoUrl: "github.com/example/fleet-tracker", defaultBranch: "main" });
   }, 120_000);
 
+  // Pass 4: through the real push (upsertSpecProposal on the locked row): what each case stores in meta.repoPhases.
+  let k = 940;
+  const pushOne = (n: string, dir: string, phaseTimes: Record<string, string>) => pushSpecclaw(maya, { projectKey: "FLT", repoUrl: "github.com/example/fleet-tracker", ref: "main",
+    sha: `0d0f${String(++k).padStart(4, "0")}`, committedAt: new Date(Date.parse("2026-10-19T09:00:00Z") + k * 60_000).toISOString(),
+    records: [{ ...record(null, n), dir, phase: "verified", done: false, status: "ready", phaseTimes }] as never, dryRun: false });
+  const storedPhases = async (n: string) => {
+    const [p] = await db.q(sql`select meta->'repoPhases' as phases from delivery.proposal where key = ${`FLT-${n}`}`);
+    return Object.fromEntries(Object.entries((p.phases ?? {}) as Record<string, { at: string }>).map(([ph, e]) => [ph, e.at]));
+  };
+  const withdraw = (n: string) => db.t.owner`update delivery.proposal set withdrawn_at = now(), withdraw_reason = 'test' where key = ${`FLT-${n}`}`;
+  it.each([
+    ["the same folder stays live: a read that leaves a phase out keeps it", "941", "941-a", async () => {}, "941-a", { proposal: past, verify: later }],
+    ["a rename on the default branch keeps them", "942", "942-old-name", async () => {}, "942-new-name", { proposal: past, verify: later }],
+    ["a withdrawn change's folder coming back starts from its read", "943", "943-a", () => withdraw("943"), "943-a", { proposal: past }],
+    ["another folder taking a withdrawn number starts from its read", "944", "944-a", () => withdraw("944"), "944-b", { proposal: past }],
+  ])("%s", async (_, n, first, between, second, want) => {
+    await pushOne(n, first, { proposal: past, verify: later });
+    await between();
+    await pushOne(n, second, { proposal: past });
+    expect(await storedPhases(n)).toEqual(want);
+  });
+
   // Final pass: the self-sync withdraws a proposal that has recorded repo phases (they're not sent back as times).
   it("the self-sync withdraws a proposal with recorded repo phases, which it keeps", async () => {
     const ctx = ctxFor(maya);
@@ -175,22 +197,17 @@ describe.skipIf(!hasDb)("096 AC-4 sync_proposal and mark_synced bound their time
   });
 });
 
-// 096 final pass: stored phases belong to one change.
-describe("096 stored phases are kept only for the same change", () => {
+// 096 final passes: stored phases belong to the live change, under any folder name.
+describe("096 stored phases are kept while the row is live", () => {
   const phases = { verify: { at: past, source: READ } };
   it.each([
-    ["the same folder, live", { source_ref: "971-a", meta: { repoPhases: phases } }, "971-a", phases],
-    ["another folder took the key", { source_ref: "971-a", meta: { repoPhases: phases } }, "971-b", undefined],
-    ["a withdrawn row coming back", { source_ref: "971-a", withdrawn_at: past, meta: { repoPhases: phases } }, "971-a", undefined],
-    ["withdrawn by its folder going (meta)", { source_ref: "971-a", meta: { withdrawn: true, repoPhases: phases } }, "971-a", undefined],
-    ["no stored row", undefined, "971-a", undefined],
-  ])("%s", (_, row, dir, want) => {
-    expect(storedPhasesFor(row as never, dir)).toEqual(want);
-  });
-
-  it("a new change on a reused key starts from its own read", () => {
-    const d = desired("FLT", { ...record(null, "971"), phase: "verified", phaseTimes: { proposal: later } }, "abc1234", [], { repoPhases: storedPhasesFor({ source_ref: "971-old", meta: { repoPhases: phases } }, "971-released") });
-    expect(d.meta.repoPhases).toEqual({ proposal: later });
+    ["live", { source_ref: "971-a", meta: { repoPhases: phases } }, phases],
+    ["live under another folder name (a rename)", { source_ref: "971-old-name", meta: { repoPhases: phases } }, phases],
+    ["withdrawn (withdrawn_at)", { source_ref: "971-a", withdrawn_at: past, meta: { repoPhases: phases } }, undefined],
+    ["withdrawn by its folder going (meta)", { source_ref: "971-a", meta: { withdrawn: true, repoPhases: phases } }, undefined],
+    ["no stored row", undefined, undefined],
+  ])("%s", (_, row, want) => {
+    expect(storedPhasesFor(row as never)).toEqual(want);
   });
 });
 

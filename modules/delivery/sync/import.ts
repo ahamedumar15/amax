@@ -75,7 +75,7 @@ export function repoDatesStale(cur: Record<string, unknown>, d: { createdAt: str
 
 /** A project's specclaw proposals as stored, with their tasks, for the "changed?" comparison. */
 export const storedSpecRows = (tx: Tx, projectKey: string) =>
-  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at, p.project_id, p.owner_user_id, p.owner_set_by_person, p.created_at,
+  tx.execute(sql`select p.key, p.title, p.phase, p.tasks_done, p.tasks_total, p.meta, p.source_ref, p.synced_commit_at, p.project_id, p.owner_user_id, p.owner_set_by_person, p.created_at, p.withdrawn_at,
                    (select coalesce(json_agg(json_build_object('ref', t.ref, 'title', t.title, 'done', t.done, 'doneAt', t.done_at, 'doneBy', t.done_by) order by length(t.ref), t.ref), '[]') from delivery.task t where t.proposal_id = p.id) as tasks
                  from delivery.proposal p join delivery.project pr on pr.id = p.project_id
                  where pr.key = ${projectKey} and p.source = 'specclaw'`);
@@ -105,7 +105,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
   const dupes = duplicateNumbers(opts.records);
   for (const r of opts.records) {
     const cur = byKey.get(`${opts.projectKey}-${r.number}`);
-    const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? [], { repoPhases: storedPhasesFor(cur, r.dir) });
+    const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? [], { repoPhases: storedPhasesFor(cur) });
     byKey.delete(d.key);
     const why = skipReason(r, dupes);
     if (why) { if (!result.skipped.includes(`${d.key}: ${why.text}`)) result.skipped.push(`${d.key}: ${why.text}`); continue; }

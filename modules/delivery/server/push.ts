@@ -118,7 +118,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
       continue;
     }
     const prior = (cur?.meta ?? {}) as Stored;
-    const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? [], { repoPhases: storedPhasesFor(cur, r.dir) });
+    const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? [], { repoPhases: storedPhasesFor(cur) });
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
     const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
     const why = refusal(d, cur, p.committedAt, onDefault);
