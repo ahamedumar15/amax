@@ -57,4 +57,25 @@ which change keeps its number.
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — `owner-092` AC-1: a person sets the owner while a sync of the same proposal runs; the sync waits at its locked
+  read, keeps the person's owner, and its audit records the same owner before and after.
+- AC-2: pass — `owner-092` AC-2 table (11 forms: trailing punctuation, mailto links, brackets, quotes, markup, unusual local
+  parts). One form stays open: an address written straight after the label (093's follow-ups, for 094).
+- AC-3: pass — `authors-091`: a change that arrived inside a merge commit has an unknown author; `owner-091` shows an unknown
+  author keeps the stored owner.
+- AC-4: pass — `specclaw-sync-ci` AC-1: merged by ancestry or by main having held the branch's version of the folder;
+  squash, squash-then-edit and a stacked branch with newer progress each handled as specified.
+- AC-5: pass — `board-092`: "In Prod · <release>" only for a deployment that released it and isn't voided (re-marking Prod
+  doesn't change it); repo history says "Released · from repo"; the Proposals list and its CSV use the same rule.
+- AC-6: pass — push.ts takes its skips from `skipReason` (now with a code); `repoOwnerStale`'s doc comment is on it.
+- AC-7: pass — the tables above; 089–091 suites and the AMX e2e unchanged.
+
+**Linux CI replica over `fc6d168b`** (the head of the fifth pass; node:24-bookworm, fresh postgres:16-alpine, the `checks`
+job's steps, `AMAX_TEMPORAL_TESTS=0`): `pnpm install --frozen-lockfile`, `pnpm db:migrate` (80), `pnpm lint` (35/35, graph ok),
+`node scripts/check-module-standard.mjs` (22), `pnpm build`: exit 0. `pnpm turbo run test --concurrency=2 --force`: 34/35; the one
+failure is Time's `grid-perf` timing under load (4.0 s against 2 s), which passes alone in the same container. e2e: not_run here
+(the browser download fails on this network); PR #113's CI runs it.
+
+**Review:** `**Review:** covered-by 093-agent-first-proposals`: reviewed in 093's loop (see 093's `## Verify`).

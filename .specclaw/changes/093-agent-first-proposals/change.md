@@ -52,4 +52,46 @@ as today.
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — `agent-first-093` table (agent-first HRI, linked-but-unsynced CON, no-repo FLT): `getProject` gives
+  `agentFirst` and `repoUrl`; `ProjectPage` renders `AgentFirstLine` in place of `NewProposalButton` for it.
+- AC-2: pass — `manualProjects` leaves agent-first projects out; the global page and its chat suggestion offer "New
+  proposal" only while one is left (tested both ways); the `create_proposal` tool and the `delivery.new-proposal` intent tell
+  chat to leave agent-first projects out of "Which project is it for?".
+- AC-3: pass — `proposeCreate` and `createProposal` refuse an agent-first project; the service checks under the project lock,
+  and a manual create racing a first sync is refused once the sync commits (two-transaction test).
+- AC-4: pass — the project's chat suggestion and pin offer no "New proposal" there (table).
+- AC-5: pass — a hand-made proposal already in HRI is still edited; unlinking brings manual creation back.
+- AC-6: pass — the tables above; 081's creation tests pass (three now make their hand-made proposal in FLT, since CON turns
+  agent-first after a spec sync in the same file).
+
+**Linux CI replica over `fc6d168b`** (the head of the fifth pass; node:24-bookworm, fresh postgres:16-alpine, the `checks`
+job's steps, `AMAX_TEMPORAL_TESTS=0`): `pnpm install --frozen-lockfile`, `pnpm db:migrate` (80), `pnpm lint` (35/35, graph ok),
+`node scripts/check-module-standard.mjs` (22), `pnpm build`: exit 0. `pnpm turbo run test --concurrency=2 --force`: 34/35; the one
+failure is Time's `grid-perf` timing under load (4.0 s against 2 s), which passes alone in the same container. e2e: not_run here
+(the browser download fails on this network); PR #113's CI runs it.
+
+**Screenshots:** none taken for this pass: the agent-first line is a header chip covered by `ProjectPage`'s rendered HTML in
+`agent-first-093` and the mock section `093-agent-first-proposals` (compared by eye: not yet).
+
+**Other checks:** `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog, as in 066–092. `specclaw-quality-scan`:
+not_run (jq "Argument list too long" on this host).
+
+### Review loop (2026-11-10)
+
+One loop over **092-ci-sync-owner-and-merge-fixes** (`**Review:** covered-by 093-agent-first-proposals`; its own round 1 didn't
+run, a usage limit) and **093-agent-first-proposals**, scope: commits after `fd8b49f6` (091's verify). Stopped at the five-pass
+cap (AGENTS.md), round 5 escalated on the Owner-line parser, with **0 blockers and 1 major open**, recorded in
+`follow-ups.md` for change 094 with three minors: the Owner-line regex misses an address written straight after the label
+and can back off to a shorter one; the redesign is a token parser, not another pattern.
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | round (opus) | — | 0/3/3: audit read before the lock; In Prod from any release; merge-commit author untested; one rule each for the line, manual projects, skips |
+| 2 | round (opus) | `60fb9920` | 0/1/2: In Prod reads `deployment.released`; comments; push-keeps-owner pointer |
+| 3 | final (opus) | — | 0/1/3: the intent's project choice; whole Owner-line addresses; one owner-frozen rule; check under the lock; relink docs |
+| 4 | final (opus) | — | 0/3/1: list and CSV share In Prod; quotes and markup around the Owner; create-vs-first-sync race test; README |
+| 5 | final (opus) | — | escalate 0/1/3: stopped at the cap (above) |
+
+`specclaw-review verdict`: `Review: ESCALATE — 5 rounds, final pass missing, models opus/opus; last round 0/1/3 b/M/m`.
