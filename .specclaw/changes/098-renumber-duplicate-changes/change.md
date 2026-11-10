@@ -31,17 +31,21 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
 2. **AC-2** The three folders are renamed as in the table. Each one's heading line, `state.json` `change`, `status.md`
    and mock `data-change`/`id` (and its scoped CSS selectors) use the new name. Their history, phases, tasks and
    verdicts are otherwise unchanged.
-3. **AC-3** Every live reference to an old name uses the new one: the R4 review rule (`062-marketing-site`), 073's
-   `## Verify` line that names 074 and 075 as covered, and `.specclaw/STATUS.md`. Records of what already happened keep
+3. **AC-3** Every live reference to an old name uses the new one: the R4 review rule (`062-marketing-site`) and
+   `.specclaw/STATUS.md`. Records of what already happened keep
    the name they had then: review rounds, gate output in `shots/`, `review-memory/findings.jsonl`, the Problem and task
    text of 078 and 089, test titles named after a change (`"062 AC-3 …"`, `062-ac1-landing.test.ts`), and the sample
    names in `packages/testing/tests/change-numbers.test.ts`. (Amended at plan, 2026-11-10: a search finds the old names
    in those records too, and rewriting them would change the record.) Archived 063's and 064's `Depends on` links keep
    `../062-marketing-site/` (amended at build: those changes are archived records, and any edit to 064 fails the fork
-   gate, since it has 16 passes from before the cap).
+   gate, since it has 16 passes from before the cap). 073's `## Verify` line keeps naming 074-dev-demo-data and
+   075-team-time-status-band, because it records what that loop reviewed. (Amended at verify: editing it makes the fork
+   gate judge 073, whose reviewed head `5056a50` isn't in this branch since the stack was rebased. The gate skips the
+   moves under AC-7, so the cover line isn't needed.)
 4. **AC-4** `099-dev-demo-data` and `100-team-time-status-band` still declare `**Review:** covered-by
-   073-time-workflow-enhancements`, and `scripts/check-review-gate.mjs` passes for this branch. If the gate can't
-   follow a renamed covered change, this change says so under `## Verify` and asks the product owner before going on.
+   073-time-workflow-enhancements`, and `scripts/check-review-gate.mjs` passes for this branch, with the moves skipped
+   under AC-7 and 098 judged by its own loop. If the gate can't follow a renamed covered change, this change says so
+   under `## Verify` and asks the product owner before going on.
 5. **AC-5** A sync preview of the whole repo (`sync_specclaw`, `dryRun: true`) shows AMX-062, AMX-074 and AMX-075 created
    for the older folders, and AMX-099, AMX-100 and AMX-101 for the moved ones. It shows no "two changes numbered" skip,
    and `needsReview` is false unless something else needs a person.
@@ -68,8 +72,8 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
 - [x] `T2` — Rename the three folders (`archive/062-marketing-site` → `archive/101-marketing-site`, `074-dev-demo-data` → `099-dev-demo-data`, `075-team-time-status-band` → `100-team-time-status-band`); heading line, `state.json` `change` and `status.md` use the new names; `covered-by 073` kept (AC-2, AC-4)
   Files: .specclaw/changes/archive/101-marketing-site/, .specclaw/changes/099-dev-demo-data/, .specclaw/changes/100-team-time-status-band/
   Depends: T1
-- [x] `T3` — Live references: R4 rule, 073's `## Verify` cover line, `STATUS.md` via `specclaw-update-status` (AC-3)
-  Files: .specclaw/review/rules/R4-marketing-time-claims.md, .specclaw/changes/073-time-workflow-enhancements/change.md, .specclaw/STATUS.md
+- [x] `T3` — Live references: R4 rule, `STATUS.md` via `specclaw-update-status` (AC-3)
+  Files: .specclaw/review/rules/R4-marketing-time-claims.md, .specclaw/STATUS.md
   Depends: T2
 - [x] `T4` — A test that fails when two folders under `.specclaw/changes/` or `archive/` share a number, run against the working tree (AC-1)
   Files: packages/testing/tests/change-numbers.test.ts

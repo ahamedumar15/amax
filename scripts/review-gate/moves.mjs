@@ -1,8 +1,6 @@
 const NUMBERED = /^(\d{3,})-(.+)$/;
 const neutral = (text, names) => names.reduce((out, name) => out.split(name).join("\0change\0"), text);
 
-// 098 AC-7: a folder this PR only moved to a new number (same slug, old one gone, every file the same apart from the
-// change's own name) carries no new work, so the gate has nothing to judge in it.
 export function movedFrom(name, { baseDirs, headDirs, filesAt }) {
   const slug = NUMBERED.exec(name)?.[2];
   if (!slug || baseDirs.includes(name)) return null;
