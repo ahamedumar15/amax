@@ -13,7 +13,7 @@ import { TaskInput } from "./tasks";
 import { notFound } from "./refusal";
 import { repoOwnerStale } from "./owner";
 import { isWithdrawn } from "./readiness";
-import { duplicateNumbers } from "../sync/duplicates";
+import { duplicateNumbers, skipReason } from "../sync/duplicates";
 import { ownerEmailOf } from "../sync/authors";
 import { SHA_RE } from "../sync/sha";
 import { planWithdrawals } from "../sync/withdraw";
@@ -102,8 +102,14 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
   for (const r of mine) {
     const key = `${p.projectKey}-${r.number}`;
     const cur = byKey.get(key);
-    const dupe = dupes.get(r.number);
-    if (dupe) { if (!counts.skipped.includes(`${key}: ${dupe}`)) skip(key, ["duplicate", dupe]); continue; }
+    // 092 AC-6: what the sync skips is decided by its own rule (skipReason, shared with the self-sync); the push keeps
+    // its codes, and its short wording for an unreadable state.json.
+    const skipWhy = skipReason(r, dupes);
+    if (skipWhy) {
+      const [code, text]: [Code, string] = dupes.has(r.number) ? ["duplicate", skipWhy] : ["unreadable", "state.json unreadable"];
+      if (!counts.skipped.includes(`${key}: ${text}`)) skip(key, [code, text]);
+      continue;
+    }
     // 091 AC-2: a branch holds one folder, so it can't see that the key belongs to another; the default branch may
     // rename a change (its push carries only the new folder).
     // A withdrawn proposal's folder is gone from the default branch, so its number is free again (final pass).
@@ -112,7 +118,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     const prior = (cur?.meta ?? {}) as Stored;
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
     const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
-    const why = r.unreadable ? (["unreadable", "state.json unreadable"] as [Code, string]) : refusal(d, cur, p.committedAt, onDefault);
+    const why = refusal(d, cur, p.committedAt, onDefault);
     if (why) { skip(key, why); continue; }
     // 091 AC-7: unchanged files, but the owner the repo names may resolve differently now (a git identity linked since).
     const ownerEmail = ownerEmailOf(r);

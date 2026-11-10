@@ -156,13 +156,16 @@ describe("089 CI specclaw sync through sync_specclaw", () => {
     // A branch named after no change folder (a typo): pushed, so amax flags it, never counted as merged.
     git("checkout", "-qb", "specclaw/106-typo"); change("106-typoo"); commit(); remote("specclaw/106-typo");
     git("checkout", "-q", "main");
+    // 092 AC-4: a stacked PR brought main an older copy of 107 later; the branch has moved on, so it's still pushed.
+    git("checkout", "-qb", "specclaw/107-stacked"); change("107-stacked"); commit(); writeFileSync(join(root, ".specclaw/changes/107-stacked/change.md"), "# 107 v2\n"); commit(); remote("specclaw/107-stacked");
+    git("checkout", "-q", "main"); change("107-stacked"); commit();
     return root;
   }
 
   it("AC-1 pushes main and open branches only, and says what it left out", async () => {
     const { calls, fetchImpl } = fakeAmax(() => ({ body: { result: ok() } })), o = collect();
     expect(await run({ env: ENV, root: branchedRepo(), fetchImpl, out: o.out })).toBe(0);
-    expect(calls.map((c) => c.args.ref)).toEqual(["main", "specclaw/104-open", "specclaw/106-typo"]);
+    expect(calls.map((c) => c.args.ref)).toEqual(["main", "specclaw/104-open", "specclaw/106-typo", "specclaw/107-stacked"]);
     expect(o.lines).toContain("left out 3 merged or archived branches");
     expect(o.warnings).toContain("specclaw/101-reused: left out, its number is already used on the default branch by 101-base; renumber it");
   }, 30_000);

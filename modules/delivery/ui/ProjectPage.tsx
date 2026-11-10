@@ -1,4 +1,5 @@
 import { can } from "@amax/auth";
+import { releasedLabel } from "./released";
 import type { ScreenProps } from "@amax/core";
 import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
@@ -61,7 +62,7 @@ function Card({ p, suggested, mine = false }: { p: ProposalRow; suggested: boole
           {(p.phase === "planned" || p.phase === "building") && (p.tasksTotal ? `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}` : `No tasks yet${p.phase === "building" ? `, ${p.hours} h` : ""}`)}
           {p.phase === "verified" && p.source !== "specclaw" && <span className="chip">{p.release ?? "No release"}{p.shippedTo ? `, in ${p.shippedTo}` : ""}</span>}
           {p.phase === "verified" && p.source === "specclaw" && `${p.tasksDone} of ${p.tasksTotal} tasks`}
-          {p.phase === "released" && <span className="chip good">In Prod</span>}
+          {p.phase === "released" && <span className={releasedLabel(p).prod ? "chip good" : "chip"}>{releasedLabel(p).text}</span>}
         </span>
       </div>
       {suggested && <div className="foot" style={{ marginTop: 8 }}><a className="chip agent" href={proposalHref(p.key)} aria-label={`amax suggests something for ${p.key}: open it`}>amax suggests</a></div>}

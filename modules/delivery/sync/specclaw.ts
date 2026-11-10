@@ -91,8 +91,9 @@ function parse(root: string, dir: string, archived: boolean, ref: string): Raw |
     releasedAt: archived ? phases.archived?.at ?? stamps.at(-1) ?? null : null,
     source: ref,
     unreadable: !parsedState.ok,
-    // 091 final pass: the email anywhere on the header's Owner line: bare, `quoted`, <bracketed> or "Name <email>".
-    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?([^\s`·<>()"']+@[^\s`·<>()"']+\.[^\s`·<>()"']+)/)?.[1] ?? null,
+    // 091 final pass, 092 AC-2: the first email anywhere on the header's Owner line (bare, `quoted`, <bracketed>, "Name
+    // <email>", a mailto link), as an address ending in a letter-only domain, so punctuation around it isn't taken in.
+    owner: change.split(/^## /m)[0].match(/\*\*Owner:\*\*[^\n]*?([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/)?.[1] ?? null,
   };
 }
 

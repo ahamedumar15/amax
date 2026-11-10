@@ -18,14 +18,18 @@ const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" 
 // commits aren't, the branch's change folder already being on main exactly as the branch has it. Only when the branch
 // has that folder: a path missing on both sides diffs as equal, and a branch named after no change must still be
 // pushed, so amax flags it ("no change is named …", 091 final pass).
-// 091 final pass: also when main has touched that folder since the branch's last commit (a squash merge, then edits on
-// main before archiving): the branch has nothing main doesn't, and pushing it would only be refused as stale.
+// 092 AC-4: by content or ancestry, never by commit times (which can't tell which side is ahead). Merged when the
+// branch's last commit touching the folder is in main's history, or main has at some point held exactly the branch's
+// version of the folder (a squash merge, even if main edited it after). A branch whose folder main never had as the
+// branch has it (a stacked PR that brought main an older copy) is pushed.
+const MAIN_HISTORY = 200;
 const sameOnMain = (root, b) => {
   const path = `.specclaw/changes/${b.slice("origin/specclaw/".length)}`;
-  try { git(root, "cat-file", "-e", `${b}:${path}`); } catch { return false; }
-  try { git(root, "diff", "--quiet", b, "HEAD", "--", path); return true; } catch { /* differs: compare times */ }
-  const mainTouched = Number(git(root, "log", "-1", "--format=%ct", "HEAD", "--", path) || 0);
-  return mainTouched > 0 && mainTouched >= Number(git(root, "log", "-1", "--format=%ct", b));
+  let tree;
+  try { tree = git(root, "rev-parse", `${b}:${path}`); } catch { return false; }
+  try { git(root, "merge-base", "--is-ancestor", git(root, "log", "-1", "--format=%H", b, "--", path), "HEAD"); return true; } catch { /* not in main's history */ }
+  const onMain = git(root, "log", `-${MAIN_HISTORY}`, "--format=%H", "HEAD", "--", path).split("\n").filter(Boolean);
+  return onMain.some((c) => { try { return git(root, "rev-parse", `${c}:${path}`) === tree; } catch { return false; } });
 };
 const merged = (root, b) => { try { git(root, "merge-base", "--is-ancestor", b, "HEAD"); return true; } catch { return sameOnMain(root, b); } };
 

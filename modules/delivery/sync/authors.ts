@@ -31,7 +31,8 @@ export function authorsOf<T extends Readable>(root: string, rev: string, records
     try {
       git(root, "cat-file", "-e", `${at}:${path}`);
       const lines = git(root, "log", at, "--follow", "--diff-filter=A", "--format=%ae", "--", path).split("\n").filter(Boolean);
-      return { ...r, author: lines.at(-1) ?? null };
+      // 092 AC-3: the file is in the tree, so a missing add commit means git couldn't tell, not "nobody".
+      return { ...r, author: lines.at(-1) };
     } catch {
       return { ...r, author: undefined };
     }
