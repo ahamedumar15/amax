@@ -89,8 +89,8 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
 
 ## Verify
 
-**Verdict:** PASS. The review stopped at pass 4 of 5 by the product owner's decision, with 0 blockers and 1 major open
-(recorded below).
+**Verdict:** PASS. The review is clean at pass 5 of 5 (final pass at `38b4582`). The pass-4 major is recorded below as a
+known limit.
 
 - AC-1: pass. `packages/testing/tests/change-numbers.test.ts` "098 … AC-1" passes on the tree, and it fails with a
   temporary `099-probe-duplicate` folder (tried, then removed). `read-specclaw` finds no shared number across all 101
@@ -128,10 +128,15 @@ and [`101-marketing-site`](../../mock/index.html#101-marketing-site). Both mock 
   AC-7 states the pairing.
 - Round 4 (final, `e1ed67d`): 0 blockers, 1 major, 2 minors. `specclaw-review verdict`: "OPEN — 4 rounds, final pass
   missing, models opus/opus; last round 0/1/2 b/M/m".
-- **Stop, with 1 major open (product owner, 2026-11-10).** 099 and 100 still declare `covered-by 073`, while 073's
+- **Known limit, recorded at pass 4 (product owner, 2026-11-10).** 099 and 100 still declare `covered-by 073`, while 073's
   `## Verify` names them by their old names, so a later fork PR that touches 099 or 100 can't pass through 073. This
   was already true before 098, because 073's reviewed head `5056a50` isn't in this branch since the stack rebase (the
   gate reported "not in this PR" at verify). Any later fork PR that edits 099 or 100 needs its own review loop and
   must drop `covered-by`. This is recorded in `follow-ups.md`.
-- Minors from the final pass: the mock banner comments are fixed. The marketing tests titled `062 AC…` are kept as
-  records (AC-3). The shared change-folder pattern and listing is in `follow-ups.md`.
+- Minors from pass 4: the mock banner comments are fixed. The marketing tests titled `062 AC…` are kept as records
+  (AC-3). The shared change-folder pattern and listing is in `follow-ups.md`.
+- Round 5 (final, `38b4582`): clean, 0 blockers, 0 majors, 1 minor plus 1 pre-existing (both already in
+  `follow-ups.md`). `specclaw-review verdict`: "CLEAN — 5 rounds, final pass 38b4582f5a, models opus/opus; last round
+  0/0/1 b/M/m". It ran because PR #115's review-gate failed: the banner fix in `338348e` touched
+  `apps/mock/public/mock/index.html` after the pass-4 final, so covered-by changes 082–086 and 092 (in #115 through the
+  stack) found a commit that no loop in the PR had reviewed. A final pass at HEAD credits it to 098's loop.
