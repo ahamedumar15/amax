@@ -20,12 +20,22 @@ const merged = (root, b) => { try { git(root, "merge-base", "--is-ancestor", b, 
  * The open specclaw/* branches the checkout knows, each read from its own tree (a branch without .specclaw is
  * skipped). 091 AC-1: a branch already merged into the checked-out default branch, or whose change that branch has
  * archived, is left out: its folder still says "PR raised", so pushing it would bring finished work back as Verified.
+ * So is one whose change number the default branch already uses for another folder: amax can't see the default
+ * branch's folders during a branch push, so the branch would take that key (its PR fails the number check anyway).
  */
-function branches(root, archived, out) {
+function branches(root, main, out) {
+  const archived = new Set(main.filter((r) => r.phase === "released").map((r) => r.dir));
+  const folders = new Map();
+  for (const r of main) folders.set(r.number, [...(folders.get(r.number) ?? []), r.dir]);
   const refs = git(root, "branch", "-r", "--format=%(refname:short)").split("\n").filter((b) => b.startsWith("origin/specclaw/"));
   const open = refs.filter((b) => !merged(root, b) && !archived.has(b.slice("origin/specclaw/".length)));
   if (refs.length > open.length) out.line(`left out ${refs.length - open.length} merged or archived branches`);
-  return open.flatMap((b) => {
+  const taken = (b) => {
+    const dir = b.slice("origin/specclaw/".length), others = (folders.get(dir.match(/^(\d{3,})-/)?.[1]) ?? []).filter((d) => d !== dir);
+    if (others.length) out.warn(`${b.slice("origin/".length)}: left out, its number is already used on the default branch by ${others.join(", ")}; renumber it`);
+    return others.length > 0;
+  };
+  return open.filter((b) => !taken(b)).flatMap((b) => {
     try { git(root, "cat-file", "-e", `${b}:.specclaw`); } catch { return []; }
     const dir = mkdtempSync(join(tmpdir(), "specclaw-branch-"));
     execFileSync("tar", ["-x", "-C", dir], { input: execFileSync("git", ["archive", b, ".specclaw"], { cwd: root, maxBuffer: 256 * 1024 * 1024 }) });
@@ -79,8 +89,7 @@ export async function run({ env = process.env, root = process.cwd(), fetchImpl =
   const attempt = async (fn) => { try { await fn(); } catch (e) { failed++; out.error(e.message); } };
   const { records, ...base } = main;
   await attempt(() => pushRef(env, fetchImpl, base, records, true, out));
-  const archived = new Set(records.filter((r) => r.phase === "released").map((r) => r.dir));
-  for (const b of branches(root, archived, out)) {
+  for (const b of branches(root, records, out)) {
     await attempt(() => pushRef(env, fetchImpl, { projectKey: main.projectKey, repoUrl: main.repoUrl, ref: b.ref, sha: b.sha, committedAt: b.committedAt }, b.records, false, out));
     rmSync(b.dir, { recursive: true, force: true });
   }

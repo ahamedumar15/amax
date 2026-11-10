@@ -25,6 +25,11 @@ holds them. The CI job summary says how many merged or archived branches it left
 1. **AC-1** CI pushes only open branches. A `specclaw/*` branch is left out when its tip is already in the checked-out
    default branch (merged), or when its change folder is archived there. The job summary says so in one line ("left
    out 61 merged or archived branches"). The rest are pushed as before.
+
+   *Build note (demo re-run, 2026-11-10):* also left out, with a warning naming the folder, is an open branch whose
+   change number the default branch already uses for another folder. amax can't see the default branch's folders
+   during a branch push, so AC-2 had no stored row to compare when main skips that number as a duplicate, and
+   `specclaw/062-mock-unclosed-sections` created AMX-062. Its PR fails the number check (089 AC-10) anyway.
 2. **AC-2** A branch push can't take over a key that the default branch holds for another folder. On a ref other than
    the default branch, a record whose stored proposal came from a different folder (`source_ref`) is skipped with
    "two changes numbered NNN: <stored folder>, <this folder>" and sets needsReview. The default branch may still

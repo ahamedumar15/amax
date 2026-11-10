@@ -146,13 +146,16 @@ describe("089 CI specclaw sync through sync_specclaw", () => {
     git("checkout", "-q", "main"); change("103-archived", true); commit();
     git("checkout", "-qb", "specclaw/104-open"); change("104-open"); commit(); remote("specclaw/104-open");
     git("checkout", "-q", "main");
+    git("checkout", "-qb", "specclaw/101-reused"); change("101-reused"); commit(); remote("specclaw/101-reused");
+    git("checkout", "-q", "main");
     return root;
   }
 
-  it("AC-1 pushes main and open branches only, and says how many it left out", async () => {
+  it("AC-1 pushes main and open branches only, and says what it left out", async () => {
     const { calls, fetchImpl } = fakeAmax(() => ({ body: { result: ok() } })), o = collect();
     expect(await run({ env: ENV, root: branchedRepo(), fetchImpl, out: o.out })).toBe(0);
     expect(calls.map((c) => c.args.ref)).toEqual(["main", "specclaw/104-open"]);
     expect(o.lines).toContain("left out 2 merged or archived branches");
+    expect(o.warnings).toContain("specclaw/101-reused: left out, its number is already used on the default branch by 101-base; renumber it");
   }, 30_000);
 });
