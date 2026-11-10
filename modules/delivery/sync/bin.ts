@@ -9,6 +9,7 @@ import { configureRuntime } from "@amax/core/server";
 import { authenticateToken, installAuthorizer, principalContext } from "@amax/auth";
 import { readSpecclaw } from "./specclaw";
 import { syncSpecclaw } from "./import";
+import { assertSha } from "./sha";
 
 const { values } = parseArgs({
   options: { repo: { type: "string" }, overlay: { type: "string", multiple: true }, project: { type: "string", default: "AMX" }, name: { type: "string", default: "amax" },
@@ -18,10 +19,13 @@ const env = process.env;
 for (const k of ["DATABASE_URL", "AMAX_SYNC_TOKEN", "AUDIT_HASH_KEY"]) if (!env[k]) throw new Error(`set ${k}`);
 if (!values.repo) throw new Error("--repo is required");
 if (!values.sha) throw new Error("--sha is required (the main commit the repo was read at)");
+// 091 AC-3: checked before anything is read, so a bad sha can't leave refs that never match.
+assertSha(values.sha, "--sha");
 // Each overlay is <dir>=<branch>@<sha>, so every synced phase can be traced to the commit it came from.
 const overlays = (values.overlay ?? []).map((o) => {
   const [dir, ref] = o.split("=");
   if (!dir || !ref) throw new Error(`--overlay must be <dir>=<branch>@<sha>, got ${o}`);
+  assertSha(ref.split("@").at(-1) ?? "", `--overlay ${o}`);
   return { dir, ref };
 });
 

@@ -121,4 +121,38 @@ describe("089 CI specclaw sync through sync_specclaw", () => {
     await run({ env: { ...ENV, AMAX_CONFIRM_WITHDRAW: given as string }, root: repo(["101-export"], { name: "specclaw/102-import", dirs: ["101-export", "102-import"] }), fetchImpl, out: collect().out });
     expect(calls.map((c) => [c.args.ref, c.args.confirmWithdraw])).toEqual([["main", expected], ["specclaw/102-import", undefined]]);
   });
+
+  // 091 AC-1: a merged branch, or one whose change main has archived, still says "PR raised"; CI leaves it out.
+  function branchedRepo() {
+    const root = mkdtempSync(join(tmpdir(), "specclaw-ci-091-"));
+    const git = (...a: string[]) => execFileSync("git", a, { cwd: root, encoding: "utf8" }).trim();
+    const change = (dir: string, archived = false) => {
+      const base = join(root, ".specclaw/changes", archived ? "archive" : "", dir);
+      mkdirSync(base, { recursive: true });
+      writeFileSync(join(base, "change.md"), `# ${dir}\n\n**Change:** ${dir}\n\n\n`);
+    };
+    const commit = () => { git("add", "-A"); git("commit", "-qm", "fixture"); };
+    const remote = (name: string) => git("update-ref", `refs/remotes/origin/${name}`, git("rev-parse", "HEAD"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "fixture@example.test");
+    git("config", "user.name", "Fixture");
+    git("remote", "add", "origin", "https://github.com/example/fleet-tracker.git");
+    mkdirSync(join(root, ".specclaw"), { recursive: true });
+    writeFileSync(join(root, ".specclaw/config.yaml"), "amax:\n  project: FLT\n");
+    change("101-base"); commit();
+    git("checkout", "-qb", "specclaw/102-merged"); change("102-merged"); commit(); remote("specclaw/102-merged");
+    git("checkout", "-q", "main"); git("merge", "-q", "--ff-only", "specclaw/102-merged");
+    git("checkout", "-qb", "specclaw/103-archived"); change("103-archived"); commit(); remote("specclaw/103-archived");
+    git("checkout", "-q", "main"); change("103-archived", true); commit();
+    git("checkout", "-qb", "specclaw/104-open"); change("104-open"); commit(); remote("specclaw/104-open");
+    git("checkout", "-q", "main");
+    return root;
+  }
+
+  it("AC-1 pushes main and open branches only, and says how many it left out", async () => {
+    const { calls, fetchImpl } = fakeAmax(() => ({ body: { result: ok() } })), o = collect();
+    expect(await run({ env: ENV, root: branchedRepo(), fetchImpl, out: o.out })).toBe(0);
+    expect(calls.map((c) => c.args.ref)).toEqual(["main", "specclaw/104-open"]);
+    expect(o.lines).toContain("left out 2 merged or archived branches");
+  }, 30_000);
 });

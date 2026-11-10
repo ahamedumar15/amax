@@ -3522,6 +3522,32 @@ specclaw/076-late-fees 51b9a07 → CON: applied
  synced", and a passing job. Some set and some missing: the job fails.)</pre></div>
 </section>
 
+<!-- ================= 091 CI sync demo fixes ================= -->
+<section data-change="091-ci-sync-demo-fixes" id="091-ci-sync-demo-fixes" data-roles="admin leadership pm engineer" data-title="Repo sync (grouped)" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span>Contoso Portal (fictional)</nav>
+  <h1>Repo sync</h1>
+  <p class="lede">The first push from main brought in the whole history: 52 finished changes landed in Released, 14 open ones in their lanes. 1 push needs you.</p>
+  <div class="card flush" style="margin-top:20px"><div class="card-head"><h2>Recent pushes</h2><button class="btn sm">✦ Ask amax to change the linked repo</button></div>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>When</th><th>By</th><th>Ref</th><th>Result</th><th></th></tr></thead><tbody>
+    <tr><td>10:05</td><td>amax CI · for Kasun Dias</td><td>main 7c1e2d4</td><td><span class="chip warn">Needs you</span> 66 created · 0 updated · 0 unchanged · 2 skipped
+      <small class="muted" style="display:block;margin-top:4px">two changes numbered … (2): CON-074, CON-075</small></td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>10:05</td><td>amax CI · for Kasun Dias</td><td>specclaw/076-late-fees 51b9a07</td><td><span class="chip good">Applied</span> 1 updated (CON-076 planned → building)</td><td><button class="btn sm">📌</button></td></tr>
+    <tr><td>10:05</td><td>amax CI · for Kasun Dias</td><td>specclaw/074-audit-filters 9d02b11</td><td><span class="chip warn">Needs you</span> 0 updated · 1 skipped
+      <small class="muted" style="display:block;margin-top:4px">two changes numbered 074: 074-invoice-export, 074-audit-filters (1): CON-074</small></td><td><button class="btn sm">📌</button></td></tr>
+    </tbody></table></div></div>
+  <div class="tickets four" style="margin-top:20px">
+    <div class="ticket t-mint"><div class="k">Released <span class="chip">📌</span></div><div class="v">52</div><div class="p">History from the repo's archive</div></div>
+    <div class="ticket t-violet"><div class="k">Verified <span class="chip">📌</span></div><div class="v">3</div><div class="p">Open PRs only</div></div>
+  </div>
+  <div class="card" style="margin-top:20px;max-width:620px"><div class="card-head"><h2>CI job summary (GitHub Actions)</h2></div>
+<pre style="white-space:pre-wrap;font-size:13px">main 7c1e2d4 → CON: applied
+  66 created · 0 updated · 0 withdrawn · 0 unchanged · 2 skipped
+left out 61 merged or archived branches
+specclaw/076-late-fees 51b9a07 → CON: applied
+specclaw/074-audit-filters 9d02b11 → CON: applied
+  ⚠ CON-074: two changes numbered 074: 074-invoice-export, 074-audit-filters</pre></div>
+</section>
+
 <!-- ================= 028 Keyflow sync ================= -->
 <section data-change="028-keyflow-sync" id="028-keyflow-sync" data-roles="admin hr" data-title="Keyflow" data-nav="no" data-parent="038-settings" data-icon="plug">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span><a href="#001-amax-foundation-integrations">Integrations</a><span>/</span>Keyflow</nav>

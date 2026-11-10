@@ -1,14 +1,18 @@
 import { isWithdrawn } from "../server/readiness";
+import { SHA } from "./sha";
 
 type Row = Record<string, unknown>;
 
+const AT_SHA = new RegExp(`@${SHA}$`, "i");
+
 /** "main@4f2c9a1" → "main": the ref a record or proposal was read from, without its commit. Anything else unchanged. */
-export const refOf = (source: unknown) => (typeof source === "string" ? source.replace(/@[0-9a-f]{7,40}$/i, "") : source);
+export const refOf = (source: unknown) => (typeof source === "string" ? source.replace(AT_SHA, "") : source);
 
 // 089 review: one rule for every specclaw writer (sync_specclaw's push and the self-sync) on which proposals a sync
 // withdraws. A proposal is eligible when it isn't withdrawn or Released, the sync read the ref that last synced it
 // (`refs`: the push's default branch; the refs of the self-sync's records, so main and the branches it took changes
-// from, never a branch whose only change isn't on main yet), and no newer commit has synced it (push.ts's stale rule). An eligible proposal whose folder the sync didn't read is withdrawn.
+// from, never a branch whose only change isn't on main yet), and no newer commit has synced it (push.ts's stale rule).
+// An eligible proposal whose folder the sync didn't read is withdrawn.
 // A sync that read nothing withdraws nothing. One that would withdraw more than half of the eligible proposals (and
 // more than two) is held: an unreadable or wrong checkout looks exactly like "every folder was deleted". A person
 // confirms a real mass deletion by syncing again with `confirm` set to the held count.

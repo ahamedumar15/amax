@@ -2,6 +2,7 @@ import { PinButton, Since } from "@amax/ui";
 import { pushPin, repoSyncPin } from "../pins";
 import type { PushRow } from "../server/repo-sync";
 import { AskButton } from "./AskButton";
+import { groupSkips } from "./skips";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
 const result = (p: PushRow) => p.outcome === "refused" ? p.reason ?? "refused"
@@ -46,7 +47,7 @@ export function RepoSyncCard({ projectKey, projectId, repoUrl, last, recent, can
                 <td data-label="When">{when(p.at)}</td>
                 <td data-label="By">{p.by}</td>
                 <td data-label="Commit"><code>{p.ref}@{p.sha.slice(0, 7)}</code></td>
-                <td data-label="Result">{outcomeChip(p)} {result(p)}{p.needsReview && p.skipped.length > 0 && <small className="muted dv-skips">{p.skipped.join("; ")}</small>}</td>
+                <td data-label="Result">{outcomeChip(p)} {result(p)}{p.needsReview && p.skipped.length > 0 && <small className="muted dv-skips">{groupSkips(p.skipped).join("; ")}</small>}</td>
                 <td className="num"><PinButton pin={pushPin({ ...p, projectKey })} /></td>
               </tr>
             ))}

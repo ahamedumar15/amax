@@ -46,7 +46,8 @@ What amax accepts:
 - **Where:** only the project's linked repo. An unknown project is refused: amax never creates one from a push.
 - **What:** a push from the default branch stored with the link covers every change. A push from any other branch covers
   only its own change (`specclaw/<NNN-slug>`), since it may have been cut from an older main. Never
-  Released, which comes from Prod deployments. Never a step back to an earlier phase. Never a proposal
+  moves a proposal to Released, which comes from Prod deployments; a finished change amax has never seen comes in
+  from the default branch as Released history. Never a step back to an earlier phase. Never a proposal
   made by hand or from another source.
 - **When:** never a proposal from a commit older than the one it was last pushed from. A commit time in
   the future is refused. Pushes to one project run one at a time, and each push applies all of its
@@ -63,7 +64,7 @@ Each project's page in amax shows a **Repo sync** card: the linked repo, the las
 
 `.github/workflows/specclaw-sync.yml` pushes after every merge to `main` that touches `.specclaw/`, through the same
 `sync_specclaw` tool, so merged changes reach the board without anyone running the skill. It pushes `main` first,
-then each `specclaw/*` branch. When the whole of `main` fits in one push (200 changes or fewer), it also withdraws a
+then each open `specclaw/*` branch (merged or archived ones are left out). When the whole of `main` fits in one push (200 changes or fewer), it also withdraws a
 proposal whose folder was deleted from `main`. To set it up:
 
 1. In amax chat, as an Admin, create a credential for it: "create an API credential named amax CI with scope

@@ -12,6 +12,7 @@ import { KeyTakenError, markSyncedRows, upsertSpecProposal } from "./services";
 import { TaskInput } from "./tasks";
 import { notFound } from "./refusal";
 import { duplicateNumbers } from "../sync/duplicates";
+import { SHA_RE } from "../sync/sha";
 import { planWithdrawals } from "../sync/withdraw";
 
 // 062: sync_specclaw, a repo's specclaw state pushed from a developer's machine. amax decides what it
@@ -36,7 +37,7 @@ export const MAX_PUSH = 200;
 // A commit time from a skewed clock or a hand-written payload must not make every later push "stale".
 const SKEW_MS = 5 * 60_000;
 export const PushInput = z.object({
-  projectKey: z.string(), repoUrl: RepoUrl, ref: z.string().min(1).max(200), sha: z.string().regex(/^[0-9a-f]{7,40}$/i),
+  projectKey: z.string(), repoUrl: RepoUrl, ref: z.string().min(1).max(200), sha: z.string().regex(SHA_RE, "sha must be a commit sha (7 to 40 hex characters)"),
   committedAt: z.string().datetime({ offset: true }).refine((t) => Date.parse(t) <= Date.now() + SKEW_MS, "committedAt is in the future"),
   dryRun: z.boolean().default(true), records: z.array(SpecRecordInput).max(MAX_PUSH),
   // 089 AC-6: the push carries every change on the default branch (not one batch of several), so a folder it doesn't
@@ -59,8 +60,11 @@ type Stored = Record<string, unknown>;
 class RepoRefused extends Error {}
 
 /** What a push may not do to one proposal; null when it may go ahead. */
-function refusal(d: { phase: Phase }, cur: Stored | undefined, committedAt: string): [Code, string] | null {
-  if (d.phase === "released" && cur?.phase !== "released") return ["released", "released comes from Prod deployments"];
+function refusal(d: { phase: Phase }, cur: Stored | undefined, committedAt: string, onDefault: boolean): [Code, string] | null {
+  // 091 AC-4: the default branch brings a finished change amax has never stored in as Released history. Moving a
+  // proposal amax has to Released stays a Prod deployment's, and a branch never releases anything.
+  const history = !cur && onDefault;
+  if (d.phase === "released" && cur?.phase !== "released" && !history) return ["released", "released comes from Prod deployments"];
   if (!cur) return null;
   const mark = cur.synced_commit_at ? new Date(cur.synced_commit_at as string) : null;
   if (mark && mark > new Date(committedAt)) return ["stale", `stale: last synced from a newer commit (${mark.toISOString()})`];
@@ -96,11 +100,14 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     const cur = byKey.get(key);
     const dupe = dupes.get(r.number);
     if (dupe) { if (!counts.skipped.includes(`${key}: ${dupe}`)) skip(key, ["duplicate", dupe]); continue; }
+    // 091 AC-2: a branch holds one folder, so it can't see that the key belongs to another; the default branch may
+    // rename a change (its push carries only the new folder).
+    if (!onDefault && cur?.source_ref && cur.source_ref !== r.dir) { skip(key, ["duplicate", `two changes numbered ${r.number}: ${String(cur.source_ref)}, ${r.dir}`]); continue; }
     const base = desired(p.projectKey, { ...r, source: `${p.ref}@${p.sha}` }, p.sha, (cur?.tasks as Task[] | undefined) ?? []);
     const prior = (cur?.meta ?? {}) as Stored;
     // A change's branch may not have its PR link or verdict yet; main's word on them stands.
     const d = onDefault ? base : { ...base, meta: { ...base.meta, pr: base.meta.pr ?? prior.pr ?? null, verdict: base.meta.verdict ?? prior.verdict ?? null } };
-    const why = r.unreadable ? (["unreadable", "state.json unreadable"] as [Code, string]) : refusal(d, cur, p.committedAt);
+    const why = r.unreadable ? (["unreadable", "state.json unreadable"] as [Code, string]) : refusal(d, cur, p.committedAt, onDefault);
     if (why) { skip(key, why); continue; }
     if (cur && unchanged(cur, d)) { counts.unchanged++; same.push(key); continue; }
     try {

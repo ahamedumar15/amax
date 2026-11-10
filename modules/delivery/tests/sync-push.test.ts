@@ -95,17 +95,18 @@ describe.skipIf(!hasDb)("062 sync_specclaw guard rails", () => {
       source: "specclaw", sourceRef: "901-x", committedAt: "2026-10-01T00:00:00Z", releasedAt: null, meta: {} })).rejects.toThrow(/forbidden/);
   });
 
-  it("AC-2/AC-6/AC-7 a dry run writes nothing; an apply never releases; re-pushing the same state writes and audits nothing", async () => {
+  it("AC-2/AC-6/AC-7 a dry run writes nothing; an apply never releases what amax has; re-pushing the same state writes and audits nothing", async () => {
     const before = await audits();
     const preview = await push();
-    expect(preview).toMatchObject({ outcome: "preview", created: 2, updated: 0, skipped: ["FLT-103: released comes from Prod deployments"], needsReview: false });
+    // 091 AC-4: the default branch brings a finished change amax has never stored in as Released history.
+    expect(preview).toMatchObject({ outcome: "preview", created: 3, updated: 0, skipped: [], needsReview: false });
     expect(await audits()).toBe(before);
-    expect(await push({ dryRun: false })).toMatchObject({ outcome: "applied", created: 2, skipped: preview.skipped });
-    expect(await count(sql`select count(*)::int as n from delivery.proposal where key = 'FLT-103'`)).toBe(0);
-    expect((await getRepoSync(nimal, { projectKey: "FLT" }))!.lastApplied).toMatchObject({ by: "Nimal Silva", created: 2 });
+    expect(await push({ dryRun: false })).toMatchObject({ outcome: "applied", created: 3, skipped: [] });
+    expect(await count(sql`select count(*)::int as n from delivery.proposal where key = 'FLT-103' and phase = 'released'`)).toBe(1);
+    expect((await getRepoSync(nimal, { projectKey: "FLT" }))!.lastApplied).toMatchObject({ by: "Nimal Silva", created: 3 });
     const settled = await audits(), rows = await pushRows();
     // Nothing new: no Repo sync row, and one audit for moving the marks (review round 4, chosen by the product owner).
-    expect(await push({ sha: "b2c3d4e", committedAt: "2026-10-08T10:00:00Z", dryRun: false })).toMatchObject({ outcome: "unchanged", created: 0, updated: 0, unchanged: 2, skipped: preview.skipped });
+    expect(await push({ sha: "b2c3d4e", committedAt: "2026-10-08T10:00:00Z", dryRun: false })).toMatchObject({ outcome: "unchanged", created: 0, updated: 0, unchanged: 3, skipped: [] });
     expect([await audits(), await pushRows()]).toEqual([settled + 1, rows]);
     expect(new Date((await proposal("FLT-102")).synced_commit_at as string).toISOString()).toBe("2026-10-08T10:00:00.000Z");
     // So a commit between the applied one and the unchanged one, with other content, is stale.

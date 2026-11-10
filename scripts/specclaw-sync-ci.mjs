@@ -14,10 +14,18 @@ export const MAX_PUSH = 200;
 const SECRETS = ["AMAX_URL", "AMAX_SYNC_API_KEY", "AMAX_SYNC_ACT_FOR"];
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
-/** The specclaw/* branches the checkout knows, each read from its own tree (a branch without .specclaw is skipped). */
-function branches(root) {
+const merged = (root, b) => { try { git(root, "merge-base", "--is-ancestor", b, "HEAD"); return true; } catch { return false; } };
+
+/**
+ * The open specclaw/* branches the checkout knows, each read from its own tree (a branch without .specclaw is
+ * skipped). 091 AC-1: a branch already merged into the checked-out default branch, or whose change that branch has
+ * archived, is left out: its folder still says "PR raised", so pushing it would bring finished work back as Verified.
+ */
+function branches(root, archived, out) {
   const refs = git(root, "branch", "-r", "--format=%(refname:short)").split("\n").filter((b) => b.startsWith("origin/specclaw/"));
-  return refs.flatMap((b) => {
+  const open = refs.filter((b) => !merged(root, b) && !archived.has(b.slice("origin/specclaw/".length)));
+  if (refs.length > open.length) out.line(`left out ${refs.length - open.length} merged or archived branches`);
+  return open.flatMap((b) => {
     try { git(root, "cat-file", "-e", `${b}:.specclaw`); } catch { return []; }
     const dir = mkdtempSync(join(tmpdir(), "specclaw-branch-"));
     execFileSync("tar", ["-x", "-C", dir], { input: execFileSync("git", ["archive", b, ".specclaw"], { cwd: root, maxBuffer: 256 * 1024 * 1024 }) });
@@ -71,7 +79,8 @@ export async function run({ env = process.env, root = process.cwd(), fetchImpl =
   const attempt = async (fn) => { try { await fn(); } catch (e) { failed++; out.error(e.message); } };
   const { records, ...base } = main;
   await attempt(() => pushRef(env, fetchImpl, base, records, true, out));
-  for (const b of branches(root)) {
+  const archived = new Set(records.filter((r) => r.phase === "released").map((r) => r.dir));
+  for (const b of branches(root, archived, out)) {
     await attempt(() => pushRef(env, fetchImpl, { projectKey: main.projectKey, repoUrl: main.repoUrl, ref: b.ref, sha: b.sha, committedAt: b.committedAt }, b.records, false, out));
     rmSync(b.dir, { recursive: true, force: true });
   }
