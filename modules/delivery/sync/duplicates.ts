@@ -9,9 +9,11 @@ export function duplicateNumbers(records: { number: string; dir: string; duplica
 
 type Readable = { number: string; dir: string; duplicate?: boolean; unreadable: boolean; source: string };
 
-/** 090: why the self-sync skips a record (a shared number, an unreadable state.json), or null when it may write it. */
-export function skipReason(r: Readable, dupes: Map<string, string>) {
-  return dupes.get(r.number) ?? (r.unreadable ? `state.json unreadable at ${r.source}` : null);
+/** 090, 093 review: why a sync skips a record (a shared number, an unreadable state.json), or null when it may write it. */
+export function skipReason(r: Readable, dupes: Map<string, string>): { code: "duplicate" | "unreadable"; text: string } | null {
+  const dupe = dupes.get(r.number);
+  if (dupe) return { code: "duplicate", text: dupe };
+  return r.unreadable ? { code: "unreadable", text: `state.json unreadable at ${r.source}` } : null;
 }
 
 /** 090: the records the self-sync writes, by its own rule, for anyone (the e2e board check) that must agree with it. */

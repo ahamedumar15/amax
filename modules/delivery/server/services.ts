@@ -284,7 +284,9 @@ export const markSynced = defineService({
 export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceContext, project: Record<string, unknown>) {
     // The project row lock serialises this with createProposal's key computation (review round 2).
     await tx.execute(sql`select 1 from delivery.project where id = ${project.id} for update`);
-    const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key}`);
+    // 093 review: read locked, so the audit's before and the write below see the same row (an owner a person sets
+    // meanwhile waits for this sync, or this sync waits for it).
+    const [found] = await tx.execute(sql`select * from delivery.proposal where key = ${input.key} for update`);
     // A proposal made by hand (no source) before the project was synced can sit on a spec change's
     // key. While it's unreleased it moves to the hand-made series, as its own audited write with its
     // own event, so the spec change can sync; releases and history follow it by id. A released one

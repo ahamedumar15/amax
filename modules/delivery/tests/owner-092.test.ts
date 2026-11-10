@@ -75,6 +75,10 @@ describe.skipIf(!hasDb)("092 owners: a person's choice stands under concurrency,
     await sync;
     expect(waited).toBe(true);
     expect(await row("FLT-601")).toMatchObject({ title: "Race v2", owner_name: "Nimal Silva" });
+    // 093 review round 1: the sync read the row locked, so its audit doesn't claim the person's change as its own.
+    const [audit] = await withTenant(app, T, (tx) => tx.execute(sql`select before->>'owner' as was, after->>'owner' as now from core.audit_event a
+      join delivery.proposal p on a.resource_id = p.id::text where p.key = 'FLT-601' and a.action = 'delivery.proposal.sync' order by a.seq desc limit 1`));
+    expect(audit).toMatchObject({ was: "Nimal Silva", now: "Nimal Silva" });
   });
 
   // 092 AC-2: the Owner line's email is a clean address, whatever punctuation people put around it.

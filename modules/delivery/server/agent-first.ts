@@ -9,8 +9,7 @@ import type { Tx } from "@amax/db";
 export const agentFirstSql = (p: SQL) =>
   sql`(${p}.repo_url is not null and exists (select 1 from delivery.proposal x where x.project_id = ${p}.id and x.source = 'specclaw'))`;
 
-/** What chat, the API and the pages say instead of creating a proposal by hand on an agent-first project. */
-export const agentFirstLine = (repoUrl: string) => `Proposals come from ${repoUrl}: write one with /specclaw:propose; it appears here when merged`;
+/** What chat and the API say instead of creating a proposal by hand on an agent-first project. */
 export const agentFirstRefusal = (key: string, repoUrl: string) => `${key}'s proposals come from its repo (${repoUrl}): write one with /specclaw:propose`;
 
 /** The project's repo when it's agent-first, else null. */

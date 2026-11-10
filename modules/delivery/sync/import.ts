@@ -72,7 +72,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const d = desired(opts.projectKey, r, opts.sha, (cur?.tasks as Task[] | undefined) ?? []);
     byKey.delete(d.key);
     const why = skipReason(r, dupes);
-    if (why) { if (!result.skipped.includes(`${d.key}: ${why}`)) result.skipped.push(`${d.key}: ${why}`); continue; }
+    if (why) { if (!result.skipped.includes(`${d.key}: ${why.text}`)) result.skipped.push(`${d.key}: ${why.text}`); continue; }
     // A Released proposal stays Released whatever the repo says (044 AC-2), so that isn't a change.
     if (cur && fingerprint({ title: cur.title as string, phase: cur.phase === "released" ? d.phase : (cur.phase as string), tasksDone: Number(cur.tasks_done), tasksTotal: Number(cur.tasks_total), tasks: cur.tasks as Task[], meta: cur.meta as Record<string, unknown> }) === fingerprint(d) && !ownerStale.has(d.key)) {
       result.unchanged++;

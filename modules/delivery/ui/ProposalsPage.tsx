@@ -1,9 +1,8 @@
 import type { ScreenProps } from "@amax/core";
-import { can } from "@amax/auth";
 import { PinButton } from "@amax/ui";
 import { PHASES, projectHref, proposalHref, proposalKeyFrom, releaseHref, type Phase } from "../contracts";
 import { metricsPin, projectPin, proposalPin } from "../pins";
-import { listProjects, listProposals, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
+import { listProjects, listProposals, manualProjects, phaseCounts, shippedPerWeek, type ProposalRow } from "../server/queries";
 import { BarChart } from "./charts";
 import { csvHref } from "./csv";
 import { FilterMenu } from "./FilterMenu";
@@ -41,7 +40,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   const trend = prior ? ((recent - prior) / prior) * 100 : null;
   const filtered = projects.find((p) => p.key === searchParams.project);
   // 093 AC-2: "New proposal" only where the viewer may create by hand: a project that isn't agent-first.
-  const manual = projects.filter((p) => !p.agentFirst && can(viewer, "delivery:proposal:create", { projectId: p.id }));
+  const manual = await manualProjects(viewer);
   // 081 amendment 11 (AC-96, AC-97): what needs attention leads; its counts follow every filter but need itself.
   const need = isNeed(searchParams.need) ? searchParams.need : undefined;
   const att = attention(rows, await suggestedIds(viewer, rows));
@@ -51,7 +50,7 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
       <div className="row head">
         <div><h1>Proposals</h1><p className="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p></div>
         {filtered?.agentFirst && filtered.repoUrl ? <div className="actions"><AgentFirstLine repoUrl={filtered.repoUrl} /></div>
-          : (filtered ? !filtered.agentFirst && can(viewer, "delivery:proposal:create", { projectId: filtered.id }) : manual.length > 0)
+          : (filtered ? manual.some((p) => p.key === filtered.key) : manual.length > 0)
             && <div className="actions"><NewProposalButton project={filtered ? { pin: projectPin(filtered), name: filtered.name } : undefined} /></div>}
       </div>
       <AttentionStrip counts={att.counts} active={need} href={(n) => `${base}${listQuery({ project: projectKey, q: searchParams.q, owner: mine ? "me" : undefined, need: n })}`}

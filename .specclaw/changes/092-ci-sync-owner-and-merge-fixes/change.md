@@ -1,6 +1,6 @@
 # The CI sync's last fixes: an owner a person sets always stands, owner emails parse cleanly, merges by content, honest history
 
-**Change:** 092-ci-sync-owner-and-merge-fixes · **Created:** 2026-11-10 · **Review:** change
+**Change:** 092-ci-sync-owner-and-merge-fixes · **Created:** 2026-11-10 · **Review:** covered-by 093-agent-first-proposals
 
 **Depends on:** 091-ci-sync-demo-fixes (same branch, PR #113). Lands before #113 merges.
 

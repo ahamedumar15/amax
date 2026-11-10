@@ -40,6 +40,19 @@ describe("091 authorsOf", () => {
     expect(authorsOf(root, sha, [{ dir: "103-draft", phase: "proposed" }])[0].author).toBeUndefined();
   });
 
+  // 092 AC-3: a file in the tree whose add git can't find (here it came in with a merge commit, which git log's
+  // --diff-filter=A doesn't show) is unknown, so the stored owner stays; it isn't "nobody".
+  it("AC-3 a change that arrived inside a merge commit has an unknown author, not nobody", () => {
+    const { root } = repo();
+    const git = (...a: string[]) => execFileSync("git", a, { cwd: root, encoding: "utf8" }).trim();
+    const id = ["-c", "user.email=merger@example.test", "-c", "user.name=Fixture"];
+    git("checkout", "-qb", "side"); writeFileSync(join(root, "side.txt"), "side\n"); git("add", "-A"); git(...id, "commit", "-qm", "side");
+    git("checkout", "-q", "main"); git(...id, "merge", "-q", "--no-ff", "--no-commit", "side");
+    mkdirSync(join(root, ".specclaw/changes/104-in-merge"), { recursive: true });
+    writeFileSync(join(root, ".specclaw/changes/104-in-merge/change.md"), "# 104\n"); git("add", "-A"); git(...id, "commit", "-qm", "merge side");
+    expect(authorsOf(root, git("rev-parse", "HEAD"), [{ dir: "104-in-merge", phase: "planned" }])[0].author).toBeUndefined();
+  });
+
   it("AC-7 a shallow clone can't tell who added a change, so every author is unknown", () => {
     const { root } = repo();
     const shallow = mkdtempSync(join(tmpdir(), "amax-shallow-"));

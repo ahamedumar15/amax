@@ -8,7 +8,7 @@ import { isReadyToVerify, isWithdrawn, overEstimate } from "../server/readiness"
 // won't suggest it and move_proposal refuses it.
 const row = (over: Partial<ProposalRow>): ProposalRow => ({
   id: "p1", key: "CON-1", title: "Fictional", phase: "building", tasksDone: 3, tasksTotal: 3, hours: 0, estimateHours: null, ownerName: "Maya", ownerUserId: "u1",
-  description: null, withdrawn: false, agent: null, projectKey: "CON", projectName: "Contoso", projectColor: "#000", release: null, shippedTo: null, shippedStatus: null,
+  description: null, withdrawn: false, agent: null, projectKey: "CON", projectName: "Contoso", projectColor: "#000", release: null, shippedTo: null, shippedStatus: null, inProd: false,
   source: null, meta: {}, createdAt: null, updatedAt: null, ...over,
 });
 

@@ -1,12 +1,45 @@
-import { describe, expect, it } from "vitest";
+import { sql } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasDb } from "@amax/db/testdb";
+import type { Viewer } from "@amax/auth";
+import { listProposals } from "../server/queries";
 import { releasedLabel } from "../ui/released";
+import { ProjectPage } from "../ui/ProjectPage";
+import { proposalDb } from "./proposal-db";
 
-// 092 AC-5: "In Prod" only for what a Prod deployment released.
-describe("092 the Released card's label", () => {
-  it.each([
-    ["released by a Prod deployment", { release: "v2.4.0" }, { text: "In Prod · v2.4.0", prod: true }],
-    ["brought in from the repo's archive", { release: null }, { text: "Released · from repo", prod: false }],
-  ])("AC-5 %s", (_, p, label) => {
-    expect(releasedLabel(p)).toEqual(label);
+const html = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
+
+// 092 AC-5 (093 review round 1): "In Prod" only for a proposal a live Prod deployment of its release released, read
+// from the real board, not from objects made up for the test.
+describe.skipIf(!hasDb)("092 the Released card's label", () => {
+  let db: Awaited<ReturnType<typeof proposalDb>>;
+  let maya: Viewer;
+  const released = async (key: string) => (await listProposals(maya, { projectKey: "CON", phase: "released" })).find((p) => p.key === key)!;
+
+  beforeAll(async () => {
+    db = await proposalDb();
+    maya = await db.as("maya");
+    await db.t.owner`insert into delivery.proposal (tenant_id, project_id, key, title, phase, source, source_ref, released_at, meta)
+      select tenant_id, id, 'CON-801', 'From the archive', 'released', 'specclaw', '801-archived', now(), '{}'::jsonb from delivery.project where key = 'CON'`;
+  }, 120_000);
+  afterAll(() => db?.t.drop());
+
+  it("AC-5 a live Prod deployment says In Prod with its release, on the board too", async () => {
+    const [shipped] = await db.q(sql`select p.key from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+      where pr.key = 'CON' and p.phase = 'released' and p.release_id is not null limit 1`);
+    const p = await released(shipped.key as string);
+    expect(releasedLabel(p)).toEqual({ text: `In Prod · ${p.release}`, prod: true });
+    expect(await html(ProjectPage({ viewer: maya, params: { key: "CON" } }))).toContain(`In Prod · ${p.release}`);
+  });
+
+  it("AC-5 a release whose Prod deployment was voided isn't In Prod", async () => {
+    const [shipped] = await db.q(sql`select p.key, p.release_id from delivery.proposal p join delivery.project pr on pr.id = p.project_id
+      where pr.key = 'CON' and p.phase = 'released' and p.release_id is not null limit 1`);
+    await db.t.owner`update delivery.deployment set voided_at = now(), void_reason = 'test' where release_id = ${shipped.release_id as string}`;
+    expect(releasedLabel(await released(shipped.key as string))).toEqual({ text: "Released", prod: false });
+  });
+
+  it("AC-5 a finished change brought in from the repo says so", async () => {
+    expect(releasedLabel(await released("CON-801"))).toEqual({ text: "Released · from repo", prod: false });
   });
 });

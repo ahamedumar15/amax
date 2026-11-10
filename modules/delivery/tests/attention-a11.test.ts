@@ -20,6 +20,7 @@ import { proposalDb } from "./proposal-db";
 const html = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup((await node) as never);
 
 const row = (o: Partial<ProposalRow> & { id: string }): ProposalRow => ({
+  inProd: false,
   key: o.id.toUpperCase(), title: `Title ${o.id}`, phase: "building", tasksDone: 1, tasksTotal: 3, hours: 2, estimateHours: 10, ownerName: "Nimal Silva", ownerUserId: "u-nimal",
   description: null, withdrawn: false, agent: null, projectKey: "CON", projectName: "Contoso Portal", projectColor: "violet", release: null, shippedTo: null, shippedStatus: null,
   source: null, meta: {}, createdAt: null, updatedAt: null, ...o,

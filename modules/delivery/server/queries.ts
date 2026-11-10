@@ -45,7 +45,7 @@ export const manualProjects = async (v: Viewer) => (await listProjects(v, "activ
 export type ProposalRow = {
   id: string; key: string; title: string; phase: Phase; tasksDone: number; tasksTotal: number; hours: number; estimateHours: number | null;
   ownerName: string | null; ownerUserId: string | null; description: string | null; withdrawn: boolean; agent: string | null; projectKey: string; projectName: string; projectColor: string;
-  release: string | null; shippedTo: string | null; shippedStatus: string | null; source: string | null; meta: Record<string, unknown>; createdAt: string | null; updatedAt: string | null;
+  release: string | null; shippedTo: string | null; shippedStatus: string | null; inProd: boolean; source: string | null; meta: Record<string, unknown>; createdAt: string | null; updatedAt: string | null;
 };
 
 const proposal = (r: Record<string, unknown>): ProposalRow => ({
@@ -54,13 +54,16 @@ const proposal = (r: Record<string, unknown>): ProposalRow => ({
   ownerUserId: (r.owner_user_id as string | null) ?? null, description: (r.description as string | null) ?? null,
   withdrawn: isWithdrawn(r), agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,
-  release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null,
+  release: (r.version as string | null) ?? null, shippedTo: (r.shipped_to as string | null) ?? null, shippedStatus: (r.shipped_status as string | null) ?? null, inProd: r.in_prod === true,
   source: (r.source as string | null) ?? null, meta: (r.meta as Record<string, unknown>) ?? {}, createdAt: iso(r.created_at), updatedAt: iso(r.updated_at),
 });
 
 // The furthest environment each release reached, for "Shipped to".
 const PROPOSALS = sql`
   select p.*, pr.key as project_key, pr.name as project_name, pr.color as project_color, r.version, last.name as shipped_to, last.status as shipped_status,
+    -- 092 AC-5: In Prod means a live (deployed, not voided) deployment of its release to a Prod environment.
+    exists (select 1 from delivery.deployment d join delivery.environment e on e.id = d.environment_id
+      where d.release_id = p.release_id and e.is_prod and d.status = 'deployed' and d.voided_at is null) as in_prod,
     ${ownerShownIn("p")} as owner_shown
   from delivery.proposal p
   join delivery.project pr on pr.id = p.project_id

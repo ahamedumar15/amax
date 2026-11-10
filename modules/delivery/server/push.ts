@@ -106,7 +106,7 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     // its codes, and its short wording for an unreadable state.json.
     const skipWhy = skipReason(r, dupes);
     if (skipWhy) {
-      const [code, text]: [Code, string] = dupes.has(r.number) ? ["duplicate", skipWhy] : ["unreadable", "state.json unreadable"];
+      const [code, text]: [Code, string] = [skipWhy.code, skipWhy.code === "unreadable" ? "state.json unreadable" : skipWhy.text];
       if (!counts.skipped.includes(`${key}: ${text}`)) skip(key, [code, text]);
       continue;
     }
