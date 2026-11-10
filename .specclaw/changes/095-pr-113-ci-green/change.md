@@ -44,9 +44,39 @@ shows (no new design; the app goes back to the mock).
   Files: apps/web/tests/e2e/delivery.spec.ts
 - [x] `T4` — The review gate credits a commit naming a covered-by change to its cover's final pass (AC-4)
   Files: scripts/review-gate/rules.mjs, packages/testing/tests/review-gate-covered.test.ts
-- [ ] `T5` — PR #113's CI green (AC-5)
+- [x] `T5` — PR #113's CI green (AC-5)
   Depends: T1–T4
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — chat works again: on the dev server a turn reached Anthropic, called `list_proposals` and answered ("AMX
+  has 26 proposals in Verified", 5.4 s, no `AiOutputError`). `apps/web/tests/tool-schemas.test.ts` (chat's converter over
+  every module's tools) passes; `ci-095`: `knownTime` table and `sync_proposal`'s write keeping stored dates over future
+  ones (created, task, both; past dates taken as the control).
+- AC-2: pass — `board-092`: the Released card renders `v2.3.0` then "In Prod"; on the dev server the Contoso card is
+  111.5625 px tall, the mock's height.
+- AC-3: pass — the proposals e2e clicks `link "Released, all time"` exactly (CI runs the e2e).
+- AC-4: pass — `review-gate-covered`: a later commit naming a covered-by change passes when its cover's final pass came
+  after it and fails when before; the fork gate over PR #113 (`--base 0dc978b6 --fork true`) passes 082–086 and 094.
+  AGENTS.md states the rule.
+- AC-5: pending CI on push (`checks`, `review-gate`; `docker-k3s` failed on a k3d image import and passed at `8e6a698`,
+  so a rerun if it flakes).
+
+**Commands (Windows host, dev Postgres):** delivery `tsc --noEmit`: exit 0; delivery `vitest`: 593/594, the one failure the
+host-only `releases.test.ts` (backslash paths); review-gate, 094, board and 095 suites 70/70; `tool-schemas` 1/1.
+`specclaw-preset-check`: exit 1 from the repo-wide comment backlog, as before. `specclaw-quality-scan`: not_run on this host.
+
+**Screenshots:** the Contoso card measured against the mock section `001-amax-foundation-project` (same height and
+labels); the 095 mock section shows the same card.
+
+### Review loop (2026-11-10)
+
+Scope: commits after `25e7d86f` (094's verify). **Clean**: `Review: CLEAN — 3 rounds, final pass 191af34533`.
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | round (opus) | — | 0/1/4: no test drove sync_proposal's write with future dates; mock card and banner; AGENTS.md; one "converts" |
+| 2 | round (opus) | `7d87d939` | clean; 1 pre-existing major (future `committedAt`/`releasedAt` on sync_proposal) to follow-ups |
+| 3 | final (opus) | — | clean; 1 pre-existing minor (README line) to follow-ups |
