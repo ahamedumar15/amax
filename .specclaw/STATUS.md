@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-10 03:22 UTC
+**Last Updated:** 2026-11-10 05:10 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -13,7 +13,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔀 **069-chat-tool-schema-hotfix** — pr raised | 3/3 tasks (100%) | 0 failed | PR #98 merged
 - 🔍 **070-time-entry-corrections** — verify done | 29/29 tasks (100%) | 0 failed | PR #102 closed
 - 🔀 **071-time-access-and-integrity** — pr raised | 8/8 tasks (100%) | 0 failed | PR #103 closed
-- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed
+- 🔀 **072-time-consumers-sync** — pr raised | 6/6 tasks (100%) | 0 failed | PR #104 closed
 - 🔀 **073-time-workflow-enhancements** — pr done | 10/10 tasks (100%) | 0 failed
 - 📝 **074-dev-demo-data** — tasks done | 7/7 tasks (100%) | 0 failed
 - 🔀 **074-fork-pr-review-gate** — pr raised
@@ -34,7 +34,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **088-notifications-tests-quiet-hours** — verify done | 1/1 tasks (100%) | 0 failed
 - 🔍 **089-specclaw-sync-over-mcp** — verify done | 7/7 tasks (100%) | 0 failed
 - 🔍 **090-e2e-amx-duplicate-numbers** — verify done | 2/2 tasks (100%) | 0 failed
-- 📝 **091-ci-sync-demo-fixes** — tasks done | 0/5 tasks (0%) | 0 failed
+- 🔍 **091-ci-sync-demo-fixes** — verify done | 7/7 tasks (100%) | 0 failed
 
 ## Pending Proposals
 

@@ -100,4 +100,54 @@ holds them. The CI job summary says how many merged or archived branches it left
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — `specclaw-sync-ci.test` AC-1 (main and open branches pushed; merged, archived, squash-merged and
+  squash-then-edited branches left out with one summary line; a branch reusing main's number left out with a warning;
+  a branch named after no folder still pushed). Demo: "left out 67 merged or archived branches", Verified 78 → 22.
+- AC-2: pass — `sync-push-091` AC-2 (a branch can't take a key held for another folder; main may rename).
+- AC-3: pass — `sha-091` (sha table, `refOf`, and `sync:specclaw --sha 3` refused before the database opens).
+- AC-4: pass — `sync-push-091` AC-4 (main brings never-seen finished changes in as Released; existing ones and branches
+  never); `sync-push` 062 test updated to the agreed rule. Demo: Released 0 → 62.
+- AC-5: pass — `skips-091` (grouped by reason, five keys then "+n more"); `shots/app-reposync.png`.
+- AC-6: pass — the tables above; 089 and 090 suites green; the AMX e2e still uses the sync's rule (`onBoard`).
+- AC-7: pass — `owner-091` (Owner line forms, author by work email and verified identity, off-project and unknown give
+  Unassigned, never the pusher, an identity linked later is picked up, an unknown author keeps the owner, the email is
+  never stored and the trace holds none, every way a person sets an owner stops the sync, owner changes audited),
+  `authors-091` (author across the archive move, unknown for a shallow clone or uncommitted folder). Demo: 20 owned by
+  Umar Ahamed via his git identity, 68 Unassigned, none by the pusher.
+
+**Linux CI replica over `d2e57521`** (the head of the fifth pass; node:24-bookworm, fresh postgres:16-alpine, the
+`checks` job's steps, `AMAX_TEMPORAL_TESTS=0`): `pnpm install --frozen-lockfile`, `pnpm db:migrate` (80, incl. `0021`),
+`pnpm lint` (35/35, graph ok), `pnpm turbo run test --concurrency=2 --force` (35/35 packages),
+`node scripts/check-module-standard.mjs` (22), `pnpm build`: all exit 0. e2e: not_run here (the browser download fails
+on this network); PR #113's CI runs it.
+
+**Screenshots:** `shots/mock.png` (091's section), `shots/app-board.png` and `shots/app-reposync.png` (local demo after
+091, signed in as Umar Ahamed), `shots/before-board-089.png` (the same board after 089, for comparison). The real card
+groups skips as the mock does; the mock still shows CI pushing a branch that reuses main's number, which CI now leaves
+out (AC-1's build note).
+
+**Other checks:** `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog, as in 066–090.
+`specclaw-quality-scan`: not_run (jq "Argument list too long" on this host).
+
+### Review loop (2026-11-10)
+
+Stopped at the five-pass cap (AGENTS.md) with **0 blockers and 4 majors open**, all in `follow-ups.md` for change 092,
+to land before PR #113 merges (two are regressions from round 4's fixes):
+- **B7:** "a person set the owner" is read before the upsert without a lock, so a concurrent `update_proposal` can be
+  overwritten. Decide it in SQL on the conflicting row again.
+- **B1:** the Owner line's email takes trailing punctuation and link brackets.
+- **B3:** a file in the tree whose add commit git can't find reads as "nobody" (clears the owner) instead of unknown.
+- **B1:** squash-merge detection by commit time can leave out a branch with newer progress; use content or ancestry.
+
+| Round | Pass | Since | Result |
+|---|---|---|---|
+| 1 | round (opus) | — | 1/6/1: committer emails stored in meta (blocker); self-sync without authors; failed lookups clear owners; owner changes not audited; person-set paths untested; squash merges; one email rule |
+| 2 | round (opus) | `9aab6ebc` | 1/0/2: trace blocker checked and refuted (`traceStep` keeps a keyed hash; proved by a test); one shallow check; uncommitted folder unknown |
+| 3 | final (opus) | — | 0/1/2: branch named after no folder counted as merged; one sha rule; mock grouping |
+| 4 | final (opus) | — | 0/1/5: Owner line forms; one owner-frozen rule; sync_proposal ownerEmail; withdrawn rows; squash then edit; 0021 note |
+| 5 | final (opus) | — | 0/4/1: stopped at the cap (above) |
+
+Scope: commits after `1dba57e5` (090's verify), `git.base_branch` set for each run, then restored.
+`specclaw-review verdict`: `Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/4/1 b/M/m`.
