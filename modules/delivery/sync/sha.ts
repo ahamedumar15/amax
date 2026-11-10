@@ -8,3 +8,11 @@ export const isSha = (sha: string) => SHA_RE.test(sha);
 export function assertSha(sha: string, where: string) {
   if (!isSha(sha)) throw new Error(`${where} must be a commit sha (7 to 40 hex characters), got "${sha}"`);
 }
+
+/**
+ * 096 review round 1: the one "<ref>@<sha>" rule for a read (a record's or proposal's `source`): any ref (git allows
+ * `@` in one) then `@` and a commit sha. Capture 1 is the sha. Withdrawal (refOf), the author walk and a repo phase's
+ * read all use it.
+ */
+export const AT_SHA = new RegExp(`@(${SHA})$`, "i");
+export const isRead = (source: unknown): source is string => typeof source === "string" && AT_SHA.test(source) && source.search(AT_SHA) > 0;

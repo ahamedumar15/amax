@@ -7,7 +7,7 @@ import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 import { repoOwnerStale } from "../server/owner";
 import { ownerEmailOf } from "./authors";
-import { knownTime, phaseTimesOnly, resolveRepoPhases } from "../server/repo-time";
+import { knownTime, phaseTimesOnly, repoInstant, resolveRepoPhases } from "../server/repo-time";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -36,7 +36,8 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
   tasksDone: tasks.length ? tasks.filter((t) => t.done).length : r.tasksDone,
   tasksTotal: tasks.length || r.tasksTotal,
   tasks,
-  releasedAt: r.releasedAt,
+  // 096 review round 1: normalised where the write is built, the same rule the write applies.
+  releasedAt: repoInstant(r.releasedAt),
   // 094 AC-1: the repo's created date; null when neither the header, state.json nor git can tell (amax keeps its own).
   createdAt: known(r.createdAt),
   // 091 review round 1: no email in meta. The owner's email is read from the repo on every sync and only resolved

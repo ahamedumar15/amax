@@ -3,15 +3,14 @@
 // and amax resolves it to a person at sync time without storing it (the trace keeps a keyed hash of a tool's
 // arguments, never the arguments). 094 AC-1, AC-2: the same walk dates the change and its ticked tasks.
 import { execFileSync } from "node:child_process";
-import { SHA } from "./sha";
+import { AT_SHA } from "./sha";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 }).trim();
 
 type TaskLine = { ref: string; done: boolean; doneAt?: string | null };
 type Readable = { dir: string; phase: string; source?: string; createdAt?: string | null; tasks?: TaskLine[] };
 
-// The sha at the end of a record's source ("main@4f2c9a1"), by the one commit-sha rule (091 AC-3).
-const AT_SHA = new RegExp(`@(${SHA})$`, "i");
+// The sha at the end of a record's source ("main@4f2c9a1"): AT_SHA, the one read rule (sync/sha.ts).
 
 /** Whether `root` is a shallow clone, so authors can't be read (the CI job checks out with full history). */
 export const isShallow = (root: string) => { try { return git(root, "rev-parse", "--is-shallow-repository") === "true"; } catch { return true; } };

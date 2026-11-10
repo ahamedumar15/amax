@@ -1,9 +1,7 @@
 import { isWithdrawn } from "../server/readiness";
-import { SHA } from "./sha";
+import { AT_SHA } from "./sha";
 
 type Row = Record<string, unknown>;
-
-const AT_SHA = new RegExp(`@${SHA}$`, "i");
 
 /** "main@4f2c9a1" → "main": the ref a record or proposal was read from, without its commit. Anything else unchanged. */
 export const refOf = (source: unknown) => (typeof source === "string" ? source.replace(AT_SHA, "") : source);

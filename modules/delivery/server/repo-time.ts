@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SHA } from "../sync/sha";
+import { isRead } from "../sync/sha";
 
 /** A commit time from a skewed clock or a hand-written payload must not land in the future. */
 export const SKEW_MS = 5 * 60_000;
@@ -17,6 +17,11 @@ export const repoTime = z.string().datetime({ offset: true }).nullable().optiona
  * so the tool input still converts to JSON Schema.
  */
 export const commitTime = z.string().datetime({ offset: true }).refine(notFuture, "committedAt is in the future");
+/**
+ * 096 review round 1: a repo time as the reader found it (a state.json `at` may lack an offset, or be only a day): an
+ * instant in ISO when it parses, else null. One rule where the write is built (desired()) and where it's stored.
+ */
+export const repoInstant = (t: unknown) => (typeof t === "string" && t && !Number.isNaN(Date.parse(t)) ? new Date(t).toISOString() : null);
 /** A repo date amax may store: null when it's absent or in the future. */
 export const knownTime = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 
@@ -53,9 +58,8 @@ export function resolveRepoPhases(read: unknown, source: unknown, stored: unknow
   return out;
 }
 
-// 096 AC-3: a write's read is recorded only when it's "<ref>@<sha>" by the one commit-sha rule; otherwise none.
-const READ = new RegExp(`^[^@\\s]+@${SHA}$`, "i");
-const readOf = (source: unknown) => (typeof source === "string" && READ.test(source) ? source : null);
+// 096 AC-3: a write's read is recorded only when it's "<ref>@<sha>" by the one read rule (sync/sha.ts); otherwise none.
+const readOf = (source: unknown) => (isRead(source) ? source : null);
 
 // 096 AC-2: entry by entry, so one malformed entry is skipped and the others stand.
 const isTime = (v: unknown): v is string => time.safeParse(v).success;
@@ -77,7 +81,8 @@ function entries(v: unknown, source: string | null): Record<string, RepoPhase> |
   return each(v, (e) => {
     if (isTime(e)) return { at: e, source };
     const o = e as { at?: unknown; source?: unknown } | null;
-    return o && typeof o === "object" && isTime(o.at) ? { at: o.at, source: readOf(o.source) } : null;
+    // A stored read is kept as stored (review round 1): only a write's own read is checked.
+    return o && typeof o === "object" && isTime(o.at) ? { at: o.at, source: typeof o.source === "string" ? o.source : null } : null;
   });
 }
 

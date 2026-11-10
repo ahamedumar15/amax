@@ -140,10 +140,10 @@ import { execFileSync } from "node:child_process";
 // modules/delivery/sync/sha.ts
 var SHA = "[0-9a-f]{7,40}";
 var SHA_RE = new RegExp(`^${SHA}$`, "i");
+var AT_SHA = new RegExp(`@(${SHA})$`, "i");
 
 // modules/delivery/sync/authors.ts
 var git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 }).trim();
-var AT_SHA = new RegExp(`@(${SHA})$`, "i");
 var isShallow = (root) => {
   try {
     return git(root, "rev-parse", "--is-shallow-repository") === "true";
