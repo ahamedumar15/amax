@@ -33,4 +33,22 @@ history; the section restates the two rows the test checks.
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PASS
+
+- AC-1: pass — the e2e reads the first row's "Shipped to" cell of `/delivery/proposals/released?project=CON`; on the dev
+  server it is CON-009, "Prod".
+- AC-2: pass — the same cell for `?project=AMX`; on the dev server AMX-045, "Released · from repo".
+- AC-3: pending CI on push. The previous run's only failure was this assertion (`delivery.spec.ts:91`, 1 failed, 52
+  passed); the `role "root" does not exist` lines are the Postgres service's `pg_isready` health check and appear in
+  green runs too (194 in run 42744272254).
+
+**Commands:** `apps/web` `tsc --noEmit`: exit 0. The e2e itself runs in CI (not on this host).
+
+### Review loop (2026-11-10)
+
+Scope: commits after `c012edf1` (096's verify). `Review: CLEAN — 2 rounds, final pass 35467abf8a`.
+
+| Round | Pass | Result |
+|---|---|---|
+| 1 | round (opus) | clean; 1 minor to follow-ups (check every row's cell, not only the first) |
+| 2 | final (opus) | clean |
