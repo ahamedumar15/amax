@@ -8,13 +8,16 @@ import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { authorsOf, payload, readSpecclaw } from "../plugins/amax/scripts/read-specclaw.mjs";
+import { authorsOf, isShallow, payload, readSpecclaw } from "../plugins/amax/scripts/read-specclaw.mjs";
 
 export const MAX_PUSH = 200;
 const SECRETS = ["AMAX_URL", "AMAX_SYNC_API_KEY", "AMAX_SYNC_ACT_FOR"];
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
-const merged = (root, b) => { try { git(root, "merge-base", "--is-ancestor", b, "HEAD"); return true; } catch { return false; } };
+// 091 review round 1: merged means in main's history (a merge or fast-forward), or, for a squash or rebase merge whose
+// commits aren't, the branch's change folder already being on main exactly as the branch has it.
+const sameOnMain = (root, b) => { try { git(root, "diff", "--quiet", b, "HEAD", "--", `.specclaw/changes/${b.slice("origin/specclaw/".length)}`); return true; } catch { return false; } };
+const merged = (root, b) => { try { git(root, "merge-base", "--is-ancestor", b, "HEAD"); return true; } catch { return sameOnMain(root, b); } };
 
 /**
  * The open specclaw/* branches the checkout knows, each read from its own tree (a branch without .specclaw is
@@ -79,6 +82,8 @@ export async function run({ env = process.env, root = process.cwd(), fetchImpl =
     out.error(`specclaw sync is only partly set up: ${missing.join(", ")} missing. Add ${missing.length === 1 ? "it" : "them"} or remove the others.`);
     return 1;
   }
+  // 091 AC-7: authors need full history; a shallow clone reads as "unknown", so amax keeps the owners it has.
+  if (isShallow(root)) out.warn("shallow clone: change authors can't be read, so owners are left as they are (check out with fetch-depth 0)");
   const main = payload(root);
   if (!main.records.length) {
     out.error(`read no specclaw changes on ${main.ref}: nothing was pushed, so nothing could be withdrawn by mistake`);

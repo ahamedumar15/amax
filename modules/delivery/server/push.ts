@@ -13,6 +13,7 @@ import { TaskInput } from "./tasks";
 import { notFound } from "./refusal";
 import { repoOwnerStale } from "./owner";
 import { duplicateNumbers } from "../sync/duplicates";
+import { ownerEmailOf } from "../sync/authors";
 import { SHA_RE } from "../sync/sha";
 import { planWithdrawals } from "../sync/withdraw";
 
@@ -112,9 +113,10 @@ async function applyPush(tx: Tx, p: Plan, ctx: ServiceContext) {
     const why = r.unreadable ? (["unreadable", "state.json unreadable"] as [Code, string]) : refusal(d, cur, p.committedAt, onDefault);
     if (why) { skip(key, why); continue; }
     // 091 AC-7: unchanged files, but the owner the repo names may resolve differently now (a git identity linked since).
-    if (cur && unchanged(cur, d) && !(await repoOwnerStale(tx, ctx.tenantId, cur, d.meta.ownerEmail))) { counts.unchanged++; same.push(key); continue; }
+    const ownerEmail = ownerEmailOf(r);
+    if (cur && unchanged(cur, d) && !(await repoOwnerStale(tx, ctx.tenantId, cur, ownerEmail))) { counts.unchanged++; same.push(key); continue; }
     try {
-      const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, source: "specclaw", sourceRef: r.dir, committedAt: p.committedAt, ...d }, ctx, project);
+      const out = await upsertSpecProposal(tx, { projectKey: p.projectKey, project: { name: project.name as string, client: project.client as string }, source: "specclaw", sourceRef: r.dir, committedAt: p.committedAt, ...d, ownerEmail }, ctx, project);
       await appendAudit(tx, ctx, { action: "delivery.proposal.sync", resource: "delivery.proposal", resourceId: out.resourceId, before: out.before, after: out.after });
       events.push(...out.events);
     } catch (e) {

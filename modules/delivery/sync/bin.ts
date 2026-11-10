@@ -10,6 +10,7 @@ import { authenticateToken, installAuthorizer, principalContext } from "@amax/au
 import { readSpecclaw } from "./specclaw";
 import { syncSpecclaw } from "./import";
 import { assertSha } from "./sha";
+import { authorsOf } from "./authors";
 
 const { values } = parseArgs({
   options: { repo: { type: "string" }, overlay: { type: "string", multiple: true }, project: { type: "string", default: "AMX" }, name: { type: "string", default: "amax" },
@@ -36,7 +37,8 @@ try {
   const id = await authenticateToken(db, env.AMAX_SYNC_TOKEN!);
   if (id?.kind !== "principal") throw new Error("AMAX_SYNC_TOKEN is not a live service principal token");
   const ctx = await principalContext(db, id.principal, "delivery:proposal:sync");
-  const records = readSpecclaw({ dir: values.repo, ref: `main@${values.sha}` }, overlays);
+  // 091 AC-7: the same author lookup as the plugin and CI, so the self-sync names the same owners.
+  const records = authorsOf(values.repo, values.sha, readSpecclaw({ dir: values.repo, ref: `main@${values.sha}` }, overlays));
   // 062: the commit's time moves each proposal's stale mark, so a developer's push of an older commit is refused.
   const committedAt = execFileSync("git", ["-C", values.repo, "show", "-s", "--format=%cI", values.sha!], { encoding: "utf8" }).trim();
   const r = await syncSpecclaw(db, ctx, { projectKey: values.project!, projectName: values.name!, client: values.client!, records, sha: values.sha!, committedAt,

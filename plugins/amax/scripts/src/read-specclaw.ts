@@ -7,8 +7,9 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { normaliseRepo } from "../../../../modules/delivery/sync/repo-name";
 import { readSpecclaw } from "../../../../modules/delivery/sync/specclaw";
+import { authorsOf, isShallow } from "../../../../modules/delivery/sync/authors";
 
-export { normaliseRepo, readSpecclaw };
+export { authorsOf, isShallow, normaliseRepo, readSpecclaw };
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
@@ -19,20 +20,6 @@ export const projectOf = (root: string, flag?: string) => {
   const m = existsSync(config) ? readFileSync(config, "utf8").match(/^amax:\s*\n\s+project:\s*["']?([A-Z][A-Z0-9]{1,9})["']?\s*$/m) : null;
   return m?.[1] ?? null;
 };
-
-/**
- * 091 AC-7: each change's author, the email on the commit that first added its change.md at `rev` (following the move
- * to archive/), so amax can make them its owner. Only the email is sent. `only` limits it to one folder (a branch's own).
- */
-export function authorsOf<T extends { dir: string; phase: string }>(root: string, rev: string, records: T[], only?: string): (T & { author: string | null })[] {
-  return records.map((r) => {
-    if (only && r.dir !== only) return { ...r, author: null };
-    const path = `.specclaw/changes/${r.phase === "released" ? "archive/" : ""}${r.dir}/change.md`;
-    let out = "";
-    try { out = git(root, "log", rev, "--follow", "--diff-filter=A", "--format=%ae", "--", path); } catch { out = ""; }
-    return { ...r, author: out.split("\n").filter(Boolean).at(-1) ?? null };
-  });
-}
 
 export function payload(cwd: string, flag?: string) {
   const root = git(cwd, "rev-parse", "--show-toplevel");

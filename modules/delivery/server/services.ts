@@ -229,6 +229,9 @@ export const SyncInput = z.object({
     tasks: z.array(TaskInput).optional(),
     // 062: the commit time the spec was read at. Every specclaw write moves the stale mark with it.
     committedAt: z.string().datetime({ offset: true }),
+    // 091 AC-7: the email the repo names the owner by, used for this write only and never stored. null: the repo
+    // names nobody; absent: it couldn't be read (a shallow clone, a git failure, a withdrawal), so the owner stays.
+    ownerEmail: z.string().max(320).nullable().optional(),
   });
 export type SyncInput = z.infer<typeof SyncInput>;
 
@@ -298,9 +301,10 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     // 091 AC-7: a spec proposal's owner comes from its repo (the Owner line, else the change's author), never from who
     // pushed: a CI credential acts for the PM, which made the PM own everything. The sync keeps it in step with the
     // repo until a person sets the owner in amax (update_proposal or a Suggested owner: owner_set_by_person, 0021);
-    // from then on it stands. No owner event: a sync's change notifies nobody.
-    const owner = await ownerFromRepo(tx, ctx.tenantId, input.meta.ownerEmail, project.id as string);
-    const personSet = sql`delivery.proposal.owner_set_by_person`;
+    // from then on it stands. No owner event: a sync's change notifies nobody, but the audit below records it. When the
+    // repo's answer is unknown (ownerEmail absent), the stored owner stays as it is.
+    const owner = await ownerFromRepo(tx, ctx.tenantId, input.ownerEmail, project.id as string);
+    const personSet = sql`(delivery.proposal.owner_set_by_person or ${input.ownerEmail === undefined})`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
               ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, now())
@@ -319,8 +323,9 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     return {
       result: { key: input.key, created: !before, phaseChanged: events.some((e) => e.name === EVENTS.proposalPhaseChanged) },
       resourceId: row.id as string,
-      before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title } : null,
-      after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, ...(rekeyed ? { rekeyed } : {}) },
+      // 091 review round 1: the owner too, so a sync that changes or clears it is on record (rule 4).
+      before: before ? { phase: before.phase, tasksDone: before.tasks_done, title: before.title, owner: (before.owner_name as string | null) ?? null, ownerUserId: (before.owner_user_id as string | null) ?? null } : null,
+      after: { phase: row.phase, tasksDone: input.tasksDone, title: input.title, sha: input.meta.sha, owner: (row.owner_name as string | null) ?? null, ownerUserId: (row.owner_user_id as string | null) ?? null, ...(rekeyed ? { rekeyed } : {}) },
       events,
     };
 }

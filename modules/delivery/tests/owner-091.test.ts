@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sql } from "drizzle-orm";
@@ -14,6 +14,7 @@ import { ctxFor } from "../server/context";
 import { updateProposal } from "../server/lifecycle";
 import { linkProjectRepo } from "../server/repo-sync";
 import { pushSpecclaw } from "../server/push";
+import { suggestedOwner } from "../server/proposal-kinds";
 import { readSpecclaw } from "../sync/specclaw";
 
 const T = lumen.tenant.id;
@@ -33,8 +34,9 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
   let nimal: Viewer;
   let at = 0;
   const push = (dir: string, o: { ownerLine?: string; author?: string | null } = {}) =>
-    pushSpecclaw(nimal, { projectKey: "FLT", repoUrl: REPO, ref: "main", sha: `0a0b0c${String(++at).padStart(2, "0")}`, committedAt: `2026-10-08T${String(9 + at).padStart(2, "0")}:00:00Z`,
-      records: readSpecclaw(fakeRepo(dir, o.ownerLine)).map((r) => ({ ...r, author: o.author ?? null })), dryRun: false });
+    pushSpecclaw(nimal, { projectKey: "FLT", repoUrl: REPO, ref: "main", sha: `0a0b0c${String(++at).padStart(2, "0")}`, committedAt: new Date(Date.parse("2026-10-08T09:00:00Z") + at * 60_000).toISOString(),
+      records: readSpecclaw(fakeRepo(dir, o.ownerLine)).map((r) => ({ ...r, author: "author" in o ? o.author : null })), dryRun: false });
+  const idOf = async (key: string) => (await withTenant(app, T, (tx) => tx.execute(sql`select id from delivery.proposal where key = ${key}`)))[0].id as string;
   const ownerOf = async (key: string) => (await withTenant(app, T, (tx) => tx.execute(sql`select owner_name from delivery.proposal where key = ${key}`)))[0]?.owner_name ?? null;
 
   beforeAll(async () => {
@@ -81,14 +83,53 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
     expect((await push("531-linked-later", { author: "nimal.later@example.test" })).unchanged).toBe(1);
   });
 
-  it("AC-7 a sync follows the repo until a person sets the owner in amax; then it stands", async () => {
+  it("AC-7 a sync follows the repo, and the audit records the owner before and after", async () => {
     await push("521-follow", { author: "nimal@lumenlabs.test" });
     expect(await ownerOf("FLT-521")).toBe("Nimal Silva");
     await push("521-follow", { author: "stranger@example.test" });
     expect(await ownerOf("FLT-521")).toBeNull();
-    await updateProposal(ctxFor(nimal), { key: "FLT-521", ownerUserId: nimal.userId });
-    expect(await ownerOf("FLT-521")).toBe("Nimal Silva");
-    await push("521-follow", { author: "stranger@example.test" });
-    expect(await ownerOf("FLT-521")).toBe("Nimal Silva");
+    const [audit] = await withTenant(app, T, (tx) => tx.execute(sql`select before->>'owner' as was, after->>'owner' as now from core.audit_event a
+      join delivery.proposal p on a.resource_id = p.id::text where p.key = 'FLT-521' and a.action = 'delivery.proposal.sync' order by a.seq desc limit 1`));
+    expect(audit).toMatchObject({ was: "Nimal Silva", now: null });
+  });
+
+  it("AC-7 an author git couldn't read keeps the stored owner; the email is never stored", async () => {
+    await push("541-unknown", { author: "nimal@lumenlabs.test" });
+    await push("541-unknown", { author: undefined });
+    expect(await ownerOf("FLT-541")).toBe("Nimal Silva");
+    const stored = await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from delivery.proposal where meta::text ~ '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}' or meta ? 'ownerEmail'`));
+    expect(stored[0].n).toBe(0);
+  });
+
+  // 091 review round 1: every way a person sets an owner stops the sync from changing it, and so does an owner a person
+  // set before 0021 (the backfill reads the audit log once).
+  const setBy = {
+    "update_proposal": (key: string) => updateProposal(ctxFor(nimal), { key, ownerUserId: nimal.userId }),
+    "accepting a Suggested owner": (key: string) => withTenant(app, T, async (tx) =>
+      suggestedOwner.apply(tx, ctxFor(nimal), { proposalId: await idOf(key), key, userId: nimal.userId, name: "Nimal Silva" })),
+    "undoing a Suggested owner": (key: string) => withTenant(app, T, async (tx) => {
+      const p = { proposalId: await idOf(key), key, userId: nimal.userId, name: "Nimal Silva" };
+      await suggestedOwner.apply(tx, ctxFor(nimal), p);
+      await suggestedOwner.undo!(tx, ctxFor(nimal), p, { key });
+    }),
+    "an owner set before 0021 (the backfill)": async (key: string) => {
+      await withTenant(app, T, (tx) => tx.execute(sql`update delivery.proposal set owner_user_id = ${nimal.userId}, owner_name = 'Nimal Silva', owner_set_by_person = false where key = ${key}`));
+      await updateProposal(ctxFor(nimal), { key, ownerUserId: nimal.userId });
+      await withTenant(app, T, (tx) => tx.execute(sql`update delivery.proposal set owner_set_by_person = false where key = ${key}`));
+      const backfill = readFileSync(join(__dirname, "../db/migrations/0021_owner_set_by_person.sql"), "utf8").split(/^update /m)[1];
+      await t.owner.unsafe(`update ${backfill}`);
+    },
+  };
+  it.each(Object.keys(setBy))("AC-7 once a person sets the owner (%s), a sync leaves it", async (how) => {
+    const dir = `55${Object.keys(setBy).indexOf(how)}-person`;
+    const key = `FLT-${dir.slice(0, 3)}`;
+    await push(dir, { author: "stranger@example.test" });
+    expect(await ownerOf(key)).toBeNull();
+    await setBy[how as keyof typeof setBy](key);
+    const settled = await ownerOf(key);
+    // The repo now names someone else than the person's choice, so following it would show.
+    await push(dir, { author: settled ? "stranger@example.test" : "nimal@lumenlabs.test" });
+    expect(await ownerOf(key)).toBe(settled);
+    expect((await withTenant(app, T, (tx) => tx.execute(sql`select owner_set_by_person from delivery.proposal where key = ${key}`)))[0].owner_set_by_person).toBe(true);
   });
 });

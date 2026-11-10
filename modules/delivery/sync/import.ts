@@ -6,6 +6,7 @@ import type { SpecRecord } from "./specclaw";
 import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 import { repoOwnerStale } from "../server/owner";
+import { ownerEmailOf } from "./authors";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
@@ -23,9 +24,9 @@ export const desired = (projectKey: string, r: SpecRecord, sha: string, stored: 
   tasksTotal: tasks.length || r.tasksTotal,
   tasks,
   releasedAt: r.releasedAt,
-  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source,
-    // 091 AC-7: who the repo says owns the change (its Owner line, else its author); an owner change is a change.
-    ownerEmail: r.owner ?? r.author ?? null },
+  // 091 review round 1: no email in meta. The owner's email is read from the repo on every sync and only resolved
+  // to a person then (ownerEmailOf, upsertSpecProposal), so amax never stores a committer's address.
+  meta: { lane: r.lane, module: r.module, status: r.status, waiting: r.waiting, claim: r.claim, hard: r.hard, optional: r.optional, acs: r.acs, pr: r.pr, verdict: r.verdict, sha, source: r.source },
   };
 };
 
@@ -55,7 +56,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
     const stale = new Set<string>();
     for (const r of opts.records) {
       const cur = byNumber.get(`${opts.projectKey}-${r.number}`);
-      if (cur && await repoOwnerStale(tx, ctx.tenantId, cur, r.owner ?? r.author ?? null)) stale.add(`${opts.projectKey}-${r.number}`);
+      if (cur && await repoOwnerStale(tx, ctx.tenantId, cur, ownerEmailOf(r))) stale.add(`${opts.projectKey}-${r.number}`);
     }
     return { existing: rows, ownerStale: stale };
   });
@@ -79,7 +80,7 @@ export async function syncSpecclaw(db: Db, ctx: ServiceContext, opts: { projectK
       continue;
     }
     try {
-      await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, committedAt: opts.committedAt, ...d });
+      await syncProposal(ctx, { projectKey: opts.projectKey, project, source: "specclaw", sourceRef: r.dir, committedAt: opts.committedAt, ...d, ownerEmail: ownerEmailOf(r) });
     } catch (e) {
       // A released hand-made proposal or another source holds the key: left alone and reported.
       if (!(e instanceof KeyTakenError)) throw e;

@@ -44,7 +44,7 @@ export async function ownerFromRepo(tx: Tx, tenantId: string, email: unknown, pr
  * though nothing in its files changed (say, its author linked their git identity since). Never once a person set it.
  */
 export async function repoOwnerStale(tx: Tx, tenantId: string, cur: Record<string, unknown>, email: unknown): Promise<boolean> {
-  if (cur.owner_set_by_person === true) return false;
+  if (cur.owner_set_by_person === true || email === undefined) return false;
   const owner = await ownerFromRepo(tx, tenantId, email, cur.project_id as string);
   return (owner?.id ?? null) !== ((cur.owner_user_id as string | null) ?? null);
 }

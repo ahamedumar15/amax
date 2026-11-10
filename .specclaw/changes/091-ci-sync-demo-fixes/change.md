@@ -58,6 +58,13 @@ holds them. The CI job summary says how many merged or archived branches it left
    A sync keeps the owner up to date with the repo until a person sets it in amax (`update_proposal`, or accepting a
    Suggested owner); from then on the sync never changes it. A sync's owner change raises no event or notification.
 
+   *Build notes:* an owner the repo names but amax couldn't match at first (a git identity linked later) is picked up
+   on the next sync though the change's files are unchanged; who set the owner is kept on the row
+   (`owner_set_by_person`, 0021). *Review round 1:* the email is never stored, only resolved during the sync; an
+   author git can't read is unknown and keeps the stored owner; the self-sync reads authors the same way
+   (`sync/authors.ts`); an owner change is audited. AC-1 also leaves out a squash- or rebase-merged branch (its change
+   folder already on main as it is).
+
 ## Tasks
 
 - [x] `T1` — Repo sync card groups skip lines by reason, five keys then "+n more" (AC-5)
@@ -68,12 +75,12 @@ holds them. The CI job summary says how many merged or archived branches it left
   Files: modules/delivery/sync/sha.ts, modules/delivery/sync/bin.ts, modules/delivery/server/push.ts, modules/delivery/tests/sha-091.test.ts
 - [x] `T4` — CI leaves out merged and archived specclaw/* branches and says how many (AC-1)
   Files: scripts/specclaw-sync-ci.mjs, packages/testing/tests/specclaw-sync-ci.test.ts
-- [~] `T5` — Docs, the 089 suites and the AMX e2e still green (AC-6)
+- [x] `T5` — Docs, the 089 suites and the AMX e2e still green (AC-6)
   Files: modules/delivery/README.md, plugins/amax/README.md, .specclaw/changes/091-ci-sync-demo-fixes/change.md
   Depends: T1–T4
 - [x] `T6` — The owner comes from the repo: the header's Owner line, else the change's author from git, mapped to a person on the project; a sync keeps it until a person sets one (AC-7)
   Files: modules/delivery/sync/specclaw.ts, plugins/amax/scripts/src/read-specclaw.ts, plugins/amax/scripts/read-specclaw.mjs, scripts/specclaw-sync-ci.mjs, modules/delivery/server/push.ts, modules/delivery/server/services.ts, modules/delivery/server/owner.ts, modules/delivery/tests/owner-091.test.ts
-- [ ] `T7` — Demo run on local amax: AMX owners are the changes' authors or Unassigned, not the PM (AC-7)
+- [x] `T7` — Demo run on local amax: AMX owners are the changes' authors or Unassigned, not the PM (AC-7)
   Files: .specclaw/changes/091-ci-sync-demo-fixes/change.md
   Depends: T6
 
