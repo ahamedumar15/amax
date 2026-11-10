@@ -29,8 +29,10 @@ describe.skipIf(!hasDb)("092 the Released card's label", () => {
     const [shipped] = await db.q(sql`select p.key from delivery.proposal p join delivery.project pr on pr.id = p.project_id
       where pr.key = 'CON' and p.phase = 'released' and p.release_id is not null limit 1`);
     const p = await released(shipped.key as string);
-    expect(releasedLabel(p)).toEqual({ text: `In Prod · ${p.release}`, prod: true });
-    expect(await html(ProjectPage({ viewer: maya, params: { key: "CON" } }))).toContain(`In Prod · ${p.release}`);
+    // 095 AC-2: "In Prod" beside the card's release chip, as the mock's board shows.
+    expect(releasedLabel(p)).toEqual({ text: "In Prod", prod: true });
+    const board = await html(ProjectPage({ viewer: maya, params: { key: "CON" } }));
+    expect(board).toContain(`<span class="chip">${p.release}</span><span><span class="chip good">In Prod</span>`);
   });
 
   // 093 review round 2: In Prod is what the deployment recorded when it was written (deployment.released), so re-marking

@@ -7,13 +7,13 @@ import { duplicateNumbers, skipReason } from "./duplicates";
 import { planWithdrawals, refOf } from "./withdraw";
 import { repoOwnerStale } from "../server/owner";
 import { ownerEmailOf } from "./authors";
-import { notFuture, phaseTimesOnly, resolveRepoPhases } from "../server/repo-time";
+import { knownTime, phaseTimesOnly, resolveRepoPhases } from "../server/repo-time";
 
 export type SyncResult = { created: number; updated: number; unchanged: number; withdrawn: number; skipped: string[] };
 
 export type Task = SpecRecord["tasks"][number];
 
-const known = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
+const known = knownTime;
 
 // 094 AC-3: the phase times to store, by the one rule (resolveRepoPhases); none stored and none read: no key.
 const repoPhasesOf = (read: Record<string, string> | undefined, source: string, prior: Record<string, unknown> | undefined) => {

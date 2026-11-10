@@ -85,7 +85,8 @@ test("AC2 proposals show the phase bar and the full list", async ({ page }) => {
   const amxInFlight = (await amx()).filter((r) => r.phase !== "released").length;
   await expect(page.getByText(/^\d+ in flight$/)).toHaveText(`${37 + amxInFlight} in flight`);
   await expect(page.locator(".phase-legend li")).toHaveText([/Proposed\s*\d+/, /Planned\s*\d+/, /Building\s*\d+/, /Verified\s*\d+/, /Released in October\s*\d+/]);
-  await page.getByRole("link", { name: "Released" }).click();
+  // 095 AC-3: by its exact name; a synced proposal's title may say "Released" too.
+  await page.getByRole("link", { name: "Released, all time", exact: true }).click();
   await expect(page).toHaveURL(/\/delivery\/proposals\/released$/);
   await expect(page.locator("table.tbl tbody tr").first()).toContainText("Prod");
   expect(await axe(page)).toEqual([]);

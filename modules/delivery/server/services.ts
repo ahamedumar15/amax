@@ -11,7 +11,7 @@ import { agentFirstRefusal, agentFirstRepo } from "./agent-first";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
-import { repoPhasesInMeta, repoTime, resolveRepoPhases } from "./repo-time";
+import { knownTime, repoPhasesInMeta, repoTime, resolveRepoPhases } from "./repo-time";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -316,6 +316,8 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     }
     const before = rekeyed ? undefined : found;
     // 094 review round 3: the repo's phase times by the one rule, against the row as locked, whoever writes.
+    // 095 AC-1: a future created date is unknown here, the one write every sync path reaches.
+    const createdAt = knownTime(input.createdAt);
     const phases = resolveRepoPhases(input.meta.repoPhases, input.meta.source, (before?.meta as Record<string, unknown> | undefined)?.repoPhases);
     const { repoPhases: _sent, ...rest } = input.meta;
     const meta = JSON.stringify(phases ? { ...rest, repoPhases: phases } : rest);
@@ -330,10 +332,10 @@ export async function upsertSpecProposal(tx: Tx, input: SyncInput, ctx: ServiceC
     const personSet = sql`${ownerFrozen(before, input.ownerEmail)}`;
     const [row] = await tx.execute(sql`insert into delivery.proposal (tenant_id, project_id, key, title, phase, tasks_done, tasks_total, agent, source, source_ref, released_at, meta, owner_user_id, owner_name, created_at, updated_at)
       values (${ctx.tenantId}, ${project.id}, ${input.key}, ${input.title}, ${input.phase}, ${input.tasksDone}, ${input.tasksTotal}, 'specclaw', ${input.source}, ${input.sourceRef},
-              ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, coalesce(${input.createdAt ?? null}::timestamptz, now()), now())
+              ${input.releasedAt}, ${meta}::jsonb, ${owner?.id ?? null}, ${owner?.name ?? null}, coalesce(${createdAt}::timestamptz, now()), now())
       on conflict (tenant_id, key) do update set title = excluded.title,
         -- 094 AC-1: a spec proposal is always made by a sync, so the repo's created date replaces the sync's.
-        created_at = coalesce(${input.createdAt ?? null}::timestamptz, delivery.proposal.created_at),
+        created_at = coalesce(${createdAt}::timestamptz, delivery.proposal.created_at),
         owner_name = case when ${personSet} then delivery.proposal.owner_name else excluded.owner_name end,
         owner_user_id = case when ${personSet} then delivery.proposal.owner_user_id else excluded.owner_user_id end,
         phase = case when delivery.proposal.phase = 'released' then 'released' else excluded.phase end, tasks_done = excluded.tasks_done, tasks_total = excluded.tasks_total,

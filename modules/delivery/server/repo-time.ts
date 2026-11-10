@@ -5,10 +5,13 @@ export const SKEW_MS = 5 * 60_000;
 export const notFuture = (t: string) => Date.parse(t) <= Date.now() + SKEW_MS;
 
 /**
- * 094 review round 1: a date the repo gives (a change's created date, a task's tick). One past now (a skewed clock)
- * reads as unknown (null), so amax keeps the date it has rather than storing a future one.
+ * 094 review round 1: a date the repo gives (a change's created date, a task's tick), as a tool input takes it: a plain
+ * datetime, so every tool's input converts to JSON Schema for chat (095 AC-1: no transform). One past now (a skewed
+ * clock) reads as unknown where it's written (knownTime), so amax keeps the date it has rather than storing a future one.
  */
-export const repoTime = z.string().datetime({ offset: true }).transform((t) => (notFuture(t) ? t : null)).nullable().optional();
+export const repoTime = z.string().datetime({ offset: true }).nullable().optional();
+/** A repo date amax may store: null when it's absent or in the future. */
+export const knownTime = (t: string | null | undefined) => (t && notFuture(t) ? t : null);
 
 const PHASE = z.enum(["proposal", "tasks", "verify", "pr", "archived"]);
 /** 094 AC-3: when each phase was reached in the repo, as a reader sends it. Absent: the sender didn't read them. */

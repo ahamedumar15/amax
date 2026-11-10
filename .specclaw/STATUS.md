@@ -1,7 +1,7 @@
 # 🦞 SpecClaw Dashboard
 
 **Project:** amax
-**Last Updated:** 2026-11-10 12:28 UTC
+**Last Updated:** 2026-11-10 13:00 UTC
 
 _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 
@@ -41,6 +41,7 @@ _1 unnumbered change · run `/specclaw-extras:renumber` to order them_
 - 🔍 **092-ci-sync-owner-and-merge-fixes** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **093-agent-first-proposals** — verify done | 3/3 tasks (100%) | 0 failed | PR #command requires
 - 🔍 **094-sync-repo-dates-and-owner-parser** — verify done | 5/5 tasks (100%) | 0 failed | PR #command requires
+- 📝 **095-pr-113-ci-green** — tasks done | 4/5 tasks (80%) | 0 failed | PR #command requires
 - 🔀 **eval** — PR #command requires
 
 ## Pending Proposals
@@ -117,6 +118,6 @@ _None._
 
 ## Stats
 
-- **Total changes:** 98
-- **Active:** 34
+- **Total changes:** 99
+- **Active:** 35
 - **Completed:** 64

@@ -7,7 +7,7 @@ import { EVENTS, type TaskDone, type TaskReopened } from "../contracts";
 import { recordActivity } from "./activity";
 import { invalid, notFound } from "./refusal";
 import { isWithdrawn } from "./readiness";
-import { repoTime } from "./repo-time";
+import { knownTime, repoTime } from "./repo-time";
 
 // 094 AC-2: doneAt is when the repo ticked the task (git); absent when git couldn't tell.
 export const TaskInput = z.object({ ref: z.string().regex(/^T\d+$/, "a task id such as T3"), title: z.string().min(1), done: z.boolean(), doneAt: repoTime });
@@ -18,7 +18,8 @@ export type TaskLine = z.infer<typeof TaskInput>;
 // person closed (done_by set) keeps its date; one a sync closed earlier takes the repo's date once the repo has one.
 export async function writeTasks(tx: Tx, tenantId: string, proposalId: string, tasks: TaskLine[]) {
   for (const t of tasks) {
-    const repoAt = t.done && t.doneAt ? t.doneAt : null;
+    // 095 AC-1: a tick dated in the future is unknown.
+    const repoAt = t.done ? knownTime(t.doneAt) : null;
     await tx.execute(sql`insert into delivery.task (tenant_id, proposal_id, ref, title, done, done_at) values (${tenantId}, ${proposalId}, ${t.ref}, ${t.title}, ${t.done}, ${t.done ? sql`coalesce(${repoAt}::timestamptz, now())` : null})
       on conflict (proposal_id, ref) do update set title = excluded.title, done = delivery.task.done or excluded.done,
         done_at = case when delivery.task.done_by is null and ${repoAt}::timestamptz is not null then ${repoAt}::timestamptz else coalesce(delivery.task.done_at, excluded.done_at) end`);
