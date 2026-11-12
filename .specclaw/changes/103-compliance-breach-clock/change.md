@@ -45,8 +45,10 @@ No UI: a test-only fix (the mock section says so).
 
 ## Verify
 
-**Verdict:** pending amendment 1's review and CI. The AC-1 to AC-3 evidence below is from `6e164618`, before the
-amendment.
+**Verdict:** PASS on this host, verified at `35c8157b` on 2026-11-12. `Review: CLEAN — 4 rounds, final pass
+35c8157b65`. CI's `checks` on PR #116 still has to confirm AC-2 and the retention e2e of AC-4 after the push.
+Two minors from rounds 3–4 are in `follow-ups.md`: the seed doesn't re-date rows on a reused database, and the mock
+section doesn't mention amendment 1.
 
 - AC-4: on this host, the page's own query (`purgedSince`, 30 days) over a row seeded at `now() - 4 days` returns
   "Agent run logs 9410", and over one at the old 2026-10-12T01:00Z returns nothing (both inside a rolled-back
@@ -73,3 +75,5 @@ Scope: commits after `9aefa301` (102's last commit; this change is stacked on it
 |---|---|---|
 | 1 | round | clean; 1 minor (the fixture day is written in three places) to follow-ups |
 | 2 | final | clean |
+| 3 | round, since `66730fa8` (amendment 1) | clean; 1 minor (a reused database keeps old seed dates) to follow-ups |
+| 4 | final | clean; 1 minor (the mock lede doesn't mention amendment 1) to follow-ups |
