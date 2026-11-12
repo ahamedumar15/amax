@@ -50,9 +50,58 @@ No UI: the change is the admin CLI only (the mock section shows its output).
 
 ## Verify
 
-Quality: not_run (`specclaw-quality-scan` fails on Windows: jq "Argument list too long"). `specclaw-preset-check`
-flags none of this change's files; it fails repo-wide on existing files, which this change doesn't touch.
+**Verdict:** PASS, with the review stopped at the five-pass cap (AGENTS.md): 0 blockers, 1 major and 1 minor open
+(below). Verified at `c7fe3b66` on 2026-11-12.
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+- AC-1: pass — `admin-cli-102.test.ts` AC-1: `principal-add` exits 0, prints `principal <id>  token (shown once): <token>`,
+  writes `auth.principal.create`, and `verifyAuditChain` is ok.
+- AC-2: pass — AC-2: `user-deactivate` exits 0, the user is `deactivated`, an audit row is added and the chain verifies.
+- AC-3: pass — AC-3 row `null`: both audited commands exit non-zero with "set AUDIT_HASH_KEY (the deployment's audit
+  key)", the audit count is unchanged, and `tenant-add`, `user-add` and `scim-token` run without the key.
+- AC-4: pass — AC-4 runs `principal-add`, `user-deactivate` and `scim-token`; each returns with no spawn error and no
+  signal inside the 60 s budget.
+- AC-5: pass — the header of `packages/auth/bin/admin.ts` and README.md's sign-in section name `AUDIT_HASH_KEY` for
+  the two commands and say every command checks the environment as the app does.
+- AC-6: pass — AC-3 rows `""` and `"short-key"` stop with "AUDIT_HASH_KEY: at least 32 characters"; the wrong-key rows,
+  on the seeded tenant and on a new one, stop with "AUDIT_HASH_KEY is not this deployment's key" and write nothing.
+  The app role gets "permission denied for function latest_keyed_actor" on the local database. Open on this AC: the
+  major below (a deployment with no keyed rows at all still takes any long-enough key).
+
+**Commands** (Windows host, local Postgres 16):
+
+- `pnpm --filter @amax/auth test`: exit 0, 71/71 (102: 8/8). `@amax/db` tests: exit 0, 9/9.
+- `@amax/core` tests after the migration: 166/167; the one failure is `ac5-adapters` (backslash paths, host-only).
+- `pnpm lint`: exit 0. `pnpm build`: exit 0.
+- `pnpm turbo run test --continue --force`: exit 1, 28/35 packages. Every failure is host-only or load: 60 s setup-hook
+  timeouts (time, core), vitest cache races with a parallel run, `ac5-adapters`/`releases` backslash paths,
+  `ac7-config` symlink EPERM, `spawn npx ENOENT`, `grid-perf` 2064 ms against 2000 ms, and compliance `daysLeft`
+  (fixture date drift). None is in auth or db. CI's Linux run is the check of record.
+- Quality: not_run (`specclaw-quality-scan` fails on Windows: jq "Argument list too long"). `specclaw-preset-check`
+  flags none of this change's files; it fails repo-wide on files this change doesn't touch.
+- Screenshot: not_run (`specclaw-screenshot`: `playwright` isn't on PATH). The mock section
+  `#102-admin-cli-audit-key` was compared with the real CLI output on the local database (unset, short and wrong
+  key: each message, exit 1). Compared by eye: Umar Ahamed.
+
+### Review loop (2026-11-12)
+
+Scope: commits after `90b4b7f6` (098's head; this branch is stacked on it). Models opus/opus.
+
+| Round | Pass | Result |
+|---|---|---|
+| 1 | round | 1 major (key length unchecked, a second copy of core's rule) → `loadEnv`; 1 minor (AC-4 scope) fixed |
+| 2 | round, since `d3f6b3fc` | clean; 2 pre-existing (sync bin, dev-seed read the raw key) to follow-ups |
+| 3 | final | 1 major (a long-enough wrong key accepted) → per-tenant key check; 2 minors (docs, AC-1 action) fixed |
+| 4 | round, since `9faae143` | 1 major (new tenant skips the check) → `core.latest_keyed_actor()` probe, product owner's decision |
+| 5 | final | escalate: 1 major, 1 minor open; stopped at the cap |
+
+**Open after pass 5 (not fixed; the cap stops the loop):**
+
+- major [B6] `packages/auth/bin/admin.ts:41`: the check passes when the deployment has no keyed audit row yet, so on a
+  fresh install the first `principal-add` takes any key of 32+ characters. That row then becomes the reference. The
+  fix needs a stored key fingerprint (an HMAC of a fixed label, written when the app first configures the runtime) or
+  a refusal until a reference exists. AC-3's wrong-key rows rely on AC-1 having written a row first.
+- minor [B10] `packages/db/migrations/0032_deployment_key_probe.sql:10`: the header says the probe returns only a
+  keyed hash, but it also returns the raw `actor` of another tenant's row. Comparing in SQL would return only
+  match or no match.
+
+Both, and the pre-existing sync-bin and dev-seed findings, are in `follow-ups.md` for a follow-up change.
