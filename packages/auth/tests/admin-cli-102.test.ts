@@ -36,7 +36,7 @@ describe.skipIf(!hasDb)("102 admin CLI audit key", () => {
     const r = run(["principal-add", "--tenant", tenant, "--email", "maya@lumen.test", "--name", "specclaw-sync", "--roles", "delivery:proposal:sync"]);
     expect(r.status, r.stderr).toBe(0);
     expect(r.stdout).toMatch(/^principal \S+ {2}token \(shown once\): \S+\s*$/);
-    expect((await audit()).length).toBeGreaterThan(0);
+    expect((await audit()).map((a) => a.action)).toContain("auth.principal.create");
     expect(await chain()).toMatchObject({ ok: true });
   }, BUDGET);
 
@@ -53,10 +53,11 @@ describe.skipIf(!hasDb)("102 admin CLI audit key", () => {
   const audited = () => [["principal-add", "--tenant", tenant, "--email", "maya@lumen.test", "--name", "x", "--roles", "delivery:proposal:sync"], ["user-deactivate", "--tenant", tenant, "--email", "maya@lumen.test"]];
 
   it.each([
-    [null, "set AUDIT_HASH_KEY (the deployment's audit key)"],
-    ["", "AUDIT_HASH_KEY: at least 32 characters"],
-    ["short-key", "AUDIT_HASH_KEY: at least 32 characters"],
-  ])("AC-3 with the key %j, audited commands refuse and write nothing; the others still run unset", async (key, message) => {
+    [null, "set AUDIT_HASH_KEY (the deployment's audit key)", true],
+    ["", "AUDIT_HASH_KEY: at least 32 characters", false],
+    ["short-key", "AUDIT_HASH_KEY: at least 32 characters", false],
+    ["w".repeat(32), "AUDIT_HASH_KEY is not this deployment's key", true],
+  ])("AC-3 key %j: audited commands refuse with %j and write nothing; scim-token runs: %s", async (key, message, othersRun) => {
     const before = (await audit()).length;
     for (const args of audited()) {
       const r = run(args, key);
@@ -64,7 +65,8 @@ describe.skipIf(!hasDb)("102 admin CLI audit key", () => {
       expect(r.stderr).toContain(message);
     }
     expect((await audit()).length).toBe(before);
-    expect(run(["scim-token", "--tenant", tenant], null).status).toBe(0);
+    expect(await chain()).toMatchObject({ ok: true });
+    expect(run(["scim-token", "--tenant", tenant], key).status === 0).toBe(othersRun);
   }, 3 * BUDGET);
 
   it("AC-4 each command exits on its own", () => {

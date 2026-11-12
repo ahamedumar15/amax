@@ -5,14 +5,14 @@
 //   pnpm --filter @amax/auth admin scim-token --tenant <id>
 //   pnpm --filter @amax/auth admin principal-add --tenant <id> --email <owner> --name <name> --roles <scopes>
 // Without --password a strong one is generated and printed once. user-deactivate and principal-add write to the
-// audit chain, so they also need AUDIT_HASH_KEY (the app's value); they refuse to start without it. The environment
-// is read by core's loadEnv, so a key the app would refuse at boot (under 32 characters) is refused here too.
+// audit chain, so they also need AUDIT_HASH_KEY (the app's value) and refuse a missing or different key. Every
+// command checks the whole environment with core's loadEnv, as the app does at boot, so any invalid variable stops it.
 import { randomBytes, randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { sql } from "drizzle-orm";
 import { createDb, withTenant } from "@amax/db";
 import { loadEnv } from "@amax/core/env";
-import { configureRuntime } from "@amax/core/server";
+import { configureRuntime, keyed } from "@amax/core/server";
 import { upsertPasswordUser } from "../src/password";
 import { revokeUser } from "../src/revoke";
 import { createScimToken } from "../src/scim";
@@ -30,12 +30,19 @@ const { values, positionals } = parseArgs({
   options: { tenant: { type: "string" }, email: { type: "string" }, name: { type: "string" }, roles: { type: "string" }, password: { type: "string" } },
 });
 const auditKey = env.AUDIT_HASH_KEY;
-if (!auditKey && (cmd === "principal-add" || cmd === "user-deactivate")) throw new Error("set AUDIT_HASH_KEY (the deployment's audit key)");
+const audited = cmd === "principal-add" || cmd === "user-deactivate";
+if (!auditKey && audited) throw new Error("set AUDIT_HASH_KEY (the deployment's audit key)");
 const { db, client } = createDb(url, { max: 1 });
 if (auditKey) configureRuntime({ db, auditKey });
 const need = (k: keyof typeof values) => values[k] ?? (() => { throw new Error(`--${k} is required`); })();
+// A wrong key would append rows no one can verify or erase, so it must reproduce the tenant's latest keyed actor.
+async function deploymentKey(tenantId: string) {
+  const [r] = await withTenant(db, tenantId, (tx) => tx.execute(sql`select actor, actor_key from core.audit_event where tenant_id = ${tenantId} and chain_v = 2 and actor is not null and actor_key is not null order by seq desc limit 1`));
+  if (r && keyed(r.actor, auditKey) !== r.actor_key) throw new Error("AUDIT_HASH_KEY is not this deployment's key");
+}
 
 try {
+  if (audited) await deploymentKey(need("tenant"));
   if (cmd === "tenant-add") {
     const id = randomUUID();
     const name = positionals[0] ?? (() => { throw new Error("tenant name is required"); })();
