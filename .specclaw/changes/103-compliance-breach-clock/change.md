@@ -32,3 +32,23 @@ No UI: a test-only fix (the mock section says so).
   Files: modules/compliance/tests/registers.test.ts
 
 ## Verify
+
+**Verdict:** PASS. Verified at `6e164618` on 2026-11-12. `Review: CLEAN — 2 rounds, final pass 6e16461885`.
+
+- AC-1: pass — AC2 calls `vi.useFakeTimers({ toFake: ["Date"], now: 2026-10-16T08:00:00Z })` and restores the real
+  clock in `onTestFinished`. Its assertions are unchanged (72 h deadline, regulator, reminders, `daysLeft: 5`).
+- AC-2: pass on this host — before the fix the test failed locally exactly as in CI (`daysLeft` 6, expected 5); after
+  it, `modules/compliance` passes 14/14. CI's `checks` on PR #116 is pending the push.
+- AC-3: pass — the only code file changed is `modules/compliance/tests/registers.test.ts` (plus the two identical mock
+  copies' section for 103).
+- `tsc --noEmit` in `modules/compliance`: exit 0.
+- Screenshot: not needed beyond the mock's text: no screen changes.
+
+### Review loop (2026-11-12)
+
+Scope: commits after `9aefa301` (102's last commit; this change is stacked on it). Models opus/opus.
+
+| Round | Pass | Result |
+|---|---|---|
+| 1 | round | clean; 1 minor (the fixture day is written in three places) to follow-ups |
+| 2 | final | clean |
