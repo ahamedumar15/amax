@@ -5,11 +5,13 @@
 //   pnpm --filter @amax/auth admin scim-token --tenant <id>
 //   pnpm --filter @amax/auth admin principal-add --tenant <id> --email <owner> --name <name> --roles <scopes>
 // Without --password a strong one is generated and printed once. user-deactivate and principal-add write to the
-// audit chain, so they also need AUDIT_HASH_KEY (the app's value); they refuse to start without it.
+// audit chain, so they also need AUDIT_HASH_KEY (the app's value); they refuse to start without it. The environment
+// is read by core's loadEnv, so a key the app would refuse at boot (under 32 characters) is refused here too.
 import { randomBytes, randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { sql } from "drizzle-orm";
 import { createDb, withTenant } from "@amax/db";
+import { loadEnv } from "@amax/core/env";
 import { configureRuntime } from "@amax/core/server";
 import { upsertPasswordUser } from "../src/password";
 import { revokeUser } from "../src/revoke";
@@ -18,7 +20,8 @@ import { createPrincipal } from "../src/principals";
 import { viewerForUser } from "../src/session";
 import { isRole } from "../src/roles";
 
-const url = process.env.DATABASE_MIGRATE_URL;
+const env = loadEnv();
+const url = env.DATABASE_MIGRATE_URL;
 if (!url) throw new Error("set DATABASE_MIGRATE_URL (the schema owner)");
 const [cmd, ...rest] = process.argv.slice(2);
 const { values, positionals } = parseArgs({
@@ -26,7 +29,7 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: { tenant: { type: "string" }, email: { type: "string" }, name: { type: "string" }, roles: { type: "string" }, password: { type: "string" } },
 });
-const auditKey = process.env.AUDIT_HASH_KEY;
+const auditKey = env.AUDIT_HASH_KEY;
 if (!auditKey && (cmd === "principal-add" || cmd === "user-deactivate")) throw new Error("set AUDIT_HASH_KEY (the deployment's audit key)");
 const { db, client } = createDb(url, { max: 1 });
 if (auditKey) configureRuntime({ db, auditKey });

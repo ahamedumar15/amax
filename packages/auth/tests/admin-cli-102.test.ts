@@ -50,20 +50,28 @@ describe.skipIf(!hasDb)("102 admin CLI audit key", () => {
     expect(await chain()).toMatchObject({ ok: true });
   }, BUDGET);
 
-  it("AC-3 without the key, audited commands refuse and write nothing; the others still run", async () => {
+  const audited = () => [["principal-add", "--tenant", tenant, "--email", "maya@lumen.test", "--name", "x", "--roles", "delivery:proposal:sync"], ["user-deactivate", "--tenant", tenant, "--email", "maya@lumen.test"]];
+
+  it.each([
+    [null, "set AUDIT_HASH_KEY (the deployment's audit key)"],
+    ["", "AUDIT_HASH_KEY: at least 32 characters"],
+    ["short-key", "AUDIT_HASH_KEY: at least 32 characters"],
+  ])("AC-3 with the key %j, audited commands refuse and write nothing; the others still run unset", async (key, message) => {
     const before = (await audit()).length;
-    for (const args of [["principal-add", "--tenant", tenant, "--email", "maya@lumen.test", "--name", "x", "--roles", "delivery:proposal:sync"], ["user-deactivate", "--tenant", tenant, "--email", "maya@lumen.test"]]) {
-      const r = run(args, null);
+    for (const args of audited()) {
+      const r = run(args, key);
       expect(r.status).not.toBe(0);
-      expect(r.stderr).toContain("set AUDIT_HASH_KEY (the deployment's audit key)");
+      expect(r.stderr).toContain(message);
     }
     expect((await audit()).length).toBe(before);
     expect(run(["scim-token", "--tenant", tenant], null).status).toBe(0);
   }, 3 * BUDGET);
 
   it("AC-4 each command exits on its own", () => {
-    const r = run(["scim-token", "--tenant", tenant]);
-    expect(r.error).toBeUndefined();
-    expect(r.signal).toBeNull();
-  }, BUDGET);
+    for (const args of [...audited(), ["scim-token", "--tenant", tenant]]) {
+      const r = run(args);
+      expect(r.error).toBeUndefined();
+      expect(r.signal).toBeNull();
+    }
+  }, 3 * BUDGET);
 });

@@ -1096,6 +1096,23 @@ demo data: seeded auth, hr, delivery, time, finance, reports, … + 070–073 wa
   <h1>e2e month window</h1>
   <p class="lede">No screen changes. The allocations copy-month e2e test finds January by the grid's own column and accepts any first month whose window shows the fixtures' January 2027 (September 2026 to January 2027).</p>
 </section>
+<section data-change="102-admin-cli-audit-key" id="102-admin-cli-audit-key" data-roles="all" data-title="Admin CLI audit key" data-nav="no" data-parent="001-amax-foundation">
+  <h1>Admin CLI audit key</h1>
+  <p class="lede">No screen changes. The admin CLI's <code>principal-add</code> and <code>user-deactivate</code> stop crashing: they read the deployment's audit key, so the entries they write join the audit chain.</p>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card"><div class="card-head"><h2>Before</h2></div>
+      <pre style="white-space:pre-wrap;font-size:13px;margin:0">$ pnpm --filter @amax/auth admin principal-add --tenant 1111…1111 \
+    --email sahan@lumenlabs.test --name specclaw-sync --roles delivery:proposal:sync
+Error: amax: configureRuntime({ db, auditKey }) before writing to the audit or trace chain</pre></div>
+    <div class="card"><div class="card-head"><h2>After</h2></div>
+      <pre style="white-space:pre-wrap;font-size:13px;margin:0">$ pnpm --filter @amax/auth admin principal-add --tenant 1111…1111 \
+    --email sahan@lumenlabs.test --name specclaw-sync --roles delivery:proposal:sync
+principal 4f0c…9a21  token (shown once): amx_sp_EXAMPLEONLY…</pre></div>
+  </div>
+  <div class="card"><div class="card-head"><h2>Without the key</h2></div>
+    <pre style="white-space:pre-wrap;font-size:13px;margin:0">$ pnpm --filter @amax/auth admin user-deactivate --tenant 1111…1111 --email kasun@lumenlabs.test
+set AUDIT_HASH_KEY (the deployment's audit key)        # exit 1, nothing written</pre></div>
+</section>
 <section data-change="081-proposals-end-to-end" id="081-proposals-end-to-end" data-roles="admin leadership pm engineer finance" data-title="CON-H003 Invoice reminders" data-nav="no" data-parent="001-amax-foundation-proposals">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-projects">Projects</a><span>/</span><a href="#001-amax-foundation-project">Contoso Portal</a><span>/</span><a href="#001-amax-foundation-proposals">Proposals</a><span>/</span>CON-H003</nav>
   <div class="row head">
