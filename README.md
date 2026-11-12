@@ -81,7 +81,9 @@ With `DATABASE_URL` set, every screen needs sign-in (set `AUTH_SECRET` too). Two
   export AMAX_AUTH_PASSWORD_TENANT=<tenant id>
   pnpm --filter @amax/auth admin user-add --tenant <id> --email you@example.com --name "Your Name" --roles Admin
   ```
-  Passwords are scrypt-hashed; five wrong attempts lock the account for 15 minutes.
+  Passwords are scrypt-hashed; five wrong attempts lock the account for 15 minutes. `admin user-deactivate` and
+  `admin principal-add` (a service principal, such as the specclaw sync's) write to the audit chain, so they also need
+  `AUDIT_HASH_KEY`, the app's own value. Without it they refuse to start.
 - **Microsoft Entra ID**: seed the first tenant with `AMAX_SEED_*` (see `packages/auth/src/seed.ts`) and run `pnpm --filter @amax/auth seed`. The app registration must emit the `groups` claim. A Microsoft button appears only for tenants with a provider.
 
 For local development, `AMAX_AUTH_DEMO=1` and `AMAX_AUTH_DEMO_TENANT=<id>` add a fixtures-only "sign in as" form (ignored in production).

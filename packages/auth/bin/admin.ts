@@ -3,11 +3,14 @@
 //   pnpm --filter @amax/auth admin user-add --tenant <id> --email a@b.c --name "A B" --roles Admin,PM [--password ...]
 //   pnpm --filter @amax/auth admin user-deactivate --tenant <id> --email a@b.c
 //   pnpm --filter @amax/auth admin scim-token --tenant <id>
-// Without --password a strong one is generated and printed once.
+//   pnpm --filter @amax/auth admin principal-add --tenant <id> --email <owner> --name <name> --roles <scopes>
+// Without --password a strong one is generated and printed once. user-deactivate and principal-add write to the
+// audit chain, so they also need AUDIT_HASH_KEY (the app's value); they refuse to start without it.
 import { randomBytes, randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { sql } from "drizzle-orm";
 import { createDb, withTenant } from "@amax/db";
+import { configureRuntime } from "@amax/core/server";
 import { upsertPasswordUser } from "../src/password";
 import { revokeUser } from "../src/revoke";
 import { createScimToken } from "../src/scim";
@@ -23,7 +26,10 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: { tenant: { type: "string" }, email: { type: "string" }, name: { type: "string" }, roles: { type: "string" }, password: { type: "string" } },
 });
+const auditKey = process.env.AUDIT_HASH_KEY;
+if (!auditKey && (cmd === "principal-add" || cmd === "user-deactivate")) throw new Error("set AUDIT_HASH_KEY (the deployment's audit key)");
 const { db, client } = createDb(url, { max: 1 });
+if (auditKey) configureRuntime({ db, auditKey });
 const need = (k: keyof typeof values) => values[k] ?? (() => { throw new Error(`--${k} is required`); })();
 
 try {

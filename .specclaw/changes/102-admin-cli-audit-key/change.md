@@ -30,10 +30,21 @@ its token), and the message it gives when `AUDIT_HASH_KEY` isn't set.
 
 ## Tasks
 
-<!-- Added by plan, UI first, then backend, then integration, in tasks.md's task-line
-     format: checkbox, `Tn`, em dash, title; then indented Files: and optional Depends: lines. -->
+No UI: the change is the admin CLI only (the mock section shows its output).
+
+- [x] `T1` — Admin CLI configures the runtime with `AUDIT_HASH_KEY` before `principal-add` and `user-deactivate`, and refuses them without it before connecting or writing (AC-1, AC-2, AC-3, AC-4)
+  Files: packages/auth/bin/admin.ts
+- [x] `T2` — Test the CLI as a process against the test database: both commands succeed with the key and their audit entries verify on the chain, both exit non-zero with the message and write nothing without it, the other three commands still run without it, and each run exits on its own within a timeout (AC-1, AC-2, AC-3, AC-4)
+  Files: packages/auth/tests/admin-cli-102.test.ts
+  Depends: T1
+- [x] `T3` — Name `AUDIT_HASH_KEY` for those two commands in the CLI's usage comment and the README's sign-in section (AC-5)
+  Files: packages/auth/bin/admin.ts, README.md
+  Depends: T1
 
 ## Verify
+
+Quality: not_run (`specclaw-quality-scan` fails on Windows: jq "Argument list too long"). `specclaw-preset-check`
+flags none of this change's files; it fails repo-wide on existing files, which this change doesn't touch.
 
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
      line per criterion, quality before → after, preset check, and screenshot paths
