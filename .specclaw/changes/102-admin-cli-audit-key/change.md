@@ -27,14 +27,21 @@ its token), and the message it gives when `AUDIT_HASH_KEY` isn't set.
 4. **AC-4** After its command finishes, the CLI exits on its own: it doesn't hang on an open database connection.
 5. **AC-5** The usage comment at the top of `admin.ts` and the README's sign-in section name `AUDIT_HASH_KEY` for the
    commands that need it.
+6. **AC-6** (added in review: round 1, then rounds 3–4 with the product owner's decision of 2026-11-12) Every command
+   reads the environment through core's `loadEnv`, so an empty key or one under 32 characters stops it, as it stops
+   the app. `principal-add` and `user-deactivate` also refuse, with "AUDIT_HASH_KEY is not this deployment's key"
+   and nothing written, a key that doesn't reproduce the newest keyed audit row anywhere in the deployment. That
+   includes a tenant with no audit rows of its own. They skip the check only when the deployment has no keyed rows.
+   The cross-tenant read is one SECURITY DEFINER function (`core.latest_keyed_actor()`) that only the schema owner
+   can call; the app role can't.
 
 ## Tasks
 
 No UI: the change is the admin CLI only (the mock section shows its output).
 
-- [x] `T1` — Admin CLI configures the runtime with `AUDIT_HASH_KEY` before `principal-add` and `user-deactivate`, and refuses them without it before connecting or writing (AC-1, AC-2, AC-3, AC-4)
-  Files: packages/auth/bin/admin.ts
-- [x] `T2` — Test the CLI as a process against the test database: both commands succeed with the key and their audit entries verify on the chain, both exit non-zero with the message and write nothing without it, the other three commands still run without it, and each run exits on its own within a timeout (AC-1, AC-2, AC-3, AC-4)
+- [x] `T1` — Admin CLI configures the runtime with `AUDIT_HASH_KEY` before `principal-add` and `user-deactivate`, and refuses them without it before connecting or writing (AC-1, AC-2, AC-3, AC-4); review rounds add the env check and the deployment-key probe (AC-6)
+  Files: packages/auth/bin/admin.ts, packages/db/migrations/0032_deployment_key_probe.sql
+- [x] `T2` — Test the CLI as a process against the test database: both commands succeed with the key and their audit entries verify on the chain, both exit non-zero with the message and write nothing without it, the other three commands still run without it, each run exits on its own within a timeout, and an empty, short or wrong key (on an old or a new tenant) is refused (AC-1, AC-2, AC-3, AC-4, AC-6)
   Files: packages/auth/tests/admin-cli-102.test.ts
   Depends: T1
 - [x] `T3` — Name `AUDIT_HASH_KEY` for those two commands in the CLI's usage comment and the README's sign-in section (AC-5)

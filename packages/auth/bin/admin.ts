@@ -35,14 +35,14 @@ if (!auditKey && audited) throw new Error("set AUDIT_HASH_KEY (the deployment's 
 const { db, client } = createDb(url, { max: 1 });
 if (auditKey) configureRuntime({ db, auditKey });
 const need = (k: keyof typeof values) => values[k] ?? (() => { throw new Error(`--${k} is required`); })();
-// A wrong key would append rows no one can verify or erase, so it must reproduce the tenant's latest keyed actor.
-async function deploymentKey(tenantId: string) {
-  const [r] = await withTenant(db, tenantId, (tx) => tx.execute(sql`select actor, actor_key from core.audit_event where tenant_id = ${tenantId} and chain_v = 2 and actor is not null and actor_key is not null order by seq desc limit 1`));
+// A wrong key would append rows no one can verify or erase, so it must reproduce the deployment's latest keyed actor.
+async function deploymentKey() {
+  const [r] = await db.execute(sql`select actor, actor_key from core.latest_keyed_actor()`);
   if (r && keyed(r.actor, auditKey) !== r.actor_key) throw new Error("AUDIT_HASH_KEY is not this deployment's key");
 }
 
 try {
-  if (audited) await deploymentKey(need("tenant"));
+  if (audited) await deploymentKey();
   if (cmd === "tenant-add") {
     const id = randomUUID();
     const name = positionals[0] ?? (() => { throw new Error("tenant name is required"); })();
