@@ -79,8 +79,24 @@ were drafted from the repo.
 
 ## Tasks
 
-<!-- Added by plan, UI first, then backend, then integration, in tasks.md's task-line
-     format: checkbox, `Tn`, em dash, title; then indented Files: and optional Depends: lines. -->
+- [ ] `T1` — "New proposal in chat" label and tooltip; the Time card's "N h waiting for approval" line, absent at 0, band unchanged (AC-1, AC-9 screen)
+  Files: modules/delivery/ui/NewProposalButton.tsx, modules/delivery/ui/proposals-action.ts, modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/band.ts, modules/delivery/tests/proposals-action-094.test.ts, apps/mock/public/mock/index.html
+- [ ] `T2` — The reader sends each change's commits (id, author email, time; merges and unnamed commits left out); older payloads without them still parse (AC-2)
+  Files: modules/delivery/sync/authors.ts, modules/delivery/sync/specclaw.ts, plugins/amax/scripts/src/read-specclaw.ts, plugins/amax/scripts/read-specclaw.mjs, plugins/amax/tests/reader.test.ts, scripts/specclaw-sync-ci.mjs, packages/testing/tests/specclaw-sync-ci.test.ts
+- [ ] `T3` — Pure session estimate per person, proposal and UTC day: 90-minute gap, 30-minute lead-in, quarter-hour rounding, 8 h cap, split at midnight; table test (AC-3)
+  Files: modules/delivery/sync/estimate.ts, modules/delivery/tests/estimate-104.test.ts
+- [ ] `T4` — Drafting from a push: authors by linked git identity (provider from the project's repo host), consent on and day on or after `notified_at`, only ended days, one draft per person, proposal and day, webhook `Time:` commits left out; suggestion wording "from N commits on KEY"; sync result counts drafted and unlinked (AC-4, AC-5, AC-6, AC-7, AC-8)
+  Files: modules/delivery/server/push.ts, modules/delivery/server/commit-time.ts, modules/delivery/server/ingest.ts, modules/delivery/db/migrations/0022_commit_draft_day.sql, modules/delivery/contracts.ts, modules/delivery/module.ts, modules/time/suggestions.ts, modules/delivery/tests/sync-time-104.test.ts, modules/time/tests/commit-draft-008.test.ts
+  Depends: T2, T3
+- [ ] `T5` — Waiting hours: Time hands per-proposal totals of live entries in unapproved weeks to Delivery's hours service under its job; refreshed on entry log, correct, delete and on week submit, approve, reject, reopen; `ProposalRow`, `get_proposal` and `list_proposals` return them (AC-9 data, AC-10, AC-12)
+  Files: modules/delivery/db/migrations/0023_proposal_waiting_hours.sql, modules/delivery/server/proposal-hours.ts, modules/time/server/proposal-hours.ts, modules/delivery/server/queries.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/mcp.ts, modules/time/tests/proposal-hours-104.test.ts
+  Depends: T1
+- [ ] `T6` — Proposal history line "Drafted 1.5 h for 12 Nov from the repo, waiting to be accepted", from Delivery's own audit of the draft, visible under 081 AC-28's rule (AC-11)
+  Files: modules/delivery/server/proposal-detail.ts, modules/delivery/tests/proposal-detail.test.ts
+  Depends: T4
+- [ ] `T7` — Docs and the full check: how hours are estimated, consent and accept; `check:graph`; the 008, 081 and 089–094 suites green (AC-13)
+  Files: modules/delivery/README.md, modules/time/README.md, plugins/amax/README.md, plugins/amax/skills/sync-specclaw/SKILL.md
+  Depends: T4, T5, T6
 
 ## Verify
 
