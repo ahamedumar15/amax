@@ -1117,6 +1117,30 @@ set AUDIT_HASH_KEY (the deployment's audit key)        # exit 1, nothing written
   <h1>Compliance breach test clock</h1>
   <p class="lede">No screen changes. The compliance breach-reminder test pins its clock to the fixtures' day (2026-10-16), so its deadlines and reminder counts no longer change with the date it runs on.</p>
 </section>
+<!-- ================= 104 agentic time from the sync ================= -->
+<section data-change="104-agentic-time-from-sync" id="104-agentic-time-from-sync" data-roles="admin leadership pm engineer" data-title="Agentic time" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
+  <h1>Agentic time from the sync</h1>
+  <p class="lede">The repo sync drafts hours from commit times. The person accepts them; nothing is logged or approved for them. All data here is fictional.</p>
+  <h2 style="margin-top:28px">1. Proposals (all projects): the button says what it does; the repo line is an info icon (amendment 1)</h2>
+  <div class="row head" style="margin-top:8px"><div><h2 style="margin:0;display:flex;align-items:flex-start;gap:6px">Proposals <span style="position:relative;display:inline-flex;margin-top:2px"><button type="button" aria-label="How proposals get here" aria-describedby="tip-104" style="width:18px;height:18px;border:0;border-radius:999px;background:var(--sunken,#f0eef7);color:#8A86A0;font:700 11px/1 inherit;cursor:help">i</button>
+      <span role="tooltip" id="tip-104" style="position:absolute;top:28px;left:0;width:340px;padding:10px 12px;border:1px solid var(--line,#E4E1F0);border-radius:10px;background:#fff;color:#1f1b2e;font-size:13px;font-weight:400;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.12)"><p style="margin:0 0 8px;font-weight:600">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p><p style="margin:0 0 8px">Proposals come from your repos; nothing is typed in here. To add one:</p><ol style="margin:0;padding-left:18px"><li>In the repo, write it with <code>/specclaw:propose</code>.</li><li>Sync the repo to amax: run <code>/amax:sync-specclaw</code> there, or merge the change and CI syncs it.</li></ol></span></span></h2></div>
+    <div class="actions"><button class="btn sm" type="button" title="Opens chat to add one">✦ New proposal in chat</button></div></div>
+  <p class="muted" style="font-size:13px;margin-top:120px">The lede moved into the tooltip, which shows on hover and on keyboard focus (drawn open here). The button was "Add by hand"; it shows only while you can add to a project that isn't synced from a repo.</p>
+  <h2 style="margin-top:32px">2. My timesheet: hours drafted from the repo</h2>
+  <div class="card pinnable" style="max-width:620px"><div class="card-head"><h2>Suggested by amax</h2><span class="chip agent">An agent suggests, a person decides</span></div>
+    <p><b>Add 1.5 h on amax for 12 Nov</b></p>
+    <p class="muted" style="font-size:13px">From 6 commits on AMX-102. Accept to add it to your timesheet as a draft. Repo sync · estimated from commit times</p>
+    <div class="actions"><button class="btn sm primary">✦ Ask amax to accept</button><button class="btn sm" style="background:none;border:0;box-shadow:none;text-decoration:underline">Dismiss</button></div></div>
+  <p class="muted" style="font-size:13px;max-width:620px">Commits less than 90 minutes apart are one session, counted from 30 minutes before the first. Capped at 8 h a day per proposal. Wrong figure? Accept, then ask amax to correct the entry.</p>
+  <h2 style="margin-top:32px">3. Proposal AMX-102: hours that wait for approval</h2>
+  <div class="cols even" style="margin-bottom:28px">
+    <div class="card pinnable"><div class="card-head"><h2>Time</h2></div><div class="big">4 h <span class="muted" style="font-size:15px;font-weight:500">approved</span></div>
+      <p style="margin:6px 0 0"><span class="chip">1.5 h waiting for approval</span></p>
+      <p class="muted" style="font-size:13px">From timesheet entries logged against AMX-102. Only approved hours count against an estimate.</p></div>
+    <div class="card flush pinnable"><div class="card-head"><h2>History</h2></div>
+      <table class="tbl"><tbody><tr><td>13 Nov</td><td>Kasun Dias logged 1.5 h for 12 Nov</td><td>Git for Kasun Dias</td></tr><tr><td>13 Nov</td><td>Drafted 1.5 h for 12 Nov from the repo, waiting to be accepted</td><td>Repo sync for Kasun Dias</td></tr><tr><td>12 Nov</td><td>T1 done · T2 done</td><td>from the repo</td></tr></tbody></table></div>
+  </div>
+</section>
 <section data-change="081-proposals-end-to-end" id="081-proposals-end-to-end" data-roles="admin leadership pm engineer finance" data-title="CON-H003 Invoice reminders" data-nav="no" data-parent="001-amax-foundation-proposals">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#001-amax-foundation-projects">Projects</a><span>/</span><a href="#001-amax-foundation-project">Contoso Portal</a><span>/</span><a href="#001-amax-foundation-proposals">Proposals</a><span>/</span>CON-H003</nav>
   <div class="row head">

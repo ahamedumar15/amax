@@ -41,6 +41,12 @@ describe("081 amendment 4: the board's band, the stepper and the Time band", () 
     expect(timeBand(11.5, null)).toMatchObject({ estimate: null, figure: "11.5 h", rest: "approved · no estimate" });
   });
 
+  it("104 AC-9 hours waiting for approval are a line of their own, absent at 0, and never move the band", () => {
+    expect(timeBand(4, 16, 1.5)).toMatchObject({ within: 4, left: 12, figure: "4 h", waitingLine: "1.5 h waiting for approval", sentence: "4 h approved of 16 h estimated, 12 h left" });
+    expect(timeBand(4, 16)).toMatchObject({ waitingLine: null });
+    expect(timeBand(0, null, 2.25)).toMatchObject({ figure: "0 h", waitingLine: "2.25 h waiting for approval" });
+  });
+
   it("AC42 (revised) the release band follows the release the sprint is heading for, stage by stage, and hides when all are live", () => {
     const st = (environment: string, position: number, status: string | null, isProd = false) => ({ environment, position, isProd, status, at: null });
     const v24 = { id: "a", version: "v2.4.0", proposals: 3, stages: [st("Dev", 1, "deployed"), st("QA", 2, "testing"), st("Prod", 4, null, true), st("UAT", 3, null)] };

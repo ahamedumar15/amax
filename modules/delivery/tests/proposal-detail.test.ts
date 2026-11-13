@@ -115,10 +115,12 @@ describe.skipIf(!hasDb)("081 the proposal page (Postgres)", () => {
         { ...base, id: "time:1", at: "2026-10-19T09:00:00.000Z", hours: 2 },
         { ...base, id: "time:2", at: "2026-10-19T10:00:00.000Z", hours: 2.5, previousProposalId: id },
         { ...base, id: "time:3", at: "2026-10-19T11:00:00.000Z", hours: 2.5, deleted: true },
+        // 104 AC-11: the repo sync's draft, worded as waiting, not logged.
+        { ...base, id: "time:4", at: "2026-10-19T12:00:00.000Z", hours: 1.5, day: "2026-11-12", drafted: 6 },
       ] };
     };
-    const lines = async (v: Viewer, key = "CON-017") => ((await getProposal(v, { key }))!.history as { text: string }[]).map((h) => h.text).filter((t) => /logged|Corrected|Removed/.test(t));
-    const want = ["Removed Nimal Silva's 2.5 h for Oct 19", "Corrected Nimal Silva's entry for Oct 19 to 2.5 h", "Nimal Silva logged 2 h for Oct 19"];
+    const lines = async (v: Viewer, key = "CON-017") => ((await getProposal(v, { key }))!.history as { text: string }[]).map((h) => h.text).filter((t) => /logged|Corrected|Removed|Drafted/.test(t));
+    const want = ["Drafted 1.5 h for Nov 12 from the repo, waiting to be accepted", "Removed Nimal Silva's 2.5 h for Oct 19", "Corrected Nimal Silva's entry for Oct 19 to 2.5 h", "Nimal Silva logged 2 h for Oct 19"];
     // With Time switched off, nothing fills the slot and there are no time lines.
     setProvided([]);
     expect(await lines(nimal)).toEqual([]);

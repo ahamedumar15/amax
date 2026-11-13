@@ -4,6 +4,7 @@
 // arguments, never the arguments). 094 AC-1, AC-2: the same walk dates the change and its ticked tasks.
 import { execFileSync } from "node:child_process";
 import { readParts } from "./sha";
+import { commitsOf, type ChangeCommit } from "./commits";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 }).trim();
 
@@ -23,8 +24,9 @@ export const isShallow = (root: string) => { try { return git(root, "rev-parse",
  *
  * 094 AC-1: a record whose files don't say when it was written (no Created header, no proposal time) is dated by that
  * add commit. 094 AC-2: each ticked task is dated by the commit that ticked it. Neither is read when git can't tell.
+ * 104 AC-2: the same walk lists the commits named for the change (commits.ts), for amax to estimate hours from.
  */
-export function authorsOf<T extends Readable>(root: string, rev: string, records: T[], only?: string): (T & { author?: string | null })[] {
+export function authorsOf<T extends Readable>(root: string, rev: string, records: T[], only?: string): (T & { author?: string | null; commits?: ChangeCommit[] })[] {
   const shallow = isShallow(root);
   return records.map((r) => {
     if (shallow || (only && r.dir !== only)) return { ...r, author: undefined };
@@ -37,7 +39,7 @@ export function authorsOf<T extends Readable>(root: string, rev: string, records
       // 092 AC-3: the file is in the tree, so a missing add commit means git couldn't tell, not "nobody".
       const [author, addedAt] = lines.length ? lines[lines.length - 1].split("\t") : [undefined, undefined];
       const createdAt = r.createdAt ?? (addedAt ? new Date(addedAt).toISOString() : r.createdAt);
-      return { ...r, author, createdAt, ...(r.tasks ? { tasks: tickDates(root, at, path, r.tasks) } : {}) };
+      return { ...r, author, createdAt, ...(r.tasks ? { tasks: tickDates(root, at, path, r.tasks) } : {}), commits: commitsOf(root, at, r.dir) };
     } catch {
       return { ...r, author: undefined };
     }

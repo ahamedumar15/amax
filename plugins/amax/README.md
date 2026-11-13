@@ -59,6 +59,13 @@ What amax accepts:
   whoever added its `change.md`, matched to someone on the project in amax. Never just whoever pushed.
 - **Duplicates:** two change folders with the same number are both skipped ("two changes numbered 074: …") and
   the push is flagged for a person. Renumber one of them; CI refuses a PR that adds a reused number.
+- **Hours (104):** the reader also sends each change's commits (those whose subject names it, `specclaw(<NNN-slug>)`
+  or `[specclaw] <NNN-slug>`: id, author email, time). amax estimates hours per author, proposal and day from the commit
+  times (commits less than 90 minutes apart are one session, counted from 30 minutes before the first; at most 8 h a
+  day) and drafts them as a timesheet suggestion for the author, found by a verified git identity, never whoever pushed.
+  Only when an Admin has switched commit time on for the author's legal entity, only for days that have ended, once
+  per day however many syncs carry the same commits. Nothing is logged until the person accepts; a wrong figure is
+  corrected in chat after accepting. The result counts `drafted` and `unlinked` (commits whose author isn't linked).
 
 Each project's page in amax shows a **Repo sync** card: the linked repo, the last sync, and refused pushes with their reasons.
 

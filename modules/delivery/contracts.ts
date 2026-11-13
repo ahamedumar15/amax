@@ -57,6 +57,8 @@ export type ProposalTimeLine = {
   id: string;
   at: string; actor: string; onBehalfOf: string | null; userId: string; day: string | null; hours: number;
   proposalId: string | null; previousProposalId?: string | null; deleted?: boolean;
+  /** 104 AC-11: hours the repo sync drafted from this many commits, waiting for the person to accept (Delivery's own audit, shown by Time's rule). */
+  drafted?: number;
 };
 /**
  * `opts.line` (review round 2): just that line ("time:<seq>"), read directly with no window, for its pin; a line that exists
@@ -78,8 +80,10 @@ export async function getProposalRef(tx: Tx, keyOrId: string): Promise<ProposalR
 /**
  * 008 AC-3: hours a person's commit says they spent, for the time module to draft on their timesheet as a
  * suggestion they accept. Never a logged entry, never a rating. `day` is the commit's date (UTC).
+ * 104 AC-4: with `commits`, the hours are the repo sync's estimate for that day from that many commits, and `commit`
+ * is the draft's own id ("<proposalKey>/<day>") rather than a sha.
  */
-export type CommitTime = { userId: string; projectId: string; projectKey: string; proposalKey: string; day: string; hours: number; commit: string };
+export type CommitTime = { userId: string; projectId: string; projectKey: string; proposalKey: string; day: string; hours: number; commit: string; commits?: number };
 
 /** 008: a proposal task was closed (by a commit, CI or a person). `by` is the actor, "… for user:…" when acting for someone. */
 export type TaskDone = { proposalId: string; key: string; task: string; projectId: string; by: string; ownerUserId?: string | null };

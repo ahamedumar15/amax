@@ -95,6 +95,8 @@ const one = (only: Only | undefined, kind: Only["kind"], where: ReturnType<typeo
 
 function timeText(a: ProposalTimeLine, id: string, owner: string) {
   const when = a.day ? ` for ${day(`${a.day}T12:00:00Z`)}` : "";
+  // 104 AC-11: the sync drafted hours from the repo's commits; nothing is logged until the person accepts.
+  if (a.drafted) return `Drafted ${hrs(a.hours)}${when} from the repo, waiting to be accepted`;
   if (a.deleted) return `Removed ${owner}'s ${hrs(a.hours)}${when}`;
   if (!("previousProposalId" in a)) return `${owner} logged ${hrs(a.hours)}${when}`;
   if (a.proposalId !== id) return `Moved ${owner}'s ${hrs(a.hours)}${when} off this proposal`;

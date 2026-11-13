@@ -6,7 +6,7 @@ import type { WeekStatus } from "../contracts";
 import { isoWeekOf, shownDays, weekKey, type IsoWeek } from "../week";
 import { exactWeekHours, targetsOf, weekFigures } from "./targets";
 import { entrySums, hoursOf, projectNames, read, weekEntries, type EntryLine } from "./read";
-import { localToday } from "./rules";
+import { currentWeek } from "./rules";
 
 export type MyRow = { projectId: string; projectName: string; days: number[]; total: number };
 export type MyWeek = {
@@ -28,9 +28,8 @@ async function decider(tx: Tx, wk: Record<string, unknown> | undefined) {
 
 export const myWeek = (v: Viewer, wanted?: IsoWeek) =>
   read(v, async (tx): Promise<MyWeek> => {
-    // 085: no week asked for is the person's current week, in their own time zone (the day Time logs by). It used to be
-    // their latest week with a timesheet, which opened an old week for someone who hasn't logged lately.
-    const w = wanted ?? isoWeekOf(new Date(`${await localToday(tx, v.userId)}T12:00:00Z`));
+    // 085: no week asked for is the person's current week, in their own time zone (the day Time logs by); 104: one rule (currentWeek).
+    const w = wanted ?? (await currentWeek(tx, v.userId));
     const [wk] = await tx.execute(sql`select * from time.week where user_id = ${v.userId} and iso_year = ${w.year} and iso_week = ${w.week}`);
     const sums = await entrySums(tx, w, v.userId);
     const days = shownDays(w, sums.map((s) => s.day));

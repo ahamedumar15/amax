@@ -37,12 +37,14 @@ function Facts({ p }: { p: ProposalDetail }) {
 }
 
 // AC-49: approved hours against the estimate, as a band. Hours past the estimate are their own part, never folded into 100%.
+// 104 AC-9: hours logged but not yet approved are a line under the figure, so accepted agent time doesn't read as 0.
 function TimeCard({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode }) {
-  const t = timeBand(p.hours, p.estimateHours);
+  const t = timeBand(p.hours, p.estimateHours, p.waitingHours);
   return (
     <div className="card pinnable dv-time">
       <div className="card-head"><h2>Time</h2>{pin("time")}</div>
       <p className="fig">{t.figure} <span>{t.rest}</span></p>
+      {t.waitingLine && <p className="dv-time-waiting"><span className="chip">{t.waitingLine}</span></p>}
       {t.estimate !== null && (
         <div className="bar" role="img" aria-label={t.sentence}>
           {t.within > 0 && <i className="within" style={{ flexGrow: t.within }} />}
@@ -53,7 +55,7 @@ function TimeCard({ p, pin }: { p: ProposalDetail; pin: (l: string) => ReactNode
       {t.estimate !== null && <p className="dv-time-legend">{t.over > 0
         ? <span className="over"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5l6 11H2z" /></svg>{h(t.over)} over the estimate</span>
         : <span className="left">{h(t.left)} left of the estimate</span>}</p>}
-      <p className="muted note">From approved timesheet entries logged against {p.key}.</p>
+      <p className="muted note">From timesheet entries logged against {p.key}. Only approved hours count against an estimate.</p>
     </div>
   );
 }

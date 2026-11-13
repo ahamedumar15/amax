@@ -38,15 +38,20 @@ export function stepsOf(p: { phase: Phase; withdrawn: boolean; createdAt: string
   }));
 }
 
-/** AC-49: approved hours against the estimate; hours past it are their own part, never folded into the bar's 100%. */
-export function timeBand(hours: number, estimate: number | null) {
+/**
+ * AC-49: approved hours against the estimate; hours past it are their own part, never folded into the bar's 100%.
+ * 104 AC-9: `waiting` is the hours on live entries in weeks not yet approved, a line of its own, absent at 0; the band
+ * and its sentence keep counting approved hours only.
+ */
+export function timeBand(hours: number, estimate: number | null, waiting = 0) {
   const h = (n: number) => `${Number(n.toFixed(2))} h`;
-  if (!estimate) return { hours, estimate: null, within: hours, over: 0, left: 0, figure: h(hours), rest: "approved · no estimate", sentence: `${h(hours)} approved, no estimate` };
+  const waitingLine = waiting > 0 ? `${h(waiting)} waiting for approval` : null;
+  if (!estimate) return { hours, estimate: null, within: hours, over: 0, left: 0, figure: h(hours), rest: "approved · no estimate", sentence: `${h(hours)} approved, no estimate`, waitingLine };
   const within = Math.min(hours, estimate);
   const over = Math.max(0, hours - estimate);
   const left = Math.max(0, estimate - hours);
   const sentence = over ? `${h(hours)} approved of ${h(estimate)} estimated, ${h(over)} over` : `${h(hours)} approved of ${h(estimate)} estimated, ${h(left)} left`;
-  return { hours, estimate, within, over, left, figure: h(hours), rest: `of ${h(estimate)} estimated`, sentence };
+  return { hours, estimate, within, over, left, figure: h(hours), rest: `of ${h(estimate)} estimated`, sentence, waitingLine };
 }
 
 type Stage = { environment: string; environmentId?: string; deploymentId?: string | null; position: number; isProd: boolean; status: string | null; at: string | null };

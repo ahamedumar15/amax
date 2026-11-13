@@ -19,6 +19,8 @@ import { AttentionStrip, listQuery, needPin } from "./Attention";
 
 // 081 AC-15: every phase of the lifecycle, Planned included.
 const FILTERS: (Phase | "all")[] = ["all", ...PHASES];
+// 104 AC-14: the page's lede, inside the info icon on an agent-first workspace (amendment 1), else under the title.
+const LEDE = "Every specclaw change across your projects, with the time spent on it and how far it has shipped.";
 const PAGE = 20;
 // 081 amendment 11 (AC-97): each reason's chip colour.
 const NEED_CHIP: Record<Need, string> = { suggested: "agent", ready: "good", over: "bad", unassigned: "warn" };
@@ -51,8 +53,9 @@ export async function ProposalsPage({ viewer: raw, params, searchParams = {} }: 
   return (
     <>
       <div className="row head">
-        <div><h1>Proposals</h1><p className="lede">Every specclaw change across your projects, with the time spent on it and how far it has shipped.</p></div>
-        {action.kind === "repo-line" ? <div className="actions"><AgentFirstLine repoUrl={action.repoUrl} />{action.addByHand && <NewProposalButton secondary />}</div>
+        {/* 104 AC-14: what the page is and where proposals come from is an info icon by the title, not a lede or a line in the actions. */}
+        <div><h1>Proposals{action.kind === "repo-line" ? <AgentFirstLine repoUrl={action.repoUrl} intro={LEDE} /> : null}</h1>{action.kind !== "repo-line" && <p className="lede">{LEDE}</p>}</div>
+        {action.kind === "repo-line" ? action.addByHand && <div className="actions"><NewProposalButton secondary /></div>
           : action.kind === "new-proposal" && <div className="actions"><NewProposalButton project={filtered ? { pin: projectPin(filtered), name: filtered.name } : undefined} /></div>}
       </div>
       <AttentionStrip counts={att.counts} active={need} href={(n) => `${base}${listQuery({ project: projectKey, q: searchParams.q, owner: mine ? "me" : undefined, need: n })}`}

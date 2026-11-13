@@ -12,6 +12,14 @@ Separately, the all-projects Proposals page calls manual creation "Add by hand" 
 Agreed with the product owner on 2026-11-13: hours are estimated from commit timestamps, drafted as a suggestion the
 person accepts, corrected in chat after accepting, and a proposal also shows hours that wait for approval.
 
+**Amendment 1 (2026-11-13, product owner, during build):** the Proposals page's header line "Proposals come from your
+repos · write one with /specclaw:propose; it appears here when merged" goes. In its place an info icon beside the page's
+title, whose hover or focus tooltip says where proposals come from and that the repo must be synced to amax (AC-14, T8).
+
+**Amendment 2 (2026-11-13, product owner, during build):** Team time (`/time`) opened on the latest week that had any
+timesheet, so an Admin or PM saw an old week's chart once nobody had logged for a while. It opens on the current week,
+as My timesheet has since 085, and the Overview's time card and hours trend follow the same week (AC-15, T9).
+
 ## Mock Delta
 
 What changes on screen, and where to see it: [`104-agentic-time-from-sync`](../../mock/index.html#104-agentic-time-from-sync)
@@ -77,24 +85,44 @@ were drafted from the repo.
 13. **AC-13** `docs/` and the plugin's README say how hours are estimated, that consent gates them, and that the person
     accepts. `npm run check:graph` passes; the 008, 081 and 089–094 suites stay green.
 
+**Amendment 1**
+
+14. **AC-14** The agent-first line is a small info icon (a button, labelled for screen readers) raised beside the page
+    title on the all-projects Proposals page, and where the line stood on a project's board and Proposals tab. Its
+    tooltip shows on hover and on keyboard focus. On the Proposals page it opens with the page's lede ("Every specclaw
+    change across your projects, with the time spent on it and how far it has shipped."), which no longer shows under
+    the title there; then: proposals come from the repo (named when one project is in view) and nothing is typed in
+    here; to add one, (1) write it in the repo with `/specclaw:propose`, (2) sync the repo to amax with
+    `/amax:sync-specclaw`, or merge the change and CI syncs it. The old chip text is gone from the app and the mock.
+
+**Amendment 2**
+
+15. **AC-15** With no week in the URL or the tool input, Team time (`/time`, `get_team_week`), My timesheet, the
+    Overview's "Hours this week" card and the hours trend open on the viewer's current ISO week by their local today,
+    one rule (`currentWeek`). A week named in the URL or input still wins. The latest-week fallback is gone.
+
 ## Tasks
 
-- [ ] `T1` — "New proposal in chat" label and tooltip; the Time card's "N h waiting for approval" line, absent at 0, band unchanged (AC-1, AC-9 screen)
+- [x] `T1` — "New proposal in chat" label and tooltip; the Time card's "N h waiting for approval" line, absent at 0, band unchanged (AC-1, AC-9 screen)
   Files: modules/delivery/ui/NewProposalButton.tsx, modules/delivery/ui/proposals-action.ts, modules/delivery/ui/ProposalPage.tsx, modules/delivery/ui/band.ts, modules/delivery/tests/proposals-action-094.test.ts, apps/mock/public/mock/index.html
-- [ ] `T2` — The reader sends each change's commits (id, author email, time; merges and unnamed commits left out); older payloads without them still parse (AC-2)
+- [x] `T2` — The reader sends each change's commits (id, author email, time; merges and unnamed commits left out); older payloads without them still parse (AC-2)
   Files: modules/delivery/sync/authors.ts, modules/delivery/sync/specclaw.ts, plugins/amax/scripts/src/read-specclaw.ts, plugins/amax/scripts/read-specclaw.mjs, plugins/amax/tests/reader.test.ts, scripts/specclaw-sync-ci.mjs, packages/testing/tests/specclaw-sync-ci.test.ts
-- [ ] `T3` — Pure session estimate per person, proposal and UTC day: 90-minute gap, 30-minute lead-in, quarter-hour rounding, 8 h cap, split at midnight; table test (AC-3)
+- [x] `T3` — Pure session estimate per person, proposal and UTC day: 90-minute gap, 30-minute lead-in, quarter-hour rounding, 8 h cap, split at midnight; table test (AC-3)
   Files: modules/delivery/sync/estimate.ts, modules/delivery/tests/estimate-104.test.ts
-- [ ] `T4` — Drafting from a push: authors by linked git identity (provider from the project's repo host), consent on and day on or after `notified_at`, only ended days, one draft per person, proposal and day, webhook `Time:` commits left out; suggestion wording "from N commits on KEY"; sync result counts drafted and unlinked (AC-4, AC-5, AC-6, AC-7, AC-8)
+- [x] `T4` — Drafting from a push: authors by linked git identity (provider from the project's repo host), consent on and day on or after `notified_at`, only ended days, one draft per person, proposal and day, webhook `Time:` commits left out; suggestion wording "from N commits on KEY"; sync result counts drafted and unlinked (AC-4, AC-5, AC-6, AC-7, AC-8)
   Files: modules/delivery/server/push.ts, modules/delivery/server/commit-time.ts, modules/delivery/server/ingest.ts, modules/delivery/db/migrations/0022_commit_draft_day.sql, modules/delivery/contracts.ts, modules/delivery/module.ts, modules/time/suggestions.ts, modules/delivery/tests/sync-time-104.test.ts, modules/time/tests/commit-draft-008.test.ts
   Depends: T2, T3
-- [ ] `T5` — Waiting hours: Time hands per-proposal totals of live entries in unapproved weeks to Delivery's hours service under its job; refreshed on entry log, correct, delete and on week submit, approve, reject, reopen; `ProposalRow`, `get_proposal` and `list_proposals` return them (AC-9 data, AC-10, AC-12)
+- [x] `T5` — Waiting hours: Time hands per-proposal totals of live entries in unapproved weeks to Delivery's hours service under its job; refreshed on entry log, correct, delete and on week submit, approve, reject, reopen; `ProposalRow`, `get_proposal` and `list_proposals` return them (AC-9 data, AC-10, AC-12)
   Files: modules/delivery/db/migrations/0023_proposal_waiting_hours.sql, modules/delivery/server/proposal-hours.ts, modules/time/server/proposal-hours.ts, modules/delivery/server/queries.ts, modules/delivery/server/proposal-detail.ts, modules/delivery/mcp.ts, modules/time/tests/proposal-hours-104.test.ts
   Depends: T1
-- [ ] `T6` — Proposal history line "Drafted 1.5 h for 12 Nov from the repo, waiting to be accepted", from Delivery's own audit of the draft, visible under 081 AC-28's rule (AC-11)
+- [x] `T6` — Proposal history line "Drafted 1.5 h for 12 Nov from the repo, waiting to be accepted", from Delivery's own audit of the draft, visible under 081 AC-28's rule (AC-11)
   Files: modules/delivery/server/proposal-detail.ts, modules/delivery/tests/proposal-detail.test.ts
   Depends: T4
-- [ ] `T7` — Docs and the full check: how hours are estimated, consent and accept; `check:graph`; the 008, 081 and 089–094 suites green (AC-13)
+- [x] `T8` — Amendment 1: the agent-first line becomes an info icon with a hover and focus tooltip, beside the Proposals title (AC-14)
+  Files: modules/delivery/ui/AgentFirstLine.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/delivery.css, modules/delivery/tests/proposals-button-104.test.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+- [x] `T9` — Amendment 2: Team time, the Overview's time card and the hours trend open on the viewer's current week (AC-15)
+  Files: modules/time/server/rules.ts, modules/time/server/team.ts, modules/time/server/my.ts, modules/time/server/overview.ts, modules/time/server/read.ts, modules/time/tests/current-week-104.test.ts, modules/time/README.md
+- [x] `T7` — Docs and the full check: how hours are estimated, consent and accept; `check:graph`; the 008, 081 and 089–094 suites green (AC-13)
   Files: modules/delivery/README.md, modules/time/README.md, plugins/amax/README.md, plugins/amax/skills/sync-specclaw/SKILL.md
   Depends: T4, T5, T6
 
@@ -103,3 +131,14 @@ were drafted from the repo.
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
+
+Quality: not_run (`specclaw-quality-scan .`: jq "Argument list too long" on this Windows host, as in 066–103; no refactor made).
+
+**Build notes (2026-11-13, Windows host, dev Postgres 5440):** `check:graph` ok. `vitest` time 248/248; delivery 637/639, the
+two failures host-only and older than 104 (`releases.test.ts` backslash paths, `create-project-surfaces` timing); plugin
+reader 5/5 (bundle rebuilt with esbuild directly: the `build:plugin` script's quoted banner splits on this shell);
+`specclaw-sync-ci` 11/11. `specclaw-preset-check .`: exit 1 from the repo-wide comment backlog, as before. Playwright
+e2e not run here (`overview.spec.ts` adjusted for AC-15; CI runs it). Migrations 0022 and 0023 apply in the throwaway
+test databases; the dev database needs `pnpm db:migrate`. AC-4's suggestion title keeps 008's form ("Add 1.75 h on CON
+for 2026-10-20"), not the mock's "12 Nov" wording, so every commit draft reads the same. AC-5 matches the author by any
+verified git identity's email, whichever provider, rather than deriving a provider from the repo host.

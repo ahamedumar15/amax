@@ -45,13 +45,15 @@ export const manualProjects = async (v: Viewer) => (await listProjects(v, "activ
 
 export type ProposalRow = {
   id: string; key: string; title: string; phase: Phase; tasksDone: number; tasksTotal: number; hours: number; estimateHours: number | null;
+  /** 104 AC-9: hours on live entries named for it in weeks not yet approved; Time keeps it current (AC-10). */
+  waitingHours: number;
   ownerName: string | null; ownerUserId: string | null; description: string | null; withdrawn: boolean; agent: string | null; projectKey: string; projectName: string; projectColor: string;
   release: string | null; shippedTo: string | null; shippedStatus: string | null; inProd: boolean; source: string | null; meta: Record<string, unknown>; createdAt: string | null; updatedAt: string | null;
 };
 
 const proposal = (r: Record<string, unknown>): ProposalRow => ({
   id: r.id as string, key: r.key as string, title: r.title as string, phase: r.phase as Phase, tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total),
-  hours: Number(r.hours), estimateHours: num(r.estimate_hours), ownerName: ((r.owner_shown ?? r.owner_name) as string | null) ?? null,
+  hours: Number(r.hours), estimateHours: num(r.estimate_hours), waitingHours: Number(r.waiting_hours ?? 0), ownerName: ((r.owner_shown ?? r.owner_name) as string | null) ?? null,
   ownerUserId: (r.owner_user_id as string | null) ?? null, description: (r.description as string | null) ?? null,
   withdrawn: isWithdrawn(r), agent: (r.agent as string | null) ?? null,
   projectKey: r.project_key as string, projectName: r.project_name as string, projectColor: r.project_color as string,

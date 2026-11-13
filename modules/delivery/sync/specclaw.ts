@@ -44,6 +44,8 @@ export type SpecRecord = {
   owner: string | null;
   /** 091 AC-7: who added the change's change.md, from git; filled by the plugin's reader and CI, never by this file reader. */
   author?: string | null;
+  /** 104 AC-2: the commits named for the change (id, author email, time), from git; absent when git wasn't read. */
+  commits?: { id: string; email: string; at: string }[];
 };
 
 const RANK: Record<Phase, number> = { proposed: 0, planned: 1, building: 2, verified: 3, released: 4 };

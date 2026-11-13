@@ -7,7 +7,7 @@ import { isReadyToVerify, isWithdrawn, overEstimate } from "../server/readiness"
 // suggestion and the Overview panel all ask readiness.ts, so a spec proposal is never shown as ready when the agent
 // won't suggest it and move_proposal refuses it.
 const row = (over: Partial<ProposalRow>): ProposalRow => ({
-  id: "p1", key: "CON-1", title: "Fictional", phase: "building", tasksDone: 3, tasksTotal: 3, hours: 0, estimateHours: null, ownerName: "Maya", ownerUserId: "u1",
+  id: "p1", key: "CON-1", title: "Fictional", phase: "building", tasksDone: 3, tasksTotal: 3, hours: 0, estimateHours: null, waitingHours: 0, ownerName: "Maya", ownerUserId: "u1",
   description: null, withdrawn: false, agent: null, projectKey: "CON", projectName: "Contoso", projectColor: "#000", release: null, shippedTo: null, shippedStatus: null, inProd: false,
   source: null, meta: {}, createdAt: null, updatedAt: null, ...over,
 });

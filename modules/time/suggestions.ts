@@ -15,9 +15,12 @@ import { projectNames } from "./server/read";
 import { actorId, type WeekRow } from "./server/weeks";
 import { isWeekend } from "./week";
 
-const gitRef = (commit: string) => `git:${commit}`;
-const Draft = z.object({ userId: z.uuid(), projectKey: z.string().min(1), day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), hours: z.number().positive().max(12), commit: z.string().min(4), proposalKey: z.string() });
+// 104 AC-4: a repo sync's day estimate (`commits` set) is its own source, "repo:<proposalKey>/<day>"; a commit's `Time:` line stays "git:<sha>".
+const gitRef = (p: { commit: string; commits?: number }) => (p.commits ? `repo:${p.commit}` : `git:${p.commit}`);
+const Draft = z.object({ userId: z.uuid(), projectKey: z.string().min(1), day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), hours: z.number().positive().max(12), commit: z.string().min(4), proposalKey: z.string(), commits: z.number().int().positive().optional() });
 type Draft = z.infer<typeof Draft>;
+const fromRepo = (p: { commits?: number }) => Boolean(p.commits);
+const noteOf = (p: Draft) => (fromRepo(p) ? `${p.proposalKey}, ${p.commits} commits` : `${p.proposalKey}, commit ${p.commit.slice(0, 7)}`);
 
 /** 081 AC-2: the commit's proposal, unless it was withdrawn or moved since; the hours then go to the project alone. */
 async function stillOn(tx: Tx, key: string, projectKey: string) {
@@ -34,10 +37,10 @@ export const commitDraft = defineSuggestionKind<Draft, { entryId: string; alread
   proposed: Draft,
   async apply(tx, ctx, p) {
     // 071 AC-6: a commit already on the timesheet logs nothing; the suggestion resolves pointing at that entry.
-    const had = await bySource(tx, p.userId, gitRef(p.commit));
+    const had = await bySource(tx, p.userId, gitRef(p));
     if (had) return { applied: { entryId: had.id, alreadyLogged: true }, action: "time.entry.log", resource: "time.entry", resourceId: had.id, after: { alreadyLogged: true } };
     const proposalKey = await stillOn(tx, p.proposalKey, p.projectKey);
-    const out = await logEntry(tx, { projectKey: p.projectKey, proposalKey, day: p.day, hours: p.hours, billable: true, note: `${p.proposalKey}, commit ${p.commit.slice(0, 7)}`, userId: p.userId, source: "agent", agent: "Git", weekend: isWeekend(p.day) }, ctx, gitRef(p.commit));
+    const out = await logEntry(tx, { projectKey: p.projectKey, proposalKey, day: p.day, hours: p.hours, billable: true, note: noteOf(p), userId: p.userId, source: "agent", agent: fromRepo(p) ? "Repo sync" : "Git", weekend: isWeekend(p.day) }, ctx, gitRef(p));
     return { applied: { entryId: out.resourceId }, action: "time.entry.log", resource: "time.entry", resourceId: out.resourceId, after: out.after, events: out.events };
   },
   // 070 review round 1: undo is the same soft delete as delete_time_entry, so the row and its requests stay (AC-16).
@@ -59,14 +62,19 @@ export const commitTimeHandler: EventHandlerDef = {
   event: DELIVERY.commitTime,
   async handle({ tx, tenantId, event }) {
     const c = event.payload as CommitTime;
-    const [taken] = await tx.execute(sql`select 1 from time.entry where user_id = ${c.userId} and source_ref = ${gitRef(c.commit)} and deleted_at is null`);
+    const [taken] = await tx.execute(sql`select 1 from time.entry where user_id = ${c.userId} and source_ref = ${gitRef(c)} and deleted_at is null`);
     if (taken) return;
+    const weekend = isWeekend(c.day) ? " of weekend work" : "";
+    // 104 AC-4: a repo sync's estimate says how many commits it came from; a commit's own line says which commit.
+    const detail = c.commits
+      ? `From ${c.commits} commits on ${c.proposalKey}${weekend ? ", on a weekend" : ""}. Accept to add it to your timesheet as a draft.`
+      : `Your commit ${c.commit.slice(0, 7)} for ${c.proposalKey} says ${c.hours} h${weekend}. Accept to add it to your timesheet as a draft.`;
     await createSuggestion(contextFor.job(tenantId, "time.commit-draft", `user:${c.userId}`), {
       kind: commitDraft.kind, target: { type: "time.week", id: `${c.userId}:${c.day}:${c.commit}`, label: `${c.hours} h on ${c.projectKey}, ${c.day}` },
       // 073 AC-2: a weekend commit says so; accepting it logs the weekend work.
-      title: `Add ${c.hours} h on ${c.projectKey} for ${c.day}${isWeekend(c.day) ? " (weekend)" : ""}`, detail: `Your commit ${c.commit.slice(0, 7)} for ${c.proposalKey} says ${c.hours} h${isWeekend(c.day) ? " of weekend work" : ""}. Accept to add it to your timesheet as a draft.`,
-      proposed: { userId: c.userId, projectKey: c.projectKey, day: c.day, hours: c.hours, commit: c.commit, proposalKey: c.proposalKey }, confidence: 0.6, agentName: "Git ingestion",
-      scope: { ownerUserId: c.userId, projectId: c.projectId }, evidence: [{ type: "record", label: `Commit ${c.commit.slice(0, 7)}`, ref: proposalHref(c.proposalKey) }],
+      title: `Add ${c.hours} h on ${c.projectKey} for ${c.day}${isWeekend(c.day) ? " (weekend)" : ""}`, detail,
+      proposed: { userId: c.userId, projectKey: c.projectKey, day: c.day, hours: c.hours, commit: c.commit, proposalKey: c.proposalKey, ...(c.commits ? { commits: c.commits } : {}) }, confidence: 0.6, agentName: c.commits ? "Repo sync" : "Git ingestion",
+      scope: { ownerUserId: c.userId, projectId: c.projectId }, evidence: [{ type: "record", label: c.commits ? `${c.commits} commits on ${c.proposalKey}` : `Commit ${c.commit.slice(0, 7)}`, ref: proposalHref(c.proposalKey) }],
     });
   },
 };
