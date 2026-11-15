@@ -21,11 +21,25 @@ describe.skipIf(!hasDb)("109 one today for HR (Postgres)", () => {
     addPerson(ctxFor(await db.as("sahan"), "mcp"), { name, title: "Engineer", department: "Engineering", entity, ...(joinedOn ? { joinedOn } : {}) });
   const row = async (name: string) => (await db.tx((tx) => tx.execute(sql`select employee_no, to_char(joined_on, 'YYYY-MM-DD') as joined, status from hr.person where name = ${name}`)))[0];
 
-  it.each([
-    ["Australia, no zone set", "Australia", "Lumen Labs Pty Ltd has no time zone set, so today there is counted in UTC"],
-    ["Sri Lanka, its country's zone", "Sri Lanka", undefined],
-  ])("review round 1: the card says when an entity has no zone: %s", async (_name, entity, note) => {
-    expect(await db.tx((tx) => zoneNote(tx, entity))).toBe(note);
+  // Review round 2: an entity with no zone set (the fixtures give Australia one; here it is taken away) is refused, never UTC.
+  describe("with Australia's zone taken away", () => {
+    const AU = "Lumen Labs Pty Ltd has no time zone set: set one before adding people there or recording leavers";
+    beforeAll(async () => { await db.t.owner`delete from workflows.entity_zone where legal_entity_id in (select id from core.legal_entity where country = 'AU')`; });
+
+    it.each([
+      ["Australia, no zone set: the refusal", "Australia", AU],
+      ["Sri Lanka, its country's zone: nothing", "Sri Lanka", undefined],
+      ["an entity that isn't there: why", "Atlantis", "no legal entity Atlantis"],
+    ])("the card says it as the entity is picked: %s", async (_name, entity, note) => {
+      expect(await db.tx((tx) => zoneNote(tx, entity))).toBe(note);
+    });
+
+    it("add_person is refused, and the daily job leaves the entity's people as they are and names it", async () => {
+      at(EVENING);
+      await expect(add("Unzoned Australia", "Australia")).rejects.toThrow(AU);
+      const r = await applyStatusDates(contextFor.job(db.maya.tenantId, "hr.person.status"), {});
+      expect(r.unzoned).toEqual(["Lumen Labs Pty Ltd"]);
+    });
   });
 
   describe("with Australia's zone set", () => {

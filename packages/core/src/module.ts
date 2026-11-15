@@ -74,7 +74,8 @@ export type NotificationRule = {
 export type SharedFixtures = {
   tenant: { id: string; name: string };
   today: string;
-  entities: { id: string; key: string; name: string; country: string; baseCurrency: string; headcount: number }[];
+  /** `timezone` (109): the entity's own zone (workflows.entity_zone), where its country has no default. */
+  entities: { id: string; key: string; name: string; country: string; baseCurrency: string; headcount: number; timezone?: string }[];
   departments: Record<string, number>;
   people: {
     key: string; name: string; initials: string; title: string; entity: string; roles: string[];

@@ -7,26 +7,36 @@ import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contra
 import { changePersonRun, changeInput } from "./change";
 import { date, inScope, inScopeFrom, personByNo } from "./records";
 import { linkableAccount } from "./link";
-import { entityZone, entityZoneSet } from "@amax/workflows";
+import { entityZoneSet } from "@amax/workflows";
 
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
 const COUNTRY: Record<string, string> = { "sri lanka": "LK", australia: "AU" };
 
+/** Review round 2: HR's refusal for an entity whose today it can't know. */
+export const noZone = (name: string) => `${name} has no time zone set: set one before adding people there or recording leavers`;
+
 /**
- * 109 AC-5: today in the legal entity's own time zone, the one date HR decides joining, active and left by. An entity with
- * no zone set counts in UTC, as every module does (entityZone); the add_person card says so (zoneNote).
+ * 109 AC-5: today in the legal entity's own time zone, the one date HR decides joining, active and left by. Review round
+ * 2: an entity with no zone set (its own, or its country's default) is refused, never counted in UTC.
  */
 export async function entityToday(tx: Tx, entityId: string, now = new Date()) {
-  const zone = await entityZone(tx, entityId);
+  const zone = await entityZoneSet(tx, entityId);
+  if (!zone) {
+    const [e] = await tx.execute(sql`select name from core.legal_entity where id = ${entityId}`);
+    throw new Error(noZone(String(e?.name ?? "This legal entity")));
+  }
   return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
-/** Review round 1: the card's word when today there is UTC's, because the entity has no time zone set. */
+/**
+ * The add_person card's word, as the entity is picked: the refusal addPerson would give for an entity with no zone, or why
+ * the entity can't be found. Undefined only for an entity found with a zone; a failed query is an error, not a pass.
+ */
 export async function zoneNote(tx: Tx, entity: string) {
-  const e = await entityOf(tx, entity).catch(() => null);
-  if (!e || (await entityZoneSet(tx, e.id as string))) return undefined;
-  return `${String(e.name)} has no time zone set, so today there is counted in UTC`;
+  let e: Record<string, unknown>;
+  try { e = await entityOf(tx, entity); } catch (err) { return err instanceof Error ? err.message : String(err); }
+  return (await entityZoneSet(tx, e.id as string)) ? undefined : noZone(String(e.name));
 }
 
 /** Exactly one legal entity: by id or full name first, else by country (name or code). Never a guess. */
@@ -113,7 +123,7 @@ export const recordLeaver = defineService({
 
 /**
  * Moves people whose dates have come: 'joining' to 'active' once joined_on passes, anyone to 'left'
- * once left_on passes. Run daily by the hr.person.status job; safe to re-run.
+ * once left_on passes. Run hourly by the hr.person.status job; safe to re-run.
  */
 export const applyStatusDates = defineService({
   name: "hr.person.status-dates",
@@ -122,17 +132,23 @@ export const applyStatusDates = defineService({
   input: z.object({ on: date.optional() }),
   async run(tx, { on }, ctx) {
     if (!isSystemContext(ctx)) throw new ScopeError("hr:person:update");
-    // Review round 1: without `on`, each entity's people move by that entity's own today, as addPerson decides.
-    const entities = await tx.execute(sql`select id from core.legal_entity`);
+    // Review round 1: without `on`, each entity's people move by that entity's own today, as addPerson decides. Review
+    // round 2: an entity with no zone is left as it is and named, never moved by UTC's today.
+    const entities = await tx.execute(sql`select id, name from core.legal_entity`);
     const days: Record<string, string> = {};
-    for (const e of entities) days[e.id as string] = on ?? await entityToday(tx, e.id as string);
+    const unzoned: string[] = [];
+    for (const e of entities) {
+      if (on) days[e.id as string] = on;
+      else if (await entityZoneSet(tx, e.id as string)) days[e.id as string] = await entityToday(tx, e.id as string);
+      else unzoned.push(String(e.name));
+    }
     const started: string[] = [], left: string[] = [];
     for (const [entity, d] of Object.entries(days)) {
       left.push(...(await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where legal_entity_id = ${entity} and status <> 'left' and left_on <= ${d}::date returning employee_no`)).map((r) => r.employee_no as string));
       started.push(...(await tx.execute(sql`update hr.person set status = 'active', updated_at = now()
         where legal_entity_id = ${entity} and status = 'joining' and joined_on <= ${d}::date returning employee_no`)).map((r) => r.employee_no as string));
     }
-    const result = { on: on ?? null, days, started, left };
+    const result = { on: on ?? null, days, started, left, unzoned };
     return { result, after: result };
   },
 });

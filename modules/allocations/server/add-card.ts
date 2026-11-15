@@ -62,10 +62,11 @@ export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
     { name: "standing", label: "For", kind: "chips", value: String(internal && !named), options: [{ value: "false", label: "This month" }, { value: "true", label: "Until further notice" }] },
   ];
   const when = a.standing ? "until further notice" : range ? range : `in ${monthLabel(month, "long")}`;
-  const suffix = range ? `, ${range}` : "";
+  // Review round 2: the title and look name no range, which Through can change; the button names it live, and at confirm
+  // the card is worded again from the edited input (rewordCard), so `done` names the months and percent written.
   return {
-    title: `Add ${who} to ${project.key}${suffix}`, lines: [],
-    look: { kind: "Add to project", confirm: `Add ${who} to ${project.key}${suffix}`, done: `Added ${who} to ${project.key} · ${a.percent ?? ""}% ${when}` },
+    title: `Add ${who} to ${project.key}`, lines: [],
+    look: { kind: "Add to project", confirm: `Add ${who} to ${project.key}`, done: `Added ${who} to ${project.key} · ${a.percent ?? ""}% ${when}` },
     // Review round 1: the button names Through from the field, so an edited end month shows on it at once.
     form: { fields, confirm: { label: `Add {person} to ${project.key}${range ? `, ${monthLabel(month)}–{through}` : ""}` } },
   };

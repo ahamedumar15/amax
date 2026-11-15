@@ -47,7 +47,7 @@ test("107 AC6 AC7 AC9 AC11, 109 AC4 a new project's team: Add your team?, someon
 
   // 109 AC-4: a named range on an internal project shows Through and This month, and confirms those months.
   await chat(page, "add Dinesh Wickrama to TMT from 2027-03 to 2027-05");
-  const range = page.getByRole("group", { name: "Confirm: Add Dinesh Wickrama to TMT, Mar–May" });
+  const range = page.getByRole("group", { name: "Confirm: Add Dinesh Wickrama to TMT", exact: true });
   await expect(range.getByLabel("Through")).toHaveValue("2027-05");
   await expect(range.getByRole("radio", { name: "This month", exact: true })).toBeChecked();
   await range.getByLabel("Through").fill("2027-04");
