@@ -45,13 +45,16 @@ test("106 AC3 AC7 AC8 AC11 one card sets up the project: a taken key is caught, 
   await expect(page.getByText("From github.com/example/northwind-portal")).toBeVisible();
 });
 
-test("106 AC13 AC14 New project shows the card first; Ask amax on Projects suggests setting a project up", async ({ page }) => {
+test("106 AC13 AC14 New project sends nothing: chat suggests setting a project up, and the picked one brings the card", async ({ page }) => {
   await signIn(page);
   await page.getByRole("button", { name: "New project" }).click();
-  await expect(page.getByRole("group", { name: /^Confirm: Set up/ })).toBeVisible();
-  await expect(page.getByLabel("Message amax")).toHaveValue("");
   await expect(page.getByRole("button", { name: "Set up a project" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Link a repo to a project" })).toBeVisible();
+  await expect(page.locator(".m.me")).toHaveCount(0);
+  await page.getByRole("button", { name: "Set up a project" }).click();
+  await expect(page.getByLabel("Message amax")).toHaveValue("Set up a new project");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("group", { name: /^Confirm: Set up/ })).toBeVisible();
 });
 
 test("106 AC9 Link a repo asks nothing in text: one card with the repo and its branch, main preselected", async ({ page }) => {

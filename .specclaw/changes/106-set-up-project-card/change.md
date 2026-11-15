@@ -16,9 +16,10 @@ confirm in chat, not a form on a page, so rule 1 holds: nothing is written until
 offering this setup when a sync names an unknown project; Connect GitHub.
 
 **Amendment 1 (2026-11-15, product owner, after the build):** on `/delivery`, the **New project** button opened chat
-with "tell me the details" and waited for typing, so the card didn't come first (AC-3), and chat suggested nothing on
-the project list. The button now sends at once, and chat suggests setting up a project and linking a repo there
-(AC-13, AC-14).
+with "tell me the details" and chat suggested nothing on the project list. Chat now suggests setting up a project and
+linking a repo there (AC-13, AC-14). Revised the same day by the product owner: opening chat (New project or Ask amax)
+never sends a message of its own; it shows the suggestions, and a picked one fills the message box for the person to
+send.
 
 ## Mock Delta
 
@@ -60,8 +61,9 @@ section with Branch chips (main preselected). One button, **Create AMX and link 
     groups), every field has a label, field errors are announced (aria-live), and it reads in light and dark themes.
 12. **AC-12** `create_project` and `link_project_repo` keep working over MCP unchanged; the chat intents' billing
     options include Internal.
-13. **AC-13** (Amendment 1) The **New project** button on `/delivery` opens chat and sends "Set up a new project" at
-    once: the Set up a project card is the first thing chat shows, with nothing typed.
+13. **AC-13** (Amendment 1) The **New project** button and Ask amax on `/delivery` open chat without sending anything to
+    the model: chat shows the page's suggestions, **Set up a project** first. Picking it fills "Set up a new project";
+    sending that brings the Set up a project card.
 14. **AC-14** (Amendment 1) Opening chat on `/delivery` suggests **Set up a project** and **Link a repo to a project**
     (each only for someone who may do it) and **Which projects need attention?**; on a project's page with no linked repo
     it suggests **Link a repo** to someone who may link it. A suggestion fills the message box, as chat's suggestions do.
@@ -101,8 +103,7 @@ section with Branch chips (main preselected). One button, **Create AMX and link 
   project; keyboard-only pass and axe check of the card; Delivery README's chat section (AC-3, AC-7, AC-8, AC-9, AC-11)
   Files: apps/web/tests/e2e/set-up-project.spec.ts, modules/delivery/README.md
   Depends: T2, T4
-- [x] `T6` — Amendment 1: an intent button may send its message at once (`send`), and New project on `/delivery` does;
-  Delivery's chat suggests Set up a project, Link a repo to a project and Which projects need attention? on `/delivery`,
+- [x] `T6` — Amendment 1: opening chat on `/delivery` sends nothing and shows the suggestions; Delivery's chat suggests Set up a project, Link a repo to a project and Which projects need attention? on `/delivery`,
   and Link a repo on a project page with no repo, each only when allowed; the scripted model answers "Set up a new
   project"; e2e for the button and the suggestions (AC-13, AC-14)
   Files: packages/ui/src/components/PinButton.tsx, apps/web/components/chat/Chat.tsx, modules/delivery/ui/ProjectsPage.tsx,
