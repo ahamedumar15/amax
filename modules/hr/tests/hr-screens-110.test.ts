@@ -1,8 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { ctxFor } from "../server/context";
-import { addPerson } from "../server/services";
-import { peopleStats } from "../server/stats";
+import { addPerson, recordLeaver } from "../server/services";
+import { peopleStats, type PeopleStats } from "../server/stats";
 import { shortDate } from "../ui/parts";
 import { PeopleAllPage } from "../ui/PeoplePage";
 import { PersonPage } from "../ui/PersonPage";
@@ -29,13 +29,30 @@ describe.skipIf(!hasDb)("110 the People screens read each person's own day (Post
     expect(await render(no)).toContain(`Joined ${shortDate("2026-11-16")}`);
   });
 
-  it("AC2 the People stats count by each person's month: a probation due and a joiner in December, the screen's day 1 Dec", async () => {
+  // Each row at 20:00 UTC on 30 Nov, already 1 Dec in Sri Lanka and Sydney: one record in December or next month, counted.
+  it.each([
+    ["a probation review due 15 Dec, due this month", async (no: string) => { await db.t.owner`insert into hr.probation (tenant_id, person_id, ends_on) select tenant_id, id, '2026-12-15' from hr.person where employee_no = ${no}`; },
+      (s: PeopleStats) => s.probation.dueThisMonth],
+    ["a fixed-term contract ending 15 Jan, ending next month", async (no: string) => { await db.t.owner`update hr.employment set contract = 'fixed-term', ends_on = '2027-01-15' where person_id = (select id from hr.person where employee_no = ${no})`; },
+      (s: PeopleStats) => s.contractsEndingNextMonth],
+    ["a leaver on 1 Dec, in December and the quarter", async (no: string) => { await recordLeaver(ctxFor(db.mayaAs("HR")), { employeeNo: no, leftOn: "2026-12-01" }); },
+      (s: PeopleStats) => s.leavers[11] + s.quarter.left],
+    ["a joiner on 1 Dec, in December", async () => undefined, (s: PeopleStats) => s.joiners[11]],
+  ])("AC2 the People stats count by each person's own month: %s", async (name, record, count) => {
     at("2026-11-30T20:00:00Z");
     const hr = db.mayaAs("HR");
     const before = await peopleStats(hr);
-    const no = await join("December joiner 110");
-    await db.t.owner`insert into hr.probation (tenant_id, person_id, ends_on) select tenant_id, id, '2026-12-15' from hr.person where employee_no = ${no}`;
+    await record(await join(`Stats ${name}`));
     const after = await peopleStats(hr);
-    expect([after.day, after.months.length, after.probation.dueThisMonth - before.probation.dueThisMonth, after.joiners[11] - (before.joiners[11] ?? 0)]).toEqual(["2026-12-01", 12, 1, 1]);
+    expect([after.day, after.oneMonth, count(after) - (count(before) || 0)]).toEqual(["2026-12-01", true, name.startsWith("a leaver") ? 2 : 1]);
+  });
+
+  it.each([
+    ["30 Nov 20:00 UTC: 1 Dec for both, the month named", "2026-11-30T20:00:00Z", ["in January", "Joiners and leavers, Q4"]],
+    ["31 Dec 14:00 UTC: Sydney's 1 Jan, Sri Lanka's 31 Dec, no month named", "2026-12-31T14:00:00Z", ["next month", "Joiners and leavers, Q1"]],
+  ])("AC2 the People lede and quarter on %s", async (_name, now, texts) => {
+    at(now);
+    const page = await html(PeopleAllPage({ params: {}, viewer: db.mayaAs("HR") } as never));
+    for (const t of texts) expect(page).toContain(t);
   });
 });

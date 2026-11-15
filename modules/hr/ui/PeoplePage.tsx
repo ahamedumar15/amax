@@ -33,7 +33,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
       <div className="row head hr">
         <div>
           <h1>People</h1>
-          <p className="lede">{plural(s.headcount, "person", "people")} in {plural(inEntities.length, "entity", "entities")}. {plural(s.probation.dueThisMonth, "probation review")} {s.probation.dueThisMonth === 1 ? "is" : "are"} due this month and {plural(s.contractsEndingNextMonth, "contract")} end{s.contractsEndingNextMonth === 1 ? "s" : ""} in {nextMonthName(today)}.</p>
+          <p className="lede">{plural(s.headcount, "person", "people")} in {plural(inEntities.length, "entity", "entities")}. {plural(s.probation.dueThisMonth, "probation review")} {s.probation.dueThisMonth === 1 ? "is" : "are"} due this month and {plural(s.contractsEndingNextMonth, "contract")} end{s.contractsEndingNextMonth === 1 ? "s" : ""} {s.oneMonth ? `in ${nextMonthName(today)}` : "next month"}.</p>
         </div>
         <div className="actions">
           <EntityFilter entities={entities.map((e) => ({ code: e.code, label: countryName(e.country, e.name) }))} current={entity?.code} />
