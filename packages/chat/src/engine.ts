@@ -107,10 +107,16 @@ async function pendingFor(t: RegisteredTool, viewer: Viewer, input: Record<strin
 
 const cardParts = (card: ToolCard) => ({ lines: card.lines, ...(card.look ? { look: card.look } : {}), ...(card.form ? { form: card.form } : {}) });
 
-/** 106: the card worded again from the input its form's edits made, so its title and receipt say what really ran. */
+/**
+ * 106: the card worded again from the input its form's edits made, so its title and receipt say what really ran. When the
+ * tool's card can't be worded, the proposed lines and receipt are dropped, never kept: they describe the input before the edits.
+ */
 export async function rewordCard(t: RegisteredTool, viewer: Viewer, action: PendingAction, input: Record<string, unknown>): Promise<PendingAction> {
   const card = await t.card?.(viewer as never, input as never).catch((e: unknown) => void logError(`chat.card ${t.name}`, e));
-  return { ...action, input, title: card?.title ?? titleOf(t, input), ...(card ? cardParts(card) : {}) };
+  if (card) return { ...action, input, title: card.title, ...cardParts(card) };
+  const { lines: _lines, look, ...rest } = action;
+  const { done: _done, ...kept } = look ?? {};
+  return { ...rest, input, title: titleOf(t, input), ...(look ? { look: kept } : {}) };
 }
 
 // An error from a write that was given a secret never carries it on, even if some layer echoed it.

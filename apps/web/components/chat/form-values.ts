@@ -1,6 +1,16 @@
 import type { CardField, CardForm } from "@amax/core";
+import type { FieldCheck } from "@amax/chat";
 
 export type Values = Record<string, string>;
+
+const onForm = (form: CardForm, field?: string) => Boolean(field) && form.fields.some((f) => f.name === field);
+
+export function refusalOf(form: CardForm, message?: string, field?: string): { check: FieldCheck; notice?: string } {
+  if (!message) return { check: {} };
+  return onForm(form, field) ? { check: { field, message } } : { check: {}, notice: message };
+}
+
+export const generalOf = (form: CardForm, check: FieldCheck | null) => (check?.message && !onForm(form, check.field) ? check.message : undefined);
 
 export const initialsOf = (text: string) => {
   const words = text.toUpperCase().match(/[A-Z0-9]+/g) ?? [];

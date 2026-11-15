@@ -7,7 +7,7 @@ import { logError } from "@amax/core/server";
 import { currentViewer } from "@amax/auth";
 import { cancelAction, chatTurn, checkCardEdits, confirmAction, resolvePins, type ChatTurn, type FieldCheck, type Pin } from "@amax/chat";
 import { myChatUsage } from "../../lib/chat-usage";
-import { doneOutcome, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
+import { checkFailure, doneOutcome, outcomeOf, type CardOutcome } from "../../lib/chat-outcome";
 import { pageInfo, type PageInfo, type PinnedArgs } from "../../lib/page-context";
 import { installed } from "../../lib/registry";
 import { sameUser, SignedInElsewhere } from "../../lib/same-user";
@@ -78,8 +78,7 @@ export async function checkCardField(conversationId: string, actionId: string, e
     sameUser(viewer, as);
     return await checkCardEdits(getDb()!, toolRegistry(), viewer, z.string().uuid().parse(conversationId), z.string().uuid().parse(actionId), fields);
   } catch (e) {
-    logError("chat.check", e);
-    return { message: "Couldn't check that just now." };
+    return checkFailure(e);
   }
 }
 

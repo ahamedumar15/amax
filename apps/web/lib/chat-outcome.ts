@@ -1,4 +1,5 @@
 import { ActionFailedError, NotPendingError } from "@amax/chat";
+import { logError } from "@amax/core/server";
 import { movedOf, type Moved } from "./chat-move";
 
 export { movedOf } from "./chat-move";
@@ -32,6 +33,17 @@ export function outcomeOf(e: unknown): CardOutcome {
     if (e.decision === "unknown") return { state: "error", note: "It wasn't clear whether this was done. Check the record before trying again." };
   }
   return { state: "error", note: e instanceof Error ? e.message : String(e) };
+}
+
+/**
+ * 106: why a form card's field couldn't be checked. A card already decided or expired, or a sign-in changed in another tab,
+ * can't be confirmed at all, so it says so; anything else is a passing failure to try again.
+ */
+export function checkFailure(e: unknown): { message: string } {
+  if (e instanceof NotPendingError) return { message: "This card is no longer open. Ask again for a new one." };
+  if (e instanceof Error && e.name === "SignedInElsewhere") return { message: e.message };
+  logError("chat.check", e);
+  return { message: "Couldn't check that just now." };
 }
 
 /**

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import type { CardForm as Form } from "@amax/core";
 import type { Edits, FieldCheck } from "@amax/chat";
 import { CardForm } from "./CardForm";
-import { confirmLabel, edited, startValues, withValue, type Values } from "./form-values";
+import { confirmLabel, edited, refusalOf, startValues, withValue, type Values } from "./form-values";
 
 type Props = {
   form: Form; input: Record<string, unknown>; fallback: string; busy: boolean; note?: string; field?: string;
@@ -13,16 +13,18 @@ type Props = {
 
 export function FormConfirm({ form, input, fallback, busy, note, field, onConfirm, onEdit, onCancel, onCheck }: Props) {
   const [values, setValues] = useState<Values>(() => startValues(form, input));
-  const [check, setCheck] = useState<FieldCheck | null>(note ? { field, message: note } : {});
+  const [check, setCheck] = useState<FieldCheck | null>(() => refusalOf(form, note, field).check);
+  const [notice, setNotice] = useState(() => refusalOf(form, note, field).notice);
   const [shown, setShown] = useState(note);
   const [checking, setChecking] = useState(false);
-  if (note !== shown) {
-    setShown(note);
-    if (note) setCheck({ field, message: note });
-  }
   const typed = useRef(new Set<string>());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const asked = useRef(0);
+  if (note !== shown) {
+    setShown(note);
+    const r = refusalOf(form, note, field);
+    if (note) { setCheck(r.check); setNotice(r.notice); }
+  }
 
   function ask(next: Values) {
     if (timer.current) clearTimeout(timer.current);
@@ -38,13 +40,14 @@ export function FormConfirm({ form, input, fallback, busy, note, field, onConfir
     typed.current.add(name);
     const next = withValue(form, values, typed.current, name, value);
     setValues(next);
+    setNotice(undefined);
     ask(next);
   }
 
   const blocked = busy || checking || Boolean(check?.message);
   return (
     <>
-      <CardForm form={form} values={values} check={check} disabled={busy} onValue={onValue} />
+      <CardForm form={form} values={values} check={check} checking={checking} notice={notice} disabled={busy} onValue={onValue} />
       {busy ? <p className="muted">Working on it…</p> : (
         <div className="cc-acts">
           <button className="btn sm primary" type="button" disabled={blocked} onClick={() => onConfirm(edited(form, values))}>{confirmLabel(form, values, fallback)}</button>

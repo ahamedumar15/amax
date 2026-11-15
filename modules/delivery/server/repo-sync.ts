@@ -10,6 +10,9 @@ import { invalid, notFound } from "./refusal";
 // 062: the one repo a project's specclaw pushes are accepted from (push.ts), and the project's
 // Repo sync card: the linked repo and its recent pushes.
 
+/** 106: the branch a new link uses when nobody names one. */
+export const DEFAULT_BRANCH = "main";
+
 /** The link as stored; 106's set_up_project writes it the same way, inside its own create. */
 export const storeLink = (tx: Tx, projectId: string, repoUrl: string | null, defaultRef: string | null) =>
   tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${projectId}`);

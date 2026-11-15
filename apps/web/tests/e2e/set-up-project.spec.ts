@@ -29,7 +29,8 @@ test("106 AC3 AC7 AC8 AC11 one card sets up the project: a taken key is caught, 
   await key.fill("NWP");
   await expect(card).toContainText("✓ free · proposal ids NWP-001");
   await card.getByRole("radio", { name: "+ new…" }).check();
-  await card.getByLabel("Client: + new…").fill("Northwind");
+  await card.getByLabel("Client: + new…").pressSequentially("Northwind Traders");
+  await expect(card.getByLabel("Client: + new…")).toHaveValue("Northwind Traders");
   await card.getByRole("radio", { name: "Fixed" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(card.getByRole("radio", { name: "T&M" })).toBeChecked();

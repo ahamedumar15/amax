@@ -1,0 +1,9 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B4] `modules/delivery/server/set-up-project.ts:28` The default branch 'main' is written three times: the service (`defaultBranch ?? "main"`), the receipt (`repoDone`, `branch ?? "main"`) and the card field (`repoFields` value 'main'). Use one exported constant. (round 1) <!-- fp:9c34fd03ff2e class:other -->
+- [minor B6] `modules/delivery/server/set-up-project.ts:24` The link permission check is skipped when the context has no viewer (`v && …`), so a call without a viewer links a repo without `delivery:project:link`. Refuse a `repoUrl` when there is no viewer. (round 1) <!-- fp:3e1ef20f127f class:other -->
+- [minor B3] `apps/web/components/chat/CardForm.tsx:34` A refusal is drawn only next to a form field with that name, or as a general message when it has no field. A refusal whose `field` isn't on the form (e.g. a schema issue on `projectKey` for link_project_repo) shows nowhere, yet it still disables the button. Show refusals for unknown fields as general messages. (round 1) <!-- fp:bfa021f7453c class:other -->
+- [minor B12] `apps/web/components/chat/CardForm.tsx:27` The key hint '✓ free · …' is drawn whenever the last check passed, including while a new value is still being checked. A taken key reads as free for up to 350 ms plus the server round trip. Hide the hint while a check is in flight. (round 1) <!-- fp:b2fd3cea203f class:other -->
+- [minor B3] `apps/web/app/actions/chat.ts:82` `checkCardField` catches every error and returns the same "Couldn't check that just now." That includes a card already decided in another tab (`NotPendingError`), an expired card and a viewer mismatch. The button stays disabled with a message that suggests trying again, when the card can't be confirmed at all. Map `NotPendingError` and expiry to a note that says so. (round 1) <!-- fp:3c9717c2d5b2 class:other -->
