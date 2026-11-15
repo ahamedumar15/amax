@@ -78,4 +78,42 @@ range.
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
 
+**Verdict:** PASS — every AC passes below; the review loop is clean (final pass at `705d63c6`, 0 blockers, 0 majors).
+
+- AC-1: pass — `hr-today-110.test.ts` AC1 table (Sri Lanka and Sydney at 20:00 UTC: a title, a department, a title on the
+  entity's own today all take effect on 2026-11-16); a person field dated UTC's today is refused; an entity with no zone
+  is refused with 109's message.
+- AC-2: pass — `hr-today-110.test.ts` AC2 table (a department changed on the entity's today shows at once in get_person,
+  listPeople, the employment in force, the person page's view and the People stats; a new manager has the report at once;
+  the audited pay read names the day it read); `hr-screens-110.test.ts` (the person page and the People directory, as
+  rendered, show "Joined Nov 16" at 20:00 UTC on the 15th; the stats count a probation due, a contract ending next month,
+  a leaver and a joiner by each person's own month; the lede and quarter label on 30 Nov and on New Year's Eve, when
+  Sydney and Sri Lanka are in different years).
+- AC-3: pass — `unzoned-110.test.ts` (the entities with no zone; `get_legal_entity` gives the entity's zone or null; the
+  hourly job moves Sri Lanka's joiner, then fails naming Australia); screenshots `shots/app.png`, `shots/app-no-zone.png`,
+  `shots/app-no-zone-dark.png` (the People screen leads with the line and **Ask amax · Set the time zone**, pinned to the
+  entity through get_legal_entity).
+- AC-4: pass — `standing-109.test.ts` end-path table: the job's end is in the name of whoever set it, the leaver end
+  names the leaver's record.
+- AC-5: pass — `apps/web/tests/card-month-109.test.ts` (a Through before the start shows as typed, "Mar–2027-01").
+- AC-6: pass — `add-person-today-109.test.ts` (a failed query is an error, not the note; an unknown entity's refusal is).
+- AC-7: pass — `apps/web/tests/add-card-confirm-110.test.ts` (an edited Through, through `confirmAction`, names the
+  months written in the stored card's done line).
+
+Commands: every package's tests one at a time (`turbo run test --concurrency=1 --force`) after the build: 31 of 35 pass,
+the other four only on this host's known failures (core `ac5-adapters`, delivery `releases` and
+`create-project-surfaces`, testing `ac7-config`, workflows `kill`); after the review rounds hr (93), allocations (78),
+notifications (15), web (368 with the database) pass; time passes but for `grid-perf` under load (passes alone, three of
+three). Type checks (`tsc --noEmit`, the repo's lint) exit 0 for core, workflows, hr, allocations, time, notifications,
+delivery, web; `check:graph` exit 0. e2e on `next dev` with the e2e database: `project-team`, `set-up-project*`,
+`notifications`, `retention` (12) pass. `specclaw-verify size`: 188 production lines against 109's head (`64b62c67`),
+cap 400, exit 0. `specclaw-preset-check .`: exit 1, the repo-wide comment backlog as in 066–107 (110's files add only
+comment-rule lines, in the repo's doc-comment style). Screenshots: `shots/app.png`, `shots/app-no-zone.png`,
+`shots/app-no-zone-dark.png`, `shots/mock.png`.
+
 Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)
+
+Review: CLEAN — 4 rounds, final pass 705d63c65f, models opus/opus; last round 0/0/4 b/M/m; fix proof not proven: no
+review.test_command configured. Minors in `follow-ups.md`: entityToday (Node's Intl) and entityDay (Postgres) compute the
+date on two tz databases; services.ts's unused re-export of entityToday and noZone; the HR README's as-of default and
+Jobs line; the confirm test's 2027–2028 months against the real clock.
