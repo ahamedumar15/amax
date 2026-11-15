@@ -58,8 +58,39 @@ section with Branch chips (main preselected). One button, **Create AMX and link 
 
 ## Tasks
 
-<!-- Added by plan, UI first, then backend, then integration, in tasks.md's task-line
-     format: checkbox, `Tn`, em dash, title; then indented Files: and optional Depends: lines. -->
+- [ ] `T1` — Editable fields on chat's confirm card: a tool's card may declare a `form` (text fields, chip groups with
+  an "other…" text field, an optional collapsible section); the card renders it with labels, field errors announced
+  (aria-live), radio-group chips, keyboard order, both themes, and the button label following the fields (AC-4, AC-5,
+  AC-6, AC-7, AC-11)
+  Files: packages/core/src/module.ts, packages/chat/src/engine.ts, apps/web/components/chat/CardForm.tsx,
+  apps/web/components/chat/ConfirmCard.tsx, apps/web/components/chat/Chat.tsx, packages/ui/src/styles/chat.css
+- [ ] `T2` — Confirm with edits: `confirmChat` sends the card's edited fields; the engine merges only fields the card
+  declared, parses the tool's input again, reruns its propose check, and runs it under the card's one key, so a refusal
+  keeps the card open with the reason by its field and a second press writes nothing more; a `checkCardField` action
+  answers a field's check while it is edited (AC-4, AC-8)
+  Files: packages/chat/src/engine.ts, apps/web/app/actions/chat.ts, apps/web/components/chat/Chat.tsx,
+  packages/chat/tests/card-form.test.ts
+  Depends: T1
+- [ ] `T3` — `set_up_project`: one `defineService` that creates the project with its environments, makes the caller
+  manager and, with a repo, links it (link step shared with `link_project_repo`), audited, both events emitted; MCP tool
+  with `delivery:project:create` plus `delivery:project:link` when a repo is given, the repo URL checked as linking
+  checks it, and a propose check for key format and a free key (AC-1, AC-2, AC-8, AC-12)
+  Files: modules/delivery/server/set-up-project.ts, modules/delivery/server/repo-sync.ts,
+  modules/delivery/server/project-create.ts, modules/delivery/mcp.ts, modules/delivery/tests/set-up-project-106.test.ts
+- [ ] `T4` — The Set up a project card and intents: the card's form (name; key suggested from the name with "✓ free ·
+  proposal ids KEY-001" / taken / format; client chips from existing clients plus Internal and a new one; four billing
+  chips; PM "You"; repo URL and branch chips with main preselected), titled and labelled "Create KEY and link repo" or
+  "Create KEY"; "New project" calls it in the first reply with what the message or pins tell; "Link a repo" gets the
+  repo and branch form on `link_project_repo`'s card; billing options include Internal; no card without
+  `delivery:project:create` (AC-3, AC-4, AC-5, AC-6, AC-9, AC-10, AC-12)
+  Files: modules/delivery/chat.ts, modules/delivery/server/set-up-project-card.ts, modules/delivery/server/write-cards.ts,
+  modules/delivery/mcp.ts, modules/delivery/tests/chat-106.test.ts
+  Depends: T1, T3
+- [ ] `T5` — End to end and docs: the scripted chat sets up a project with a repo (edits the key on the card, sees a
+  taken key refused, creates, sees the receipt and the project page's Repo sync card) and links a repo to an existing
+  project; keyboard-only pass and axe check of the card; Delivery README's chat section (AC-3, AC-7, AC-8, AC-9, AC-11)
+  Files: apps/web/tests/e2e/set-up-project.spec.ts, modules/delivery/README.md
+  Depends: T2, T4
 
 ## Verify
 
