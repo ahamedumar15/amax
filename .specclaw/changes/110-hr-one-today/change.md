@@ -49,6 +49,29 @@ range.
 <!-- Added by plan, UI first, then backend, then integration, in tasks.md's task-line
      format: checkbox, `Tn`, em dash, title; then indented Files: and optional Depends: lines. -->
 
+- [ ] `T1` — Entities with no time zone shown: the People screen leads with one attention line per entity with no zone
+  (its own or its country's), pinned to the entity, with **Ask amax · Set the time zone** (set_entity_zone); the hourly
+  status job, once the zoned entities are moved, fails its run naming the entities it left unmoved (AC-3)
+  Files: modules/hr/ui/PeoplePage.tsx, modules/hr/server/stats.ts, modules/hr/server/jobs.ts,
+  modules/hr/tests/unzoned-110.test.ts
+- [ ] `T2` — change_person by the entity's own today: the default effective date and the person-fields-change-today
+  check use `entityToday` for the person's legal entity, refusing an entity with no zone (AC-1)
+  Files: modules/hr/server/change.ts, modules/hr/tests/hr-today-110.test.ts
+- [ ] `T3` — In-force reads by each person's entity's today: with no date passed, `employmentAt` reads each row on its own
+  entity's local date (in SQL, from `workflows.entity_zone` or the country default, else UTC for a read), used by
+  `personByNo`, the directory and person view, and `getPerson` / `listPeople` / `getEmployment` / `reportUserIds`; an
+  explicit date still wins (AC-2)
+  Files: modules/hr/server/inforce.ts, modules/hr/contracts.ts, modules/hr/server/records.ts,
+  modules/hr/server/queries.ts, modules/hr/tests/hr-today-110.test.ts
+  Depends: T2
+- [ ] `T4` — 109's minors: the job's end is in the name of whoever set the standing allocation, the leaver end names the
+  leaver's record; `monthRange` gives null for a Through before the start, so the button shows it as typed; `zoneNote`
+  turns only entityOf's refusals into the note; linkNote's comment; the done-line test through `confirmAction` (AC-4–AC-7)
+  Files: modules/allocations/server/standing-jobs.ts, modules/allocations/tests/standing-109.test.ts,
+  packages/core/src/months.ts, apps/web/tests/card-month-109.test.ts, modules/hr/server/services.ts,
+  modules/hr/server/add-person-card.ts, modules/hr/tests/add-person-today-109.test.ts,
+  apps/web/tests/add-card-confirm-110.test.ts
+
 ## Verify
 
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
