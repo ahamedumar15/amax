@@ -1,5 +1,6 @@
 import { ActionFailedError, CHECK_FAILED, NotPendingError, type FieldCheck } from "@amax/chat";
 import { logError } from "@amax/core/server";
+import { SignedInElsewhere } from "./same-user";
 import { movedOf, type Moved } from "./chat-move";
 
 export { movedOf } from "./chat-move";
@@ -41,7 +42,7 @@ export function outcomeOf(e: unknown): CardOutcome {
  */
 export function checkFailure(e: unknown): FieldCheck {
   if (e instanceof NotPendingError) return { message: "This card is no longer open. Ask again for a new one." };
-  if (e instanceof Error && e.name === "SignedInElsewhere") return { message: e.message };
+  if (e instanceof SignedInElsewhere) return { message: e.message };
   logError("chat.check", e);
   return CHECK_FAILED;
 }

@@ -128,6 +128,7 @@ function scrub(e: unknown, secret: string | undefined): unknown {
 
 export const AWAITING = { status: "awaiting_confirmation", note: "The user now sees a confirm card for this. Don't say it's done." };
 const NOT_PROPOSED = { status: "not_proposed", note: "No confirm card was made: amax couldn't record the request. Tell the user it didn't go through and to try again shortly." };
+const NO_FORM = { status: "not_proposed", note: "No confirm card was made: its fields couldn't be prepared. Tell the user it didn't go through and to try again shortly." };
 // 043 AC-1: a card's write runs keyed to the tool's declared service, so a tool without one can't be
 // made safe to confirm and never becomes a card.
 const serviceNames = (t: RegisteredTool | undefined) => [t?.service ?? []].flat().map((s) => s.spec.name);
@@ -157,6 +158,8 @@ export async function proposeWrite(t: RegisteredTool, viewer: Viewer, input: Rec
   // The step comes first (053): a card is shown only once its pending step is in the trace, so a
   // step that can't be written means nothing was proposed, and the model is told exactly that.
   const action = { ...(await pendingFor(t, viewer, input)), ...(choice ? { choice } : {}) };
+  // 106 final pass: a tool proposed with its looser draft needs its card's fields, or the person could never complete it.
+  if (t.draft && !action.form) return { refused: NO_FORM };
   if (!(await traceStep({ kind: "pending", tool: t.name, args: input, detail: { actionId: action.id, ...(choice ? { choice: choice.id } : {}) } }))) return { refused: NOT_PROPOSED };
   return { action };
 }

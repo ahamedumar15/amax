@@ -11,7 +11,7 @@ const BILLING = [{ value: "fixed", label: "Fixed" }, { value: "t&m", label: "T&M
 
 export const repoFields = (selected = DEFAULT_BRANCH): CardField[] => [
   { name: "repoUrl", label: "Repo URL", kind: "text" },
-  { name: "defaultBranch", label: "Branch", kind: "chips", value: selected, options: [...new Set([selected, DEFAULT_BRANCH])].map((b) => ({ value: b, label: b })), other: "other…" },
+  { name: "defaultBranch", label: "Branch", kind: "chips", value: selected, options: [...new Set([selected, DEFAULT_BRANCH])].map((b) => ({ value: b, label: b })), other: "other…", required: true },
 ];
 
 export const storedLink = async (v: Viewer, projectKey: string) => (await withTenant(getRuntime().db, v.tenantId, (tx) =>

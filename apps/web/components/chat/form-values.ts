@@ -10,8 +10,9 @@ export function refusalOf(form: CardForm, message?: string, field?: string): { c
   return onForm(form, field) ? { check: { field, message } } : { check: {}, notice: message };
 }
 
-export function checkResultOf(result: FieldCheck): { check: FieldCheck; notice?: string } {
-  return result.transient ? { check: {}, notice: result.message } : { check: result };
+export function checkResultOf(result: FieldCheck): { check: FieldCheck; notice?: string; verified: boolean } {
+  if (result.transient) return { check: {}, notice: result.message, verified: false };
+  return { check: result, verified: !result.message };
 }
 
 export const generalOf = (form: CardForm, check: FieldCheck | null) => (check?.message && !onForm(form, check.field) ? check.message : undefined);
@@ -25,6 +26,10 @@ export const initialsOf = (text: string) => {
 
 export const startValues = (form: CardForm, input: Record<string, unknown>): Values =>
   Object.fromEntries(form.fields.map((f) => [f.name, String(input[f.name] ?? f.value ?? "")]));
+
+export const startTyped = (form: CardForm, values: Values) => new Set(form.fields
+  .filter((f) => f.kind === "text" && f.follow && values[f.name] && values[f.name] !== initialsOf(values[f.follow] ?? ""))
+  .map((f) => f.name));
 
 export function withValue(form: CardForm, values: Values, typed: Set<string>, name: string, value: string): Values {
   const next = { ...values, [name]: value };

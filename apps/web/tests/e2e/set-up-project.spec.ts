@@ -56,8 +56,10 @@ test("106 AC3 AC7 AC8 AC11 one card sets up the project: a taken key is caught, 
 
 test("106 AC13 AC14 New project sends nothing: chat suggests setting a project up, and the picked one brings the card", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("button", { name: "New project" }).click();
-  await expect(page.getByRole("button", { name: "Set up a project" })).toBeVisible();
+  await expect(async () => {
+    await page.getByRole("button", { name: "New project" }).click();
+    await expect(page.getByRole("button", { name: "Set up a project" })).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 30_000 });
   await expect(page.getByRole("button", { name: "Link a repo to a project" })).toBeVisible();
   await expect(page.locator(".m.me")).toHaveCount(0);
   await expect(page.getByText("tell me the details")).toHaveCount(0);

@@ -11,7 +11,7 @@ export function withEdits(form: CardForm, input: Record<string, unknown>, edits:
   for (const f of form.fields) {
     if (!(f.name in edits)) continue;
     const value = String(edits[f.name] ?? "").trim();
-    if (value) next[f.name] = value;
+    if (value || (f.kind === "chips" && f.required)) next[f.name] = value;
     else delete next[f.name];
   }
   return next;
@@ -22,7 +22,8 @@ export async function checkInput(t: RegisteredTool, viewer: Viewer, input: Recor
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const field = issue?.path[0] === undefined ? undefined : String(issue.path[0]);
-    return { refused: { field, message: field && input[field] === undefined ? "Fill this in" : issue?.message ?? "check the fields" } };
+    const empty = field !== undefined && (input[field] === undefined || input[field] === "");
+    return { refused: { field, message: empty ? "Fill this in" : issue?.message ?? "check the fields" } };
   }
   const value = parsed.data as Record<string, unknown>;
   try {

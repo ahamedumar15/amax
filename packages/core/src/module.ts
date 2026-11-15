@@ -109,7 +109,7 @@ export type CardLook = { kind?: string; figure?: string; subject?: string; detai
  */
 export type CardField =
   | { name: string; label: string; kind: "text"; value?: string; hint?: string; upper?: boolean; follow?: string }
-  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string }[]; other?: string };
+  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string }[]; other?: string; required?: boolean };
 export type CardForm = { fields: CardField[]; optional?: { label: string; fields: string[] }; confirm?: { label: string; unless?: { field: string; label: string } } };
 export type ToolCard = { title: string; lines: CardLine[]; look?: CardLook; form?: CardForm };
 

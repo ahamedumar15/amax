@@ -1,13 +1,13 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { CardField, CardForm as Form } from "@amax/core";
 import type { FieldCheck } from "@amax/chat";
 import { FormChips } from "./FormChips";
 import { generalOf, hintOf, type Values } from "./form-values";
 
 type Props = {
-  form: Form; values: Values; check: FieldCheck | null; checking?: boolean; notice?: string; disabled: boolean;
+  form: Form; values: Values; check: FieldCheck; verified: boolean; notice?: string; disabled: boolean;
   onValue: (name: string, value: string) => void;
 };
 
@@ -24,28 +24,30 @@ function TextField({ field, values, error, ok, disabled, onValue }: { field: Ext
   );
 }
 
-function Field({ field, values, check, checking, disabled, onValue }: Omit<Props, "form"> & { field: CardField }) {
-  const error = check?.field === field.name ? check.message : undefined;
+function Field({ field, values, check, verified, disabled, onValue }: Omit<Props, "form"> & { field: CardField }) {
+  const error = check.field === field.name ? check.message : undefined;
   if (field.kind === "chips") return <FormChips field={field} value={values[field.name] ?? ""} error={error} disabled={disabled} onChange={(v) => onValue(field.name, v)} />;
-  return <TextField field={field} values={values} error={error} ok={check !== null && !check.message && !checking} disabled={disabled} onValue={onValue} />;
+  return <TextField field={field} values={values} error={error} ok={verified} disabled={disabled} onValue={onValue} />;
 }
 
-export function CardForm({ form, values, check, checking, notice, disabled, onValue }: Props) {
+export function CardForm({ form, values, check, verified, notice, disabled, onValue }: Props) {
   const optional = new Set(form.optional?.fields ?? []);
-  const draw = (f: CardField) => <Field key={f.name} field={f} values={values} check={check} checking={checking} disabled={disabled} onValue={onValue} />;
-  const filled = form.fields.some((f) => optional.has(f.name) && f.kind === "text" && values[f.name]?.trim());
+  const draw = (f: CardField) => <Field key={f.name} field={f} values={values} check={check} verified={verified} disabled={disabled} onValue={onValue} />;
+  const [startOpen] = useState(() => form.fields.some((f) => optional.has(f.name) && f.kind === "text" && values[f.name]?.trim()));
+  const section = useRef<HTMLDetailsElement>(null);
+  const refusedInside = Boolean(check.message && check.field && optional.has(check.field));
+  useEffect(() => { if (refusedInside && section.current) section.current.open = true; }, [refusedInside]);
   const message = generalOf(form, check) ?? notice;
-  const general = message ? <p className="err" role="alert">{message}</p> : null;
   return (
     <div className="cf">
       {form.fields.filter((f) => !optional.has(f.name)).map(draw)}
       {form.optional && (
-        <details className="cf-more" open={filled || undefined}>
+        <details className="cf-more" ref={section} open={startOpen || undefined}>
           <summary>{form.optional.label}</summary>
           {form.fields.filter((f) => optional.has(f.name)).map(draw)}
         </details>
       )}
-      {general}
+      {message ? <p className="err" role="alert">{message}</p> : null}
     </div>
   );
 }
