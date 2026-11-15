@@ -43,10 +43,11 @@ export const extendStanding = defineService({
     const events: { name: string; payload: AllocationSet }[] = [];
     const ended: Ended[] = [];
     for (const s of rows) {
+      // 110 AC-4: the job writes and ends in the name of whoever set it.
+      const by = `allocations.standing for ${String(s.updated_by)}`;
       // 109 AC-1: ended as ending it by hand would, from next month: the months it wrote from then on go too, kept in the audit.
       if (!people.has(s.person_id as string) || !projects.has(s.project_id as string)) {
-        // 110 AC-4: ended in the name of whoever set it, as its extensions are.
-        const end = await endSlot(tx, s.person_id as string, s.project_id as string, addMonths(monthOf(input.today), 1), `allocations.standing for ${String(s.updated_by)}`, ctx.tenantId);
+        const end = await endSlot(tx, s.person_id as string, s.project_id as string, addMonths(monthOf(input.today), 1), by, ctx.tenantId);
         ended.push(end.before);
         events.push(end.event);
         continue;
@@ -54,7 +55,6 @@ export const extendStanding = defineService({
       const skip = new Set((s.skips as string[]).map(day));
       const months: string[] = [];
       for (let m = addMonths(day(s.filled_to), 1); m <= target; m = addMonths(m, 1)) if (!skip.has(m)) months.push(m);
-      const by = `allocations.standing for ${String(s.updated_by)}`;
       const written = await fill(tx, s.id as string, { personId: s.person_id as string, projectId: s.project_id as string, percent: Number(s.percent), by, tenantId: ctx.tenantId }, months);
       await tx.execute(sql`update allocations.standing set filled_to = ${target} where id = ${s.id}`);
       if (written.length) events.push({ name: EVENTS.allocationSet, payload: { personId: s.person_id as string, projectId: s.project_id as string, work: null, months: written, percent: Number(s.percent), by, standing: true } });

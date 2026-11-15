@@ -2,7 +2,9 @@ import { z } from "zod";
 import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { EMPLOYMENT_SENSITIVE } from "./contracts";
-import { personOf } from "./pins";
+import { entityOf, personOf } from "./pins";
+import { readHr } from "./server/read";
+import { getLegalEntity } from "./server/zones";
 import { ctxFor } from "./server/context";
 import { getPersonView, listDirectory } from "./server/queries";
 import { peopleStats } from "./server/stats";
@@ -22,6 +24,8 @@ export const mcpTools: McpToolDef[] = [
     sensitive: EMPLOYMENT_SENSITIVE, input: z.object({ personId: z.string().uuid().optional(), employeeNo: z.string().optional() }), run: (v, a) => getPersonView(v, a) }),
   tool({ ...read, pin: "view", name: "people_stats", description: "Headcount by entity and department, joiners and leavers by month this year, probation and missing documents.",
     input: z.object({}), run: (v) => peopleStats(v) }),
+  tool({ ...read, pin: { id: "entityId", of: entityOf }, name: "get_legal_entity", description: "One legal entity by id: its name, country and time zone (null when it has none, so HR can't add people or move its joiners and leavers there).",
+    input: z.object({ entityId: z.string().uuid() }), run: (v, a) => readHr(v, (tx) => getLegalEntity(tx, a.entityId)) }),
   tool({ name: "add_person", description: "Add a person to HR records. Entity is Sri Lanka or Australia (or the entity's name). joinedOn defaults to today; a future join date makes them 'joining'. A work email that someone already signs in with links the record to them. forProject (a project key) offers to add them there next.", scope: "write", permission: "hr:person:create",
     input: AddPersonInput, draft: AddPersonInput.partial(), card: addPersonCard, note: linkNote,
     service: addPerson, run: (v, a, s = "mcp") => { const { forProject: _, ...person } = a; return addPerson(ctxFor(v, s), person); } }),

@@ -2,12 +2,13 @@
 // tenant transaction and take a Reader: a viewer sees only the legal entities their hr:read reaches,
 // with pay and bank masked per 002; trusted system code (a ServiceContext core issued with
 // contextFor.job, checked by isSystemContext, not by its fields) sees everything, and its pay reads are audited. Every read takes an as-of date
-// (default: each person's own today, in their entity's time zone, 110) so one screen or job reads one day.
+// (default: each person's own today, in their entity's time zone, 110) so one screen or job reads one day. For an entity
+// with no time zone a read falls back to UTC's today and never refuses: HR's writes refuse it, and People names it.
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { can, mask, ScopeError, type Masked, type Viewer } from "@amax/auth";
 import { appendAudit, isSystemContext, type ServiceContext } from "@amax/core/server";
-import { employmentAt, inForceOrder, subjectOf } from "./server/inforce";
+import { asOf, employmentAt, inForceOrder, subjectOf } from "./server/inforce";
 
 /** Who reads: a signed-in viewer, or a ServiceContext (a system job, or a call acting for a viewer). */
 export type Reader = Viewer | ServiceContext;
@@ -108,7 +109,7 @@ export async function listEmploymentPeriods(tx: Tx, reader: Reader, personIds?: 
  */
 export async function getEmployment(tx: Tx, personId: string, reader: Reader, on?: string): Promise<Employment | null> {
   const who = readerOf(reader);
-  const [r] = await tx.execute(sql`select e.*, p.user_id,
+  const [r] = await tx.execute(sql`select e.*, p.user_id, to_char(${asOf(on)}, 'YYYY-MM-DD') as as_of,
       (select x.ends_on from hr.employment x where x.person_id = e.person_id order by x.starts_on desc limit 1) as contract_ends_on
     from hr.employment e join hr.person p on p.id = e.person_id where e.person_id::text = ${personId} ${inForceOrder(on)}`);
   if (!r || !sees(who, r)) return null;
@@ -118,7 +119,7 @@ export async function getEmployment(tx: Tx, personId: string, reader: Reader, on
     epfNumber: (r.epf_number as string | null) ?? null, bankName: (r.bank_name as string | null) ?? null, bankAccount: (r.bank_account as string | null) ?? null,
   };
   if (who.kind === "system") {
-    await appendAudit(tx, who.ctx, { action: "hr.employment.read", resource: "hr.employment", resourceId: full.id, before: null, after: { personId, on: on ?? null, fields: Object.keys(EMPLOYMENT_SENSITIVE) } });
+    await appendAudit(tx, who.ctx, { action: "hr.employment.read", resource: "hr.employment", resourceId: full.id, before: null, after: { personId, on: r.as_of as string, fields: Object.keys(EMPLOYMENT_SENSITIVE) } });
     return full;
   }
   return mask(who.viewer, full, EMPLOYMENT_SENSITIVE, subjectOf(r)) as Employment;

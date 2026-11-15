@@ -20,7 +20,7 @@ export const peopleStats = (v: Viewer, asOf: string | Date = todayIso(), entityI
     const ent = entityId ? sql`and p.legal_entity_id = ${entityId}` : sql``;
     const byEntity = await tx.execute(sql`select le.id, le.name, le.country, count(p.id)::int as n from core.legal_entity le
       left join hr.person p on p.legal_entity_id = le.id and p.status = 'active' ${ent} group by le.id order by n desc`);
-    const departments = await tx.execute(sql`select emp.department as name, count(*)::int as n from hr.person p ${employmentAt(now)}
+    const departments = await tx.execute(sql`select emp.department as name, count(*)::int as n from hr.person p ${employmentAt()}
       where p.status = 'active' ${ent} group by emp.department order by n desc, name`);
     const flows = await tx.execute(sql`select extract(month from d)::int as m, sum(j)::int as joined, sum(l)::int as left from (
         select joined_on as d, 1 as j, 0 as l from hr.person p where joined_on between ${monthStart(y, 0)}::date and ${now}::date ${ent}

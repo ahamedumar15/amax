@@ -60,7 +60,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
           <div className="legend"><span><i className="sq" style={{ background: "#2FCB8C" }} />Joiners</span><span><i className="sq" style={{ background: "#F48B9B" }} />Leavers</span></div>
         </div>
       </div>
-      <Directory rows={dir.rows} total={dir.total} today={on} allHref={all ? undefined : entity ? `/hr/e/${entity.code}/all` : "/hr/all"} />
+      <Directory rows={dir.rows} total={dir.total} allHref={all ? undefined : entity ? `/hr/e/${entity.code}/all` : "/hr/all"} />
     </>
   );
 }

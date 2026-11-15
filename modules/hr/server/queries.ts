@@ -2,20 +2,21 @@ import { sql } from "drizzle-orm";
 import { canSee, type Masked, type Viewer } from "@amax/auth";
 import type { Sensitivity } from "@amax/core/server";
 import { getEmployment, toPersonRef, type Employment, type PersonRef } from "../contracts";
-import { employmentAt } from "./inforce";
+import { asOf, employmentAt } from "./inforce";
 import { readHr } from "./read";
 
-export type DirectoryRow = PersonRef & { country: string; entityName: string; probationEnds: string | null };
+/** `asOf` (110): the day the row was read on, the person's own today unless a date was given. */
+export type DirectoryRow = PersonRef & { country: string; entityName: string; probationEnds: string | null; asOf: string };
 export type DocumentRow = { id: string; title: string | Masked; class: string; status: string; datedOn: string | null };
 export type PersonView = { person: DirectoryRow; workEmail: string | null; location: string | null; employment: Employment | null; documents: DocumentRow[] };
 
 const day = (v: unknown) => (v ? (v instanceof Date ? v.toISOString() : String(v)).slice(0, 10) : null);
 
-const directory = (on?: string) => sql`select p.*, emp.department, emp.manager_person_id, mgr.user_id as manager_user_id, mgr.name as manager_name,
+const directory = (on?: string) => sql`select p.*, to_char(${asOf(on)}, 'YYYY-MM-DD') as as_of, emp.department, emp.manager_person_id, mgr.user_id as manager_user_id, mgr.name as manager_name,
     le.country, le.name as entity_name, (select min(ends_on) from hr.probation b where b.person_id = p.id and b.status = 'open') as probation_ends
   from hr.person p ${employmentAt(on)} join core.legal_entity le on le.id = p.legal_entity_id`;
 
-const row = (r: Record<string, unknown>): DirectoryRow => ({ ...toPersonRef(r), country: r.country as string, entityName: r.entity_name as string, probationEnds: day(r.probation_ends) });
+const row = (r: Record<string, unknown>): DirectoryRow => ({ ...toPersonRef(r), country: r.country as string, entityName: r.entity_name as string, probationEnds: day(r.probation_ends), asOf: r.as_of as string });
 
 /** The directory as of `on` (default: each person's own today): shared people with a sign-in first, then by name. `total` counts every match. */
 export const listDirectory = (v: Viewer, opts: { entityId?: string; q?: string; limit?: number; on?: string } = {}) =>

@@ -4,7 +4,7 @@ import { hasDb } from "@amax/db/testdb";
 import { ctxFor } from "../server/context";
 import { statusDatesJob } from "../server/jobs";
 import { addPerson } from "../server/services";
-import { unzonedEntities } from "../server/zones";
+import { getLegalEntity, unzonedEntities } from "../server/zones";
 import { hrDatabase } from "./setup";
 
 // 110 AC-3: an entity with no time zone is named where people look, and the hourly job's run fails naming it once the
@@ -22,7 +22,11 @@ describe.skipIf(!hasDb)("110 entities with no time zone are shown (Postgres)", (
     ["with it taken away: Australia", false, ["Lumen Labs Pty Ltd"]],
   ])("AC3 the entities with no zone, %s", async (_name, set, names) => {
     await zone(set);
-    expect((await db.tx((tx) => unzonedEntities(tx))).map((e) => e.name)).toEqual(names);
+    try {
+      expect((await db.tx((tx) => unzonedEntities(tx))).map((e) => e.name)).toEqual(names);
+      const [au] = await db.tx((tx) => tx.execute(sql`select id from core.legal_entity where country = 'AU'`));
+      expect((await db.tx((tx) => getLegalEntity(tx, au.id as string)))?.timezone).toBe(set ? "Australia/Sydney" : null);
+    } finally { await zone(true); }
   });
 
   it("AC3 the job moves Sri Lanka's joiner, then fails naming Australia", async () => {
@@ -30,8 +34,10 @@ describe.skipIf(!hasDb)("110 entities with no time zone are shown (Postgres)", (
     await addPerson(ctxFor(await db.as("sahan"), "mcp"), { name: "Starter 110", title: "Engineer", department: "Engineering", entity: "Sri Lanka", joinedOn: "2026-01-02" });
     await db.t.owner`update hr.person set status = 'joining' where name = 'Starter 110'`;
     await zone(false);
-    await expect(statusDatesJob.run({ tenantId: db.maya.tenantId } as never)).rejects.toThrow(/Lumen Labs Pty Ltd has no time zone set/);
-    const [p] = await db.tx((tx) => tx.execute(sql`select status from hr.person where name = 'Starter 110'`));
-    expect(p.status).toBe("active");
+    try {
+      await expect(statusDatesJob.run({ tenantId: db.maya.tenantId } as never)).rejects.toThrow(/Lumen Labs Pty Ltd has no time zone set/);
+      const [p] = await db.tx((tx) => tx.execute(sql`select status from hr.person where name = 'Starter 110'`));
+      expect(p.status).toBe("active");
+    } finally { await zone(true); }
   });
 });

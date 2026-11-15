@@ -8,7 +8,7 @@ import { changePersonRun, changeInput } from "./change";
 import { date, inScope, inScopeFrom, personByNo } from "./records";
 import { linkableAccount } from "./link";
 import { entityZoneSet } from "@amax/workflows";
-import { entityToday, noZone } from "./zones";
+import { entityToday, noZone, unzonedEntities } from "./zones";
 
 export { entityToday, noZone };
 
@@ -124,14 +124,14 @@ export const applyStatusDates = defineService({
     if (!isSystemContext(ctx)) throw new ScopeError("hr:person:update");
     // Review round 1: without `on`, each entity's people move by that entity's own today, as addPerson decides. Review
     // round 2: an entity with no zone is left as it is and named, never moved by UTC's today.
-    const entities = await tx.execute(sql`select id, name from core.legal_entity`);
+    const entities = await tx.execute(sql`select id from core.legal_entity`);
+    const missing = on ? [] : await unzonedEntities(tx);
     const days: Record<string, string> = {};
-    const unzoned: string[] = [];
     for (const e of entities) {
       if (on) days[e.id as string] = on;
-      else if (await entityZoneSet(tx, e.id as string)) days[e.id as string] = await entityToday(tx, e.id as string);
-      else unzoned.push(String(e.name));
+      else if (!missing.some((m) => m.id === e.id)) days[e.id as string] = await entityToday(tx, e.id as string);
     }
+    const unzoned = missing.map((m) => m.name);
     const started: string[] = [], left: string[] = [];
     for (const [entity, d] of Object.entries(days)) {
       left.push(...(await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where legal_entity_id = ${entity} and status <> 'left' and left_on <= ${d}::date returning employee_no`)).map((r) => r.employee_no as string));

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { ENTITY_ZONES } from "@amax/workflows";
+import { entityZoneSql } from "@amax/workflows";
 
 /** Today's date (UTC). The one clock every "in force" read uses unless a date is passed in. */
 export const today = () => new Date().toISOString().slice(0, 10);
@@ -8,12 +8,10 @@ export const today = () => new Date().toISOString().slice(0, 10);
  * 110 AC-2: today for the person in the row (alias `p`), in their entity's own time zone (its own, else its country's,
  * else UTC: a read never refuses), from the app's clock, so one read covers people in Sri Lanka and Sydney alike.
  */
-export const localToday = () => sql`(${new Date().toISOString()}::timestamptz at time zone coalesce(
-  (select z.timezone from workflows.entity_zone z where z.legal_entity_id = p.legal_entity_id),
-  (select ${JSON.stringify(ENTITY_ZONES)}::jsonb ->> trim(le0.country) from core.legal_entity le0 where le0.id = p.legal_entity_id), 'UTC'))::date`;
+export const localToday = () => sql`(${new Date().toISOString()}::timestamptz at time zone coalesce(${entityZoneSql(sql`p.legal_entity_id`)}, 'UTC'))::date`;
 
-/** The as-of date: the one given, or each person's own today (localToday). */
-const asOf = (at?: string) => (at ? sql`${at}::date` : localToday());
+/** The as-of date: the one given, or each person's own today (localToday). Selected beside a row, it says which day was read. */
+export const asOf = (at?: string) => (at ? sql`${at}::date` : localToday());
 
 /** Orders a person's employment periods (alias `e`) so the first is the one in force on `at` (default: the person's own today), or the first period for someone who hasn't started yet. */
 export const inForceOrder = (at?: string) =>
