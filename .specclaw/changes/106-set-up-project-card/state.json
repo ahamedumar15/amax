@@ -1,9 +1,10 @@
 {
   "change": "106-set-up-project-card",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-11-15T06:20:12Z"},
-    "tasks": {"status":"done","at":"2026-11-15T06:31:03Z"}
+    "tasks": {"status":"done","at":"2026-11-15T06:31:03Z"},
+    "verify": {"status":"done","at":"2026-11-15T10:13:44Z"}
   }
 }

@@ -121,5 +121,47 @@ section with Branch chips (main preselected). One button, **Create AMX and link 
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
 
+**Verdict:** PASS
+
+- AC-1: pass — `modules/delivery/tests/set-up-project-106.test.ts` AC-1: one write creates NWP with Dev/QA/UAT/Prod, the caller as
+  manager and the link (main), one `delivery.project.setup` audit entry.
+- AC-2: pass — same file AC-2: an Engineer is refused, a repo URL holding credentials is refused, nothing is created; a repo
+  link without a viewer is refused (review round 1).
+- AC-3: pass — `modules/delivery/tests/chat-106.test.ts` AC3 (the first reply is the card, given fields filled, the rest
+  empty); e2e `set-up-project.spec.ts` test 1; a draft tool with no fields makes no card (`packages/chat/tests/card-draft.test.ts`).
+- AC-4: pass — `packages/chat/tests/card-form.test.ts` AC4 (schema then the tool's check, each naming its field); e2e: CON
+  is taken, the button disabled, NWP "✓ free · proposal ids NWP-001"; a key given in the message is kept
+  (`set-up-project-fields.spec.ts`); the ✓ shows only after a passing check (`apps/web/tests/card-form-106.test.ts`).
+- AC-5: pass — `chat-106.test.ts` AC5 (Internal and existing clients with "+ new…", four billing chips); e2e types a
+  multi-word client key by key (`set-up-project.spec.ts`, `apps/web/tests/card-chips-106.test.ts`).
+- AC-6: pass — e2e: the Repo section opens, main preselected, and stays open with focus when its URL is cleared; an empty
+  "other…" branch is refused (`set-up-project-fields.spec.ts`, `card-draft.test.ts`).
+- AC-7: pass — `chat-106.test.ts` AC7 and e2e: "Create NWP and link repo"; the receipt "Created NWP · Northwind Portal,
+  linked github.com/example/northwind-portal (main)"; the project page's Repo sync card shows the repo.
+- AC-8: pass — `card-form.test.ts` AC8 (a refusal keeps the card open by its field; one write on a second press); a failed
+  reword drops the stale receipt (`card-reword.test.ts`); `set-up-project-106.test.ts` AC-8 (a taken key refused before the
+  card and by the write, no link alone).
+- AC-9: pass — `chat-106.test.ts` AC9; `set-up-project-r1-106.test.ts` (a relink keeps the stored branch); e2e test 3.
+- AC-10: pass — `chat-106.test.ts` AC10 (Kasun isn't offered `set_up_project`).
+- AC-11: pass — e2e: chips chosen with the keyboard (ArrowRight), axe wcag2a/2aa/21aa on `#chat` with no violations; light and
+  dark screenshots; field errors in aria-live notes.
+- AC-12: pass — `chat-106.test.ts` AC10/AC12; `create_project` and `link_project_repo` suites unchanged and passing.
+- AC-13: pass — e2e: New project sends nothing and shows no "tell me the details" line; the suggestion fills "Set up a new
+  project", and sending it brings the card.
+- AC-14: pass — `modules/delivery/tests/chat-106-a1.test.ts` AC14 (Maya, Kasun, a project with and without a repo).
+
+Commands: `pnpm lint` exit 0; `pnpm --filter @amax/chat --filter @amax/mcp --filter @amax/delivery --filter @amax/ai
+--filter @amax/ui test` exit 1 in the parallel run (trace-ac1, trace-store-down, authors-091: they share the database;
+each passes alone), the 106 and review suites pass; web tests pass but for this host's two known load timeouts; e2e
+(`set-up-project*.spec.ts`, 6 tests) passed on `next dev` with the e2e database (this host's `next start` fails with
+`output: standalone`). `specclaw-verify size`: exit 0 with the size waiver. `specclaw-preset-check .`: exit 1, the
+repo-wide backlog as in 066–105 (4,325 violations). Screenshots: `shots/app.png`, `shots/app-dark.png`,
+`shots/app-suggestions.png`, `shots/mock.png` (the mock's sections from 047 on are nested in hidden ones, an older
+markup slip, so the section was moved into view to shoot it).
+
+Review: CLEAN — 5 rounds, final pass 845d0e486b, models opus/opus; last round 0/0/3 b/M/m; fix proof not proven: no
+review.test_command configured, so no test could prove the fix. Three minors from the final pass are open in
+`follow-ups.md`.
+
 Quality: not_run (`specclaw-quality-scan .`: jq "Argument list too long" on this Windows host, as in 066–105; no refactor
 made). Every new file is under 80 lines.
