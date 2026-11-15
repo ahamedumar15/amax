@@ -25,9 +25,9 @@ export const linkNote = async (v: Viewer, a: Partial<AddPerson>) => {
 /** 107 AC-8: Add NAME to HR, a 106 form: their name and work email as given, title and department typed, entity chips. */
 export async function addPersonCard(v: Viewer, a: Partial<AddPerson>): Promise<ToolCard> {
   const who = a.name ?? "someone";
-  const [names, account] = await Promise.all([entities(v).then((rows) => rows.map((r) => String(r.name))), linksTo(v, a.workEmail)]);
+  const [names, note] = await Promise.all([entities(v).then((rows) => rows.map((r) => String(r.name))), linkNote(v, a)]);
   return {
-    title: `Add ${who} to HR${account ? ` · links to ${account.name}'s sign-in` : ""}`, lines: [],
+    title: `Add ${who} to HR`, lines: [],
     look: { kind: "Add to HR", confirm: `Add ${who} to HR`, done: `Added ${who} to HR`,
       ...(a.forProject && a.name ? { next: { label: `Add ${a.name} to ${a.forProject}`, prompt: `Add ${a.name} to ${a.forProject}` } } : {}) },
     form: {
@@ -39,6 +39,7 @@ export async function addPersonCard(v: Viewer, a: Partial<AddPerson>): Promise<T
         { name: "entity", label: "Entity", kind: "chips", value: names[0], options: names.map((n) => ({ value: n, label: n })), required: true },
       ],
       confirm: { label: "Add {name} to HR" },
+      ...(note ? { note } : {}),
     },
   };
 }

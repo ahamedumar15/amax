@@ -7,7 +7,7 @@ import { getProjectRef } from "@amax/delivery/contracts";
 import { EVENTS, monthOf, type AllocationSet, type MonthCopied } from "../contracts";
 import { teamMembers } from "./forecast";
 import { lockStanding, setStanding, skipMonths } from "./standing";
-import { resolvePerson } from "./person";
+import { ambiguous, resolvePerson } from "./person";
 
 const month = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, "a month, e.g. 2026-11").transform(monthOf);
 const by = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
@@ -27,7 +27,7 @@ const span = (from: string, to: string) => (Number(to.slice(0, 4)) - Number(from
 async function personOf(tx: Tx, ctx: ServiceContext, who: string) {
   const r = await resolvePerson(tx, ctx, who);
   if (r.kind === "found") return r.person;
-  throw new Error(r.kind === "ambiguous" ? `${who} matches more than one person; use the employee number` : `no person ${who}`);
+  throw new Error(r.kind === "ambiguous" ? ambiguous(who) : `no person ${who}`);
 }
 
 export const allocate = defineService({

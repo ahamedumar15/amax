@@ -3,7 +3,7 @@ import type { CardField, ToolCard } from "@amax/core";
 import { ToolError } from "@amax/mcp";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { listPeople } from "@amax/hr/contracts";
-import { resolvePerson } from "./person";
+import { ambiguous, resolvePerson } from "./person";
 import { listAllocations } from "../contracts";
 import { monthLabel, windowMonths } from "./months";
 import { readAlloc } from "./read";
@@ -36,7 +36,7 @@ export async function proposeAllocate(v: Viewer, a: AddInput) {
   if (!a.person) return;
   const r = await personNamed(v, a.person.trim());
   if (r.kind === "found") return;
-  if (r.kind === "ambiguous") throw new ToolError(`${a.person.trim()} matches more than one person; use the employee number`, "invalid_input", "person");
+  if (r.kind === "ambiguous") throw new ToolError(ambiguous(a.person), "invalid_input", "person");
   const account = await readAlloc(v, (tx) => activeAccount(tx, a.person!));
   throw new ToolError(account ? `${account.name} can sign in but has no HR record yet. Add them to HR first: "add ${account.name} to HR for ${a.projectKey ?? "the project"}"`
     : `No one called ${a.person.trim()} is in HR`, "invalid_input", "person");

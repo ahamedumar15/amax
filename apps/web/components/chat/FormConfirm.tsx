@@ -19,7 +19,7 @@ export function FormConfirm({ form, input, fallback, busy, note, field, onConfir
   const [check, setCheck] = useState<FieldCheck>(() => refusalOf(form, note, field).check);
   const [notice, setNotice] = useState(() => refusalOf(form, note, field).notice);
   const [verified, setVerified] = useState(false);
-  const [info, setInfo] = useState<string | undefined>();
+  const [info, setInfo] = useState<string | undefined>(form.note);
   const [shown, setShown] = useState(note);
   const [checking, setChecking] = useState(false);
   const typed = useRef<Set<string> | null>(null);
