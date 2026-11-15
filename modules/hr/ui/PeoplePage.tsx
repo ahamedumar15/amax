@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import type { ScreenProps } from "@amax/core";
 import { canEver } from "@amax/auth";
 import { IntentButton, PinButton, Ticket } from "@amax/ui";
-import { today as todayIso } from "../server/inforce";
 import { listDirectory, listEntities } from "../server/queries";
 import { peopleStats } from "../server/stats";
 import { readHr } from "../server/read";
@@ -20,12 +19,12 @@ const stat = (label: string, inline = false) => <PinButton inline={inline} pin={
 export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>People</h1><SignInFirst /></>;
-  const on = todayIso(), today = new Date(`${on}T00:00:00Z`);
   const entities = await listEntities(viewer);
   const entity = entities.find((e) => e.code === params.entity);
   if (params.entity && !entity) notFound();
   const all = params.all === "all";
-  const [s, dir, unzoned] = await Promise.all([peopleStats(viewer, on, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25 }), readHr(viewer, unzonedEntities)]);
+  const [s, dir, unzoned] = await Promise.all([peopleStats(viewer, undefined, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25 }), readHr(viewer, unzonedEntities)]);
+  const today = new Date(`${s.day}T00:00:00Z`);
   const inEntities = s.byEntity.filter((e) => e.n > 0);
   const joined = s.joiners.reduce((a, b) => a + b, 0), left = s.leavers.reduce((a, b) => a + b, 0);
   const q = `Q${Math.floor(today.getUTCMonth() / 3) + 1}`;

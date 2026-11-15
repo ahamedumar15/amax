@@ -29,6 +29,8 @@ export async function unzonedEntities(tx: Tx): Promise<{ id: string; name: strin
 /** The People screen's line and the status job's failure, in one wording. */
 export const unzonedLine = (name: string) => `${name} has no time zone set: its joiners and leavers aren't moved, and people can't be added there`;
 
+// Legal entities' names and zones are tenant-wide, as the People screen's entity filter is: every hr:read viewer sees them.
+
 /** 110 AC-3: one legal entity and its time zone (null when it has none, own or country's), for its pin. */
 export async function getLegalEntity(tx: Tx, entityId: string) {
   const [e] = await tx.execute(sql`select id, name, country from core.legal_entity where id = ${entityId}`);

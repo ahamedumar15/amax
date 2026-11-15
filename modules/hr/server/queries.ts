@@ -43,7 +43,7 @@ export const getPersonView = (v: Viewer, ref: string | { personId?: string; empl
     const docs = await tx.execute(sql`select * from hr.document where person_id = ${r.id} order by dated_on desc nulls last, title`);
     return {
       person: row(r), workEmail: (r.work_email as string | null) ?? null, location: (r.location as string | null) ?? null,
-      employment: await getEmployment(tx, r.id as string, v, on),
+      employment: await getEmployment(tx, r.id as string, v, r.as_of as string),
       documents: docs.map((d) => ({
         id: d.id as string, class: d.class as string, status: d.status as string, datedOn: day(d.dated_on),
         title: d.class === "personal" || canSee(v, d.class as Sensitivity, subject) ? (d.title as string) : { masked: true, class: d.class as Sensitivity },

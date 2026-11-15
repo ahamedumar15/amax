@@ -1,14 +1,14 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import { entityZoneSql } from "@amax/workflows";
-
-/** Today's date (UTC). The one clock every "in force" read uses unless a date is passed in. */
-export const today = () => new Date().toISOString().slice(0, 10);
 
 /**
  * 110 AC-2: today for the person in the row (alias `p`), in their entity's own time zone (its own, else its country's,
  * else UTC: a read never refuses), from the app's clock, so one read covers people in Sri Lanka and Sydney alike.
  */
-export const localToday = () => sql`(${new Date().toISOString()}::timestamptz at time zone coalesce(${entityZoneSql(sql`p.legal_entity_id`)}, 'UTC'))::date`;
+export const localToday = () => entityDay(sql`p.legal_entity_id`);
+
+/** Today in a legal entity's own zone (else UTC, for a read), from the app's clock; `entityId` is a SQL expression. */
+export const entityDay = (entityId: SQL) => sql`(${new Date().toISOString()}::timestamptz at time zone coalesce(${entityZoneSql(entityId)}, 'UTC'))::date`;
 
 /** The as-of date: the one given, or each person's own today (localToday). Selected beside a row, it says which day was read. */
 export const asOf = (at?: string) => (at ? sql`${at}::date` : localToday());

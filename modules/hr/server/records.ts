@@ -4,9 +4,9 @@ import type { Tx } from "@amax/db";
 import { assertCan, ScopeError, viewerOf, type ResourceAttrs } from "@amax/auth";
 import { isSystemContext, type ServiceContext } from "@amax/core/server";
 
-import { employmentAt, subjectOf, today } from "./inforce";
+import { employmentAt, subjectOf } from "./inforce";
 
-export { today, subjectOf };
+export { subjectOf };
 export const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "a date, e.g. 2026-11-02");
 
 /**
