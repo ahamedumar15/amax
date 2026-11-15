@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Viewer } from "@amax/auth";
 import { linkableAccount } from "./link";
+import { zoneNote } from "./services";
 import type { ToolCard } from "@amax/core";
 import { getRuntime } from "@amax/core/server";
 import { withTenant } from "@amax/db";
@@ -16,16 +17,21 @@ const entities = (v: Viewer) => withTenant(getRuntime().db, v.tenantId, (tx) => 
 
 const linksTo = (v: Viewer, email?: string) => withTenant(getRuntime().db, v.tenantId, (tx) => linkableAccount(tx, email));
 
-/** Review round 2: the card's note as the work email is typed, from the same rule addPerson links by. */
+/**
+ * Review round 2: the card's note as the work email is typed, from the same rule addPerson links by. 109 review round 1:
+ * and, for an entity with no time zone set, that today there is UTC's.
+ */
 export const linkNote = async (v: Viewer, a: Partial<AddPerson>) => {
-  const account = await linksTo(v, a.workEmail);
-  return account ? `Links to ${account.name}'s sign-in` : undefined;
+  const [account, zone] = await Promise.all([linksTo(v, a.workEmail), a.entity ? withTenant(getRuntime().db, v.tenantId, (tx) => zoneNote(tx, a.entity!)) : undefined]);
+  const notes = [account ? `Links to ${account.name}'s sign-in` : undefined, zone].filter(Boolean);
+  return notes.length ? notes.join(". ") : undefined;
 };
 
 /** 107 AC-8: Add NAME to HR, a 106 form: their name and work email as given, title and department typed, entity chips. */
 export async function addPersonCard(v: Viewer, a: Partial<AddPerson>): Promise<ToolCard> {
   const who = a.name ?? "someone";
-  const [names, note] = await Promise.all([entities(v).then((rows) => rows.map((r) => String(r.name))), linkNote(v, a)]);
+  const names = (await entities(v)).map((r) => String(r.name));
+  const note = await linkNote(v, { ...a, entity: a.entity ?? names[0] });
   return {
     title: `Add ${who} to HR`, lines: [],
     look: { kind: "Add to HR", confirm: `Add ${who} to HR`, done: `Added ${who} to HR`,

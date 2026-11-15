@@ -7,6 +7,7 @@ import { ambiguous, resolvePerson } from "./person";
 import { listAllocations, monthOf } from "../contracts";
 import { monthLabel, windowMonths } from "./months";
 import { readAlloc } from "./read";
+import { STANDING_WITH_END, standingWithEnd } from "./rules";
 import { freeIn } from "./team";
 
 export type AddInput = { person?: string; projectKey?: string; work?: string; month?: string; through?: string; percent?: number; standing?: boolean };
@@ -33,7 +34,7 @@ const personNamed = (v: Viewer, who: string) => readAlloc(v, (tx) => resolvePers
  * share asks for the employee number, as the service would.
  */
 export async function proposeAllocate(v: Viewer, a: AddInput) {
-  if (a.standing && a.through) throw new ToolError("until further notice has no end month: clear Through, or pick This month", "invalid_input", "through");
+  if (standingWithEnd(a)) throw new ToolError(STANDING_WITH_END, "invalid_input", "through");
   if (!a.person) return;
   const r = await personNamed(v, a.person.trim());
   if (r.kind === "found") return;
@@ -57,7 +58,7 @@ export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
   const fields: CardField[] = [
     { name: "person", label: "Who", kind: "chips", options: await picks(v, project.id, month), other: "Someone else…", required: true },
     { name: "percent", label: "Percent", kind: "text", value: String(internal ? 100 : 50) },
-    ...(a.through ? [{ name: "through", label: "Through", kind: "text" } as CardField] : []),
+    ...(a.through ? [{ name: "through", label: "Through", kind: "text", format: "month" } as CardField] : []),
     { name: "standing", label: "For", kind: "chips", value: String(internal && !named), options: [{ value: "false", label: "This month" }, { value: "true", label: "Until further notice" }] },
   ];
   const when = a.standing ? "until further notice" : range ? range : `in ${monthLabel(month, "long")}`;
@@ -65,6 +66,7 @@ export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
   return {
     title: `Add ${who} to ${project.key}${suffix}`, lines: [],
     look: { kind: "Add to project", confirm: `Add ${who} to ${project.key}${suffix}`, done: `Added ${who} to ${project.key} · ${a.percent ?? ""}% ${when}` },
-    form: { fields, confirm: { label: `Add {person} to ${project.key}${suffix}` } },
+    // Review round 1: the button names Through from the field, so an edited end month shows on it at once.
+    form: { fields, confirm: { label: `Add {person} to ${project.key}${range ? `, ${monthLabel(month)}–{through}` : ""}` } },
   };
 }

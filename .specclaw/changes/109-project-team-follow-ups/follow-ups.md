@@ -1,0 +1,8 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B4] `modules/allocations/server/add-card.ts:36` The rule that until further notice can't have an end month, and its message, are written twice: once in proposeAllocate and once in the allocate service's `.refine`. If one copy changes, the card and the service can disagree. Fix: export one predicate and message from services.ts (or from a shared const) and use it in both places. (round 1) <!-- fp:41872aacbe8a class:other -->
+- [minor docs] `modules/hr/server/services.ts:16` entityToday was inserted between entityOf's doc comment ("Exactly one legal entity: …") and entityOf itself. entityOf has lost its JSDoc, and entityToday now sits under two stacked comments. Fix: move entityToday above the entityOf comment. (round 1) <!-- fp:174d1a388a8d class:other -->
+- [minor docs] `modules/hr/tests/add-person-today-109.test.ts:8` The header comment is wrong and doesn't match the test cases. At 23:00 UTC it is already the next day in both Sri Lanka and Sydney, not "the same day in neither", and no case runs at 23:00 anyway: the same-day case runs at 06:00Z. Fix the comment. (round 1) <!-- fp:130cc07dba31 class:other -->
+- [minor B2] `modules/hr/tests/add-person-today-109.test.ts:22` Every row in the table leaves joinedOn out. No row passes an explicit joinedOn that is today for the entity but tomorrow in UTC. That is the status half of AC-5: before this fix it gave 'joining'. Add that row, and also a row where the explicit date is the next day locally, which must give 'joining'. (round 1) <!-- fp:be5871f26f94 class:other -->

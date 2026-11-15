@@ -28,6 +28,10 @@ describe.skipIf(!hasDb)("109 standing allocations end cleanly and keep hand remo
     await extendStanding(contextFor.job(T, "allocations.standing-extend"), { today: "2027-02-05" });
     const m = await months(who, key);
     expect([m["2027-02"], m["2027-03"], m["2027-08"], m["2027-09"], m["2027-12"]]).toEqual([30, undefined, undefined, 15, undefined]);
+    // Review round 1: the audit keeps what the end removed, as a hand end's does.
+    const [audit] = await db.tx((tx) => tx.execute(sql`select before from core.audit_event where action = 'allocations.standing.extend' order by seq desc limit 1`));
+    const end = (audit.before as { ended: { rows: { month: string }[] }[] }).ended[0];
+    expect(end.rows.map((r) => String(r.month).slice(0, 7))).toEqual(expect.arrayContaining(["2027-03", "2027-08"]));
   });
 
   it.each([

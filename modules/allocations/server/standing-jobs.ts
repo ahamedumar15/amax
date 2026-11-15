@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { Tx } from "@amax/db";
 import { z } from "zod";
 import type { EventHandlerDef } from "@amax/core";
 import { ScopeError } from "@amax/auth";
@@ -10,6 +11,18 @@ import { EVENTS, monthOf, type AllocationSet } from "../contracts";
 import { addMonths, day, fill, HORIZON, setStanding } from "./standing";
 
 const STILL = ["active", "joining"] as const;
+
+type Ended = { personId: string; projectId: string; from: string; rows: unknown; standing: unknown };
+
+/**
+ * Review round 1: a job or the leaver handler ends a standing allocation exactly as a hand end does: setStanding at 0%,
+ * with the month rows it removed and the standing rows it ended in the audit's before, and the same allocationSet event.
+ */
+async function endSlot(tx: Tx, personId: string, projectId: string, from: string, by: string, tenantId: string) {
+  const { months, removed, standing } = await setStanding(tx, { personId, projectId, month: from, percent: 0, by, tenantId });
+  const event = { name: EVENTS.allocationSet, payload: { personId, projectId, work: null, months, percent: 0, by, standing: true } satisfies AllocationSet };
+  return { before: { personId, projectId, from, rows: removed, standing } satisfies Ended, event };
+}
 
 /**
  * The monthly job's write: each open standing allocation, locked, is written up to HORIZON months ahead, skipping months
@@ -28,12 +41,13 @@ export const extendStanding = defineService({
     const people = new Set((await listPeople(tx, ctx, { status: [...STILL], ids: rows.map((s) => s.person_id as string) })).map((p) => p.id));
     const projects = new Set((await listProjectRefs(tx)).map((p) => p.id));
     const events: { name: string; payload: AllocationSet }[] = [];
-    let ended = 0;
+    const ended: Ended[] = [];
     for (const s of rows) {
-      // 109 AC-1: ended as ending it by hand would, from next month: the months it wrote from then on go too.
+      // 109 AC-1: ended as ending it by hand would, from next month: the months it wrote from then on go too, kept in the audit.
       if (!people.has(s.person_id as string) || !projects.has(s.project_id as string)) {
-        await setStanding(tx, { personId: s.person_id as string, projectId: s.project_id as string, month: addMonths(monthOf(input.today), 1), percent: 0, by: "allocations.standing", tenantId: ctx.tenantId });
-        ended++;
+        const end = await endSlot(tx, s.person_id as string, s.project_id as string, addMonths(monthOf(input.today), 1), "allocations.standing", ctx.tenantId);
+        ended.push(end.before);
+        events.push(end.event);
         continue;
       }
       const skip = new Set((s.skips as string[]).map(day));
@@ -44,7 +58,9 @@ export const extendStanding = defineService({
       await tx.execute(sql`update allocations.standing set filled_to = ${target} where id = ${s.id}`);
       if (written.length) events.push({ name: EVENTS.allocationSet, payload: { personId: s.person_id as string, projectId: s.project_id as string, work: null, months: written, percent: Number(s.percent), by, standing: true } });
     }
-    return { result: { written: events.reduce((n, e) => n + e.payload.months.length, 0), ended }, resourceId: null, after: { through: target, slots: events.length, ended }, events };
+    const extended = events.length - ended.length;
+    return { result: { written: events.reduce((n, e) => n + e.payload.months.length, 0), ended: ended.length }, resourceId: null, before: { ended },
+      after: { through: target, slots: extended, ended: ended.length }, events };
   },
 });
 
@@ -58,8 +74,9 @@ export const endStandingForLeaver = defineService({
     if (!isSystemContext(ctx)) throw new ScopeError("allocations:allocate");
     const month = addMonths(monthOf(input.leftOn), 1);
     const open = await tx.execute(sql`select project_id from allocations.standing where person_id = ${input.personId} and until_month is null`);
-    for (const s of open) await setStanding(tx, { personId: input.personId, projectId: s.project_id as string, month, percent: 0, by: "hr leaver", tenantId: ctx.tenantId });
-    return { result: { ended: open.length }, resourceId: input.personId, after: { from: month, ended: open.length } };
+    const ends = [];
+    for (const s of open) ends.push(await endSlot(tx, input.personId, s.project_id as string, month, "hr leaver", ctx.tenantId));
+    return { result: { ended: open.length }, resourceId: input.personId, before: { ended: ends.map((e) => e.before) }, after: { from: month, ended: open.length }, events: ends.map((e) => e.event) };
   },
 });
 

@@ -5,25 +5,35 @@ import { ScopeError } from "@amax/auth";
 import { defineService, isSystemContext } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contracts";
 import { changePersonRun, changeInput } from "./change";
-import { date, inScope, inScopeFrom, personByNo, today } from "./records";
+import { date, inScope, inScopeFrom, personByNo } from "./records";
 import { linkableAccount } from "./link";
-import { entityZone } from "@amax/workflows";
+import { entityZone, entityZoneSet } from "@amax/workflows";
 
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
 const COUNTRY: Record<string, string> = { "sri lanka": "LK", australia: "AU" };
 
-/** Exactly one legal entity: by id or full name first, else by country (name or code). Never a guess. */
-/** 109 AC-5: today in the legal entity's own time zone, the one date add_person decides by. */
+/**
+ * 109 AC-5: today in the legal entity's own time zone, the one date HR decides joining, active and left by. An entity with
+ * no zone set counts in UTC, as every module does (entityZone); the add_person card says so (zoneNote).
+ */
 export async function entityToday(tx: Tx, entityId: string, now = new Date()) {
   const zone = await entityZone(tx, entityId);
   return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
+/** Review round 1: the card's word when today there is UTC's, because the entity has no time zone set. */
+export async function zoneNote(tx: Tx, entity: string) {
+  const e = await entityOf(tx, entity).catch(() => null);
+  if (!e || (await entityZoneSet(tx, e.id as string))) return undefined;
+  return `${String(e.name)} has no time zone set, so today there is counted in UTC`;
+}
+
+/** Exactly one legal entity: by id or full name first, else by country (name or code). Never a guess. */
 export async function entityOf(tx: Tx, entity: string) {
   const key = entity.trim();
   const code = COUNTRY[key.toLowerCase()] ?? key;
-  const rows = await tx.execute(sql`select id, country, base_currency, (id::text = ${key} or lower(name) = lower(${key})) as exact
+  const rows = await tx.execute(sql`select id, name, country, base_currency, (id::text = ${key} or lower(name) = lower(${key})) as exact
     from core.legal_entity where id::text = ${key} or lower(name) = lower(${key}) or lower(country) = lower(${code})`);
   const exact = rows.filter((r) => r.exact);
   const hits = exact.length ? exact : rows;
@@ -85,7 +95,8 @@ export const recordLeaver = defineService({
     const p = await personByNo(tx, input.employeeNo);
     await inScopeFrom(tx, ctx, "hr:person:leave", p, input.leftOn);
     if (p.status === "left") throw new Error(`${input.employeeNo} has already left`);
-    const status = input.leftOn <= today() ? "left" : p.status;
+    // Review round 1: left today or before, in the person's entity's own today, as addPerson and the daily job decide.
+    const status = input.leftOn <= await entityToday(tx, p.legal_entity_id as string) ? "left" : p.status;
     await tx.execute(sql`update hr.person set left_on = ${input.leftOn}, status = ${status}, updated_at = now() where id = ${p.id}`);
     // Periods that would only start after the last day never happen (a future FTE step, or the whole
     // employment of someone who leaves before their start date); the one in force ends that day.
@@ -108,13 +119,20 @@ export const applyStatusDates = defineService({
   name: "hr.person.status-dates",
   action: "hr:person:update",
   resource: "hr.person",
-  input: z.object({ on: date }),
+  input: z.object({ on: date.optional() }),
   async run(tx, { on }, ctx) {
     if (!isSystemContext(ctx)) throw new ScopeError("hr:person:update");
-    const left = await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where status <> 'left' and left_on <= ${on}::date returning employee_no`);
-    const started = await tx.execute(sql`update hr.person set status = 'active', updated_at = now()
-      where status = 'joining' and joined_on <= ${on}::date returning employee_no`);
-    const result = { on, started: started.map((r) => r.employee_no as string), left: left.map((r) => r.employee_no as string) };
+    // Review round 1: without `on`, each entity's people move by that entity's own today, as addPerson decides.
+    const entities = await tx.execute(sql`select id from core.legal_entity`);
+    const days: Record<string, string> = {};
+    for (const e of entities) days[e.id as string] = on ?? await entityToday(tx, e.id as string);
+    const started: string[] = [], left: string[] = [];
+    for (const [entity, d] of Object.entries(days)) {
+      left.push(...(await tx.execute(sql`update hr.person set status = 'left', updated_at = now() where legal_entity_id = ${entity} and status <> 'left' and left_on <= ${d}::date returning employee_no`)).map((r) => r.employee_no as string));
+      started.push(...(await tx.execute(sql`update hr.person set status = 'active', updated_at = now()
+        where legal_entity_id = ${entity} and status = 'joining' and joined_on <= ${d}::date returning employee_no`)).map((r) => r.employee_no as string));
+    }
+    const result = { on: on ?? null, days, started, left };
     return { result, after: result };
   },
 });

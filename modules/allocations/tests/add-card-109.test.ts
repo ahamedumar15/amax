@@ -29,7 +29,7 @@ describe.skipIf(!hasDb)("109 the Add to project card keeps a month or a range (P
     const maya = await db.as("maya");
     const card = await addCard(maya, { projectKey: "INT", person: "Dinesh Wickrama", month: "2027-03", through: "2027-05" });
     expect(card.form?.fields.map((f) => f.name)).toContain("through");
-    expect(card.form?.confirm?.label).toBe("Add {person} to INT, Mar–May");
+    expect(card.form?.confirm?.label).toBe("Add {person} to INT, Mar–{through}");
     const tool = registry.toolsFor(maya).find((t) => t.name === "allocate")!;
     await expect(tool.propose!(maya as never, { person: "Dinesh Wickrama", projectKey: "INT", month: "2027-03", through: "2027-05", standing: true } as never))
       .rejects.toMatchObject({ field: "through" });

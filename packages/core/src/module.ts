@@ -107,10 +107,11 @@ export type CardLook = { kind?: string; figure?: string; subject?: string; detai
  * checked again at confirm. A text field may `follow` another (a key from a name's initials) until it is typed in; chips
  * pick one value and may offer `other` (a text field); an option's `short` names it in the button label (107: a name for an
  * employee number). `optional` fields sit in a section that starts collapsed when
- * empty. `confirm` labels the button from the values, `{field}` replaced, with `unless` when its field is empty.
+ * empty. `confirm` labels the button from the values, `{field}` replaced, with `unless` when its field is empty. A text
+ * field with `format: "month"` (109) names a YYYY-MM value by its month ("May") in the label, so the label follows edits.
  */
 export type CardField =
-  | { name: string; label: string; kind: "text"; value?: string; hint?: string; upper?: boolean; follow?: string }
+  | { name: string; label: string; kind: "text"; value?: string; hint?: string; upper?: boolean; follow?: string; format?: "month" }
   | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string; short?: string }[]; other?: string; required?: boolean };
 /** `note` (107): the tool's note for the starting input (its `note` hook), shown until an edit's check says otherwise. */
 export type CardForm = { fields: CardField[]; note?: string; optional?: { label: string; fields: string[] }; confirm?: { label: string; unless?: { field: string; label: string } } };

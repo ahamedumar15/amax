@@ -50,6 +50,9 @@ test("107 AC6 AC7 AC9 AC11, 109 AC4 a new project's team: Add your team?, someon
   const range = page.getByRole("group", { name: "Confirm: Add Dinesh Wickrama to TMT, Mar–May" });
   await expect(range.getByLabel("Through")).toHaveValue("2027-05");
   await expect(range.getByRole("radio", { name: "This month", exact: true })).toBeChecked();
+  await range.getByLabel("Through").fill("2027-04");
+  await expect(range.getByRole("button", { name: "Add Dinesh Wickrama to TMT, Mar–Apr" })).toBeVisible();
+  await range.getByLabel("Through").fill("2027-05");
   await range.getByRole("button", { name: "Add Dinesh Wickrama to TMT, Mar–May" }).click();
   await expect(range).toContainText("Added");
   const months = owner();
