@@ -1,5 +1,6 @@
-import { ActionFailedError, NotPendingError } from "@amax/chat";
+import { ActionFailedError, NotPendingError, type FieldCheck } from "@amax/chat";
 import { logError } from "@amax/core/server";
+import { CHECK_FAILED } from "../components/chat/form-values";
 import { movedOf, type Moved } from "./chat-move";
 
 export { movedOf } from "./chat-move";
@@ -37,13 +38,13 @@ export function outcomeOf(e: unknown): CardOutcome {
 
 /**
  * 106: why a form card's field couldn't be checked. A card already decided or expired, or a sign-in changed in another tab,
- * can't be confirmed at all, so it says so; anything else is a passing failure to try again.
+ * can't be confirmed at all, so it says so and blocks; anything else is a passing failure (`transient`) that never blocks.
  */
-export function checkFailure(e: unknown): { message: string } {
+export function checkFailure(e: unknown): FieldCheck {
   if (e instanceof NotPendingError) return { message: "This card is no longer open. Ask again for a new one." };
   if (e instanceof Error && e.name === "SignedInElsewhere") return { message: e.message };
   logError("chat.check", e);
-  return { message: "Couldn't check that just now." };
+  return CHECK_FAILED;
 }
 
 /**

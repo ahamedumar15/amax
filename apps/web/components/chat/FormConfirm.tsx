@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import type { CardForm as Form } from "@amax/core";
 import type { Edits, FieldCheck } from "@amax/chat";
 import { CardForm } from "./CardForm";
-import { confirmLabel, edited, refusalOf, startValues, withValue, type Values } from "./form-values";
+import { CHECK_FAILED, checkResultOf, confirmLabel, edited, refusalOf, startValues, withValue, type Values } from "./form-values";
 
 type Props = {
   form: Form; input: Record<string, unknown>; fallback: string; busy: boolean; note?: string; field?: string;
@@ -31,8 +31,8 @@ export function FormConfirm({ form, input, fallback, busy, note, field, onConfir
     const n = ++asked.current;
     setChecking(true);
     timer.current = setTimeout(async () => {
-      const result = await onCheck(edited(form, next)).catch(() => ({ message: "Couldn't check that just now." }));
-      if (n === asked.current) { setCheck(result); setChecking(false); }
+      const result = checkResultOf(await onCheck(edited(form, next)).catch(() => CHECK_FAILED));
+      if (n === asked.current) { setCheck(result.check); setNotice(result.notice); setChecking(false); }
     }, 350);
   }
 

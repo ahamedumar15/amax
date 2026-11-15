@@ -10,7 +10,13 @@ export function refusalOf(form: CardForm, message?: string, field?: string): { c
   return onForm(form, field) ? { check: { field, message } } : { check: {}, notice: message };
 }
 
-export const generalOf = (form: CardForm, check: FieldCheck | null) => (check?.message && !onForm(form, check.field) ? check.message : undefined);
+export const CHECK_FAILED: FieldCheck = { message: "Couldn't check that just now.", transient: true };
+
+export function checkResultOf(result: FieldCheck): { check: FieldCheck; notice?: string } {
+  return result.transient ? { check: {}, notice: result.message } : { check: result };
+}
+
+export const generalOf =(form: CardForm, check: FieldCheck | null) => (check?.message && !onForm(form, check.field) ? check.message : undefined);
 
 export const initialsOf = (text: string) => {
   const words = text.toUpperCase().match(/[A-Z0-9]+/g) ?? [];
