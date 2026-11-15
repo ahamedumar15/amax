@@ -97,7 +97,8 @@ describe.skipIf(!hasDb)("081 creating proposals from chat (Postgres)", () => {
     const confirms = await Promise.all([createReleaseCard(maya, { projectKey: "FLT", version: "v1.9.0" }), deploymentCard(maya, { projectKey: "FLT", version: "v1.9.0", environment: "Dev" }),
       environmentCard(maya, { projectKey: "FLT", name: "Sandbox" }), removeEnvironmentCard(maya, { projectKey: "FLT", name: "Sandbox" }), taskDoneCard(maya, { key: "CON-014", task: "T1" }),
       linkCard(maya, { projectKey: "FLT", repoUrl: "https://github.com/example/fleet" }), unlinkCard(maya, { projectKey: "CON" })]);
-    expect(confirms.map((c) => c.look?.confirm)).toEqual(["Create", "Record", "Add", "Remove", "Close the task", "Link", "Unlink"]);
+    // 106 AC-9: the link card's button reads "Link the repo", as its mock section shows.
+    expect(confirms.map((c) => c.look?.confirm)).toEqual(["Create", "Record", "Add", "Remove", "Close the task", "Link the repo", "Unlink"]);
     expect(await withdrawCard(maya, { key: "CON-017", reason: "not needed" })).toMatchObject({ title: "Withdraw CON-017 CSV import for clients",
       lines: expect.arrayContaining([{ label: "Reason", value: "not needed" }]), look: { confirm: "Withdraw", done: "Done: withdrew CON-017" } });
   });

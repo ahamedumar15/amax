@@ -10,6 +10,9 @@ import { invalid, notFound } from "./refusal";
 // 062: the one repo a project's specclaw pushes are accepted from (push.ts), and the project's
 // Repo sync card: the linked repo and its recent pushes.
 
+/** The link as stored; 106's set_up_project writes it the same way, inside its own create. */
+export const storeLink = (tx: Tx, projectId: string, repoUrl: string | null, defaultRef: string | null) =>
+  tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${projectId}`);
 
 export const linkProjectRepo = defineService({
   scoped: true,
@@ -27,7 +30,7 @@ export const linkProjectRepo = defineService({
     // A relink to the same repo keeps the stored branch unless one is given; a first link or another repo must name it.
     const defaultRef = repoUrl ? input.defaultBranch ?? (repoUrl === p.repo_url ? (p.repo_default_ref as string | null) : null) : null;
     if (repoUrl && !defaultRef) throw invalid(`name ${input.projectKey}'s default branch (for example main) when linking its repo`);
-    await tx.execute(sql`update delivery.project set repo_url = ${repoUrl}, repo_default_ref = ${defaultRef} where id = ${p.id}`);
+    await storeLink(tx, p.id as string, repoUrl, defaultRef);
     return { result: { projectKey: input.projectKey, repoUrl, defaultBranch: defaultRef }, resourceId: p.id as string, before: { repoUrl: p.repo_url, defaultBranch: p.repo_default_ref }, after: { repoUrl, defaultBranch: defaultRef } };
   },
 });

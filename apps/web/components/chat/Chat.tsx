@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { announce, Mascot, PinButton, type PinRef } from "@amax/ui";
-import type { Answers, Conversation, ConversationSummary, Highlight, PendingAction } from "@amax/chat";
-import { cancelChat, confirmChat, pageContext, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
+import type { Answers, Conversation, ConversationSummary, Edits, Highlight, PendingAction } from "@amax/chat";
+import { cancelChat, checkCardField, confirmChat, pageContext, refreshPins, sendChat, type CardOutcome } from "../../app/actions/chat";
 import type { PageInfo } from "../../lib/page-context";
 import { pinKey, withFresh, type Pin } from "@amax/chat/pins";
 import { ChoiceCard } from "./ChoiceCard";
@@ -20,7 +20,7 @@ import { Suggestions } from "./Suggestions";
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
   | { kind: "amax"; text: string; tools: string[]; error?: boolean; answers?: Answers }
-  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string; reveal?: CardOutcome["reveal"] };
+  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string; field?: string; reveal?: CardOutcome["reveal"] };
 
 const restoredLog = (c: Conversation): Entry[] => [
   ...c.messages.map((m): Entry => (m.role === "me" ? { kind: "me", text: m.text, highlights: [] } : { kind: "amax", text: m.text, tools: [] })),
@@ -241,10 +241,10 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
     announce(r.pending.some((p) => p.choice) ? "amax offered a choice for you to pick from" : r.pending.length ? "amax prepared a change for you to confirm" : r.answers ? "amax asked a question with answers to pick from" : "amax replied");
   }
 
-  async function decide(action: PendingAction, ok: boolean, answer?: string) {
+  async function decide(action: PendingAction, ok: boolean, answer?: string, edits?: Edits) {
     if (!convo.current) return;
     // One decision per card: the buttons go away while the request is in flight.
-    setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working", note: undefined } : x)));
+    setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === action.id ? { ...x, state: "working", note: undefined, field: undefined } : x)));
     // 076: on a choice card, once one option is done or the card is cancelled, every other option is closed too (the
     // server has recorded them as not chosen or cancelled).
     const sibling = (x: Entry) => x.kind === "confirm" && !!action.choice && x.action.choice?.id === action.choice.id && x.action.id !== action.id && x.state === "open";
@@ -252,7 +252,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
       : (o.state === "done" || o.state === "cancelled") && sibling(x) ? { ...x, state: "cancelled" as const, note: undefined } : x)));
     try {
       // The server says what the card is now: done, cancelled, back open to retry, or an error.
-      const o = ok ? await confirmChat(convo.current, action.id, userId, answer) : await cancelChat(convo.current, action.id, userId);
+      const o = ok ? await confirmChat(convo.current, action.id, userId, answer, edits) : await cancelChat(convo.current, action.id, userId);
       apply(o);
       announce(o.note);
       // The record this page shows was renamed (a re-tag): follow it, or the page would read "not found".
@@ -322,7 +322,8 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
           }
           return (
             <div key={i} className="m">
-              <ConfirmCard action={e.action} state={e.state} note={e.note} onConfirm={() => decide(e.action, true)} onCancel={() => decide(e.action, false)}
+              <ConfirmCard action={e.action} state={e.state} note={e.note} field={e.field} onConfirm={(edits) => decide(e.action, true, undefined, edits)} onCancel={() => decide(e.action, false)}
+                onCheck={(edits) => checkCardField(convo.current ?? "", e.action.id, edits, userId)}
                 onEdit={() => { setText("Change "); input.current?.focus({ preventScroll: true }); }}
                 secret={e.action.secret && convo.current ? <SecretConfirm conversationId={convo.current} as={userId} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
                   onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} /> : undefined}

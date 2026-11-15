@@ -1,0 +1,33 @@
+import type { CardField, CardForm } from "@amax/core";
+
+export type Values = Record<string, string>;
+
+export const initialsOf = (text: string) => {
+  const words = text.toUpperCase().match(/[A-Z0-9]+/g) ?? [];
+  if (words.length > 1) return words.map((w) => w[0]).join("").slice(0, 10);
+  const word = words[0] ?? "";
+  return `${word.slice(0, 1)}${word.slice(1).replace(/[AEIOU]/g, "").slice(0, 2)}`;
+};
+
+export const startValues = (form: CardForm, input: Record<string, unknown>): Values =>
+  Object.fromEntries(form.fields.map((f) => [f.name, String(input[f.name] ?? f.value ?? "")]));
+
+export function withValue(form: CardForm, values: Values, typed: Set<string>, name: string, value: string): Values {
+  const next = { ...values, [name]: value };
+  for (const f of form.fields) {
+    if (f.kind === "text" && f.follow === name && !typed.has(f.name)) next[f.name] = initialsOf(value);
+  }
+  return next;
+}
+
+const fill = (label: string, values: Values) => label.replace(/\{(\w+)\}/g, (_, k: string) => values[k] || "…");
+
+export function confirmLabel(form: CardForm, values: Values, fallback: string) {
+  const c = form.confirm;
+  if (!c) return fallback;
+  return fill(c.unless && !values[c.unless.field]?.trim() ? c.unless.label : c.label, values);
+}
+
+export const hintOf = (field: CardField, values: Values) => (field.kind === "text" && field.hint && values[field.name]?.trim() ? fill(field.hint, { ...values, value: values[field.name] }) : undefined);
+
+export const edited = (form: CardForm, values: Values) => Object.fromEntries(form.fields.map((f) => [f.name, values[f.name]?.trim() ?? ""]));

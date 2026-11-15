@@ -4,7 +4,7 @@ import { movedOf, type Moved } from "./chat-move";
 export { movedOf } from "./chat-move";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; reveal?: Reveal; moved?: Moved };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; field?: string; reveal?: Reveal; moved?: Moved };
 
 /** 035: a value shown once on the card (a new API key). It goes nowhere else: not the model, the conversation or the logs. */
 export type Reveal = { label: string; value: string };
@@ -19,6 +19,7 @@ export const revealOf = (result: unknown): Reveal | undefined => {
  */
 export function outcomeOf(e: unknown): CardOutcome {
   if (e instanceof ActionFailedError) {
+    if (e.kind === "retry" && e.field) return { state: "open", note: e.message, field: e.field };
     if (e.kind === "retry") return { state: "open", note: `That didn't work: ${e.message}. Try again or cancel.` };
     if (e.kind === "failed") return { state: "error", note: `This couldn't be done: ${e.message}. Nothing was changed.` };
     return { state: "error", note: e.message };

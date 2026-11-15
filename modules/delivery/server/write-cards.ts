@@ -3,6 +3,7 @@ import { withTenant } from "@amax/db";
 import type { Viewer } from "@amax/auth";
 import type { ToolCard } from "@amax/core";
 import { getRuntime } from "@amax/core/server";
+import { repoFields } from "./set-up-project-card";
 
 // 081 amendment 3: the confirm cards for the writes Delivery's pins offer (releases, deployments, environments, tasks,
 // repos), so the card says what will happen and its receipt what did, instead of the tool's description and raw
@@ -53,8 +54,11 @@ export async function taskDoneCard(v: Viewer, a: { key: string; task: string; co
   return card(`Mark ${a.task} of ${a.key} done`, "Close a task", [["Proposal", a.key], ["Task", t ? `${a.task} ${t.title as string}` : a.task], ["Commit", a.commit]], `closed ${a.task} of ${a.key}`, "Close the task");
 }
 
-export const linkCard = async (_v: Viewer, a: { projectKey: string; repoUrl: string; defaultBranch?: string }) =>
-  card(`Link ${a.projectKey}'s repo`, "Link a repo", [["Project", a.projectKey], ["Repo", a.repoUrl], ["Default branch", a.defaultBranch]], `${a.projectKey} syncs from ${a.repoUrl}`, "Link");
+/** 106 AC-9: the repo and its branch are fields on the card, main preselected, instead of three questions. */
+export const linkCard = async (_v: Viewer, a: { projectKey: string; repoUrl?: string; defaultBranch?: string }): Promise<ToolCard> => ({
+  ...card(`Link ${a.projectKey}'s repo`, "Link a repo", [["Project", a.projectKey]], `${a.projectKey} syncs from ${a.repoUrl ?? "its repo"}`, "Link the repo"),
+  form: { fields: repoFields(a.defaultBranch ? [a.defaultBranch] : []) },
+});
 
 export const unlinkCard = async (_v: Viewer, a: { projectKey: string }) =>
   card(`Unlink ${a.projectKey}'s repo`, "Unlink a repo", [["Project", a.projectKey], ["After", "no specclaw push is accepted until a repo is linked again"]], `unlinked ${a.projectKey}'s repo`, "Unlink");

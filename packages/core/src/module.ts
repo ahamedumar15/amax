@@ -101,7 +101,17 @@ export type PinSuggestion = { tool: string; suggest: (viewer: never, args: Recor
  * ("Logged 1.5 h · Fleet Tracker, Tue Oct 27"). Without them a card keeps the plain layout, "Add it" and "Done: {title}."
  */
 export type CardLook = { kind?: string; figure?: string; subject?: string; detail?: string; who?: string; confirm?: string; tone?: "danger"; done?: string };
-export type ToolCard = { title: string; lines: CardLine[]; look?: CardLook };
+/**
+ * 106: fields a person edits on the confirm card before pressing its button; the edited values are the tool's input,
+ * checked again at confirm. A text field may `follow` another (a key from a name's initials) until it is typed in; chips
+ * pick one value and may offer `other` (a text field). `optional` fields sit in a section that starts collapsed when
+ * empty. `confirm` labels the button from the values, `{field}` replaced, with `unless` when its field is empty.
+ */
+export type CardField =
+  | { name: string; label: string; kind: "text"; value?: string; hint?: string; upper?: boolean; follow?: string }
+  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string }[]; other?: string };
+export type CardForm = { fields: CardField[]; optional?: { label: string; fields: string[] }; confirm?: { label: string; unless?: { field: string; label: string } } };
+export type ToolCard = { title: string; lines: CardLine[]; look?: CardLook; form?: CardForm };
 
 export type McpToolDef = {
   name: string;
@@ -119,6 +129,11 @@ export type McpToolDef = {
    * part of `input`, so the model can neither see nor fill it; `run` gets it as `secret`.
    */
   secretInput?: { label: string };
+  /**
+   * 106: a looser input chat may propose a form card with, so fields nobody has said yet are left for the person to fill
+   * on the card. Only a tool whose card has a `form` sets it; the full `input` is still checked at confirm and over MCP.
+   */
+  draft?: z.ZodType;
   run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
   /**
    * A write tool's one service, the defineService result it calls (043 AC-1); a list when the input

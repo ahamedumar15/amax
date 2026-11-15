@@ -6,11 +6,12 @@ import type { Pin } from "./pins";
 import { resolvePins } from "./resolve";
 import { CHOICE_INSTRUCTIONS, CHOICE_TOOL, choiceTool } from "./choices";
 import { ANSWER_INSTRUCTIONS, ANSWER_TOOL, answerTool, type Answers } from "./answers";
+import { checkInput, withEdits, type Edits, type FieldCheck } from "./edits";
 import { entityZone } from "@amax/workflows";
 import { CancelledByKeyError, claimKey, currentTrace, KEY_DAYS, keyedOutcome, logError, lookupKey, ReplayedError, retryable, traceStep, traceStepOrFail, UndeclaredWriteError, withIdempotency, withTrace, type KeyedRun } from "@amax/core/server";
 import { ToolError, type Registry, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
-import type { CardLine, CardLook } from "@amax/core";
+import type { CardForm, CardLine, CardLook, ToolCard } from "@amax/core";
 
 export type Intent = { id: string; label: string; tool: string; required: string[]; fields: { name: string; ask: string; options?: string[] }[] };
 export type { Pin };
@@ -21,7 +22,8 @@ export type { Pin };
 /** `choice` (076): the card is one option of a choice card; options share its `id` and `question`, and only one can run. */
 /** `ask` (076 amendment 1): one value the person types on the card (a reason), added to the chosen option's input at confirm. */
 export type Choice = { id: string; question: string; label: string; ask?: { field: string; label: string } };
-export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[]; look?: CardLook; choice?: Choice };
+/** `form` (106): fields the person edits on the card; only these may change at confirm. */
+export type PendingAction = { id: string; tool: string; title: string; input: Record<string, unknown>; fields: string[]; createdAt: string; secret?: { label: string }; traceId?: string; lines?: CardLine[]; look?: CardLook; choice?: Choice; form?: CardForm };
 export type Highlight = { text: string; field: string; index: number };
 /** `pins`: the turn's pins as read (059), in the order sent: labels refreshed, old ones moved onto ids. */
 /** `answers` (084): quick replies for the question the reply asks, shown as buttons until the next message. */
@@ -100,7 +102,15 @@ const traceFor = (viewer: Viewer, traceId?: string) => ({ traceId, tenantId: vie
 async function pendingFor(t: RegisteredTool, viewer: Viewer, input: Record<string, unknown>): Promise<PendingAction> {
   const card = await t.card?.(viewer as never, input as never).catch((e: unknown) => void logError(`chat.card ${t.name}`, e));
   return { id: randomUUID(), tool: t.name, title: card?.title ?? titleOf(t, input), input, fields: Object.keys(input), createdAt: new Date().toISOString(), traceId: currentTrace()?.traceId,
-    ...(card ? { lines: card.lines, ...(card.look ? { look: card.look } : {}) } : {}), ...(t.secretInput ? { secret: t.secretInput } : {}) };
+    ...(card ? cardParts(card) : {}), ...(t.secretInput ? { secret: t.secretInput } : {}) };
+}
+
+const cardParts = (card: ToolCard) => ({ lines: card.lines, ...(card.look ? { look: card.look } : {}), ...(card.form ? { form: card.form } : {}) });
+
+/** 106: the card worded again from the input its form's edits made, so its title and receipt say what really ran. */
+export async function rewordCard(t: RegisteredTool, viewer: Viewer, action: PendingAction, input: Record<string, unknown>): Promise<PendingAction> {
+  const card = await t.card?.(viewer as never, input as never).catch((e: unknown) => void logError(`chat.card ${t.name}`, e));
+  return { ...action, input, title: card?.title ?? titleOf(t, input), ...(card ? cardParts(card) : {}) };
 }
 
 // An error from a write that was given a secret never carries it on, even if some layer echoed it.
@@ -158,7 +168,7 @@ async function runTurn(db: Db, registry: Registry, viewer: Viewer, opts: { conve
   const tools: Tool[] = registry.toolsFor(viewer).map((t) => ({
     name: t.name,
     description: t.description,
-    input: t.input,
+    input: t.draft ?? t.input,
     sensitive: t.sensitive,
     run: async (input: Record<string, unknown>) => {
       if (t.scope !== "write") return registry.call(viewer, t.name, input, { source: "chat" });
@@ -215,7 +225,7 @@ export class NotPendingError extends Error {
  * and the user is asked to check before trying again (never a blind retry).
  */
 export class ActionFailedError extends Error {
-  constructor(message: string, public kind: "retry" | "failed" | "unknown") {
+  constructor(message: string, public kind: "retry" | "failed" | "unknown", public field?: string) {
     super(message);
     this.name = "ActionFailedError";
   }
@@ -281,7 +291,7 @@ const doneNote = (title: string, result: unknown) => {
 // immutable, so a confirm that never took effect must never read as a plain confirm (052 review).
 // A cancel is recorded once it has taken effect. Every decided step is best-effort except `run`
 // (traceStepOrFail): it is written before the write, so a write never runs untraced (053).
-export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret" | "not_chosen" | "needs_answer";
+export type ConfirmOutcome = "run" | "already_done" | "already_cancelled" | "expired" | "needs_secret" | "not_chosen" | "needs_answer" | "needs_edits";
 const decidedStep = (action: PendingAction, decision: "confirmed" | "cancelled", outcome?: ConfirmOutcome) => {
   const step = { kind: "decided" as const, tool: action.tool, detail: { actionId: action.id, decision, ...(outcome ? { outcome } : {}) } };
   return outcome === "run" ? traceStepOrFail(step) : traceStep(step);
@@ -290,12 +300,23 @@ const inTrace = <T>(viewer: Viewer, action: PendingAction, fn: () => Promise<T>)
 
 /** "Add it": run the pending write as the user, source chat (AC-3), at most once per card. */
 /** `answer` (076 amendment 1): the value typed on a choice card for its `ask` field. */
-export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: { secret?: string; answer?: string } = {}) {
+/** `edits` (106): the values of the card's form fields as the person left them. */
+type ConfirmOpts = { secret?: string; answer?: string; edits?: Edits };
+export async function confirmAction(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, opts: ConfirmOpts = {}) {
   const action = await card(db, viewer, conversationId, actionId);
   return inTrace(viewer, action, () => confirmCard(db, registry, viewer, conversationId, action, opts));
 }
 
-async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: { secret?: string; answer?: string }) {
+/** 106: a form field's check while it is edited: the tool's schema, then its own propose check, nothing written. */
+export async function checkCardEdits(db: Db, registry: Registry, viewer: Viewer, conversationId: string, actionId: string, edits: Edits): Promise<FieldCheck> {
+  const action = await card(db, viewer, conversationId, actionId);
+  const tool = registry.toolsFor(viewer).find((t) => t.name === action.tool);
+  if (!action.form || !tool) return { message: "This card has no fields to check." };
+  const checked = await checkInput(tool, viewer, withEdits(action.form, action.input, edits), true);
+  return "refused" in checked ? checked.refused : {};
+}
+
+async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: ConfirmOpts) {
   const actionId = action.id;
   const key = keyOf(actionId);
   const by = viewer.userId;
@@ -337,7 +358,9 @@ async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversat
     await settleNow(db, viewer, conversationId, action, "failed", `(I couldn't run "${action.title}": it can't be confirmed in chat.)`);
     throw new ActionFailedError("this change can't be confirmed in chat", "failed");
   }
-  const input = await withAnswer(registry, viewer, action, opts.answer, () => decide("needs_answer"));
+  const formed = action.form ? await formInput(registry, viewer, action, opts.edits, () => decide("needs_edits")) : null;
+  if (formed) action = formed.action;
+  const input = formed ?? await withAnswer(registry, viewer, action, opts.answer, () => decide("needs_answer"));
   if ("failed" in input) {
     await settleNow(db, viewer, conversationId, action, "failed", `(I couldn't send "${action.title}": ${input.failed})`);
     throw new ActionFailedError(input.failed, "failed");
@@ -381,6 +404,19 @@ async function failedRun(db: Db, viewer: Viewer, conversationId: string, action:
   // The note is read back by the model: the failure kind and a reference, never the message (final review).
   await settleNow(db, viewer, conversationId, action, "failed", `(I tried "${action.title}" but ${toolFailure(action.tool, run.error, logError(`chat.confirm ${action.tool}`, run.error))})`);
   throw new ActionFailedError(message, "failed");
+}
+
+// 106: a form card's edits join its input here, only for its declared fields, and the whole input is checked again (schema,
+// then the tool's propose check). A refusal keeps the card open (retry) with the field it is about; the card is worded
+// again from the input that runs, so its receipt names what was really written.
+async function formInput(registry: Registry, viewer: Viewer, action: PendingAction, edits: Edits | undefined, refuse: () => Promise<unknown>) {
+  const tool = registry.all.find((t) => t.name === action.tool)!;
+  const checked = await checkInput(tool, viewer, withEdits(action.form!, action.input, edits));
+  if ("refused" in checked) {
+    await refuse();
+    throw new ActionFailedError(checked.refused.message ?? "check the fields", "retry", checked.refused.field);
+  }
+  return { value: checked.value, action: await rewordCard(tool, viewer, action, checked.value) };
 }
 
 // 076 amendment 1: a choice card's typed value joins the chosen option's input here, and only here. The full input is

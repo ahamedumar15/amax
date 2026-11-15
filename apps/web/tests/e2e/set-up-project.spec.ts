@@ -1,0 +1,51 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+async function ask(page: Page, text: string) {
+  await page.goto("/signin");
+  await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
+  await page.getByRole("button", { name: "Sign in as demo user" }).click();
+  await expect(page).toHaveURL((u) => u.pathname === "/");
+  await page.goto("/delivery");
+  await page.getByRole("button", { name: "Ask amax" }).click();
+  await page.getByLabel("Message amax").fill(text);
+  await page.keyboard.press("Enter");
+}
+
+test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
+
+test("106 AC3 AC7 AC8 AC11 one card sets up the project: a taken key is caught, the key follows the fix, one click creates and links", async ({ page }) => {
+  await ask(page, "set up a project called Northwind Portal (NWP)");
+  const card = page.getByRole("group", { name: /^Confirm: Set up NWP/ });
+  await expect(card.getByLabel("Name")).toHaveValue("Northwind Portal");
+  const key = card.getByLabel("Key");
+  await key.fill("CON");
+  await expect(card).toContainText("CON is taken (Contoso Portal)");
+  await expect(card.getByRole("button", { name: "Create CON" })).toBeDisabled();
+  await key.fill("NWP");
+  await expect(card).toContainText("✓ free · proposal ids NWP-001");
+  await card.getByRole("radio", { name: "+ new…" }).check();
+  await card.getByLabel("Client: + new…").fill("Northwind");
+  await card.getByRole("radio", { name: "Fixed" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(card.getByRole("radio", { name: "T&M" })).toBeChecked();
+  await card.getByText("Repo (optional)").click();
+  await card.getByLabel("Repo URL").fill("https://github.com/example/northwind-portal");
+  await expect(card.getByRole("radio", { name: "main" })).toBeChecked();
+  const { violations } = await new AxeBuilder({ page }).include("#chat").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+  await card.getByRole("button", { name: "Create NWP and link repo" }).click();
+  await expect(card).toContainText("Created NWP · Northwind Portal, linked github.com/example/northwind-portal (main)");
+  await page.goto("/delivery/p/NWP");
+  await page.getByRole("heading", { name: "Repo sync" }).click();
+  await expect(page.getByText("From github.com/example/northwind-portal")).toBeVisible();
+});
+
+test("106 AC9 Link a repo asks nothing in text: one card with the repo and its branch, main preselected", async ({ page }) => {
+  await ask(page, "link a repo to FLT");
+  const card = page.getByRole("group", { name: /^Confirm: Link FLT's repo/ });
+  await expect(card.getByRole("radio", { name: "main" })).toBeChecked();
+  await card.getByLabel("Repo URL").fill("https://github.com/example/fleet-tracker");
+  await card.getByRole("button", { name: "Link the repo" }).click();
+  await expect(card).toContainText("FLT syncs from https://github.com/example/fleet-tracker");
+});

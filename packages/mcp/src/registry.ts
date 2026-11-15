@@ -10,7 +10,7 @@ export type RegisteredTool = McpToolDef & { module: string };
 
 export class ToolError extends Error {
   readonly retryable = false;
-  constructor(message: string, public code: "not_found" | "forbidden" | "invalid_input") {
+  constructor(message: string, public code: "not_found" | "forbidden" | "invalid_input", public field?: string) {
     super(message);
     this.name = "ToolError";
   }
