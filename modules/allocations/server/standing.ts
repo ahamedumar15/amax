@@ -29,16 +29,28 @@ async function fill(tx: Tx, standingId: string, s: Omit<Slot, "month">, months: 
  * standing allocations wrote from then on are replaced, so a month set by hand wins. Returns the months written and the
  * rows it removed (the audit's `before`).
  */
-export async function setStanding(tx: Tx, s: Slot): Promise<{ months: string[]; removed: Record<string, unknown>[] }> {
+export async function setStanding(tx: Tx, s: Slot): Promise<{ months: string[]; removed: Record<string, unknown>[]; standing: Record<string, unknown>[] }> {
   const slot = sql`person_id = ${s.personId} and project_id = ${s.projectId}`;
+  await lockStanding(tx, s.personId, s.projectId);
   const removed = await tx.execute(sql`delete from allocations.allocation where ${slot} and standing_id is not null and month >= ${s.month}::date returning to_char(month, 'YYYY-MM-DD') as month, percent`);
-  await tx.execute(sql`update allocations.standing set until_month = ${s.month}, updated_by = ${s.by}, updated_at = now() where ${slot} and until_month is null and from_month < ${s.month}`);
-  await tx.execute(sql`delete from allocations.standing where ${slot} and until_month is null and from_month >= ${s.month}`);
-  if (s.percent === 0) return { months: [], removed };
+  const ended = await tx.execute(sql`update allocations.standing set until_month = ${s.month}, updated_by = ${s.by}, updated_at = now() where ${slot} and until_month is null and from_month < ${s.month} returning ${STANDING_COLS}`);
+  const dropped = await tx.execute(sql`delete from allocations.standing where ${slot} and until_month is null and from_month >= ${s.month} returning ${STANDING_COLS}`);
+  const standing = [...ended, ...dropped];
+  if (s.percent === 0) return { months: [], removed, standing };
   const months = ahead(s.month, HORIZON);
   const [row] = await tx.execute(sql`insert into allocations.standing (tenant_id, person_id, project_id, percent, from_month, filled_to, updated_by)
     values (${s.tenantId}, ${s.personId}, ${s.projectId}, ${s.percent}, ${s.month}, ${months[months.length - 1]}, ${s.by}) returning id`);
-  return { months: await fill(tx, row.id as string, s, months), removed };
+  return { months: await fill(tx, row.id as string, s, months), removed, standing };
+}
+
+const STANDING_COLS = sql`percent, to_char(from_month, 'YYYY-MM-DD') as from_month, to_char(until_month, 'YYYY-MM-DD') as until_month, to_json(skip) as skip`;
+
+/**
+ * Review round 2: every writer of a slot that a standing allocation covers takes its row lock first, before reading or
+ * deleting month rows, so a month the extend job is writing is either seen committed or written after; never missed.
+ */
+export async function lockStanding(tx: Tx, personId: string, projectId: string) {
+  await tx.execute(sql`select id from allocations.standing where person_id = ${personId} and project_id = ${projectId} and until_month is null for update`);
 }
 
 /** A month removed by hand past what a standing allocation has written: the monthly job leaves it out. */

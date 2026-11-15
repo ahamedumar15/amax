@@ -10,9 +10,10 @@ export function refusalOf(form: CardForm, message?: string, field?: string): { c
   return onForm(form, field) ? { check: { field, message } } : { check: {}, notice: message };
 }
 
-export function checkResultOf(result: FieldCheck): { check: FieldCheck; notice?: string; verified: boolean } {
+export function checkResultOf(result: FieldCheck): { check: FieldCheck; notice?: string; note?: string; verified: boolean } {
   if (result.transient) return { check: {}, notice: result.message, verified: false };
-  return { check: result, verified: !result.message };
+  if (result.message) return { check: result, verified: false };
+  return { check: {}, verified: true, ...(result.note ? { note: result.note } : {}) };
 }
 
 export const generalOf = (form: CardForm, check: FieldCheck | null) => (check?.message && !onForm(form, check.field) ? check.message : undefined);

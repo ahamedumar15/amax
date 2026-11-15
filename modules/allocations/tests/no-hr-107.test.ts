@@ -28,6 +28,14 @@ describe.skipIf(!hasDb)("107 someone with no HR record (Postgres)", () => {
     await expect(allocate.propose!(maya as never, { person: "Kasun Dias", projectKey: "CON" } as never)).resolves.toBeUndefined();
   });
 
+  it.each([
+    ["an email someone signs in with, not yet linked", "priya@lumenlabs.test", "Links to Priya Jayasena's sign-in"],
+    ["an email nobody signs in with", "new.hire@example.test", undefined],
+    ["an account already someone's record", "kasun@lumenlabs.test", undefined],
+  ])("B1 the Add to HR card's note follows the typed email: %s", async (_name, workEmail, note) => {
+    expect(await (await tool("add_person")).note!((await db.as("maya")) as never, { name: "X", workEmail } as never)).toBe(note);
+  });
+
   it("AC8 Add to HR links their sign-in by work email and its receipt offers the project next; then the allocate card accepts them", async () => {
     const maya = await db.as("maya");
     const add = await tool("add_person");
@@ -37,5 +45,13 @@ describe.skipIf(!hasDb)("107 someone with no HR record (Postgres)", () => {
     const [p] = await db.tx((tx) => tx.execute(sql`select p.user_id, u.email from hr.person p join auth.user u on u.id = p.user_id where p.name = 'Priya Jayasena'`));
     expect(p?.email).toBe("priya@lumenlabs.test");
     await expect((await tool("allocate")).propose!(maya as never, { person: "Priya Jayasena", projectKey: "CON" } as never)).resolves.toBeUndefined();
+  });
+
+  it("B4 a name two people share asks for the employee number, as the service does, and never sends them to HR", async () => {
+    const maya = await db.as("maya");
+    await registry.call(maya, "add_person", { name: "Kasun Dias", title: "Engineer", department: "Engineering", entity: "Sri Lanka" }, { source: "mcp" });
+    const allocate = await tool("allocate");
+    await expect(allocate.propose!(maya as never, { person: "Kasun Dias", projectKey: "CON" } as never)).rejects.toMatchObject({ field: "person", message: "Kasun Dias matches more than one person; use the employee number" });
+    await expect(registry.call(maya, "allocate", { person: "Kasun Dias", projectKey: "CON", percent: 10 }, { source: "mcp" })).rejects.toThrow(/use the employee number/);
   });
 });

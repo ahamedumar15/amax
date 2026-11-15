@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
+import { withTenant } from "@amax/db";
 import { contextFor } from "@amax/core/server";
 import { ctxFor } from "../server/context";
 import { allocate } from "../server/services";
@@ -41,6 +42,20 @@ describe.skipIf(!hasDb)("107 standing allocations (Postgres)", () => {
       for (const today of ["2026-12-05", "2027-01-05"]) await extendStanding(contextFor.job(T, "allocations.standing-extend"), { today });
     }
     expect((await months("Dinesh Wickrama"))[month]).toBe(expected);
+  });
+
+  it("B12 ending waits for the job's lock and removes the month the job was writing, in two sessions at once", async () => {
+    await set("Kasun Dias", "2027-01", 30, true);
+    const held = await withTenant(db.app, T, async (tx) => {
+      const [s] = await tx.execute(sql`select s.id, s.person_id, s.project_id from allocations.standing s join hr.person p on p.id = s.person_id where p.name = 'Kasun Dias' and s.until_month is null for update`);
+      await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, month, percent, updated_by, standing_id) values (${T}, ${s.person_id}, ${s.project_id}, '2028-01-01', 30, 'allocations.standing', ${s.id})`);
+      const ending = set("Kasun Dias", "2027-06", 0, true);
+      await new Promise((r) => setTimeout(r, 400));
+      return { ending };
+    });
+    await held.ending;
+    const m = await months("Kasun Dias");
+    expect([m["2027-05"], m["2027-06"], m["2028-01"]]).toEqual([30, undefined, undefined]);
   });
 
   it("AC5 Team marks whoever stands on it; only a job may extend", async () => {

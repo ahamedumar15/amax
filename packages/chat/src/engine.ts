@@ -322,7 +322,9 @@ export async function checkCardEdits(db: Db, registry: Registry, viewer: Viewer,
   const tool = registry.toolsFor(viewer).find((t) => t.name === action.tool);
   if (!action.form || !tool) return { message: "This card has no fields to check." };
   const checked = await checkInput(tool, viewer, withEdits(action.form, action.input, edits), true);
-  return "refused" in checked ? checked.refused : {};
+  if ("refused" in checked) return checked.refused;
+  const note = await tool.note?.(viewer as never, checked.value as never);
+  return note ? { note } : {};
 }
 
 async function confirmCard(db: Db, registry: Registry, viewer: Viewer, conversationId: string, action: PendingAction, opts: ConfirmOpts) {

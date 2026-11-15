@@ -2,7 +2,8 @@ import { activeAccount, type Viewer } from "@amax/auth";
 import type { CardField, ToolCard } from "@amax/core";
 import { ToolError } from "@amax/mcp";
 import { getProjectRef } from "@amax/delivery/contracts";
-import { getPerson, listPeople } from "@amax/hr/contracts";
+import { listPeople } from "@amax/hr/contracts";
+import { resolvePerson } from "./person";
 import { listAllocations } from "../contracts";
 import { monthLabel, windowMonths } from "./months";
 import { readAlloc } from "./read";
@@ -23,20 +24,19 @@ async function picks(v: Viewer, projectId: string, month: string) {
   });
 }
 
-/** The person as allocate finds them (employee number or full name), in the viewer's own HR scope, as the service does. */
-const personNamed = (v: Viewer, who: string) => readAlloc(v, async (tx) => {
-  const exact = await getPerson(tx, v, who);
-  if (exact) return exact;
-  const named = (await listPeople(tx, v, { status: ["active", "joining"] })).filter((p) => p.name.toLowerCase() === who.toLowerCase());
-  return named.length === 1 ? named[0] : null;
-});
+/** The person as allocate finds them, with the service's own resolver and the viewer's HR scope. */
+const personNamed = (v: Viewer, who: string) => readAlloc(v, (tx) => resolvePerson(tx, v, who));
 
 /**
  * 107 AC-8: before the card and while it is edited, the person must be in HR. Someone who can sign in but has no HR
- * record yet is named, with the way on: add them to HR first (HR's own write, then this card again).
+ * record yet is named, with the way on: add them to HR first (HR's own write, then this card again). A name two people
+ * share asks for the employee number, as the service would.
  */
 export async function proposeAllocate(v: Viewer, a: AddInput) {
-  if (!a.person || (await personNamed(v, a.person.trim()))) return;
+  if (!a.person) return;
+  const r = await personNamed(v, a.person.trim());
+  if (r.kind === "found") return;
+  if (r.kind === "ambiguous") throw new ToolError(`${a.person.trim()} matches more than one person; use the employee number`, "invalid_input", "person");
   const account = await readAlloc(v, (tx) => activeAccount(tx, a.person!));
   throw new ToolError(account ? `${account.name} can sign in but has no HR record yet. Add them to HR first: "add ${account.name} to HR for ${a.projectKey ?? "the project"}"`
     : `No one called ${a.person.trim()} is in HR`, "invalid_input", "person");
@@ -46,7 +46,8 @@ export async function proposeAllocate(v: Viewer, a: AddInput) {
 export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
   const project = a.projectKey ? await readAlloc(v, (tx) => getProjectRef(tx, a.projectKey!)) : null;
   const month = a.month ?? windowMonths(new Date(), 1)[0];
-  const who = a.person ? (await personNamed(v, a.person.trim()))?.name ?? a.person : "someone";
+  const found = a.person ? await personNamed(v, a.person.trim()) : null;
+  const who = found?.kind === "found" ? found.person.name : a.person ?? "someone";
   if (!project) return { title: `Allocate ${who}${a.work ? ` to ${a.work}` : ""}`, lines: [{ label: "Percent", value: `${a.percent ?? 0}%` }] };
   const internal = project.billing === "internal";
   const fields: CardField[] = [

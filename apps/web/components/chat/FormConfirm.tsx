@@ -19,6 +19,7 @@ export function FormConfirm({ form, input, fallback, busy, note, field, onConfir
   const [check, setCheck] = useState<FieldCheck>(() => refusalOf(form, note, field).check);
   const [notice, setNotice] = useState(() => refusalOf(form, note, field).notice);
   const [verified, setVerified] = useState(false);
+  const [info, setInfo] = useState<string | undefined>();
   const [shown, setShown] = useState(note);
   const [checking, setChecking] = useState(false);
   const typed = useRef<Set<string> | null>(null);
@@ -38,7 +39,7 @@ export function FormConfirm({ form, input, fallback, busy, note, field, onConfir
     setVerified(false);
     timer.current = setTimeout(async () => {
       const r = checkResultOf(await timed(onCheck(edited(form, next))));
-      if (n === asked.current) { setCheck(r.check); setNotice(r.notice); setVerified(r.verified); setChecking(false); }
+      if (n === asked.current) { setCheck(r.check); setNotice(r.notice); setInfo(r.note); setVerified(r.verified); setChecking(false); }
     }, 350);
   }
 
@@ -54,6 +55,7 @@ export function FormConfirm({ form, input, fallback, busy, note, field, onConfir
   return (
     <>
       <CardForm form={form} values={values} check={check} verified={verified} notice={notice} disabled={busy} onValue={onValue} />
+      {info && !checking && <p className="cc-help" aria-live="polite">{info}</p>}
       {busy ? <p className="muted">Working on it…</p> : (
         <div className="cc-acts">
           <button className="btn sm primary" type="button" disabled={blocked} onClick={() => onConfirm(edited(form, values))}>{confirmLabel(form, values, fallback)}</button>

@@ -136,6 +136,8 @@ export type McpToolDef = {
    * on the card. Only a tool whose card has a `form` sets it; the full `input` is still checked at confirm and over MCP.
    */
   draft?: z.ZodType;
+  /** 107: a line the form card shows for the input as edited (HR: "Links to Priya's sign-in"); never blocks. */
+  note?: (viewer: never, input: never) => Promise<string | undefined>;
   run: (viewer: never, input: never, source: "mcp" | "chat" | "api", secret?: string) => Promise<unknown>;
   /**
    * A write tool's one service, the defineService result it calls (043 AC-1); a list when the input

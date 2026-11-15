@@ -4,10 +4,10 @@ import type { Tx } from "@amax/db";
 import { can, ScopeError, viewerOf } from "@amax/auth";
 import { defineService, isSystemContext, type ServiceContext } from "@amax/core/server";
 import { getProjectRef } from "@amax/delivery/contracts";
-import { getPerson, listPeople } from "@amax/hr/contracts";
 import { EVENTS, monthOf, type AllocationSet, type MonthCopied } from "../contracts";
 import { teamMembers } from "./forecast";
-import { setStanding, skipMonths } from "./standing";
+import { lockStanding, setStanding, skipMonths } from "./standing";
+import { resolvePerson } from "./person";
 
 const month = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, "a month, e.g. 2026-11").transform(monthOf);
 const by = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
@@ -25,11 +25,9 @@ export const MAX_MONTHS = 24;
 const span = (from: string, to: string) => (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7)) + 1;
 
 async function personOf(tx: Tx, ctx: ServiceContext, who: string) {
-  const exact = await getPerson(tx, ctx, who);
-  if (exact) return exact;
-  const named = (await listPeople(tx, ctx, { status: ["active", "joining"] })).filter((p) => p.name.toLowerCase() === who.trim().toLowerCase());
-  if (named.length !== 1) throw new Error(named.length ? `${who} matches more than one person; use the employee number` : `no person ${who}`);
-  return named[0];
+  const r = await resolvePerson(tx, ctx, who);
+  if (r.kind === "found") return r.person;
+  throw new Error(r.kind === "ambiguous" ? `${who} matches more than one person; use the employee number` : `no person ${who}`);
 }
 
 export const allocate = defineService({
@@ -54,11 +52,12 @@ export async function setAllocation(tx: Tx, input: AllocateInput, ctx: ServiceCo
   if (input.projectKey && !project) throw new Error(`no project ${input.projectKey}`);
   if (!mayAllocate(ctx, project?.id ?? null)) throw new ScopeError("allocations:allocate");
   if (input.standing && project) {
-    const { months, removed } = await setStanding(tx, { personId: person.id, projectId: project.id, month: input.month, percent: input.percent, by: by(ctx), tenantId: ctx.tenantId });
+    const { months, removed, standing } = await setStanding(tx, { personId: person.id, projectId: project.id, month: input.month, percent: input.percent, by: by(ctx), tenantId: ctx.tenantId });
     const payload: AllocationSet = { personId: person.id, projectId: project.id, work: null, months, percent: input.percent, by: by(ctx), standing: true };
-    return { result: { person: person.name, months, percent: input.percent, standing: true }, resourceId: person.id, before: { rows: removed }, after: { from: input.month, percent: input.percent, project: input.projectKey, standing: true }, events: [{ name: EVENTS.allocationSet, payload }] };
+    return { result: { person: person.name, months, percent: input.percent, standing: true }, resourceId: person.id, before: { rows: removed, standing }, after: { from: input.month, percent: input.percent, project: input.projectKey, standing: true }, events: [{ name: EVENTS.allocationSet, payload }] };
   }
   const months = monthsBetween(input.month, input.through ?? input.month);
+  if (project) await lockStanding(tx, person.id, project.id);
   const slot = project ? sql`project_id = ${project.id}` : sql`work = ${input.work}`;
   const before = (await tx.execute(sql`select month::text as month, percent from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date order by month`));
   await tx.execute(sql`delete from allocations.allocation where person_id = ${person.id} and ${slot} and month between ${months[0]}::date and ${months[months.length - 1]}::date`);

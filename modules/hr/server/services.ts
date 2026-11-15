@@ -6,6 +6,7 @@ import { defineService, isSystemContext } from "@amax/core/server";
 import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contracts";
 import { changePersonRun, changeInput } from "./change";
 import { date, inScope, inScopeFrom, personByNo, today } from "./records";
+import { linkableAccount } from "./link";
 
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
@@ -51,10 +52,9 @@ export const addPerson = defineService({
     const status = input.joinedOn > today() ? "joining" : "active";
     // 107: a person added with the work email of someone who can already sign in is linked to them, so their allocations
     // count for what they may do (assigned projects); an account already linked to someone else is left alone.
+    const link = await linkableAccount(tx, input.workEmail);
     const [p] = await tx.execute(sql`insert into hr.person (tenant_id, legal_entity_id, employee_no, name, initials, title, work_email, status, joined_on, user_id)
-      values (${ctx.tenantId}, ${e.id}, ${no}, ${input.name}, ${initialsOf(input.name)}, ${input.title}, ${input.workEmail ?? null}, ${status}, ${input.joinedOn},
-        (select u.id from auth.user u where ${input.workEmail ?? null}::text is not null and lower(u.email) = lower(${input.workEmail ?? ""}) and u.status = 'active'
-          and not exists (select 1 from hr.person x where x.user_id = u.id)))
+      values (${ctx.tenantId}, ${e.id}, ${no}, ${input.name}, ${initialsOf(input.name)}, ${input.title}, ${input.workEmail ?? null}, ${status}, ${input.joinedOn}, ${link?.id ?? null})
       returning id, user_id`);
     await tx.execute(sql`insert into hr.employment (tenant_id, person_id, legal_entity_id, department, grade, manager_person_id, contract, fte, starts_on, currency, base_salary)
       values (${ctx.tenantId}, ${p.id}, ${e.id}, ${input.department}, ${input.grade ?? null}, ${manager?.id ?? null}, ${input.contract}, ${input.fte}, ${input.joinedOn}, ${e.base_currency}, ${input.baseSalary ?? null})`);
