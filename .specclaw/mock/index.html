@@ -3617,6 +3617,98 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
     <p class="muted" style="font-size:13px">Fleet Tracker (fictional) has no linked repo, so its header keeps <button class="btn sm primary" type="button">✦ New proposal</button> as today.</p></div>
 </section>
 
+<!-- ================= 106 Set up a project card ================= -->
+<section data-change="106-set-up-project-card" id="106-set-up-project-card" data-roles="admin pm" data-title="Chat: set up a project" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-project">
+  <h1>Chat: set up a project on one card</h1>
+  <p class="lede">One card, already filled in, creates the project and links its repo. Nothing is written until the button. Fictional data.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+    <div class="card" style="max-width:460px">
+      <p class="muted" style="margin:0 0 8px">You: Set up a project for the Northwind portal repo</p>
+      <div class="card" style="padding:16px 18px">
+        <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Set up a project</span><span class="chip">PM: You</span></div>
+        <label style="display:block;font-size:12.5px;font-weight:600;margin:4px 0 2px" for="m106-name">Name</label>
+        <input id="m106-name" value="Northwind Portal" style="width:100%;padding:8px 10px;border:1px solid #d9d6ea;border-radius:10px;font:inherit">
+        <label style="display:block;font-size:12.5px;font-weight:600;margin:10px 0 2px" for="m106-key">Key</label>
+        <div style="display:flex;gap:8px;align-items:center"><input id="m106-key" value="NWP" style="width:90px;padding:8px 10px;border:1px solid #d9d6ea;border-radius:10px;font:inherit;text-transform:uppercase">
+          <span style="font-size:12.5px;color:#0F6E4A" aria-live="polite">✓ free · proposal ids NWP-001</span></div>
+        <p class="muted" style="font-size:11.5px;margin:4px 0 0">The key can't change later.</p>
+        <fieldset style="border:0;padding:0;margin:10px 0 0"><legend style="font-size:12.5px;font-weight:600;margin-bottom:4px">Client</legend>
+          <span class="chip">Internal</span> <span class="chip">Contoso</span> <span class="chip" style="background:#5B44D6;color:#fff">Northwind ●</span> <span class="chip">+ new…</span></fieldset>
+        <fieldset style="border:0;padding:0;margin:10px 0 0"><legend style="font-size:12.5px;font-weight:600;margin-bottom:4px">Billing</legend>
+          <span class="chip">Fixed</span> <span class="chip" style="background:#5B44D6;color:#fff">T&amp;M ●</span> <span class="chip">Retainer</span> <span class="chip">Internal</span></fieldset>
+        <div style="border-top:1px solid #d9d6ea;margin-top:12px;padding-top:10px">
+          <p style="font-size:12.5px;font-weight:600;margin:0 0 2px">Repo <span class="muted" style="font-weight:400">(optional)</span></p>
+          <label class="muted" style="display:block;font-size:12px;margin:4px 0 2px" for="m106-repo">URL</label>
+          <input id="m106-repo" value="https://github.com/example/northwind-portal" style="width:100%;padding:8px 10px;border:1px solid #d9d6ea;border-radius:10px;font:inherit">
+          <fieldset style="border:0;padding:0;margin:8px 0 0"><legend class="muted" style="font-size:12px;margin-bottom:4px">Branch</legend>
+            <span class="chip" style="background:#5B44D6;color:#fff">main ●</span> <span class="chip">develop</span> <span class="chip">other…</span></fieldset>
+        </div>
+        <p style="margin-top:14px"><span class="btn">Create NWP and link repo</span> &nbsp; Cancel</p>
+        <p class="muted" style="font-size:12px">Nothing is created until you press the button.</p>
+      </div>
+      <p class="muted">After confirming: ✓ Created NWP · Northwind Portal, linked github.com/example/northwind-portal (main)</p>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>Key taken</h2></div>
+        <p style="font-size:13px"><span style="display:inline-block;padding:6px 10px;border:1px solid #B42318;border-radius:10px">CON</span> <span style="color:#B42318;font-size:12.5px">CON is taken (Contoso Portal). Try CNP.</span></p>
+        <p class="muted" style="font-size:12.5px">The button stays disabled until the key is free and 2–10 capitals or digits.</p></div>
+      <div class="card"><div class="card-head"><h2>No repo</h2></div>
+        <p class="muted" style="font-size:12.5px">The Repo section stays collapsed: <span class="btn sm">Create NWP</span></p></div>
+      <div class="card"><div class="card-head"><h2>Link a repo to an existing project</h2></div>
+        <p style="font-size:13px;margin:0 0 6px"><b>Fleet Tracker</b> · FLT</p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 6px">URL <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">https://github.com/example/fleet-tracker</span></p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 8px">Branch <span class="chip" style="background:#5B44D6;color:#fff">main ●</span> <span class="chip">other…</span></p>
+        <p style="margin:0"><span class="btn sm">Link the repo</span> &nbsp; Cancel</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 107 Project team ================= -->
+<section data-change="107-project-team" id="107-project-team" data-roles="admin pm" data-title="Project team" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-project">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span><a href="#">Northwind Portal (fictional)</a><span>/</span>Team</nav>
+  <div class="row head"><div><h1>Team · NWP</h1><p class="lede">Who is on the project this month and the next two. Fictional data.</p></div>
+    <div class="actions"><button class="btn sm primary" type="button">✦ Ask amax · Add someone to NWP</button></div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start;margin-top:12px">
+    <div class="card">
+      <div class="card-head"><h2>PM: Maya Fernando</h2><span class="chip">+</span></div>
+      <table class="tbl"><thead><tr><th>Person</th><th>Nov</th><th>Dec</th><th>Jan</th><th></th></tr></thead><tbody>
+        <tr><td>Nimal Silva <small class="muted">Tech lead</small></td><td class="num">50%</td><td class="num">50%</td><td class="num">—</td><td><span class="chip">+</span></td></tr>
+        <tr><td>Kasun Dias <small class="muted">Engineer</small></td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td><span class="chip">+</span></td></tr>
+        <tr><td>Tharushi Wijesinghe <small class="muted">Associate engineer</small> <span class="chip info">until further notice</span></td><td class="num">40%</td><td class="num">40%</td><td class="num">40%</td><td><span class="chip">+</span></td></tr>
+      </tbody></table>
+      <p class="muted" style="font-size:12px">"Until further notice" stays on every month until someone ends it; no monthly copy.</p>
+    </div>
+    <div class="card" style="max-width:460px">
+      <p class="muted" style="margin:0 0 8px">You: Add someone to NWP</p>
+      <div class="card" style="padding:16px 18px">
+        <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Choose · Add to NWP</span><span class="chip">NWP</span></div>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c107" checked> <span><b>Dinesh Wickrama</b> · Engineer · 100% free this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c107"> <span><b>Ayesha Rahman</b> · QA lead · 40% free this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px dashed #d9d6ea;border-radius:12px"><input type="radio" name="c107"> <span>Someone else…</span></label>
+        <div style="display:flex;gap:14px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <label style="font-size:12.5px;font-weight:600" for="m107-pct">Percent</label> <input id="m107-pct" value="50" style="width:60px;padding:6px 8px;border:1px solid #d9d6ea;border-radius:10px;font:inherit"> %
+          <span class="chip" style="background:#5B44D6;color:#fff">This month ●</span> <span class="chip">Until further notice</span>
+        </div>
+        <p style="margin-top:14px"><span class="btn">Add Dinesh to NWP</span> &nbsp; Cancel</p>
+      </div>
+      <p class="muted">After confirming: ✓ Added Dinesh Wickrama to NWP · 50% in November</p>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>No HR record yet</h2></div>
+        <p style="font-size:13px">Priya Jayasena (fictional) can sign in but has no HR record, so she can't be allocated yet.</p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 6px">Title <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">Engineer</span> · Department <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">Engineering</span></p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 8px">Entity <span class="chip" style="background:#5B44D6;color:#fff">Sri Lanka ●</span> <span class="chip">Australia</span></p>
+        <p style="margin:0"><span class="btn sm">Add to HR and NWP</span> &nbsp; Cancel</p></div>
+      <div class="card"><div class="card-head"><h2>Hand over the PM</h2></div>
+        <p class="muted" style="margin:0 0 6px">You: Make Nimal the PM of NWP</p>
+        <p style="font-size:13px;margin:0 0 8px">Make <b>Nimal Silva</b> the PM of NWP (was Maya Fernando)</p>
+        <p style="margin:0"><span class="btn sm">Make PM</span> &nbsp; Cancel</p></div>
+      <div class="card"><div class="card-head"><h2>After setting up a project (106)</h2></div>
+        <p class="muted" style="font-size:12.5px;margin:0">✓ Created NWP · Northwind Portal. <b>Add your team?</b> opens the card above for NWP.</p></div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
