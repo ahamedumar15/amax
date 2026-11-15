@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import type { CardForm as Form } from "@amax/core";
 import type { Edits, FieldCheck } from "@amax/chat";
 import { CardForm } from "./CardForm";
-import { CHECK_FAILED, checkResultOf, confirmLabel, edited, refusalOf, startValues, withValue, type Values } from "./form-values";
+import { CHECK_FAILED } from "@amax/chat/field-check";
+import { checkResultOf, confirmLabel, edited, refusalOf, startValues, withValue, type Values } from "./form-values";
 
 type Props = {
   form: Form; input: Record<string, unknown>; fallback: string; busy: boolean; note?: string; field?: string;

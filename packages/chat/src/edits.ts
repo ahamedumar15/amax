@@ -1,10 +1,10 @@
 import { ToolError, type RegisteredTool } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 import type { CardForm } from "@amax/core";
+import type { FieldCheck } from "./field-check";
 
+export type { FieldCheck };
 export type Edits = Record<string, string>;
-/** `transient` (106 review round 2): the check itself failed for now; shown, but it never blocks the button. */
-export type FieldCheck = { field?: string; message?: string; transient?: boolean };
 
 export function withEdits(form: CardForm, input: Record<string, unknown>, edits: Edits = {}): Record<string, unknown> {
   const next = { ...input };

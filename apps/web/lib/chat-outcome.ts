@@ -1,6 +1,5 @@
-import { ActionFailedError, NotPendingError, type FieldCheck } from "@amax/chat";
+import { ActionFailedError, CHECK_FAILED, NotPendingError, type FieldCheck } from "@amax/chat";
 import { logError } from "@amax/core/server";
-import { CHECK_FAILED } from "../components/chat/form-values";
 import { movedOf, type Moved } from "./chat-move";
 
 export { movedOf } from "./chat-move";

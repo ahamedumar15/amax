@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CardForm } from "@amax/core";
-import { NotPendingError } from "@amax/chat";
-import { CHECK_FAILED, checkResultOf, generalOf, refusalOf } from "../components/chat/form-values";
+import { CHECK_FAILED, NotPendingError } from "@amax/chat";
+import { checkResultOf, generalOf, refusalOf } from "../components/chat/form-values";
 import { checkFailure } from "../lib/chat-outcome";
 
 const form: CardForm = { fields: [{ name: "key", label: "Key", kind: "text" }, { name: "client", label: "Client", kind: "chips", options: [], other: "+ new…" }] };
