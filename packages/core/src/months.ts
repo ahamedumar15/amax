@@ -12,11 +12,12 @@ export function monthName(value: string, withYear = false): string | null {
 
 /**
  * A range of months, "Mar–May" within one year and "Mar 2027–Jan 2028" across years, so a range never reads as a shorter
- * one; null when either end isn't a month.
+ * one; null when either end isn't a month, or (110) the end comes before the start: that is no range at all.
  */
 export function monthRange(from: string, to: string): string | null {
-  const years = [from, to].map((v) => v.trim().match(MONTH)?.[1]);
-  if (!years[0] || !years[1]) return null;
+  const ends = [from, to].map((v) => v.trim().match(MONTH));
+  if (!ends[0] || !ends[1] || `${ends[1][1]}-${ends[1][2]}` < `${ends[0][1]}-${ends[0][2]}`) return null;
+  const years = ends.map((m) => m![1]);
   const withYear = years[0] !== years[1];
   return `${monthName(from, withYear)}–${monthName(to, withYear)}`;
 }

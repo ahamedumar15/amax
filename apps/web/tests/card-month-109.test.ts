@@ -18,6 +18,8 @@ describe("109 the button follows Through", () => {
     ["a day given too: still the month", "2027-05-01", "Add Dinesh Wickrama to TMT, Mar–May"],
     ["half typed: the start, and the end as typed", "2027-1", "Add Dinesh Wickrama to TMT, Mar–2027-1"],
     ["cleared: the start, and the end to come", "", "Add Dinesh Wickrama to TMT, Mar–…"],
+    ["110 AC5: before the start, as typed, never a range", "2027-01", "Add Dinesh Wickrama to TMT, Mar–2027-01"],
+    ["110 AC5: the start month itself is a range of one", "2027-03", "Add Dinesh Wickrama to TMT, Mar–Mar"],
   ])("%s", (_name, through, label) => {
     expect(confirmLabel(form, { person: "LL-0412", through }, "Confirm")).toBe(label);
   });

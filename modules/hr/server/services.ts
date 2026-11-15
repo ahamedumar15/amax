@@ -8,26 +8,13 @@ import { changePersonRun, changeInput } from "./change";
 import { date, inScope, inScopeFrom, personByNo } from "./records";
 import { linkableAccount } from "./link";
 import { entityZoneSet } from "@amax/workflows";
+import { entityToday, noZone } from "./zones";
+
+export { entityToday, noZone };
 
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
 const COUNTRY: Record<string, string> = { "sri lanka": "LK", australia: "AU" };
-
-/** Review round 2: HR's refusal for an entity whose today it can't know. */
-export const noZone = (name: string) => `${name} has no time zone set: set one before adding people there or recording leavers`;
-
-/**
- * 109 AC-5: today in the legal entity's own time zone, the one date HR decides joining, active and left by. Review round
- * 2: an entity with no zone set (its own, or its country's default) is refused, never counted in UTC.
- */
-export async function entityToday(tx: Tx, entityId: string, now = new Date()) {
-  const zone = await entityZoneSet(tx, entityId);
-  if (!zone) {
-    const [e] = await tx.execute(sql`select name from core.legal_entity where id = ${entityId}`);
-    throw new Error(noZone(String(e?.name ?? "This legal entity")));
-  }
-  return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-}
 
 /**
  * The add_person card's word, as the entity is picked: the refusal addPerson would give for an entity with no zone, or why
@@ -35,9 +22,12 @@ export async function entityToday(tx: Tx, entityId: string, now = new Date()) {
  */
 export async function zoneNote(tx: Tx, entity: string) {
   let e: Record<string, unknown>;
-  try { e = await entityOf(tx, entity); } catch (err) { return err instanceof Error ? err.message : String(err); }
+  try { e = await entityOf(tx, entity); } catch (err) { if (err instanceof EntityLookupError) return err.message; throw err; }
   return (await entityZoneSet(tx, e.id as string)) ? undefined : noZone(String(e.name));
 }
+
+/** 110 AC-6: entityOf's own refusals (none, or more than one), the only errors the card turns into its note. */
+export class EntityLookupError extends Error {}
 
 /** Exactly one legal entity: by id or full name first, else by country (name or code). Never a guess. */
 export async function entityOf(tx: Tx, entity: string) {
@@ -47,8 +37,8 @@ export async function entityOf(tx: Tx, entity: string) {
     from core.legal_entity where id::text = ${key} or lower(name) = lower(${key}) or lower(country) = lower(${code})`);
   const exact = rows.filter((r) => r.exact);
   const hits = exact.length ? exact : rows;
-  if (!hits.length) throw new Error(`no legal entity ${key}`);
-  if (hits.length > 1) throw new Error(`${key} matches ${hits.length} legal entities: give the entity's full name`);
+  if (!hits.length) throw new EntityLookupError(`no legal entity ${key}`);
+  if (hits.length > 1) throw new EntityLookupError(`${key} matches ${hits.length} legal entities: give the entity's full name`);
   return hits[0];
 }
 

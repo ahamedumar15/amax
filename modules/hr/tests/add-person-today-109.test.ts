@@ -34,6 +34,11 @@ describe.skipIf(!hasDb)("109 one today for HR (Postgres)", () => {
       expect(await db.tx((tx) => zoneNote(tx, entity))).toBe(note);
     });
 
+    it("110 AC6 a failed query is an error, never the card's note", async () => {
+      const down = { execute: () => Promise.reject(new Error("db down")) };
+      await expect(zoneNote(down as never, "Australia")).rejects.toThrow("db down");
+    });
+
     it("add_person is refused, and the daily job leaves the entity's people as they are and names it", async () => {
       at(EVENING);
       await expect(add("Unzoned Australia", "Australia")).rejects.toThrow(AU);

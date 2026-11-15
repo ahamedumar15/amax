@@ -45,7 +45,8 @@ export const extendStanding = defineService({
     for (const s of rows) {
       // 109 AC-1: ended as ending it by hand would, from next month: the months it wrote from then on go too, kept in the audit.
       if (!people.has(s.person_id as string) || !projects.has(s.project_id as string)) {
-        const end = await endSlot(tx, s.person_id as string, s.project_id as string, addMonths(monthOf(input.today), 1), "allocations.standing", ctx.tenantId);
+        // 110 AC-4: ended in the name of whoever set it, as its extensions are.
+        const end = await endSlot(tx, s.person_id as string, s.project_id as string, addMonths(monthOf(input.today), 1), `allocations.standing for ${String(s.updated_by)}`, ctx.tenantId);
         ended.push(end.before);
         events.push(end.event);
         continue;
@@ -75,7 +76,8 @@ export const endStandingForLeaver = defineService({
     const month = addMonths(monthOf(input.leftOn), 1);
     const open = await tx.execute(sql`select project_id from allocations.standing where person_id = ${input.personId} and until_month is null`);
     const ends = [];
-    for (const s of open) ends.push(await endSlot(tx, input.personId, s.project_id as string, month, "hr leaver", ctx.tenantId));
+    // 110 AC-4: the end names the leaver's record it follows from.
+    for (const s of open) ends.push(await endSlot(tx, input.personId, s.project_id as string, month, `hr leaver ${input.personId}`, ctx.tenantId));
     return { result: { ended: open.length }, resourceId: input.personId, before: { ended: ends.map((e) => e.before) }, after: { from: month, ended: open.length }, events: ends.map((e) => e.event) };
   },
 });

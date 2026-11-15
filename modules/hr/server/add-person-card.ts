@@ -18,8 +18,8 @@ const entities = (v: Viewer) => withTenant(getRuntime().db, v.tenantId, (tx) => 
 const linksTo = (v: Viewer, email?: string) => withTenant(getRuntime().db, v.tenantId, (tx) => linkableAccount(tx, email));
 
 /**
- * Review round 2: the card's note as the work email is typed, from the same rule addPerson links by. 109 review round 1:
- * and, for an entity with no time zone set, that today there is UTC's.
+ * Review round 2: the card's note as the work email is typed, from the same rule addPerson links by. 110 AC-6: and, as
+ * the entity is picked, addPerson's own refusal for an entity with no time zone, or why the entity can't be found.
  */
 export const linkNote = async (v: Viewer, a: Partial<AddPerson>) => {
   const [account, zone] = await Promise.all([linksTo(v, a.workEmail), a.entity ? withTenant(getRuntime().db, v.tenantId, (tx) => zoneNote(tx, a.entity!)) : undefined]);

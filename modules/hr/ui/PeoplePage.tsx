@@ -5,9 +5,12 @@ import { IntentButton, PinButton, Ticket } from "@amax/ui";
 import { today as todayIso } from "../server/inforce";
 import { listDirectory, listEntities } from "../server/queries";
 import { peopleStats } from "../server/stats";
+import { readHr } from "../server/read";
+import { unzonedEntities } from "../server/zones";
 import { GBars, HBars } from "./charts";
 import { Directory } from "./Directory";
 import { EntityFilter } from "./EntityFilter";
+import { NoZoneLines } from "./NoZoneLines";
 import { countryName, needViewer, shortDate, SignInFirst } from "./parts";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -22,7 +25,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
   const entity = entities.find((e) => e.code === params.entity);
   if (params.entity && !entity) notFound();
   const all = params.all === "all";
-  const [s, dir] = await Promise.all([peopleStats(viewer, on, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25, on })]);
+  const [s, dir, unzoned] = await Promise.all([peopleStats(viewer, on, entity?.id), listDirectory(viewer, { entityId: entity?.id, limit: all ? 1000 : 25 }), readHr(viewer, unzonedEntities)]);
   const inEntities = s.byEntity.filter((e) => e.n > 0);
   const joined = s.joiners.reduce((a, b) => a + b, 0), left = s.leavers.reduce((a, b) => a + b, 0);
   const q = `Q${Math.floor(today.getUTCMonth() / 3) + 1}`;
@@ -38,6 +41,7 @@ export async function PeoplePage({ params, viewer: raw }: ScreenProps) {
           {canEver(viewer, "hr:person:create") && <IntentButton intent="hr.add-person" label="Add person" />}
         </div>
       </div>
+      <NoZoneLines viewer={viewer} entities={unzoned.filter((u) => !entity || u.id === entity.id)} />
       <div className="tickets four">
         <Ticket tone="info" label="Headcount" art={stat("Headcount")} value={String(s.headcount)} note={inEntities.map((e) => `${e.n} ${countryName(e.country, e.name)}`).join(", ")} />
         <Ticket tone="good" label={`Joiners and leavers, ${q}`} art={stat(`Joiners and leavers, ${q}`)} value={`${s.quarter.joined} / ${s.quarter.left}`} note={`${s.quarter.joined} joined, ${s.quarter.left} left.${s.upcoming.n ? ` ${s.upcoming.n} more join ${shortDate(s.upcoming.on)}` : ""}`} />

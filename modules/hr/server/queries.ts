@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { canSee, type Masked, type Viewer } from "@amax/auth";
 import type { Sensitivity } from "@amax/core/server";
 import { getEmployment, toPersonRef, type Employment, type PersonRef } from "../contracts";
-import { employmentAt, today } from "./inforce";
+import { employmentAt } from "./inforce";
 import { readHr } from "./read";
 
 export type DirectoryRow = PersonRef & { country: string; entityName: string; probationEnds: string | null };
@@ -11,16 +11,16 @@ export type PersonView = { person: DirectoryRow; workEmail: string | null; locat
 
 const day = (v: unknown) => (v ? (v instanceof Date ? v.toISOString() : String(v)).slice(0, 10) : null);
 
-const directory = (on: string) => sql`select p.*, emp.department, emp.manager_person_id, mgr.user_id as manager_user_id, mgr.name as manager_name,
+const directory = (on?: string) => sql`select p.*, emp.department, emp.manager_person_id, mgr.user_id as manager_user_id, mgr.name as manager_name,
     le.country, le.name as entity_name, (select min(ends_on) from hr.probation b where b.person_id = p.id and b.status = 'open') as probation_ends
   from hr.person p ${employmentAt(on)} join core.legal_entity le on le.id = p.legal_entity_id`;
 
 const row = (r: Record<string, unknown>): DirectoryRow => ({ ...toPersonRef(r), country: r.country as string, entityName: r.entity_name as string, probationEnds: day(r.probation_ends) });
 
-/** The directory as of `on` (default today): shared people with a sign-in first, then by name. `total` counts every match. */
+/** The directory as of `on` (default: each person's own today): shared people with a sign-in first, then by name. `total` counts every match. */
 export const listDirectory = (v: Viewer, opts: { entityId?: string; q?: string; limit?: number; on?: string } = {}) =>
   readHr(v, async (tx) => {
-    const on = opts.on ?? today();
+    const on = opts.on;
     const where = [sql`p.status <> 'left'`, opts.entityId ? sql`p.legal_entity_id = ${opts.entityId}` : undefined,
       opts.q ? sql`(p.name ilike ${`%${opts.q}%`} or p.title ilike ${`%${opts.q}%`} or emp.department ilike ${`%${opts.q}%`})` : undefined].filter((w): w is ReturnType<typeof sql> => Boolean(w));
     const filter = sql`where ${sql.join(where, sql` and `)}`;
@@ -31,7 +31,7 @@ export const listDirectory = (v: Viewer, opts: { entityId?: string; q?: string; 
 
 /** One person's page: pay and bank masked per 002, each document masked by its own class. */
 /** `ref`: an employee number, or the person's id (059: pins use the id; a number given with it only narrows). */
-export const getPersonView = (v: Viewer, ref: string | { personId?: string; employeeNo?: string }, on = today()) =>
+export const getPersonView = (v: Viewer, ref: string | { personId?: string; employeeNo?: string }, on?: string) =>
   readHr(v, async (tx): Promise<PersonView | null> => {
     const { personId, employeeNo } = typeof ref === "string" ? { personId: undefined, employeeNo: ref } : ref;
     if (!personId && !employeeNo) throw new Error("say which person: a personId or an employeeNo");

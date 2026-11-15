@@ -41,16 +41,20 @@ describe.skipIf(!hasDb)("109 standing allocations end cleanly and keep hand remo
     ["the leaver handler, for someone who left", "Dinesh Wickrama", "CON", "allocations.standing.leaver", async (personId: string) => {
       await onLeaver.handle({ tenantId: T, event: { name: "hr.person.left", payload: { personId, userId: null, leftOn: "2027-02-05" } } } as never);
     }],
-  ])("the end by %s is audited and sent like a hand end", async (_name, who, key, action, end) => {
+  ])("the end by %s is audited and sent like a hand end, in the name it follows from (110 AC4)", async (_name, who, key, action, end) => {
     if (key === "SHUT") await db.t.owner`insert into delivery.project (tenant_id, key, name, client, billing, manager_user_id) select ${T}, 'SHUT', 'Shut tools', 'Internal', 'internal', id from auth.user where email = 'maya@lumenlabs.test'`;
     await set(who, key, "2027-01", 20, true);
     const [p] = await db.tx((tx) => tx.execute(sql`select id from hr.person where name = ${who}`));
+    const [{ updated_by: setBy }] = await db.tx((tx) => tx.execute(sql`select s.updated_by from allocations.standing s join delivery.project j on j.id = s.project_id
+      where s.person_id = ${p.id as string} and j.key = ${key} and s.until_month is null`));
     await end(p.id as string);
     const [audit] = await db.tx((tx) => tx.execute(sql`select before from core.audit_event where action = ${action} order by seq desc limit 1`));
     const ended = (audit.before as { ended: { personId: string; rows: { month: string }[]; standing: unknown[] }[] }).ended.find((e) => e.personId === p.id)!;
     expect([ended.rows.map((r) => String(r.month).slice(0, 7)), ended.standing.length]).toEqual([expect.arrayContaining(["2027-03", "2027-12"]), 1]);
     const [event] = await db.tx((tx) => tx.execute(sql`select payload from core.event where name = ${EVENTS.allocationSet} and payload->>'personId' = ${p.id as string} order by created_at desc, id desc limit 1`));
     expect(event.payload).toMatchObject({ months: [], percent: 0, standing: true });
+    // 110 AC-4: in the name of whoever set it (the job), or naming the leaver's record (the handler).
+    expect((event.payload as { by: string }).by).toBe(action === "allocations.standing.extend" ? `allocations.standing for ${setBy}` : `hr leaver ${p.id as string}`);
   });
 
   it.each([
