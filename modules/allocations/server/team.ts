@@ -12,8 +12,11 @@ import { standingOn } from "./standing";
 // when the reader can't see the person's employment.
 /** `standing` (107): on the project until further notice. */
 export type TeamMember = { personId: string; userId: string | null; employeeNo: string; name: string; role: string; percents: (number | null)[]; freeThisMonth: number | null; standing: boolean };
-/** `manager` (107): the project's PM, led with on the Team page; null when it has none. */
-export type ProjectTeam = { project: ProjectRef; manager: { userId: string; name: string } | null; months: string[]; people: TeamMember[]; hidden: number };
+/**
+ * `manager` (107): the project's PM, led with on the Team page; null when it has none. `inactive` (final pass): the PM's
+ * account is no longer active, so the project needs a new one; `name` is then the name the project last recorded.
+ */
+export type ProjectTeam = { project: ProjectRef; manager: { userId: string; name: string; inactive?: true } | null; months: string[]; people: TeamMember[]; hidden: number };
 
 /** Each person's capacity this month less every allocation that month, as the grid counts it; null without their employment. */
 export async function freeIn(tx: Tx, v: Viewer, ids: string[], month: string): Promise<(personId: string) => number | null> {
@@ -33,8 +36,10 @@ export async function teamIn(tx: Tx, v: Viewer, projectKey: string, today: Date)
   const ids = [...new Set(rows.map((r) => r.personId))];
   const [people, free, standing] = await Promise.all([listPeople(tx, v, { ids }), freeIn(tx, v, ids, months[0]), standingOn(tx, project.id)]);
   const pm = project.managerUserId ? await viewerForUser(tx, v.tenantId, project.managerUserId) : null;
+  const manager = !project.managerUserId ? null : pm ? { userId: project.managerUserId, name: pm.name }
+    : { userId: project.managerUserId, name: project.managerName ?? "Their PM", inactive: true as const };
   return {
-    project, months, hidden, manager: pm && project.managerUserId ? { userId: project.managerUserId, name: pm.name } : null,
+    project, months, hidden, manager,
     people: people.map((p) => ({
       personId: p.id, userId: p.userId, employeeNo: p.employeeNo, name: p.name, role: p.title,
       percents: months.map((m) => rows.find((r) => r.personId === p.id && r.month === m)?.percent ?? null), freeThisMonth: free(p.id), standing: standing.has(p.id),

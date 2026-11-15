@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { upsertPasswordUser } from "@amax/auth";
+import { activeAccount, upsertPasswordUser } from "@amax/auth";
 import type { ModuleManifest } from "@amax/core";
 import { createRegistry } from "@amax/mcp";
 import allocations from "../module";
@@ -45,6 +45,15 @@ describe.skipIf(!hasDb)("107 someone with no HR record (Postgres)", () => {
     const [p] = await db.tx((tx) => tx.execute(sql`select p.user_id, u.email from hr.person p join auth.user u on u.id = p.user_id where p.name = 'Priya Jayasena'`));
     expect(p?.email).toBe("priya@lumenlabs.test");
     await expect((await tool("allocate")).propose!(maya as never, { person: "Priya Jayasena", projectKey: "CON" } as never)).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ["a shared name names nobody", "Sam Same", null],
+    ["an email names its one account", "sam.one@lumenlabs.test", "sam.one@lumenlabs.test"],
+    ["a name only one account has names it", "Priya Jayasena", "priya@lumenlabs.test"],
+  ])("final pass: activeAccount, %s", async (_name, who, email) => {
+    for (const e of ["sam.one@lumenlabs.test", "sam.two@lumenlabs.test"]) await upsertPasswordUser(db.app, T, { email: e, name: "Sam Same", roles: ["Engineer"], password: "a-long-password-1234" });
+    expect((await db.tx((tx) => activeAccount(tx, who)))?.email ?? null).toBe(email);
   });
 
   it("B4 a name two people share asks for the employee number, as the service does, and never sends them to HR", async () => {

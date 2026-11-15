@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Viewer } from "@amax/auth";
+import { entityZone } from "@amax/workflows";
 import { linkableAccount } from "./link";
+import { entityOf } from "./services";
 import type { ToolCard } from "@amax/core";
 import { getRuntime } from "@amax/core/server";
 import { withTenant } from "@amax/db";
@@ -13,6 +15,13 @@ export const AddPersonInput = z.object({ name: z.string().min(2), title: z.strin
 export type AddPerson = z.infer<typeof AddPersonInput>;
 
 const entities = (v: Viewer) => withTenant(getRuntime().db, v.tenantId, (tx) => tx.execute(sql`select name from core.legal_entity order by name`));
+
+/** Final pass: today in the entity's own time zone, the date someone added now joins on by default. */
+export const localToday = (v: Viewer, entity: string) => withTenant(getRuntime().db, v.tenantId, async (tx) => {
+  const e = await entityOf(tx, entity);
+  const zone = await entityZone(tx, e.id as string);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+});
 
 const linksTo = (v: Viewer, email?: string) => withTenant(getRuntime().db, v.tenantId, (tx) => linkableAccount(tx, email));
 

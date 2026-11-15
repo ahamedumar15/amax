@@ -4,7 +4,7 @@ import { hasDb } from "@amax/db/testdb";
 import { contextFor } from "@amax/core/server";
 import { ctxFor } from "../server/context";
 import { allocate } from "../server/services";
-import { extendStanding } from "../server/standing";
+import { extendStanding } from "../server/standing-jobs";
 import { teamFor } from "../server/team";
 import { allocationsDatabase, T } from "./setup";
 

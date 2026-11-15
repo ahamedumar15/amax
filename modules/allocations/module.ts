@@ -7,7 +7,7 @@ import { assignedProjectIds } from "./server/scopes";
 import { AllocationsEveryonePage, AllocationsPage } from "./ui/AllocationsPage";
 import { agentCheck, agentCheckSchedule, rebalance } from "./suggestions";
 import { ProjectTeamPage } from "./ui/ProjectTeamPage";
-import { standingExtend, standingExtendSchedule } from "./server/standing";
+import { onLeaver, standingExtend, standingExtendSchedule } from "./server/standing-jobs";
 
 const READ = ["allocations:read"];
 
@@ -46,7 +46,8 @@ export default defineModule({
   workflows: [agentCheck, standingExtend],
   schedules: [agentCheckSchedule, standingExtendSchedule],
   // 035: outgoing webhooks send only declared fields (review 058).
-  events: { emits: Object.values(EVENTS), payloads: {
+  // 107 final pass: a leaver's standing allocations end the month after they leave.
+  events: { emits: Object.values(EVENTS), handles: [onLeaver], payloads: {
     [EVENTS.allocationSet]: declarePayload<AllocationSet>({ personId: "plain", projectId: "plain", work: "plain", months: "plain", percent: "plain", by: "plain", standing: "plain" }),
     [EVENTS.monthCopied]: declarePayload<MonthCopied>({ team: "plain", from: "plain", to: "plain", rows: "plain", by: "plain" }),
   } },

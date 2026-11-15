@@ -4,7 +4,7 @@ import { hasDb } from "@amax/db/testdb";
 import { contextFor } from "@amax/core/server";
 import { ctxFor } from "../server/context";
 import { allocate } from "../server/services";
-import { extendStanding } from "../server/standing";
+import { extendStanding } from "../server/standing-jobs";
 import { allocationsDatabase, T } from "./setup";
 
 // Review round 3: the real monthly job (session A) holds a standing row's lock while it writes 2028-01. It is held there

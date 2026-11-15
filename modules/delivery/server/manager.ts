@@ -12,7 +12,9 @@ export const MANAGE = "delivery:project:manage";
 export const ManagerInput = z.object({ projectKey: z.string(), userId: z.string().uuid() });
 type Input = z.infer<typeof ManagerInput>;
 
-const projectOf = async (tx: Tx, key: string) => (await tx.execute(sql`select id, key, name, manager_user_id from delivery.project where key = ${key}`))[0];
+/** `lock` (final pass): the handover reads its project under a row lock, so two at once run one after the other. */
+const projectOf = async (tx: Tx, key: string, lock = false) =>
+  (await tx.execute(sql`select id, key, name, manager_user_id from delivery.project where key = ${key} ${lock ? sql`for update` : sql``}`))[0];
 const nameOf = async (tx: Tx, tenantId: string, userId: string | null) => (userId ? (await viewerForUser(tx, tenantId, userId))?.name ?? null : null);
 
 /** Review round 1: a project's PM rights come from the PM role, so only someone who holds PM (or Admin) can be its manager. */
@@ -31,7 +33,7 @@ export const setProjectManager = defineService({
   resource: "delivery.project",
   input: ManagerInput,
   async run(tx, input, ctx) {
-    const p = await projectOf(tx, input.projectKey);
+    const p = await projectOf(tx, input.projectKey, true);
     if (!p) throw notFound(`no project ${input.projectKey}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, MANAGE, { projectId: p.id as string });

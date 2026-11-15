@@ -26,6 +26,7 @@ function ManagerLine({ team }: { team: ProjectTeam }) {
   return (
     <div className="card pinnable team-pm">
       <div className="card-head"><h2>PM: {manager?.name ?? "nobody yet"}</h2>
+        {manager?.inactive && <span className="chip warn">Account deactivated · needs a new PM</span>}
         <PinButton inline pin={{ label: `${project.name} PM`, tool: "get_project", args: { projectId: project.id } }} /></div>
     </div>
   );
