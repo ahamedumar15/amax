@@ -29,6 +29,7 @@ describe.skipIf(!hasDb)("109 the Add to project card keeps a month or a range (P
     ["as drafted", { through: "2027-05", percent: 40 }, "Added Dinesh Wickrama to INT · 40% Mar–May"],
     ["Through edited later", { through: "2027-07", percent: 40 }, "Added Dinesh Wickrama to INT · 40% Mar–Jul"],
     ["Through and Percent edited", { through: "2027-04", percent: 60 }, "Added Dinesh Wickrama to INT · 60% Mar–Apr"],
+    ["final pass: Through into the next year names both years", { through: "2028-01", percent: 40 }, "Added Dinesh Wickrama to INT · 40% Mar 2027–Jan 2028"],
   ])("review round 2: worded again at confirm from the edited input, done names what is written: %s", async (_name, edits, done) => {
     const card = await addCard(await db.as("maya"), { projectKey: "INT", person: "Dinesh Wickrama", month: "2027-03", standing: false, ...edits });
     expect(card.look?.done).toBe(done);
@@ -38,7 +39,7 @@ describe.skipIf(!hasDb)("109 the Add to project card keeps a month or a range (P
     const maya = await db.as("maya");
     const card = await addCard(maya, { projectKey: "INT", person: "Dinesh Wickrama", month: "2027-03", through: "2027-05" });
     expect(card.form?.fields.map((f) => f.name)).toContain("through");
-    expect([card.title, card.form?.confirm?.label]).toEqual(["Add Dinesh Wickrama to INT", "Add {person} to INT, Mar–{through}"]);
+    expect([card.title, card.form?.confirm?.label]).toEqual(["Add Dinesh Wickrama to INT", "Add {person} to INT, {through}"]);
     const tool = registry.toolsFor(maya).find((t) => t.name === "allocate")!;
     await expect(tool.propose!(maya as never, { person: "Dinesh Wickrama", projectKey: "INT", month: "2027-03", through: "2027-05", standing: true } as never))
       .rejects.toMatchObject({ field: "through" });

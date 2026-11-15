@@ -1,5 +1,5 @@
 import { activeAccount, type Viewer } from "@amax/auth";
-import type { CardField, ToolCard } from "@amax/core";
+import { monthRange, type CardField, type ToolCard } from "@amax/core";
 import { ToolError } from "@amax/mcp";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { listPeople } from "@amax/hr/contracts";
@@ -54,11 +54,11 @@ export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
   const internal = project.billing === "internal";
   // 109 AC-3, AC-4: until further notice is offered first only when no month was named; a range keeps its end month.
   const named = Boolean(a.month || a.through);
-  const range = a.through ? `${monthLabel(month)}–${monthLabel(monthOf(a.through))}` : "";
+  const range = a.through ? (monthRange(month, monthOf(a.through)) ?? "") : "";
   const fields: CardField[] = [
     { name: "person", label: "Who", kind: "chips", options: await picks(v, project.id, month), other: "Someone else…", required: true },
     { name: "percent", label: "Percent", kind: "text", value: String(internal ? 100 : 50) },
-    ...(a.through ? [{ name: "through", label: "Through", kind: "text", format: "month" } as CardField] : []),
+    ...(a.through ? [{ name: "through", label: "Through", kind: "text", rangeFrom: month } as CardField] : []),
     { name: "standing", label: "For", kind: "chips", value: String(internal && !named), options: [{ value: "false", label: "This month" }, { value: "true", label: "Until further notice" }] },
   ];
   const when = a.standing ? "until further notice" : range ? range : `in ${monthLabel(month, "long")}`;
@@ -68,6 +68,6 @@ export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
     title: `Add ${who} to ${project.key}`, lines: [],
     look: { kind: "Add to project", confirm: `Add ${who} to ${project.key}`, done: `Added ${who} to ${project.key} · ${a.percent ?? ""}% ${when}` },
     // Review round 1: the button names Through from the field, so an edited end month shows on it at once.
-    form: { fields, confirm: { label: `Add {person} to ${project.key}${range ? `, ${monthLabel(month)}–{through}` : ""}` } },
+    form: { fields, confirm: { label: `Add {person} to ${project.key}${range ? ", {through}" : ""}` } },
   };
 }

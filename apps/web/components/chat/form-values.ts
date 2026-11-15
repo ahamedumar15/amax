@@ -1,4 +1,4 @@
-import type { CardField, CardForm } from "@amax/core";
+import { monthName, monthRange, type CardField, type CardForm } from "@amax/core";
 import type { FieldCheck } from "@amax/chat";
 
 export type Values = Record<string, string>;
@@ -42,16 +42,10 @@ export function withValue(form: CardForm, values: Values, typed: Set<string>, na
 
 const fill = (label: string, values: Values) => label.replace(/\{(\w+)\}/g, (_, k: string) => values[k] || "…");
 
-const MONTH = /^(\d{4})-(0[1-9]|1[0-2])$/;
-/** 109: "2027-05" as "May", for a text field with format "month"; anything else as typed. */
-export const monthShort = (v: string) => {
-  const m = v.trim().match(MONTH);
-  return m ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 1)).toLocaleString("en-US", { month: "short", timeZone: "UTC" }) : v;
-};
-
 const shown = (form: CardForm, values: Values): Values => Object.fromEntries(Object.entries(values).map(([k, v]) => {
   const f = form.fields.find((x) => x.name === k);
-  if (f?.kind === "text" && f.format === "month") return [k, monthShort(v)];
+  // 109: a range's end month named with its start, by the same rule as the server's card text; anything else as typed.
+  if (f?.kind === "text" && f.rangeFrom) return [k, monthRange(f.rangeFrom, v) ?? `${monthName(f.rangeFrom) ?? f.rangeFrom}–${v || "…"}`];
   return [k, (f?.kind === "chips" && f.options.find((o) => o.value === v)?.short) || v];
 }));
 
