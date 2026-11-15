@@ -41,13 +41,13 @@ test("107 AC6 AC7 AC9 AC11 a new project's team: Add your team?, someone added u
   expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
 
   const db = owner();
-  const [nimal] = await db`select id from auth.user where email = 'nimal@lumenlabs.test'`;
+  const [sahan] = await db`select id from auth.user where email = 'sahan@lumenlabs.test'`;
   await db.end();
   await page.getByRole("button", { name: "Ask amax", exact: true }).click();
-  await chat(page, `make Nimal Silva (user id ${nimal.id}) the PM of TMT`);
-  const pm = page.getByRole("group", { name: "Confirm: Make Nimal Silva the PM of TMT (was Maya Fernando)" });
+  await chat(page, `make Sahan Kumara (user id ${sahan.id}) the PM of TMT`);
+  const pm = page.getByRole("group", { name: "Confirm: Make Sahan Kumara the PM of TMT (was Maya Fernando)" });
   await pm.getByRole("button", { name: "Make PM" }).click();
-  await expect(pm).toContainText("Nimal Silva is the PM of TMT");
+  await expect(pm).toContainText("Sahan Kumara is the PM of TMT");
   await page.reload();
-  await expect(page.getByRole("heading", { name: "PM: Nimal Silva" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "PM: Sahan Kumara" })).toBeVisible();
 });

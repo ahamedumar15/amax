@@ -35,7 +35,7 @@ export default defineModule({
   // People are hr.person ids and their names stay in hr; only who last changed an allocation is personal.
   retention: [
     { table: "allocations.allocation", label: "Who changed an allocation", subject: ["person_id", "project_id", "updated_by"], fields: ["person_id", "updated_by"], class: "personal", period: "P7Y", start: { at: ["month"] }, action: "anonymise" },
-    { table: "allocations.standing", label: "Who set an allocation until further notice", subject: ["person_id", "project_id", "updated_by"], fields: ["person_id", "updated_by"], class: "personal", period: "P7Y", start: { at: ["from_month"] }, action: "anonymise" },
+    { table: "allocations.standing", label: "Who set an allocation until further notice", subject: ["person_id", "project_id", "updated_by"], fields: ["person_id", "updated_by"], class: "personal", period: "P7Y", start: { at: ["until_month"] }, action: "anonymise" },
   ],
   viewerScopes: async (tx, user) => ({ assignedProjects: await assignedProjectIds(tx, user) }),
   chatIntents,

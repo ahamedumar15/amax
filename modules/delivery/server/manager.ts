@@ -15,6 +15,14 @@ type Input = z.infer<typeof ManagerInput>;
 const projectOf = async (tx: Tx, key: string) => (await tx.execute(sql`select id, key, name, manager_user_id from delivery.project where key = ${key}`))[0];
 const nameOf = async (tx: Tx, tenantId: string, userId: string | null) => (userId ? (await viewerForUser(tx, tenantId, userId))?.name ?? null : null);
 
+/** Review round 1: a project's PM rights come from the PM role, so only someone who holds PM (or Admin) can be its manager. */
+async function newManager(tx: Tx, tenantId: string, userId: string): Promise<{ name: string } | { refused: string }> {
+  const v = await viewerForUser(tx, tenantId, userId);
+  if (!v) return { refused: "the new PM must be an active person in this workspace" };
+  if (!v.actualRoles.some((r) => r === "PM" || r === "Admin")) return { refused: `${v.name} doesn't hold the PM role, so they couldn't manage it; an Admin gives them PM first` };
+  return { name: v.name };
+}
+
 /** 107 AC-1: an Admin, or the project's current manager, makes an active person its manager. */
 export const setProjectManager = defineService({
   scoped: true,
@@ -27,8 +35,9 @@ export const setProjectManager = defineService({
     if (!p) throw notFound(`no project ${input.projectKey}`);
     const v = viewerOf(ctx);
     if (v) assertCan(v, MANAGE, { projectId: p.id as string });
-    const toName = await nameOf(tx, ctx.tenantId, input.userId);
-    if (!toName) throw invalid("the new PM must be an active person in this workspace");
+    const next = await newManager(tx, ctx.tenantId, input.userId);
+    if ("refused" in next) throw invalid(next.refused);
+    const toName = next.name;
     const from = (p.manager_user_id as string | null) ?? null;
     if (from === input.userId) throw invalid(`${toName} is already the PM of ${input.projectKey}`);
     await tx.execute(sql`update delivery.project set manager_user_id = ${input.userId}, manager_name = ${toName} where id = ${p.id}`);
@@ -40,7 +49,8 @@ export const setProjectManager = defineService({
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => withTenant(getRuntime().db, v.tenantId, fn);
 
 export const proposeManager = (v: Viewer, a: Input) => read(v, async (tx) => {
-  if (!(await nameOf(tx, v.tenantId, a.userId))) throw new ToolError("the new PM must be an active person in this workspace", "invalid_input", "userId");
+  const next = await newManager(tx, v.tenantId, a.userId);
+  if ("refused" in next) throw new ToolError(next.refused, "invalid_input", "userId");
 });
 
 export const managerCard = (v: Viewer, a: Input): Promise<ToolCard> => read(v, async (tx) => {

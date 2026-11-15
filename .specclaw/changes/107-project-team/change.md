@@ -2,6 +2,10 @@
 
 **Change:** 107-project-team · **Created:** 2026-11-15 · **Review:** change
 
+Size waiver: one feature across three modules, granted by the product owner 2026-11-15. The Team page, standing
+allocations, the PM handover and Add to HR ship together; about 430 production lines against 106 (c52cb39). The checker
+counts from the stale `origin/main`, so it reports the whole stack.
+
 **Builds on:** 106-set-up-project-card (its card hands off to this change's "Add someone" card).
 
 ## Problem

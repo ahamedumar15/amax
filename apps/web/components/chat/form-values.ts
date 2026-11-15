@@ -41,10 +41,15 @@ export function withValue(form: CardForm, values: Values, typed: Set<string>, na
 
 const fill = (label: string, values: Values) => label.replace(/\{(\w+)\}/g, (_, k: string) => values[k] || "…");
 
+const shown = (form: CardForm, values: Values): Values => Object.fromEntries(Object.entries(values).map(([k, v]) => {
+  const f = form.fields.find((x) => x.name === k);
+  return [k, (f?.kind === "chips" && f.options.find((o) => o.value === v)?.short) || v];
+}));
+
 export function confirmLabel(form: CardForm, values: Values, fallback: string) {
   const c = form.confirm;
   if (!c) return fallback;
-  return fill(c.unless && !values[c.unless.field]?.trim() ? c.unless.label : c.label, values);
+  return fill(c.unless && !values[c.unless.field]?.trim() ? c.unless.label : c.label, shown(form, values));
 }
 
 export const hintOf = (field: CardField, values: Values) => (field.kind === "text" && field.hint && values[field.name]?.trim() ? fill(field.hint, { ...values, value: values[field.name] }) : undefined);

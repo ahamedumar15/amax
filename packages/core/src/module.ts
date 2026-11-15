@@ -105,12 +105,13 @@ export type CardLook = { kind?: string; figure?: string; subject?: string; detai
 /**
  * 106: fields a person edits on the confirm card before pressing its button; the edited values are the tool's input,
  * checked again at confirm. A text field may `follow` another (a key from a name's initials) until it is typed in; chips
- * pick one value and may offer `other` (a text field). `optional` fields sit in a section that starts collapsed when
+ * pick one value and may offer `other` (a text field); an option's `short` names it in the button label (107: a name for an
+ * employee number). `optional` fields sit in a section that starts collapsed when
  * empty. `confirm` labels the button from the values, `{field}` replaced, with `unless` when its field is empty.
  */
 export type CardField =
   | { name: string; label: string; kind: "text"; value?: string; hint?: string; upper?: boolean; follow?: string }
-  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string }[]; other?: string; required?: boolean };
+  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string; short?: string }[]; other?: string; required?: boolean };
 export type CardForm = { fields: CardField[]; optional?: { label: string; fields: string[] }; confirm?: { label: string; unless?: { field: string; label: string } } };
 export type ToolCard = { title: string; lines: CardLine[]; look?: CardLook; form?: CardForm };
 

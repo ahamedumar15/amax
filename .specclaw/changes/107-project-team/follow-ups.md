@@ -1,0 +1,8 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B2] `packages/chat/src/engine.ts:162` This loosens the 106 final-pass NO_FORM refusal: a draft tool whose input fully parses can now be proposed with no form. The diff has no engine test for it. Add a table test over three cases: draft-only input with no form is refused; full input with no form is proposed; draft input with a form is proposed. (round 1) <!-- fp:ac1dd2a5dde5 class:other -->
+- [minor docs] `modules/delivery/README.md:8` The `ProjectRef` contract gains `billing` (and `EVENTS.projectManagerChanged`), but the README's contract notes don't mention the `billing` addition. The module standard asks for a README note when a contract that other modules use changes. (round 1) <!-- fp:fff87e5e0dc2 class:other -->
+- [minor B10] `modules/allocations/server/add-card.ts:41` proposeAllocate runs raw SQL on `auth.user` from inside the allocations module, outside any contract or `@amax/auth` function. It also checks HR existence under a job context rather than the viewer's scope. The pre-check can then pass for someone the service's viewer-scoped `personOf` later refuses with a different error. Fix: read the account through an `@amax/auth` function, and check HR with the same context `setAllocation` uses. (round 1) <!-- fp:74679ffc7ac0 class:other -->
+- [minor B1] `modules/allocations/server/standing.ts:60` Month rows the extend job writes emit no `allocations.allocation.set` event. Webhook and outbox consumers see a standing allocation's first 12 months but none after that. Either emit an event per extended slot, or document that consumers must read `standing: true` as open-ended. (round 1) <!-- fp:8b3484d242f8 class:other -->

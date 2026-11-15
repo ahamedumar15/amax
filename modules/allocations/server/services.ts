@@ -7,7 +7,7 @@ import { getProjectRef } from "@amax/delivery/contracts";
 import { getPerson, listPeople } from "@amax/hr/contracts";
 import { EVENTS, monthOf, type AllocationSet, type MonthCopied } from "../contracts";
 import { teamMembers } from "./forecast";
-import { setStanding } from "./standing";
+import { setStanding, skipMonths } from "./standing";
 
 const month = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, "a month, e.g. 2026-11").transform(monthOf);
 const by = (ctx: ServiceContext) => (ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id);
@@ -54,9 +54,9 @@ export async function setAllocation(tx: Tx, input: AllocateInput, ctx: ServiceCo
   if (input.projectKey && !project) throw new Error(`no project ${input.projectKey}`);
   if (!mayAllocate(ctx, project?.id ?? null)) throw new ScopeError("allocations:allocate");
   if (input.standing && project) {
-    const months = await setStanding(tx, { personId: person.id, projectId: project.id, month: input.month, percent: input.percent, by: by(ctx), tenantId: ctx.tenantId });
+    const { months, removed } = await setStanding(tx, { personId: person.id, projectId: project.id, month: input.month, percent: input.percent, by: by(ctx), tenantId: ctx.tenantId });
     const payload: AllocationSet = { personId: person.id, projectId: project.id, work: null, months, percent: input.percent, by: by(ctx), standing: true };
-    return { result: { person: person.name, months, percent: input.percent, standing: true }, resourceId: person.id, after: { from: input.month, percent: input.percent, project: input.projectKey, standing: true }, events: [{ name: EVENTS.allocationSet, payload }] };
+    return { result: { person: person.name, months, percent: input.percent, standing: true }, resourceId: person.id, before: { rows: removed }, after: { from: input.month, percent: input.percent, project: input.projectKey, standing: true }, events: [{ name: EVENTS.allocationSet, payload }] };
   }
   const months = monthsBetween(input.month, input.through ?? input.month);
   const slot = project ? sql`project_id = ${project.id}` : sql`work = ${input.work}`;
@@ -65,6 +65,7 @@ export async function setAllocation(tx: Tx, input: AllocateInput, ctx: ServiceCo
   if (input.percent > 0) for (const m of months) {
     await tx.execute(sql`insert into allocations.allocation (tenant_id, person_id, project_id, work, month, percent, updated_by) values (${ctx.tenantId}, ${person.id}, ${project?.id ?? null}, ${project ? null : input.work}, ${m}, ${input.percent}, ${by(ctx)})`);
   }
+  else if (project) await skipMonths(tx, person.id, project.id, months);
   const payload: AllocationSet = { personId: person.id, projectId: project?.id ?? null, work: project ? null : input.work!, months, percent: input.percent, by: by(ctx) };
   return { result: { person: person.name, months, percent: input.percent, standing: false }, resourceId: person.id, before: { rows: before }, after: { months, percent: input.percent, project: input.projectKey ?? input.work }, events: [{ name: EVENTS.allocationSet, payload }] };
 }

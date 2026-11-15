@@ -16,8 +16,9 @@ const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run"> & { inpu
 const read = { scope: "read" as const, readOnly: true, permission: "allocations:read" };
 // 107: a card's fields arrive as text, so the percent and "until further notice" are read from it as numbers and booleans.
 const flag = z.preprocess((x) => (x === "true" ? true : x === "false" ? false : x), z.boolean());
+const number = z.preprocess((x) => (typeof x === "string" && x.trim() !== "" && Number.isFinite(Number(x)) ? Number(x) : x), z.number().int());
 const AllocateInput = z.object({ person: z.string().min(1), projectKey: z.string().optional(), work: z.string().optional(), month: z.string().optional(), through: z.string().optional(),
-  percent: z.coerce.number().int(), standing: flag.optional() });
+  percent: number, standing: flag.optional() });
 
 export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: "view", name: "get_capacity_forecast", description: "Capacity against demand (FTE) for the next six months, and who is on the bench each month with their skill.",

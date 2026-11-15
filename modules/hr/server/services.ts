@@ -59,7 +59,7 @@ export const addPerson = defineService({
     await tx.execute(sql`insert into hr.employment (tenant_id, person_id, legal_entity_id, department, grade, manager_person_id, contract, fte, starts_on, currency, base_salary)
       values (${ctx.tenantId}, ${p.id}, ${e.id}, ${input.department}, ${input.grade ?? null}, ${manager?.id ?? null}, ${input.contract}, ${input.fte}, ${input.joinedOn}, ${e.base_currency}, ${input.baseSalary ?? null})`);
     const payload: PersonJoined = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, legalEntityId: e.id as string, department: input.department, joinedOn: input.joinedOn, status };
-    return { result: { id: p.id as string, employeeNo: no, status }, resourceId: p.id as string, after: { employeeNo: no, ...input }, events: [{ name: EVENTS.personJoined, payload }] };
+    return { result: { id: p.id as string, employeeNo: no, status }, resourceId: p.id as string, after: { employeeNo: no, ...input, linkedUserId: (p.user_id as string | null) ?? null }, events: [{ name: EVENTS.personJoined, payload }] };
   },
 });
 

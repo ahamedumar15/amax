@@ -20,6 +20,16 @@ describe("106 final pass: a draft tool's card and a required choice", () => {
     expect(p).toEqual({ refused: expect.objectContaining({ status: "not_proposed", note: expect.stringMatching(/fields couldn't be prepared/) }) });
   });
 
+  it.each([
+    ["a draft-only input with no fields is refused", async () => ({ title: "Set up", lines: [] }), {}, true],
+    ["a complete input needs no fields", async () => ({ title: "Set up", lines: [] }), { key: "NWP" }, false],
+    ["a draft-only input with its fields is a card", async () => ({ title: "Set up", lines: [], form: { fields: [{ name: "key", label: "Key", kind: "text" }] } }), {}, false],
+  ])("107 B2 %s", async (_name, card, input, refused) => {
+    const p = await proposeWrite(tool(card as McpToolDef["card"]), {} as never, input);
+    const note = "refused" in p ? p.refused.note : "";
+    expect(/fields couldn't be prepared/.test(note)).toBe(refused);
+  });
+
   const branch: CardForm = { fields: [{ name: "repoUrl", label: "Repo", kind: "text" }, { name: "defaultBranch", label: "Branch", kind: "chips", options: [], other: "other…", required: true },
     { name: "client", label: "Client", kind: "chips", options: [], other: "+ new…" }] };
   it.each([
