@@ -113,5 +113,42 @@ notice**. Someone without an HR record gets "Add Chandima to HR first?" on the s
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
 
+**Verdict:** PASS — every AC passes below. The review stopped at the five-pass cap (AGENTS.md) with 0 blockers and 4
+majors open (in `follow-ups.md`, for a follow-up change).
+
+- AC-1: pass — `modules/delivery/tests/manager-107.test.ts` AC1 (handed to Sahan: manager set, managed scope at once,
+  audit before/after, `delivery.project.manager_changed`); B12, two handovers at once run in turn (fails without the lock).
+- AC-2: pass — same file AC2 (card "Make Maya Fernando the PM of FLT (was Nimal Silva)", **Make PM**; an unknown person
+  refused before the card) and the PM-or-Admin table (Engineers refused; final pass round 1).
+- AC-3: pass — `standing-107.test.ts` AC3 (months ahead; percent 0 ends it, earlier months kept; hand-set months win;
+  the audit keeps what went).
+- AC-4: pass — `standing-107.test.ts` AC4 table (the job writes the next month, never over a hand-set month, never a
+  hand-removed one); `standing-race-107.test.ts` (the real job against each writer in three sessions; end and removal
+  fail without the lock); `standing-end-107.test.ts` (leavers and closed projects stop).
+- AC-5: pass — `standing-107.test.ts` AC5 (Team marks a standing member); the grid's line carries `standing`; screenshot.
+- AC-6: pass — e2e `project-team.spec.ts` (PM line first, **Ask amax · Add someone to TMT**); screenshot `shots/app.png`.
+- AC-7: pass — `add-card-107.test.ts` (≤4 people most free first, labels, 50 % / This month, internal 100 % / Until
+  further notice, text fields read as a number and a yes/no); e2e adds someone until further notice.
+- AC-8: pass — `no-hr-107.test.ts` (someone who can sign in but isn't in HR is named with "add them to HR first"; Add to
+  HR links their sign-in by work email, its note follows the email, its receipt offers the project; an ambiguous name
+  asks for the employee number). Two confirms, as the plan note says.
+- AC-9: pass — `manager-107.test.ts` AC9 (`look.next` "Add your team?"); e2e follows it from 106's card.
+- AC-10: pass — `manager-107.test.ts` AC10 (a PM only on projects they manage; Engineers get no tool).
+- AC-11: pass — e2e: axe wcag2a/2aa/21aa on the Team page clean; cards keyboard-operable (chips are radio groups);
+  light and dark screenshots of the add card; PinButtons on the PM line (by projectId) and each member.
+
+Commands: `pnpm lint` exit 0; allocations (64), hr (57), chat (62) suites pass; delivery passes but for this host's two
+known failures (backslash paths in releases.test, an 8 s load timeout); web form tests pass; e2e (`project-team`,
+`set-up-project*`, 7 tests) pass on `next dev` with the e2e database (round 1 head; later rounds changed no screen flow
+but the PM line's deactivated label). `specclaw-verify size`: exit 0 with the size waiver. `specclaw-preset-check .`:
+exit 1, the repo-wide backlog as in 066–106. Screenshots: `shots/app.png`, `shots/app-add-card.png`,
+`shots/app-add-card-dark.png`, `shots/mock.png` (the mock section moved into view, as for 106).
+
+Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/4/0 b/M/m; fix proof not proven: no
+review.test_command configured. Stopped at the five-pass cap: rounds 1–3 and two final passes (rounds 4 and 5). Open
+majors, all in `follow-ups.md`: the job's end of a leaver's or closed project's standing leaves the written months; an
+internal project's card defaults to standing for a one-month or ranged request; re-setting a standing allocation
+forgets months removed by hand; add_person's default join date and its status check use different "todays".
+
 Quality: not_run (`specclaw-quality-scan .`: jq "Argument list too long" on this Windows host, as in 066–106; no refactor
 made). Every new file is under 80 lines.
