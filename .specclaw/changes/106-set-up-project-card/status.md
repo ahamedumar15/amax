@@ -14,6 +14,7 @@
 | Tasks | ✅ Done |  |
 | Build | - | - |
 | Verify | ✅ Done |  |
+| PR | ✅ Done |  |
 
 ## Task Progress
 

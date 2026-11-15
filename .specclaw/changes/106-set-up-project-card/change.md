@@ -1,6 +1,6 @@
 # Set up a project from one card in chat: create it and link its repo in one confirm
 
-**Change:** 106-set-up-project-card · **Created:** 2026-11-15 · **Review:** change
+**Change:** 106-set-up-project-card · **Created:** 2026-11-15 · **Review:** change · **PR:** [#118](https://github.com/chan4lk/amax/pull/118)
 
 Size waiver: one feature, granted by the product owner 2026-11-15. The reusable editable card fields (chat engine and
 UI) ship with their first user, the Set up a project card; split, the form would ship unused. About 510 production
