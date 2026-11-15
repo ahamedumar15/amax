@@ -1,0 +1,9 @@
+{
+  "change": "109-project-team-follow-ups",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-15T12:07:11Z"},
+    "tasks": {"status":"done","at":"2026-11-15T12:07:30Z"}
+  }
+}
