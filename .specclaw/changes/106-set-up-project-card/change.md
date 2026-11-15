@@ -2,6 +2,10 @@
 
 **Change:** 106-set-up-project-card · **Created:** 2026-11-15 · **Review:** change
 
+Size waiver: one feature, granted by the product owner 2026-11-15. The reusable editable card fields (chat engine and
+UI) ship with their first user, the Set up a project card; split, the form would ship unused. About 510 production
+lines against 105; the checker counts from the stale `origin/main` (b257a6d), so it reports the whole stack.
+
 ## Problem
 
 "New project" in chat asks for the name, client, key and billing one message at a time before any card appears, and
@@ -62,8 +66,8 @@ section with Branch chips (main preselected). One button, **Create AMX and link 
 12. **AC-12** `create_project` and `link_project_repo` keep working over MCP unchanged; the chat intents' billing
     options include Internal.
 13. **AC-13** (Amendment 1) The **New project** button and Ask amax on `/delivery` open chat without sending anything to
-    the model: chat shows the page's suggestions, **Set up a project** first. Picking it fills "Set up a new project";
-    sending that brings the Set up a project card.
+    the model and without a "tell me the details" line: chat shows the page's suggestions, **Set up a project** first.
+    Picking it fills "Set up a new project"; sending that brings the Set up a project card.
 14. **AC-14** (Amendment 1) Opening chat on `/delivery` suggests **Set up a project** and **Link a repo to a project**
     (each only for someone who may do it) and **Which projects need attention?**; on a project's page with no linked repo
     it suggests **Link a repo** to someone who may link it. A suggestion fills the message box, as chat's suggestions do.

@@ -125,7 +125,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
   // Pins and intents arrive from anywhere on the page.
   useEffect(() => {
     const onEvent = (e: Event) => {
-      const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
+      const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string; quiet?: boolean }>).detail;
       const key = d.pin ? pinKey(d.pin) : undefined;
       // An untouched Ask amax prompt belongs to the record it pinned. A pin or prompt for another record
       // replaces both, so the agent never gets the last row's pin with this row's question.
@@ -147,7 +147,10 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
         setPins([pin]);
         announce(`${pin.label} added to chat`);
       }
-      if (d.intent) { asked.current = null; setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
+      if (d.intent) {
+        asked.current = null; setIntent(d.intent); setText("");
+        if (!d.quiet) setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]);
+      }
       else if (d.prompt) {
         asked.current = key ? { key, added } : null;
         filled.current = d.prompt;

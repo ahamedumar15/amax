@@ -51,6 +51,7 @@ test("106 AC13 AC14 New project sends nothing: chat suggests setting a project u
   await expect(page.getByRole("button", { name: "Set up a project" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Link a repo to a project" })).toBeVisible();
   await expect(page.locator(".m.me")).toHaveCount(0);
+  await expect(page.getByText("tell me the details")).toHaveCount(0);
   await page.getByRole("button", { name: "Set up a project" }).click();
   await expect(page.getByLabel("Message amax")).toHaveValue("Set up a new project");
   await page.keyboard.press("Enter");
