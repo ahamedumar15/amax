@@ -49,6 +49,10 @@ notice**. Someone without an HR record gets "Add Chandima to HR first?" on the s
 8. **AC-8** When the person picked has no HR record, the card says so and offers **Add to HR and AMX**: it runs
    `add_person` (name and work email from their account, title and department typed on the card, entity chips) and then
    `allocate`, confirmed once. If the HR write is refused, nothing is allocated.
+   (Plan note, 2026-11-15, for the product owner to confirm: one chat card runs exactly one service write (043), so a
+   write across HR and Allocations can't be one confirm, as presales' Promote to delivery isn't. Planned instead: the
+   card offers **Add Priya to HR**; once confirmed, chat shows the allocate card at once, filled in. Two confirms in a
+   row; if the HR write is refused, no allocate card appears.)
 9. **AC-9** After 106's card creates a project, chat offers "Add your team?" with this change's card for the new project.
 10. **AC-10** A PM can add people and hand over the PM only on projects they manage; an Admin on any. Engineers and
     others get no card; chat says who can.
@@ -57,8 +61,45 @@ notice**. Someone without an HR record gets "Add Chandima to HR first?" on the s
 
 ## Tasks
 
-<!-- Added by plan, UI first, then backend, then integration, in tasks.md's task-line
-     format: checkbox, `Tn`, em dash, title; then indented Files: and optional Depends: lines. -->
+- [ ] `T1` — Team page: leads with the PM line (pinnable) and an **Ask amax · Add someone to KEY** intent button with the
+  project pinned; standing members marked "until further notice" in the team table and the allocations grid; no write
+  controls on the page (AC-5, AC-6, AC-11)
+  Files: modules/allocations/ui/ProjectTeamPage.tsx, modules/allocations/ui/Grid.tsx, modules/allocations/ui/allocations.css,
+  modules/allocations/server/team.ts, modules/delivery/contracts.ts
+- [ ] `T2` — The Add to project card: `allocate`'s card gets a 106 form (up to four likely people not on the project this
+  month, most free first, as chips labelled "name · role · n% free this month", plus "Someone else…"; percent, default
+  100 on an internal project and 50 otherwise; This month / Until further notice chips, the latter preselected for
+  internal billing), button "Add NAME to KEY"; after 106's card creates a project its receipt offers "Add your team?",
+  which fills the message box (AC-7, AC-9, AC-11)
+  Files: modules/allocations/mcp.ts, modules/allocations/server/add-card.ts, modules/allocations/chat.ts,
+  packages/core/src/module.ts, apps/web/components/chat/ConfirmCard.tsx, apps/web/components/chat/Chat.tsx,
+  modules/delivery/server/set-up-project-card.ts, modules/allocations/tests/add-card-107.test.ts
+  Depends: T1
+- [ ] `T3` — Standing allocations: `allocate` takes `standing: true`; a new `allocations.standing` row (RLS, retention)
+  records it, and month rows are written 12 months ahead so every reader counts it unchanged; a monthly schedule
+  extends the horizon; `percent: 0` from a month ends it from then on, earlier months kept; a month row set by hand wins
+  for its month; `get_project_team` and the grid read the standing mark (AC-3, AC-4, AC-5)
+  Files: modules/allocations/db/migrations/0002_standing.sql, modules/allocations/db/schema.ts,
+  modules/allocations/server/services.ts, modules/allocations/server/standing.ts, modules/allocations/module.ts,
+  modules/allocations/mcp.ts, modules/allocations/README.md, modules/allocations/tests/standing-107.test.ts
+- [ ] `T4` — `set_project_manager`: a Delivery service (Admin, or the current manager) that makes an active person the
+  manager, audited, emitting `delivery.project.manager-changed` (from, to); a notification rule tells the new manager;
+  chat's card "Make NAME the PM of KEY (was NAME)" with button **Make PM**; an inactive person is refused before the card
+  (AC-1, AC-2, AC-10)
+  Files: modules/delivery/server/manager.ts, modules/delivery/mcp.ts, modules/delivery/contracts.ts,
+  modules/delivery/module.ts, modules/delivery/server/write-cards.ts, modules/delivery/README.md,
+  modules/delivery/tests/manager-107.test.ts
+- [ ] `T5` — No HR record: the Add to project card names someone who can sign in but has no HR record, and offers **Add
+  NAME to HR** (an `add_person` form card: name and work email from their account, title and department typed, entity
+  chips); once confirmed, chat proposes the allocate card filled in; a refused HR write proposes nothing more (AC-8, AC-10)
+  Files: modules/hr/mcp.ts, modules/hr/server/add-person-card.ts, modules/allocations/server/add-card.ts,
+  modules/hr/tests/add-person-card-107.test.ts
+  Depends: T2
+- [ ] `T6` — End to end and docs: on a project's Team page, Add someone (pick, percent, until further notice, confirm,
+  the row shows "until further notice"); hand over the PM; someone with no HR record added in two confirms; after
+  setting up a project, "Add your team?"; keyboard and axe on each card (AC-6, AC-7, AC-8, AC-9, AC-11)
+  Files: apps/web/tests/e2e/project-team.spec.ts, apps/web/playwright.auth.config.ts, packages/ai/src/scripted-writes.ts
+  Depends: T3, T4, T5
 
 ## Verify
 
