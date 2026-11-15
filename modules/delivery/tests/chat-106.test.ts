@@ -66,6 +66,7 @@ describe.skipIf(!hasDb)("106 the Set up a project card (Postgres)", () => {
   it("AC12 New project runs set_up_project with Internal billing among its options", () => {
     const intent = chatIntents.find((i) => i.id === "delivery.new-project")!;
     expect(intent.tool).toBe("set_up_project");
-    expect(intent.fields.find((f) => f.name === "billing")?.options).toEqual(["fixed", "t&m", "retainer", "internal"]);
+    const billing = intent.fields.find((f) => f.name === "billing");
+    expect(billing && "options" in billing ? billing.options : undefined).toEqual(["fixed", "t&m", "retainer", "internal"]);
   });
 });

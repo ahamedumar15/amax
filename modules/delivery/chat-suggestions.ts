@@ -22,6 +22,12 @@ const PROJECT = ["p/:key", "p/:key/proposals", "p/:key/proposals/:phase"];
 const LIST = ["proposals", "proposals/:phase"];
 
 export const chatSuggestions: ChatSuggestion[] = [
+  // 106 amendment 1 (AC-14): the project list offers setting a project up and linking a repo; a project with no repo, linking one.
+  { routes: [""], label: "Set up a project", prompt: "Set up a new project", tool: "set_up_project", when: when(async (v) => canEver(v, "delivery:project:create")) },
+  { routes: [""], label: "Link a repo to a project", prompt: "Link a repo to ", tool: "link_project_repo", when: when(async (v) => canEver(v, "delivery:project:link")) },
+  { routes: [""], label: "Which projects need attention?", prompt: "Which projects need attention?", tool: "list_projects" },
+  { routes: ["p/:key"], label: "Link a repo", prompt: "Link a repo to this project", tool: "link_project_repo",
+    when: when(async (v, p) => { const r = await project(v, p); return Boolean(r && !r.project.repoUrl && can(v, "delivery:project:link", { projectId: r.project.id })); }) },
   { routes: PROJECT, label: "New proposal", prompt: "Add a proposal to this project: ", tool: "create_proposal",
     // 093 AC-4: never on an agent-first project, whose proposals come from its repo.
     when: when(async (v, p) => { const r = await project(v, p); return Boolean(r && !r.project.agentFirst && can(v, "delivery:proposal:create", { projectId: r.project.id })); }) },

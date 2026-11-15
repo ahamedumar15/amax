@@ -65,6 +65,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
   const fields = useRef<string[]>([]);
   // A prompt an Ask amax chip filled, until the person edits it (059 AC-7): what they type finishes it.
   const filled = useRef<string | null>(null);
+  const sendNow = useRef<(message: string, intentId?: string) => Promise<void>>(async () => {});
   // The pin that came with that prompt, and whether the prompt added it (rather than it being pinned already).
   const asked = useRef<{ key: string; added: boolean } | null>(null);
   const textNow = useRef(text);
@@ -125,7 +126,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
   // Pins and intents arrive from anywhere on the page.
   useEffect(() => {
     const onEvent = (e: Event) => {
-      const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string }>).detail;
+      const d = (e as CustomEvent<{ pin?: PinRef; intent?: string; prompt?: string; send?: string }>).detail;
       const key = d.pin ? pinKey(d.pin) : undefined;
       // An untouched Ask amax prompt belongs to the record it pinned. A pin or prompt for another record
       // replaces both, so the agent never gets the last row's pin with this row's question.
@@ -147,7 +148,9 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
         setPins([pin]);
         announce(`${pin.label} added to chat`);
       }
-      if (d.intent) { asked.current = null; setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
+      // 106 AC-13: an intent with `send` sends it at once, after this event's pin has rendered, so its card comes first.
+      if (d.intent && d.send) { asked.current = null; setIntent(d.intent); setText(""); const { send: message, intent } = d; setTimeout(() => sendNow.current(message, intent), 0); }
+      else if (d.intent) { asked.current = null; setIntent(d.intent); setText(""); setLog((l) => [...l, { kind: "amax", text: `${d.prompt ?? "New record"}: tell me the details and I'll fill it in.`, tools: [] }]); }
       else if (d.prompt) {
         asked.current = key ? { key, added } : null;
         filled.current = d.prompt;
@@ -215,14 +218,14 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
     announce(`Reopened ${r.conversation.title}`);
   }
 
-  async function send(message: string) {
+  async function send(message: string, intentId = intent) {
     if (!message.trim() || busy) return;
     setText("");
     setHistory(null);
     setBusy(true);
     setLog((l) => [...l, { kind: "me", text: message, highlights: [] }]);
     const sent = pins;
-    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId: intent, path: pathname, as: userId });
+    const r = await sendChat({ conversationId: convo.current, text: message, pins: sent, intentId, path: pathname, as: userId });
     setBusy(false);
     if (!r.ok) { setLog((l) => [...l, { kind: "amax", text: r.error, tools: [], error: true }]); return; }
     convo.current = r.conversationId;
@@ -272,6 +275,8 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
       announce("That didn't go through. Try again.");
     }
   }
+
+  sendNow.current = send;
 
   function talk() {
     const Ctor = (window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor }).SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: SpeechCtor }).webkitSpeechRecognition;

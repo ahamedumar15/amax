@@ -1,12 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-async function ask(page: Page, text: string) {
+async function signIn(page: Page) {
   await page.goto("/signin");
   await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
   await expect(page).toHaveURL((u) => u.pathname === "/");
   await page.goto("/delivery");
+}
+
+async function ask(page: Page, text: string) {
+  await signIn(page);
   await page.getByRole("button", { name: "Ask amax" }).click();
   await page.getByLabel("Message amax").fill(text);
   await page.keyboard.press("Enter");
@@ -39,6 +43,15 @@ test("106 AC3 AC7 AC8 AC11 one card sets up the project: a taken key is caught, 
   await page.goto("/delivery/p/NWP");
   await page.getByRole("heading", { name: "Repo sync" }).click();
   await expect(page.getByText("From github.com/example/northwind-portal")).toBeVisible();
+});
+
+test("106 AC13 AC14 New project shows the card first; Ask amax on Projects suggests setting a project up", async ({ page }) => {
+  await signIn(page);
+  await page.getByRole("button", { name: "New project" }).click();
+  await expect(page.getByRole("group", { name: /^Confirm: Set up/ })).toBeVisible();
+  await expect(page.getByLabel("Message amax")).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Set up a project" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Link a repo to a project" })).toBeVisible();
 });
 
 test("106 AC9 Link a repo asks nothing in text: one card with the repo and its branch, main preselected", async ({ page }) => {
