@@ -7,12 +7,19 @@ import { CONTRACTS, EVENTS, type PersonJoined, type PersonLeft } from "../contra
 import { changePersonRun, changeInput } from "./change";
 import { date, inScope, inScopeFrom, personByNo, today } from "./records";
 import { linkableAccount } from "./link";
+import { entityZone } from "@amax/workflows";
 
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
 const COUNTRY: Record<string, string> = { "sri lanka": "LK", australia: "AU" };
 
 /** Exactly one legal entity: by id or full name first, else by country (name or code). Never a guess. */
+/** 109 AC-5: today in the legal entity's own time zone, the one date add_person decides by. */
+export async function entityToday(tx: Tx, entityId: string, now = new Date()) {
+  const zone = await entityZone(tx, entityId);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+
 export async function entityOf(tx: Tx, entity: string) {
   const key = entity.trim();
   const code = COUNTRY[key.toLowerCase()] ?? key;
@@ -40,7 +47,7 @@ export const addPerson = defineService({
   resource: "hr.person",
   sensitive: { baseSalary: "pay" },
   input: z.object({
-    name: z.string().min(2), title: z.string().min(1), department: z.string().min(1), entity: z.string().min(2), joinedOn: date,
+    name: z.string().min(2), title: z.string().min(1), department: z.string().min(1), entity: z.string().min(2), joinedOn: date.optional(),
     managerEmployeeNo: z.string().optional(), contract: z.enum(CONTRACTS).default("permanent"), fte: z.number().gt(0).max(1).default(1),
     grade: z.string().optional(), workEmail: z.string().email().optional(), baseSalary: z.string().regex(/^\d+(\.\d+)?$/).optional(),
   }),
@@ -49,17 +56,20 @@ export const addPerson = defineService({
     inScope(ctx, "hr:person:create", { legalEntityId: e.id as string, department: input.department });
     const manager = input.managerEmployeeNo ? await personByNo(tx, input.managerEmployeeNo) : null;
     const no = await nextEmployeeNo(tx, ctx.tenantId, e.id as string, e.country as string);
-    const status = input.joinedOn > today() ? "joining" : "active";
+    const local = await entityToday(tx, e.id as string);
+    const joinedOn = input.joinedOn ?? local;
+    // 109 AC-5: one today, the entity's own, for the default join date and for joining vs active.
+    const status = joinedOn > local ? "joining" : "active";
     // 107: a person added with the work email of someone who can already sign in is linked to them, so their allocations
     // count for what they may do (assigned projects); an account already linked to someone else is left alone.
     const link = await linkableAccount(tx, input.workEmail);
     const [p] = await tx.execute(sql`insert into hr.person (tenant_id, legal_entity_id, employee_no, name, initials, title, work_email, status, joined_on, user_id)
-      values (${ctx.tenantId}, ${e.id}, ${no}, ${input.name}, ${initialsOf(input.name)}, ${input.title}, ${input.workEmail ?? null}, ${status}, ${input.joinedOn}, ${link?.id ?? null})
+      values (${ctx.tenantId}, ${e.id}, ${no}, ${input.name}, ${initialsOf(input.name)}, ${input.title}, ${input.workEmail ?? null}, ${status}, ${joinedOn}, ${link?.id ?? null})
       returning id, user_id`);
     await tx.execute(sql`insert into hr.employment (tenant_id, person_id, legal_entity_id, department, grade, manager_person_id, contract, fte, starts_on, currency, base_salary)
-      values (${ctx.tenantId}, ${p.id}, ${e.id}, ${input.department}, ${input.grade ?? null}, ${manager?.id ?? null}, ${input.contract}, ${input.fte}, ${input.joinedOn}, ${e.base_currency}, ${input.baseSalary ?? null})`);
-    const payload: PersonJoined = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, legalEntityId: e.id as string, department: input.department, joinedOn: input.joinedOn, status };
-    return { result: { id: p.id as string, employeeNo: no, status }, resourceId: p.id as string, after: { employeeNo: no, ...input, linkedUserId: (p.user_id as string | null) ?? null }, events: [{ name: EVENTS.personJoined, payload }] };
+      values (${ctx.tenantId}, ${p.id}, ${e.id}, ${input.department}, ${input.grade ?? null}, ${manager?.id ?? null}, ${input.contract}, ${input.fte}, ${joinedOn}, ${e.base_currency}, ${input.baseSalary ?? null})`);
+    const payload: PersonJoined = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, legalEntityId: e.id as string, department: input.department, joinedOn, status };
+    return { result: { id: p.id as string, employeeNo: no, status }, resourceId: p.id as string, after: { employeeNo: no, ...input, joinedOn, linkedUserId: (p.user_id as string | null) ?? null }, events: [{ name: EVENTS.personJoined, payload }] };
   },
 });
 

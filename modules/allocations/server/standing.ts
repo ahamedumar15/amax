@@ -32,10 +32,12 @@ export async function setStanding(tx: Tx, s: Slot): Promise<{ months: string[]; 
   const dropped = await tx.execute(sql`delete from allocations.standing where ${slot} and until_month is null and from_month >= ${s.month} returning ${STANDING_COLS}`);
   const standing = [...ended, ...dropped];
   if (s.percent === 0) return { months: [], removed, standing };
+  // 109 AC-2: months removed by hand from the new start on stay removed when it is set again.
+  const kept = [...new Set(standing.flatMap((r) => (r.skip as string[] | null) ?? []).map(day).filter((m) => m >= s.month))].sort();
   const months = ahead(s.month, HORIZON);
-  const [row] = await tx.execute(sql`insert into allocations.standing (tenant_id, person_id, project_id, percent, from_month, filled_to, updated_by)
-    values (${s.tenantId}, ${s.personId}, ${s.projectId}, ${s.percent}, ${s.month}, ${months[months.length - 1]}, ${s.by}) returning id`);
-  return { months: await fill(tx, row.id as string, s, months), removed, standing };
+  const [row] = await tx.execute(sql`insert into allocations.standing (tenant_id, person_id, project_id, percent, from_month, filled_to, updated_by, skip)
+    values (${s.tenantId}, ${s.personId}, ${s.projectId}, ${s.percent}, ${s.month}, ${months[months.length - 1]}, ${s.by}, ${`{${kept.join(",")}}`}::date[]) returning id`);
+  return { months: await fill(tx, row.id as string, s, months.filter((m) => !kept.includes(m))), removed, standing };
 }
 
 const STANDING_COLS = sql`percent, to_char(from_month, 'YYYY-MM-DD') as from_month, to_char(until_month, 'YYYY-MM-DD') as until_month, to_json(skip) as skip`;

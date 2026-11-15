@@ -38,21 +38,21 @@ internal project. Nothing else on screen changes.
 
 ## Tasks
 
-- [ ] `T1` — The Add to project card keeps a month or a range: Until further notice is preselected on an internal project
+- [x] `T1` — The Add to project card keeps a month or a range: Until further notice is preselected on an internal project
   only when no month and no end month were named; a range shows a Through field and the button names it ("…, Mar–May");
   Until further notice with a Through month is refused next to Through (AC-3, AC-4)
   Files: modules/allocations/server/add-card.ts, modules/allocations/server/services.ts,
   modules/allocations/tests/add-card-109.test.ts
-- [ ] `T2` — One way to end a standing allocation: the monthly job ends one whose person or project stopped through
+- [x] `T2` — One way to end a standing allocation: the monthly job ends one whose person or project stopped through
   `setStanding` (percent 0), removing the months it wrote from then on; a re-set carries the old row's hand removals
   (`skip`, from the new start on) into the new row, and `fill` leaves them out (AC-1, AC-2)
   Files: modules/allocations/server/standing.ts, modules/allocations/server/standing-jobs.ts,
   modules/allocations/tests/standing-109.test.ts
-- [ ] `T3` — One today for add_person: the default join date and the joining/active status both come from today in the
+- [x] `T3` — One today for add_person: the default join date and the joining/active status both come from today in the
   entity's time zone, decided in addPerson (AC-5)
   Files: modules/hr/server/services.ts, modules/hr/server/add-person-card.ts, modules/hr/mcp.ts,
   modules/hr/tests/add-person-today-109.test.ts
-- [ ] `T4` — End to end: "add Dinesh to TMT from March to May" shows the Through field and This month, and confirms
+- [x] `T4` — End to end: "add Dinesh to TMT from March to May" shows the Through field and This month, and confirms
   those months (AC-4)
   Files: apps/web/tests/e2e/project-team.spec.ts, packages/ai/src/scripted-writes.ts
   Depends: T1
@@ -62,3 +62,5 @@ internal project. Nothing else on screen changes.
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
+
+Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)

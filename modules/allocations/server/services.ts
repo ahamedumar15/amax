@@ -37,7 +37,8 @@ export const allocate = defineService({
   resource: "allocations.allocation",
   input: z.object({ person: z.string().min(2), projectKey: z.string().optional(), work: z.string().min(2).optional(), month, through: month.optional(), percent: z.number().int().min(0).max(200), standing: z.boolean().optional() })
     .refine((i) => Boolean(i.projectKey) !== Boolean(i.work), "name a project key or other work, not both")
-    .refine((i) => !i.standing || (Boolean(i.projectKey) && !i.through), { message: "until further notice needs a project and no end month", path: ["standing"] })
+    .refine((i) => !i.standing || Boolean(i.projectKey), { message: "until further notice needs a project", path: ["standing"] })
+    .refine((i) => !i.standing || !i.through, { message: "until further notice has no end month: clear Through, or pick This month", path: ["through"] })
     .refine((i) => !i.through || i.through >= i.month, { message: "through can't be before month", path: ["through"] })
     .refine((i) => !i.through || span(i.month, i.through) <= MAX_MONTHS, { message: `at most ${MAX_MONTHS} months at a time`, path: ["through"] }),
   run: (tx, input, ctx) => setAllocation(tx, input, ctx),

@@ -8,7 +8,7 @@ import { getPersonView, listDirectory } from "./server/queries";
 import { peopleStats } from "./server/stats";
 import { addPerson, changePerson, recordLeaver } from "./server/services";
 import { changeInput } from "./server/change";
-import { AddPersonInput, addPersonCard, linkNote, localToday } from "./server/add-person-card";
+import { AddPersonInput, addPersonCard, linkNote } from "./server/add-person-card";
 
 // MCP tools (004): the same queries and services as the screens, so masking, permissions and audit match.
 type Src = "mcp" | "chat";
@@ -24,7 +24,7 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({}), run: (v) => peopleStats(v) }),
   tool({ name: "add_person", description: "Add a person to HR records. Entity is Sri Lanka or Australia (or the entity's name). joinedOn defaults to today; a future join date makes them 'joining'. A work email that someone already signs in with links the record to them. forProject (a project key) offers to add them there next.", scope: "write", permission: "hr:person:create",
     input: AddPersonInput, draft: AddPersonInput.partial(), card: addPersonCard, note: linkNote,
-    service: addPerson, run: async (v, a, s = "mcp") => { const { forProject: _, ...person } = a; return addPerson(ctxFor(v, s), { ...person, joinedOn: person.joinedOn ?? await localToday(v, person.entity) }); } }),
+    service: addPerson, run: (v, a, s = "mcp") => { const { forProject: _, ...person } = a; return addPerson(ctxFor(v, s), person); } }),
   tool({ name: "change_person", description: "Change a person's department, grade, manager, contract, FTE or review date from an effective date (default today), or their title, location or work email (today only).", scope: "write",
     permission: "hr:person:update", input: changeInput.omit({ baseSalary: true }), service: changePerson, run: (v, a, s = "mcp") => changePerson(ctxFor(v, s), a) }),
   tool({ name: "record_leaver", description: "Record that a person leaves on a date. Their employment ends that day.", scope: "write", destructive: true, permission: "hr:person:leave",

@@ -30,8 +30,9 @@ export const extendStanding = defineService({
     const events: { name: string; payload: AllocationSet }[] = [];
     let ended = 0;
     for (const s of rows) {
+      // 109 AC-1: ended as ending it by hand would, from next month: the months it wrote from then on go too.
       if (!people.has(s.person_id as string) || !projects.has(s.project_id as string)) {
-        await tx.execute(sql`update allocations.standing set until_month = ${addMonths(day(s.filled_to), 1)}, updated_at = now() where id = ${s.id}`);
+        await setStanding(tx, { personId: s.person_id as string, projectId: s.project_id as string, month: addMonths(monthOf(input.today), 1), percent: 0, by: "allocations.standing", tenantId: ctx.tenantId });
         ended++;
         continue;
       }

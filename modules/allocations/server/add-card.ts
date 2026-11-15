@@ -4,12 +4,12 @@ import { ToolError } from "@amax/mcp";
 import { getProjectRef } from "@amax/delivery/contracts";
 import { listPeople } from "@amax/hr/contracts";
 import { ambiguous, resolvePerson } from "./person";
-import { listAllocations } from "../contracts";
+import { listAllocations, monthOf } from "../contracts";
 import { monthLabel, windowMonths } from "./months";
 import { readAlloc } from "./read";
 import { freeIn } from "./team";
 
-export type AddInput = { person?: string; projectKey?: string; work?: string; month?: string; percent?: number; standing?: boolean };
+export type AddInput = { person?: string; projectKey?: string; work?: string; month?: string; through?: string; percent?: number; standing?: boolean };
 const PICKS = 4;
 
 export const freeLabel = (free: number | null) => (free === null ? "" : free === 0 ? " · fully allocated" : free < 0 ? ` · over-allocated by ${-free}%` : ` · ${free}% free this month`);
@@ -33,6 +33,7 @@ const personNamed = (v: Viewer, who: string) => readAlloc(v, (tx) => resolvePers
  * share asks for the employee number, as the service would.
  */
 export async function proposeAllocate(v: Viewer, a: AddInput) {
+  if (a.standing && a.through) throw new ToolError("until further notice has no end month: clear Through, or pick This month", "invalid_input", "through");
   if (!a.person) return;
   const r = await personNamed(v, a.person.trim());
   if (r.kind === "found") return;
@@ -50,15 +51,20 @@ export async function addCard(v: Viewer, a: AddInput): Promise<ToolCard> {
   const who = found?.kind === "found" ? found.person.name : a.person ?? "someone";
   if (!project) return { title: `Allocate ${who}${a.work ? ` to ${a.work}` : ""}`, lines: [{ label: "Percent", value: `${a.percent ?? 0}%` }] };
   const internal = project.billing === "internal";
+  // 109 AC-3, AC-4: until further notice is offered first only when no month was named; a range keeps its end month.
+  const named = Boolean(a.month || a.through);
+  const range = a.through ? `${monthLabel(month)}–${monthLabel(monthOf(a.through))}` : "";
   const fields: CardField[] = [
     { name: "person", label: "Who", kind: "chips", options: await picks(v, project.id, month), other: "Someone else…", required: true },
     { name: "percent", label: "Percent", kind: "text", value: String(internal ? 100 : 50) },
-    { name: "standing", label: "For", kind: "chips", value: String(internal), options: [{ value: "false", label: "This month" }, { value: "true", label: "Until further notice" }] },
+    ...(a.through ? [{ name: "through", label: "Through", kind: "text" } as CardField] : []),
+    { name: "standing", label: "For", kind: "chips", value: String(internal && !named), options: [{ value: "false", label: "This month" }, { value: "true", label: "Until further notice" }] },
   ];
-  const when = a.standing ? "until further notice" : `in ${monthLabel(month, "long")}`;
+  const when = a.standing ? "until further notice" : range ? range : `in ${monthLabel(month, "long")}`;
+  const suffix = range ? `, ${range}` : "";
   return {
-    title: `Add ${who} to ${project.key}`, lines: [],
-    look: { kind: "Add to project", confirm: `Add ${who} to ${project.key}`, done: `Added ${who} to ${project.key} · ${a.percent ?? ""}% ${when}` },
-    form: { fields, confirm: { label: `Add {person} to ${project.key}` } },
+    title: `Add ${who} to ${project.key}${suffix}`, lines: [],
+    look: { kind: "Add to project", confirm: `Add ${who} to ${project.key}${suffix}`, done: `Added ${who} to ${project.key} · ${a.percent ?? ""}% ${when}` },
+    form: { fields, confirm: { label: `Add {person} to ${project.key}${suffix}` } },
   };
 }

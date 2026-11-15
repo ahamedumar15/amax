@@ -45,6 +45,8 @@ const RULES: Rule[] = [
   [/^set up a new project\s*$/i, () => [["set_up_project", {}]]],
   // 107: the Add to project card from the Team page or "Add your team?", and handing over the PM (test-only, by id).
   [new RegExp(`^add someone to ${KEY}\\s*$`, "i"), (m) => [["allocate", { projectKey: m[1] }]]],
+  // 109: a named range keeps its months on the card (test-only, months as YYYY-MM).
+  [new RegExp(`^add (.+?) to ${KEY} from (\\d{4}-\\d{2}) to (\\d{4}-\\d{2})\\s*$`, "i"), (m) => [["allocate", { person: m[1].trim(), projectKey: m[2], month: m[3], through: m[4] }]]],
   [new RegExp(`^make .+? \\(user id ${UUID}\\) the PM of ${KEY}\\s*$`, "i"), (m) => [["set_project_manager", { userId: m[1], projectKey: m[2] }]]],
   [new RegExp(`^set up a project called (.+?)(?: \\(${KEY}\\))?\\s*$`, "i"), (m) => [["set_up_project", { name: m[1].trim(), ...(m[2] ? { key: m[2] } : {}) }]]],
   [new RegExp(`^link a repo to ${KEY}\\s*$`, "i"), (m) => [["link_project_repo", { projectKey: m[1] }]]],
