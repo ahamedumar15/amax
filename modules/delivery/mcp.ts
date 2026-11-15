@@ -22,6 +22,7 @@ import { createProject, createProposal, ProposalCreateInput, createRelease, move
 import { commitTime, repoTime } from "./server/repo-time";
 import { proposeSetUp, SetUpDraft, SetUpInput, setUpProject } from "./server/set-up-project";
 import { setUpProjectCard } from "./server/set-up-project-card";
+import { MANAGE, ManagerInput, managerCard, proposeManager, setProjectManager } from "./server/manager";
 
 // MCP tools (004): the same queries and services as the screens, so permissions and audit match.
 // Chat (005) runs read tools directly and turns write tools into a confirm card first.
@@ -75,6 +76,10 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "create_project", description: "Create a project. Key: 2-10 capitals, e.g. CON.", scope: "write", permission: "delivery:project:create",
     input: z.object({ key: z.string(), name: z.string(), client: z.string(), billing: z.enum(["fixed", "t&m", "retainer", "internal"]) }),
     service: createProject, run: (v, a, s = "mcp") => createProject(ctxFor(v, s), a) }),
+  // 107 AC-1, AC-2: hand a project to another PM.
+  tool({ name: "set_project_manager", description: "Make an active person (userId) the PM of a project. An Admin, or the project's current PM. In chat, \"make Nimal the PM of AMX\": find their userId with get_project_team or list_people first.",
+    scope: "write", permission: MANAGE, input: ManagerInput, propose: proposeManager, card: managerCard,
+    service: setProjectManager, run: (v, a, s = "mcp") => setProjectManager(ctxFor(v, s), a) }),
   // 106: create a project and link its repo in one write, from one card the person fills in.
   tool({ name: "set_up_project", description: "Set up a new project in one step: create it and, when a repo is given, link the repo its specclaw proposals sync from (default branch main unless said). You become its manager. Key: 2-10 capitals or digits, e.g. CON. In chat, call it at once, in your first reply, with whatever the user, a pinned record or their projects tell you, and suggest a key from the name; leave out what you don't know (client, billing, repo): the user fills it in on the card. Don't ask for fields in text first.",
     scope: "write", permission: "delivery:project:create", input: SetUpInput, draft: SetUpDraft, propose: proposeSetUp, card: setUpProjectCard,

@@ -100,7 +100,8 @@ export type PinSuggestion = { tool: string; suggest: (viewer: never, args: Recor
  * ("Log 1.5 h") and `tone: "danger"` marks a destructive one. `done` is the receipt once confirmed, in the past tense
  * ("Logged 1.5 h · Fleet Tracker, Tue Oct 27"). Without them a card keeps the plain layout, "Add it" and "Done: {title}."
  */
-export type CardLook = { kind?: string; figure?: string; subject?: string; detail?: string; who?: string; confirm?: string; tone?: "danger"; done?: string };
+/** `next` (107): once done, a quick reply that fills the message box with the next thing to ask ("Add your team?"). */
+export type CardLook = { kind?: string; figure?: string; subject?: string; detail?: string; who?: string; confirm?: string; tone?: "danger"; done?: string; next?: { label: string; prompt: string } };
 /**
  * 106: fields a person edits on the confirm card before pressing its button; the edited values are the tool's input,
  * checked again at confirm. A text field may `follow` another (a key from a name's initials) until it is typed in; chips

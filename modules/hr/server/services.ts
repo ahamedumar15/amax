@@ -49,8 +49,13 @@ export const addPerson = defineService({
     const manager = input.managerEmployeeNo ? await personByNo(tx, input.managerEmployeeNo) : null;
     const no = await nextEmployeeNo(tx, ctx.tenantId, e.id as string, e.country as string);
     const status = input.joinedOn > today() ? "joining" : "active";
-    const [p] = await tx.execute(sql`insert into hr.person (tenant_id, legal_entity_id, employee_no, name, initials, title, work_email, status, joined_on)
-      values (${ctx.tenantId}, ${e.id}, ${no}, ${input.name}, ${initialsOf(input.name)}, ${input.title}, ${input.workEmail ?? null}, ${status}, ${input.joinedOn}) returning id, user_id`);
+    // 107: a person added with the work email of someone who can already sign in is linked to them, so their allocations
+    // count for what they may do (assigned projects); an account already linked to someone else is left alone.
+    const [p] = await tx.execute(sql`insert into hr.person (tenant_id, legal_entity_id, employee_no, name, initials, title, work_email, status, joined_on, user_id)
+      values (${ctx.tenantId}, ${e.id}, ${no}, ${input.name}, ${initialsOf(input.name)}, ${input.title}, ${input.workEmail ?? null}, ${status}, ${input.joinedOn},
+        (select u.id from auth.user u where ${input.workEmail ?? null}::text is not null and lower(u.email) = lower(${input.workEmail ?? ""}) and u.status = 'active'
+          and not exists (select 1 from hr.person x where x.user_id = u.id)))
+      returning id, user_id`);
     await tx.execute(sql`insert into hr.employment (tenant_id, person_id, legal_entity_id, department, grade, manager_person_id, contract, fte, starts_on, currency, base_salary)
       values (${ctx.tenantId}, ${p.id}, ${e.id}, ${input.department}, ${input.grade ?? null}, ${manager?.id ?? null}, ${input.contract}, ${input.fte}, ${input.joinedOn}, ${e.base_currency}, ${input.baseSalary ?? null})`);
     const payload: PersonJoined = { personId: p.id as string, userId: (p.user_id as string | null) ?? null, legalEntityId: e.id as string, department: input.department, joinedOn: input.joinedOn, status };

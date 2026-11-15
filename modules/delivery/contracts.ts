@@ -11,7 +11,8 @@ export type Phase = (typeof PHASES)[number];
 /** A release's page. A re-tag changes it, so tag_release returns the old and new page as `moved` (057). */
 export const releaseHref = (r: { projectKey: string; version: string }) => `/delivery/releases/${r.projectKey}/${encodeURIComponent(r.version)}`;
 
-export type ProjectRef = { id: string; key: string; name: string; client: string; managerUserId: string | null; legalEntityId: string | null };
+/** `billing` (107): fixed, t&m, retainer or internal; Allocations defaults a new member's time from it. */
+export type ProjectRef = { id: string; key: string; name: string; client: string; billing: string; managerUserId: string | null; legalEntityId: string | null };
 
 /** Emitted when a deployment is recorded. `released` is true when the environment is Prod. */
 export type ReleaseDeployed = { releaseId: string; projectId: string; version: string; environment: string; status: "deployed" | "testing" | "rolled-back"; released: boolean };
@@ -32,7 +33,10 @@ export type ProposalRekeyed = { proposalId: string; projectId: string; from: str
 /** 081 amendment 7 (AC-74): `ownerUserId` (null for none) and `title`, so the owner can be told. */
 export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string; ownerUserId?: string | null; title?: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed" } as const;
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed", projectManagerChanged: "delivery.project.manager_changed" } as const;
+
+/** 107: a project's PM handed over; `from` is null when it had none, `by` the actor. */
+export type ProjectManagerChanged = { projectId: string; key: string; name: string; from: string | null; to: string; toName: string; by: string };
 
 /**
  * 081: a proposal's page. It shares the `proposals/:phase` segment: a phase name (lowercase) is the list, anything
@@ -97,17 +101,17 @@ export type TaskDone = { proposalId: string; key: string; task: string; projectI
 export type TaskReopened = { proposalId: string; key: string; task: string; projectId: string; by: string };
 
 const toRef = (r: Record<string, unknown>): ProjectRef => ({
-  id: r.id as string, key: r.key as string, name: r.name as string, client: r.client as string,
+  id: r.id as string, key: r.key as string, name: r.name as string, client: r.client as string, billing: r.billing as string,
   managerUserId: (r.manager_user_id as string | null) ?? null, legalEntityId: (r.legal_entity_id as string | null) ?? null,
 });
 
 /** Projects visible in this tenant transaction (time, finance and allocations look projects up here). */
 export async function listProjectRefs(tx: Tx): Promise<ProjectRef[]> {
-  return (await tx.execute(sql`select id, key, name, client, manager_user_id, legal_entity_id from delivery.project where status = 'active' order by name`)).map(toRef);
+  return (await tx.execute(sql`select id, key, name, client, billing, manager_user_id, legal_entity_id from delivery.project where status = 'active' order by name`)).map(toRef);
 }
 
 export async function getProjectRef(tx: Tx, keyOrId: string): Promise<ProjectRef | null> {
-  const [r] = await tx.execute(sql`select id, key, name, client, manager_user_id, legal_entity_id from delivery.project where key = ${keyOrId} or id::text = ${keyOrId}`);
+  const [r] = await tx.execute(sql`select id, key, name, client, billing, manager_user_id, legal_entity_id from delivery.project where key = ${keyOrId} or id::text = ${keyOrId}`);
   return r ? toRef(r) : null;
 }
 

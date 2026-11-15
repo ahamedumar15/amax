@@ -327,6 +327,7 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
             <div key={i} className="m">
               <ConfirmCard action={e.action} state={e.state} note={e.note} field={e.field} onConfirm={(edits) => decide(e.action, true, undefined, edits)} onCancel={() => decide(e.action, false)}
                 onCheck={(edits) => checkCardField(convo.current ?? "", e.action.id, edits, userId)}
+                onNext={(prompt) => { filled.current = prompt; setText(prompt); input.current?.focus({ preventScroll: true }); }}
                 onEdit={() => { setText("Change "); input.current?.focus({ preventScroll: true }); }}
                 secret={e.action.secret && convo.current ? <SecretConfirm conversationId={convo.current} as={userId} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
                   onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} /> : undefined}

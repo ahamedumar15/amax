@@ -31,7 +31,8 @@ export async function setUpProjectCard(v: Viewer, a: Partial<SetUp>): Promise<To
   return {
     title: `Set up ${key}${a.name ? ` · ${a.name}` : ""}`,
     lines: [],
-    look: { kind: "Set up a project", who: "PM: You", confirm: `Create ${key}`, done: `Created ${key} · ${a.name ?? ""}${repoDone(a.repoUrl, a.defaultBranch)}` },
+    look: { kind: "Set up a project", who: "PM: You", confirm: `Create ${key}`, done: `Created ${key} · ${a.name ?? ""}${repoDone(a.repoUrl, a.defaultBranch)}`,
+      ...(a.key ? { next: { label: "Add your team?", prompt: `Add someone to ${a.key}` } } : {}) },
     form: {
       fields: [
         { name: "name", label: "Name", kind: "text" },

@@ -1,13 +1,14 @@
 import { z } from "zod";
 import type { McpToolDef, SearchHit } from "@amax/core";
 import type { Viewer } from "@amax/auth";
-import { CONTRACTS, EMPLOYMENT_SENSITIVE } from "./contracts";
+import { EMPLOYMENT_SENSITIVE } from "./contracts";
 import { personOf } from "./pins";
 import { ctxFor } from "./server/context";
 import { getPersonView, listDirectory } from "./server/queries";
 import { peopleStats } from "./server/stats";
 import { addPerson, changePerson, recordLeaver } from "./server/services";
 import { changeInput } from "./server/change";
+import { AddPersonInput, addPersonCard } from "./server/add-person-card";
 
 // MCP tools (004): the same queries and services as the screens, so masking, permissions and audit match.
 type Src = "mcp" | "chat";
@@ -21,10 +22,9 @@ export const mcpTools: McpToolDef[] = [
     sensitive: EMPLOYMENT_SENSITIVE, input: z.object({ personId: z.string().uuid().optional(), employeeNo: z.string().optional() }), run: (v, a) => getPersonView(v, a) }),
   tool({ ...read, pin: "view", name: "people_stats", description: "Headcount by entity and department, joiners and leavers by month this year, probation and missing documents.",
     input: z.object({}), run: (v) => peopleStats(v) }),
-  tool({ name: "add_person", description: "Add a person to HR records. Entity is Sri Lanka or Australia (or the entity's name). A future join date makes them 'joining'.", scope: "write", permission: "hr:person:create",
-    input: z.object({ name: z.string(), title: z.string(), department: z.string(), entity: z.string(), joinedOn: z.string(), managerEmployeeNo: z.string().optional(),
-      contract: z.enum(CONTRACTS).optional(), fte: z.number().optional(), grade: z.string().optional(), workEmail: z.string().optional() }),
-    service: addPerson, run: (v, a, s = "mcp") => addPerson(ctxFor(v, s), a) }),
+  tool({ name: "add_person", description: "Add a person to HR records. Entity is Sri Lanka or Australia (or the entity's name). joinedOn defaults to today; a future join date makes them 'joining'. A work email that someone already signs in with links the record to them. forProject (a project key) offers to add them there next.", scope: "write", permission: "hr:person:create",
+    input: AddPersonInput, draft: AddPersonInput.partial(), card: addPersonCard,
+    service: addPerson, run: (v, a, s = "mcp") => { const { forProject: _, ...person } = a; return addPerson(ctxFor(v, s), { ...person, joinedOn: person.joinedOn ?? new Date().toISOString().slice(0, 10) }); } }),
   tool({ name: "change_person", description: "Change a person's department, grade, manager, contract, FTE or review date from an effective date (default today), or their title, location or work email (today only).", scope: "write",
     permission: "hr:person:update", input: changeInput.omit({ baseSalary: true }), service: changePerson, run: (v, a, s = "mcp") => changePerson(ctxFor(v, s), a) }),
   tool({ name: "record_leaver", description: "Record that a person leaves on a date. Their employment ends that day.", scope: "write", destructive: true, permission: "hr:person:leave",

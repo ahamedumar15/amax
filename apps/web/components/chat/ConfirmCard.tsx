@@ -9,7 +9,7 @@ type State = "open" | "working" | "done" | "error" | "expired" | "cancelled";
 /** 106: a card with a `form` shows its fields instead of its lines; `field` places a refusal next to the field it is about. */
 type Props = {
   action: PendingAction; state: State; note?: string; field?: string; onConfirm: (edits?: Edits) => void; onEdit: () => void; onCancel: () => void;
-  onCheck?: (edits: Edits) => Promise<FieldCheck>; secret?: ReactNode; after?: ReactNode;
+  onCheck?: (edits: Edits) => Promise<FieldCheck>; onNext?: (prompt: string) => void; secret?: ReactNode; after?: ReactNode;
 };
 
 const MAX_LINES = 5;
@@ -28,7 +28,7 @@ export function Lines({ lines }: { lines: { label: string; value: string }[] }) 
   );
 }
 
-export function ConfirmCard({ action, state, note, field, onConfirm, onEdit, onCancel, onCheck, secret, after }: Props) {
+export function ConfirmCard({ action, state, note, field, onConfirm, onEdit, onCancel, onCheck, onNext, secret, after }: Props) {
   const look = action.look ?? {};
   const lines = action.lines ?? Object.entries(action.input).map(([label, v]) => ({ label, value: typeof v === "string" ? v : JSON.stringify(v) }));
   const danger = look.tone === "danger";
@@ -38,6 +38,7 @@ export function ConfirmCard({ action, state, note, field, onConfirm, onEdit, onC
     return (
       <div className={`b cc ${state}`} role="group" aria-label={`Confirm: ${action.title}`}>
         <p className="cc-receipt"><span className="cc-tick" aria-hidden="true">{done ? "✓" : "✕"}</span>{note ?? (done ? "Done:" : `Cancelled: ${action.title}`)}</p>{after}
+        {done && look.next && onNext && <div className="c-answers"><button type="button" className="chip" onClick={() => onNext(look.next!.prompt)}>{look.next.label}</button></div>}
       </div>
     );
   }

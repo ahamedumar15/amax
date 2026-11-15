@@ -9,7 +9,7 @@ import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
 import { proposalAgent } from "./server/agent";
 import { proposalKinds } from "./server/proposal-kinds";
-import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime } from "./contracts";
+import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime, type ProjectManagerChanged } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -31,12 +31,12 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
-  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push", "delivery:proposal:hours", "delivery:commit-time:release"],
+  permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push", "delivery:proposal:hours", "delivery:commit-time:release", "delivery:project:manage"],
   grants: {
     Leadership: READ,
     Finance: READ,
     Engineer: [...READ, "delivery:proposal:create@assigned", "delivery:proposal:move@assigned", "delivery:task:done@assigned", "delivery:proposal:push@assigned"],
-    PM: [...READ, "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move@managed", "delivery:release:create@managed", "delivery:deployment:record@managed", "delivery:task:done@managed", "delivery:proposal:push@managed", "delivery:project:link@managed"],
+    PM: [...READ, "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move@managed", "delivery:release:create@managed", "delivery:deployment:record@managed", "delivery:task:done@managed", "delivery:proposal:push@managed", "delivery:project:link@managed", "delivery:project:manage@managed"],
   },
   routes: [
     { path: "", title: "Projects", component: ProjectsPage },
@@ -102,6 +102,7 @@ export default defineModule({
       [EVENTS.taskDone]: declarePayload<TaskDone>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.taskReopened]: declarePayload<TaskReopened>({ proposalId: "plain", key: "plain", task: "plain", projectId: "plain", by: "plain" }),
       [EVENTS.ownerChanged]: declarePayload<ProposalOwnerChanged>({ proposalId: "plain", key: "plain", title: "plain", projectId: "plain", from: "plain", to: "plain", toName: "plain", cleared: "plain", by: "plain" }),
+      [EVENTS.projectManagerChanged]: declarePayload<ProjectManagerChanged>({ projectId: "plain", key: "plain", name: "plain", from: "plain", to: "plain", toName: "plain", by: "plain" }),
       [EVENTS.commitTime]: declarePayload<CommitTime>({ userId: "plain", projectId: "plain", projectKey: "plain", proposalKey: "plain", day: "plain", hours: "plain", commit: "plain", commits: "plain", source: "plain", draftId: "plain", trusted: "plain" }),
     },
   },
@@ -127,6 +128,9 @@ export default defineModule({
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "from", title: "{key} has a new owner: {toName}", href: "/delivery/proposals/{key}" },
     { id: "delivery.proposal-owner-cleared", event: EVENTS.ownerChanged, when: { cleared: true }, category: "releases", to: [{ owner: "from" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "from", title: "{key} no longer has an owner", href: "/delivery/proposals/{key}" },
+    // 107 AC-1: the new PM hears the project is theirs, never for their own action.
+    { id: "delivery.project-manager-new", event: EVENTS.projectManagerChanged, category: "releases", to: [{ owner: "to" }], except: "by",
+      permission: "delivery:read", scope: { projectId: "projectId" }, subject: "to", title: "You're now the PM of {key}: {name}", href: "/delivery/p/{key}" },
     // 081 amendment 7 (AC-74): the owner hears someone else withdrew their proposal; its page stays readable.
     { id: "delivery.proposal-withdrawn", event: EVENTS.proposalWithdrawn, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "{key} was withdrawn: {reason}", href: "/delivery/proposals/{key}" },

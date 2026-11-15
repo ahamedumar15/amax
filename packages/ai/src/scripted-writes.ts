@@ -43,6 +43,9 @@ const RULES: Rule[] = [
   [new RegExp(`^reopen (T\\d+) of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["reopen_task", { key: m[2], task: m[1].toUpperCase() }]]],
   // 106: the Set up a project card from the first reply, and Link a repo with only the project named.
   [/^set up a new project\s*$/i, () => [["set_up_project", {}]]],
+  // 107: the Add to project card from the Team page or "Add your team?", and handing over the PM (test-only, by id).
+  [new RegExp(`^add someone to ${KEY}\\s*$`, "i"), (m) => [["allocate", { projectKey: m[1] }]]],
+  [new RegExp(`^make .+? \\(user id ${UUID}\\) the PM of ${KEY}\\s*$`, "i"), (m) => [["set_project_manager", { userId: m[1], projectKey: m[2] }]]],
   [new RegExp(`^set up a project called (.+?)(?: \\(${KEY}\\))?\\s*$`, "i"), (m) => [["set_up_project", { name: m[1].trim(), ...(m[2] ? { key: m[2] } : {}) }]]],
   [new RegExp(`^link a repo to ${KEY}\\s*$`, "i"), (m) => [["link_project_repo", { projectKey: m[1] }]]],
   [new RegExp(`^link ${KEY}'s repo to (\\S+)(?: on (\\S+))?\\s*$`, "i"), (m) => [["link_project_repo", { projectKey: m[1], repoUrl: m[2], ...(m[3] ? { defaultBranch: m[3] } : {}) }]]],
