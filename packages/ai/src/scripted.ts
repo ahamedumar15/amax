@@ -25,8 +25,10 @@ export function scriptedProvider() {
     if (writes?.length) return { toolCalls: writes };
     const task = text.match(/add a task to (PS-\d{4}):\s*(.+?)\s*$/i);
     if (task) return { toolCalls: [{ type: "tool_use", id: `t${Date.now()}`, name: "add_opportunity_task", input: { number: task[1], title: task[2] } }] };
-    const githubApp = text.match(/set up the github app with client id (\S+)/i);
+    if (/remove the github app/i.test(text)) return { toolCalls: [{ type: "tool_use", id: `t${Date.now()}`, name: "revoke_secret", input: { connector: "github-oauth", reason: "unused" } }] };
+    const githubApp = text.match(/(?:set up|rotate) the github app(?: secret)? with client id (\S+)/i);
     if (githubApp) return { toolCalls: [{ type: "tool_use", id: `t${Date.now()}`, name: "set_github_app", input: { clientId: githubApp[1] } }] };
+    if (/\b(?:set up|rotate) the github app\b/i.test(text)) return { text: "What's the GitHub app's Client ID? It's at the top of the app's page on GitHub." };
     const rotate = text.match(/rotate the (.+?) (?:token|secret|key)\b/i);
     if (rotate) return { toolCalls: [{ type: "tool_use", id: `t${Date.now()}`, name: "rotate_secret", input: { connector: rotate[1].toLowerCase().replace(/[^a-z0-9]+/g, "-") } }] };
     const cred = text.match(/create a service credential named (.+?) with ([a-z0-9:, -]+?) for (\d+) days/i);

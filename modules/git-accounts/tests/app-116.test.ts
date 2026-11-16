@@ -5,7 +5,9 @@ import { configureSecrets, localKms, NO_KEY_SERVICE, putSecret, revokeSecret, us
 import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import { completeGitHubConnect } from "../contracts";
+import { githubCallback } from "../server/callback";
 import { resultCodeOf } from "../server/connect";
+import { returnResult } from "../server/read";
 import { ctxFor } from "../server/context";
 import { APP_INCOMPLETE } from "../words";
 import { gitAccountsDatabase, T } from "./setup";
@@ -58,6 +60,12 @@ describe.skipIf(!hasDb)("116 setting up the GitHub app (Postgres)", () => {
     const r = (await db.registry.call(kasun, "connect_github", {}, { source: "mcp" })) as { open: { url: string } };
     const e = await completeGitHubConnect(ctxFor(kasun), { state: new URL(r.open.url).searchParams.get("state")!, code: "mismatch" }).catch((x: unknown) => x);
     expect([resultCodeOf(e), (e as Error).message]).toEqual(["callback", expect.stringContaining("http://localhost:3000/api/git/github/callback")]);
+  });
+
+  it("final pass: GitHub's own redirect_uri_mismatch return (forwarded from the homepage) records the callback result", async () => {
+    const r = (await db.registry.call(kasun, "connect_github", {}, { source: "mcp" })) as { open: { url: string } };
+    const query = await githubCallback(ctxFor(kasun), { error: "redirect_uri_mismatch", state: new URL(r.open.url).searchParams.get("state")! });
+    expect(await returnResult(kasun, query.ref!)).toEqual({ result: "callback", skipped: 0 });
   });
 
   it("AC6 with no key service, setting the app up says an operator sets AMAX_KMS", async () => {

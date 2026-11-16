@@ -20,7 +20,9 @@ export function WaitingTable({ items: given, now, viewerId }: { items: OverviewW
   const all = given.filter((i) => !hidden(i.id));
   const items = all.slice(0, SHOWN);
   const [picked, setPicked] = useState<string[]>([]);
-  const chosen = items.filter((i) => picked.includes(i.id));
+  // 116 final pass: a nudge isn't a decision, so it is never selected or approved in bulk.
+  const decisions = items.filter((i) => !i.snoozeDays);
+  const chosen = decisions.filter((i) => picked.includes(i.id));
   const toggle = (id: string, on: boolean) => setPicked((p) => (on ? [...p, id] : p.filter((x) => x !== id)));
   const ask = (rows: OverviewWaiting[], prompt: string) => { for (const r of rows) openChat({ pin: r.pin }); openChat({ prompt }); };
   return (
@@ -30,14 +32,14 @@ export function WaitingTable({ items: given, now, viewerId }: { items: OverviewW
       </div></div>
       {items.length ? (
         <div className="scroll-x"><table className="tbl">
-          <thead><tr><th className="sel"><input type="checkbox" aria-label="Select all decisions" checked={chosen.length === items.length} onChange={(e) => setPicked(e.target.checked ? items.map((i) => i.id) : [])} /></th><th>Decision</th><th>Project</th><th>Raised by</th><th>Waiting</th><th className="num">Action</th></tr></thead>
+          <thead><tr><th className="sel"><input type="checkbox" aria-label="Select all decisions" checked={decisions.length > 0 && chosen.length === decisions.length} onChange={(e) => setPicked(e.target.checked ? decisions.map((i) => i.id) : [])} /></th><th>Decision</th><th>Project</th><th>Raised by</th><th>Waiting</th><th className="num">Action</th></tr></thead>
           <tbody>{items.map((i) => (
             <tr key={i.id} className="pinnable">
-              <td className="sel"><input type="checkbox" aria-label={`Select: ${i.title}`} checked={picked.includes(i.id)} onChange={(e) => toggle(i.id, e.target.checked)} /></td>
+              <td className="sel">{!i.snoozeDays && <input type="checkbox" aria-label={`Select: ${i.title}`} checked={picked.includes(i.id)} onChange={(e) => toggle(i.id, e.target.checked)} />}</td>
               <td><b>{i.title}</b>{i.detail && <small>{i.detail}</small>}</td>
               <td>{i.context}</td>
               <td><span className={i.agent ? "chip agent" : "chip"}>{i.raisedBy}</span></td>
-              <td><time dateTime={i.since}>{waited(i.since, now)}</time></td>
+              <td>{i.snoozeDays ? "New" : <time dateTime={i.since}>{waited(i.since, now)}</time>}</td>
               <td className="num"><span className="when"><button type="button" className="btn sm" title="Ask amax" onClick={() => ask([i], i.prompt)}>{i.action}</button>{i.snoozeDays && <button type="button" className="btn sm" onClick={() => snooze(i.id, i.snoozeDays!)}>Not now<span className="sr"> ({i.snoozeDays} days): {i.title}</span></button>}<PinButton pin={i.pin} /></span></td>
             </tr>
           ))}</tbody>

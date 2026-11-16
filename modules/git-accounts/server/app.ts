@@ -1,12 +1,12 @@
 import { ToolError } from "@amax/mcp";
-import { keptExpiryOf, listCredentials, NO_KEY_SERVICE, putSecret, useSecret } from "@amax/core/secrets";
+import { keptExpiryOf, kmsLabel, listCredentials, putSecret, unavailableWords, useSecret } from "@amax/core/secrets";
 import type { ServiceContext } from "@amax/core/server";
 import { APP_INCOMPLETE, NOT_SET_UP } from "../words";
 
 // 116: the GitHub app's credential, "<client id>:<client secret>" (connector github-oauth), written only by set_github_app.
 // Errors raised inside a secret's use are rebuilt by its scrub, so they are named there and turned into refusals here.
 const REFUSALS: Record<string, (e: Error) => string> = {
-  SecretNotConfiguredError: () => NOT_SET_UP, GitHubAppIncomplete: () => APP_INCOMPLETE, SecretsUnavailableError: () => NO_KEY_SERVICE, ExpiryPassedError: (e) => e.message,
+  SecretNotConfiguredError: () => NOT_SET_UP, GitHubAppIncomplete: () => APP_INCOMPLETE, SecretsUnavailableError: (e) => unavailableWords(e, kmsLabel()), ExpiryPassedError: (e) => e.message,
 };
 export const asRefusal = (e: unknown): never => {
   if (e instanceof Error && Object.hasOwn(REFUSALS, e.name)) throw new ToolError(REFUSALS[e.name](e), "invalid_input");

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONNECTOR_IDS, CONNECTORS, endOfDay, EXPIRY_DAY, EXPIRY_DAY_HINT, expiryDayProblem, ExpiryPassedError, keptExpiryOf, listCredentials, NO_KEY_SERVICE, putSecret, REVOKE_REASONS, revokeSecret, type CredentialRow } from "@amax/core/secrets";
+import { CONNECTOR_IDS, CONNECTORS, endOfDay, EXPIRY_DAY, EXPIRY_DAY_HINT, expiryDayProblem, ExpiryPassedError, keptExpiryOf, kmsLabel, listCredentials, putSecret, REVOKE_REASONS, revokeSecret, unavailableWords, type CredentialRow } from "@amax/core/secrets";
 import { ToolError } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 import { filterCredentials, SECRET_FILTERS } from "./credentials";
@@ -30,7 +30,7 @@ const guard = (connector: string, expiresAt: string | undefined) => {
 };
 // 116 AC-6: with no key service nothing can be stored; say so instead of "I can't tell whether this was done".
 const stored = <T>(p: Promise<T>) => p.catch((e: unknown) => {
-  throw e instanceof Error && e.name === "SecretsUnavailableError" ? new ToolError(NO_KEY_SERVICE, "invalid_input") : e;
+  throw e instanceof Error && e.name === "SecretsUnavailableError" ? new ToolError(unavailableWords(e, kmsLabel()), "invalid_input") : e;
 });
 
 // "Keep its expiry" (052): the rule lives in @amax/core/secrets; here a past date is the tool's refusal.
