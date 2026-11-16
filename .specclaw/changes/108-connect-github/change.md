@@ -58,19 +58,19 @@ amax will match commits by, with **Ask amax · Disconnect**. With no GitHub app 
 Plan note: AC-4's "the schema allows it" doesn't hold today: `auth.git_identity` is unique on (tenant, provider, login),
 one email per login. T2 adds the migration that allows several emails per login, each email unique per provider.
 
-- [ ] `T1` — The Git accounts screen in the profile menu: a `git-accounts` module (`menu: "profile"`) whose screen leads
+- [x] `T1` — The Git accounts screen in the profile menu: a `git-accounts` module (`menu: "profile"`) whose screen leads
   with the GitHub status, then the login and each verified email with a PinButton; **Ask amax · Connect GitHub** /
   **Disconnect GitHub** intent buttons, no write controls; "GitHub isn't set up for this workspace; an Admin adds the
   GitHub app" without the app; the return from GitHub announced (aria-live); light and dark (AC-1 screen, AC-6, AC-11)
   Files: modules/git-accounts/module.ts, modules/git-accounts/package.json, modules/git-accounts/README.md,
   modules/git-accounts/ui/GitAccountsPage.tsx, modules/git-accounts/ui/AskButton.tsx, modules/git-accounts/pins.ts
-- [ ] `T2` — Identities by GitHub: a migration letting one login hold several emails (each email unique per provider),
+- [x] `T2` — Identities by GitHub: a migration letting one login hold several emails (each email unique per provider),
   `linkGitIdentity` on the new keys, and `setGitHubIdentities` (one person's verified GitHub emails stored as verified
   identities; emails GitHub no longer lists removed; a login or email linked to someone else skipped and named) (AC-3,
   AC-4, AC-5)
   Files: packages/db/migrations/0033_git_identity_emails.sql, packages/auth/src/git-identity.ts,
   packages/auth/tests/git-identity-108.test.ts
-- [ ] `T3` — Connecting: `connect_github` issues a single-use state (the module's `git_accounts.connect_state`, 10
+- [x] `T3` — Connecting: `connect_github` issues a single-use state (the module's `git_accounts.connect_state`, 10
   minutes, the same person) and the authorize link (`read:user user:email`); the callback route checks the state,
   exchanges the code, reads the user and its verified emails, keeps no token, stores them in one audited write
   (`<person> connected GitHub as @login: 3 emails`) and closes open `delivery.git-identity` suggestions for those emails;
@@ -79,13 +79,13 @@ one email per login. T2 adds the migration that allows several emails per login,
   modules/git-accounts/server/github.ts, apps/web/app/api/git/github/callback/route.ts,
   apps/web/app/(app)/settings/integrations/page.tsx, modules/git-accounts/tests/connect-108.test.ts
   Depends: T2
-- [ ] `T4` — The tools and chat: `get_my_git_identities`, `connect_github` (a card whose button opens GitHub),
+- [x] `T4` — The tools and chat: `get_my_git_identities`, `connect_github` (a card whose button opens GitHub),
   `disconnect_github` (a red confirm card naming "@login and N emails"; owners kept), Admin `unlink_git_identity`, all
   through `defineService`, audited; chat suggestions on the screen (AC-7, AC-8)
   Files: modules/git-accounts/mcp.ts, modules/git-accounts/chat.ts, modules/git-accounts/server/services.ts,
   modules/git-accounts/tests/tools-108.test.ts
   Depends: T3
-- [ ] `T5` — End to end: with a fake GitHub (its URLs from env), a person connects, the screen shows the login and
+- [x] `T5` — End to end: with a fake GitHub (its URLs from env), a person connects, the screen shows the login and
   emails, the next specclaw sync names them owner of their changes (091's rule) and 104 drafts their hours, then they
   disconnect (AC-9, AC-11)
   Files: apps/web/tests/e2e/git-accounts.spec.ts, modules/delivery/tests/owner-108.test.ts
@@ -96,3 +96,5 @@ one email per login. T2 adds the migration that allows several emails per login,
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
+
+Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)

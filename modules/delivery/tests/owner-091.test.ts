@@ -8,6 +8,7 @@ import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import { configureRuntime, traceStep, withTrace } from "@amax/core/server";
 import { installAuthorizer, loadViewer, setGrants, setViewerScopeResolvers, signInDemo, type Viewer } from "@amax/auth";
 import { authFixtures } from "@amax/auth/fixtures";
+import { setGitHubIdentities } from "@amax/auth/git-identity";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { ctxFor } from "../server/context";
@@ -78,6 +79,14 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
   ])("AC-7 %s", async (_, dir, o, owner) => {
     await push(dir, o);
     expect(await ownerOf(`FLT-${dir.slice(0, 3)}`)).toBe(owner);
+  });
+
+  it("108 AC-9 a person who connects GitHub owns their no-reply-authored change from the next sync", async () => {
+    const noreply = "4821937+nimal-gh@users.noreply.github.com";
+    expect(await (async () => { await push("541-connected", { author: noreply }); return ownerOf("FLT-541"); })()).toBe(null);
+    await withTenant(app, T, (tx) => setGitHubIdentities(tx, T, nimal.userId, { login: "nimal-gh", emails: [noreply] }));
+    await push("541-connected", { author: noreply });
+    expect(await ownerOf("FLT-541")).toBe("Nimal Silva");
   });
 
   it("AC-7 a git identity linked after the first sync gives the unchanged change its owner on the next sync", async () => {

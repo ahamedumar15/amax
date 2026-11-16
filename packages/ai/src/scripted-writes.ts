@@ -43,6 +43,9 @@ const RULES: Rule[] = [
   [new RegExp(`^reopen (T\\d+) of (${KEY.slice(1, -1)}-H?\\d+)\\s*$`, "i"), (m) => [["reopen_task", { key: m[2], task: m[1].toUpperCase() }]]],
   // 106: the Set up a project card from the first reply, and Link a repo with only the project named.
   [/^set up a new project\s*$/i, () => [["set_up_project", {}]]],
+  // 108: connecting and disconnecting GitHub from the Git accounts screen.
+  [/^connect my github\s*$/i, () => [["connect_github", {}]]],
+  [/^disconnect my github\s*$/i, () => [["disconnect_github", {}]]],
   // 107: the Add to project card from the Team page or "Add your team?", and handing over the PM (test-only, by id).
   [new RegExp(`^add someone to ${KEY}\\s*$`, "i"), (m) => [["allocate", { projectKey: m[1] }]]],
   // 109: a named range keeps its months on the card (test-only, months as YYYY-MM).

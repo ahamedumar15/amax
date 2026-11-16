@@ -6,13 +6,20 @@ import { movedOf, type Moved } from "./chat-move";
 export { movedOf } from "./chat-move";
 
 /** The card's state after a decision; the page draws exactly this. */
-export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; field?: string; reveal?: Reveal; moved?: Moved };
+export type CardOutcome = { state: "done" | "cancelled" | "open" | "error"; note: string; field?: string; reveal?: Reveal; moved?: Moved; open?: Open };
 
 /** 035: a value shown once on the card (a new API key). It goes nowhere else: not the model, the conversation or the logs. */
 export type Reveal = { label: string; value: string };
 export const revealOf = (result: unknown): Reveal | undefined => {
   const r = (result as { reveal?: Partial<Reveal> } | null)?.reveal;
   return r && typeof r.label === "string" && typeof r.value === "string" ? { label: r.label, value: r.value } : undefined;
+};
+
+/** 108: a link a write hands back to follow next (GitHub's authorize page), shown on the card once it is done. Only http(s). */
+export type Open = { label: string; url: string };
+export const openOf = (result: unknown): Open | undefined => {
+  const o = (result as { open?: Partial<Open> } | null)?.open;
+  return o && typeof o.label === "string" && typeof o.url === "string" && /^https?:\/\//.test(o.url) ? { label: o.label, url: o.url } : undefined;
 };
 
 /**
@@ -56,9 +63,10 @@ export function doneOutcome(title: string, result: unknown, receipt?: string): C
   if (reveal) return { state: "done", note: `Done. Copy the ${reveal.label.toLowerCase()} now: it is shown only this once.`, reveal };
   const key = (result as { key?: string } | null)?.key;
   const moved = movedOf(result);
+  const open = openOf(result);
   const many = summaryOf(result, receipt);
   // 073: a card's own past-tense receipt ("Logged 1.5 h · Fleet Tracker, Tue Oct 27") reads better than "Done: {title}".
-  return { state: "done", note: many ?? receipt ?? (key ? `Done: ${key} added.` : `Done: ${title}.`), ...(moved ? { moved } : {}) };
+  return { state: "done", note: many ?? receipt ?? (key ? `Done: ${key} added.` : `Done: ${title}.`), ...(moved ? { moved } : {}), ...(open ? { open } : {}) };
 }
 
 /** 070 amendment 4: a write over several records reports a summary and a result per record. */

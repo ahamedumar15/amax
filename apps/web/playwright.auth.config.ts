@@ -46,6 +46,10 @@ export default defineConfig({
       // The whole suite signs in as a handful of demo users; 035's own tests set low limits explicitly.
       AMAX_RATE_PAGE_USER: "100000",
       AMAX_KMS_KEY_FILE: join(tmpdir(), `amax-e2e-kms-${process.env.E2E_DB ?? "amax_e2e"}.key`),
+      // 108: GitHub's return comes back to this server, from the fake GitHub git-accounts.spec starts.
+      AMAX_BASE_URL: `http://localhost:${port}`,
+      AMAX_GITHUB_URL: `http://127.0.0.1:${process.env.E2E_GITHUB_PORT ?? 3599}`,
+      AMAX_GITHUB_API_URL: `http://127.0.0.1:${process.env.E2E_GITHUB_PORT ?? 3599}`,
       // 034: what the Backups screen shows of the host's PITR, as in its mock; snapshots and exports on a temp dir.
       AMAX_PITR: "cnpg",
       AMAX_PITR_RPO_MINUTES: "5",

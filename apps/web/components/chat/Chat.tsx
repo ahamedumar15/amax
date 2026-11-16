@@ -20,7 +20,7 @@ import { Suggestions } from "./Suggestions";
 type Entry =
   | { kind: "me"; text: string; highlights: Highlight[] }
   | { kind: "amax"; text: string; tools: string[]; error?: boolean; answers?: Answers }
-  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string; field?: string; reveal?: CardOutcome["reveal"] };
+  | { kind: "confirm"; action: PendingAction; state: CardOutcome["state"] | "working" | "expired"; note?: string; field?: string; reveal?: CardOutcome["reveal"]; open?: CardOutcome["open"] };
 
 const restoredLog = (c: Conversation): Entry[] => [
   ...c.messages.map((m): Entry => (m.role === "me" ? { kind: "me", text: m.text, highlights: [] } : { kind: "amax", text: m.text, tools: [] })),
@@ -331,7 +331,8 @@ export function Chat({ open, fresh = 0, onClose, returnFocus, signedIn, userId, 
                 onEdit={() => { setText("Change "); input.current?.focus({ preventScroll: true }); }}
                 secret={e.action.secret && convo.current ? <SecretConfirm conversationId={convo.current} as={userId} action={{ ...e.action, secret: e.action.secret }} onCancel={() => decide(e.action, false)}
                   onState={(o) => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, ...o } : x)))} /> : undefined}
-                after={e.reveal && <RevealOnce reveal={e.reveal} onDone={() => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, reveal: undefined } : x)))} />} />
+                after={e.reveal ? <RevealOnce reveal={e.reveal} onDone={() => setLog((l) => l.map((x) => (x.kind === "confirm" && x.action.id === e.action.id ? { ...x, reveal: undefined } : x)))} />
+                  : e.open && <p style={{ margin: "8px 0 0" }}><a className="btn sm primary" href={e.open.url}>{e.open.label} ↗</a></p>} />
             </div>
           );
         })}
