@@ -2,17 +2,17 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { activeAccount, upsertPasswordUser } from "@amax/auth";
-import type { ModuleManifest } from "@amax/core";
 import { createRegistry } from "@amax/mcp";
 import allocations from "../module";
-import { allocationsDatabase, T } from "./setup";
+import { allocationsDatabase, installed, T } from "./setup";
 
 describe.skipIf(!hasDb)("107 someone with no HR record (Postgres)", () => {
   let db: Awaited<ReturnType<typeof allocationsDatabase>>;
   let registry: ReturnType<typeof createRegistry>;
   beforeAll(async () => {
     db = await allocationsDatabase();
-    const hr = (await import("@amax/hr/module")).default as ModuleManifest;
+    // 113: loaded the way the app loads installed modules, never through another module's internals (graph rule R1).
+    const hr = await installed("hr");
     registry = createRegistry([hr, allocations]);
     await upsertPasswordUser(db.app, T, { email: "priya@lumenlabs.test", name: "Priya Jayasena", roles: ["Engineer"], password: "a-long-password-1234" });
   }, 60_000);
