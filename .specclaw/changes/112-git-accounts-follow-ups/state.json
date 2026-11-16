@@ -1,0 +1,9 @@
+{
+  "change": "112-git-accounts-follow-ups",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-16T04:41:31Z"},
+    "tasks": {"status":"done","at":"2026-11-16T04:41:32Z"}
+  }
+}
