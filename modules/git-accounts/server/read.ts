@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 import { gitIdentitiesOf } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
 import { hasSecret } from "@amax/core/secrets";
@@ -30,7 +31,7 @@ export const disconnectWhat = (g: NonNullable<GitAccounts["github"]>) => {
 
 /** 112 AC-2: one return's result, by the record the callback named: the viewer's own, from the last 10 minutes. */
 export const returnResult = (v: Viewer, ref: string) => read(v, async (tx) => {
-  if (!/^[0-9a-f-]{36}$/i.test(ref)) return null;
+  if (!z.uuid().safeParse(ref).success) return null;
   const [r] = await tx.execute(sql`select result, skipped from git_accounts.connect_state where id = ${ref} and user_id = ${v.userId}
     and result is not null and result_at > now() - interval '10 minutes'`);
   return r ? { result: String(r.result), skipped: Number(r.skipped) } : null;

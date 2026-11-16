@@ -11,11 +11,11 @@ const Query = z.object({ state: z.string().min(16).max(200), code: z.string().mi
  * that record's id, so its note is about this return and comes from the record, never the URL (112 AC-2).
  */
 export const githubCallback: GitHubCallback = async (ctx, params) => {
-  const { code, claimId } = await outcome(ctx, params);
+  const { code, claimId, held } = await outcome(ctx, params);
   const state = typeof params.state === "string" ? params.state : "";
-  // Final pass 2: a success's reference is its own claim; a failure is recorded on the state it carries (first one stands).
+  // A success's reference is its own claim; a failure is recorded by the claim it held, or only while nobody holds one.
   const ref = claimId ?? (state
-    ? (await recordReturn(ctx, { state, result: code }).catch((e: unknown) => { logError("git-accounts.result", e); return { id: null }; })).id
+    ? (await recordReturn(ctx, { state, result: code, ...(held ? { claimId: held } : {}) }).catch((e: unknown) => { logError("git-accounts.result", e); return { id: null }; })).id
     : null);
   const query: Record<string, string> = { github: "1" };
   if (ref) query.ref = ref;
@@ -23,7 +23,7 @@ export const githubCallback: GitHubCallback = async (ctx, params) => {
 };
 
 /** What this return came to, as a result code, and on success the claim it stored against. */
-async function outcome(ctx: Parameters<GitHubCallback>[0], params: Record<string, string>): Promise<{ code: Exclude<ResultCode, "connected">; claimId?: undefined } | { code: "connected"; claimId: string }> {
+async function outcome(ctx: Parameters<GitHubCallback>[0], params: Record<string, string>): Promise<{ code: Exclude<ResultCode, "connected">; claimId?: undefined; held?: string } | { code: "connected"; claimId: string; held?: undefined }> {
   if (params.error) return { code: params.error === "access_denied" ? "denied" : "incomplete" };
   const q = Query.safeParse(params);
   if (!q.success) return { code: "incomplete" };
@@ -33,6 +33,7 @@ async function outcome(ctx: Parameters<GitHubCallback>[0], params: Record<string
   } catch (e) {
     const code = resultCodeOf(e);
     if (code === "error") logError("git-accounts.callback", e);
-    return { code: code as Exclude<ResultCode, "connected"> };
+    const held = (e as { claimId?: unknown } | null)?.claimId;
+    return { code: code as Exclude<ResultCode, "connected">, ...(typeof held === "string" ? { held } : {}) };
   }
 }

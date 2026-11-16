@@ -38,15 +38,14 @@ export const closedTasks = (message: string) => [...message.matchAll(/\b([A-Z][A
 /** Who a commit is attributed to: only a verified commit or a verified email for the identity counts. */
 export async function authorOf(tenantId: string, provider: GitProvider, c: Commit) {
   return withTenant(getRuntime().db, tenantId, async (tx) => {
+    // 112 AC-1 (final pass 3): whoever holds the commit's email as a verified identity made it, whatever its login
+    // says: a reused login never credits its earlier holder, connected or linked before 108.
+    const byEmail = c.email ? await findGitIdentity(tx, provider, { login: null, email: c.email }) : null;
+    const holder = byEmail?.emailVerified ? byEmail : null;
     const id = await findGitIdentity(tx, provider, { login: c.login, email: c.email });
-    // 112 AC-1: a connected identity (it carries the provider's account id) credits a commit only for one of its person's
-    // verified emails: a renamed login that someone else reuses never credits its first holder.
-    if (id?.providerUserId) {
-      if (await isVerifiedEmailOf(tx, id.userId, provider, c.email)) return { userId: id.userId, candidate: null };
-      // Final pass: the login's holder didn't make it; whoever holds the commit's verified email did.
-      const byEmail = c.email ? await findGitIdentity(tx, provider, { login: null, email: c.email }) : null;
-      return { userId: byEmail && byEmail.userId !== id.userId && byEmail.emailVerified ? byEmail.userId : null, candidate: null };
-    }
+    if (holder && holder.userId !== id?.userId) return { userId: holder.userId, candidate: null };
+    // A connected identity (it carries the provider's account id) credits a commit only for one of its verified emails.
+    if (id?.providerUserId) return { userId: (await isVerifiedEmailOf(tx, id.userId, provider, c.email)) ? id.userId : null, candidate: null };
     const emailOk = Boolean(id?.emailVerified && id.email && c.email && id.email.toLowerCase() === c.email.toLowerCase());
     if (id && (c.verified || emailOk)) return { userId: id.userId, candidate: null };
     return { userId: null, candidate: id ? null : await personByEmail(tx, c.email) };

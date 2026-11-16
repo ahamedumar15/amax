@@ -60,7 +60,7 @@ async function ask(page: Page, button: string, prompt: string) {
   await page.keyboard.press("Enter");
 }
 
-test("112 AC5 a real return interrupted by sign-in finishes the connect after resume", async ({ page, context }) => {
+test("112 AC5 a real return interrupted by sign-in finishes the connect after resume", async ({ page, browser }) => {
   await page.goto("/signin");
   await page.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
@@ -70,15 +70,19 @@ test("112 AC5 a real return interrupted by sign-in finishes the connect after re
   const card = page.getByRole("group", { name: "Confirm: Connect GitHub" });
   await card.getByRole("button", { name: "Connect GitHub" }).click();
   const link = await card.getByRole("link", { name: /Continue to GitHub/ }).getAttribute("href");
-  await context.clearCookies();
-  await page.goto(link!);
-  await expect(page).toHaveURL((u) => u.pathname === "/signin" && (u.searchParams.get("next") ?? "").startsWith("/git-accounts?resume="));
-  await page.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");
-  await page.getByRole("button", { name: "Sign in as demo user" }).click();
-  await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub connected as @kasun-dias: 2 emails");
-  await ask(page, "Ask amax · Disconnect GitHub", "Disconnect my GitHub");
-  await page.getByRole("group", { name: /^Confirm: Disconnect GitHub/ }).getByRole("button", { name: "Disconnect" }).click();
-  await expect(page.getByRole("group", { name: /^Confirm: Disconnect GitHub/ })).toContainText("Disconnected");
+  // GitHub's return reaches a browser with no session (it lapsed): a fresh context, signed out.
+  const lapsed = await browser.newContext({ baseURL: test.info().project.use.baseURL, colorScheme: "light" });
+  const back = await lapsed.newPage();
+  try {
+    await back.goto(link!);
+    await expect(back).toHaveURL((u) => u.pathname === "/signin" && (u.searchParams.get("next") ?? "").startsWith("/git-accounts?resume="));
+    await back.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");
+    await back.getByRole("button", { name: "Sign in as demo user" }).click();
+    await expect(back.getByRole("main").getByRole("status")).toContainText("GitHub connected as @kasun-dias: 2 emails");
+    await ask(back, "Ask amax · Disconnect GitHub", "Disconnect my GitHub");
+    await back.getByRole("group", { name: /^Confirm: Disconnect GitHub/ }).getByRole("button", { name: "Disconnect" }).click();
+    await expect(back.getByRole("group", { name: /^Confirm: Disconnect GitHub/ })).toContainText("Disconnected");
+  } finally { await lapsed.close(); }
 });
 
 test("108 AC1 AC6 AC7 AC11 Git accounts: connect GitHub from chat, see the verified emails, then disconnect", async ({ page }) => {

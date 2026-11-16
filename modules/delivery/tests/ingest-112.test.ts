@@ -30,6 +30,7 @@ describe.skipIf(!hasDb)("112 commits credited by GitHub account (Postgres)", () 
     ["someone else who took the renamed login, signed by GitHub", commit("kasun-old", "stranger@example.test"), null],
     ["the connected person's login, an email they never verified", commit("kasun-old", "kasun@elsewhere.test"), null],
     ["someone else who took the renamed login, from their own verified email: credited to them", commit("kasun-old", "nimal@lumen.test"), NIMAL],
+    ["a login linked before 108, from a connected person's verified email: credited to the email's holder", commit("nimal-legacy", "kasun@lumen.test"), KASUN],
     ["an identity linked before 108 (no account id), signed by GitHub, as before", commit("nimal-legacy", "nimal@legacy.test"), NIMAL],
   ])("AC1 %s", async (_name, c, who) => {
     expect((await authorOf(T, "github", c)).userId).toBe(who);

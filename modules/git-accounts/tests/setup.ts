@@ -25,12 +25,14 @@ function fakeGitHub(): Promise<Server> {
     req.on("end", () => {
       if (req.url === "/login/oauth/access_token") {
         const b = JSON.parse(body || "{}");
-        const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails", "hang", "reset", "noverified", "many"].includes(b.code);
+        const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails", "hang", "reset", "noverified", "many", "slownoverified"].includes(b.code);
         return ok ? send(200, { access_token: `gho_${b.code}` }) : send(200, { error: "bad_verification_code" });
       }
       const token = String(req.headers.authorization ?? "").replace("Bearer ", "");
       if (!token.startsWith("gho_")) return send(401, {});
       if (req.url === "/user" && token === "gho_hang") return;
+      if (req.url === "/user" && token === "gho_slownoverified") return void setTimeout(() => send(200, { login: "kasun-dias", id: 4821937 }), 800);
+      if (req.url?.startsWith("/user/emails") && token === "gho_slownoverified") return send(200, [{ email: "kasun@unverified.test", verified: false }]);
       if (req.url === "/user" && token === "gho_reset") return req.socket.destroy();
       if (req.url === "/user") return send(200, token === "gho_nologin" ? { id: 4821937 } : { login: "kasun-dias", id: 4821937 });
       if (req.url?.startsWith("/user/emails") && token === "gho_noverified") return send(200, [{ email: "kasun@unverified.test", verified: false }]);

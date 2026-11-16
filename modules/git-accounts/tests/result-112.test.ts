@@ -44,6 +44,19 @@ describe.skipIf(!hasDb)("112 the Git accounts note is about this return, from it
     expect([first.ref === second.ref, (await returnResult(kasun, first.ref))?.result]).toEqual([true, "connected"]);
   });
 
+  it("final pass 3: a duplicate return while the first waits on GitHub only reads; the first return's refusal stands", async () => {
+    const state = await newState(kasun);
+    const first = githubCallback(ctxFor(kasun), { state, code: "slownoverified" });
+    await new Promise((ok) => setTimeout(ok, 300));
+    const second = await githubCallback(ctxFor(kasun), { state, code: "good" });
+    const done = await first;
+    expect([done.ref === second.ref, (await returnResult(kasun, done.ref))?.result]).toEqual([true, "no-email"]);
+  });
+
+  it("final pass 3: a reference that isn't a UUID reads nothing", async () => {
+    expect(await returnResult(kasun, "-".repeat(36))).toBeNull();
+  });
+
   it("final pass 2: someone connected sees no note for a return amax has no record of", async () => {
     expect(await note(kasun, undefined, { logins: ["kasun-dias"], emails: 2 })).toBe("");
   });
