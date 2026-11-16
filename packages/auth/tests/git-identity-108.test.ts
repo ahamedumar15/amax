@@ -22,13 +22,13 @@ describe.skipIf(!hasDb)("108 GitHub identities (Postgres)", () => {
   afterAll(() => t?.drop());
 
   it.each([
-    ["the first connect stores every verified email", { login: "kasun-dias", emails: ["kasun@lumen.test", "1+kasun-dias@users.noreply.github.com", "kasun@example.test"] },
+    ["the first connect stores every verified email", { login: "kasun-dias", githubId: 100, emails: ["kasun@lumen.test", "1+kasun-dias@users.noreply.github.com", "kasun@example.test"] },
       { linked: 3, removed: [], skipped: [] }, ["kasun-dias 1+kasun-dias@users.noreply.github.com true", "kasun-dias kasun@example.test true", "kasun-dias kasun@lumen.test true"]],
-    ["a connect again drops what GitHub no longer lists", { login: "kasun-dias", emails: ["kasun@lumen.test", "1+kasun-dias@users.noreply.github.com"] },
+    ["a connect again drops what GitHub no longer lists", { login: "kasun-dias", githubId: 100, emails: ["kasun@lumen.test", "1+kasun-dias@users.noreply.github.com"] },
       { linked: 2, removed: ["kasun@example.test"], skipped: [] }, ["kasun-dias 1+kasun-dias@users.noreply.github.com true", "kasun-dias kasun@lumen.test true"]],
-    ["someone else's email is skipped and named, the rest linked", { login: "kasun-dias", emails: ["kasun@lumen.test", "nimal@lumen.test"] },
+    ["someone else's email is skipped and named, the rest linked", { login: "kasun-dias", githubId: 100, emails: ["kasun@lumen.test", "nimal@lumen.test"] },
       { linked: 1, removed: ["1+kasun-dias@users.noreply.github.com"], skipped: ["nimal@lumen.test"] }, ["kasun-dias kasun@lumen.test true"]],
-    ["someone else's login takes nothing over", { login: "nimal-s", emails: ["kasun@lumen.test"] },
+    ["someone else's login takes nothing over", { login: "nimal-s", githubId: 100, emails: ["kasun@lumen.test"] },
       { linked: 0, removed: ["kasun@lumen.test"], skipped: ["@nimal-s"] }, []],
   ])("AC3 AC4 AC5 %s", async (_name, gh, result, stored) => {
     const r = await tx((x) => setGitHubIdentities(x, T, KASUN, gh));
@@ -37,16 +37,27 @@ describe.skipIf(!hasDb)("108 GitHub identities (Postgres)", () => {
     expect(await emailsOf(NIMAL)).toEqual(["nimal-s nimal@lumen.test true"]);
   });
 
+  it.each([
+    ["a renamed login replaces the person's old one", KASUN, { login: "kasun-renamed", githubId: 400, emails: ["kasun@renamed.test"] }, { linked: ["kasun@renamed.test"], skipped: [] }, ["kasun-renamed"]],
+    ["someone else can't take the old login under another GitHub account", NIMAL, { login: "kasun-renamed", githubId: 999, emails: ["nimal@reuse.test"] }, { linked: [], skipped: ["@kasun-renamed"] }, []],
+    ["someone else can't take the account under a new login", NIMAL, { login: "nimal-fresh", githubId: 400, emails: ["nimal@fresh.test"] }, { linked: [], skipped: ["@nimal-fresh"] }, []],
+  ])("final pass 2: %s", async (_name, who, gh, result, logins) => {
+    if (who === KASUN) await tx((x) => setGitHubIdentities(x, T, KASUN, { login: "kasun-before", githubId: 400, emails: ["kasun@before.test"] }));
+    const r = await tx((x) => setGitHubIdentities(x, T, who, gh));
+    expect({ linked: r.linked, skipped: r.skipped }).toEqual(result);
+    expect([...new Set((await tx((x) => gitIdentitiesOf(x, who))).filter((g) => g.providerUserId).map((g) => g.login))]).toEqual(logins);
+  });
+
   it("review round 1 (B7): two people linking one email at once: exactly one has it, and only that one reports it linked", async () => {
     const shared = "pair@example.test";
-    const [a, b] = await Promise.all([KASUN, NIMAL].map((id, i) => tx((x) => setGitHubIdentities(x, T, id, { login: `racer-${i}`, emails: [shared] }))));
+    const [a, b] = await Promise.all([KASUN, NIMAL].map((id, i) => tx((x) => setGitHubIdentities(x, T, id, { login: `racer-${i}`, githubId: 200 + i, emails: [shared] }))));
     const owners = await t.owner`select user_id from auth.git_identity where lower(email) = ${shared}`;
     expect([owners.length, a.linked.length + b.linked.length, [...a.skipped, ...b.skipped]]).toEqual([1, 1, [shared]]);
     expect(owners[0].user_id).toBe(a.linked.length ? KASUN : NIMAL);
   });
 
   it("review round 2: two people linking one login at once: the login is one person's, the other is told", async () => {
-    const [a, b] = await Promise.all([[KASUN, "k@race.test"], [NIMAL, "n@race.test"]].map(([id, email]) => tx((x) => setGitHubIdentities(x, T, id, { login: "same-login", emails: [email] }))));
+    const [a, b] = await Promise.all([[KASUN, "k@race.test"], [NIMAL, "n@race.test"]].map(([id, email]) => tx((x) => setGitHubIdentities(x, T, id, { login: "same-login", githubId: id === KASUN ? 301 : 302, emails: [email] }))));
     const holders = await t.owner`select distinct user_id from auth.git_identity where lower(login) = 'same-login'`;
     expect([holders.length, [a, b].filter((r) => r.skipped.includes("@same-login")).length]).toEqual([1, 1]);
   });

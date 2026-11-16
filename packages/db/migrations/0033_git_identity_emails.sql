@@ -23,3 +23,8 @@ end $$;
 
 create unique index git_identity_login_email on auth.git_identity (tenant_id, provider, lower(login), lower(coalesce(email, '')));
 create unique index git_identity_email on auth.git_identity (tenant_id, provider, lower(email)) where email is not null;
+
+-- Final pass 2: the provider's own id for the account (GitHub's numeric user id). A login can be renamed and then taken
+-- by someone else; the id never changes, so a connect matches the account by it, never by the name alone.
+alter table auth.git_identity add column if not exists provider_user_id text;
+create index if not exists git_identity_provider_user on auth.git_identity (tenant_id, provider, provider_user_id) where provider_user_id is not null;

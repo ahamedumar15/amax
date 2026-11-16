@@ -6,6 +6,7 @@ import { viewerOf } from "@amax/auth";
 import { withdrawSuggestions } from "@amax/agents/server";
 import { contextFor, defineService, logError, type ServiceContext } from "@amax/core/server";
 import { EVENTS } from "../contracts";
+import type { ResultCode } from "../words";
 import { CONNECT, selfOf } from "./context";
 import { authorizeUrl, readGitHubUser } from "./github";
 
@@ -13,9 +14,8 @@ const hash = (state: string) => createHash("sha256").update(state).digest("hex")
 /** GitHub's app is used by the system, acting for the person who connects (rule 4). */
 export const forPerson = (ctx: ServiceContext) => contextFor.job(ctx.tenantId, "git-accounts.connect", `user:${selfOf(ctx)}`);
 
-/** Why a connect didn't happen, as a code the Git accounts screen turns into fixed words (final pass: nothing else). */
-export type ConnectReason = "expired" | "no-email" | "all-taken" | "login-taken";
-export const refuse = (message: string, reason?: ConnectReason) => Object.assign(new Error(message), { retryable: false, code: "invalid_input", reason });
+/** Why a connect didn't happen: a result code from the one list (words.ts) the screen turns into fixed words. */
+export const refuse = (message: string, reason?: ResultCode) => Object.assign(new Error(message), { retryable: false, code: "invalid_input", reason });
 
 /**
  * 108 AC-1, AC-2: a single-use link to GitHub's authorize page for the viewer, good for 10 minutes. Only its hash is kept.
@@ -49,7 +49,7 @@ const claimConnect = defineService({
  */
 const storeConnect = defineService({
   name: "git-accounts.github.connect", action: CONNECT, resource: "auth.git_identity",
-  input: z.object({ claimId: z.uuid(), login: z.string().min(1), emails: z.array(z.string()) }),
+  input: z.object({ claimId: z.uuid(), login: z.string().min(1), githubId: z.number().int().positive(), emails: z.array(z.string()) }),
   async run(tx, input, ctx) {
     const userId = selfOf(ctx);
     const [ok] = await tx.execute(sql`update git_accounts.connect_state set stored_at = now() where id = ${input.claimId} and user_id = ${userId}
@@ -73,7 +73,7 @@ const storeConnect = defineService({
 export async function completeConnect(ctx: ServiceContext, input: { state: string; code: string }) {
   const { claimId } = await claimConnect(ctx, { state: input.state });
   const gh = await readGitHubUser(forPerson(ctx), input.code);
-  const r = await storeConnect(ctx, { claimId, login: gh.login, emails: gh.emails });
+  const r = await storeConnect(ctx, { claimId, login: gh.login, githubId: gh.githubId, emails: gh.emails });
   // Review round 2: the identities are stored; a suggestion left open is logged, never reported as a failed connect.
   await withdrawSuggestions(forPerson(ctx), { kind: "delivery.git-identity", targetType: "auth.git_identity", targetIds: [`github:${gh.login}`], reason: `${gh.login} connected GitHub themselves` })
     .catch((e: unknown) => logError("git-accounts.withdraw", e));

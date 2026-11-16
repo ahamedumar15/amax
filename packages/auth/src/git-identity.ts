@@ -4,10 +4,10 @@ import type { Tx } from "@amax/db";
 // 008 AC-2: the Git logins and emails a person commits as (auth.git_identity). A commit is attributed
 // to its person only when the provider verified it or the email is verified for this identity.
 export type GitProvider = "github" | "azure-devops";
-export type GitIdentity = { id: string; userId: string; provider: GitProvider; login: string; email: string | null; emailVerified: boolean };
+export type GitIdentity = { id: string; userId: string; provider: GitProvider; login: string; email: string | null; emailVerified: boolean; providerUserId: string | null };
 
 const identity = (r: Record<string, unknown>): GitIdentity => ({
-  id: r.id as string, userId: r.user_id as string, provider: r.provider as GitProvider, login: r.login as string, email: (r.email as string | null) ?? null, emailVerified: Boolean(r.email_verified),
+  id: r.id as string, userId: r.user_id as string, provider: r.provider as GitProvider, login: r.login as string, email: (r.email as string | null) ?? null, emailVerified: Boolean(r.email_verified), providerUserId: (r.provider_user_id as string | null) ?? null,
 });
 
 /** The identity a commit names: by login first, else by email. */
@@ -55,21 +55,26 @@ const anyOf = (column: ReturnType<typeof sql>, values: string[]) => (values.leng
  * it is skipped and named, and the rest are linked (a login of someone else's skips every email). Review round 1: what is
  * reported linked is what was written, so an email another writer took a moment earlier reads as skipped.
  */
-export async function setGitHubIdentities(tx: Tx, tenantId: string, userId: string, gh: { login: string; emails: string[] }): Promise<GitHubLinkResult> {
+export async function setGitHubIdentities(tx: Tx, tenantId: string, userId: string, gh: { login: string; githubId: number; emails: string[] }): Promise<GitHubLinkResult> {
   const emails = [...new Set(gh.emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  const account = String(gh.githubId);
   await lockLogin(tx, tenantId, "github", gh.login);
-  const others = await tx.execute(sql`select lower(login) as login, lower(email) as email from auth.git_identity where provider = 'github' and user_id <> ${userId}
-    and (lower(login) = lower(${gh.login}) or ${anyOf(sql`lower(email)`, emails)})`);
-  const loginTaken = others.some((o) => o.login === gh.login.toLowerCase());
+  await lockLogin(tx, tenantId, "github", `#${account}`);
+  // Final pass 2: the account is GitHub's id. Someone else holding this login (under another id, or none recorded) or
+  // this account keeps it; the person's own rows under an old login of the same account are replaced below (a rename).
+  const others = await tx.execute(sql`select lower(login) as login, lower(email) as email, provider_user_id from auth.git_identity where provider = 'github' and user_id <> ${userId}
+    and (lower(login) = lower(${gh.login}) or provider_user_id = ${account} or ${anyOf(sql`lower(email)`, emails)})`);
+  const loginTaken = others.some((o) => o.login === gh.login.toLowerCase() || o.provider_user_id === account);
   const takenEmails = new Set(others.map((o) => o.email as string | null).filter((e): e is string => Boolean(e)));
   const kept = loginTaken ? [] : emails.filter((e) => !takenEmails.has(e));
   const removed = await tx.execute(sql`delete from auth.git_identity where provider = 'github' and user_id = ${userId}
     and not (lower(login) = lower(${gh.login}) and ${anyOf(sql`lower(coalesce(email, ''))`, kept)}) returning email, login`);
   const linked: string[] = [];
   for (const e of kept) {
-    const [own] = await tx.execute(sql`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
-      values (${tenantId}, ${userId}, 'github', ${gh.login}, ${e}, true) on conflict do nothing returning email`);
-    const [mine] = own ? [own] : await tx.execute(sql`select email from auth.git_identity where provider = 'github' and user_id = ${userId} and lower(email) = ${e}`);
+    const [own] = await tx.execute(sql`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified, provider_user_id)
+      values (${tenantId}, ${userId}, 'github', ${gh.login}, ${e}, true, ${account}) on conflict do nothing returning email`);
+    const [mine] = own ? [own] : await tx.execute(sql`update auth.git_identity set provider_user_id = ${account}, email_verified = true
+      where provider = 'github' and user_id = ${userId} and lower(email) = ${e} returning email`);
     if (mine) linked.push(e);
   }
   const skipped = loginTaken ? [`@${gh.login}`] : emails.filter((e) => !linked.includes(e));

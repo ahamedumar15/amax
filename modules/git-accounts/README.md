@@ -14,7 +14,9 @@ changes (091) and 104 drafts hours from their commits. A commit email alone prov
   route finishes through `completeGitHubConnect` (contracts): it claims the state, then reads GitHub outside any write
   (10-second timeouts, replies checked against their schema), keeps no token, stores the login and verified emails as
   verified `auth.git_identity` rows in one audited write, and withdraws open `delivery.git-identity` suggestions for that
-  login, acting for the person. A login or email linked to someone else is skipped and named.
+  login, acting for the person. An email linked to someone else is skipped, and the screen says how many; a connect that would link nothing (no
+  verified email, every email or the login someone else's) is refused and changes nothing. The app's callback route reads
+  the module's `app.github-callback` slot, so it names no module package.
 - **MCP tools** (`mcp.ts`): read `get_my_git_identities`, `get_my_git_identity`; write `connect_github`,
   `disconnect_github` (red card naming every GitHub login and email it removes), and for an Admin `unlink_git_identity`.
 - **Owners:** a spec proposal's owner follows its repo at every sync (091). After a disconnect, or a reconnect that drops

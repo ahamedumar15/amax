@@ -84,7 +84,7 @@ describe.skipIf(!hasDb)("091 a spec proposal's owner comes from its repo", () =>
   it("108 AC-9 a person who connects GitHub owns their no-reply-authored change from the next sync", async () => {
     const noreply = "4821937+nimal-gh@users.noreply.github.com";
     expect(await (async () => { await push("541-connected", { author: noreply }); return ownerOf("FLT-541"); })()).toBe(null);
-    await withTenant(app, T, (tx) => setGitHubIdentities(tx, T, nimal.userId, { login: "nimal-gh", emails: [noreply] }));
+    await withTenant(app, T, (tx) => setGitHubIdentities(tx, T, nimal.userId, { login: "nimal-gh", githubId: 4821938, emails: [noreply] }));
     await push("541-connected", { author: noreply });
     expect(await ownerOf("FLT-541")).toBe("Nimal Silva");
   });
