@@ -5,7 +5,7 @@ import { PinButton } from "@amax/ui";
 import { PHASES, proposalHref, type Phase } from "../contracts";
 import { projectPin, proposalPin } from "../pins";
 import { getProject, listEnvironments, listReleases, type ProposalRow } from "../server/queries";
-import { hasNoOwner } from "../server/readiness";
+import { ownerLabel } from "../server/readiness";
 import { proposalSuggestions } from "./ProposalSuggestions";
 import { NewProposalButton } from "./NewProposalButton";
 import { AgentFirstLine } from "./AgentFirstLine";
@@ -55,9 +55,9 @@ function Card({ p, suggested, mine = false }: { p: ProposalRow; suggested: boole
         {p.phase === "released" ? <span className="chip">{p.release ?? "Released"}</span>
           // 081 amendment 9 (AC-90): your own card says so, beside the initials or the agent that made it (most of an
           // engineer's proposals are made by an agent for them; found in the end-to-end demo).
-          : mine ? <span className="mine">{p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={hasNoOwner(p) ? "Unassigned" : p.ownerName ?? ""} />}<span className="chip yours">Yours</span></span>
+          : mine ? <span className="mine">{p.agent ? <span className="chip agent">{p.agent}</span> : <Avatar initials={initials(p.ownerName)} name={ownerLabel(p)} />}<span className="chip yours">Yours</span></span>
           : p.agent ? <span className="chip agent">{p.agent}</span>
-          : <Avatar initials={initials(p.ownerName)} name={hasNoOwner(p) ? "Unassigned" : p.ownerName ?? ""} />}
+          : <Avatar initials={initials(p.ownerName)} name={ownerLabel(p)} />}
         <span>
           {p.phase === "proposed" && `${p.estimateHours !== null ? `est. ${p.estimateHours} h` : `${p.hours} h`}${p.tasksTotal ? ` · ${p.tasksDone} of ${p.tasksTotal} tasks` : ""}`}
           {(p.phase === "planned" || p.phase === "building") && (p.tasksTotal ? `${p.tasksDone} of ${p.tasksTotal}${p.phase === "building" ? `, ${p.hours} h` : " tasks"}` : `No tasks yet${p.phase === "building" ? `, ${p.hours} h` : ""}`)}
