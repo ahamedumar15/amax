@@ -43,12 +43,23 @@ describe.skipIf(!hasDb)("116 the GitHub app's expiry and state (Postgres)", () =
     expect(after === "kept" ? now?.toISOString() : after === null ? now : now?.toISOString().slice(0, 10)).toBe(after === "kept" ? before!.toISOString() : after);
   });
 
+  it.each([
+    ["refused before the secret is typed when the expiry has passed", new Date(Date.now() - day), {}, "refused"],
+    ["allowed when a new expiry is given", new Date(Date.now() - day), { expiresAt: "2099-01-31" }, "allowed"],
+    ["allowed while the expiry is ahead", new Date(Date.now() + 30 * day), {}, "allowed"],
+  ])("review round 2: the card is %s", async (_n, before, input, outcome) => {
+    await fresh(before);
+    const propose = db.registry.toolsFor(maya).find((t) => t.name === "set_github_app")!.propose!(maya as never, { clientId: "Ov23liFAKEdemo02", ...input } as never);
+    if (outcome === "refused") await expect(propose).rejects.toThrow(/has passed; give a new expiresAt/);
+    else await expect(propose).resolves.toBeUndefined();
+  });
+
   it("an expired app is Expired on the status and the card replaces it", async () => {
     await fresh(new Date(Date.now() - day));
     const status = await db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" });
     const card = await db.registry.toolsFor(maya).find((t) => t.name === "set_github_app")!.card!(maya as never, { clientId: "Ov23liFAKEdemo02" } as never);
     expect([status, card.title, card.lines.find((l) => l.label === "Replaces")?.value]).toEqual([
-      expect.objectContaining({ configured: false, expired: true }), "Replace the GitHub app", expect.stringContaining("(expired)"),
+      expect.objectContaining({ configured: false, expired: true }), "Replace the GitHub app", expect.stringContaining("expired GitHub app"),
     ]);
   });
 });

@@ -30,13 +30,17 @@ What changes on screen, and where to see it: [`116-github-setup-without-struggle
    - the Client ID
    - the masked **Client secret** field
    - "Callback URL to paste into GitHub: `<callback URL>`", using the same URL `redirectUri()` builds, with a Copy button
-   - "Adds" or "Replaces" the GitHub app, depending on whether one is set
+   - "Adds" or "Replaces" the GitHub app, depending on whether one is set (review round 2: an expired app is replaced
+     without the "old secret works 72 more hours" note)
 
    The card refuses a client id with a space, `<`, `>` or `:` in it, and a secret shorter than 20 characters or holding
-   whitespace or `:`.
-2. **AC-2** `put_secret` and `rotate_secret` for `github-oauth` refuse a value without one colon separating a non-empty
-   id and secret, with "Use set_github_app: the GitHub app needs its Client ID and Client secret". Chat's "add or rotate
-   the GitHub app" prompts pick `set_github_app`.
+   whitespace or `:`. An optional `expiresAt` (`YYYY-MM-DD`, the end of that UTC day) sets the app's expiry. On
+   replace without one, the current expiry is kept by 052's rule, shared with `rotate_secret` through
+   `@amax/core/secrets`: a future date or none is kept, and a past one refuses the card before the secret is typed.
+2. **AC-2** `put_secret` and `rotate_secret` refuse the `github-oauth` connector outright, whatever the value, when chat
+   proposes the card and when they run (over MCP too), with "Use set_github_app: the GitHub app needs its Client ID and
+   Client secret". So `set_github_app` is the only writer of the GitHub app, and chat's "add or rotate the GitHub app"
+   prompts pick it.
 3. **AC-3** On `/settings/integrations`, chat suggests to an Admin:
    - **Set up the GitHub app** (`set_github_app`) when `github-oauth` is not set
    - **Rotate the GitHub app secret** (`set_github_app`) and **Remove the GitHub app** (`revoke_secret`, connector
@@ -95,8 +99,8 @@ What changes on screen, and where to see it: [`116-github-setup-without-struggle
     no space, `<`, `>` or `:`), secret from the masked field (20+ characters, no whitespace or `:`). It puts or rotates
     `github-oauth` through `putSecret` / `listCredentials` from `@amax/core/secrets`.
   - **Status:** `get_github_app_status` adds `rotatedAt` and `callbackUrl`.
-  - **The guard:** `put_secret` / `rotate_secret` refuse a `github-oauth` value without one colon between a non-empty id
-    and secret ("Use set_github_app…").
+  - **The guard:** `put_secret` / `rotate_secret` refuse the `github-oauth` connector outright, at propose and at run
+    ("Use set_github_app…").
   - **Clear refusals (`ToolError`, `invalid_input`):** a malformed credential at connect; `SecretsUnavailableError` on
     any credential write ("no key service is set (`AMAX_KMS`)…"); GitHub's `redirect_uri_mismatch` at the token
     exchange (callback URL message). Chat then shows the message, not "I can't tell…".

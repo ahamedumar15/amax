@@ -7,5 +7,5 @@ export { putSecret, revokeSecret } from "./secrets/manage";
 export { hasSecret, SecretNotConfiguredError, useSecret, useValidSecrets, type SecretUse } from "./secrets/use";
 export { Secret, SecretLeakError, SecretResultError } from "./secrets/secret";
 export { listCredentials, type CredentialRow } from "./secrets/list";
-export { ExpiryPassedError, keptExpiry as keptExpiryOf, NO_KEY_SERVICE } from "./secrets/expiry";
+export { endOfDay, EXPIRY_DAY, EXPIRY_DAY_HINT, ExpiryPassedError, keptExpiry as keptExpiryOf, NO_KEY_SERVICE } from "./secrets/expiry";
 export { EXPIRING_EVENT, EXPIRY_WARNING_DAYS, EXPIRY_WINDOW_DAYS, secretsSweepJob } from "./secrets/jobs";

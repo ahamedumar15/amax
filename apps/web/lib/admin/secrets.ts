@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { CONNECTOR_IDS, CONNECTORS, ExpiryPassedError, keptExpiryOf, listCredentials, NO_KEY_SERVICE, putSecret, REVOKE_REASONS, revokeSecret, type CredentialRow } from "@amax/core/secrets";
+import { CONNECTOR_IDS, CONNECTORS, endOfDay, EXPIRY_DAY, EXPIRY_DAY_HINT, ExpiryPassedError, keptExpiryOf, listCredentials, NO_KEY_SERVICE, putSecret, REVOKE_REASONS, revokeSecret, type CredentialRow } from "@amax/core/secrets";
 import { ToolError } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 import { filterCredentials, SECRET_FILTERS } from "./credentials";
 import { ctxFor, notFound, read, tool, write } from "./tool";
 
 const connector = z.enum(CONNECTOR_IDS).describe(`One of ${CONNECTOR_IDS.join(", ")}`);
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("YYYY-MM-DD; the credential stops working at the end of that day (UTC)");
+const day = z.string().regex(EXPIRY_DAY).describe(EXPIRY_DAY_HINT);
 const READ = "secrets:credential:read";
 const MANAGE = "secrets:credential:manage";
 
@@ -19,7 +19,7 @@ function typed(secret: string | undefined) {
   if (!secret) throw new ToolError("the value is typed into the masked field on amax chat's confirm card; it can't be sent as tool input", "invalid_input");
   return secret;
 }
-const endOf = (d: string | undefined) => (d ? `${d}T23:59:59Z` : undefined);
+const endOf = endOfDay;
 
 // 116 AC-2: the GitHub app (connector github-oauth) is set only with set_github_app, which checks its Client ID and secret.
 const GITHUB_APP = "Use set_github_app: the GitHub app needs its Client ID and Client secret";
