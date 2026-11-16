@@ -1,14 +1,15 @@
 import type { ChatSuggestion } from "@amax/core";
 import { can, type Viewer } from "@amax/auth";
 import { MANAGE_APP } from "./app-tool";
-import { myGitAccounts } from "./server/read";
+import { githubAppStatus, myGitAccounts } from "./server/read";
 
 // 108: what chat offers on Git accounts, each only when it can happen: connect when GitHub is set up and not connected,
 // disconnect when it is. A suggestion fills the message box; chat still confirms.
 const state = async (v: Viewer) => myGitAccounts(v);
 const when = (check: (v: Viewer) => Promise<boolean>) => check as ChatSuggestion["when"];
 // 116 AC-3: on Integrations, only for those who manage credentials, each only when it can happen.
-const admin = (set: boolean) => when(async (v) => can(v, MANAGE_APP) && (await state(v)).configured === set);
+// 117 AC-3: an Admin's view of the app is the status, where an incomplete value isn't "configured" (so: Set up, not Rotate).
+const admin = (set: boolean) => when(async (v) => can(v, MANAGE_APP) && (await githubAppStatus(v)).configured === set);
 const INTEGRATIONS = ["/settings/integrations"];
 
 export const chatSuggestions: ChatSuggestion[] = [

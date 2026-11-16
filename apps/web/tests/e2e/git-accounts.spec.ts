@@ -47,7 +47,7 @@ test.beforeAll(async () => {
   configureRuntime({ db, auditKey: "e2e-audit-key-e2e-audit-key-e2e-audit" });
   installAuthorizer();
   configureSecrets({ kms: localKms(parseKeyFile(readFileSync(KEY_FILE, "utf8"))) });
-  await putSecret(contextFor.job(T, "e2e-seed"), { connector: "github-oauth", value: "e2e-app:e2e-secret" });
+  await putSecret(contextFor.job(T, "e2e-seed"), { connector: "github-oauth", value: "e2e-app:e2e-secret-fake-0000000000" });
   await client.end();
 });
 test.afterAll(async () => {

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import type { ActivityItem } from "@amax/core";
 import { can, type Viewer } from "@amax/auth";
 import { logError } from "@amax/core/server";
@@ -28,9 +27,6 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const viewer = await getViewer();
   const raw = await searchParams;
   const query = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
-  // 116 final pass: a GitHub app whose Redirect URI is the homepage sends its refusal here; the callback records it and
-  // Git accounts says what to fix.
-  if (query.error === "redirect_uri_mismatch" && query.state) redirect(`/api/git/github/callback?${new URLSearchParams({ error: query.error, state: query.state })}`);
   const [items, data] = viewer ? await Promise.all([activity(viewer), gatherOverview(viewer, query)]) : [[], EMPTY];
   const side = data.panels.filter((p) => p.slot === "aside");
   const main = data.panels.filter((p) => p.slot === "main");

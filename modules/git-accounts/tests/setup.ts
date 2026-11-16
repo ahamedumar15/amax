@@ -26,7 +26,8 @@ function fakeGitHub(): Promise<Server> {
       if (req.url === "/login/oauth/access_token") {
         const b = JSON.parse(body || "{}");
         if (b.code === "mismatch") return send(200, { error: "redirect_uri_mismatch" });
-        const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails", "hang", "reset", "noverified", "many", "slownoverified"].includes(b.code);
+        if (b.code === "wrongsecret") return send(200, { error: "incorrect_client_credentials" });
+        const ok = b.client_id === "app-id" && b.client_secret === "app-secret-fake-0000000000" && ["good", "nologin", "noemails", "hang", "reset", "noverified", "many", "slownoverified"].includes(b.code);
         return ok ? send(200, { access_token: `gho_${b.code}` }) : send(200, { error: "bad_verification_code" });
       }
       const token = String(req.headers.authorization ?? "").replace("Bearer ", "");
@@ -66,7 +67,7 @@ export async function gitAccountsDatabase() {
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${`${key}@lumenlabs.test`}`));
     return (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
   };
-  const setUpApp = () => putSecret(contextFor.job(T, "seed"), { connector: "github-oauth", value: "app-id:app-secret" });
+  const setUpApp = () => putSecret(contextFor.job(T, "seed"), { connector: "github-oauth", value: "app-id:app-secret-fake-0000000000" });
   const tx = <R>(fn: (tx: Tx) => Promise<R>) => withTenant(app, T, fn);
   const drop = async () => { github.close(); await t.drop(); };
   return { t, app, registry, as, tx, setUpApp, origin, drop };

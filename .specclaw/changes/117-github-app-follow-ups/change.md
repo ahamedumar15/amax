@@ -37,12 +37,26 @@ No new screen. Git accounts gains one result line for a wrong secret, and the In
    - `checkClientId` / `checkClientSecret` (the writer)
    - the status, which gains `incomplete`
 
-   `configured` is true only when the value parses. An unparseable value shows "Incomplete" on Integrations, gets the
-   Admin's **Set up the GitHub app** suggestion (not Rotate), and shows no Overview nudge.
+   For those who manage credentials, `configured` is true only when the value parses. An unparseable value shows
+   "Incomplete" on Integrations and gets the Admin's **Set up the GitHub app** suggestion (not Rotate). Reading the
+   value is an audited credential use, so the answer is kept per tenant until the credential is next rotated. The
+   Overview nudge stays on the credential existing, since reading it for every person on every load would audit a use
+   each time. A person who connects against an incomplete value gets 116's clear refusal ("The GitHub app's credential
+   is incomplete…").
 4. **AC-4** Variant tests for each, the git-accounts and admin suites and the git-accounts e2e pass, and nothing in
    116's acceptance criteria changes.
 
 ## Tasks
+
+- [x] `T1` — A mismatch return caught wherever it lands (AC-1)
+  Files: apps/web/proxy.ts, apps/web/lib/github-return.ts, apps/web/app/(app)/page.tsx
+- [x] `T2` — A wrong Client ID or secret said plainly (AC-2)
+  Files: modules/git-accounts/server/github.ts, modules/git-accounts/server/connect.ts, modules/git-accounts/words.ts
+- [x] `T3` — One parse of the GitHub app's value; "configured" means usable for those who manage it (AC-3)
+  Files: modules/git-accounts/server/app.ts, modules/git-accounts/server/read.ts, modules/git-accounts/chat-suggestions.ts,
+  apps/web/app/(app)/settings/integrations/page.tsx
+- [x] `T4` — Variant tests (AC-4)
+  Files: modules/git-accounts/tests/follow-ups-117.test.ts, modules/git-accounts/tests/setup.ts, apps/web/tests/github-return-117.test.ts
 
 ## Verify
 

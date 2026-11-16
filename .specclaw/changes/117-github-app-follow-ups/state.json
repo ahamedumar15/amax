@@ -1,0 +1,9 @@
+{
+  "change": "117-github-app-follow-ups",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-16T13:27:00Z"},
+    "tasks": {"status":"done","at":"2026-11-16T13:27:28Z"}
+  }
+}

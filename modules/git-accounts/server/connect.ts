@@ -8,7 +8,7 @@ import { contextFor, defineService, logError, type ServiceContext } from "@amax/
 import { EVENTS } from "../contracts";
 import { RESULTS, type ResultCode } from "../words";
 import { CONNECT, selfOf } from "./context";
-import { authorizeUrl, isGitHubCallbackError, isGitHubReplyError, readGitHubUser } from "./github";
+import { authorizeUrl, isGitHubCallbackError, isGitHubCredentialsError, isGitHubReplyError, readGitHubUser } from "./github";
 
 const hash = (state: string) => createHash("sha256").update(state).digest("hex");
 /** GitHub's app is used by the system, acting for the person who connects (rule 4). */
@@ -73,7 +73,9 @@ const storeConnect = defineService({
 export const resultCodeOf = (e: unknown): ResultCode => {
   const reason = (e as { reason?: unknown } | null)?.reason;
   if (typeof reason === "string" && Object.hasOwn(RESULTS, reason)) return reason as ResultCode;
-  return isGitHubCallbackError(e) ? "callback" : isGitHubReplyError(e) ? "github" : "error";
+  if (isGitHubCallbackError(e)) return "callback";
+  if (isGitHubCredentialsError(e)) return "credentials";
+  return isGitHubReplyError(e) ? "github" : "error";
 };
 
 /**

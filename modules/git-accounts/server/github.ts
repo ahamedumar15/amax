@@ -34,6 +34,9 @@ export const isGitHubReplyError = (e: unknown) => e instanceof Error && e.name =
 /** 116 AC-6: GitHub refused the callback URL at the token exchange (redirect_uri_mismatch). */
 export class GitHubCallbackError extends Error { override name = "GitHubCallbackError"; }
 export const isGitHubCallbackError = (e: unknown) => e instanceof Error && e.name === "GitHubCallbackError";
+/** 117 AC-2: GitHub refused the app's Client ID or secret at the token exchange (incorrect_client_credentials). */
+export class GitHubCredentialsError extends Error { override name = "GitHubCredentialsError"; }
+export const isGitHubCredentialsError = (e: unknown) => e instanceof Error && e.name === "GitHubCredentialsError";
 
 const Token = z.object({ access_token: z.string().min(1).optional(), error: z.string().optional() });
 const User = z.object({ login: z.string().regex(/^[A-Za-z0-9-]{1,39}$/), id: z.number().int().positive() });
@@ -55,6 +58,7 @@ export const readGitHubUser = (ctx: ServiceContext, code: string) => app(ctx, "G
   const t = await call(Token, "the sign-in", `${web()}/login/oauth/access_token`, { method: "POST", headers: { accept: "application/json", "content-type": "application/json" },
     body: JSON.stringify({ client_id: id, client_secret: secret, code, redirect_uri: redirectUri() }) });
   if (t.error === "redirect_uri_mismatch") throw new GitHubCallbackError(callbackRefused(redirectUri()));
+  if (t.error === "incorrect_client_credentials") throw new GitHubCredentialsError("GitHub refused the app's Client ID or secret");
   if (!t.access_token) throw new GitHubReplyError("GitHub refused the sign-in");
   const headers = { accept: "application/vnd.github+json", authorization: `Bearer ${t.access_token}` };
   const user = await call(User, "your profile", `${api()}/user`, { headers });

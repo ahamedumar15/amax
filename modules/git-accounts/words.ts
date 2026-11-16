@@ -19,6 +19,7 @@ export const RESULTS = {
   "all-taken": "GitHub wasn't connected: every verified email on your GitHub is linked to another person. Ask an Admin",
   "login-taken": "GitHub wasn't connected: that GitHub login is linked to another person. Ask an Admin",
   github: "GitHub wasn't connected: GitHub didn't answer or its reply wasn't readable. Try again",
+  credentials: "GitHub wasn't connected: GitHub refused the app's Client ID or secret. An Admin replaces the GitHub app (Settings › Integrations)",
   callback: "GitHub wasn't connected: GitHub refused amax's callback URL. An Admin adds it to the GitHub app's Redirect URIs (Settings › Integrations shows it)",
   error: "GitHub wasn't connected: something went wrong. Try again",
 } as const;

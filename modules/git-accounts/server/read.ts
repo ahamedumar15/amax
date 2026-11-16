@@ -6,7 +6,7 @@ import { can } from "@amax/auth";
 import { ToolError } from "@amax/mcp";
 import { hasSecret } from "@amax/core/secrets";
 import type { GitAccounts, GitHubLogin } from "../contracts";
-import { appRow } from "./app";
+import { appRow, appUsable } from "./app";
 import { ctxFor, read } from "./context";
 import { redirectUri } from "./github";
 
@@ -31,7 +31,9 @@ export const githubAppStatus = async (v: Viewer) => {
   // rotated, and whether a credential that's no longer usable has expired. The callback URL GitHub must have, or why not.
   const row = can(v, "secrets:credential:read") ? await appRow(ctxFor(v)) : null;
   const callback = (() => { try { return { callbackUrl: redirectUri(), callbackProblem: null }; } catch (e) { if (e instanceof ToolError) return { callbackUrl: null, callbackProblem: e.message }; throw e; } })();
-  return { connector: "github-oauth", configured, expired: !configured && row?.status === "expired", rotatedAt: row?.lastRotatedAt ?? null, ...callback };
+  // 117 AC-3: for those who manage credentials, "configured" means the stored value is a usable client id and secret.
+  const incomplete = configured && row !== null && !(await appUsable(ctxFor(v), row.lastRotatedAt));
+  return { connector: "github-oauth", configured: configured && !incomplete, incomplete, expired: !configured && row?.status === "expired", rotatedAt: row?.lastRotatedAt ?? null, ...callback };
 };
 
 /** What Disconnect removes: every GitHub login and every row under it, in words. */
