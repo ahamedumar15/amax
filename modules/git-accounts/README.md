@@ -11,11 +11,15 @@ changes (091) and 104 drafts hours from their commits. A commit email alone prov
   `<AMAX_BASE_URL>/api/git/github/callback`. `AMAX_GITHUB_URL` and `AMAX_GITHUB_API_URL` point tests at a fake GitHub.
 - **Connecting:** `connect_github` issues a single-use state (10 minutes, the same person; only its hash is kept in
   `git_accounts.connect_state`) and a link to GitHub's authorize page (`read:user user:email`). The app's callback
-  route finishes through `completeGitHubConnect` (contracts): it reads the login and verified emails, keeps no token,
-  stores them as verified `auth.git_identity` rows in one audited write, and withdraws open `delivery.git-identity`
-  suggestions for that login. A login or email linked to someone else is skipped and named.
+  route finishes through `completeGitHubConnect` (contracts): it claims the state, then reads GitHub outside any write
+  (10-second timeouts, replies checked against their schema), keeps no token, stores the login and verified emails as
+  verified `auth.git_identity` rows in one audited write, and withdraws open `delivery.git-identity` suggestions for that
+  login, acting for the person. A login or email linked to someone else is skipped and named.
 - **MCP tools** (`mcp.ts`): read `get_my_git_identities`, `get_my_git_identity`; write `connect_github`,
-  `disconnect_github` (red card; owners kept), and for an Admin `unlink_git_identity`.
+  `disconnect_github` (red card naming every GitHub login and email it removes), and for an Admin `unlink_git_identity`.
+- **Owners:** a spec proposal's owner follows its repo at every sync (091). After a disconnect, or a reconnect that drops
+  an email, a proposal named for the person only through that email is unowned at the next sync, unless its Owner line
+  or their account email names them.
 - **Events:** `git-accounts.github.connected`, `git-accounts.github.disconnected` (user id, login, email count).
 - **Permissions:** `git-accounts:read` and `git-accounts:connect` (every role, for their own accounts),
   `git-accounts:unlink` (Admin).

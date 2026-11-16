@@ -1,21 +1,35 @@
 import { gitIdentitiesOf } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
 import { hasSecret } from "@amax/core/secrets";
-import type { GitAccounts } from "../contracts";
+import type { GitAccounts, GitHubLogin } from "../contracts";
 import { read } from "./context";
 
-/** 108 AC-6: the viewer's Git accounts: whether GitHub is set up here, and their login with its verified emails. */
+/**
+ * 108 AC-6: the viewer's Git accounts: whether GitHub is set up here, and each GitHub login they hold with its verified
+ * emails (review round 1: several logins, or a login with no email, linked earlier through a delivery suggestion).
+ */
 export const myGitAccounts = (v: Viewer) => read(v, async (tx): Promise<GitAccounts> => {
-  const mine = (await gitIdentitiesOf(tx, v.userId)).filter((g) => g.provider === "github");
-  return {
-    configured: await hasSecret(tx, "github-oauth"),
-    github: mine.length ? { login: mine[0].login, emails: mine.filter((g) => g.email).map((g) => ({ id: g.id, email: g.email!, verified: g.emailVerified })) } : null,
-  };
+  const logins = new Map<string, GitHubLogin>();
+  for (const g of (await gitIdentitiesOf(tx, v.userId)).filter((x) => x.provider === "github")) {
+    const l = logins.get(g.login) ?? { login: g.login, identityIds: [], emails: [] };
+    l.identityIds.push(g.id);
+    if (g.email) l.emails.push({ id: g.id, email: g.email, verified: g.emailVerified });
+    logins.set(g.login, l);
+  }
+  return { configured: await hasSecret(tx, "github-oauth"), github: logins.size ? { logins: [...logins.values()] } : null };
 });
+
+/** What Disconnect removes: every GitHub login and every row under it, in words. */
+export const disconnectWhat = (g: NonNullable<GitAccounts["github"]>) => {
+  const emails = g.logins.reduce((n, l) => n + l.emails.length, 0);
+  return `${g.logins.map((l) => `@${l.login}`).join(", ")} and ${emails} email${emails === 1 ? "" : "s"}`;
+};
 
 /** One of the viewer's own identities, for its pin. */
 export const myIdentity = async (v: Viewer, id: string) => {
-  const g = (await myGitAccounts(v)).github;
-  const e = g?.emails.find((x) => x.id === id);
-  return e && g ? { id: e.id, login: g.login, email: e.email, verified: e.verified } : null;
+  for (const l of (await myGitAccounts(v)).github?.logins ?? []) {
+    const e = l.emails.find((x) => x.id === id);
+    if (e) return { id: e.id, login: l.login, email: e.email, verified: e.verified };
+  }
+  return null;
 };

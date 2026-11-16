@@ -14,7 +14,8 @@ import gitAccounts from "../module";
 
 export const T = lumen.tenant.id;
 
-/** A fake GitHub (fictional data): one app, code "good" for @kasun-dias with two verified emails and one unverified. */
+/** A fake GitHub (fictional data): one app; code "good" is @kasun-dias with two verified emails and one unverified;
+ * "nologin" and "noemails" give replies that don't match GitHub's schema. */
 function fakeGitHub(): Promise<Server> {
   const server = createServer((req, res) => {
     const send = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
@@ -23,11 +24,14 @@ function fakeGitHub(): Promise<Server> {
     req.on("end", () => {
       if (req.url === "/login/oauth/access_token") {
         const b = JSON.parse(body || "{}");
-        return b.client_id === "app-id" && b.client_secret === "app-secret" && b.code === "good" ? send(200, { access_token: "gho_fake" }) : send(200, { error: "bad_verification_code" });
+        const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails"].includes(b.code);
+        return ok ? send(200, { access_token: `gho_${b.code}` }) : send(200, { error: "bad_verification_code" });
       }
-      if (req.headers.authorization !== "Bearer gho_fake") return send(401, {});
-      if (req.url === "/user") return send(200, { login: "kasun-dias", id: 4821937 });
-      if (req.url === "/user/emails") return send(200, [{ email: "kasun@lumenlabs.test", verified: true }, { email: "4821937+kasun-dias@users.noreply.github.com", verified: true }, { email: "kasun@unverified.test", verified: false }]);
+      const token = String(req.headers.authorization ?? "").replace("Bearer ", "");
+      if (!token.startsWith("gho_")) return send(401, {});
+      if (req.url === "/user") return send(200, token === "gho_nologin" ? { id: 4821937 } : { login: "kasun-dias", id: 4821937 });
+      if (req.url === "/user/emails") return send(200, token === "gho_noemails" ? { message: "not a list" }
+        : [{ email: "kasun@lumenlabs.test", verified: true }, { email: "4821937+kasun-dias@users.noreply.github.com", verified: true }, { email: "kasun@unverified.test", verified: false }]);
       return send(404, {});
     });
   });

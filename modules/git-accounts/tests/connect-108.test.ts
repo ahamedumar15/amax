@@ -47,6 +47,24 @@ describe.skipIf(!hasDb)("108 connecting GitHub (Postgres)", () => {
     expect(await mine(who)).toEqual([]);
   });
 
+  it.each([
+    ["a profile with no login", "nologin", /your profile wasn't readable/],
+    ["emails that aren't a list", "noemails", /your emails wasn't readable/],
+    ["a code GitHub refuses", "stolen", /GitHub refused the sign-in|the sign-in wasn't readable/],
+  ])("review round 1: %s is refused, nothing stored", async (_name, code, error) => {
+    await expect(completeGitHubConnect(ctxFor(kasun), { state: stateOf(await link(kasun)), code })).rejects.toThrow(error);
+    expect(await mine(kasun)).toEqual([]);
+  });
+
+  it("review round 1: in production without AMAX_BASE_URL, connect refuses rather than send GitHub to localhost", async () => {
+    const { NODE_ENV, AMAX_BASE_URL } = process.env;
+    Object.assign(process.env, { NODE_ENV: "production" });
+    delete process.env.AMAX_BASE_URL;
+    try {
+      await expect(db.registry.call(kasun, "connect_github", {}, { source: "mcp" })).rejects.toThrow(/AMAX_BASE_URL/);
+    } finally { Object.assign(process.env, { NODE_ENV, AMAX_BASE_URL }); }
+  });
+
   it("AC3 AC10 the verified emails are stored in one audited write, no token kept, and the open link suggestion withdrawn", async () => {
     await db.t.owner`insert into agents.suggestion (tenant_id, kind, target_type, target_id, target_label, title, proposed, confidence, agent, agent_name, expires_at)
       values (${T}, 'delivery.git-identity', 'auth.git_identity', 'github:kasun-dias', 'kasun-dias on GitHub', 'Link kasun-dias to Kasun', '{}', 0.7, 'delivery', 'Git ingestion', now() + interval '7 days')`;

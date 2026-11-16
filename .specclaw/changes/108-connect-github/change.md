@@ -2,6 +2,12 @@
 
 **Change:** 108-connect-github · **Created:** 2026-11-15 · **Review:** change
 
+Lane exemption: the platform pieces (the auth migration and identity helpers, the `github-oauth` connector and the
+GitHub URL env vars, chat's link after a confirm, the callback route) exist only for this module and ship with it in
+one change (product owner, 2026-11-16, review round 1).
+
+Size waiver: one new module (Git accounts) whose screen, tools and OAuth connect only work together; splitting leaves a half-built connect flow (product owner, 2026-11-16).
+
 ## Problem
 
 amax gives a spec proposal its owner, and drafts 104's hours, only for a commit email that is a person's account email
@@ -23,10 +29,12 @@ amax will match commits by, with **Ask amax · Disconnect**. With no GitHub app 
 
 ## Acceptance Criteria
 
-1. **AC-1** With `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` set, a person can connect GitHub: chat's **Connect
-   GitHub** card opens GitHub's authorize page (scopes `read:user user:email`), and GitHub returns to amax's callback.
-   Without them, the Git accounts screen and chat say "GitHub isn't set up for this workspace; an Admin adds the GitHub
-   app", and Settings › Integrations shows GitHub accounts as not configured.
+1. **AC-1** With the GitHub app set up (a 031 credential, connector `github-oauth`, value `<client id>:<client secret>`,
+   added by an Admin in chat: the module standard keeps credentials out of env), a person can connect GitHub: chat's
+   **Connect GitHub** card, once confirmed, offers **Continue to GitHub** to GitHub's authorize page (scopes
+   `read:user user:email`), and GitHub returns to amax's callback. Without it, the Git accounts screen and chat say
+   "GitHub isn't set up for this workspace; an Admin adds the GitHub app", and Settings › Integrations shows GitHub
+   accounts as not configured.
 2. **AC-2** The callback accepts only a `state` it issued to the same signed-in person, once, within 10 minutes;
    anything else is refused and nothing is linked.
 3. **AC-3** On approval amax reads the GitHub user (login and numeric id) and every email GitHub marks verified,
@@ -40,13 +48,15 @@ amax will match commits by, with **Ask amax · Disconnect**. With no GitHub app 
 6. **AC-6** The profile menu has **Git accounts**. The screen leads with the connection status, then the login and its
    verified emails, each with a PinButton. Connect and Disconnect are Ask amax intent buttons; there are no write
    controls on the page.
-7. **AC-7** "Disconnect GitHub" in chat shows a red confirm card listing what goes ("@kasun-dias and 2 emails");
-   confirming removes those identities, audited. Proposals already owned keep their owner.
+7. **AC-7** "Disconnect GitHub" in chat shows a red confirm card listing what goes ("@kasun-dias and 2 emails", every
+   GitHub login the person holds); confirming removes those identities, audited. Owners follow the repo (091): the card
+   says that proposals named for the person only through those emails lose them as owner at the next sync.
 8. **AC-8** MCP tools: `get_my_git_identities` (read), `connect_github` (returns a single-use connect link for the
    caller), `disconnect_github` (write), and for an Admin `unlink_git_identity` (one identity of any person, audited).
 9. **AC-9** After connecting, the next specclaw sync names the person as owner of the changes whose author email is one
    of theirs (091's rule, unless a person set the owner), and 104 drafts hours for their commits where commit time is on.
-10. **AC-10** Open `delivery.git-identity` link suggestions for an email the person just connected close as resolved.
+10. **AC-10** Open `delivery.git-identity` link suggestions for the login the person just connected
+    (`github:<login>`) are withdrawn, acting for that person.
 11. **AC-11** The screen and cards are keyboard-complete, labelled, and read in light and dark themes; the return from
     GitHub announces the result (aria-live).
 

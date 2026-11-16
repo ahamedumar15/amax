@@ -20,10 +20,11 @@ export async function GitAccountsPage({ viewer, searchParams }: ScreenProps) {
       <ResultNote result={searchParams?.github} reason={searchParams?.reason} />
       {github ? (
         <div className="card pinnable" style={{ maxWidth: 720 }}>
-          <div className="card-head"><h2>GitHub · Connected as @{github.login}</h2><PinButton inline pin={accountsPin} /></div>
+          <div className="card-head"><h2>GitHub · Connected as {github.logins.map((l) => `@${l.login}`).join(", ")}</h2><PinButton inline pin={accountsPin} /></div>
           <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>These emails are verified by GitHub.</p>
           <ul className="list" aria-label="Verified emails">
-            {github.emails.map((e) => <li key={e.id} className="pinnable"><div className="l"><div>{e.email}</div></div><PinButton pin={identityPin(e)} /></li>)}
+            {github.logins.flatMap((l) => l.emails.map((e) => (
+              <li key={e.id} className="pinnable"><div className="l"><div>{e.email}{github.logins.length > 1 && <small>@{l.login}</small>}</div></div><PinButton pin={identityPin(e)} /></li>)))}
           </ul>
           <p style={{ margin: "12px 0 0" }}><AskButton label="Ask amax · Disconnect GitHub" prompt="Disconnect my GitHub" pin={accountsPin} /></p>
         </div>

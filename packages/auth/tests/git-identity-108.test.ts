@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTenant } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
@@ -35,9 +37,30 @@ describe.skipIf(!hasDb)("108 GitHub identities (Postgres)", () => {
     expect(await emailsOf(NIMAL)).toEqual(["nimal-s nimal@lumen.test true"]);
   });
 
+  it("review round 1 (B7): two people linking one email at once: exactly one has it, and only that one reports it linked", async () => {
+    const shared = "pair@example.test";
+    const [a, b] = await Promise.all([KASUN, NIMAL].map((id, i) => tx((x) => setGitHubIdentities(x, T, id, { login: `racer-${i}`, emails: [shared] }))));
+    const owners = await t.owner`select user_id from auth.git_identity where lower(email) = ${shared}`;
+    expect([owners.length, a.linked.length + b.linked.length, [...a.skipped, ...b.skipped]]).toEqual([1, 1, [shared]]);
+    expect(owners[0].user_id).toBe(a.linked.length ? KASUN : NIMAL);
+  });
+
+  it("review round 1 (B9): 0033 keeps one of the rows the old rule allowed, the verified one first, so its indexes build", async () => {
+    await t.owner`drop index auth.git_identity_email`;
+    await t.owner`drop index auth.git_identity_login_email`;
+    await t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified) values
+      (${T}, ${KASUN}, 'github', 'dup-a', 'dup@example.test', false), (${T}, ${NIMAL}, 'github', 'dup-b', 'DUP@example.test', true),
+      (${T}, ${KASUN}, 'github', 'Case-Login', null, false), (${T}, ${KASUN}, 'github', 'case-login', null, false)`;
+    await t.owner.unsafe(readFileSync(join(__dirname, "../../db/migrations/0033_git_identity_emails.sql"), "utf8"));
+    const dup = await t.owner`select login, email_verified from auth.git_identity where lower(email) = 'dup@example.test'`;
+    const cased = await t.owner`select count(*)::int as n from auth.git_identity where lower(login) = 'case-login'`;
+    expect([dup.map((r) => [r.login, r.email_verified]), cased[0].n]).toEqual([[["dup-b", true]], 1]);
+  });
+
   it("AC4 the schema holds several emails per login, each email one person's", async () => {
-    await expect(t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email) values (${T}, ${KASUN}, 'github', 'other', 'NIMAL@lumen.test')`).rejects.toThrow(/git_identity_email/);
-    const [{ n }] = await t.owner`select count(*)::int as n from auth.git_identity where provider = 'github' and login = 'nimal-s'`;
-    expect(n).toBe(1);
+    await t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email) values (${T}, ${NIMAL}, 'github', 'one-login', 'one@example.test'), (${T}, ${NIMAL}, 'github', 'one-login', 'two@example.test')`;
+    await expect(t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email) values (${T}, ${KASUN}, 'github', 'other', 'ONE@example.test')`).rejects.toThrow(/git_identity_email/);
+    const [{ n }] = await t.owner`select count(*)::int as n from auth.git_identity where provider = 'github' and login = 'one-login'`;
+    expect(n).toBe(2);
   });
 });

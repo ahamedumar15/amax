@@ -38,27 +38,45 @@ export async function linkGitIdentity(tx: Tx, tenantId: string, g: { provider: G
 
 export type GitHubLinkResult = { login: string; linked: string[]; removed: string[]; skipped: string[] };
 
+/** Values as a SQL list for `in (...)`, each its own parameter; an empty list matches nothing. */
+const anyOf = (column: ReturnType<typeof sql>, values: string[]) => (values.length ? sql`${column} in (${sql.join(values.map((v) => sql`${v}`), sql`, `)})` : sql`false`);
+
 /**
  * 108 AC-3–AC-5: a person's GitHub login and the emails GitHub verified, stored as their verified identities. A connect
  * again replaces the set: emails GitHub no longer lists go. A login or email linked to someone else is never taken over:
- * it is skipped and named, and the rest are linked (a login of someone else's skips every email).
+ * it is skipped and named, and the rest are linked (a login of someone else's skips every email). Review round 1: what is
+ * reported linked is what was written, so an email another writer took a moment earlier reads as skipped.
  */
 export async function setGitHubIdentities(tx: Tx, tenantId: string, userId: string, gh: { login: string; emails: string[] }): Promise<GitHubLinkResult> {
   const emails = [...new Set(gh.emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
   const others = await tx.execute(sql`select lower(login) as login, lower(email) as email from auth.git_identity where provider = 'github' and user_id <> ${userId}
-    and (lower(login) = lower(${gh.login}) or lower(email) = any(${`{${emails.map((e) => `"${e}"`).join(",")}}`}::text[]))`);
+    and (lower(login) = lower(${gh.login}) or ${anyOf(sql`lower(email)`, emails)})`);
   const loginTaken = others.some((o) => o.login === gh.login.toLowerCase());
   const takenEmails = new Set(others.map((o) => o.email as string | null).filter((e): e is string => Boolean(e)));
   const kept = loginTaken ? [] : emails.filter((e) => !takenEmails.has(e));
   const removed = await tx.execute(sql`delete from auth.git_identity where provider = 'github' and user_id = ${userId}
-    and not (lower(login) = lower(${gh.login}) and lower(coalesce(email, '')) = any(${`{${kept.map((e) => `"${e}"`).join(",")}}`}::text[])) returning email, login`);
-  for (const e of kept) await tx.execute(sql`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
-    values (${tenantId}, ${userId}, 'github', ${gh.login}, ${e}, true) on conflict do nothing`);
-  return { login: gh.login, linked: kept, removed: removed.map((r) => String(r.email ?? r.login)), skipped: loginTaken ? [`@${gh.login}`] : emails.filter((e) => takenEmails.has(e)) };
+    and not (lower(login) = lower(${gh.login}) and ${anyOf(sql`lower(coalesce(email, ''))`, kept)}) returning email, login`);
+  const linked: string[] = [];
+  for (const e of kept) {
+    const [own] = await tx.execute(sql`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
+      values (${tenantId}, ${userId}, 'github', ${gh.login}, ${e}, true) on conflict do nothing returning email`);
+    const [mine] = own ? [own] : await tx.execute(sql`select email from auth.git_identity where provider = 'github' and user_id = ${userId} and lower(email) = ${e}`);
+    if (mine) linked.push(e);
+  }
+  const skipped = loginTaken ? [`@${gh.login}`] : emails.filter((e) => !linked.includes(e));
+  return { login: gh.login, linked, removed: removed.map((r) => String(r.email ?? r.login)), skipped };
 }
 
 /** A person's own Git identities, newest login first. */
 export const gitIdentitiesOf = async (tx: Tx, userId: string) =>
   (await tx.execute(sql`select * from auth.git_identity where user_id = ${userId} order by provider, login, email`)).map(identity);
 
-export const unlinkGitIdentity = (tx: Tx, id: string) => tx.execute(sql`delete from auth.git_identity where id = ${id}`);
+/** One identity gone; what it was, or null when there was none. */
+export const unlinkGitIdentity = async (tx: Tx, id: string) => {
+  const [r] = await tx.execute(sql`delete from auth.git_identity where id = ${id} returning *`);
+  return r ? identity(r) : null;
+};
+
+/** 108 AC-7: every identity a person has with a provider, gone; what they were. */
+export const unlinkGitIdentitiesOf = async (tx: Tx, userId: string, provider: GitProvider) =>
+  (await tx.execute(sql`delete from auth.git_identity where user_id = ${userId} and provider = ${provider} returning *`)).map(identity);

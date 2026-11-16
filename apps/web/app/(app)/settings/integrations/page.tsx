@@ -14,7 +14,8 @@ export const metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
 
 const CLIENTS = { label: "Connected clients", tool: "list_mcp_clients", args: {} };
-const GITHUB_APP = { label: "GitHub accounts app", tool: "get_secret_meta", args: { connector: "github-oauth" } };
+// Review round 1: the credentials list answers whether or not the app is set up.
+const GITHUB_APP = { label: "Connector credentials", tool: "list_secrets", args: {} };
 
 // Chat-first (047): revoking a client is an "Ask amax" chip; chat confirms revoke_mcp_client.
 export default async function IntegrationsPage() {

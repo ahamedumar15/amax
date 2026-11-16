@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { gitIdentitiesOf } from "@amax/auth/git-identity";
+import { gitIdentitiesOf, linkGitIdentity } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
-import { completeGitHubConnect } from "../contracts";
+import { completeGitHubConnect, OWNERS_NOTE } from "../contracts";
 import { ctxFor } from "../server/context";
 import { gitAccountsDatabase } from "./setup";
 
@@ -25,8 +25,17 @@ describe.skipIf(!hasDb)("108 the Git accounts tools (Postgres)", () => {
   it("AC7 Disconnect GitHub is a red card naming what goes; confirming removes it", async () => {
     await connect();
     const card = await toolOf(kasun, "disconnect_github")!.card!(kasun as never, {} as never);
-    expect([card.title, card.look?.tone, card.look?.confirm]).toEqual(["Disconnect GitHub: @kasun-dias and 2 emails", "danger", "Disconnect"]);
+    expect([card.title, card.look?.tone, card.look?.confirm, card.lines.find((l) => l.label === "Owners")?.value]).toEqual(["Disconnect GitHub: @kasun-dias and 2 emails", "danger", "Disconnect", OWNERS_NOTE]);
     await db.registry.call(kasun, "disconnect_github", {}, { source: "mcp" });
+    expect(await db.tx((tx) => gitIdentitiesOf(tx, kasun.userId))).toEqual([]);
+  });
+
+  it("review round 1: Disconnect names every GitHub login the person holds, and removes exactly that", async () => {
+    await connect();
+    await db.tx((tx) => linkGitIdentity(tx, kasun.tenantId, { provider: "github", login: "kasun-old", email: null, userId: kasun.userId }));
+    const card = await toolOf(kasun, "disconnect_github")!.card!(kasun as never, {} as never);
+    expect(card.title).toBe("Disconnect GitHub: @kasun-dias, @kasun-old and 2 emails");
+    expect(await db.registry.call(kasun, "disconnect_github", {}, { source: "mcp" })).toEqual({ logins: ["kasun-dias", "kasun-old"], removed: 3 });
     expect(await db.tx((tx) => gitIdentitiesOf(tx, kasun.userId))).toEqual([]);
   });
 
