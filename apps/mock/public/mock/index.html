@@ -3617,6 +3617,201 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
     <p class="muted" style="font-size:13px">Fleet Tracker (fictional) has no linked repo, so its header keeps <button class="btn sm primary" type="button">✦ New proposal</button> as today.</p></div>
 </section>
 
+<!-- ================= 106 Set up a project card ================= -->
+<section data-change="106-set-up-project-card" id="106-set-up-project-card" data-roles="admin pm" data-title="Chat: set up a project" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-project">
+  <h1>Chat: set up a project on one card</h1>
+  <p class="lede">One card, already filled in, creates the project and links its repo. Nothing is written until the button. Fictional data.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+    <div class="card" style="max-width:460px">
+      <p class="muted" style="margin:0 0 8px">You: Set up a project for the Northwind portal repo</p>
+      <div class="card" style="padding:16px 18px">
+        <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Set up a project</span><span class="chip">PM: You</span></div>
+        <label style="display:block;font-size:12.5px;font-weight:600;margin:4px 0 2px" for="m106-name">Name</label>
+        <input id="m106-name" value="Northwind Portal" style="width:100%;padding:8px 10px;border:1px solid #d9d6ea;border-radius:10px;font:inherit">
+        <label style="display:block;font-size:12.5px;font-weight:600;margin:10px 0 2px" for="m106-key">Key</label>
+        <div style="display:flex;gap:8px;align-items:center"><input id="m106-key" value="NWP" style="width:90px;padding:8px 10px;border:1px solid #d9d6ea;border-radius:10px;font:inherit;text-transform:uppercase">
+          <span style="font-size:12.5px;color:#0F6E4A" aria-live="polite">✓ free · proposal ids NWP-001</span></div>
+        <p class="muted" style="font-size:11.5px;margin:4px 0 0">The key can't change later.</p>
+        <fieldset style="border:0;padding:0;margin:10px 0 0"><legend style="font-size:12.5px;font-weight:600;margin-bottom:4px">Client</legend>
+          <span class="chip">Internal</span> <span class="chip">Contoso</span> <span class="chip" style="background:#5B44D6;color:#fff">Northwind ●</span> <span class="chip">+ new…</span></fieldset>
+        <fieldset style="border:0;padding:0;margin:10px 0 0"><legend style="font-size:12.5px;font-weight:600;margin-bottom:4px">Billing</legend>
+          <span class="chip">Fixed</span> <span class="chip" style="background:#5B44D6;color:#fff">T&amp;M ●</span> <span class="chip">Retainer</span> <span class="chip">Internal</span></fieldset>
+        <div style="border-top:1px solid #d9d6ea;margin-top:12px;padding-top:10px">
+          <p style="font-size:12.5px;font-weight:600;margin:0 0 2px">Repo <span class="muted" style="font-weight:400">(optional)</span></p>
+          <label class="muted" style="display:block;font-size:12px;margin:4px 0 2px" for="m106-repo">URL</label>
+          <input id="m106-repo" value="https://github.com/example/northwind-portal" style="width:100%;padding:8px 10px;border:1px solid #d9d6ea;border-radius:10px;font:inherit">
+          <fieldset style="border:0;padding:0;margin:8px 0 0"><legend class="muted" style="font-size:12px;margin-bottom:4px">Branch</legend>
+            <span class="chip" style="background:#5B44D6;color:#fff">main ●</span> <span class="chip">develop</span> <span class="chip">other…</span></fieldset>
+        </div>
+        <p style="margin-top:14px"><span class="btn">Create NWP and link repo</span> &nbsp; Cancel</p>
+        <p class="muted" style="font-size:12px">Nothing is created until you press the button.</p>
+      </div>
+      <p class="muted">After confirming: ✓ Created NWP · Northwind Portal, linked github.com/example/northwind-portal (main)</p>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>Key taken</h2></div>
+        <p style="font-size:13px"><span style="display:inline-block;padding:6px 10px;border:1px solid #B42318;border-radius:10px">CON</span> <span style="color:#B42318;font-size:12.5px">CON is taken (Contoso Portal). Try CNP.</span></p>
+        <p class="muted" style="font-size:12.5px">The button stays disabled until the key is free and 2–10 capitals or digits.</p></div>
+      <div class="card"><div class="card-head"><h2>No repo</h2></div>
+        <p class="muted" style="font-size:12.5px">The Repo section stays collapsed: <span class="btn sm">Create NWP</span></p></div>
+      <div class="card"><div class="card-head"><h2>Link a repo to an existing project</h2></div>
+        <p style="font-size:13px;margin:0 0 6px"><b>Fleet Tracker</b> · FLT</p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 6px">URL <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">https://github.com/example/fleet-tracker</span></p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 8px">Branch <span class="chip" style="background:#5B44D6;color:#fff">main ●</span> <span class="chip">other…</span></p>
+        <p style="margin:0"><span class="btn sm">Link the repo</span> &nbsp; Cancel</p></div>
+      <div class="card"><div class="card-head"><h2>Amendment 1: on Projects</h2></div>
+        <p class="muted" style="font-size:12.5px;margin:0 0 6px"><span class="btn sm primary">✦ New project</span> and Ask amax open chat and send nothing; chat suggests (a pick fills the message box):</p>
+        <p style="margin:0"><span class="chip">Set up a project</span> <span class="chip">Link a repo to a project</span> <span class="chip">Which projects need attention?</span></p>
+        <p class="muted" style="font-size:12px;margin:8px 0 0">On a project with no repo: <span class="chip">Link a repo</span></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 107 Project team ================= -->
+<section data-change="107-project-team" id="107-project-team" data-roles="admin pm" data-title="Project team" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-project">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span><a href="#">Northwind Portal (fictional)</a><span>/</span>Team</nav>
+  <div class="row head"><div><h1>Team · NWP</h1><p class="lede">Who is on the project this month and the next two. Fictional data.</p></div>
+    <div class="actions"><button class="btn sm primary" type="button">✦ Ask amax · Add someone to NWP</button></div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start;margin-top:12px">
+    <div class="card">
+      <div class="card-head"><h2>PM: Maya Fernando</h2><span class="chip">+</span></div>
+      <table class="tbl"><thead><tr><th>Person</th><th>Nov</th><th>Dec</th><th>Jan</th><th></th></tr></thead><tbody>
+        <tr><td>Nimal Silva <small class="muted">Tech lead</small></td><td class="num">50%</td><td class="num">50%</td><td class="num">—</td><td><span class="chip">+</span></td></tr>
+        <tr><td>Kasun Dias <small class="muted">Engineer</small></td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td><span class="chip">+</span></td></tr>
+        <tr><td>Tharushi Wijesinghe <small class="muted">Associate engineer</small> <span class="chip info">until further notice</span></td><td class="num">40%</td><td class="num">40%</td><td class="num">40%</td><td><span class="chip">+</span></td></tr>
+      </tbody></table>
+      <p class="muted" style="font-size:12px">"Until further notice" stays on every month until someone ends it; no monthly copy.</p>
+    </div>
+    <div class="card" style="max-width:460px">
+      <p class="muted" style="margin:0 0 8px">You: Add someone to NWP</p>
+      <div class="card" style="padding:16px 18px">
+        <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Choose · Add to NWP</span><span class="chip">NWP</span></div>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c107" checked> <span><b>Dinesh Wickrama</b> · Engineer · 100% free this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px solid #d9d6ea;border-radius:12px;margin-bottom:6px"><input type="radio" name="c107"> <span><b>Ayesha Rahman</b> · QA lead · 40% free this month</span></label>
+        <label style="display:flex;gap:10px;padding:10px;border:1px dashed #d9d6ea;border-radius:12px"><input type="radio" name="c107"> <span>Someone else…</span></label>
+        <div style="display:flex;gap:14px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <label style="font-size:12.5px;font-weight:600" for="m107-pct">Percent</label> <input id="m107-pct" value="50" style="width:60px;padding:6px 8px;border:1px solid #d9d6ea;border-radius:10px;font:inherit"> %
+          <span class="chip" style="background:#5B44D6;color:#fff">This month ●</span> <span class="chip">Until further notice</span>
+        </div>
+        <p style="margin-top:14px"><span class="btn">Add Dinesh to NWP</span> &nbsp; Cancel</p>
+      </div>
+      <p class="muted">After confirming: ✓ Added Dinesh Wickrama to NWP · 50% in November</p>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>No HR record yet</h2></div>
+        <p style="font-size:13px">Priya Jayasena (fictional) can sign in but has no HR record, so she can't be allocated yet.</p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 6px">Title <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">Engineer</span> · Department <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">Engineering</span></p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 8px">Entity <span class="chip" style="background:#5B44D6;color:#fff">Sri Lanka ●</span> <span class="chip">Australia</span></p>
+        <p style="margin:0"><span class="btn sm">Add to HR and NWP</span> &nbsp; Cancel</p></div>
+      <div class="card"><div class="card-head"><h2>Hand over the PM</h2></div>
+        <p class="muted" style="margin:0 0 6px">You: Make Nimal the PM of NWP</p>
+        <p style="font-size:13px;margin:0 0 8px">Make <b>Nimal Silva</b> the PM of NWP (was Maya Fernando)</p>
+        <p style="margin:0"><span class="btn sm">Make PM</span> &nbsp; Cancel</p></div>
+      <div class="card"><div class="card-head"><h2>After setting up a project (106)</h2></div>
+        <p class="muted" style="font-size:12.5px;margin:0">✓ Created NWP · Northwind Portal. <b>Add your team?</b> opens the card above for NWP.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 109 Project team follow-ups ================= -->
+<section data-change="109-project-team-follow-ups" id="109-project-team-follow-ups" data-roles="admin pm" data-title="Add to project: a range" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-project">
+  <h1>Add to project: a month or a range stays one</h1>
+  <p class="lede">A request with months keeps them, even on an internal project. Fictional data.</p>
+  <div class="card" style="max-width:460px">
+    <p class="muted" style="margin:0 0 8px">You: Add Dinesh to NWP from March to May</p>
+    <div class="card" style="padding:16px 18px">
+      <div class="card-head"><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Confirm · Add to project</span><span class="chip">NWP</span></div>
+      <p style="font-size:13px;margin:0 0 6px"><b>Who</b> <span class="chip" style="background:#ede9fb;color:#4b3bb5">Dinesh Wickrama · Engineer · 100% free this month</span></p>
+      <p style="font-size:13px;margin:0 0 6px"><b>Percent</b> <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">50</span></p>
+      <p style="font-size:13px;margin:0 0 6px"><b>From</b> March 2027 · <b>Through</b> <span style="border:1px solid #d9d6ea;border-radius:8px;padding:3px 8px">2027-05</span></p>
+      <p style="font-size:13px;margin:0 0 10px"><b>For</b> <span class="chip" style="background:#ede9fb;color:#4b3bb5">This month ●</span> <span class="chip">Until further notice</span></p>
+      <p style="margin:0"><span class="btn">Add Dinesh Wickrama to NWP, Mar–May</span> &nbsp; Cancel</p>
+    </div>
+    <p class="muted" style="font-size:12px">Until further notice with a Through month is refused next to Through. Ending a standing allocation, by hand or by the monthly job, removes the months it wrote; months removed by hand stay removed when it is set again.</p>
+  </div>
+</section>
+
+<!-- ================= 110 HR one today ================= -->
+<section data-change="110-hr-one-today" id="110-hr-one-today" data-roles="admin hr" data-title="People: no time zone" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-people">
+  <h1>People</h1>
+  <p class="lede">110: an entity with no time zone leads the screen; HR's dates are each entity's own today. Fictional data.</p>
+  <div class="card" style="max-width:720px;border-left:4px solid #d97706">
+    <div class="card-head"><h2 style="font-size:15px">Needs attention</h2><span class="chip">Pin</span></div>
+    <p style="font-size:13.5px;margin:0 0 10px"><b>Lumen Labs Pty Ltd has no time zone set:</b> its joiners and leavers aren't moved, and people can't be added there.</p>
+    <p style="margin:0"><span class="btn">Ask amax · Set the time zone</span></p>
+  </div>
+  <table class="tbl" style="max-width:720px;margin-top:16px"><thead><tr><th>Name</th><th>Title</th><th>Entity</th><th>Status</th></tr></thead><tbody>
+    <tr><td>Dinesh Wickrama</td><td>Engineer</td><td>Lumen Labs Lanka</td><td><span class="chip good">Active · joined today</span></td></tr>
+    <tr><td>Liam Murphy</td><td>Account director</td><td>Lumen Labs Pty Ltd</td><td><span class="chip">Active</span></td></tr>
+  </tbody></table>
+  <div class="card" style="max-width:460px;margin-top:16px">
+    <p class="muted" style="margin:0 0 8px">Add to project, Through edited to before the start:</p>
+    <p style="margin:0"><span class="btn">Add Dinesh Wickrama to NWP, Mar–2027-01</span></p>
+    <p class="muted" style="font-size:12px">Refused next to Through: through can't be before month.</p>
+  </div>
+</section>
+
+<!-- ================= 111 HR today follow-ups ================= -->
+<section data-change="111-hr-today-follow-ups" id="111-hr-today-follow-ups" data-roles="admin hr" data-title="HR today follow-ups" data-nav="no" data-icon="plug" data-parent="001-amax-foundation-people">
+  <h1>People</h1>
+  <p class="lede">111: no screen change. HR works out each entity's today one way, in the database, for its writes and reads alike.</p>
+</section>
+
+<!-- ================= 108 Connect GitHub ================= -->
+<section data-change="108-connect-github" id="108-connect-github" data-roles="all" data-title="Git accounts" data-nav="no" data-icon="plug" data-parent="001-amax-foundation">
+  <h1>Git accounts</h1>
+  <p class="lede">Reached from the profile menu. amax matches your commits and proposals to you by these verified emails. Fictional data.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+    <div class="card">
+      <div class="card-head"><h2>GitHub · Connected as @kasun-dias</h2><span class="chip">+</span></div>
+      <p class="muted" style="font-size:12.5px;margin:0 0 8px">Connected Nov 15 · these emails are verified by GitHub</p>
+      <ul class="list">
+        <li><div class="l"><div>kasun@lumenlabs.test<small>Primary</small></div></div><span class="chip">+</span></li>
+        <li><div class="l"><div>4821937+kasun-dias@users.noreply.github.com<small>GitHub no-reply</small></div></div><span class="chip">+</span></li>
+        <li><div class="l"><div>kasun.dias@example.test<small>Personal</small></div></div><span class="chip">+</span></li>
+      </ul>
+      <p style="margin:10px 0 0"><button class="btn sm" type="button">✦ Ask amax · Disconnect GitHub</button></p>
+      <p class="muted" style="font-size:12px" aria-live="polite">kasun.old@example.test is linked to another person; ask an Admin.</p>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>Not connected yet</h2></div>
+        <p style="font-size:13px;margin:0 0 8px">GitHub · <span class="chip">Not connected</span></p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 8px">Until you connect, proposals from the repo can't name you as owner and no hours are drafted from your commits.</p>
+        <button class="btn sm primary" type="button">✦ Ask amax · Connect GitHub</button></div>
+      <div class="card"><div class="card-head"><h2>In chat</h2></div>
+        <p class="muted" style="margin:0 0 6px">You: Connect my GitHub</p>
+        <div class="card" style="padding:12px 14px">
+          <p style="font-size:13px;margin:0 0 8px">amax reads your GitHub login and verified emails once. It keeps no GitHub token.</p>
+          <p style="margin:0"><span class="btn sm">Connect GitHub ↗</span> &nbsp; Cancel</p></div>
+        <p class="muted" style="font-size:12px">After GitHub: ✓ Connected GitHub as @kasun-dias · 3 emails</p></div>
+      <div class="card"><div class="card-head"><h2>Disconnect</h2></div>
+        <p style="font-size:13px;margin:0 0 8px">Remove <b>@kasun-dias and 3 emails</b>? Proposals you already own keep you as owner.</p>
+        <p style="margin:0"><span class="btn sm" style="background:#B42318;border-color:#B42318;color:#fff">Disconnect</span> &nbsp; Cancel</p></div>
+      <div class="card"><div class="card-head"><h2>No GitHub app yet</h2></div>
+        <p class="muted" style="font-size:12.5px;margin:0">GitHub isn't set up for this workspace; an Admin adds the GitHub app.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 112 Git accounts follow-ups ================= -->
+<section data-change="112-git-accounts-follow-ups" id="112-git-accounts-follow-ups" data-roles="all" data-title="Git accounts follow-ups" data-nav="no" data-icon="plug" data-parent="001-amax-foundation">
+  <h1>Git accounts</h1>
+  <p class="lede">112: no new screen. The note after GitHub's return comes from that return's own record; a link that doesn't match one says only this. Fictional data.</p>
+  <p class="muted" style="display:inline-block">amax can't say how that GitHub connect went. To try again, ask amax to connect GitHub.</p>
+</section>
+
+<!-- ================= 113 PR #119 CI green ================= -->
+<section data-change="113-pr-119-ci-green" id="113-pr-119-ci-green" data-roles="admin" data-title="PR #119 CI" data-nav="no" data-icon="plug" data-parent="001-amax-foundation">
+  <h1>No screen change</h1>
+  <p class="lede">113: a test loads HR the way the app loads installed modules, so the module graph check passes on PR #119.</p>
+</section>
+
+<!-- ================= 114 PR #119 CodeQL ================= -->
+<section data-change="114-pr-119-codeql" id="114-pr-119-codeql" data-roles="admin" data-title="PR #119 CodeQL" data-nav="no" data-icon="plug" data-parent="001-amax-foundation">
+  <h1>No screen change</h1>
+  <p class="lede">114: the mock looks the same; its script escapes the text it puts into HTML.</p>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
@@ -4021,12 +4216,15 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   // the browser jumps to the #section anchor on first load; undo that once
   window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,0)},0)});
   document.getElementById('skipLink').addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('section.on'),h=(t&&t.querySelector('h1'))||document.getElementById('main');h.setAttribute('tabindex','-1');h.focus();});
+  // 114: text the script puts into HTML is escaped first (CodeQL: DOM text reinterpreted as HTML).
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  window.amaxEsc=esc;
   // phone: "More" opens a sheet with every screen this role can see
   (function(){var more=document.getElementById('navMore'),sheet=document.getElementById('navSheet'),list=document.getElementById('sheetList');
     more.addEventListener('click',function(){var h='',kids=nav.children;
       for(var i=0;i<kids.length;i++){var k=kids[i];if(k.hidden)continue;
-        if(k.classList.contains('grp'))h+='<li class="sh" aria-hidden="true">'+k.textContent+'</li>';
-        else h+='<li><a href="'+k.getAttribute('href')+'"'+(k.getAttribute('aria-current')?' aria-current="page"':'')+'>'+k.querySelector('svg').outerHTML+'<span>'+k.textContent+'</span></a></li>';}
+        if(k.classList.contains('grp'))h+='<li class="sh" aria-hidden="true">'+esc(k.textContent)+'</li>';
+        else h+='<li><a href="'+esc(k.getAttribute('href'))+'"'+(k.getAttribute('aria-current')?' aria-current="page"':'')+'>'+k.querySelector('svg').outerHTML+'<span>'+esc(k.textContent)+'</span></a></li>';}
       list.innerHTML=h;sheet.showModal();});
     list.addEventListener('click',function(e){if(e.target.closest('a'))sheet.close();});})();
   // drawers
@@ -4079,7 +4277,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   var tag=el('g',{}); tag.innerHTML='<path d="M'+lx+' '+(ly-9)+'V'+(ly-42)+'" stroke="#5B44D6" stroke-width="1.5" stroke-dasharray="2 3"/><rect x="'+(lx-150)+'" y="'+(ly-74)+'" width="138" height="30" rx="10" fill="#5B44D6"/><text x="'+(lx-81)+'" y="'+(ly-54)+'" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="600" font-family="Avenir Next,system-ui">90 h by agents so far</text>'; svg.appendChild(tag);
   // every chart gets its values as a visually hidden table next to it
   function srTable(sv,caption,head,rows){var t=document.createElement('table');t.className='sr';
-    t.innerHTML='<caption>'+caption+'</caption><thead><tr>'+head.map(function(h){return '<th scope="col">'+h+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return i?'<td>'+c+'</td>':'<th scope="row">'+c+'</th>'}).join('')+'</tr>'}).join('')+'</tbody>';
+    var esc=window.amaxEsc;t.innerHTML='<caption>'+esc(caption)+'</caption><thead><tr>'+head.map(function(h){return '<th scope="col">'+esc(h)+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return i?'<td>'+esc(c)+'</td>':'<th scope="row">'+esc(c)+'</th>'}).join('')+'</tr>'}).join('')+'</tbody>';
     sv.setAttribute('aria-describedby',(sv.id||(sv.id='v'+Math.random().toString(36).slice(2)))+'-data');t.id=sv.id+'-data';sv.parentNode.insertBefore(t,sv.nextSibling);}
   srTable(svg,svg.getAttribute('aria-label'),['Week','Agents (h)','People (h)'],agents.map(function(v,i){return ['W'+(31+i),v,people[i]]}));
 
@@ -4321,7 +4519,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       while((m=re.exec(t))){var n=parseFloat(m[1].replace(/,/g,''));
         if(m[4]&&/%/.test(m[4])){F='stage';D.win=n+'%';hit(m[0].trim());F='value';continue;}
         if(m[4]&&/h/i.test(m[4])){D.hours=n+' h';hit(m[0].trim());continue;}
-        if(/^k|thousand/i.test(m[2]||''))n*=1000;if(/^m|million/i.test(m[2]||''))n*=1e6;
+        if(/^(k|thousand)/i.test(m[2]||''))n*=1000;if(/^(m|million)/i.test(m[2]||''))n*=1e6;
         if(n>=1000){var cur=(m[3]||'USD').toUpperCase().replace('DOLLARS','USD');var FX={AUD:.66,GBP:1.27,EUR:1.08,SGD:.74,LKR:.0033};
           D.value=(cur==='USD'?'$':cur+' ')+n.toLocaleString('en-US')+(FX[cur]?' (≈ $'+(Math.round(n*FX[cur]/1000)*1000).toLocaleString('en-US')+')':'');hit(m[0].trim());}}
       F='stage';[['negotiat','Negotiation'],['proposal stage','Proposal'],['qualif','Qualified'],['new idea','New idea']].some(function(x){var i=low.indexOf(x[0]);if(i>-1){D.stage=x[1];hit(t.substr(i,x[0].length));return true;}});
@@ -4343,7 +4541,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       if(S.intent){var it=INTENTS[S.intent],miss=it.need.filter(function(k){return !S.D[k]});
         if(miss.length){var w={name:'what it is',client:'the client',value:'a rough value',owner:'who leads it',person:'who',type:'the leave type',dates:'the dates',title:'a short description',hours:'how many hours'};
           msg(false,'Got it. Still need '+miss.map(function(k){return w[k]}).join(' and ')+'.');return;}
-        var m=msg(false,'Here is the '+it.label+'.'+record()+'<div class="acts"><button class="btn sm primary" data-commit>Add it</button><button class="btn sm" data-tweak>Change something</button></div>');return;}
+        msg(false,'Here is the '+it.label+'.'+record()+'<div class="acts"><button class="btn sm primary" data-commit>Add it</button><button class="btn sm" data-tweak>Change something</button></div>');return;}
       // questions and pinned context
       var low=text.toLowerCase();
       if(/v2\.4|sign-?off|qa/.test(low)){msg(false,'<div class="tools"><span>list_proposals</span><span>get_release</span></div>Both proposals in v2.4.0 are Verified and in QA without sign-off: CON-012 SSO token refresh (Ayesha) and CON-010 Email digest (Kasun). Want me to ask them?');return;}
@@ -4422,7 +4620,6 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
 
   // ---- payroll changes: the agent explains, a person decides ----
   (function(){var tb=document.getElementById('payChanges'); if(!tb) return; var run=document.getElementById('approveRun'),hint=document.getElementById('runHint'),lede=document.getElementById('payLede');
-    var OPEN='<button class="btn sm primary" data-decide="accept">Accept</button> <button class="btn sm" data-decide="query">Query</button>';
     function update(){var n=tb.querySelectorAll('tr[data-change-row="open"]').length;
       if(run.dataset.done) return; run.disabled=n>0;
       hint.textContent=n?'Resolve the '+n+' open change'+(n>1?'s':'')+' to approve the run':'All changes resolved. Ready to approve';
@@ -4503,7 +4700,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       if(b.dataset.view){setView(b.dataset.view);closeM(true);toast('Viewing as '+NAMES[b.dataset.view]);}
       else if(b.dataset.themeOpt){setTheme(b.dataset.themeOpt);closeM(true);}
       else if(b.id==='signOut'){closeM(true);toast('Signed out (not in this mock)');}});
-    var st='system';try{st=localStorage.getItem('amax-theme')||'system'}catch(e){}
+    var st='system';try{st=localStorage.getItem('amax-theme')||'system';}catch(e){}
     setTheme(/^(system|light|dark)$/.test(st)?st:'system');
     var sal=document.getElementById('salShow');if(sal)sal.addEventListener('click',function(){revealed=!revealed;mask();});
     setView('admin');

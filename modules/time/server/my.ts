@@ -3,7 +3,7 @@ import type { Viewer } from "@amax/auth";
 import type { Tx } from "@amax/db";
 import { listProjectRefs } from "@amax/delivery/contracts";
 import type { WeekStatus } from "../contracts";
-import { isoWeekOf, shownDays, weekKey, type IsoWeek } from "../week";
+import { shownDays, weekKey, type IsoWeek } from "../week";
 import { exactWeekHours, targetsOf, weekFigures } from "./targets";
 import { entrySums, hoursOf, projectNames, read, weekEntries, type EntryLine } from "./read";
 import { currentWeek } from "./rules";

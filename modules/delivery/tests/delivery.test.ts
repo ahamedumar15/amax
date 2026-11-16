@@ -9,7 +9,7 @@ import { applyViewAs, installAuthorizer, setGrants, setViewerScopeResolvers, vie
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import manifest from "../module";
-import { EVENTS, getProjectRef, listProjectRefs, managedProjectIds, PHASES } from "../contracts";
+import { EVENTS, getProjectRef, listProjectRefs, PHASES } from "../contracts";
 import { mcpTools } from "../mcp";
 import { ctxFor } from "../server/context";
 import { getProject, listProjects, listProposals, listReleases, phaseCounts, shippedPerWeek, today, weeklyThroughput } from "../server/queries";

@@ -7,9 +7,9 @@ const changeMd = (name: string, header: string, verify = "", body = "") =>
   ({ [`.specclaw/changes/${name}/change.md`]: `**Review:** ${header}\n${body}## Verify\n${verify}\n` });
 const finalAt = (name: string): Step => (h) => ({ [`.specclaw/changes/${name}/review/round-1.json`]: round(1, h, { final: true, status: "clean" }) });
 const stacked: Step = () => ({ ...changeMd("103-stacked", "covered-by 101-cover"), "modules/demo/b.ts": "export {};\n" });
-const cover = (verify: string): Step => () => changeMd("archive/101-cover", "change", verify);
+const cover = (verify: string): Step => (_h) => changeMd("archive/101-cover", "change", verify);
 const reviewed: Step = (h) => ({ ...cover("loop covered 103-stacked: **Review:** covered-by 101-cover")(h), ...finalAt("archive/101-cover")(h) });
-const later = (subject: string): Step => () => ({ [SUBJECT]: subject, "modules/demo/c.ts": "export {};\n" });
+const later = (subject: string): Step => (_h) => ({ [SUBJECT]: subject, "modules/demo/c.ts": "export {};\n" });
 const mention: Step = (h) => ({
   ...changeMd("archive/101-cover", "change", "loop covered 103-stacked", "## Problem\nSee 090's ## Verify for context.\n## Tasks\n"),
   ...finalAt("archive/101-cover")(h),

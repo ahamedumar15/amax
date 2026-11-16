@@ -15,7 +15,6 @@ import { CARD_DAYS, cancelAction, chatTurn, confirmAction, NotPendingError, type
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
 import { chatIntents } from "../chat";
-import { managedProjectIds } from "../contracts";
 import { ctxFor } from "../server/context";
 
 const T = lumen.tenant.id;

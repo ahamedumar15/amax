@@ -21,7 +21,11 @@ function fakeGitHub(): Promise<Server> {
     const u = new URL(req.url ?? "/", `http://127.0.0.1:${PORT}`);
     const send = (body: unknown) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
     if (u.pathname === "/login/oauth/authorize") {
-      res.writeHead(302, { location: `${u.searchParams.get("redirect_uri")}?code=good&state=${u.searchParams.get("state")}` });
+      // 114: only ever back to the local app under test.
+      const back = new URL(u.searchParams.get("redirect_uri") ?? "", "http://localhost");
+      if (back.protocol !== "http:" || back.hostname !== "localhost") { res.writeHead(400); return res.end(); }
+      back.search = new URLSearchParams({ code: "good", state: u.searchParams.get("state") ?? "" }).toString();
+      res.writeHead(302, { location: back.toString() });
       return res.end();
     }
     if (u.pathname === "/login/oauth/access_token") return send({ access_token: "gho_e2e" });

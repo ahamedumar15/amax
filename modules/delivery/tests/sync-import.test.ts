@@ -31,7 +31,6 @@ describe.skipIf(!hasDb)("AC-2/AC-3 self-sync import", () => {
   let t: Awaited<ReturnType<typeof migratedDatabase>>;
   let app: Db;
   let ctx: ServiceContext;
-  const audits = async () => Number((await withTenant(app, T, (tx) => tx.execute(sql`select count(*)::int as n from core.audit_event where action = 'delivery.proposal.sync'`)))[0].n);
 
   beforeAll(async () => {
     t = await migratedDatabase();

@@ -7,7 +7,6 @@ import { applyViewAs, installAuthorizer, setGrants, viewerForUser, type Viewer, 
 import { authFixtures } from "@amax/auth/fixtures";
 import { loadFixtures, lumen } from "@amax/testing";
 import delivery from "../module";
-import { managedProjectIds } from "../contracts";
 import { ctxFor } from "../server/context";
 import { moveProposal } from "../server/services";
 import { createRegistry, ToolError } from "@amax/mcp";

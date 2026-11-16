@@ -2,7 +2,6 @@ import { can, type Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { IntentButton, PinButton } from "@amax/ui";
 import { projectHref, releaseHref } from "../contracts";
-import { AskButton } from "./AskButton";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
 import { releasePin } from "../pins";
 import { day, needViewer, SignInFirst } from "./parts";
