@@ -19,13 +19,13 @@ export async function GET(req: Request) {
   if (params.error) return back(req, { github: "failed", reason: params.error === "access_denied" ? "you didn't approve it on GitHub" : "GitHub didn't finish the sign-in" });
   const q = Query.safeParse(params);
   if (!q.success) return back(req, { github: "failed", reason: "GitHub's reply was incomplete" });
-  const { completeGitHubConnect, GitHubReplyError } = await import("@amax/git-accounts/contracts");
+  const { completeGitHubConnect, isGitHubReplyError } = await import("@amax/git-accounts/contracts");
   try {
     const r = await completeGitHubConnect(contextForViewer(viewer, "ui"), q.data);
     const skipped = r.skipped.length ? `; ${r.skipped.join(", ")} ${r.skipped.length === 1 ? "is" : "are"} linked to another person, ask an Admin` : "";
     return back(req, { github: "connected", reason: `@${r.login}, ${r.linked.length} email${r.linked.length === 1 ? "" : "s"}${skipped}` });
   } catch (e) {
-    const known = e instanceof GitHubReplyError || (e as { code?: string } | null)?.code === "invalid_input";
+    const known = isGitHubReplyError(e) || (e as { code?: string } | null)?.code === "invalid_input";
     if (!known) logError("git-accounts.callback", e);
     return back(req, { github: "failed", reason: known ? (e as Error).message : "something went wrong; try again" });
   }

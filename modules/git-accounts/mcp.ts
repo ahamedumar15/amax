@@ -5,7 +5,7 @@ import { NOT_SET_UP, OWNERS_NOTE } from "./contracts";
 import { identityOf } from "./pins";
 import { issueConnect } from "./server/connect";
 import { CONNECT, ctxFor, READ, UNLINK } from "./server/context";
-import { disconnectWhat, myGitAccounts, myIdentity } from "./server/read";
+import { disconnectWhat, githubAppStatus, myGitAccounts, myIdentity } from "./server/read";
 import { disconnectGitHub, unlinkIdentity } from "./server/services";
 
 type Src = "mcp" | "chat";
@@ -17,7 +17,8 @@ const connectCard = async (v: Viewer): Promise<ToolCard> => {
   const { configured, github } = await myGitAccounts(v);
   if (!configured) throw new Error(NOT_SET_UP);
   return { title: "Connect GitHub", lines: [{ label: "Reads", value: "your GitHub login and the emails GitHub verified, once" }, { label: "Kept", value: "no GitHub token" },
-    ...(github ? [{ label: "Now", value: `${github.logins.map((l) => `@${l.login}`).join(", ")}: connecting again replaces their emails` }] : [])],
+    ...(github ? [{ label: "Now", value: `${github.logins.map((l) => `@${l.login}`).join(", ")}: connecting again keeps only the login and emails GitHub returns; the rest are removed` },
+      { label: "Owners", value: OWNERS_NOTE }] : [])],
     look: { kind: "Git accounts", confirm: "Connect GitHub", done: "Continue on GitHub to finish" } };
 };
 
@@ -33,6 +34,8 @@ const disconnectCard = async (v: Viewer): Promise<ToolCard> => {
 export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: "view", name: "get_my_git_identities", description: "Your Git accounts: whether GitHub is set up in this workspace, your GitHub login and the verified emails amax matches your commits by.",
     input: z.object({}), run: (v) => myGitAccounts(v) }),
+  tool({ ...read, pin: "view", name: "get_github_app_status", description: "Whether this workspace has the GitHub app people connect their GitHub accounts through (connector github-oauth).",
+    input: z.object({}), run: (v) => githubAppStatus(v) }),
   tool({ ...read, pin: { id: "identityId", of: identityOf }, name: "get_my_git_identity", description: "One of your verified Git emails by id.",
     input: z.object({ identityId: z.uuid() }), run: (v, a) => myIdentity(v, a.identityId) }),
   tool({ scope: "write", permission: CONNECT, name: "connect_github", description: "Connect your GitHub account: gives you a single-use link to GitHub (10 minutes) where you approve amax reading your login and verified emails once.",

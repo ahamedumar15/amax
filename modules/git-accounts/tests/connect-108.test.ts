@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { gitIdentitiesOf } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
-import { completeGitHubConnect, NOT_SET_UP } from "../contracts";
+import { completeGitHubConnect, isGitHubReplyError, NOT_SET_UP } from "../contracts";
+import { setGitHubTimeout } from "../server/github";
 import { ctxFor } from "../server/context";
 import { gitAccountsDatabase, T } from "./setup";
 
@@ -54,6 +55,23 @@ describe.skipIf(!hasDb)("108 connecting GitHub (Postgres)", () => {
   ])("review round 1: %s is refused, nothing stored", async (_name, code, error) => {
     await expect(completeGitHubConnect(ctxFor(kasun), { state: stateOf(await link(kasun)), code })).rejects.toThrow(error);
     expect(await mine(kasun)).toEqual([]);
+  });
+
+  it.each([
+    ["never answers", "hang"],
+    ["drops the connection", "reset"],
+  ])("review round 2: when GitHub %s, the connect times out, nothing is stored, and no write is held open meanwhile", async (_name, code) => {
+    setGitHubTimeout(1500);
+    try {
+      const pending = completeGitHubConnect(ctxFor(kasun), { state: stateOf(await link(kasun)), code }).then(() => null, (e: unknown) => e);
+      await new Promise((ok) => setTimeout(ok, 300));
+      const started = Date.now();
+      await db.t.owner`update git_accounts.connect_state set created_at = created_at where user_id = ${kasun.userId}`;
+      expect(Date.now() - started).toBeLessThan(1000);
+      const failed = await pending;
+      expect([isGitHubReplyError(failed), (failed as Error).message]).toEqual([true, "GitHub didn't answer for your profile"]);
+      expect(await mine(kasun)).toEqual([]);
+    } finally { setGitHubTimeout(10_000); }
   });
 
   it("review round 1: in production without AMAX_BASE_URL, connect refuses rather than send GitHub to localhost", async () => {

@@ -5,7 +5,7 @@ import { setGitHubIdentities } from "@amax/auth/git-identity";
 import { viewerOf } from "@amax/auth";
 import { withdrawSuggestions } from "@amax/agents/server";
 import { hasSecret } from "@amax/core/secrets";
-import { contextFor, defineService, type ServiceContext } from "@amax/core/server";
+import { contextFor, defineService, logError, type ServiceContext } from "@amax/core/server";
 import { EVENTS, NOT_SET_UP } from "../contracts";
 import { CONNECT, selfOf } from "./context";
 import { authorizeUrl, readGitHubUser } from "./github";
@@ -65,6 +65,8 @@ export async function completeConnect(ctx: ServiceContext, input: { state: strin
   const { claimId } = await claimConnect(ctx, { state: input.state });
   const gh = await readGitHubUser(forPerson(ctx), input.code);
   const r = await storeConnect(ctx, { claimId, login: gh.login, emails: gh.emails });
-  if (r.linked.length) await withdrawSuggestions(forPerson(ctx), { kind: "delivery.git-identity", targetType: "auth.git_identity", targetIds: [`github:${gh.login}`], reason: `${gh.login} connected GitHub themselves` });
+  // Review round 2: the identities are stored; a suggestion left open is logged, never reported as a failed connect.
+  if (r.linked.length) await withdrawSuggestions(forPerson(ctx), { kind: "delivery.git-identity", targetType: "auth.git_identity", targetIds: [`github:${gh.login}`], reason: `${gh.login} connected GitHub themselves` })
+    .catch((e: unknown) => logError("git-accounts.withdraw", e));
   return r;
 }

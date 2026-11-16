@@ -6,7 +6,9 @@ import type { ServiceContext } from "@amax/core/server";
 // 108: GitHub's OAuth app, the one place amax talks to GitHub for a person's accounts. Its client id and secret are one
 // 031 credential (`github-oauth`, "<client id>:<client secret>"), never env; the URLs may point at a fake GitHub in tests.
 export const SCOPES = "read:user user:email";
-const TIMEOUT_MS = 10_000;
+let timeoutMs = 10_000;
+/** Tests shorten GitHub's timeout; the app keeps 10 seconds. */
+export const setGitHubTimeout = (ms: number) => { timeoutMs = ms; };
 const web = () => (loadEnv().AMAX_GITHUB_URL ?? "https://github.com").replace(/\/$/, "");
 const api = () => (loadEnv().AMAX_GITHUB_API_URL ?? "https://api.github.com").replace(/\/$/, "");
 
@@ -30,8 +32,10 @@ export const authorizeUrl = (ctx: ServiceContext, state: string) => app(ctx, "Gi
 
 export type GitHubUser = { login: string; githubId: number; emails: string[] };
 
-/** A GitHub reply that isn't what GitHub documents, or that GitHub refused: never read as data. */
-export class GitHubReplyError extends Error {}
+/** A GitHub reply that isn't what GitHub documents, or that GitHub refused: never read as data. Known by its name,
+ * which the secret's error scrub keeps (it rebuilds the error object). */
+export class GitHubReplyError extends Error { override name = "GitHubReplyError"; }
+export const isGitHubReplyError = (e: unknown) => e instanceof Error && e.name === "GitHubReplyError";
 
 const Token = z.object({ access_token: z.string().min(1) });
 const User = z.object({ login: z.string().regex(/^[A-Za-z0-9-]{1,39}$/), id: z.number().int().positive() });
@@ -39,7 +43,7 @@ const Emails = z.array(z.object({ email: z.string().email(), verified: z.boolean
 
 /** Review round 1: each call to GitHub times out, and its reply must match its schema. */
 async function call<T>(schema: z.ZodType<T>, what: string, url: string, init: RequestInit = {}): Promise<T> {
-  const r = await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) }).catch(() => { throw new GitHubReplyError(`GitHub didn't answer for ${what}`); });
+  const r = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) }).catch(() => { throw new GitHubReplyError(`GitHub didn't answer for ${what}`); });
   if (!r.ok) throw new GitHubReplyError(`GitHub refused ${what}`);
   const parsed = schema.safeParse(await r.json().catch(() => null));
   if (!parsed.success) throw new GitHubReplyError(`GitHub's reply for ${what} wasn't readable`);

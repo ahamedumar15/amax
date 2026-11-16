@@ -45,6 +45,12 @@ describe.skipIf(!hasDb)("108 GitHub identities (Postgres)", () => {
     expect(owners[0].user_id).toBe(a.linked.length ? KASUN : NIMAL);
   });
 
+  it("review round 2: two people linking one login at once: the login is one person's, the other is told", async () => {
+    const [a, b] = await Promise.all([[KASUN, "k@race.test"], [NIMAL, "n@race.test"]].map(([id, email]) => tx((x) => setGitHubIdentities(x, T, id, { login: "same-login", emails: [email] }))));
+    const holders = await t.owner`select distinct user_id from auth.git_identity where lower(login) = 'same-login'`;
+    expect([holders.length, [a, b].filter((r) => r.skipped.includes("@same-login")).length]).toEqual([1, 1]);
+  });
+
   it("review round 1 (B9): 0033 keeps one of the rows the old rule allowed, the verified one first, so its indexes build", async () => {
     await t.owner`drop index auth.git_identity_email`;
     await t.owner`drop index auth.git_identity_login_email`;

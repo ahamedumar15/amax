@@ -25,9 +25,17 @@ export async function personByEmail(tx: Tx, email: string | null) {
   return r ? { id: r.id as string, name: r.name as string } : null;
 }
 
+/**
+ * 108 review round 2: a login is one person's. No index can say so (one login holds several emails), so every writer
+ * that links a login takes this lock first, then checks: two people linking one login at once go one after the other.
+ */
+const lockLogin = (tx: Tx, tenantId: string, provider: GitProvider, login: string) =>
+  tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`auth.git_identity:${tenantId}:${provider}:${login.toLowerCase()}`}))`);
+
 /** Links a login to a person, its email verified because a person approved the link. A login or email that is already
  * linked (108: one login may hold several emails, each email one person's) is refused. */
 export async function linkGitIdentity(tx: Tx, tenantId: string, g: { provider: GitProvider; login: string; email: string | null; userId: string }) {
+  await lockLogin(tx, tenantId, g.provider, g.login);
   const [taken] = await tx.execute(sql`select 1 from auth.git_identity where provider = ${g.provider}
     and (lower(login) = lower(${g.login}) or (${g.email ?? ""} <> '' and lower(email) = lower(${g.email ?? ""}))) limit 1`);
   const [r] = taken ? [] : await tx.execute(sql`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
@@ -49,6 +57,7 @@ const anyOf = (column: ReturnType<typeof sql>, values: string[]) => (values.leng
  */
 export async function setGitHubIdentities(tx: Tx, tenantId: string, userId: string, gh: { login: string; emails: string[] }): Promise<GitHubLinkResult> {
   const emails = [...new Set(gh.emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  await lockLogin(tx, tenantId, "github", gh.login);
   const others = await tx.execute(sql`select lower(login) as login, lower(email) as email from auth.git_identity where provider = 'github' and user_id <> ${userId}
     and (lower(login) = lower(${gh.login}) or ${anyOf(sql`lower(email)`, emails)})`);
   const loginTaken = others.some((o) => o.login === gh.login.toLowerCase());

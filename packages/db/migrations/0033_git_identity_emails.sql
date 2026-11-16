@@ -2,8 +2,8 @@
 alter table auth.git_identity drop constraint if exists git_identity_tenant_id_provider_login_key;
 
 -- Review round 1: rows the old rule (unique on the login, case-sensitive) allowed would stop the new indexes. Of rows
--- with the same email per provider, or the same login and email in another case, one stays: verified first, then the
--- oldest row; each one dropped is named in a notice.
+-- with the same email per provider, or the same login and email in another case, one stays: the verified one first,
+-- then any (the table records no creation time); each one dropped is named in the migration's notices.
 do $$
 declare r record;
 begin

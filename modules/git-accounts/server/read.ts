@@ -11,13 +11,15 @@ import { read } from "./context";
 export const myGitAccounts = (v: Viewer) => read(v, async (tx): Promise<GitAccounts> => {
   const logins = new Map<string, GitHubLogin>();
   for (const g of (await gitIdentitiesOf(tx, v.userId)).filter((x) => x.provider === "github")) {
-    const l = logins.get(g.login) ?? { login: g.login, identityIds: [], emails: [] };
-    l.identityIds.push(g.id);
+    const l = logins.get(g.login) ?? { login: g.login, emails: [] };
     if (g.email) l.emails.push({ id: g.id, email: g.email, verified: g.emailVerified });
     logins.set(g.login, l);
   }
   return { configured: await hasSecret(tx, "github-oauth"), github: logins.size ? { logins: [...logins.values()] } : null };
 });
+
+/** 108 AC-1 (review round 2): whether this workspace has the GitHub app, as one record whether or not it is set up. */
+export const githubAppStatus = (v: Viewer) => read(v, async (tx) => ({ connector: "github-oauth", configured: await hasSecret(tx, "github-oauth") }));
 
 /** What Disconnect removes: every GitHub login and every row under it, in words. */
 export const disconnectWhat = (g: NonNullable<GitAccounts["github"]>) => {

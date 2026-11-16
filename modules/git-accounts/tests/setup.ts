@@ -15,7 +15,8 @@ import gitAccounts from "../module";
 export const T = lumen.tenant.id;
 
 /** A fake GitHub (fictional data): one app; code "good" is @kasun-dias with two verified emails and one unverified;
- * "nologin" and "noemails" give replies that don't match GitHub's schema. */
+ * "nologin" and "noemails" give replies that don't match GitHub's schema; with "hang" GitHub never answers for the profile,
+ * with "reset" it drops the connection. */
 function fakeGitHub(): Promise<Server> {
   const server = createServer((req, res) => {
     const send = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
@@ -24,11 +25,13 @@ function fakeGitHub(): Promise<Server> {
     req.on("end", () => {
       if (req.url === "/login/oauth/access_token") {
         const b = JSON.parse(body || "{}");
-        const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails"].includes(b.code);
+        const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails", "hang", "reset"].includes(b.code);
         return ok ? send(200, { access_token: `gho_${b.code}` }) : send(200, { error: "bad_verification_code" });
       }
       const token = String(req.headers.authorization ?? "").replace("Bearer ", "");
       if (!token.startsWith("gho_")) return send(401, {});
+      if (req.url === "/user" && token === "gho_hang") return;
+      if (req.url === "/user" && token === "gho_reset") return req.socket.destroy();
       if (req.url === "/user") return send(200, token === "gho_nologin" ? { id: 4821937 } : { login: "kasun-dias", id: 4821937 });
       if (req.url === "/user/emails") return send(200, token === "gho_noemails" ? { message: "not a list" }
         : [{ email: "kasun@lumenlabs.test", verified: true }, { email: "4821937+kasun-dias@users.noreply.github.com", verified: true }, { email: "kasun@unverified.test", verified: false }]);
