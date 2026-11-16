@@ -31,14 +31,21 @@ export const githubAppStatus = async (v: Viewer) => {
   // rotated, and whether a credential that's no longer usable has expired. The callback URL GitHub must have, or why not.
   const row = can(v, "secrets:credential:read") ? await appRow(ctxFor(v)) : null;
   const callback = (() => { try { return { callbackUrl: redirectUri(), callbackProblem: null }; } catch (e) { if (e instanceof ToolError) return { callbackUrl: null, callbackProblem: e.message }; throw e; } })();
-  // 117 AC-3: for those who manage credentials, "configured" means the stored value is a usable client id and secret.
-  // Review round 2: three answers, never folded: usable, incomplete (it doesn't parse) or couldn't check (and why).
-  const check = configured && row !== null ? await appUsable(ctxFor(v), row.lastRotatedAt) : null;
-  const incomplete = check?.usable === false;
-  const checkProblem = check && check.usable === null ? check.problem : null;
-  return { connector: "github-oauth", configured: configured && !incomplete, incomplete, usable: check ? check.usable : null, checkProblem,
-    expired: !configured && row?.status === "expired", rotatedAt: row?.lastRotatedAt ?? null, ...callback };
+  // 117 AC-3 (review round 3, escalated): one state every consumer switches on, never a yes/no to lean on.
+  const { state, checkProblem } = await stateOf(v, configured, row);
+  return { connector: "github-oauth", state, checkProblem, rotatedAt: row?.lastRotatedAt ?? null, ...callback };
 };
+
+/** The GitHub app's state: none, expired, incomplete (the value doesn't parse), unchecked (couldn't be read, and why;
+ * also for those who don't manage credentials) or ready. */
+export type AppState = "none" | "expired" | "incomplete" | "unchecked" | "ready";
+async function stateOf(v: Viewer, exists: boolean, row: Awaited<ReturnType<typeof appRow>>): Promise<{ state: AppState; checkProblem: string | null }> {
+  if (!exists) return { state: row?.status === "expired" ? "expired" : "none", checkProblem: null };
+  if (!row) return { state: "unchecked", checkProblem: "only those who manage credentials can check the GitHub app" };
+  const check = await appUsable(ctxFor(v), row.lastRotatedAt);
+  if (check.usable === null) return { state: "unchecked", checkProblem: check.problem };
+  return { state: check.usable ? "ready" : "incomplete", checkProblem: null };
+}
 
 /** What Disconnect removes: every GitHub login and every row under it, in words. */
 export const disconnectWhat = (g: NonNullable<GitAccounts["github"]>) => {

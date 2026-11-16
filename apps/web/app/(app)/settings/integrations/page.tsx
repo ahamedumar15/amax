@@ -4,7 +4,7 @@ import { installed } from "../../../../lib/registry";
 import { connectedClients, toolCatalogue } from "@amax/mcp/admin";
 import { PinButton } from "@amax/ui";
 import { AskButton } from "../../../../components/settings/AskButton";
-import { CopyValue } from "../../../../components/chat/CopyValue";
+import { GitHubAppCard, type GitHubAppStatus } from "../../../../components/settings/GitHubAppCard";
 import { getDb, toolRegistry } from "../../../../lib/server";
 import { getViewer } from "../../../../lib/viewer";
 import "../settings.css";
@@ -13,10 +13,6 @@ export const metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
 
 const CLIENTS = { label: "Connected clients", tool: "list_mcp_clients", args: {} };
-// Review round 2: the card's own record, answered whether or not the app is set up.
-const GITHUB_APP = { label: "GitHub accounts", tool: "get_github_app_status", args: {} };
-type GitHubAppStatus = { configured: boolean; incomplete?: boolean; checkProblem?: string | null; expired: boolean; rotatedAt: string | Date | null; callbackUrl: string | null; callbackProblem: string | null };
-const day = (d: string | Date) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 // Chat-first (047): revoking a client is an "Ask amax" chip; chat confirms revoke_mcp_client.
 export default async function IntegrationsPage() {
@@ -28,21 +24,11 @@ export default async function IntegrationsPage() {
   const gitAccounts = installed.some((m) => m.id === "git-accounts") && can(viewer, "git-accounts:read");
   // 116 AC-4: the app's state through the same read tool chat and MCP use; its rotation date and the callback URL GitHub needs.
   const app = gitAccounts ? await toolRegistry().call(viewer, "get_github_app_status", {}, { source: "chat" }) as GitHubAppStatus : null;
-  const githubApp = Boolean(app?.configured);
   return (
     <>
       <nav className="crumb" aria-label="Breadcrumb"><a href="/settings">Settings</a><span>/</span>Integrations</nav>
       <div className="row head"><div><h1>Integrations</h1><p className="lede">Every amax capability is an MCP tool with the same permissions as the screens. Claude and other MCP clients connect at <code>/api/mcp</code> with OAuth; each person approves the scopes. Changes happen in chat. Pin anything, then ask.</p></div></div>
-      {gitAccounts && (
-        <div className="card pinnable" style={{ marginBottom: 28 }}>
-          <div className="card-head"><h2>GitHub accounts</h2><PinButton inline pin={GITHUB_APP} /><span className={`chip${githubApp ? " good" : ""}`}>{githubApp ? `Configured${app?.checkProblem ? " · couldn't check it" : ""}${app?.rotatedAt ? ` · rotated ${day(app.rotatedAt)}` : ""}` : app?.incomplete ? "Incomplete · set it up again" : app?.expired ? "Expired" : "Not configured"}</span></div>
-          <p className="muted" style={{ fontSize: 13, margin: "0 0 10px" }}>{githubApp ? "People connect their GitHub accounts from Git accounts in their profile menu." : "Set up the GitHub OAuth app with its Client ID and Client secret, so people can connect their GitHub accounts."}</p>
-          {app?.checkProblem && <p className="err" style={{ fontSize: 13, margin: "0 0 10px" }}>{app.checkProblem}</p>}
-          {app?.callbackProblem && <p className="err" style={{ fontSize: 13, margin: "0 0 10px" }}>{app.callbackProblem}</p>}
-          {app?.callbackUrl && <p style={{ fontSize: 13, margin: "0 0 10px" }}>Callback URL for the GitHub app&apos;s Redirect URIs: <code>{app.callbackUrl}</code> <CopyValue value={app.callbackUrl} label="the callback URL" /></p>}
-          {!githubApp && <AskButton label="Ask amax · Set up the GitHub app" prompt="Set up the GitHub app" pin={GITHUB_APP} tool="set_github_app" name="Ask amax to set up the GitHub app" />}
-        </div>
-      )}
+      {app && <GitHubAppCard app={app} />}
       <div className="card flush pinnable" style={{ marginBottom: 28 }}>
         <div className="card-head"><h2>Connected clients</h2><PinButton inline pin={CLIENTS} /><span className="muted" style={{ fontSize: 13 }}>{clients.length} active</span></div>
         <div className="scroll-x"><table className="tbl">

@@ -37,7 +37,13 @@ No new screen. Git accounts gains one result line for a wrong secret, and the In
    - `checkClientId` / `checkClientSecret` (the writer)
    - the status, which gains `incomplete`
 
-   For those who manage credentials, `configured` is true only when the value parses. An unparseable value shows
+   Review round 3 escalated: the status is one `state` that every consumer switches on, never a yes/no to lean on (the
+   product owner chose this redesign, 2026-11-16). The states are `none`, `expired`, `incomplete` (the value doesn't
+   parse), `unchecked` (it couldn't be read, with `checkProblem` saying why; also for those who don't manage credentials)
+   and `ready`. Integrations shows each one as itself, and only `ready` is green. Chat offers Set up for none, expired and
+   incomplete, Rotate for ready, and Remove for ready and unchecked.
+
+   For those who manage credentials, `ready` needs the value to parse. An unparseable value shows
    "Incomplete" on Integrations and gets the Admin's **Set up the GitHub app** suggestion (not Rotate). Reading the
    value is an audited credential use, so the answer is kept per tenant until the credential is next rotated. The
    Overview nudge stays on the credential existing, since reading it for every person on every load would audit a use
@@ -53,7 +59,7 @@ No new screen. Git accounts gains one result line for a wrong secret, and the In
 - [x] `T2` — A wrong Client ID or secret said plainly (AC-2)
   Files: modules/git-accounts/server/github.ts, modules/git-accounts/server/connect.ts, modules/git-accounts/words.ts
 - [x] `T3` — One parse of the GitHub app's value; "configured" means usable for those who manage it (AC-3)
-  Files: modules/git-accounts/server/app.ts, modules/git-accounts/server/read.ts, modules/git-accounts/chat-suggestions.ts,
+  Files: modules/git-accounts/server/app.ts, modules/git-accounts/server/read.ts, modules/git-accounts/chat-suggestions.ts, apps/web/components/settings/GitHubAppCard.tsx,
   apps/web/app/(app)/settings/integrations/page.tsx
 - [x] `T4` — Variant tests (AC-4)
   Files: modules/git-accounts/tests/follow-ups-117.test.ts, modules/git-accounts/tests/setup.ts, apps/web/tests/github-return-117.test.ts

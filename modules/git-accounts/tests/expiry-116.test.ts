@@ -62,7 +62,7 @@ describe.skipIf(!hasDb)("116 the GitHub app's expiry and state (Postgres)", () =
     const status = await db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" });
     const card = await db.registry.toolsFor(maya).find((t) => t.name === "set_github_app")!.card!(maya as never, { clientId: "Ov23liFAKEdemo02" } as never);
     expect([status, card.title, card.lines.find((l) => l.label === "Replaces")?.value]).toEqual([
-      expect.objectContaining({ configured: false, expired: true }), "Replace the GitHub app", expect.stringContaining("expired GitHub app"),
+      expect.objectContaining({ state: "expired" }), "Replace the GitHub app", expect.stringContaining("expired GitHub app"),
     ]);
   });
 });

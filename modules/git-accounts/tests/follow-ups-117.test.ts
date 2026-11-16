@@ -24,16 +24,16 @@ describe("117 AC-3 a usable GitHub app value", () => {
   });
 });
 
-// 117 AC-2, AC-3: a wrong secret is said plainly; an incomplete value isn't "configured" for an Admin.
+// 117 AC-2, AC-3: a wrong secret is said plainly; the GitHub app has one state every consumer reads.
 describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
   let db: Awaited<ReturnType<typeof gitAccountsDatabase>>;
   let kasun: Viewer, maya: Viewer;
   beforeAll(async () => { db = await gitAccountsDatabase(); [kasun, maya] = [await db.as("kasun"), await db.as("maya")]; }, 120_000);
   afterAll(() => db?.drop());
   const job = contextFor.job(T, "test");
-  const status = () => db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ configured: boolean; incomplete: boolean; usable: boolean | null; checkProblem: string | null }>;
-  const offered = async () => (await Promise.all(chatSuggestions.filter((s) => s.routes.includes("/settings/integrations"))
-    .map(async (s) => ((await s.when!(maya as never, {})) ? s.label : null)))).filter(Boolean);
+  const status = () => db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ state: string }>;
+  const offeredTo = async (v: Viewer) => (await Promise.all(chatSuggestions.filter((s) => s.routes.includes("/settings/integrations"))
+    .map(async (s) => ((await s.when!(v as never, {})) ? s.label : null)))).filter(Boolean);
 
   const app = async (value: string) => {
     await revokeSecret(job, { connector: "github-oauth", reason: "replaced" }).catch(() => {});
@@ -54,22 +54,26 @@ describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
     if (result === "credentials") expect([RESULTS.credentials.includes("An Admin replaces the GitHub app"), /try again/i.test(RESULTS.credentials)]).toEqual([true, false]);
   });
 
-  it("AC3 an incomplete stored value is Incomplete, offers Set up, and is configured again once set up", async () => {
-    await app("only-the-secret-00000000000000");
-    expect([await status(), await offered()]).toEqual([expect.objectContaining({ configured: false, incomplete: true }), ["Set up the GitHub app"]]);
-    await db.registry.call(maya, "set_github_app", { clientId: "Ov23liFAKEdemo01" }, { source: "mcp", secret: "c".repeat(40) });
-    expect([await status(), await offered()]).toEqual([expect.objectContaining({ configured: true, incomplete: false }), ["Rotate the GitHub app secret", "Remove the GitHub app"]]);
-  });
-
+  // Review round 3 (escalated): one state, and what each consumer does with it, as one table.
+  const ok = `Ov23liFAKEdemo01:${"c".repeat(40)}`;
+  const past = async () => { await db.t.owner`update secrets.credential set expires_at = now() - interval '1 day' where connector = 'github-oauth'`; };
   it.each([
-    ["no key service", () => configureSecrets({ kms: null }), /no key service is set/],
-    ["a different key service", () => configureSecrets({ kms: localKms(new Uint8Array(32)) }), /./],
-  ])("review rounds 1 and 2: with %s the status says it couldn't check, keeps nothing, and recovers", async (_n, outage, why) => {
-    await app("only-the-secret-00000000000000");
-    outage();
-    const during = await status();
+    ["no app", null, null, "maya", "none", null, ["Set up the GitHub app"]],
+    ["an expired app", ok, past, "maya", "expired", null, ["Set up the GitHub app"]],
+    ["a value that doesn't parse", "only-the-secret-00000000000000", null, "maya", "incomplete", null, ["Set up the GitHub app"]],
+    ["a usable app", ok, null, "maya", "ready", null, ["Rotate the GitHub app secret", "Remove the GitHub app"]],
+    ["no key service (then it recovers)", ok, () => configureSecrets({ kms: null }), "maya", "unchecked", /no key service is set/, ["Remove the GitHub app"]],
+    ["a different key service (then it recovers)", ok, () => configureSecrets({ kms: localKms(new Uint8Array(32)) }), "maya", "unchecked", /^amax couldn't read the GitHub app's credential just now$/, ["Remove the GitHub app"]],
+    ["someone who doesn't manage credentials", ok, null, "kasun", "unchecked", /only those who manage credentials/, []],
+  ] as const)("AC3 %s", async (_n, value, then, who, state, why, offers) => {
+    await app(value ?? ok);
+    if (!value) await revokeSecret(job, { connector: "github-oauth", reason: "unused" });
+    await then?.();
+    const v = who === "maya" ? maya : kasun;
+    const got = (await db.registry.call(v, "get_github_app_status", {}, { source: "mcp" })) as { state: string; checkProblem: string | null };
+    const offered = await offeredTo(v);
     configureSecrets({ kms: db.kms });
-    expect([during.incomplete, during.usable, why.test(String(during.checkProblem))]).toEqual([false, null, true]);
-    expect(await status()).toEqual(expect.objectContaining({ incomplete: true, usable: false, checkProblem: null }));
+    expect([got.state, why ? why.test(String(got.checkProblem)) : got.checkProblem, offered]).toEqual([state, why ? true : null, offers]);
+    if (state === "unchecked" && who === "maya") expect((await status()).state).toBe("ready");
   });
 });

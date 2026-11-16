@@ -36,9 +36,9 @@ describe.skipIf(!hasDb)("116 the nudge, the suggestions and the audit record (Po
   it("AC3 AC4 AC5 with the app: Admins rotate or remove; the status says when; Kasun is nudged until he connects", async () => {
     await db.setUpApp();
     expect([await offered(maya), await offered(kasun)]).toEqual([["Rotate the GitHub app secret", "Remove the GitHub app"], []]);
-    const status = (v: Viewer) => db.registry.call(v, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ configured: boolean; rotatedAt: unknown; callbackUrl: string }>;
+    const status = (v: Viewer) => db.registry.call(v, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ state: string; rotatedAt: unknown; callbackUrl: string }>;
     const [admin, person] = [await status(maya), await status(kasun)];
-    expect([admin.configured, admin.rotatedAt !== null, person.rotatedAt, person.callbackUrl]).toEqual([true, true, null, "http://localhost:3000/api/git/github/callback"]);
+    expect([admin.state, admin.rotatedAt !== null, person.state, person.rotatedAt, person.callbackUrl]).toEqual(["ready", true, "unchecked", null, "http://localhost:3000/api/git/github/callback"]);
     expect(await nudged(kasun)).toEqual([["Connect GitHub", "Connect my GitHub", 30]]);
     await connect();
     expect(await nudged(kasun)).toEqual([]);
@@ -55,6 +55,6 @@ describe.skipIf(!hasDb)("116 the nudge, the suggestions and the audit record (Po
 
   it("AC4 the status is a record whether or not the app is set up", async () => {
     await revokeSecret(contextFor.job(T, "test"), { connector: "github-oauth", reason: "unused" });
-    expect(await db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" })).toMatchObject({ configured: false, rotatedAt: null });
+    expect(await db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" })).toMatchObject({ state: "none", rotatedAt: null });
   });
 });

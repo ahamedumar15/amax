@@ -44,8 +44,8 @@ export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<
   const at = rotatedAt?.toISOString() ?? "";
   const held = checks.get(ctx.tenantId);
   if (held?.rotatedAt === at) return held.answer;
-  // Review round 2: a failed read is "couldn't check" with its reason, dropped so the next status reads again; a late
-  // failure never drops a newer check.
+  // Review round 2: a failed read is "couldn't check" with its reason, dropped (if still the held one) so the next status
+  // reads again.
   const answer: Promise<AppCheck> = useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null)
     .then((usable) => ({ usable }), (e: unknown) => {
       if (checks.get(ctx.tenantId)?.answer === answer) checks.delete(ctx.tenantId);
