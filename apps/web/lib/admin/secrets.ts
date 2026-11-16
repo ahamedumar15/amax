@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONNECTOR_IDS, CONNECTORS, listCredentials, putSecret, REVOKE_REASONS, revokeSecret, type CredentialRow } from "@amax/core/secrets";
+import { CONNECTOR_IDS, CONNECTORS, ExpiryPassedError, keptExpiryOf, listCredentials, NO_KEY_SERVICE, putSecret, REVOKE_REASONS, revokeSecret, type CredentialRow } from "@amax/core/secrets";
 import { ToolError } from "@amax/mcp";
 import type { Viewer } from "@amax/auth";
 import { filterCredentials, SECRET_FILTERS } from "./credentials";
@@ -21,25 +21,17 @@ function typed(secret: string | undefined) {
 }
 const endOf = (d: string | undefined) => (d ? `${d}T23:59:59Z` : undefined);
 
-// 116 AC-2: the GitHub app is set with set_github_app (Client ID and Client secret); a value without "<id>:<secret>" is refused.
+// 116 AC-2: the GitHub app (connector github-oauth) is set only with set_github_app, which checks its Client ID and secret.
 const GITHUB_APP = "Use set_github_app: the GitHub app needs its Client ID and Client secret";
 const steer = (connector: string) => { if (connector === "github-oauth") throw new ToolError(GITHUB_APP, "invalid_input"); };
-function checked(connector: string, value: string) {
-  const at = value.indexOf(":");
-  if (connector === "github-oauth" && (at <= 0 || at === value.length - 1 || value.indexOf(":", at + 1) > -1)) throw new ToolError(GITHUB_APP, "invalid_input");
-  return value;
-}
 // 116 AC-6: with no key service nothing can be stored; say so instead of "I can't tell whether this was done".
 const stored = <T>(p: Promise<T>) => p.catch((e: unknown) => {
-  throw e instanceof Error && e.name === "SecretsUnavailableError" ? new ToolError("amax can't store credentials yet: no key service is set (AMAX_KMS); an operator sets it", "invalid_input") : e;
+  throw e instanceof Error && e.name === "SecretsUnavailableError" ? new ToolError(NO_KEY_SERVICE, "invalid_input") : e;
 });
 
-// "Keep its expiry" keeps a future date or no date. A past one can't be kept: dropping it would
-// leave a credential that never expires and never shows as Expiring again (052 review).
+// "Keep its expiry" (052): the rule lives in @amax/core/secrets; here a past date is the tool's refusal.
 export function keptExpiry(connector: string, expiresAt: Date | null, now = new Date()): string | null {
-  if (!expiresAt) return null;
-  if (expiresAt > now) return expiresAt.toISOString();
-  throw new ToolError(`the ${connector} credential's expiry (${expiresAt.toISOString().slice(0, 10)}) has passed; give a new expiresAt for the rotated value`, "invalid_input");
+  try { return keptExpiryOf(connector, expiresAt, now); } catch (e) { throw e instanceof ExpiryPassedError ? new ToolError(e.message, "invalid_input") : e; }
 }
 
 export const secretTools = [
@@ -50,8 +42,9 @@ export const secretTools = [
   tool({ ...write(MANAGE), name: "put_secret", description: "Add a connector credential. The person types the value on the confirm card.", secretInput: { label: "Value" },
     input: z.object({ connector, expiresAt: day.optional() }), service: putSecret, propose: async (_v, a) => steer(a.connector),
     run: async (v, a, s, secret) => {
+      steer(a.connector);
       if (await current(v, a.connector)) throw new ToolError(`${a.connector} already has a credential; use rotate_secret`, "invalid_input");
-      return stored(putSecret(ctxFor(v, s), { connector: a.connector, value: checked(a.connector, typed(secret)), expiresAt: endOf(a.expiresAt) ?? null }));
+      return stored(putSecret(ctxFor(v, s), { connector: a.connector, value: typed(secret), expiresAt: endOf(a.expiresAt) ?? null }));
     } }),
   tool({ ...write(MANAGE), name: "rotate_secret", description: "Rotate a connector credential to a new value, keeping its expiry unless a new one is given. The person types the value on the confirm card.",
     secretInput: { label: "New value" }, service: putSecret,
@@ -63,9 +56,10 @@ export const secretTools = [
       if (row && !a.expiresAt) keptExpiry(a.connector, row.expiresAt);
     },
     run: async (v, a, s, secret) => {
+      steer(a.connector);
       const row = await current(v, a.connector);
       if (!row) throw new ToolError(`${a.connector} has no credential to rotate; use put_secret`, "invalid_input");
-      return stored(putSecret(ctxFor(v, s), { connector: a.connector, value: checked(a.connector, typed(secret)), expiresAt: endOf(a.expiresAt) ?? keptExpiry(a.connector, row.expiresAt), graceHours: a.graceHours ?? 72 }));
+      return stored(putSecret(ctxFor(v, s), { connector: a.connector, value: typed(secret), expiresAt: endOf(a.expiresAt) ?? keptExpiry(a.connector, row.expiresAt), graceHours: a.graceHours ?? 72 }));
     } }),
   tool({ ...write(MANAGE), name: "revoke_secret", description: "Revoke a connector credential now; its stored value is destroyed.", destructive: true,
     input: z.object({ connector, reason: z.enum(REVOKE_REASONS) }), service: revokeSecret, run: (v, a, s) => revokeSecret(ctxFor(v, s), a) }),

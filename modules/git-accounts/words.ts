@@ -4,7 +4,6 @@ export const NOT_SET_UP = "GitHub isn't set up for this workspace; an Admin adds
 
 /** 116 AC-6: what an Admin or operator fixes, said instead of "I can't tell whether this was done". */
 export const APP_INCOMPLETE = "The GitHub app's credential is incomplete; an Admin sets it up again with Set up the GitHub app";
-export const NO_KEY_SERVICE = "amax can't store credentials yet: no key service is set (AMAX_KMS); an operator sets it";
 export const callbackRefused = (url: string) => `GitHub refused amax's callback URL; an Admin pastes ${url} into the GitHub app's Redirect URIs`;
 
 /** Review round 1 (AC-7): owners follow the repo, so a proposal named for these emails is unowned again at the next sync. */

@@ -5,13 +5,12 @@ import { NOT_SET_UP, OWNERS_NOTE } from "./contracts";
 import { identityOf } from "./pins";
 import { forPerson, issueConnect } from "./server/connect";
 import { setGitHubAppTool } from "./app-tool";
+import { tool } from "./tool";
 import { clientIdOf } from "./server/app";
 import { CONNECT, ctxFor, READ, UNLINK } from "./server/context";
 import { disconnectWhat, githubAppStatus, myGitAccounts, myIdentity } from "./server/read";
 import { disconnectGitHub, unlinkIdentity } from "./server/services";
 
-type Src = "mcp" | "chat";
-const tool = <I extends z.ZodType>(t: Omit<McpToolDef, "input" | "run"> & { input: I; run: (v: Viewer, input: z.infer<I>, source: Src) => Promise<unknown> }) => t as unknown as McpToolDef;
 const read = { scope: "read" as const, readOnly: true, permission: READ };
 
 /** 108 AC-1: the Connect GitHub card; once confirmed, its button opens GitHub. Without the app, chat says who sets it up. */

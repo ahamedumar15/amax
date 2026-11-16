@@ -15,8 +15,8 @@ const SHOWN = 6;
 
 // 068 AC-3: decisions waiting on the viewer, oldest first. Every action opens chat with the record
 // pinned and a prompt filled in; chat runs any write after the pending-action confirm (rule 1).
-export function WaitingTable({ items: given, now }: { items: OverviewWaiting[]; now: number }) {
-  const { hidden, snooze } = useSnoozed();
+export function WaitingTable({ items: given, now, viewerId }: { items: OverviewWaiting[]; now: number; viewerId: string }) {
+  const { hidden, snooze } = useSnoozed(viewerId);
   const all = given.filter((i) => !hidden(i.id));
   const items = all.slice(0, SHOWN);
   const [picked, setPicked] = useState<string[]>([]);

@@ -3,8 +3,10 @@ import { z } from "zod";
 import { gitIdentitiesOf } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
 import { can } from "@amax/auth";
-import { hasSecret, listCredentials } from "@amax/core/secrets";
+import { ToolError } from "@amax/mcp";
+import { hasSecret } from "@amax/core/secrets";
 import type { GitAccounts, GitHubLogin } from "../contracts";
+import { appRow } from "./app";
 import { ctxFor, read } from "./context";
 import { redirectUri } from "./github";
 
@@ -25,10 +27,11 @@ export const myGitAccounts = (v: Viewer) => read(v, async (tx): Promise<GitAccou
 /** 108 AC-1 (review round 2): whether this workspace has the GitHub app, as one record whether or not it is set up. */
 export const githubAppStatus = async (v: Viewer) => {
   const configured = await read(v, (tx) => hasSecret(tx, "github-oauth"));
-  // 116 AC-4: when it was set or last rotated, for those who manage credentials; the callback URL GitHub must have.
-  const row = configured && can(v, "secrets:credential:read") ? (await listCredentials(ctxFor(v))).rows.find((r) => r.connector === "github-oauth" && r.status !== "revoked") : undefined;
-  const callbackUrl = (() => { try { return redirectUri(); } catch { return null; } })();
-  return { connector: "github-oauth", configured, rotatedAt: row?.lastRotatedAt ?? null, callbackUrl };
+  // 116 AC-4 (review round 1): the same row the card reads, for those who manage credentials: when it was set or last
+  // rotated, and whether a credential that's no longer usable has expired. The callback URL GitHub must have, or why not.
+  const row = can(v, "secrets:credential:read") ? await appRow(ctxFor(v)) : null;
+  const callback = (() => { try { return { callbackUrl: redirectUri(), callbackProblem: null }; } catch (e) { if (e instanceof ToolError) return { callbackUrl: null, callbackProblem: e.message }; throw e; } })();
+  return { connector: "github-oauth", configured, expired: !configured && row?.status === "expired", rotatedAt: row?.lastRotatedAt ?? null, ...callback };
 };
 
 /** What Disconnect removes: every GitHub login and every row under it, in words. */

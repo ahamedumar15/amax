@@ -8,7 +8,7 @@ import { adminDb } from "./fixture";
 const STEER = /Use set_github_app/;
 
 // 116 AC-2, AC-6: the generic credential tools send the GitHub app to set_github_app, refuse a value without
-// "<client id>:<client secret>", and say when no key service is set instead of "I can't tell whether this was done".
+// set_github_app, over MCP too, and say when no key service is set instead of "I can't tell whether this was done".
 describe.skipIf(!hasDb)("116 the github-oauth guard (Postgres)", () => {
   let db: Awaited<ReturnType<typeof adminDb>>;
   let maya: Viewer;
@@ -23,17 +23,11 @@ describe.skipIf(!hasDb)("116 the github-oauth guard (Postgres)", () => {
   });
 
   it.each([
-    ["only the secret", "f".repeat(40)],
-    ["the id with nothing after its colon", "Ov23liFAKEdemo01:"],
-    ["nothing before the colon", `:${"f".repeat(40)}`],
-    ["two colons", `Ov23li:FAKE:${"f".repeat(40)}`],
-  ])("AC2 put_secret refuses a github-oauth value of %s", async (_n, value) => {
-    await expect(call("put_secret", { connector: "github-oauth" }, value)).rejects.toThrow(STEER);
-  });
-
-  it("AC2 a well-formed value is stored, and rotate_secret checks the same", async () => {
-    await call("put_secret", { connector: "github-oauth" }, `Ov23liFAKEdemo01:${"f".repeat(40)}`);
-    await expect(call("rotate_secret", { connector: "github-oauth" }, "f".repeat(40))).rejects.toThrow(STEER);
+    ["put_secret, a well-formed value", "put_secret", `Ov23liFAKEdemo01:${"f".repeat(40)}`],
+    ["put_secret, only the secret", "put_secret", "f".repeat(40)],
+    ["rotate_secret, a well-formed value", "rotate_secret", `Ov23liFAKEdemo01:${"f".repeat(40)}`],
+  ])("AC2 review round 1: over MCP too, %s is refused for the GitHub app", async (_n, tool, value) => {
+    await expect(call(tool, { connector: "github-oauth" }, value)).rejects.toThrow(STEER);
   });
 
   it("AC6 with no key service, adding a credential says an operator sets AMAX_KMS", async () => {

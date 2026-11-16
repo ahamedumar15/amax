@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { configureSecrets, localKms, putSecret, revokeSecret, useSecret } from "@amax/core/secrets";
+import { configureSecrets, localKms, NO_KEY_SERVICE, putSecret, revokeSecret, useSecret } from "@amax/core/secrets";
 import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import { completeGitHubConnect } from "../contracts";
 import { resultCodeOf } from "../server/connect";
 import { ctxFor } from "../server/context";
-import { APP_INCOMPLETE, NO_KEY_SERVICE } from "../words";
+import { APP_INCOMPLETE } from "../words";
 import { gitAccountsDatabase, T } from "./setup";
 
 const stores = (value: string) => useSecret(contextFor.job(T, "test"), { connector: "github-oauth", purpose: "test" }, async (s) => s.reveal() === value);
