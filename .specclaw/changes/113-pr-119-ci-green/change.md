@@ -6,7 +6,8 @@
 
 PR #119's `checks` job fails at the module graph check: `modules/allocations/tests/no-hr-107.test.ts` imports
 `@amax/hr/module`, another module's internals (rule R1). The check reports "0 modules" on Windows, so 107's local runs
-never saw it. The fix comes after 107's final review pass, so it is its own change (as 095 and 105 were).
+never saw it. A Linux run of the job also found the Git accounts e2e starting its fake GitHub twice on one port. The
+fix comes after 107's final review pass, so it is its own change (as 095 and 105 were).
 
 ## Mock Delta
 
@@ -18,11 +19,15 @@ No screen change.
 
 1. **AC-1** `no-hr-107.test.ts` loads HR through the test setup's `installed()`, the way the app loads installed modules,
    and the module graph check passes with every module counted (on Linux, as CI runs it).
+2. **AC-2** The Git accounts e2e runs its tests one after another in one worker, so its one fake GitHub on port 3599
+   never collides with a second copy (the e2e config runs files fully parallel).
 
 ## Tasks
 
 - [x] `T1` — The test loads HR through `installed()`; the setup exports it (AC-1)
   Files: modules/allocations/tests/setup.ts, modules/allocations/tests/no-hr-107.test.ts
+- [x] `T2` — The Git accounts spec runs serially (AC-2)
+  Files: apps/web/tests/e2e/git-accounts.spec.ts
 
 ## Verify
 

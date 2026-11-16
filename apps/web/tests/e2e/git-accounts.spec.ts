@@ -32,6 +32,10 @@ function fakeGitHub(): Promise<Server> {
   return new Promise((ok) => server.listen(PORT, "127.0.0.1", () => ok(server)));
 }
 
+// 113: one fake GitHub on one port, so this file's tests run one after another in one worker (the e2e config runs files
+// fully parallel, and two workers each starting the fake on the same port collide).
+test.describe.configure({ mode: "serial" });
+
 let github: Server;
 test.beforeAll(async () => {
   github = await fakeGitHub();
