@@ -2,6 +2,11 @@
 
 **Change:** 116-github-setup-without-struggle · **Created:** 2026-11-16 · **Review:** change
 
+Lane exemption: the platform pieces (core's shared expiry rule and vault words in `secrets/expiry.ts`, the card line's
+`copy` and the waiting item's `snoozeDays`, the scripted model's GitHub app prompts, and in the app the Copy button,
+the Integrations row, Overview's nudge order and "Not now", and the generic credential tools' `github-oauth` guard)
+exist for this module's GitHub app and ship with it in one change, as 108's did (product owner, 2026-11-16).
+
 ## Problem
 
 Setting up a real GitHub connect on 2026-11-16 took six tries.
@@ -123,6 +128,48 @@ What changes on screen, and where to see it: [`116-github-setup-without-struggle
 
 ## Verify
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+**Verdict:** PASS. Every AC passes below. The review stopped at the five-pass cap (AGENTS.md) with **0 blockers, 3
+majors and 5 minors open**, all recorded in `follow-ups.md`. The 3 majors:
+
+1. GitHub's `redirect_uri_mismatch` return is forwarded only from the homepage, not from every page a wrong Redirect URI
+   could name.
+2. `incorrect_client_credentials` at the token exchange still reads as "try again".
+3. `configured` doesn't check that the stored value parses (the read and write format checks differ).
+
+- AC-1: pass. `set_github_app`, an Admin-only card:
+  - It shows the Client ID, the callback URL with Copy (`CardLine.copy`) and the masked Client secret, and stores
+    `<id>:<secret>`.
+  - It refuses placeholders, spaces, a colon and short secrets.
+  - A second setup replaces the app.
+  - On replace, the expiry follows 052's shared rule. A given or kept expiry that has passed, or that isn't a real day,
+    is refused before the secret is typed.
+
+  Evidence: `modules/git-accounts/tests/app-116.test.ts` and `expiry-116.test.ts`, `packages/core/tests/secrets-words-116.test.ts`.
+- AC-2: pass. `put_secret` and `rotate_secret` refuse `github-oauth` outright, both when chat proposes the card and
+  when they run over MCP (`apps/web/tests/admin/secret-116.test.ts`).
+- AC-3: pass. On Integrations, chat suggests Set up / Rotate / Remove, to Admins only, and each only when it can happen
+  (`nudge-116.test.ts`).
+- AC-4: pass. The Integrations row reads "Configured · rotated `<date>`", "Expired" or "Not configured", shows the
+  callback URL with Copy, and is pinnable through `get_github_app_status`. The status also carries `expired` and
+  `callbackProblem` (`nudge-116.test.ts`, `expiry-116.test.ts`, e2e).
+- AC-5: pass. The Overview nudge appears only for a person who can connect, isn't connected, and whose workspace has
+  the app. It leads "Waiting on you", reads "New", has "Not now" for 30 days (per person, per browser), and can't be
+  selected (`nudge-116.test.ts`, `apps/web/tests/attention-116.test.ts`).
+- AC-6: pass. Clear refusals reach chat as `ToolError`s:
+  - a malformed credential
+  - no key service, but only when `AMAX_KMS` is unset; otherwise the vault's own reason
+  - GitHub's `redirect_uri_mismatch`, at the token exchange and as GitHub's own return forwarded from the homepage,
+    recorded as "callback". Checked live: signed in, `/?error=redirect_uri_mismatch&state=…` lands on Git accounts.
+- AC-7: pass. The audit records of connect, disconnect and the Admin unlink contain no email address, and the Admin's
+  unlink answer names none (`nudge-116.test.ts`).
+- AC-8: pass. Reads stay the viewer's own, and the Admin unlink works by id.
+  - Tests: git-accounts 57/57 (Postgres); `apps/web/tests/admin` 184/184; core 10/10 new, with the rest as before.
+  - Typecheck: `turbo lint` for core, web, ai, testing and git-accounts, 5/5.
+  - `check-graph` (Docker): ok, 23 modules.
+  - Git accounts e2e: 3/3, including "116 AC1 AC4 an Admin replaces the GitHub app from Integrations".
+  - Core's `ac5-adapters` fails on Windows only (backslash paths); Linux CI skips `tests/`.
+- AC-9: pass. `packages/testing/tests/mock-balanced-116.test.ts` (4/4): no unclosed element, and the deployed copy
+  matches. All sections from 050 to 116 render (checked in Chromium).
+- Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/3/5 b/M/m; stopped at the cap with no
+  blockers (AGENTS.md).
+- Screenshots: the mock section, rendered in Chromium; the e2e covers the screens in the app.
