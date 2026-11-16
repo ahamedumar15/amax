@@ -74,6 +74,25 @@ describe.skipIf(!hasDb)("108 connecting GitHub (Postgres)", () => {
     } finally { setGitHubTimeout(10_000); }
   });
 
+  it("final pass: a further page of emails is refused rather than read short", async () => {
+    await expect(completeGitHubConnect(ctxFor(kasun), { state: stateOf(await link(kasun)), code: "many" })).rejects.toThrow(/more of your emails than amax reads at once/);
+  });
+
+  it.each([
+    ["GitHub has no verified email", "noverified", async () => {}, "no-email"],
+    ["every verified email is someone else's", "good", async () => { await db.t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
+      select ${T}, ${nimal.userId}, 'github', 'nimal-x', e, true from unnest(array['kasun@lumenlabs.test', '4821937+kasun-dias@users.noreply.github.com']) e`; }, "all-taken"],
+    ["the login is someone else's", "good", async () => { await db.t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified)
+      values (${T}, ${nimal.userId}, 'github', 'kasun-dias', null, false)`; }, "login-taken"],
+  ])("final pass: a connect that would link nothing is refused and leaves what was there: %s", async (_name, code, arrange, reason) => {
+    await db.t.owner`delete from auth.git_identity`;
+    await db.t.owner`insert into auth.git_identity (tenant_id, user_id, provider, login, email, email_verified) values (${T}, ${kasun.userId}, 'github', 'kasun-before', 'kasun.before@example.test', true)`;
+    await arrange();
+    const refused = await completeGitHubConnect(ctxFor(kasun), { state: stateOf(await link(kasun)), code }).then(() => null, (e: unknown) => e);
+    expect([(refused as { reason?: string } | null)?.reason, await mine(kasun)]).toEqual([reason, ["kasun.before@example.test"]]);
+    await db.t.owner`delete from auth.git_identity`;
+  });
+
   it("review round 1: in production without AMAX_BASE_URL, connect refuses rather than send GitHub to localhost", async () => {
     const { NODE_ENV, AMAX_BASE_URL } = process.env;
     Object.assign(process.env, { NODE_ENV: "production" });

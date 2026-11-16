@@ -3,7 +3,8 @@ import type { McpToolDef, ToolCard } from "@amax/core";
 import type { Viewer } from "@amax/auth";
 import { NOT_SET_UP, OWNERS_NOTE } from "./contracts";
 import { identityOf } from "./pins";
-import { issueConnect } from "./server/connect";
+import { forPerson, issueConnect } from "./server/connect";
+import { clientIdOf } from "./server/github";
 import { CONNECT, ctxFor, READ, UNLINK } from "./server/context";
 import { disconnectWhat, githubAppStatus, myGitAccounts, myIdentity } from "./server/read";
 import { disconnectGitHub, unlinkIdentity } from "./server/services";
@@ -39,7 +40,10 @@ export const mcpTools: McpToolDef[] = [
   tool({ ...read, pin: { id: "identityId", of: identityOf }, name: "get_my_git_identity", description: "One of your verified Git emails by id.",
     input: z.object({ identityId: z.uuid() }), run: (v, a) => myIdentity(v, a.identityId) }),
   tool({ scope: "write", permission: CONNECT, name: "connect_github", description: "Connect your GitHub account: gives you a single-use link to GitHub (10 minutes) where you approve amax reading your login and verified emails once.",
-    input: z.object({}), card: connectCard, service: issueConnect, run: (v, _a, s = "mcp") => issueConnect(ctxFor(v, s), {}) }),
+    input: z.object({}), card: connectCard, service: issueConnect, run: async (v, _a, s = "mcp") => {
+      const ctx = ctxFor(v, s);
+      return issueConnect(ctx, { clientId: await clientIdOf(forPerson(ctx)) });
+    } }),
   tool({ scope: "write", permission: CONNECT, destructive: true, name: "disconnect_github", description: "Disconnect your GitHub account: removes every GitHub login you have in amax and its emails. Proposals named for you only through those emails lose you as owner at the next sync.",
     input: z.object({}), card: disconnectCard, service: disconnectGitHub, run: (v, _a, s = "mcp") => disconnectGitHub(ctxFor(v, s), {}) }),
   tool({ scope: "write", permission: UNLINK, destructive: true, name: "unlink_git_identity", description: "Admin: unlink one Git identity (a login's email) of any person by its id.",

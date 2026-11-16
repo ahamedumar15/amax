@@ -1,10 +1,17 @@
-// 108 AC-11: the return from GitHub, said in a live region so a screen reader hears it on arrival.
-export function ResultNote({ result, reason }: { result?: string; reason?: string }) {
-  if (!result) return null;
-  const ok = result === "connected";
+import { RESULTS, type ResultCode } from "../words";
+
+// 108 AC-11: the return from GitHub, said in a live region so a screen reader hears it on arrival. Final pass: only a known
+// code from the URL picks fixed words, the login and count come from the stored record, and an unknown code says nothing.
+export function ResultNote({ result, skipped, connectedAs }: { result?: string; skipped?: string; connectedAs?: { logins: string[]; emails: number } }) {
+  if (!result || !(result in RESULTS)) return null;
+  const code = result as ResultCode;
+  const ok = code === "connected";
+  const others = Number(skipped);
+  const detail = ok && connectedAs ? ` as ${connectedAs.logins.map((l) => `@${l}`).join(", ")}: ${connectedAs.emails} email${connectedAs.emails === 1 ? "" : "s"}` : "";
+  const more = ok && others > 0 ? `. ${others} more ${others === 1 ? "is" : "are"} linked to another person; ask an Admin` : "";
   return (
     <p role="status" aria-live="polite" className={ok ? "chip good" : "err"} style={{ display: "inline-block", marginBottom: 16 }}>
-      {ok ? `GitHub connected${reason ? `: ${reason}` : ""}` : `GitHub wasn't connected: ${reason ?? "try again"}`}
+      {RESULTS[code]}{detail}{more}
     </p>
   );
 }

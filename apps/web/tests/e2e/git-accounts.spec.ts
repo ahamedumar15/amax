@@ -70,7 +70,7 @@ test("108 AC1 AC6 AC7 AC11 Git accounts: connect GitHub from chat, see the verif
   await connect.getByRole("button", { name: "Connect GitHub" }).click();
   await connect.getByRole("link", { name: /Continue to GitHub/ }).click();
   await expect(page).toHaveURL(/\/git-accounts\?github=connected/);
-  await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub connected: @kasun-dias, 2 emails");
+  await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub connected as @kasun-dias: 2 emails");
   await expect(page.getByRole("heading", { name: "GitHub · Connected as @kasun-dias" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Verified emails" }).getByRole("listitem")).toHaveCount(2);
   const { violations } = await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();

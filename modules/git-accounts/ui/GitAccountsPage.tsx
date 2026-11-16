@@ -17,7 +17,8 @@ export async function GitAccountsPage({ viewer, searchParams }: ScreenProps) {
     <>
       <h1>Git accounts</h1>
       <p className="lede">amax matches your commits and proposals to you by these verified emails.</p>
-      <ResultNote result={searchParams?.github} reason={searchParams?.reason} />
+      <ResultNote result={searchParams?.github} skipped={searchParams?.skipped}
+        connectedAs={github ? { logins: github.logins.map((l) => l.login), emails: github.logins.reduce((n, l) => n + l.emails.length, 0) } : undefined} />
       {github ? (
         <div className="card pinnable" style={{ maxWidth: 720 }}>
           <div className="card-head"><h2>GitHub · Connected as {github.logins.map((l) => `@${l.login}`).join(", ")}</h2><PinButton inline pin={accountsPin} /></div>
