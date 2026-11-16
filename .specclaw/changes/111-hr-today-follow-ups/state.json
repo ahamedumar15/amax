@@ -1,0 +1,9 @@
+{
+  "change": "111-hr-today-follow-ups",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-16T02:24:43Z"},
+    "tasks": {"status":"done","at":"2026-11-16T02:24:53Z"}
+  }
+}

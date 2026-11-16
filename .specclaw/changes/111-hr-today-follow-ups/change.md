@@ -34,6 +34,12 @@ No screen change: the mock section says so.
 <!-- Added by plan, UI first, then backend, then integration, in tasks.md's task-line
      format: checkbox, `Tn`, em dash, title; then indented Files: and optional Depends: lines. -->
 
+- [x] `T1` — One date engine and the loose ends: `entityToday` reads the entity's date from Postgres (`entityDay`), still
+  refusing an entity with no zone; `services.ts` drops its re-export; the HR README's reads, tools and Jobs lines; the
+  add-card confirm test on a fake clock (AC-1–AC-4)
+  Files: modules/hr/server/zones.ts, modules/hr/server/services.ts, modules/hr/README.md,
+  modules/hr/tests/hr-today-110.test.ts, apps/web/tests/add-card-confirm-110.test.ts
+
 ## Verify
 
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`

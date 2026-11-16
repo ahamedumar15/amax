@@ -7,6 +7,8 @@ import { getEmployment, getPerson, listPeople, reportUserIds } from "../contract
 import { getPersonView } from "../server/queries";
 import { peopleStats } from "../server/stats";
 import { changePerson } from "../server/services";
+import { entityDay } from "../server/inforce";
+import { entityToday } from "../server/zones";
 import { hrDatabase } from "./setup";
 
 // 110: at 20:00 UTC on the 15th it is already the 16th in Sri Lanka and Sydney. HR's changes and reads go by that date.
@@ -71,6 +73,14 @@ describe.skipIf(!hasDb)("110 HR's one today for changes and reads (Postgres)", (
     await db.tx((tx) => getEmployment(tx, report.id as string, contextFor.job(db.maya.tenantId, "hr.test")));
     const [audit] = await db.tx((tx) => tx.execute(sql`select after from core.audit_event where action = 'hr.employment.read' order by seq desc limit 1`));
     expect((audit.after as { on: string }).on).toBe("2026-11-16");
+  });
+
+  it.each([["Sri Lanka", "LK"], ["Sydney", "AU"]])("111 AC1 %s: one date engine, the write's today is the read's", async (_name, country) => {
+    at(EVENING);
+    const [e] = await db.tx((tx) => tx.execute(sql`select id from core.legal_entity where country = ${country}`));
+    const id = e.id as string;
+    const [read] = await db.tx((tx) => tx.execute(sql`select to_char(${entityDay(sql`${id}::uuid`)}, 'YYYY-MM-DD') as day`));
+    expect([await db.tx((tx) => entityToday(tx, id)), read.day]).toEqual(["2026-11-16", "2026-11-16"]);
   });
 
   it("AC1 a person field dated UTC's today, already yesterday there, is refused", async () => {

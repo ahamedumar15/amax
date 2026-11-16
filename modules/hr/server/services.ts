@@ -10,8 +10,6 @@ import { linkableAccount } from "./link";
 import { entityZoneSet } from "@amax/workflows";
 import { entityToday, noZone, unzonedEntities } from "./zones";
 
-export { entityToday, noZone };
-
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
 const COUNTRY: Record<string, string> = { "sri lanka": "LK", australia: "AU" };

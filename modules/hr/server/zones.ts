@@ -1,21 +1,23 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { entityZoneSet } from "@amax/workflows";
+import { entityDay } from "./inforce";
 
 /** Review round 2: HR's refusal for an entity whose today it can't know. */
 export const noZone = (name: string) => `${name} has no time zone set: set one before adding people there or recording leavers`;
 
 /**
  * 109 AC-5: today in the legal entity's own time zone, the one date HR decides joining, active and left by. Review round
- * 2: an entity with no zone set (its own, or its country's default) is refused, never counted in UTC.
+ * 2: an entity with no zone set (its own, or its country's default) is refused, never counted in UTC. 111 AC-1: the
+ * date is the database's (entityDay), the same engine HR's in-force reads use.
  */
-export async function entityToday(tx: Tx, entityId: string, now = new Date()) {
-  const zone = await entityZoneSet(tx, entityId);
-  if (!zone) {
+export async function entityToday(tx: Tx, entityId: string) {
+  if (!(await entityZoneSet(tx, entityId))) {
     const [e] = await tx.execute(sql`select name from core.legal_entity where id = ${entityId}`);
     throw new Error(noZone(String(e?.name ?? "This legal entity")));
   }
-  return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const [r] = await tx.execute(sql`select to_char(${entityDay(sql`${entityId}::uuid`)}, 'YYYY-MM-DD') as day`);
+  return String(r.day);
 }
 
 /** 110 AC-3: the legal entities with no time zone (their own or their country's), whose people HR can't move or add. */

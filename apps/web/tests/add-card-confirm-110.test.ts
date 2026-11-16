@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withTenant, type Db } from "@amax/db";
 import { hasDb, migratedDatabase } from "@amax/db/testdb";
 import type { ModuleManifest } from "@amax/core";
@@ -23,6 +23,9 @@ describe.skipIf(!hasDb)("110 the confirmed Add to project card names what was wr
   let registry: Registry;
   let maya: Viewer;
   beforeAll(async () => {
+    // 111 AC-4: a clock fixed before the months it allocates, so the test doesn't drift as the real date passes them.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-16T10:00:00Z"));
     t = await migratedDatabase();
     app = t.app();
     configureRuntime({ db: app, auditKey: "k".repeat(32) });
@@ -36,7 +39,7 @@ describe.skipIf(!hasDb)("110 the confirmed Add to project card names what was wr
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = 'maya@lumenlabs.test'`));
     maya = (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
   }, 120_000);
-  afterAll(() => t?.drop());
+  afterAll(() => { vi.useRealTimers(); return t?.drop(); });
 
   it.each([
     ["Through as drafted", {}, "Added Dinesh Wickrama to CON · 40% Mar–May"],
