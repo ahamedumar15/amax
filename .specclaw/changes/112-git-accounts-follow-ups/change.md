@@ -24,7 +24,9 @@ doesn't match one says only "amax can't say how that GitHub connect went", and n
 
 1. **AC-1** A commit is credited through a GitHub identity that was connected (it has GitHub's account id) only when the
    commit's email is one of that person's verified GitHub emails, so a renamed login reused by another GitHub user is
-   never credited to its first holder. An identity linked before 108 (no account id) is credited as before.
+   never credited to its first holder. When a connected login's holder and the commit's verified email's holder are
+   different people, nobody is credited and the conflict is left for an Admin (product owner, 2026-11-16). An identity
+   linked before 108 (no account id) yields to the email's holder, and is otherwise credited as before.
 2. **AC-2** The note after GitHub's return comes from that return's own record on its connect state (the result and the
    skipped count, the first outcome standing), read by id for the viewer within the last 10 minutes. With no such record
    it says only "amax can't say how that GitHub connect went. To try again, ask amax to connect GitHub.", or nothing for

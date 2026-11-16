@@ -29,7 +29,7 @@ describe.skipIf(!hasDb)("112 commits credited by GitHub account (Postgres)", () 
     ["the connected person, from one of their verified emails", commit("kasun-old", "4821937+kasun-old@users.noreply.github.com"), KASUN],
     ["someone else who took the renamed login, signed by GitHub", commit("kasun-old", "stranger@example.test"), null],
     ["the connected person's login, an email they never verified", commit("kasun-old", "kasun@elsewhere.test"), null],
-    ["someone else who took the renamed login, from their own verified email: credited to them", commit("kasun-old", "nimal@lumen.test"), NIMAL],
+    ["a connected login with someone else's verified email: nobody, left for an Admin", commit("kasun-old", "nimal@lumen.test"), null],
     ["a login linked before 108, from a connected person's verified email: credited to the email's holder", commit("nimal-legacy", "kasun@lumen.test"), KASUN],
     ["an identity linked before 108 (no account id), signed by GitHub, as before", commit("nimal-legacy", "nimal@legacy.test"), NIMAL],
   ])("AC1 %s", async (_name, c, who) => {

@@ -38,12 +38,14 @@ export const closedTasks = (message: string) => [...message.matchAll(/\b([A-Z][A
 /** Who a commit is attributed to: only a verified commit or a verified email for the identity counts. */
 export async function authorOf(tenantId: string, provider: GitProvider, c: Commit) {
   return withTenant(getRuntime().db, tenantId, async (tx) => {
-    // 112 AC-1 (final pass 3): whoever holds the commit's email as a verified identity made it, whatever its login
-    // says: a reused login never credits its earlier holder, connected or linked before 108.
+    // 112 AC-1: a reused login never credits its earlier holder. The commit's verified email decides, except against a
+    // connected login held by someone else, where nobody is credited.
     const byEmail = c.email ? await findGitIdentity(tx, provider, { login: null, email: c.email }) : null;
     const holder = byEmail?.emailVerified ? byEmail : null;
     const id = await findGitIdentity(tx, provider, { login: c.login, email: c.email });
-    if (holder && holder.userId !== id?.userId) return { userId: holder.userId, candidate: null };
+    // Final pass 4 (the product owner's rule): when the login's connected holder and the email's holder are different
+    // people, nobody is credited and the conflict is left for an Admin; an older login (no account id) yields to the email.
+    if (holder && holder.userId !== id?.userId) return { userId: id?.providerUserId ? null : holder.userId, candidate: null };
     // A connected identity (it carries the provider's account id) credits a commit only for one of its verified emails.
     if (id?.providerUserId) return { userId: (await isVerifiedEmailOf(tx, id.userId, provider, c.email)) ? id.userId : null, candidate: null };
     const emailOk = Boolean(id?.emailVerified && id.email && c.email && id.email.toLowerCase() === c.email.toLowerCase());
