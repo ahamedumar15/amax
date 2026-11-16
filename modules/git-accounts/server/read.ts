@@ -32,8 +32,12 @@ export const githubAppStatus = async (v: Viewer) => {
   const row = can(v, "secrets:credential:read") ? await appRow(ctxFor(v)) : null;
   const callback = (() => { try { return { callbackUrl: redirectUri(), callbackProblem: null }; } catch (e) { if (e instanceof ToolError) return { callbackUrl: null, callbackProblem: e.message }; throw e; } })();
   // 117 AC-3: for those who manage credentials, "configured" means the stored value is a usable client id and secret.
-  const incomplete = configured && row !== null && (await appUsable(ctxFor(v), row.lastRotatedAt)) === false;
-  return { connector: "github-oauth", configured: configured && !incomplete, incomplete, expired: !configured && row?.status === "expired", rotatedAt: row?.lastRotatedAt ?? null, ...callback };
+  // Review round 2: three answers, never folded: usable, incomplete (it doesn't parse) or couldn't check (and why).
+  const check = configured && row !== null ? await appUsable(ctxFor(v), row.lastRotatedAt) : null;
+  const incomplete = check?.usable === false;
+  const checkProblem = check && check.usable === null ? check.problem : null;
+  return { connector: "github-oauth", configured: configured && !incomplete, incomplete, usable: check ? check.usable : null, checkProblem,
+    expired: !configured && row?.status === "expired", rotatedAt: row?.lastRotatedAt ?? null, ...callback };
 };
 
 /** What Disconnect removes: every GitHub login and every row under it, in words. */

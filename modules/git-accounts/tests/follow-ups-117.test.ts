@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { configureSecrets, putSecret, revokeSecret } from "@amax/core/secrets";
+import { configureSecrets, localKms, putSecret, revokeSecret } from "@amax/core/secrets";
 import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import { completeGitHubConnect, RESULTS } from "../contracts";
@@ -31,7 +31,7 @@ describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
   beforeAll(async () => { db = await gitAccountsDatabase(); [kasun, maya] = [await db.as("kasun"), await db.as("maya")]; }, 120_000);
   afterAll(() => db?.drop());
   const job = contextFor.job(T, "test");
-  const status = () => db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ configured: boolean; incomplete: boolean }>;
+  const status = () => db.registry.call(maya, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ configured: boolean; incomplete: boolean; usable: boolean | null; checkProblem: string | null }>;
   const offered = async () => (await Promise.all(chatSuggestions.filter((s) => s.routes.includes("/settings/integrations"))
     .map(async (s) => ((await s.when!(maya as never, {})) ? s.label : null)))).filter(Boolean);
 
@@ -61,9 +61,15 @@ describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
     expect([await status(), await offered()]).toEqual([expect.objectContaining({ configured: true, incomplete: false }), ["Rotate the GitHub app secret", "Remove the GitHub app"]]);
   });
 
-  it("review round 1: a key service outage is 'couldn't check', never Incomplete (kept last: the key can't come back)", async () => {
+  it.each([
+    ["no key service", () => configureSecrets({ kms: null }), /no key service is set/],
+    ["a different key service", () => configureSecrets({ kms: localKms(new Uint8Array(32)) }), /./],
+  ])("review rounds 1 and 2: with %s the status says it couldn't check, keeps nothing, and recovers", async (_n, outage, why) => {
     await app("only-the-secret-00000000000000");
-    configureSecrets({ kms: null });
-    expect(await status()).toEqual(expect.objectContaining({ incomplete: false }));
+    outage();
+    const during = await status();
+    configureSecrets({ kms: db.kms });
+    expect([during.incomplete, during.usable, why.test(String(during.checkProblem))]).toEqual([false, null, true]);
+    expect(await status()).toEqual(expect.objectContaining({ incomplete: true, usable: false, checkProblem: null }));
   });
 });

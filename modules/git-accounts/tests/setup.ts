@@ -56,7 +56,8 @@ export async function gitAccountsDatabase() {
   const t = await migratedDatabase();
   const app = t.app();
   configureRuntime({ db: app, auditKey: "k".repeat(32) });
-  configureSecrets({ kms: localKms(new Uint8Array(randomBytes(32))) });
+  const kms = localKms(new Uint8Array(randomBytes(32)));
+  configureSecrets({ kms });
   setGrants([gitAccounts]);
   installAuthorizer();
   await loadFixtures(app, [{ id: "auth", fixtures: [authFixtures] }, gitAccounts], lumen);
@@ -71,5 +72,5 @@ export async function gitAccountsDatabase() {
   const setUpApp = () => putSecret(contextFor.job(T, "seed"), { connector: "github-oauth", value: "app-id:app-secret-fake-0000000000" });
   const tx = <R>(fn: (tx: Tx) => Promise<R>) => withTenant(app, T, fn);
   const drop = async () => { github.close(); await t.drop(); };
-  return { t, app, registry, as, tx, setUpApp, origin, drop };
+  return { t, app, registry, as, tx, setUpApp, origin, drop, kms };
 }

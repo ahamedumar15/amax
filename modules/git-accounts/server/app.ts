@@ -37,13 +37,20 @@ export const app = (ctx: ServiceContext, purpose: string) => <T>(fn: (id: string
  * refused use), which is never mistaken for "unusable" and never kept. Reading it is an audited use, so a read answer is
  * kept per tenant until the credential is next rotated, one entry per tenant, and concurrent checks share one read.
  */
-const checks = new Map<string, { rotatedAt: string; answer: Promise<boolean | null> }>();
-export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<boolean | null> {
+export type AppCheck = { usable: boolean } | { usable: null; problem: string };
+const checks = new Map<string, { rotatedAt: string; answer: Promise<AppCheck> }>();
+const problemOf = (e: unknown) => { try { return asRefusal(e); } catch (r) { return r instanceof ToolError ? r.message : "amax couldn't read the GitHub app's credential just now"; } };
+export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<AppCheck> {
   const at = rotatedAt?.toISOString() ?? "";
   const held = checks.get(ctx.tenantId);
   if (held?.rotatedAt === at) return held.answer;
-  const answer = useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null)
-    .catch(() => { checks.delete(ctx.tenantId); return null; });
+  // Review round 2: a failed read is "couldn't check" with its reason, dropped so the next status reads again; a late
+  // failure never drops a newer check.
+  const answer: Promise<AppCheck> = useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null)
+    .then((usable) => ({ usable }), (e: unknown) => {
+      if (checks.get(ctx.tenantId)?.answer === answer) checks.delete(ctx.tenantId);
+      return { usable: null, problem: problemOf(e) };
+    });
   checks.set(ctx.tenantId, { rotatedAt: at, answer });
   return answer;
 }
