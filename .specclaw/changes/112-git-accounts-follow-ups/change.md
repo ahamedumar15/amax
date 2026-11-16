@@ -18,16 +18,17 @@ architecture doc doesn't say the app may read a slot, and a lapsed session on Gi
 What changes on screen, and where to see it: [`112-git-accounts-follow-ups`](../../mock/index.html#112-git-accounts-follow-ups)
 
 No new screen. The Git accounts note after GitHub's return reads from the person's own connect record; a link that
-doesn't match one says only "GitHub wasn't connected. Ask amax to connect GitHub again."
+doesn't match one says only "amax can't say how that GitHub connect went", and nothing when you're connected.
 
 ## Acceptance Criteria
 
 1. **AC-1** A commit is credited through a GitHub identity that was connected (it has GitHub's account id) only when the
    commit's email is one of that person's verified GitHub emails, so a renamed login reused by another GitHub user is
    never credited to its first holder. An identity linked before 108 (no account id) is credited as before.
-2. **AC-2** The note after GitHub's return comes from the person's own most recent connect, recorded on its connect
-   state (the result and the skipped count) within the last 10 minutes. A result code or count in the URL that no such
-   record matches shows only the fixed "GitHub wasn't connected. Ask amax to connect GitHub again.", or nothing.
+2. **AC-2** The note after GitHub's return comes from that return's own record on its connect state (the result and the
+   skipped count, the first outcome standing), read by id for the viewer within the last 10 minutes. With no such record
+   it says only "amax can't say how that GitHub connect went. To try again, ask amax to connect GitHub.", or nothing for
+   someone connected; never a claim from the URL.
 3. **AC-3** The callback slot's name and type are declared once, in `@amax/core`, and both the app's route and the module
    use that declaration.
 4. **AC-4** `docs/architecture.md` says the app may also read a slot, where that slot is declared, and names this one.

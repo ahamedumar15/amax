@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { logError, type GitHubCallback } from "@amax/core/server";
+import type { ResultCode } from "../words";
 import { completeConnect, recordReturn, resultCodeOf } from "./connect";
 
 const Query = z.object({ state: z.string().min(16).max(200), code: z.string().min(1).max(200) });
@@ -10,25 +11,28 @@ const Query = z.object({ state: z.string().min(16).max(200), code: z.string().mi
  * that record's id, so its note is about this return and comes from the record, never the URL (112 AC-2).
  */
 export const githubCallback: GitHubCallback = async (ctx, params) => {
-  const code = await outcome(ctx, params);
+  const { code, claimId } = await outcome(ctx, params);
   const state = typeof params.state === "string" ? params.state : "";
-  const { id } = state ? await recordReturn(ctx, { state, result: code }).catch((e: unknown) => { logError("git-accounts.result", e); return { id: null }; }) : { id: null };
+  // Final pass 2: a success's reference is its own claim; a failure is recorded on the state it carries (first one stands).
+  const ref = claimId ?? (state
+    ? (await recordReturn(ctx, { state, result: code }).catch((e: unknown) => { logError("git-accounts.result", e); return { id: null }; })).id
+    : null);
   const query: Record<string, string> = { github: "1" };
-  if (id) query.ref = id;
+  if (ref) query.ref = ref;
   return query;
 };
 
-/** What this return came to, as a result code. */
-async function outcome(ctx: Parameters<GitHubCallback>[0], params: Record<string, string>) {
-  if (params.error) return params.error === "access_denied" ? "denied" : "incomplete";
+/** What this return came to, as a result code, and on success the claim it stored against. */
+async function outcome(ctx: Parameters<GitHubCallback>[0], params: Record<string, string>): Promise<{ code: Exclude<ResultCode, "connected">; claimId?: undefined } | { code: "connected"; claimId: string }> {
+  if (params.error) return { code: params.error === "access_denied" ? "denied" : "incomplete" };
   const q = Query.safeParse(params);
-  if (!q.success) return "incomplete";
+  if (!q.success) return { code: "incomplete" };
   try {
-    await completeConnect(ctx, q.data);
-    return "connected";
+    const r = await completeConnect(ctx, q.data);
+    return { code: "connected", claimId: r.claimId };
   } catch (e) {
     const code = resultCodeOf(e);
     if (code === "error") logError("git-accounts.callback", e);
-    return code;
+    return { code: code as Exclude<ResultCode, "connected"> };
   }
 }

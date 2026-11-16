@@ -76,19 +76,18 @@ export const resultCodeOf = (e: unknown): ResultCode => {
 };
 
 /**
- * 112 AC-2 (final pass): how this return came out, on the state it carries (found by its hash, for this person, used or
- * not), so the screen reads exactly this return and never an earlier one. A connect that succeeded already wrote its
- * result and skipped count in its own write. The row's id goes back to the screen; none when no such state is this
- * person's.
+ * 112 AC-2 (final pass): how a failed return came out, on the state it carries (found by its hash, for this person, used
+ * or not), so the screen reads exactly this return. A connect that succeeded wrote its own result in its store, and its
+ * claim's id is the screen's reference. The row's id goes back to the screen; none when no such state is this person's.
  */
 export const recordReturn = defineService({
   name: "git-accounts.github.result", action: CONNECT, resource: "git_accounts.connect_state",
-  input: z.object({ state: z.string(), result: z.string() }),
+  input: z.object({ state: z.string(), result: z.enum(Object.keys(RESULTS) as [ResultCode, ...ResultCode[]]).exclude(["connected"]) }),
   async run(tx, input, ctx) {
-    const [row] = input.result === "connected"
-      ? await tx.execute(sql`select id from git_accounts.connect_state where state_hash = ${hash(input.state)} and user_id = ${selfOf(ctx)}`)
-      : await tx.execute(sql`update git_accounts.connect_state set result = ${input.result}, skipped = 0, result_at = now()
-          where state_hash = ${hash(input.state)} and user_id = ${selfOf(ctx)} returning id`);
+    // Final pass 2: the first outcome stands; a later return carrying the same state reads it and never overwrites it.
+    await tx.execute(sql`update git_accounts.connect_state set result = ${input.result}, skipped = 0, result_at = now()
+      where state_hash = ${hash(input.state)} and user_id = ${selfOf(ctx)} and result is null`);
+    const [row] = await tx.execute(sql`select id from git_accounts.connect_state where state_hash = ${hash(input.state)} and user_id = ${selfOf(ctx)}`);
     const id = (row?.id as string | undefined) ?? null;
     return { result: { id }, resourceId: id, after: { result: input.result } };
   },
@@ -105,5 +104,5 @@ export async function completeConnect(ctx: ServiceContext, input: { state: strin
   // Review round 2: the identities are stored; a suggestion left open is logged, never reported as a failed connect.
   await withdrawSuggestions(forPerson(ctx), { kind: "delivery.git-identity", targetType: "auth.git_identity", targetIds: [`github:${gh.login}`], reason: `${gh.login} connected GitHub themselves` })
     .catch((e: unknown) => logError("git-accounts.withdraw", e));
-  return r;
+  return { ...r, claimId };
 }

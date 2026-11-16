@@ -26,11 +26,26 @@ describe.skipIf(!hasDb)("112 the Git accounts note is about this return, from it
     ["a connect GitHub refused, after that success", async () => ({ state: await newState(kasun), code: "noverified" }), undefined, "GitHub has no verified email for you"],
     ["declined on GitHub, after those", async () => ({ state: await newState(kasun), error: "access_denied" }), undefined, "you didn't approve it on GitHub"],
     ["an incomplete return", async () => ({ state: await newState(kasun) }), undefined, "GitHub didn't finish the sign-in"],
-    ["a link already used", async () => ({ state: used, code: "good" }), undefined, "that link has expired or was already used"],
+    ["the first link returned again: its first outcome stands", async () => ({ state: used, code: "good" }), { logins: ["kasun-dias"], emails: 2 }, "GitHub connected as @kasun-dias"],
+    ["a link used up by a refusal, returned again: the refusal stands", async () => {
+      const state = await newState(kasun);
+      await githubCallback(ctxFor(kasun), { state, code: "noverified" });
+      return { state, code: "good" };
+    }, undefined, "GitHub has no verified email for you"],
   ])("AC2 %s: the note is this return's", async (_name, make, connectedAs, text) => {
     const params = await make();
     const query = await githubCallback(ctxFor(kasun), params as Record<string, string>);
     expect(await note(kasun, query.ref, connectedAs)).toContain(text);
+  });
+
+  it("final pass 2: two real returns on one state share one record, and the first outcome stands", async () => {
+    const state = await newState(kasun);
+    const [first, second] = [await githubCallback(ctxFor(kasun), { state, code: "good" }), await githubCallback(ctxFor(kasun), { state, code: "good" })];
+    expect([first.ref === second.ref, (await returnResult(kasun, first.ref))?.result]).toEqual([true, "connected"]);
+  });
+
+  it("final pass 2: someone connected sees no note for a return amax has no record of", async () => {
+    expect(await note(kasun, undefined, { logins: ["kasun-dias"], emails: 2 })).toBe("");
   });
 
   it("AC2 someone else's record, or no record, says only the fixed sentence", async () => {

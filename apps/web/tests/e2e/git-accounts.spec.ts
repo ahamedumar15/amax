@@ -60,13 +60,25 @@ async function ask(page: Page, button: string, prompt: string) {
   await page.keyboard.press("Enter");
 }
 
-test("112 AC5 GitHub's return to a signed-out browser goes to sign-in and back to the callback", async ({ page }) => {
-  await page.goto("/api/git/github/callback?state=abcdefghijklmnopqrstuvwxyz&code=good");
+test("112 AC5 a real return interrupted by sign-in finishes the connect after resume", async ({ page, context }) => {
+  await page.goto("/signin");
+  await page.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");
+  await page.getByRole("button", { name: "Sign in as demo user" }).click();
+  await expect(page).toHaveURL((u) => u.pathname === "/");
+  await page.goto("/git-accounts");
+  await ask(page, "Ask amax · Connect GitHub", "Connect my GitHub");
+  const card = page.getByRole("group", { name: "Confirm: Connect GitHub" });
+  await card.getByRole("button", { name: "Connect GitHub" }).click();
+  const link = await card.getByRole("link", { name: /Continue to GitHub/ }).getAttribute("href");
+  await context.clearCookies();
+  await page.goto(link!);
   await expect(page).toHaveURL((u) => u.pathname === "/signin" && (u.searchParams.get("next") ?? "").startsWith("/git-accounts?resume="));
   await page.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");
   await page.getByRole("button", { name: "Sign in as demo user" }).click();
-  await expect(page).toHaveURL((u) => u.pathname === "/git-accounts");
-  await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub wasn't connected. Ask amax to connect GitHub again.");
+  await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub connected as @kasun-dias: 2 emails");
+  await ask(page, "Ask amax · Disconnect GitHub", "Disconnect my GitHub");
+  await page.getByRole("group", { name: /^Confirm: Disconnect GitHub/ }).getByRole("button", { name: "Disconnect" }).click();
+  await expect(page.getByRole("group", { name: /^Confirm: Disconnect GitHub/ })).toContainText("Disconnected");
 });
 
 test("108 AC1 AC6 AC7 AC11 Git accounts: connect GitHub from chat, see the verified emails, then disconnect", async ({ page }) => {
