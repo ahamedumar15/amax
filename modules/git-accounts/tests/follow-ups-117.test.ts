@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { putSecret, revokeSecret } from "@amax/core/secrets";
+import { configureSecrets, putSecret, revokeSecret } from "@amax/core/secrets";
 import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import { completeGitHubConnect, RESULTS } from "../contracts";
@@ -35,21 +35,35 @@ describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
   const offered = async () => (await Promise.all(chatSuggestions.filter((s) => s.routes.includes("/settings/integrations"))
     .map(async (s) => ((await s.when!(maya as never, {})) ? s.label : null)))).filter(Boolean);
 
-  it("AC2 GitHub refusing the app's Client ID or secret says an Admin replaces the app, never 'Try again'", async () => {
-    await db.setUpApp();
+  const app = async (value: string) => {
+    await revokeSecret(job, { connector: "github-oauth", reason: "replaced" }).catch(() => {});
+    await db.t.owner`delete from secrets.version where credential_id in (select id from secrets.credential where connector = 'github-oauth')`;
+    await db.t.owner`delete from secrets.credential where connector = 'github-oauth'`;
+    await putSecret(job, { connector: "github-oauth", value });
+  };
+  it.each([
+    ["a wrong Client secret", `app-id:${"w".repeat(40)}`, "good", "credentials"],
+    ["a wrong Client ID", "Ov23liWRONG0000:app-secret-fake-0000000000", "good", "credentials"],
+    ["a Redirect URI GitHub refuses", "app-id:app-secret-fake-0000000000", "mismatch", "callback"],
+    ["a code GitHub doesn't know (still 'Try again')", "app-id:app-secret-fake-0000000000", "unknown-code", "github"],
+  ])("AC2 GitHub's exchange reply for %s comes back as its own result", async (_n, value, code, result) => {
+    await app(value);
     const r = (await db.registry.call(kasun, "connect_github", {}, { source: "mcp" })) as { open: { url: string } };
-    const e = await completeGitHubConnect(ctxFor(kasun), { state: new URL(r.open.url).searchParams.get("state")!, code: "wrongsecret" }).catch((x: unknown) => x);
-    expect([resultCodeOf(e), RESULTS.credentials]).toEqual(["credentials", expect.stringContaining("An Admin replaces the GitHub app")]);
-    expect(RESULTS.credentials).not.toMatch(/try again/i);
+    const e = await completeGitHubConnect(ctxFor(kasun), { state: new URL(r.open.url).searchParams.get("state")!, code }).catch((x: unknown) => x);
+    expect(resultCodeOf(e)).toBe(result);
+    if (result === "credentials") expect([RESULTS.credentials.includes("An Admin replaces the GitHub app"), /try again/i.test(RESULTS.credentials)]).toEqual([true, false]);
   });
 
   it("AC3 an incomplete stored value is Incomplete, offers Set up, and is configured again once set up", async () => {
-    await revokeSecret(job, { connector: "github-oauth", reason: "replaced" });
-    await db.t.owner`delete from secrets.version where credential_id in (select id from secrets.credential where connector = 'github-oauth')`;
-    await db.t.owner`delete from secrets.credential where connector = 'github-oauth'`;
-    await putSecret(job, { connector: "github-oauth", value: "only-the-secret-00000000000000" });
+    await app("only-the-secret-00000000000000");
     expect([await status(), await offered()]).toEqual([expect.objectContaining({ configured: false, incomplete: true }), ["Set up the GitHub app"]]);
     await db.registry.call(maya, "set_github_app", { clientId: "Ov23liFAKEdemo01" }, { source: "mcp", secret: "c".repeat(40) });
     expect([await status(), await offered()]).toEqual([expect.objectContaining({ configured: true, incomplete: false }), ["Rotate the GitHub app secret", "Remove the GitHub app"]]);
+  });
+
+  it("review round 1: a key service outage is 'couldn't check', never Incomplete (kept last: the key can't come back)", async () => {
+    await app("only-the-secret-00000000000000");
+    configureSecrets({ kms: null });
+    expect(await status()).toEqual(expect.objectContaining({ incomplete: false }));
   });
 });

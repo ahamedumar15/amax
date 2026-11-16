@@ -1,0 +1,6 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B2] `modules/git-accounts/tests/setup.ts:29` The fake GitHub returns `incorrect_client_credentials` for the magic code `wrongsecret`, whatever client_id or client_secret is sent. So the AC-2 test never stores a wrong secret and drives it through the exchange; it plants the refusal by the code value. Make the fake return `incorrect_client_credentials` whenever `client_id`/`client_secret` don't match `app-id`/`app-secret-fake-…`. Then the test can store a well-formed but wrong secret (and a wrong client id) and connect with `good`. (round 1) <!-- fp:966c8c64fbc1 class:other -->
+- [minor B12] `modules/git-accounts/server/app.ts:37` The `usable` cache is a process-wide Map that never evicts. Every rotation adds a new `tenant:rotatedAt` key, so it grows without limit across tenants and rotations. The `has`-then-`await`-then-`set` sequence also lets concurrent status reads (the chip and every Integrations chat-suggestion `when`) each do an audited secret use before the first one lands. Keep one entry per tenant (replace the entry when rotatedAt changes) and store the in-flight promise so concurrent reads share it. (round 1) <!-- fp:099d201e9ebb class:other -->

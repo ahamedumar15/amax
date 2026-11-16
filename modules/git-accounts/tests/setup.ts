@@ -26,8 +26,9 @@ function fakeGitHub(): Promise<Server> {
       if (req.url === "/login/oauth/access_token") {
         const b = JSON.parse(body || "{}");
         if (b.code === "mismatch") return send(200, { error: "redirect_uri_mismatch" });
-        if (b.code === "wrongsecret") return send(200, { error: "incorrect_client_credentials" });
-        const ok = b.client_id === "app-id" && b.client_secret === "app-secret-fake-0000000000" && ["good", "nologin", "noemails", "hang", "reset", "noverified", "many", "slownoverified"].includes(b.code);
+        // 117 review round 1: a wrong client id or secret is GitHub's incorrect_client_credentials; an unknown code is bad_verification_code.
+        if (b.client_id !== "app-id" || b.client_secret !== "app-secret-fake-0000000000") return send(200, { error: "incorrect_client_credentials" });
+        const ok = ["good", "nologin", "noemails", "hang", "reset", "noverified", "many", "slownoverified"].includes(b.code);
         return ok ? send(200, { access_token: `gho_${b.code}` }) : send(200, { error: "bad_verification_code" });
       }
       const token = String(req.headers.authorization ?? "").replace("Bearer ", "");

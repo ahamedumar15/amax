@@ -32,13 +32,20 @@ export const app = (ctx: ServiceContext, purpose: string) => <T>(fn: (id: string
     return fn(parsed.id, parsed.secret);
   }).catch(asRefusal);
 
-/** 117 AC-3: whether the stored value is usable. Reading it is an audited use, so the answer is kept per tenant until the
- * credential is next rotated (its newest version's time). */
-const usable = new Map<string, boolean>();
-export async function appUsable(ctx: ServiceContext, rotatedAt: Date | null) {
-  const key = `${ctx.tenantId}:${rotatedAt?.toISOString() ?? ""}`;
-  if (!usable.has(key)) usable.set(key, await useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null).catch(() => false));
-  return usable.get(key)!;
+/**
+ * 117 AC-3: whether the stored value is usable: true, false, or null when it couldn't be read (a key service outage, a
+ * refused use), which is never mistaken for "unusable" and never kept. Reading it is an audited use, so a read answer is
+ * kept per tenant until the credential is next rotated, one entry per tenant, and concurrent checks share one read.
+ */
+const checks = new Map<string, { rotatedAt: string; answer: Promise<boolean | null> }>();
+export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<boolean | null> {
+  const at = rotatedAt?.toISOString() ?? "";
+  const held = checks.get(ctx.tenantId);
+  if (held?.rotatedAt === at) return held.answer;
+  const answer = useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null)
+    .catch(() => { checks.delete(ctx.tenantId); return null; });
+  checks.set(ctx.tenantId, { rotatedAt: at, answer });
+  return answer;
 }
 
 /** The app's client id, read before any write: it isn't secret, but it lives in the credential. */
