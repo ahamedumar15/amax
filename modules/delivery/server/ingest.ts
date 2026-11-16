@@ -41,7 +41,12 @@ export async function authorOf(tenantId: string, provider: GitProvider, c: Commi
     const id = await findGitIdentity(tx, provider, { login: c.login, email: c.email });
     // 112 AC-1: a connected identity (it carries the provider's account id) credits a commit only for one of its person's
     // verified emails: a renamed login that someone else reuses never credits its first holder.
-    if (id?.providerUserId) return { userId: (await isVerifiedEmailOf(tx, id.userId, provider, c.email)) ? id.userId : null, candidate: null };
+    if (id?.providerUserId) {
+      if (await isVerifiedEmailOf(tx, id.userId, provider, c.email)) return { userId: id.userId, candidate: null };
+      // Final pass: the login's holder didn't make it; whoever holds the commit's verified email did.
+      const byEmail = c.email ? await findGitIdentity(tx, provider, { login: null, email: c.email }) : null;
+      return { userId: byEmail && byEmail.userId !== id.userId && byEmail.emailVerified ? byEmail.userId : null, candidate: null };
+    }
     const emailOk = Boolean(id?.emailVerified && id.email && c.email && id.email.toLowerCase() === c.email.toLowerCase());
     if (id && (c.verified || emailOk)) return { userId: id.userId, candidate: null };
     return { userId: null, candidate: id ? null : await personByEmail(tx, c.email) };

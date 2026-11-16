@@ -62,7 +62,11 @@ async function ask(page: Page, button: string, prompt: string) {
 
 test("112 AC5 GitHub's return to a signed-out browser goes to sign-in and back to the callback", async ({ page }) => {
   await page.goto("/api/git/github/callback?state=abcdefghijklmnopqrstuvwxyz&code=good");
-  await expect(page).toHaveURL((u) => u.pathname === "/signin" && (u.searchParams.get("next") ?? "").startsWith("/api/git/github/callback?state="));
+  await expect(page).toHaveURL((u) => u.pathname === "/signin" && (u.searchParams.get("next") ?? "").startsWith("/git-accounts?resume="));
+  await page.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");
+  await page.getByRole("button", { name: "Sign in as demo user" }).click();
+  await expect(page).toHaveURL((u) => u.pathname === "/git-accounts");
+  await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub wasn't connected. Ask amax to connect GitHub again.");
 });
 
 test("108 AC1 AC6 AC7 AC11 Git accounts: connect GitHub from chat, see the verified emails, then disconnect", async ({ page }) => {
@@ -77,7 +81,7 @@ test("108 AC1 AC6 AC7 AC11 Git accounts: connect GitHub from chat, see the verif
   const connect = page.getByRole("group", { name: "Confirm: Connect GitHub" });
   await connect.getByRole("button", { name: "Connect GitHub" }).click();
   await connect.getByRole("link", { name: /Continue to GitHub/ }).click();
-  await expect(page).toHaveURL(/\/git-accounts\?github=connected/);
+  await expect(page).toHaveURL(/\/git-accounts\?github=1&ref=/);
   await expect(page.getByRole("main").getByRole("status")).toContainText("GitHub connected as @kasun-dias: 2 emails");
   await expect(page.getByRole("heading", { name: "GitHub · Connected as @kasun-dias" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Verified emails" }).getByRole("listitem")).toHaveCount(2);

@@ -19,6 +19,7 @@ describe.skipIf(!hasDb)("112 commits credited by GitHub account (Postgres)", () 
     for (const [id, email] of [[KASUN, "kasun@lumen.test"], [NIMAL, "nimal@lumen.test"]]) await t.owner`insert into auth.user (id, tenant_id, email, name) values (${id}, ${T}, ${email}, ${email})`;
     await withTenant(t.app(), T, async (tx) => {
       await setGitHubIdentities(tx, T, KASUN, { login: "kasun-old", githubId: 4821937, emails: ["kasun@lumen.test", "4821937+kasun-old@users.noreply.github.com"] });
+      await setGitHubIdentities(tx, T, NIMAL, { login: "nimal-gh", githubId: 999, emails: ["nimal@lumen.test"] });
       await linkGitIdentity(tx, T, { provider: "github", login: "nimal-legacy", email: null, userId: NIMAL });
     });
   }, 60_000);
@@ -28,7 +29,8 @@ describe.skipIf(!hasDb)("112 commits credited by GitHub account (Postgres)", () 
     ["the connected person, from one of their verified emails", commit("kasun-old", "4821937+kasun-old@users.noreply.github.com"), KASUN],
     ["someone else who took the renamed login, signed by GitHub", commit("kasun-old", "stranger@example.test"), null],
     ["the connected person's login, an email they never verified", commit("kasun-old", "kasun@elsewhere.test"), null],
-    ["an identity linked before 108 (no account id), signed by GitHub, as before", commit("nimal-legacy", "nimal@lumen.test"), NIMAL],
+    ["someone else who took the renamed login, from their own verified email: credited to them", commit("kasun-old", "nimal@lumen.test"), NIMAL],
+    ["an identity linked before 108 (no account id), signed by GitHub, as before", commit("nimal-legacy", "nimal@legacy.test"), NIMAL],
   ])("AC1 %s", async (_name, c, who) => {
     expect((await authorOf(T, "github", c)).userId).toBe(who);
   });

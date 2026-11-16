@@ -12,7 +12,9 @@ export async function GET(req: Request) {
   if (!handle) return new Response("Not found", { status: 404 });
   const url = new URL(req.url);
   const viewer = await getViewer();
-  if (!viewer) return Response.redirect(new URL(`/signin?next=${encodeURIComponent(url.pathname + url.search)}`, req.url), 303);
+  // 112 AC-5: signed out, sign in and come back to Git accounts, which resumes this return (the query only; the path is fixed).
+  if (!viewer) return Response.redirect(new URL(`/signin?next=${encodeURIComponent(`/git-accounts?resume=${encodeURIComponent(url.search.slice(1))}`)}`, req.url), 303);
   const query = await handle(contextForViewer(viewer, "ui"), Object.fromEntries(url.searchParams));
   return Response.redirect(new URL(`/git-accounts?${new URLSearchParams(query)}`, req.url), 303);
 }
+

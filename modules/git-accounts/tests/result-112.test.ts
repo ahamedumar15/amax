@@ -3,36 +3,38 @@ import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
 import { githubCallback } from "../server/callback";
 import { ctxFor } from "../server/context";
-import { latestResult } from "../server/read";
+import { returnResult } from "../server/read";
 import { ResultNote, UNMATCHED } from "../ui/ResultNote";
 import { gitAccountsDatabase } from "./setup";
 
 const html = async (node: unknown) => (await import("react-dom/server")).renderToStaticMarkup(node as never).replace(/&#x27;/g, "'");
 
-// 112 AC-2: the note after GitHub's return comes from the person's own connect record, never from the URL.
-describe.skipIf(!hasDb)("112 the Git accounts note reads the person's own connect (Postgres)", () => {
+// 112 AC-2: every return from GitHub is recorded on the state it carries; the screen's note reads exactly that record,
+// owned by the viewer, never the URL and never an earlier attempt.
+describe.skipIf(!hasDb)("112 the Git accounts note is about this return, from its record (Postgres)", () => {
   let db: Awaited<ReturnType<typeof gitAccountsDatabase>>;
   let kasun: Viewer, nimal: Viewer;
   beforeAll(async () => { db = await gitAccountsDatabase(); [kasun, nimal] = [await db.as("kasun"), await db.as("nimal")]; await db.setUpApp(); }, 120_000);
   afterAll(() => db?.drop());
-  const returnWith = async (v: Viewer, code: string) => {
-    const r = (await db.registry.call(v, "connect_github", {}, { source: "mcp" })) as { open: { url: string } };
-    return githubCallback(ctxFor(v), { state: new URL(r.open.url).searchParams.get("state")!, code });
-  };
-  const note = async (v: Viewer, connectedAs?: { logins: string[]; emails: number }) =>
-    html(ResultNote({ shown: true, record: await latestResult(v), connectedAs }));
+  const newState = async (v: Viewer) => new URL(((await db.registry.call(v, "connect_github", {}, { source: "mcp" })) as { open: { url: string } }).open.url).searchParams.get("state")!;
+  const note = async (v: Viewer, ref: string | undefined, connectedAs?: { logins: string[]; emails: number }) =>
+    html(ResultNote({ shown: true, record: ref ? await returnResult(v, ref) : null, connectedAs }));
+  let used = "";
 
   it.each([
-    ["a connect that worked, from its record", "kasun", "good", { logins: ["kasun-dias"], emails: 2 }, "GitHub connected as @kasun-dias: 2 emails"],
-    ["a connect GitHub refused, from its record", "kasun", "noverified", undefined, "GitHub has no verified email for you"],
-    ["someone with no connect of their own, whatever the URL says", "nimal", null, { logins: ["x"], emails: 9 }, UNMATCHED],
-  ])("AC2 %s", async (_name, who, code, connectedAs, text) => {
-    const v = who === "kasun" ? kasun : nimal;
-    if (code) await returnWith(v, code);
-    expect(await note(v, connectedAs)).toContain(text);
+    ["a connect that worked", async () => { used = await newState(kasun); return { state: used, code: "good" }; }, { logins: ["kasun-dias"], emails: 2 }, "GitHub connected as @kasun-dias: 2 emails"],
+    ["a connect GitHub refused, after that success", async () => ({ state: await newState(kasun), code: "noverified" }), undefined, "GitHub has no verified email for you"],
+    ["declined on GitHub, after those", async () => ({ state: await newState(kasun), error: "access_denied" }), undefined, "you didn't approve it on GitHub"],
+    ["an incomplete return", async () => ({ state: await newState(kasun) }), undefined, "GitHub didn't finish the sign-in"],
+    ["a link already used", async () => ({ state: used, code: "good" }), undefined, "that link has expired or was already used"],
+  ])("AC2 %s: the note is this return's", async (_name, make, connectedAs, text) => {
+    const params = await make();
+    const query = await githubCallback(ctxFor(kasun), params as Record<string, string>);
+    expect(await note(kasun, query.ref, connectedAs)).toContain(text);
   });
 
-  it("AC2 the URL alone shows nothing when the note isn't asked for", async () => {
-    expect(await html(ResultNote({ shown: false, record: await latestResult(kasun) }))).toBe("");
+  it("AC2 someone else's record, or no record, says only the fixed sentence", async () => {
+    const query = await githubCallback(ctxFor(kasun), { state: await newState(kasun), error: "access_denied" });
+    expect([await note(nimal, query.ref), await note(kasun, undefined)]).toEqual([expect.stringContaining(UNMATCHED), expect.stringContaining(UNMATCHED)]);
   });
 });

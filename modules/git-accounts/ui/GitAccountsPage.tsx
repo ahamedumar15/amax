@@ -3,17 +3,19 @@ import type { Viewer } from "@amax/auth";
 import { PinButton } from "@amax/ui";
 import { NOT_SET_UP } from "../contracts";
 import { accountsPin, identityPin } from "../pins";
-import { latestResult, myGitAccounts } from "../server/read";
+import { myGitAccounts, returnResult } from "../server/read";
 import { AskButton } from "./AskButton";
 import { ResultNote } from "./ResultNote";
+import { ResumeReturn } from "./ResumeReturn";
 
 // 108 AC-6, AC-11: the connection first, then the login and the verified emails amax matches commits by. Connect and
 // Disconnect are asked of amax; nothing on the page writes.
 export async function GitAccountsPage({ viewer, searchParams }: ScreenProps) {
   const v = viewer as Viewer | null;
   if (!v) return <h1>Git accounts</h1>;
+  if (searchParams?.resume) return <><h1>Git accounts</h1><ResumeReturn query={searchParams.resume} /></>;
   const shown = Boolean(searchParams?.github);
-  const [{ configured, github }, record] = await Promise.all([myGitAccounts(v), shown ? latestResult(v) : null]);
+  const [{ configured, github }, record] = await Promise.all([myGitAccounts(v), shown && searchParams?.ref ? returnResult(v, searchParams.ref) : null]);
   return (
     <>
       <h1>Git accounts</h1>

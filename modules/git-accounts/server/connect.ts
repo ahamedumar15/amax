@@ -25,7 +25,8 @@ export const issueConnect = defineService({
   name: "git-accounts.github.link", action: CONNECT, resource: "git_accounts.connect_state", input: z.object({ clientId: z.string().min(1) }),
   async run(tx, input, ctx) {
     const userId = selfOf(ctx);
-    await tx.execute(sql`delete from git_accounts.connect_state where user_id = ${userId} and (used_at is not null or created_at < now() - interval '10 minutes')`);
+    // 112: states are kept a day, so a late or repeated return still finds its record; older ones go.
+    await tx.execute(sql`delete from git_accounts.connect_state where user_id = ${userId} and created_at < now() - interval '1 day'`);
     const state = randomBytes(24).toString("base64url");
     await tx.execute(sql`insert into git_accounts.connect_state (tenant_id, user_id, state_hash) values (${ctx.tenantId}, ${userId}, ${hash(state)})`);
     return { result: { open: { label: "Continue to GitHub", url: authorizeUrl(input.clientId, state) }, expiresInMinutes: 10 }, resourceId: userId, after: { issued: true } };
@@ -74,13 +75,22 @@ export const resultCodeOf = (e: unknown): ResultCode => {
   return isGitHubReplyError(e) ? "github" : "error";
 };
 
-/** 112 AC-2: a failed connect's result, on the state it claimed. */
-const recordResult = defineService({
+/**
+ * 112 AC-2 (final pass): how this return came out, on the state it carries (found by its hash, for this person, used or
+ * not), so the screen reads exactly this return and never an earlier one. A connect that succeeded already wrote its
+ * result and skipped count in its own write. The row's id goes back to the screen; none when no such state is this
+ * person's.
+ */
+export const recordReturn = defineService({
   name: "git-accounts.github.result", action: CONNECT, resource: "git_accounts.connect_state",
-  input: z.object({ claimId: z.uuid(), result: z.string() }),
+  input: z.object({ state: z.string(), result: z.string() }),
   async run(tx, input, ctx) {
-    await tx.execute(sql`update git_accounts.connect_state set result = ${input.result}, skipped = 0, result_at = now() where id = ${input.claimId} and user_id = ${selfOf(ctx)}`);
-    return { result: { recorded: true }, resourceId: input.claimId, after: { result: input.result } };
+    const [row] = input.result === "connected"
+      ? await tx.execute(sql`select id from git_accounts.connect_state where state_hash = ${hash(input.state)} and user_id = ${selfOf(ctx)}`)
+      : await tx.execute(sql`update git_accounts.connect_state set result = ${input.result}, skipped = 0, result_at = now()
+          where state_hash = ${hash(input.state)} and user_id = ${selfOf(ctx)} returning id`);
+    const id = (row?.id as string | undefined) ?? null;
+    return { result: { id }, resourceId: id, after: { result: input.result } };
   },
 });
 
@@ -90,15 +100,8 @@ const recordResult = defineService({
  */
 export async function completeConnect(ctx: ServiceContext, input: { state: string; code: string }) {
   const { claimId } = await claimConnect(ctx, { state: input.state });
-  const stored = await (async () => {
-    const gh = await readGitHubUser(forPerson(ctx), input.code);
-    return { gh, r: await storeConnect(ctx, { claimId, login: gh.login, githubId: gh.githubId, emails: gh.emails }) };
-  })().catch(async (e: unknown) => {
-    // 112 AC-2: a connect that failed after its claim says why on its own state, for the screen to read.
-    await recordResult(ctx, { claimId, result: resultCodeOf(e) }).catch((err: unknown) => logError("git-accounts.result", err));
-    throw e;
-  });
-  const { gh, r } = stored;
+  const gh = await readGitHubUser(forPerson(ctx), input.code);
+  const r = await storeConnect(ctx, { claimId, login: gh.login, githubId: gh.githubId, emails: gh.emails });
   // Review round 2: the identities are stored; a suggestion left open is logged, never reported as a failed connect.
   await withdrawSuggestions(forPerson(ctx), { kind: "delivery.git-identity", targetType: "auth.git_identity", targetIds: [`github:${gh.login}`], reason: `${gh.login} connected GitHub themselves` })
     .catch((e: unknown) => logError("git-accounts.withdraw", e));
