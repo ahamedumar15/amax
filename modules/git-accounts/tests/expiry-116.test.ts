@@ -47,11 +47,14 @@ describe.skipIf(!hasDb)("116 the GitHub app's expiry and state (Postgres)", () =
     ["refused before the secret is typed when the expiry has passed", new Date(Date.now() - day), {}, "refused"],
     ["allowed when a new expiry is given", new Date(Date.now() - day), { expiresAt: "2099-01-31" }, "allowed"],
     ["allowed while the expiry is ahead", new Date(Date.now() + 30 * day), {}, "allowed"],
+    ["refused for a given day that has passed (round 3)", null, { expiresAt: "2020-01-31" }, /2020-01-31 has passed/],
+    ["refused for a given day that isn't real (round 3)", null, { expiresAt: "2026-13-45" }, /isn't a real day/],
+    ["refused for February 30 (round 3)", null, { expiresAt: "2099-02-30" }, /isn't a real day/],
   ])("review round 2: the card is %s", async (_n, before, input, outcome) => {
     await fresh(before);
     const propose = db.registry.toolsFor(maya).find((t) => t.name === "set_github_app")!.propose!(maya as never, { clientId: "Ov23liFAKEdemo02", ...input } as never);
-    if (outcome === "refused") await expect(propose).rejects.toThrow(/has passed; give a new expiresAt/);
-    else await expect(propose).resolves.toBeUndefined();
+    if (outcome === "allowed") await expect(propose).resolves.toBeUndefined();
+    else await expect(propose).rejects.toThrow(outcome === "refused" ? /has passed; give a new expiresAt/ : outcome);
   });
 
   it("an expired app is Expired on the status and the card replaces it", async () => {

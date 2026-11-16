@@ -30,6 +30,16 @@ describe.skipIf(!hasDb)("116 the github-oauth guard (Postgres)", () => {
     await expect(call(tool, { connector: "github-oauth" }, value)).rejects.toThrow(STEER);
   });
 
+  it.each([
+    ["put_secret", "2020-01-31", /has passed/], ["put_secret", "2026-13-45", /isn't a real day/],
+    ["rotate_secret", "2099-02-30", /isn't a real day/], ["put_secret", "2099-01-31", null],
+  ])("review round 3: %s's card checks the given expiry %s before the value is typed", async (tool, expiresAt, refused) => {
+    const t = db.registry.toolsFor(maya).find((x) => x.name === tool)!;
+    const propose = t.propose!(maya as never, { connector: "xero", expiresAt } as never);
+    if (refused) await expect(propose).rejects.toThrow(refused);
+    else await expect(propose).resolves.toBeUndefined();
+  });
+
   it("AC6 with no key service, adding a credential says an operator sets AMAX_KMS", async () => {
     configureSecrets({ kms: null });
     try { await expect(call("put_secret", { connector: "xero" }, "x".repeat(30))).rejects.toThrow(/no key service is set \(AMAX_KMS\)/); }

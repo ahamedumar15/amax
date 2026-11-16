@@ -17,6 +17,12 @@ export function keptExpiry(connector: string, expiresAt: Date | null, now = new 
 export const EXPIRY_DAY = /^\d{4}-\d{2}-\d{2}$/;
 export const EXPIRY_DAY_HINT = "YYYY-MM-DD; the credential stops working at the end of that day (UTC)";
 export const endOfDay = (d: string | undefined) => (d ? `${d}T23:59:59Z` : undefined);
+/** Review round 3: what's wrong with an expiry day a tool was given, before anyone types a value: not a real day, or not ahead. */
+export function expiryDayProblem(d: string, now = new Date()): string | null {
+  const at = new Date(`${d}T23:59:59Z`);
+  if (!EXPIRY_DAY.test(d) || Number.isNaN(at.getTime()) || at.toISOString().slice(0, 10) !== d) return `${d} isn't a real day; give the expiry as YYYY-MM-DD`;
+  return at > now ? null : `${d} has passed; give an expiry in the future`;
+}
 
 /** 116: said when no key service is set, by every tool that stores a credential. */
 export const NO_KEY_SERVICE = "amax can't store credentials yet: no key service is set (AMAX_KMS); an operator sets it";
