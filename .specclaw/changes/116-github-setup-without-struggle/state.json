@@ -1,8 +1,9 @@
 {
   "change": "116-github-setup-without-struggle",
-  "phase": "proposal",
+  "phase": "tasks",
   "branch": "",
   "phases": {
-    "proposal": {"status":"approved","at":"2026-11-16T11:18:43Z"}
+    "proposal": {"status":"approved","at":"2026-11-16T11:18:43Z"},
+    "tasks": {"status":"done","at":"2026-11-16T11:26:29Z"}
   }
 }

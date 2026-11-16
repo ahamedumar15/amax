@@ -68,6 +68,24 @@ async function ask(page: Page, button: string, prompt: string) {
   await page.keyboard.press("Enter");
 }
 
+test("116 AC1 AC4 an Admin replaces the GitHub app from Integrations with one card: Client ID, callback URL, masked secret", async ({ page }) => {
+  await page.goto("/signin");
+  await page.getByLabel("Demo user (fixtures only)").fill("maya@lumenlabs.test");
+  await page.getByRole("button", { name: "Sign in as demo user" }).click();
+  await expect(page).toHaveURL((u) => u.pathname === "/");
+  await page.goto("/settings/integrations");
+  await expect(page.getByText(/^Configured · rotated /)).toBeVisible();
+  await page.getByRole("button", { name: "Ask amax" }).first().click();
+  await page.getByLabel("Message amax").fill("Set up the GitHub app with client id e2e-app");
+  await page.keyboard.press("Enter");
+  const card = page.getByRole("group", { name: "Confirm: Replace the GitHub app" });
+  await expect(card).toContainText("/api/git/github/callback");
+  await expect(card.getByRole("button", { name: "Copy Callback URL to paste into GitHub" })).toBeVisible();
+  await card.getByLabel("Client secret").fill("e2e-secret-0000000000000000");
+  await card.getByRole("button", { name: "Confirm" }).click();
+  await expect(card).toContainText("GitHub app replaced");
+});
+
 test("112 AC5 a real return interrupted by sign-in finishes the connect after resume", async ({ page, browser }) => {
   await page.goto("/signin");
   await page.getByLabel("Demo user (fixtures only)").fill("kasun@lumenlabs.test");

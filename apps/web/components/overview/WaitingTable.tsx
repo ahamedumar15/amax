@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { OverviewWaiting } from "@amax/core";
 import { openChat, PinButton } from "@amax/ui";
+import { useSnoozed } from "./useSnoozed";
 
 const waited = (since: string, now: number) => {
   const h = Math.max(0, Math.round((now - new Date(since).getTime()) / 3_600_000));
@@ -14,7 +15,9 @@ const SHOWN = 6;
 
 // 068 AC-3: decisions waiting on the viewer, oldest first. Every action opens chat with the record
 // pinned and a prompt filled in; chat runs any write after the pending-action confirm (rule 1).
-export function WaitingTable({ items: all, now }: { items: OverviewWaiting[]; now: number }) {
+export function WaitingTable({ items: given, now }: { items: OverviewWaiting[]; now: number }) {
+  const { hidden, snooze } = useSnoozed();
+  const all = given.filter((i) => !hidden(i.id));
   const items = all.slice(0, SHOWN);
   const [picked, setPicked] = useState<string[]>([]);
   const chosen = items.filter((i) => picked.includes(i.id));
@@ -35,7 +38,7 @@ export function WaitingTable({ items: all, now }: { items: OverviewWaiting[]; no
               <td>{i.context}</td>
               <td><span className={i.agent ? "chip agent" : "chip"}>{i.raisedBy}</span></td>
               <td><time dateTime={i.since}>{waited(i.since, now)}</time></td>
-              <td className="num"><span className="when"><button type="button" className="btn sm" title="Ask amax" onClick={() => ask([i], i.prompt)}>{i.action}</button><PinButton pin={i.pin} /></span></td>
+              <td className="num"><span className="when"><button type="button" className="btn sm" title="Ask amax" onClick={() => ask([i], i.prompt)}>{i.action}</button>{i.snoozeDays && <button type="button" className="btn sm" onClick={() => snooze(i.id, i.snoozeDays!)}>Not now<span className="sr"> ({i.snoozeDays} days): {i.title}</span></button>}<PinButton pin={i.pin} /></span></td>
             </tr>
           ))}</tbody>
         </table></div>

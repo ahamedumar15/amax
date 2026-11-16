@@ -25,6 +25,7 @@ function fakeGitHub(): Promise<Server> {
     req.on("end", () => {
       if (req.url === "/login/oauth/access_token") {
         const b = JSON.parse(body || "{}");
+        if (b.code === "mismatch") return send(200, { error: "redirect_uri_mismatch" });
         const ok = b.client_id === "app-id" && b.client_secret === "app-secret" && ["good", "nologin", "noemails", "hang", "reset", "noverified", "many", "slownoverified"].includes(b.code);
         return ok ? send(200, { access_token: `gho_${b.code}` }) : send(200, { error: "bad_verification_code" });
       }

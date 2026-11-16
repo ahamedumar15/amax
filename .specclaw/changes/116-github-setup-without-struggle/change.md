@@ -43,7 +43,7 @@ What changes on screen, and where to see it: [`116-github-setup-without-struggle
      `github-oauth`) when it is
 
    Nobody else gets these suggestions.
-4. **AC-4** The Integrations "GitHub accounts" row shows "Configured · rotated <date>" or "Not configured". It is pinnable
+4. **AC-4** The Integrations "GitHub accounts" row shows "Configured · rotated `<date>`" or "Not configured". It is pinnable
    through `get_github_app_status`, which also returns `rotatedAt` and the callback URL.
 5. **AC-5** Overview leads with a "Connect GitHub so your commits and proposals are credited to you" attention item for
    a person who:
@@ -72,6 +72,50 @@ What changes on screen, and where to see it: [`116-github-setup-without-struggle
    `apps/mock/public/mock/index.html` matches.
 
 ## Tasks
+
+- [x] `T1` — The screens: the Integrations row, Admin chat suggestions, the Overview nudge and the GitHub app card (AC-3, AC-4, AC-5, the UI of AC-1)
+  - **Integrations:** the "GitHub accounts" row shows "Configured · rotated `<date>`" or "Not configured", pinnable through
+    `get_github_app_status`. Its Ask button prompts "Set up the GitHub app" (tool `set_github_app`).
+  - **Admin suggestions:** `chatSuggestions` on `/settings/integrations` offer set up, rotate or remove, each only when
+    it can happen and only with `secrets:credential:manage`.
+  - **Overview:** git-accounts' `overview` hook returns one `waiting` item, "Connect GitHub so your commits and proposals
+    are credited to you". It has action "Ask amax · Connect GitHub", prompt "Connect my GitHub" and pin
+    `get_my_git_identities`, and appears only for a person who can connect, has no GitHub login, and has the app set up.
+  - **Not now:** a waiting item with `snoozeDays` gets a "Not now" button that hides it for 30 days in this browser
+    (localStorage). It's a read-only control, with no server write (rule 1).
+  - **The card:** `set_github_app`'s card shows the Client ID (a line, from the message: a form card can't also hold
+    the masked field), the callback URL with a Copy button (`CardLine.copy`), the masked Client secret, and Adds or
+    Replaces.
+  Files: apps/web/app/(app)/settings/integrations/page.tsx, modules/git-accounts/chat-suggestions.ts, modules/git-accounts/overview.ts,
+  modules/git-accounts/module.ts, apps/web/components/chat/CopyValue.tsx, apps/web/components/chat/ConfirmCard.tsx,
+  apps/web/components/overview/WaitingTable.tsx, apps/web/components/overview/useSnoozed.ts, packages/core/src/module.ts,
+  packages/core/src/overview.ts, .specclaw/mock/index.html, apps/mock/public/mock/index.html
+- [x] `T2` — The tools and the server: `set_github_app`, the `github-oauth` guard, clear refusals and counts in the audit record (AC-1, AC-2, AC-6, AC-7)
+  - **`set_github_app`:** in git-accounts' `mcp.ts`, permission `secrets:credential:manage`. Input `clientId` (checked:
+    no space, `<`, `>` or `:`), secret from the masked field (20+ characters, no whitespace or `:`). It puts or rotates
+    `github-oauth` through `putSecret` / `listCredentials` from `@amax/core/secrets`.
+  - **Status:** `get_github_app_status` adds `rotatedAt` and `callbackUrl`.
+  - **The guard:** `put_secret` / `rotate_secret` refuse a `github-oauth` value without one colon between a non-empty id
+    and secret ("Use set_github_app…").
+  - **Clear refusals (`ToolError`, `invalid_input`):** a malformed credential at connect; `SecretsUnavailableError` on
+    any credential write ("no key service is set (`AMAX_KMS`)…"); GitHub's `redirect_uri_mismatch` at the token
+    exchange (callback URL message). Chat then shows the message, not "I can't tell…".
+  - **Audit counts:** connect and disconnect `after` hold `linked` / `removed` / `skipped` counts, not addresses.
+  Files: modules/git-accounts/mcp.ts, modules/git-accounts/app-tool.ts, modules/git-accounts/words.ts,
+  modules/git-accounts/server/github.ts, modules/git-accounts/server/connect.ts, modules/git-accounts/server/callback.ts,
+  modules/git-accounts/server/services.ts, modules/git-accounts/server/read.ts, modules/git-accounts/server/app.ts,
+  apps/web/lib/admin/secrets.ts
+  Depends: T1
+- [x] `T3` — Tests and the mock check (AC-8, AC-9)
+  - **Tables:** the client id / secret checks (valid, placeholder `<Client ID>`, spaces, colon, short secret); the
+    `github-oauth` guard on put and rotate; each refusal reaching chat as its message; audit `after` with no `@` in it;
+    the nudge's three conditions; suggestions by role and state.
+  - **E2E:** the git-accounts e2e sets the app up through `set_github_app`'s card, then connects.
+  - **Mock:** a test that parses `.specclaw/mock/index.html` and finds no unclosed element.
+  Files: modules/git-accounts/tests/app-116.test.ts, modules/git-accounts/tests/nudge-116.test.ts, modules/git-accounts/tests/setup.ts,
+  apps/web/tests/admin/secret-116.test.ts, apps/web/tests/e2e/git-accounts.spec.ts, packages/ai/src/scripted.ts,
+  packages/testing/tests/mock-balanced-116.test.ts
+  Depends: T2
 
 ## Verify
 
