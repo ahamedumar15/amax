@@ -28,4 +28,21 @@ describe("logError keeps content out of logs", () => {
     const line = String(spy.mock.calls[0][0]);
     expect([line.includes("\n"), line.includes("\r")]).toEqual([false, false]);
   });
+
+  // 115 AC-2: only control characters are replaced; spaces stay.
+  it.each([
+    ["CR and LF", "a\r\nb", "amax a__b: Error"],
+    ["a tab", "a\tb", "amax a_b: Error"],
+    ["U+2028", `a${String.fromCharCode(0x2028)}b`, "amax a_b: Error"],
+    ["spaces kept", "ai.tool read_ticket", "amax ai.tool read_ticket: Error"],
+  ])("%s", (_name, scope, start) => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    logError(scope, new Error("x"));
+    expect(String(spy.mock.calls[0][0]).startsWith(start)).toBe(true);
+  });
+  it("115 AC-1 a code keeps its spaces", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    logError("chat", Object.assign(new Error("x"), { code: "400 invalid_request_error" }));
+    expect(String(spy.mock.calls[0][0])).toMatch(/^amax chat: Error 400 invalid_request_error \[/);
+  });
 });
