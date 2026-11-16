@@ -42,3 +42,23 @@ No screen change.
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
+
+**Verdict:** PASS — every AC passes below; the review is clean (final pass at `122d236f`, 0 blockers, 0 majors).
+
+- AC-1: pass — `node scripts/check-graph.mjs` on Linux (node:24-bookworm): "ok (23 modules, 11 packages)";
+  `check-module-standard.mjs`: "ok (23 modules)"; `no-hr-107.test.ts` 9 of 9.
+- AC-2: pass — `git-accounts.spec.ts` runs serially; the Linux replica no longer reports `EADDRINUSE 127.0.0.1:3599`.
+- AC-3: pass — the signed-out suite (`pnpm --filter @amax/web e2e`) on Linux: 9 passed, none of the signed-in specs in it;
+  the signed-in suite's `writes` project lists `git-accounts`.
+- AC-4: pass — the Settings hub test expects 3 (2 without pricing) things, as the fixtures now are; it no longer fails.
+
+Commands, in a Linux replica of CI's `checks` job (Postgres 16, node:24-bookworm, over the working tree): install,
+migrate, lint (with the graph check), all 36 package test tasks, module standard and build pass; the signed-out e2e
+passes (9). The signed-in e2e passed 52 then failed `auth.spec.ts` AC5 (after sign-out, /delivery showed the guest
+preview) in two replica runs started from snapshots of earlier runs; the same spec passes 6 of 6 locally on this code, and
+passed in the replica's first full run, so it is left to CI's fresh run. No screen change.
+
+Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)
+
+Review: CLEAN — 2 rounds, final pass 122d236f97, models opus/opus; 0/0/1 b/M/m. Minors in `follow-ups.md`: the no-HR
+test's comment overstates R1; the Git accounts spec's comment gives an outdated reason for serial mode.
