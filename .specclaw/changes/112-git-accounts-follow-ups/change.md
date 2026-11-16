@@ -59,4 +59,32 @@ doesn't match one says only "amax can't say how that GitHub connect went", and n
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
 
+**Verdict:** PASS — every AC passes below. The review stopped at the five-pass cap (AGENTS.md) with 0 blockers and 1
+major open (below and in `follow-ups.md`, for a follow-up change).
+
+- AC-1: pass — `ingest-112.test.ts` table: a connected person's own verified email credits them; a reused login with a
+  stranger's email, or an email the person never verified, credits nobody; a connected login with someone else's verified
+  email credits nobody (the product owner's rule, 2026-11-16); a login linked before 108 yields to the email's holder and
+  is otherwise credited as before. Open: that conflict isn't yet raised to an Admin (see Review).
+- AC-2: pass — `result-112.test.ts`: every return is recorded on its own state and read by id for the viewer (success,
+  refusal, declined, incomplete, a reused link); the first outcome stands; a duplicate return while the first waits on
+  GitHub only reads; a non-UUID ref reads nothing; with no record the note is the neutral sentence, or nothing when
+  connected.
+- AC-3: pass — `GITHUB_CALLBACK_SLOT` and `GitHubCallback` are declared once in `packages/core/src/slots.ts`; the route
+  and the module import them; the e2e connect runs through the slot.
+- AC-4: pass — `docs/architecture.md`, Module slots: the app may read a slot, where it is declared, and this one.
+- AC-5: pass — e2e `git-accounts.spec.ts` "112 AC5": a real return to a signed-out browser goes to sign-in, resumes
+  through Git accounts, and finishes the connect (on a cold server too); the callback is on the gate's public list and
+  checks the session itself.
+
+Commands: git-accounts (30), auth (82), web (370), delivery's ingest, owner and attribution tests (29) pass; type checks
+exit 0 for core, auth, git-accounts, delivery, web. e2e on `next dev` with the e2e database: `git-accounts` (2) pass.
+`specclaw-verify size`: 158 production lines against 108's head (`fdfcf943`), cap 400, exit 0. No new screen: screenshot
+`shots/mock.png`.
+
 Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)
+
+Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/1/1 b/M/m. Stopped at the five-pass cap: five
+final passes; round 4 escalated on whom a conflicting commit credits, and the product owner chose nobody. Open major, for
+a follow-up change: a commit credited to nobody because of that conflict is not raised anywhere an Admin sees it (it
+looks like an unknown author's). Open minor in `follow-ups.md`: a return that changes no row still writes an audit entry.
