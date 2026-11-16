@@ -3806,6 +3806,12 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   <p class="lede">113: a test loads HR the way the app loads installed modules, so the module graph check passes on PR #119.</p>
 </section>
 
+<!-- ================= 114 PR #119 CodeQL ================= -->
+<section data-change="114-pr-119-codeql" id="114-pr-119-codeql" data-roles="admin" data-title="PR #119 CodeQL" data-nav="no" data-icon="plug" data-parent="001-amax-foundation">
+  <h1>No screen change</h1>
+  <p class="lede">114: the mock looks the same; its script escapes the text it puts into HTML.</p>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
@@ -4210,12 +4216,15 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   // the browser jumps to the #section anchor on first load; undo that once
   window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,0)},0)});
   document.getElementById('skipLink').addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('section.on'),h=(t&&t.querySelector('h1'))||document.getElementById('main');h.setAttribute('tabindex','-1');h.focus();});
+  // 114: text the script puts into HTML is escaped first (CodeQL: DOM text reinterpreted as HTML).
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  window.amaxEsc=esc;
   // phone: "More" opens a sheet with every screen this role can see
   (function(){var more=document.getElementById('navMore'),sheet=document.getElementById('navSheet'),list=document.getElementById('sheetList');
     more.addEventListener('click',function(){var h='',kids=nav.children;
       for(var i=0;i<kids.length;i++){var k=kids[i];if(k.hidden)continue;
-        if(k.classList.contains('grp'))h+='<li class="sh" aria-hidden="true">'+k.textContent+'</li>';
-        else h+='<li><a href="'+k.getAttribute('href')+'"'+(k.getAttribute('aria-current')?' aria-current="page"':'')+'>'+k.querySelector('svg').outerHTML+'<span>'+k.textContent+'</span></a></li>';}
+        if(k.classList.contains('grp'))h+='<li class="sh" aria-hidden="true">'+esc(k.textContent)+'</li>';
+        else h+='<li><a href="'+esc(k.getAttribute('href'))+'"'+(k.getAttribute('aria-current')?' aria-current="page"':'')+'>'+k.querySelector('svg').outerHTML+'<span>'+esc(k.textContent)+'</span></a></li>';}
       list.innerHTML=h;sheet.showModal();});
     list.addEventListener('click',function(e){if(e.target.closest('a'))sheet.close();});})();
   // drawers
@@ -4268,7 +4277,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   var tag=el('g',{}); tag.innerHTML='<path d="M'+lx+' '+(ly-9)+'V'+(ly-42)+'" stroke="#5B44D6" stroke-width="1.5" stroke-dasharray="2 3"/><rect x="'+(lx-150)+'" y="'+(ly-74)+'" width="138" height="30" rx="10" fill="#5B44D6"/><text x="'+(lx-81)+'" y="'+(ly-54)+'" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="600" font-family="Avenir Next,system-ui">90 h by agents so far</text>'; svg.appendChild(tag);
   // every chart gets its values as a visually hidden table next to it
   function srTable(sv,caption,head,rows){var t=document.createElement('table');t.className='sr';
-    t.innerHTML='<caption>'+caption+'</caption><thead><tr>'+head.map(function(h){return '<th scope="col">'+h+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return i?'<td>'+c+'</td>':'<th scope="row">'+c+'</th>'}).join('')+'</tr>'}).join('')+'</tbody>';
+    var esc=window.amaxEsc;t.innerHTML='<caption>'+esc(caption)+'</caption><thead><tr>'+head.map(function(h){return '<th scope="col">'+esc(h)+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return i?'<td>'+esc(c)+'</td>':'<th scope="row">'+esc(c)+'</th>'}).join('')+'</tr>'}).join('')+'</tbody>';
     sv.setAttribute('aria-describedby',(sv.id||(sv.id='v'+Math.random().toString(36).slice(2)))+'-data');t.id=sv.id+'-data';sv.parentNode.insertBefore(t,sv.nextSibling);}
   srTable(svg,svg.getAttribute('aria-label'),['Week','Agents (h)','People (h)'],agents.map(function(v,i){return ['W'+(31+i),v,people[i]]}));
 
@@ -4510,7 +4519,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       while((m=re.exec(t))){var n=parseFloat(m[1].replace(/,/g,''));
         if(m[4]&&/%/.test(m[4])){F='stage';D.win=n+'%';hit(m[0].trim());F='value';continue;}
         if(m[4]&&/h/i.test(m[4])){D.hours=n+' h';hit(m[0].trim());continue;}
-        if(/^k|thousand/i.test(m[2]||''))n*=1000;if(/^m|million/i.test(m[2]||''))n*=1e6;
+        if(/^(k|thousand)/i.test(m[2]||''))n*=1000;if(/^(m|million)/i.test(m[2]||''))n*=1e6;
         if(n>=1000){var cur=(m[3]||'USD').toUpperCase().replace('DOLLARS','USD');var FX={AUD:.66,GBP:1.27,EUR:1.08,SGD:.74,LKR:.0033};
           D.value=(cur==='USD'?'$':cur+' ')+n.toLocaleString('en-US')+(FX[cur]?' (≈ $'+(Math.round(n*FX[cur]/1000)*1000).toLocaleString('en-US')+')':'');hit(m[0].trim());}}
       F='stage';[['negotiat','Negotiation'],['proposal stage','Proposal'],['qualif','Qualified'],['new idea','New idea']].some(function(x){var i=low.indexOf(x[0]);if(i>-1){D.stage=x[1];hit(t.substr(i,x[0].length));return true;}});
@@ -4532,7 +4541,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       if(S.intent){var it=INTENTS[S.intent],miss=it.need.filter(function(k){return !S.D[k]});
         if(miss.length){var w={name:'what it is',client:'the client',value:'a rough value',owner:'who leads it',person:'who',type:'the leave type',dates:'the dates',title:'a short description',hours:'how many hours'};
           msg(false,'Got it. Still need '+miss.map(function(k){return w[k]}).join(' and ')+'.');return;}
-        var m=msg(false,'Here is the '+it.label+'.'+record()+'<div class="acts"><button class="btn sm primary" data-commit>Add it</button><button class="btn sm" data-tweak>Change something</button></div>');return;}
+        msg(false,'Here is the '+it.label+'.'+record()+'<div class="acts"><button class="btn sm primary" data-commit>Add it</button><button class="btn sm" data-tweak>Change something</button></div>');return;}
       // questions and pinned context
       var low=text.toLowerCase();
       if(/v2\.4|sign-?off|qa/.test(low)){msg(false,'<div class="tools"><span>list_proposals</span><span>get_release</span></div>Both proposals in v2.4.0 are Verified and in QA without sign-off: CON-012 SSO token refresh (Ayesha) and CON-010 Email digest (Kasun). Want me to ask them?');return;}
@@ -4611,7 +4620,6 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
 
   // ---- payroll changes: the agent explains, a person decides ----
   (function(){var tb=document.getElementById('payChanges'); if(!tb) return; var run=document.getElementById('approveRun'),hint=document.getElementById('runHint'),lede=document.getElementById('payLede');
-    var OPEN='<button class="btn sm primary" data-decide="accept">Accept</button> <button class="btn sm" data-decide="query">Query</button>';
     function update(){var n=tb.querySelectorAll('tr[data-change-row="open"]').length;
       if(run.dataset.done) return; run.disabled=n>0;
       hint.textContent=n?'Resolve the '+n+' open change'+(n>1?'s':'')+' to approve the run':'All changes resolved. Ready to approve';
@@ -4692,7 +4700,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       if(b.dataset.view){setView(b.dataset.view);closeM(true);toast('Viewing as '+NAMES[b.dataset.view]);}
       else if(b.dataset.themeOpt){setTheme(b.dataset.themeOpt);closeM(true);}
       else if(b.id==='signOut'){closeM(true);toast('Signed out (not in this mock)');}});
-    var st='system';try{st=localStorage.getItem('amax-theme')||'system'}catch(e){}
+    var st='system';try{st=localStorage.getItem('amax-theme')||'system';}catch(e){}
     setTheme(/^(system|light|dark)$/.test(st)?st:'system');
     var sal=document.getElementById('salShow');if(sal)sal.addEventListener('click',function(){revealed=!revealed;mask();});
     setView('admin');
