@@ -18,7 +18,9 @@ No screen change: the mock looks the same; its script escapes what it inserts.
 
 ## Acceptance Criteria
 
-1. **AC-1** The mock's script escapes every text it puts into HTML (the phone nav sheet, the charts' hidden tables) and
+1. **AC-1** The mock's script escapes every text it puts into HTML with one shared escaper, `window.amaxEsc` (the nav
+   and its phone sheet, the charts' legends and hidden tables, the added deal card, the licence list, empty states and
+   chat) and
    its amount parser anchors both alternatives (`/^(k|thousand)/`, `/^(m|million)/`); the deployed copy
    (`apps/mock/public/mock/index.html`) matches the spec mock.
 2. **AC-2** `logError` writes one line whatever its scope or the error's code holds: only letters, digits and `.:_-`.

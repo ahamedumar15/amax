@@ -20,6 +20,8 @@ describe("logError keeps content out of logs", () => {
   it.each([
     ["a newline in the scope", "chat\nFAKE amax admin: ok", new Error("x")],
     ["a newline in the error's code", "chat", Object.assign(new Error("x"), { code: "E1\r\nFAKE line" })],
+    ["a newline in the error's name", "chat", Object.assign(new Error("x"), { name: "Error\nFAKE amax admin: ok" })],
+    ["a thrown object with a newline in its code", "chat", { code: "E2\nFAKE line" }],
   ])("%s stays on one line", (_name, scope, err) => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     logError(scope, err);

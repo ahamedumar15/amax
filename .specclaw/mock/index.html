@@ -4155,6 +4155,9 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
 
 <script>
 (function(){
+  // 114: text the script puts into HTML is escaped first (CodeQL: DOM text reinterpreted as HTML).
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  window.amaxEsc=esc;
   var ICONS={
     home:'<path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
     grid:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
@@ -4184,7 +4187,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
     if(s.dataset.nav==='no') return;
     if(s.dataset.group){var g=document.createElement('div');g.className='grp';g.innerHTML='<span>'+GROUPS[s.dataset.group]+'</span>';nav.appendChild(g);}
     var a=document.createElement('a'); a.href='#'+s.id; if(PRIMARY.indexOf(s.id)>-1) a.className='pri';
-    a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[s.dataset.icon]||ICONS.home)+'</svg><span class="lbl">'+s.dataset.title+'</span>';
+    a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[s.dataset.icon]||ICONS.home)+'</svg><span class="lbl">'+esc(s.dataset.title)+'</span>';
     nav.appendChild(a);
   });
   // one polite live region for toasts, moves and screen changes
@@ -4216,9 +4219,6 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   // the browser jumps to the #section anchor on first load; undo that once
   window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,0)},0)});
   document.getElementById('skipLink').addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('section.on'),h=(t&&t.querySelector('h1'))||document.getElementById('main');h.setAttribute('tabindex','-1');h.focus();});
-  // 114: text the script puts into HTML is escaped first (CodeQL: DOM text reinterpreted as HTML).
-  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-  window.amaxEsc=esc;
   // phone: "More" opens a sheet with every screen this role can see
   (function(){var more=document.getElementById('navMore'),sheet=document.getElementById('navSheet'),list=document.getElementById('sheetList');
     more.addEventListener('click',function(){var h='',kids=nav.children;
@@ -4291,7 +4291,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
     var path=el('path',{d:'M'+P(ro,s)+' A'+ro+' '+ro+' 0 '+big+' 1 '+P(ro,e)+' L'+P(ri,e)+' A'+ri+' '+ri+' 0 '+big+' 0 '+P(ri,s)+' Z',fill:p[2]});
     d.appendChild(path);
     var li=document.createElement('li'); if(i===0) li.className='hl';
-    li.innerHTML='<i style="background:'+p[2]+'"></i>'+p[0]+'<b>'+p[1]+'%</b>'; lg.appendChild(li);
+    li.innerHTML='<i style="background:'+window.amaxEsc(p[2])+'"></i>'+window.amaxEsc(p[0])+'<b>'+window.amaxEsc(p[1])+'%</b>'; lg.appendChild(li);
     a0=a1;
   });
   var c=el('text',{x:85,y:82,'text-anchor':'middle','font-size':20,'font-weight':600,fill:'currentColor','font-family':'Avenir Next,system-ui'}); c.textContent='141.5 h'; d.appendChild(c);
@@ -4384,7 +4384,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
     parts.forEach(function(p,i){var a1=a0+p[1]/tot*Math.PI*2,g=.025,st=a0+g,en=a1-g,big=(en-st)>Math.PI?1:0,mid=(st+en)/2,off=i===0?6:0,ox=Math.cos(mid)*off,oy=Math.sin(mid)*off;
       function P(r,a){return (cx+ox+r*Math.cos(a)).toFixed(2)+' '+(cy+oy+r*Math.sin(a)).toFixed(2)}
       sv.appendChild(el('path',{d:'M'+P(ro,st)+' A'+ro+' '+ro+' 0 '+big+' 1 '+P(ro,en)+' L'+P(ri,en)+' A'+ri+' '+ri+' 0 '+big+' 0 '+P(ri,st)+' Z',fill:p[2]}));
-      if(lgEl){var li=document.createElement('li');if(i===0)li.className='hl';li.innerHTML='<i style="background:'+p[2]+'"></i>'+p[0]+'<b>'+Math.round(p[1]/tot*100)+'%</b>';lgEl.appendChild(li);}
+      if(lgEl){var li=document.createElement('li');if(i===0)li.className='hl';li.innerHTML='<i style="background:'+window.amaxEsc(p[2])+'"></i>'+window.amaxEsc(p[0])+'<b>'+Math.round(p[1]/tot*100)+'%</b>';lgEl.appendChild(li);}
       a0=a1;});
     var c=el('text',{x:85,y:84,'text-anchor':'middle','font-size':19,'font-weight':600,fill:'currentColor','font-family':'Avenir Next,system-ui'});c.textContent=sv.dataset.center;if(sv.dataset.pay)c.setAttribute('class','pay');sv.appendChild(c);
     var c2=el('text',{x:85,y:102,'text-anchor':'middle','font-size':11.5,fill:'var(--ink-3)','font-family':'Avenir Next,system-ui'});c2.textContent=sv.dataset.sub;sv.appendChild(c2);
@@ -4445,7 +4445,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
     [].forEach.call(board.querySelectorAll('.tcard'),wire);
     window.amaxAddDeal=function(d){var lane=board.querySelector('.lane[data-stage="'+(d.stage||'New idea')+'"]')||board.querySelector('.lane');
       var c=document.createElement('div');c.className='tcard deal';
-      c.innerHTML='<div class="opp-top"><span class="id">'+(d.client||'New client')+'</span><span class="rag g"></span></div><p>'+(d.name||'Untitled')+'</p><div class="opp-num"><b>'+(d.value||'–')+'</b><span>'+(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+(d.ownerIni||'MF')+'</span><span>'+(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm" type="button" data-go disabled>Move</button><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
+      var E=window.amaxEsc;c.innerHTML='<div class="opp-top"><span class="id">'+E(d.client||'New client')+'</span><span class="rag g"></span></div><p>'+E(d.name||'Untitled')+'</p><div class="opp-num"><b>'+E(d.value||'–')+'</b><span>'+E(d.win||'10%')+'</span></div><div class="foot"><span class="av sm">'+E(d.ownerIni||'MF')+'</span><span>'+E(d.close?'Close '+d.close:'No close date')+'</span></div><div class="opp-act"><select class="select sm" aria-label="Move to stage" data-move></select><button class="btn sm" type="button" data-go disabled>Move</button><button class="btn sm ghost icon" data-remove aria-label="Remove opportunity" title="Remove"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button></div>';
       lane.insertBefore(c,lane.children[1]||null);var av=c.querySelector('.av');if(FOLK[d.ownerIni||'MF']){av.classList.add('photo');av.innerHTML=face(d.ownerIni||'MF');}
       wire(c);recount();c.classList.add('flash');
       c.amaxUndo=function(){c.remove();recount();};return c;};
@@ -4474,7 +4474,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
       if(!was){var a=document.activeElement;opener=(a&&a!==document.body&&!C.contains(a))?a:launcher;setTimeout(function(){inp.focus();},30);}}
     function close(){if(!isOpen())return;pick(false);C.classList.remove('open');document.body.classList.remove('chat-open');launcher.setAttribute('aria-expanded','false');C.inert=true;
       var o=opener;opener=null;if(!o||!document.contains(o)||!o.offsetParent)o=launcher;o.focus();}
-    function esc(t){return String(t).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+    var esc=window.amaxEsc;
     // consecutive messages from one author form a group; only the last shows the name and face
     function msg(me,html,isTyping){var m=document.createElement('div');m.className='m'+(me?' me':'')+(isTyping?' typing':'');
       m.innerHTML='<div class="b">'+html+'</div><div class="who">'+(me?'<span class="av">MF</span>Maya':'<span class="mface">'+MAS+'</span>amax')+'</div>';
@@ -4646,7 +4646,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
         people:[['Lahiru Mendis',90],['Sanduni Karunaratne',104],['Ashan Kariyawasam',97],['Malsha Gunasekara',120],['Yohan Peiris',95],['Nethmi Abeysekara',131]],note:'days since last test run'}};
     document.addEventListener('click',function(e){var b=e.target.closest('[data-review]'); if(!b) return; cur=b.dataset.review; var d=DATA[cur];
       document.getElementById('licTitle').textContent=d.title;document.getElementById('licConf').textContent=d.conf;document.getElementById('licWhy').textContent=d.why;document.getElementById('licSave').textContent=d.save;
-      document.getElementById('licList').innerHTML=d.people.map(function(p){return '<li><span>'+p[0]+'</span><small>'+p[1]+' '+d.note+'</small></li>'}).join('');
+      document.getElementById('licList').innerHTML=d.people.map(function(p){var E=window.amaxEsc;return '<li><span>'+E(p[0])+'</span><small>'+E(p[1]+' '+d.note)+'</small></li>'}).join('');
       dlg.showModal();});
     document.getElementById('licApprove').addEventListener('click',function(){var li=document.querySelector('[data-saving="'+cur+'"]'); if(!li){dlg.close();return;}
       var note=li.querySelector('.sv-note'),rb=li.querySelector('[data-review]'),prev=note.innerHTML,u=document.createElement('button');
@@ -4715,7 +4715,7 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   // reusable empty state
   var EMPTYICO={done:'<path d="m5 12 5 5 9-10"/>',inbox:'<path d="M4 13h4l2 3h4l2-3h4M5 5h14l1 8v6H4v-6z"/>'};
   function emptyState(o){var d=document.createElement('div');d.className='empty';d.setAttribute('role','status');
-    d.innerHTML='<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">'+(EMPTYICO[o.icon]||EMPTYICO.inbox)+'</svg></span><b>'+o.title+'</b><p>'+o.hint+'</p>';
+    d.innerHTML='<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">'+(EMPTYICO[o.icon]||EMPTYICO.inbox)+'</svg></span><b>'+window.amaxEsc(o.title)+'</b><p>'+window.amaxEsc(o.hint)+'</p>';
     if(o.action){var b=document.createElement('button');b.type='button';b.className='btn sm';b.textContent=o.action;if(o.onAction)b.onclick=o.onAction;d.appendChild(b);}return d;}
   window.amaxEmpty=emptyState;
 
