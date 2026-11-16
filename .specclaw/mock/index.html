@@ -3391,6 +3391,9 @@ set AUDIT_HASH_KEY (the deployment's audit key)        # exit 1, nothing written
     <label>New value <input type="password" value="••••••••••••" aria-label="New secret value"></label>
     <p class="muted" style="font-size:13px">Typed here only. It goes straight to the vault, never to the AI or the chat history.</p>
     <div class="actions"><button class="btn primary">Confirm</button> <button class="btn">Cancel</button></div>
+  </div>
+</section>
+
 <!-- ================= 049 Chat history ================= -->
 <section data-change="049-chat-history" id="049-chat-history" data-roles="all" data-title="Chat history" data-nav="no" data-icon="spark">
   <h1>Chat history</h1>
@@ -3411,6 +3414,8 @@ set AUDIT_HASH_KEY (the deployment's audit key)        # exit 1, nothing written
     <div class="row line"><span>Submit timesheet, week 41</span><span class="chip">Expired</span></div>
     <p class="muted" style="font-size:13px">Ask again to make a fresh request.</p>
   </div>
+</section>
+
 <!-- ================= 048 Chat cost ================= -->
 <section data-change="048-chat-cost" id="048-chat-cost" data-roles="admin" data-title="AI usage" data-nav="no" data-parent="038-settings" data-icon="chart">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span><a href="#033-ai-gateway-and-residency">AI and data</a><span>/</span>AI usage</nav>
@@ -3441,6 +3446,8 @@ set AUDIT_HASH_KEY (the deployment's audit key)        # exit 1, nothing written
       </tbody></table></div></div>
   </div>
   <div class="card" style="margin-top:28px;max-width:420px"><div class="card-head"><h2>Chat panel footer</h2></div><p class="muted">This month: $4.12 · 212 calls</p></div>
+</section>
+
 <!-- ================= 050 Immutable trace ================= -->
 <section data-change="050-immutable-trace" id="050-immutable-trace" data-roles="admin" data-title="Audit and trace" data-nav="no" data-parent="038-settings" data-icon="doc">
   <nav class="crumb" aria-label="Breadcrumb"><a href="#038-settings">Settings</a><span>/</span>Audit and trace</nav>
@@ -3798,6 +3805,44 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   <h1>Git accounts</h1>
   <p class="lede">112: no new screen. The note after GitHub's return comes from that return's own record; a link that doesn't match one says only this. Fictional data.</p>
   <p class="muted" style="display:inline-block">amax can't say how that GitHub connect went. To try again, ask amax to connect GitHub.</p>
+</section>
+
+<!-- ================= 116 GitHub setup without the struggle ================= -->
+<section data-change="116-github-setup-without-struggle" id="116-github-setup-without-struggle" data-roles="all" data-title="GitHub setup" data-nav="no" data-icon="plug" data-parent="001-amax-foundation">
+  <h1>GitHub setup</h1>
+  <p class="lede">116: an Admin sets up the GitHub app with one card; everyone else is nudged to connect. Fictional data.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>Overview · needs attention</h2><span class="chip">+</span></div>
+        <p style="font-size:13px;margin:0 0 6px"><b>Connect GitHub</b> so your commits and proposals are credited to you.</p>
+        <p class="muted" style="font-size:12.5px;margin:0 0 8px">Shown to Kasun Dias: not connected, and this workspace has the GitHub app.</p>
+        <p style="margin:0"><button class="btn sm primary" type="button">✦ Ask amax · Connect GitHub</button> &nbsp; <button class="btn sm" type="button">Not now (30 days)</button></p></div>
+      <div class="card"><div class="card-head"><h2>Settings › Integrations</h2></div>
+        <ul class="list">
+          <li><div class="l"><div>GitHub accounts<small>Configured · rotated Nov 16</small></div></div><span class="chip">+</span></li>
+        </ul>
+        <p class="muted" style="font-size:12px;margin:8px 0 4px">Chat suggests (Admins only):</p>
+        <p style="margin:0"><span class="chip">Rotate the GitHub app secret</span> <span class="chip">Remove the GitHub app</span></p>
+        <p class="muted" style="font-size:12px;margin:6px 0 0">When not set up: <span class="chip">Set up the GitHub app</span></p></div>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="card"><div class="card-head"><h2>In chat · Set up the GitHub app</h2></div>
+        <p class="muted" style="margin:0 0 6px">You: Set up the GitHub app</p>
+        <div class="card" style="padding:12px 14px;display:grid;gap:8px">
+          <p style="font-size:13px;margin:0"><b>Adds</b> the GitHub app people connect their GitHub accounts through.</p>
+          <label style="font-size:12.5px">Client ID<br><input type="text" value="Ov23liFAKE0000demo01" style="width:100%"></label>
+          <label style="font-size:12.5px">Client secret<br><input type="password" value="fictional-secret-value-000000" style="width:100%"></label>
+          <p style="font-size:12.5px;margin:0">Callback URL to paste into GitHub: <code>http://localhost:3000/api/git/github/callback</code> <span class="btn sm">Copy</span></p>
+          <p style="margin:0"><span class="btn sm primary">Set up the GitHub app</span> &nbsp; Cancel</p></div>
+        <p class="muted" style="font-size:12px">After: ✓ GitHub app set up · rotated Nov 16</p></div>
+      <div class="card"><div class="card-head"><h2>Clear refusals</h2></div>
+        <ul class="list" style="font-size:12.5px">
+          <li>The GitHub app's credential is incomplete; an Admin sets it up again with Set up the GitHub app.</li>
+          <li>amax can't store credentials yet: no key service is set (AMAX_KMS); an operator sets it.</li>
+          <li>GitHub refused amax's callback URL; an Admin pastes http://localhost:3000/api/git/github/callback into the GitHub app's Redirect URIs.</li>
+        </ul></div>
+    </div>
+  </div>
 </section>
 
 <!-- ================= 113 PR #119 CI green ================= -->
