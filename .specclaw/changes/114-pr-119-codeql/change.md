@@ -40,6 +40,19 @@ No screen change: the mock looks the same; its script escapes what it inserts.
 
 ## Verify
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+**Verdict:** PASS
+
+- AC-1: pass — every innerHTML sink in the mock that takes data goes through `window.amaxEsc`, defined at the top of
+  the script (nav, phone sheet, legends, hidden tables, deal card, licence list, empty states, chat; chat's own weaker
+  escaper removed). Both regexes are anchored as groups. `apps/mock/public/mock/index.html` is byte-identical to the
+  spec mock (`cmp`). The mock loads in Chromium with no page errors; its phone sheet lists 26 screens and its 24 hidden
+  chart tables render (scratch Playwright check).
+- AC-2: pass — `packages/core/tests/log.test.ts`, 8/8: a newline in the scope, the code or the error's name, or in a
+  thrown non-Error's code, still logs one line.
+- AC-3: pass — the fake authorize page answers 400 unless `redirect_uri` is `http://localhost…`
+  (`apps/web/tests/e2e/git-accounts.spec.ts`).
+- AC-4: pass — unused imports and variables removed. `packages/testing/tests/review-gate-covered.test.ts` passes 18/18.
+  Its steps keep `(_h)` against review minor B11, because CodeQL flags the superfluous argument without it.
+- Commands: `npx turbo run lint` for core, web, testing, delivery and time (tsc: 5/5 successful); the vitest runs above.
+- Review: CLEAN — 2 rounds, final pass 80b268ed49, models opus/opus; last round 0/0/0 b/M/m
+- Screenshots: none. No screen changes; the mock check above is the evidence.
