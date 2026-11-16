@@ -107,4 +107,46 @@ one email per login. T2 adds the migration that allows several emails per login,
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
 
+**Verdict:** PASS — every AC passes below. The review stopped at the five-pass cap (AGENTS.md) with 0 blockers and 2
+majors open (below and in `follow-ups.md`, for a follow-up change).
+
+- AC-1: pass — `connect-108.test.ts` AC1 (no app: "GitHub isn't set up…"; with it, the link is GitHub's authorize page with
+  the client id, `read:user user:email` and amax's callback); the app is the 031 credential `github-oauth`; Settings ›
+  Integrations shows GitHub accounts (`shots/app-integrations.png`); fail closed without AMAX_BASE_URL in production.
+- AC-2: pass — `connect-108.test.ts` AC2 table (a state someone else was given, over 10 minutes old, already used, never
+  given: refused, nothing linked).
+- AC-3: pass — `connect-108.test.ts` AC3 (two verified emails stored, the unverified one not; one audited write naming
+  the person; no token in the audit); GitHub read outside any write, with timeouts (hang, reset) and checked replies.
+- AC-4: pass — `git-identity-108.test.ts` (several emails per login, each email one person's; a reconnect drops what
+  GitHub no longer lists; 0033 dedupes rows the old rule allowed); GitHub's account id stored, renames and reuse handled.
+- AC-5: pass — `git-identity-108.test.ts` (someone else's email skipped and counted, their login taking nothing over; the
+  email and login races between two writers); a connect that would link nothing is refused and rolled back.
+- AC-6: pass — the Git accounts screen in the profile menu (`shots/app.png`, `shots/app-dark.png`): status first, then
+  the login and pinnable emails, Ask amax Connect / Disconnect, no write controls; e2e `git-accounts.spec.ts`.
+- AC-7: pass — `tools-108.test.ts` (the red card names every login and email it removes and that owners follow the repo;
+  confirming removes them).
+- AC-8: pass — `tools-108.test.ts` (get_my_git_identities, get_my_git_identity, connect_github, disconnect_github; only
+  an Admin has unlink_git_identity).
+- AC-9: pass — `owner-091.test.ts` "108 AC-9" (a no-reply-authored change has no owner, then after connecting GitHub
+  the next sync names the person); 104's hours read the same verified identities.
+- AC-10: pass — `connect-108.test.ts` AC10 (the open `delivery.git-identity` suggestion for the login is withdrawn).
+- AC-11: pass — e2e `git-accounts.spec.ts` (connect from chat through a fake GitHub, the result in a live region, axe
+  wcag2a/2aa/21aa clean on main, disconnect); light and dark screenshots.
+
+Commands: git-accounts (19), auth (76, 11 in `git-identity-108`), ai (82), agents (7), chat (62), web (370) pass;
+delivery passes but for this host's known `releases` and `create-project-surfaces`; core but for `ac5-adapters`. Type
+checks exit 0 for core, auth, git-accounts, delivery, web. e2e on `next dev` with the e2e database: `git-accounts`,
+`project-team`, `set-up-project*`, `retention` pass; the notifications bell test fails here with git-accounts switched off
+too (a date-drift failure, not this change). `specclaw-verify size`: 522 production lines against 111's head, over the
+cap, with the size waiver. `specclaw-preset-check .`: exit 1, the repo-wide comment backlog as in 066–110. Screenshots:
+`shots/app.png`, `shots/app-dark.png`, `shots/app-integrations.png`, `shots/mock.png`.
+
 Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)
+
+Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/2/2 b/M/m; fix proof not proven: no
+review.test_command configured. Stopped at the five-pass cap: round 1, round 2 and three final passes. Open majors, for a
+follow-up change: delivery's commit attribution still matches a GitHub login without its stored account id, so a renamed
+login someone else reuses is credited to its first holder until they reconnect; the Git accounts screen still shows the
+skipped count and failure codes from the URL (keep them on the connect record instead). Open minors in `follow-ups.md`:
+the callback slot's name and type are declared twice (app and module); docs/architecture.md doesn't yet say the app may
+read a slot; a lapsed session on GitHub's return gives a bare 404.
