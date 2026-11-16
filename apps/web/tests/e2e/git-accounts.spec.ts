@@ -52,10 +52,18 @@ test.afterAll(async () => {
 });
 
 async function ask(page: Page, button: string, prompt: string) {
-  await page.getByRole("button", { name: button }).click();
-  await expect(page.getByLabel("Message amax")).toHaveValue(prompt);
+  // A click before the page has hydrated opens nothing; click again until the message box holds the prompt.
+  await expect(async () => {
+    await page.getByRole("button", { name: button }).click();
+    await expect(page.getByLabel("Message amax")).toHaveValue(prompt, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await page.keyboard.press("Enter");
 }
+
+test("112 AC5 GitHub's return to a signed-out browser goes to sign-in and back to the callback", async ({ page }) => {
+  await page.goto("/api/git/github/callback?state=abcdefghijklmnopqrstuvwxyz&code=good");
+  await expect(page).toHaveURL((u) => u.pathname === "/signin" && (u.searchParams.get("next") ?? "").startsWith("/api/git/github/callback?state="));
+});
 
 test("108 AC1 AC6 AC7 AC11 Git accounts: connect GitHub from chat, see the verified emails, then disconnect", async ({ page }) => {
   await page.goto("/signin");

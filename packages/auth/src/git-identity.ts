@@ -81,6 +81,13 @@ export async function setGitHubIdentities(tx: Tx, tenantId: string, userId: stri
   return { login: gh.login, linked, removed: removed.map((r) => String(r.email ?? r.login)), skipped };
 }
 
+/** 112 AC-1: whether this email is one of the person's verified emails with the provider. */
+export async function isVerifiedEmailOf(tx: Tx, userId: string, provider: GitProvider, email: string | null) {
+  if (!email) return false;
+  const [r] = await tx.execute(sql`select 1 from auth.git_identity where user_id = ${userId} and provider = ${provider} and email_verified and lower(email) = lower(${email}) limit 1`);
+  return Boolean(r);
+}
+
 /** A person's own Git identities, newest login first. */
 export const gitIdentitiesOf = async (tx: Tx, userId: string) =>
   (await tx.execute(sql`select * from auth.git_identity where user_id = ${userId} order by provider, login, email`)).map(identity);

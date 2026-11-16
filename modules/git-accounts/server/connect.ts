@@ -6,9 +6,9 @@ import { viewerOf } from "@amax/auth";
 import { withdrawSuggestions } from "@amax/agents/server";
 import { contextFor, defineService, logError, type ServiceContext } from "@amax/core/server";
 import { EVENTS } from "../contracts";
-import type { ResultCode } from "../words";
+import { RESULTS, type ResultCode } from "../words";
 import { CONNECT, selfOf } from "./context";
-import { authorizeUrl, readGitHubUser } from "./github";
+import { authorizeUrl, isGitHubReplyError, readGitHubUser } from "./github";
 
 const hash = (state: string) => createHash("sha256").update(state).digest("hex");
 /** GitHub's app is used by the system, acting for the person who connects (rule 4). */
@@ -60,9 +60,27 @@ const storeConnect = defineService({
     if (r.skipped.includes(`@${input.login}`)) throw refuse(`@${input.login} is linked to another person; ask an Admin.`, "login-taken");
     if (!r.linked.length) throw refuse("Every verified email on your GitHub is linked to another person; ask an Admin.", "all-taken");
     const n = r.linked.length;
+    await tx.execute(sql`update git_accounts.connect_state set result = 'connected', skipped = ${r.skipped.length}, result_at = now() where id = ${input.claimId}`);
     const summary = `${viewerOf(ctx)?.name ?? "Someone"} connected GitHub as @${input.login}: ${n} email${n === 1 ? "" : "s"}`;
     return { result: { ...r, summary }, resourceId: userId, after: { summary, ...r },
       events: [{ name: EVENTS.connected, payload: { userId, login: input.login, emails: n } }] };
+  },
+});
+
+/** 112 AC-2: the code a failure comes to: its refusal's reason, a GitHub reply that wasn't readable, else an error. */
+export const resultCodeOf = (e: unknown): ResultCode => {
+  const reason = (e as { reason?: unknown } | null)?.reason;
+  if (typeof reason === "string" && Object.hasOwn(RESULTS, reason)) return reason as ResultCode;
+  return isGitHubReplyError(e) ? "github" : "error";
+};
+
+/** 112 AC-2: a failed connect's result, on the state it claimed. */
+const recordResult = defineService({
+  name: "git-accounts.github.result", action: CONNECT, resource: "git_accounts.connect_state",
+  input: z.object({ claimId: z.uuid(), result: z.string() }),
+  async run(tx, input, ctx) {
+    await tx.execute(sql`update git_accounts.connect_state set result = ${input.result}, skipped = 0, result_at = now() where id = ${input.claimId} and user_id = ${selfOf(ctx)}`);
+    return { result: { recorded: true }, resourceId: input.claimId, after: { result: input.result } };
   },
 });
 
@@ -72,8 +90,15 @@ const storeConnect = defineService({
  */
 export async function completeConnect(ctx: ServiceContext, input: { state: string; code: string }) {
   const { claimId } = await claimConnect(ctx, { state: input.state });
-  const gh = await readGitHubUser(forPerson(ctx), input.code);
-  const r = await storeConnect(ctx, { claimId, login: gh.login, githubId: gh.githubId, emails: gh.emails });
+  const stored = await (async () => {
+    const gh = await readGitHubUser(forPerson(ctx), input.code);
+    return { gh, r: await storeConnect(ctx, { claimId, login: gh.login, githubId: gh.githubId, emails: gh.emails }) };
+  })().catch(async (e: unknown) => {
+    // 112 AC-2: a connect that failed after its claim says why on its own state, for the screen to read.
+    await recordResult(ctx, { claimId, result: resultCodeOf(e) }).catch((err: unknown) => logError("git-accounts.result", err));
+    throw e;
+  });
+  const { gh, r } = stored;
   // Review round 2: the identities are stored; a suggestion left open is logged, never reported as a failed connect.
   await withdrawSuggestions(forPerson(ctx), { kind: "delivery.git-identity", targetType: "auth.git_identity", targetIds: [`github:${gh.login}`], reason: `${gh.login} connected GitHub themselves` })
     .catch((e: unknown) => logError("git-accounts.withdraw", e));

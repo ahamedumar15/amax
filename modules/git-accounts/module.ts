@@ -3,7 +3,8 @@ import { chatSuggestions } from "./chat-suggestions";
 import { EVENTS, type GitHubConnected } from "./contracts";
 import { gitAccountsFixtures } from "./fixtures";
 import { mcpTools } from "./mcp";
-import { GITHUB_CALLBACK_SLOT, githubCallback } from "./server/callback";
+import { GITHUB_CALLBACK_SLOT } from "@amax/core/server";
+import { githubCallback } from "./server/callback";
 import { CONNECT, READ, UNLINK } from "./server/context";
 import { GitAccountsPage } from "./ui/GitAccountsPage";
 

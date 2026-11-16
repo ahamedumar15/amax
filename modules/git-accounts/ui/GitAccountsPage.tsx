@@ -3,7 +3,7 @@ import type { Viewer } from "@amax/auth";
 import { PinButton } from "@amax/ui";
 import { NOT_SET_UP } from "../contracts";
 import { accountsPin, identityPin } from "../pins";
-import { myGitAccounts } from "../server/read";
+import { latestResult, myGitAccounts } from "../server/read";
 import { AskButton } from "./AskButton";
 import { ResultNote } from "./ResultNote";
 
@@ -12,12 +12,13 @@ import { ResultNote } from "./ResultNote";
 export async function GitAccountsPage({ viewer, searchParams }: ScreenProps) {
   const v = viewer as Viewer | null;
   if (!v) return <h1>Git accounts</h1>;
-  const { configured, github } = await myGitAccounts(v);
+  const shown = Boolean(searchParams?.github);
+  const [{ configured, github }, record] = await Promise.all([myGitAccounts(v), shown ? latestResult(v) : null]);
   return (
     <>
       <h1>Git accounts</h1>
       <p className="lede">amax matches your commits and proposals to you by these verified emails.</p>
-      <ResultNote result={searchParams?.github} skipped={searchParams?.skipped}
+      <ResultNote shown={shown} record={record}
         connectedAs={github ? { logins: github.logins.map((l) => l.login), emails: github.logins.reduce((n, l) => n + l.emails.length, 0) } : undefined} />
       {github ? (
         <div className="card pinnable" style={{ maxWidth: 720 }}>

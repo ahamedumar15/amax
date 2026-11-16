@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { gitIdentitiesOf } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
 import { hasSecret } from "@amax/core/secrets";
@@ -26,6 +27,13 @@ export const disconnectWhat = (g: NonNullable<GitAccounts["github"]>) => {
   const emails = g.logins.reduce((n, l) => n + l.emails.length, 0);
   return `${g.logins.map((l) => `@${l.login}`).join(", ")} and ${emails} email${emails === 1 ? "" : "s"}`;
 };
+
+/** 112 AC-2: the viewer's latest connect result from the last 10 minutes, the only source of the screen's note. */
+export const latestResult = (v: Viewer) => read(v, async (tx) => {
+  const [r] = await tx.execute(sql`select result, skipped from git_accounts.connect_state where user_id = ${v.userId} and result_at > now() - interval '10 minutes'
+    order by result_at desc limit 1`);
+  return r ? { result: String(r.result), skipped: Number(r.skipped) } : null;
+});
 
 /** One of the viewer's own identities, for its pin. */
 export const myIdentity = async (v: Viewer, id: string) => {

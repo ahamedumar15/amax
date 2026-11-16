@@ -1,5 +1,5 @@
 import { withTenant } from "@amax/db";
-import { findGitIdentity, personByEmail, type GitProvider } from "@amax/auth/git-identity";
+import { findGitIdentity, isVerifiedEmailOf, personByEmail, type GitProvider } from "@amax/auth/git-identity";
 import type { InboundEvent } from "@amax/core";
 import { contextFor, getRuntime, logError } from "@amax/core/server";
 import { suggestLink } from "../suggestions";
@@ -39,6 +39,9 @@ export const closedTasks = (message: string) => [...message.matchAll(/\b([A-Z][A
 export async function authorOf(tenantId: string, provider: GitProvider, c: Commit) {
   return withTenant(getRuntime().db, tenantId, async (tx) => {
     const id = await findGitIdentity(tx, provider, { login: c.login, email: c.email });
+    // 112 AC-1: a connected identity (it carries the provider's account id) credits a commit only for one of its person's
+    // verified emails: a renamed login that someone else reuses never credits its first holder.
+    if (id?.providerUserId) return { userId: (await isVerifiedEmailOf(tx, id.userId, provider, c.email)) ? id.userId : null, candidate: null };
     const emailOk = Boolean(id?.emailVerified && id.email && c.email && id.email.toLowerCase() === c.email.toLowerCase());
     if (id && (c.verified || emailOk)) return { userId: id.userId, candidate: null };
     return { userId: null, candidate: id ? null : await personByEmail(tx, c.email) };
