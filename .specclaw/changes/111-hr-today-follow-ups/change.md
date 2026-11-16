@@ -45,3 +45,23 @@ No screen change: the mock section says so.
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
      line per criterion, quality before → after, preset check, and screenshot paths
      (or "compared by eye: <who>"). -->
+
+**Verdict:** PASS — every AC passes below; the review is clean at its first, final pass (`bb604729`).
+
+- AC-1: pass — `modules/hr/server/zones.ts` takes the date from `entityDay` (Postgres), no Intl; `hr-today-110.test.ts`
+  "111 AC1" table (Sri Lanka and Sydney at 20:00 UTC: entityToday and entityDay both 2026-11-16); the AC1 refusal of an
+  entity with no zone still passes.
+- AC-2: pass — `services.ts` has no re-export; HR type-checks with `zones.ts` the one home.
+- AC-3: pass — `modules/hr/README.md`: contracts' default date, `get_legal_entity`, the hourly job's failure, HR writes'
+  today.
+- AC-4: pass — `apps/web/tests/add-card-confirm-110.test.ts` runs on a clock fixed at 2026-11-16 (3 of 3 pass).
+
+Commands: hr (95) and the add-card confirm test (3) pass; `tsc --noEmit` exit 0 for hr and web. `specclaw-verify size`:
+22 production lines against 110's head (`aa3071e0`), cap 400, exit 0. No screen change: screenshot `shots/mock.png` (the
+mock section says so).
+
+Quality: not_run (specclaw-quality-scan: jq "Argument list too long" on this Windows host)
+
+Review: CLEAN — 1 round, final pass bb60472984, models opus/opus; last round 0/0/2 b/M/m. Minors in `follow-ups.md`:
+entityToday reads the zone twice (a zone removed between the two reads would give UTC's date); the 111 AC1 test also
+passes on the old Intl path, so it shows the engines agree rather than that one is gone.
