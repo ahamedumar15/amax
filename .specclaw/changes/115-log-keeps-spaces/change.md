@@ -29,6 +29,14 @@ No screen change: only server log lines.
 
 ## Verify
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+**Verdict:** PASS
+
+- AC-1: pass — `oneLine` replaces `[\n\r\p{Zl}\p{Zp}\x00-\x1f\x7f-\x9f]`: C0 controls (CR and LF included), DEL, C1
+  controls (NEL included) and U+2028/U+2029. Spaces stay: `amax ai.tool read_ticket: Error [<id>]` and
+  `amax chat: Error 400 invalid_request_error [<id>]` (log test rows).
+- AC-2: pass — `packages/core` `tests/log.test.ts` passes 17/17, with rows for CR/LF, a tab, U+2028, U+2029, DEL, NEL
+  and a control character in the error's name. `@amax/ai` passes 82/82 against Postgres, including the three gateway
+  tests that failed on PR #119. `packages/core` `tsc --noEmit` exits 0.
+- Review: CLEAN — 3 rounds, final pass ab83e93c25, models opus/opus; last round 0/0/1 b/M/m; fix proof not proven: no
+  review.test_command configured. The minor (Unicode format characters such as bidi overrides) is in `follow-ups.md`.
+- Screenshots: none. Only server log lines change.
