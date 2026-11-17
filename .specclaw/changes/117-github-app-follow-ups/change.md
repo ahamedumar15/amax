@@ -66,6 +66,31 @@ No new screen. Git accounts gains one result line for a wrong secret, and the In
 
 ## Verify
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+**Verdict:** PASS. Every AC passes below. The review stopped at the five-pass cap (AGENTS.md) with **0 blockers, 2
+majors and 4 minors open**, all recorded in `follow-ups.md`. Round 3 escalated, and the product owner chose the
+one-state redesign. The 2 majors:
+
+1. The Connect GitHub suggestion and the Overview nudge still read "a credential exists", not the app's state. An
+   incomplete value still invites people to connect, and they then get 116's clear refusal.
+2. A successful check is kept until the next rotation, so an outage that starts after it still reads as `ready`.
+
+- AC-1: pass. The proxy sends a `redirect_uri_mismatch` return to the callback from any page, signed in or not.
+  - `apps/web/tests/github-return-117.test.ts`: the homepage, Git accounts, `/signin` and Auth.js's callback are
+    forwarded; the callback itself, other errors, a missing state and ordinary pages are left alone.
+  - Live (e2e server): a signed-out `/signin?error=redirect_uri_mismatch&state=…` redirects (307) to the callback.
+  - `app-116.test.ts`: GitHub's own mismatch return records the `callback` result.
+- AC-2: pass. At the token exchange, `incorrect_client_credentials` gives `credentials` ("An Admin replaces the GitHub
+  app", never "Try again") and `redirect_uri_mismatch` gives `callback`; an unknown code still gives `github`. The fake
+  GitHub checks the client id and secret (`follow-ups-117.test.ts`, a table that runs a real connect for each row).
+- AC-3: pass. `parseGitHubApp` is the one rule for writer, reader and status (table). The status is one `state`:
+  `none`, `expired`, `incomplete`, `unchecked` (with its reason) or `ready`.
+  - Consumers: the Integrations card and the Admin suggestions switch on `state` (`follow-ups-117.test.ts`, a states ×
+    consumers table that includes two outages with recovery and a person who can't check; `github-app-card-117.test.ts`).
+  - The card mirrors the module's states, checked by `github-app-states-117.test.ts`, and falls back to "Unknown state".
+  - Every reason branch, a refused use included, is in `problem-117.test.ts`.
+  - The value check is kept per tenant until the next rotation.
+- AC-4: pass. git-accounts 79/79 (Postgres); the web 117 and 116 tests 17/17; typecheck 3/3 (web, git-accounts,
+  delivery); the git-accounts e2e 3/3; nothing in 116's acceptance criteria changed.
+- Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/2/3 b/M/m; stopped at the cap with no
+  blockers (AGENTS.md).
+- Screenshots: no new screen. The mock section is `#117-github-app-follow-ups`, and the e2e covers Integrations.
