@@ -7,6 +7,7 @@ import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import { chatSuggestions } from "../chat-suggestions";
 import { gitAccountsOverview } from "../overview";
+import { GitAccountsPage } from "../ui/GitAccountsPage";
 import { setAppCheckMs, forgetAppCheck } from "../server/app";
 import { gitAccountsDatabase, T } from "./setup";
 
@@ -27,16 +28,19 @@ describe.skipIf(!hasDb)("119 the GitHub app's state for everyone (Postgres)", ()
     if (value) await putSecret(job, { connector: "github-oauth", value });
   };
   const state = async () => ((await db.registry.call(kasun, "get_github_app_status", {}, { source: "mcp" })) as { state: string }).state;
+  // Final pass: the Git accounts page is the third place that invites a person to connect.
+  const page = async () => (await import("react-dom/server")).renderToStaticMarkup((await GitAccountsPage({ viewer: kasun, searchParams: {} } as never)) as never);
   const invited = async () => [
     await chatSuggestions.find((s) => s.label === "Connect GitHub")!.when!(kasun as never, {}),
     ((await gitAccountsOverview(kasun)).waiting ?? []).length > 0,
+    (await page()).includes("Ask amax · Connect GitHub"),
   ];
 
   it.each([
-    ["a usable app", GOOD, "ready", [true, true]],
-    ["a value that doesn't parse", "only-the-secret-00000000000000", "incomplete", [false, false]],
-    ["no app", null, "none", [false, false]],
-    ["an expired app (review round 1)", "expired", "expired", [false, false]],
+    ["a usable app", GOOD, "ready", [true, true, true]],
+    ["a value that doesn't parse", "only-the-secret-00000000000000", "incomplete", [false, false, false]],
+    ["no app", null, "none", [false, false, false]],
+    ["an expired app (review round 1)", "expired", "expired", [false, false, false]],
   ])("AC1 AC2 for an Engineer, %s is %s, and connecting is offered only when ready", async (_n, value, expected, offers) => {
     setAppCheckMs(0);
     await app(value === "expired" ? GOOD : value);

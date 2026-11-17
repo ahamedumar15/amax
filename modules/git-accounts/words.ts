@@ -3,6 +3,8 @@
 export const NOT_SET_UP = "GitHub isn't set up for this workspace; an Admin adds the GitHub app";
 
 /** 116 AC-6: what an Admin or operator fixes, said instead of "I can't tell whether this was done". */
+/** 119: said on Git accounts when the app exists but isn't ready to connect (incomplete, expired or unreadable). */
+export const APP_NOT_READY = "GitHub can't be connected right now; an Admin checks the GitHub app on Settings › Integrations";
 export const APP_INCOMPLETE = "The GitHub app's credential is incomplete; an Admin sets it up again with Set up the GitHub app";
 export const callbackRefused = (url: string) => `GitHub refused amax's callback URL; an Admin pastes ${url} into the GitHub app's Redirect URIs`;
 
