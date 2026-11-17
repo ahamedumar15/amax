@@ -8,9 +8,9 @@ import { acceptSuggestion, setSuggestionKinds } from "@amax/agents/server";
 import delivery from "../module";
 import { proposalAgent } from "../server/agent";
 import { ctxFor } from "../server/context";
-import { addProposalTask } from "../server/lifecycle";
+import { addProposalTask, updateProposal, withdrawProposal } from "../server/lifecycle";
 import { proposalKinds } from "../server/proposal-kinds";
-import { createProposal, moveProposal } from "../server/services";
+import { createProposal, createRelease, moveProposal, recordDeployment } from "../server/services";
 import { markTaskDone } from "../server/tasks";
 import { linkIdentity } from "../suggestions";
 import { proposalDb, T } from "./proposal-db";
@@ -36,20 +36,29 @@ describe.skipIf(!hasDb)("118 the Suggested owner's accept guard (Postgres)", () 
     seen = events.length;
   };
 
+  // Review round 2: each state reached through the service that makes it, never a direct update.
+  const releaseIt = async (key: string) => {
+    const version = `v7.${Date.now()}`;
+    await createRelease(ctxFor(maya), { projectKey: "CON", version, proposalKeys: [key] });
+    await recordDeployment(ctxFor(maya), { projectKey: "CON", version, environment: "Prod" });
+  };
   it.each([
-    ["still open", null, true],
-    ["released since", "released", false],
-  ])("a Suggested owner for a proposal %s is %s", async (_n, phase, accepted) => {
-    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: `Accept guard ${String(phase)}` });
+    ["still open", null, null],
+    ["released since", releaseIt, /is released now and needs no owner/],
+    ["withdrawn since", (key: string) => withdrawProposal(ctxFor(maya), { key, reason: "Client dropped it" }), /was withdrawn/],
+    ["given a named owner since", async (key: string) => { await updateProposal(ctxFor(maya), { key, ownerUserId: (await db.as("nimal")).userId }); }, /has an owner now \(Nimal Silva\)/],
+  ] as const)("a Suggested owner for a proposal %s", async (_n, since, refused) => {
+    const { key } = await createProposal(ctxFor(maya), { projectKey: "CON", title: `Accept guard ${_n}` });
     await addProposalTask(ctxFor(maya), { key, title: "Step 1" });
     for (const to of ["planned", "building"] as const) await moveProposal(ctxFor(maya), { key, to });
     await db.t.owner`update delivery.proposal set owner_user_id = null, owner_name = null where key = ${key}`;
     await markTaskDone(ctxFor(maya), { key, task: "T1" });
     await runAgent();
     const [s] = await db.q(sql`select s.id from agents.suggestion s join delivery.proposal p on p.id::text = s.target_id where p.key = ${key} and s.kind = 'delivery.proposal-owner'`);
-    if (phase) await db.t.owner`update delivery.proposal set phase = ${phase} where key = ${key}`;
+    await since?.(key);
+    const before = (await db.row(key)).owner_user_id;
     const result = await acceptSuggestion(contextForViewer(maya, "chat"), { id: s.id as string }).then(() => "accepted", (e: Error) => e.message);
-    expect(result).toEqual(accepted ? "accepted" : expect.stringMatching(/is released now and needs no owner; nothing was changed/));
-    expect(((await db.row(key)).owner_user_id as string | null) !== null).toBe(accepted);
+    if (!refused) { expect([result, (await db.row(key)).owner_user_id]).toEqual(["accepted", maya.userId]); return; }
+    expect([refused.test(result), (await db.row(key)).owner_user_id]).toEqual([true, before]);
   });
 });

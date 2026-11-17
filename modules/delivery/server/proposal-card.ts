@@ -89,7 +89,7 @@ export async function updateCard(v: Viewer, a: Edit): Promise<ToolCard> {
   const owner = a.ownerUserId ? await withTenant(getRuntime().db, v.tenantId, async (tx) => (await tx.execute(sql`select name from auth.user where id::text = ${a.ownerUserId!}`))[0]?.name as string | undefined) : undefined;
   const who = a.ownerUserId ? (a.ownerUserId === v.userId ? `you (${owner ?? "you"})` : owner ?? "an unknown person") : undefined;
   // 118 (review round 1): the owner it has now, worded by the one rule every screen uses.
-  const was = p ? ownerLabel({ ownerUserId: (p.owner_user_id as string | null) ?? null, ownerName: (p.owner_name as string | null) ?? null, phase: String(p.phase), withdrawn: Boolean(p.withdrawn) }) : "Unassigned";
+  const was = p ? ownerLabel({ ownerUserId: (p.owner_user_id as string | null) ?? null, ownerName: (p.owner_name as string | null) ?? null, phase: String(p.phase), withdrawn: Boolean(p.withdrawn) }) : "–";
   const lines = [
     ...(a.title !== undefined ? [{ label: "Title", value: `${(p?.title as string | undefined) ?? "–"} → ${a.title}` }] : []),
     ...(a.description !== undefined ? [{ label: "Description", value: a.description ?? "none" }] : []),
