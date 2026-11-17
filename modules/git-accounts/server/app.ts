@@ -33,25 +33,23 @@ export const app = (ctx: ServiceContext, purpose: string) => <T>(fn: (id: string
   }).catch((e: unknown) => { forgetAppCheck(ctx.tenantId); return asRefusal(e); });
 
 // 117 AC-3, 119 AC-3: usable, unusable, or null when it couldn't be read (never "unusable", never kept). An audited read:
-// an answer is kept per tenant for at most CHECK_MS, shared by concurrent checks, and dropped when any use fails.
+// an answer is kept per tenant and credential version (from the database, so every process sees a new app at once) for
+// at most CHECK_MS, shared by concurrent checks, and dropped in this process when a use fails.
 export type AppCheck = { usable: boolean } | { usable: null; problem: string };
 let CHECK_MS = 10 * 60_000; export const setAppCheckMs = (ms: number) => { CHECK_MS = ms; };
-const checks = new Map<string, { at: number; answer: Promise<AppCheck> }>();
+const checks = new Map<string, { at: number; version: string; answer: Promise<AppCheck> }>();
 export const forgetAppCheck = (tenantId: string) => checks.delete(tenantId);
-const REFUSED_USE = "you may see the GitHub app but not use its credential, so amax can't check it; an Admin can";
-export const problemOf = (e: unknown) => {
-  if (e instanceof Error && e.name === "ForbiddenError") return REFUSED_USE;
-  try { return asRefusal(e); } catch (r) { return r instanceof ToolError ? r.message : "amax couldn't read the GitHub app's credential just now"; }
-};
-export function appUsable(ctx: ServiceContext): Promise<AppCheck> {
+export const problemOf = (e: unknown) => { try { return asRefusal(e); } catch (r) { return r instanceof ToolError ? r.message : "amax couldn't read the GitHub app's credential just now"; } };
+export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<AppCheck> {
+  const version = rotatedAt?.toISOString() ?? "";
   const held = checks.get(ctx.tenantId);
-  if (held && Date.now() - held.at < CHECK_MS) return held.answer;
+  if (held && held.version === version && Date.now() - held.at < CHECK_MS) return held.answer;
   const answer: Promise<AppCheck> = useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null)
     .then((usable) => ({ usable }), (e: unknown) => {
       if (checks.get(ctx.tenantId)?.answer === answer) checks.delete(ctx.tenantId);
       return { usable: null, problem: problemOf(e) };
     });
-  checks.set(ctx.tenantId, { at: Date.now(), answer });
+  checks.set(ctx.tenantId, { at: Date.now(), version, answer });
   return answer;
 }
 

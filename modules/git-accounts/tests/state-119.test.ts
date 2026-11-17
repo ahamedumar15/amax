@@ -36,29 +36,37 @@ describe.skipIf(!hasDb)("119 the GitHub app's state for everyone (Postgres)", ()
     ["a usable app", GOOD, "ready", [true, true]],
     ["a value that doesn't parse", "only-the-secret-00000000000000", "incomplete", [false, false]],
     ["no app", null, "none", [false, false]],
+    ["an expired app (review round 1)", "expired", "expired", [false, false]],
   ])("AC1 AC2 for an Engineer, %s is %s, and connecting is offered only when ready", async (_n, value, expected, offers) => {
     setAppCheckMs(0);
-    await app(value);
+    await app(value === "expired" ? GOOD : value);
+    if (value === "expired") await db.t.owner`update secrets.credential set expires_at = now() - interval '1 day' where connector = 'github-oauth'`;
     expect([await state(), await invited()]).toEqual([expected, offers]);
   });
 
-  it("AC3 a success is kept only for its lifetime, and dropped as soon as a use of the credential fails", async () => {
+  it("AC3 review round 1: another process's new app is seen at once; its failures within the lifetime; a local failure at once", async () => {
     setAppCheckMs(10 * 60_000);
     await app(GOOD);
     expect(await state()).toBe("ready");
-    await db.t.owner`update secrets.credential set expires_at = null where connector = 'github-oauth'`;
+    // Another process stores a new value: no forget here, but the credential's version changed in the database.
     await putSecret(job, { connector: "github-oauth", value: "only-the-secret-00000000000000", graceHours: 0 });
-    expect(await state()).toBe("ready");
-    setAppCheckMs(0);
     expect(await state()).toBe("incomplete");
-    setAppCheckMs(10 * 60_000);
     await app(GOOD);
+    expect(await state()).toBe("ready");
+    // Another process's outage (same version, nothing failed here) is seen once the lifetime ends.
+    configureSecrets({ kms: null });
+    const cached = await state();
+    setAppCheckMs(0);
+    const expired = await state();
+    // A failed use in this process drops the success at once.
+    setAppCheckMs(10 * 60_000);
+    configureSecrets({ kms: db.kms });
     expect(await state()).toBe("ready");
     configureSecrets({ kms: null });
     await db.registry.call(kasun, "connect_github", {}, { source: "mcp" }).catch(() => null);
-    const during = await state();
+    const local = await state();
     configureSecrets({ kms: db.kms });
-    expect([during, await state()]).toEqual(["unchecked", "ready"]);
+    expect([cached, expired, local, await state()]).toEqual(["ready", "unchecked", "unchecked", "ready"]);
   });
 
   it("AC5 every field the Integrations card reads is one the status returns", async () => {

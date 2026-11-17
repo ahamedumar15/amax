@@ -33,7 +33,9 @@ What changes on screen, and where to see it: [`119-github-app-state-for-everyone
    `incomplete`, `expired`, `none` or `unchecked` app invites nobody to connect.
 3. **AC-3** A successful check is kept for at most 10 minutes, and is dropped as soon as any use of the GitHub app's
    credential fails. So the status says `ready` only when a recent read succeeded. Concurrent checks still share one
-   read.
+   read. Review round 1: amax runs as several processes, so the check is keyed on the credential's version from the
+   database as well. A new app is seen by every process at once; a failure in another process is seen within the
+   10 minutes; a failure in this process at once.
 4. **AC-4** The CSV export's Owner column is `ownerLabel` ("Unassigned" or "Not recorded" for an ownerless proposal).
 5. **AC-5** A test compares every field the Integrations card reads with what `get_github_app_status` returns, not only
    `state`.
