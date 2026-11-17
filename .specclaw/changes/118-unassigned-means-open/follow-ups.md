@@ -1,0 +1,6 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B4] `modules/delivery/ui/ProposalPage.tsx:32` AC-2 says the proposal page's Owner fact shows `ownerLabel`. Instead, the page repeats the branching inline (`needsOwner ? 'Unassigned' : hasNoOwner ? 'Not recorded' : name`), with the 'Not recorded' text written a second time. It agrees with `ownerLabel` today because it uses the same predicates, but a change to the wording would have to be made in two places. Fix: render `ownerLabel(p)` and choose only the style (warn chip or muted) with `needsOwner(p)` / `hasNoOwner(p)`. (round 1) <!-- fp:05b89c4971ec class:other -->
+- [minor B2] `modules/delivery/tests/owner-label-118.test.ts:6` The AC-3 table calls the pure functions on hand-built `as unknown as ProposalRow` rows. It never renders the three screens AC-2 changed. If the Owner column, the board avatar or the page fact still printed "Unassigned" for released or withdrawn proposals, this test would stay green. Fix: extend the render table in `proposal-agent.test.ts` 087 AC1 with released and withdrawn ownerless rows, checking the muted "Not recorded" on the list, the page and the card. (round 1) <!-- fp:74643dd27863 class:other -->

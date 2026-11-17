@@ -4,7 +4,7 @@ import { can, canEver, type Viewer } from "@amax/auth";
 import { getRuntime, hasModule } from "@amax/core/server";
 import { getDeployment, getEnvironment, getProposal, getProposalTask, listReleases, manualProjects, type ProposalRow } from "./queries";
 import { agentFirstSql } from "./agent-first";
-import { hasNoOwner } from "./readiness";
+import { needsOwner } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
 
 // 081 amendments 2 and 3 (AC-30, AC-38): what a pinned Delivery record offers in chat. Each offer is the prompt its
@@ -101,7 +101,8 @@ export async function proposalOffers(v: Viewer, a: Args) {
 }
 
 function proposalGated(p: ProposalRow, me: string, f: { openTask: string | null; justClosed?: string | null; release: { version: string; keys: string } | null }): Gated[] {
-  const owner: Gated[] = !hasNoOwner(p) ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
+  // 118 (review round 1): the owner offer follows the same rule as the Unassigned chip: only an open proposal needs one.
+  const owner: Gated[] = !needsOwner(p) ? [] : [{ label: `Make me the owner of ${p.key}`, prompt: `Make me (user id ${me}) the owner of ${p.key}`, tool: "update_proposal", permission: "delivery:proposal:create" }];
   const task: Gated[] = f.openTask ? [{ label: `Mark ${f.openTask} of ${p.key} done`, prompt: `Mark ${f.openTask} of ${p.key} done`, tool: "mark_task_done", permission: "delivery:task:done" }] : [];
   const release: Gated[] = f.release ? [{ label: `Put ${p.key} in ${p.projectKey} ${f.release.version}`, prompt: `Set the proposals in ${p.projectKey} ${f.release.version} to: ${[f.release.keys, p.key].filter(Boolean).join(", ")}`,
     tool: "set_release_proposals", permission: "delivery:release:create" }] : [];
