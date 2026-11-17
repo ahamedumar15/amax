@@ -30,29 +30,28 @@ export const app = (ctx: ServiceContext, purpose: string) => <T>(fn: (id: string
     const parsed = parseGitHubApp(s.reveal());
     if (!parsed) throw incomplete();
     return fn(parsed.id, parsed.secret);
-  }).catch(asRefusal);
+  }).catch((e: unknown) => { forgetAppCheck(ctx.tenantId); return asRefusal(e); });
 
-// 117 AC-3: usable, unusable, or null when it couldn't be read (never "unusable", never kept). An audited read, so one
-// answer per tenant is kept until the next rotation, and concurrent checks share it.
+// 117 AC-3, 119 AC-3: usable, unusable, or null when it couldn't be read (never "unusable", never kept). An audited read:
+// an answer is kept per tenant for at most CHECK_MS, shared by concurrent checks, and dropped when any use fails.
 export type AppCheck = { usable: boolean } | { usable: null; problem: string };
-const checks = new Map<string, { rotatedAt: string; answer: Promise<AppCheck> }>();
+let CHECK_MS = 10 * 60_000; export const setAppCheckMs = (ms: number) => { CHECK_MS = ms; };
+const checks = new Map<string, { at: number; answer: Promise<AppCheck> }>();
+export const forgetAppCheck = (tenantId: string) => checks.delete(tenantId);
 const REFUSED_USE = "you may see the GitHub app but not use its credential, so amax can't check it; an Admin can";
 export const problemOf = (e: unknown) => {
   if (e instanceof Error && e.name === "ForbiddenError") return REFUSED_USE;
   try { return asRefusal(e); } catch (r) { return r instanceof ToolError ? r.message : "amax couldn't read the GitHub app's credential just now"; }
 };
-export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<AppCheck> {
-  const at = rotatedAt?.toISOString() ?? "";
+export function appUsable(ctx: ServiceContext): Promise<AppCheck> {
   const held = checks.get(ctx.tenantId);
-  if (held?.rotatedAt === at) return held.answer;
-  // Review round 2: a failed read is "couldn't check" with its reason, dropped (if still the held one) so the next status
-  // reads again.
+  if (held && Date.now() - held.at < CHECK_MS) return held.answer;
   const answer: Promise<AppCheck> = useSecret(ctx, { connector: "github-oauth", purpose: "GitHub app check" }, async (s) => parseGitHubApp(s.reveal()) !== null)
     .then((usable) => ({ usable }), (e: unknown) => {
       if (checks.get(ctx.tenantId)?.answer === answer) checks.delete(ctx.tenantId);
       return { usable: null, problem: problemOf(e) };
     });
-  checks.set(ctx.tenantId, { rotatedAt: at, answer });
+  checks.set(ctx.tenantId, { at: Date.now(), answer });
   return answer;
 }
 
@@ -76,5 +75,6 @@ export const appRow = async (ctx: ServiceContext) =>
 export async function storeGitHubApp(ctx: ServiceContext, input: { clientId: string; secret: string; expiresAt?: string }) {
   const row = await appRow(ctx);
   const expiresAt = input.expiresAt ?? (row ? (() => { try { return keptExpiryOf("github-oauth", row.expiresAt); } catch (e) { return asRefusal(e); } })() : null);
-  return putSecret(ctx, { connector: "github-oauth", value: `${input.clientId}:${input.secret}`, expiresAt, ...(row ? { graceHours: 72 } : {}) }).catch(asRefusal);
+  return putSecret(ctx, { connector: "github-oauth", value: `${input.clientId}:${input.secret}`, expiresAt, ...(row ? { graceHours: 72 } : {}) })
+    .catch(asRefusal).finally(() => forgetAppCheck(ctx.tenantId));
 }

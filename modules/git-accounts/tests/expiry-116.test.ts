@@ -4,6 +4,7 @@ import { hasDb } from "@amax/db/testdb";
 import { putSecret, revokeSecret } from "@amax/core/secrets";
 import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
+import { forgetAppCheck } from "../server/app";
 import { gitAccountsDatabase, T } from "./setup";
 
 const day = 86_400_000;
@@ -17,6 +18,7 @@ describe.skipIf(!hasDb)("116 the GitHub app's expiry and state (Postgres)", () =
   afterAll(() => db?.drop());
   const job = contextFor.job(T, "test");
   const fresh = async (expiresAt: Date | null) => {
+    forgetAppCheck(T);
     await revokeSecret(job, { connector: "github-oauth", reason: "replaced" }).catch(() => {});
     await db.t.owner`delete from secrets.version where credential_id in (select id from secrets.credential where connector = 'github-oauth')`;
     await db.t.owner`delete from secrets.credential where connector = 'github-oauth'`;

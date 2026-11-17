@@ -11,6 +11,7 @@ import { authFixtures } from "@amax/auth/fixtures";
 import { createRegistry } from "@amax/mcp";
 import { loadFixtures, lumen } from "@amax/testing";
 import gitAccounts from "../module";
+import { forgetAppCheck } from "../server/app";
 
 export const T = lumen.tenant.id;
 
@@ -69,7 +70,8 @@ export async function gitAccountsDatabase() {
     const [u] = await withTenant(app, T, (tx) => tx.execute(sql`select id from auth.user where email = ${`${key}@lumenlabs.test`}`));
     return (await withTenant(app, T, (tx) => viewerForUser(tx, T, u.id as string)))!;
   };
-  const setUpApp = () => putSecret(contextFor.job(T, "seed"), { connector: "github-oauth", value: "app-id:app-secret-fake-0000000000" });
+  // 119: the app's check is dropped when the app is written, as set_github_app does.
+  const setUpApp = () => putSecret(contextFor.job(T, "seed"), { connector: "github-oauth", value: "app-id:app-secret-fake-0000000000" }).finally(() => forgetAppCheck(T));
   const tx = <R>(fn: (tx: Tx) => Promise<R>) => withTenant(app, T, fn);
   const drop = async () => { github.close(); await t.drop(); };
   return { t, app, registry, as, tx, setUpApp, origin, drop, kms };

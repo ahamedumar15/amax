@@ -43,6 +43,15 @@ What changes on screen, and where to see it: [`119-github-app-state-for-everyone
 
 ## Tasks
 
+- [x] `T1` — Everyone's state from one check that expires; connect follows it (AC-1, AC-2, AC-3)
+  Files: modules/git-accounts/server/app.ts, modules/git-accounts/server/read.ts, modules/git-accounts/chat-suggestions.ts,
+  modules/git-accounts/overview.ts
+- [x] `T2` — The CSV owner label (AC-4)
+  Files: modules/delivery/ui/ProposalsPage.tsx
+- [x] `T3` — Tests (AC-5, AC-6)
+  Files: modules/git-accounts/tests/state-119.test.ts, modules/git-accounts/tests/follow-ups-117.test.ts,
+  modules/git-accounts/tests/nudge-116.test.ts, modules/delivery/tests/csv-owner-119.test.ts
+
 ## Verify
 
 <!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`

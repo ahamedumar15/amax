@@ -38,7 +38,7 @@ describe.skipIf(!hasDb)("116 the nudge, the suggestions and the audit record (Po
     expect([await offered(maya), await offered(kasun)]).toEqual([["Rotate the GitHub app secret", "Remove the GitHub app"], []]);
     const status = (v: Viewer) => db.registry.call(v, "get_github_app_status", {}, { source: "mcp" }) as Promise<{ state: string; rotatedAt: unknown; callbackUrl: string }>;
     const [admin, person] = [await status(maya), await status(kasun)];
-    expect([admin.state, admin.rotatedAt !== null, person.state, person.rotatedAt, person.callbackUrl]).toEqual(["ready", true, "unchecked", null, "http://localhost:3000/api/git/github/callback"]);
+    expect([admin.state, admin.rotatedAt !== null, person.state, person.rotatedAt, person.callbackUrl]).toEqual(["ready", true, "ready", null, "http://localhost:3000/api/git/github/callback"]);
     expect(await nudged(kasun)).toEqual([["Connect GitHub", "Connect my GitHub", 30]]);
     await connect();
     expect(await nudged(kasun)).toEqual([]);

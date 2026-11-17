@@ -5,7 +5,7 @@ import { contextFor } from "@amax/core/server";
 import type { Viewer } from "@amax/auth";
 import { completeGitHubConnect, RESULTS } from "../contracts";
 import { chatSuggestions } from "../chat-suggestions";
-import { parseGitHubApp } from "../server/app";
+import { parseGitHubApp, forgetAppCheck } from "../server/app";
 import { resultCodeOf } from "../server/connect";
 import { ctxFor } from "../server/context";
 import { gitAccountsDatabase, T } from "./setup";
@@ -36,6 +36,7 @@ describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
     .map(async (s) => ((await s.when!(v as never, {})) ? s.label : null)))).filter(Boolean);
 
   const app = async (value: string) => {
+    forgetAppCheck(T);
     await revokeSecret(job, { connector: "github-oauth", reason: "replaced" }).catch(() => {});
     await db.t.owner`delete from secrets.version where credential_id in (select id from secrets.credential where connector = 'github-oauth')`;
     await db.t.owner`delete from secrets.credential where connector = 'github-oauth'`;
@@ -64,7 +65,7 @@ describe.skipIf(!hasDb)("117 the GitHub app's follow-ups (Postgres)", () => {
     ["a usable app", ok, null, "maya", "ready", null, ["Rotate the GitHub app secret", "Remove the GitHub app"]],
     ["no key service (then it recovers)", ok, () => configureSecrets({ kms: null }), "maya", "unchecked", /no key service is set/, ["Remove the GitHub app"]],
     ["a different key service (then it recovers)", ok, () => configureSecrets({ kms: localKms(new Uint8Array(32)) }), "maya", "unchecked", /^amax couldn't read the GitHub app's credential just now$/, ["Remove the GitHub app"]],
-    ["someone who doesn't manage credentials", ok, null, "kasun", "unchecked", /only those who manage credentials/, []],
+    ["someone who doesn't manage credentials (119: the real state)", ok, null, "kasun", "ready", null, []],
   ] as const)("AC3 %s", async (_n, value, then, who, state, why, offers) => {
     await app(value ?? ok);
     if (!value) await revokeSecret(job, { connector: "github-oauth", reason: "unused" });

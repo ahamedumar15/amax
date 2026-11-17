@@ -128,7 +128,7 @@ export function ProposalsTable({ rows: all, needs, need, me, phase, root, projec
           {mine && <FilterChip name="Mine" href={`${base}${query({ project, q })}`} clears="everyone's proposals" />}
           {need && <FilterChip name={NEED_LABEL[need]} href={`${base}${query({ project, q, owner, need: undefined })}`} clears="every proposal" />}
           <ProposalSearch base={base} project={project} q={q} owner={owner} need={need} options={rows.map((p) => ({ key: p.key, title: p.title }))} />
-          <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", shippedToLabel(p) ?? "", p.ownerName ?? ""])])} download="proposals.csv">
+          <a className="btn" href={csvHref([["Proposal", "Title", "Project", "Phase", "Tasks done", "Tasks", "Hours", "Release", "Shipped to", "Owner"], ...rows.map((p) => [p.key, p.title, p.projectName, p.phase, String(p.tasksDone), String(p.tasksTotal), String(p.hours), p.release ?? "", shippedToLabel(p) ?? "", ownerLabel(p)])])} download="proposals.csv">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14" /></svg>Export
           </a>
         </div>

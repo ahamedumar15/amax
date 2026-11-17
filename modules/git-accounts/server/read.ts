@@ -4,6 +4,7 @@ import { gitIdentitiesOf } from "@amax/auth/git-identity";
 import type { Viewer } from "@amax/auth";
 import { can } from "@amax/auth";
 import { ToolError } from "@amax/mcp";
+import { contextFor } from "@amax/core/server";
 import { hasSecret } from "@amax/core/secrets";
 import type { GitAccounts, GitHubLogin } from "../contracts";
 import { appRow, appUsable } from "./app";
@@ -36,13 +37,12 @@ export const githubAppStatus = async (v: Viewer) => {
   return { connector: "github-oauth", state, checkProblem, rotatedAt: row?.lastRotatedAt ?? null, ...callback };
 };
 
-/** The GitHub app's state: none, expired, incomplete (the value doesn't parse), unchecked (couldn't be read, and why;
- * also for those who don't manage credentials) or ready. */
+/** The GitHub app's state: none, expired, incomplete (the value doesn't parse), unchecked (it couldn't be read, and why)
+ * or ready. 119 AC-1: checked for everyone, as the connect reads it (a job acting for the viewer). */
 export type AppState = "none" | "expired" | "incomplete" | "unchecked" | "ready";
 async function stateOf(v: Viewer, exists: boolean, row: Awaited<ReturnType<typeof appRow>>): Promise<{ state: AppState; checkProblem: string | null }> {
   if (!exists) return { state: row?.status === "expired" ? "expired" : "none", checkProblem: null };
-  if (!row) return { state: "unchecked", checkProblem: "only those who manage credentials can check the GitHub app" };
-  const check = await appUsable(ctxFor(v), row.lastRotatedAt);
+  const check = await appUsable(contextFor.job(v.tenantId, "git-accounts.app-check", `user:${v.userId}`));
   if (check.usable === null) return { state: "unchecked", checkProblem: check.problem };
   return { state: check.usable ? "ready" : "incomplete", checkProblem: null };
 }
