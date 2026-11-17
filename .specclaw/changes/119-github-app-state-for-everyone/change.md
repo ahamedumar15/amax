@@ -56,6 +56,29 @@ What changes on screen, and where to see it: [`119-github-app-state-for-everyone
 
 ## Verify
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+**Verdict:** PASS. Every AC passes below. The git-accounts browser e2e wasn't run locally: Next.js 16.4.2 now stops
+at start with a security-upgrade notice when started from the agent's shell. CI runs it with the PR.
+
+- AC-1: pass. Every viewer gets the app's real state: the row and the check are read through a job context acting for
+  the viewer, as the connect reads the credential. An Engineer sees `ready` for a working app and `expired` for an
+  expired one; `rotatedAt` stays for those who manage credentials (`state-119.test.ts`; `follow-ups-117.test.ts`,
+  whose non-Admin row is now `ready`; `nudge-116.test.ts`).
+- AC-2: pass. The Connect GitHub suggestion, the Overview nudge and the Git accounts page's Connect button appear only
+  when the state is `ready`. When it isn't, the page says "GitHub can't be connected right now…" (`state-119.test.ts`,
+  a table over ready, incomplete, none and expired × the three places).
+- AC-3: pass. A successful check is kept for at most 10 minutes, keyed on the credential's version from the database,
+  so another process's new app is seen at once. Another process's outage is seen when the lifetime ends; a failed use
+  here drops it at once (`state-119.test.ts`).
+- AC-4: pass. The CSV's Owner column reads "Unassigned", "Not recorded" or the name (`csv-owner-119.test.ts`).
+- AC-5: pass. Every field the Integrations card reads is one the status returns (`state-119.test.ts`), alongside 117's
+  state-list check.
+- AC-6: pass, with the e2e left to CI (above). Results:
+  - git-accounts 83/83 (Postgres)
+  - delivery owner and CSV tests 17/17
+  - web 117 tests 14/14
+  - typecheck 3/3 (web, git-accounts, delivery)
+- Review: CLEAN — 4 rounds, final pass 4dbfea80de, models opus/opus; last round 0/0/2 b/M/m. The final pass also listed
+  one pre-existing major, recorded in `follow-ups.md`: the `connect_github` card and `get_my_git_identities` still
+  read "a credential exists". Against an incomplete app, a Connect card can still be raised in chat, and pressing it
+  gives 116's clear refusal.
+- Screenshots: no new screen. The mock section is `#119-github-app-state-for-everyone`.
