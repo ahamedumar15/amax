@@ -1,0 +1,50 @@
+# The GitHub app's state for everyone: connecting follows it, a stale success expires, and a working app looks working
+
+**Change:** 119-github-app-state-for-everyone · **Created:** 2026-11-17 · **Review:** change
+
+## Problem
+
+117 stopped at the five-pass cap with two majors open, and 118's final pass left three minors (their `follow-ups.md`):
+
+- **Connect ignores the app's state.** The Connect GitHub suggestion and the Overview nudge read "a credential exists",
+  so an incomplete value still invites people to connect, and each attempt then fails.
+- **A stale success.** A successful check is kept until the next rotation, so an outage that starts later still reads
+  as "ready".
+- **A working app looks broken to most people.** Someone who can't manage credentials gets `unchecked`, and the card
+  shows a working app as a red "Not checked".
+- **The export.** The CSV's Owner column leaves an ownerless proposal blank instead of using 118's label.
+- **The card's fields.** Only the card's `state` list is checked against the module; its other fields aren't.
+
+Asked by the product owner (2026-11-17).
+
+## Mock Delta
+
+What changes on screen, and where to see it: [`119-github-app-state-for-everyone`](../../mock/index.html#119-github-app-state-for-everyone)
+
+- An Engineer sees "Configured" on a working app.
+- People aren't invited to connect while the app is incomplete.
+
+## Acceptance Criteria
+
+1. **AC-1** The app's state is checked for everyone, through a job context acting for the viewer, the same way the
+   connect reads the credential. The `unchecked` state then means only that the read failed (with its reason), never
+   "not allowed to check". `rotatedAt` stays for those who manage credentials.
+2. **AC-2** The Connect GitHub suggestion and the Overview nudge appear only when the app's state is `ready`. An
+   `incomplete`, `expired`, `none` or `unchecked` app invites nobody to connect.
+3. **AC-3** A successful check is kept for at most 10 minutes, and is dropped as soon as any use of the GitHub app's
+   credential fails. So the status says `ready` only when a recent read succeeded. Concurrent checks still share one
+   read.
+4. **AC-4** The CSV export's Owner column is `ownerLabel` ("Unassigned" or "Not recorded" for an ownerless proposal).
+5. **AC-5** A test compares every field the Integrations card reads with what `get_github_app_status` returns, not only
+   `state`.
+6. **AC-6** Variant tests for each, and the git-accounts, delivery and web suites, the git-accounts e2e and typecheck
+   pass. Nothing in 116–118's acceptance criteria changes, except that 117 AC-3's `unchecked` for people who don't manage
+   credentials becomes their real state (AC-1).
+
+## Tasks
+
+## Verify
+
+<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
+     line per criterion, quality before → after, preset check, and screenshot paths
+     (or "compared by eye: <who>"). -->
