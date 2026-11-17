@@ -40,6 +40,21 @@ proposal with no owner. "Unassigned" stays for open ones, and the count is uncha
 
 ## Verify
 
-<!-- Filled by verify: a **Verdict:** PASS|FAIL line, then one `- AC-n: pass|fail — evidence`
-     line per criterion, quality before → after, preset check, and screenshot paths
-     (or "compared by eye: <who>"). -->
+**Verdict:** PASS
+
+- AC-1: pass. `needsOwner` and `ownerLabel` in `readiness.ts` are the one rule. The Unassigned count, the pin's
+  "Make me the owner", the agent's Suggested owner and its accept guard all use it (`owner-label-118.test.ts`;
+  `owner-accept-118.test.ts`, a table that reaches each state through its service: open is accepted; released through
+  a release and a Prod deployment, withdrawn since, and named since are refused with the owner unchanged).
+- AC-2: pass. The list's Owner column, the board card's avatar, the proposal page's Owner fact and chat's owner-change
+  card (From and Owner lines) read `ownerLabel`. "Unassigned" is a warning only where an owner is needed; "Not
+  recorded" is muted (`owner-render-118.test.ts`, by state across the page, the list, the card and the offer). A
+  missing proposal reads "–" on the card. Checked live on AMX: 8 "Unassigned", matching the strip's 8.
+- AC-3: pass. AMX's mix (3 proposed, 5 verified, 64 released, no owner) counts 8, and exactly those 8 read
+  "Unassigned" (`owner-label-118.test.ts`).
+  - The delivery suite passes 728/729. The one failure is the Windows-only `releases` path check; 087's owner table
+    still passes.
+  - `sync-import`'s re-run test can time out under the full suite's load on Windows (it re-reads this repo's growing
+    `.specclaw`). It passes on its own, 20/20, and is a follow-up.
+- Review: CLEAN — 3 rounds, final pass a733054e51, models opus/opus; last round 0/0/2 b/M/m.
+- Screenshots: the mock section is `#118-unassigned-means-open`; AMX's proposals page was checked live.
