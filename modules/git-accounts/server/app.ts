@@ -32,14 +32,15 @@ export const app = (ctx: ServiceContext, purpose: string) => <T>(fn: (id: string
     return fn(parsed.id, parsed.secret);
   }).catch(asRefusal);
 
-/**
- * 117 AC-3: whether the stored value is usable: true, false, or null when it couldn't be read (a key service outage, a
- * refused use), which is never mistaken for "unusable" and never kept. Reading it is an audited use, so a read answer is
- * kept per tenant until the credential is next rotated, one entry per tenant, and concurrent checks share one read.
- */
+// 117 AC-3: usable, unusable, or null when it couldn't be read (never "unusable", never kept). An audited read, so one
+// answer per tenant is kept until the next rotation, and concurrent checks share it.
 export type AppCheck = { usable: boolean } | { usable: null; problem: string };
 const checks = new Map<string, { rotatedAt: string; answer: Promise<AppCheck> }>();
-const problemOf = (e: unknown) => { try { return asRefusal(e); } catch (r) { return r instanceof ToolError ? r.message : "amax couldn't read the GitHub app's credential just now"; } };
+const REFUSED_USE = "you may see the GitHub app but not use its credential, so amax can't check it; an Admin can";
+export const problemOf = (e: unknown) => {
+  if (e instanceof Error && e.name === "ForbiddenError") return REFUSED_USE;
+  try { return asRefusal(e); } catch (r) { return r instanceof ToolError ? r.message : "amax couldn't read the GitHub app's credential just now"; }
+};
 export function appUsable(ctx: ServiceContext, rotatedAt: Date | null): Promise<AppCheck> {
   const at = rotatedAt?.toISOString() ?? "";
   const held = checks.get(ctx.tenantId);

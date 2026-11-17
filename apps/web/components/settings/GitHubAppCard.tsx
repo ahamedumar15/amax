@@ -2,8 +2,9 @@ import { PinButton } from "@amax/ui";
 import { CopyValue } from "../chat/CopyValue";
 import { AskButton } from "./AskButton";
 
-// 116 AC-4, 117 AC-3 (review round 3): the GitHub app's row on Integrations, read through get_github_app_status and
-// switched on its one `state`. The record names every state, so a new one can't be shown as another.
+// 116 AC-4, 117 AC-3 (review rounds 3 and 4): the GitHub app's row on Integrations, read through get_github_app_status
+// and switched on its one `state`. The app can't import the module (it may be removed), so this list mirrors the module's
+// AppState; a test keeps the two equal, and a state this list doesn't know is shown as unknown, never as another.
 export type GitHubAppState = "none" | "expired" | "incomplete" | "unchecked" | "ready";
 export type GitHubAppStatus = { state: GitHubAppState; checkProblem: string | null; rotatedAt: string | Date | null; callbackUrl: string | null; callbackProblem: string | null };
 
@@ -14,12 +15,15 @@ const SHOWN: Record<GitHubAppState, { chip: string; tone: "" | " good" | " warn"
   none: { chip: "Not configured", tone: "", note: SET_UP, setUp: true },
   expired: { chip: "Expired", tone: " warn", note: SET_UP, setUp: true },
   incomplete: { chip: "Incomplete · set it up again", tone: " warn", note: SET_UP, setUp: true },
-  unchecked: { chip: "Couldn't check it", tone: " warn", note: "amax couldn't read the GitHub app's credential to check it.", setUp: false },
+  unchecked: { chip: "Not checked", tone: " warn", note: "amax hasn't checked the GitHub app's credential; the line below says why.", setUp: false },
   ready: { chip: "Configured", tone: " good", note: "People connect their GitHub accounts from Git accounts in their profile menu.", setUp: false },
 };
 
+export const GITHUB_APP_STATES = Object.keys(SHOWN) as GitHubAppState[];
+const UNKNOWN = { chip: "Unknown state", tone: " warn" as const, note: "amax reports a state this screen doesn't know yet.", setUp: false };
+
 export function GitHubAppCard({ app }: { app: GitHubAppStatus }) {
-  const s = SHOWN[app.state];
+  const s = SHOWN[app.state] ?? UNKNOWN;
   const rotated = app.state === "ready" && app.rotatedAt ? ` · rotated ${day(app.rotatedAt)}` : "";
   return (
     <div className="card pinnable" style={{ marginBottom: 28 }}>
