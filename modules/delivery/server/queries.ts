@@ -8,6 +8,7 @@ import type { Phase } from "../contracts";
 import { invalid } from "./refusal";
 import { isWithdrawn, ownerShownIn, withdrawnIn } from "./readiness";
 import { proposalInProd } from "./in-prod";
+import { computePortfolio, portfolioFacts } from "./portfolio";
 
 const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
@@ -26,6 +27,7 @@ export type ProjectRow = {
   sprintStart: string | null; sprintEnd: string | null;
   /** 093: the linked repo, and whether it's agent-first (the repo has brought in proposals; no manual creation). */
   repoUrl: string | null; agentFirst: boolean;
+  healthReason: string | null; openProposals: number | null;
 };
 
 const project = (r: Record<string, unknown>): ProjectRow => ({
@@ -34,11 +36,16 @@ const project = (r: Record<string, unknown>): ProjectRow => ({
   sprintDone: Number(r.sprint_done), sprintTotal: Number(r.sprint_total), health: r.health as string, riskPct: num(r.risk_pct),
   marginPct: num(r.margin_pct), contractValue: num(r.contract_value), invoiced: num(r.invoiced), nextRelease: (r.next_release as string | null) ?? null,
   sprintStart: isoDate(r.sprint_start), sprintEnd: isoDate(r.sprint_end),
-  repoUrl: (r.repo_url as string | null) ?? null, agentFirst: r.agent_first === true,
+  repoUrl: (r.repo_url as string | null) ?? null, agentFirst: r.agent_first === true, healthReason: null, openProposals: null,
 });
 
+const withPortfolio = async (tx: Tx, rows: ProjectRow[]): Promise<ProjectRow[]> => {
+  const facts = await portfolioFacts(tx, rows.filter((p) => p.agentFirst).map((p) => p.id), await clockOf(tx));
+  return rows.map((p) => { const f = facts.get(p.id); return f ? { ...p, ...computePortfolio(f) } : p; });
+};
+
 export const listProjects = (v: Viewer, status: "active" | "closed" = "active") =>
-  read(v, async (tx) => (await tx.execute(sql`select *, ${agentFirstSql(sql`delivery.project`)} as agent_first from delivery.project where status = ${status} order by created_at, name`)).map(project));
+  read(v, async (tx) => withPortfolio(tx, (await tx.execute(sql`select *, ${agentFirstSql(sql`delivery.project`)} as agent_first from delivery.project where status = ${status} order by created_at, name`)).map(project)));
 
 /** 093 AC-2: the active projects the viewer may add proposals to by hand (not agent-first). */
 export const manualProjects = async (v: Viewer) => (await listProjects(v, "active")).filter((x) => !x.agentFirst && can(v, "delivery:proposal:create", { projectId: x.id }));
@@ -130,7 +137,8 @@ export const getProject = (v: Viewer, key: string | undefined, projectId?: strin
     const [c] = await tx.execute(sql`select count(*) filter (where ${BY_AGENT})::int as agents, count(*) filter (where ${BY_PERSON})::int as people,
         count(*) filter (where not (${BY_AGENT}) and not ${BY_PERSON})::int as automation
       from delivery.task t join delivery.proposal p on p.id = t.proposal_id where p.project_id = ${r.id} and t.done and t.done_by is not null and ${ACTIVE}`);
-    return { project: project(r), proposals, closedBy: { agents: Number(c?.agents ?? 0), people: Number(c?.people ?? 0), automation: Number(c?.automation ?? 0) } };
+    const [withComputed] = await withPortfolio(tx, [project(r)]);
+    return { project: withComputed!, proposals, closedBy: { agents: Number(c?.agents ?? 0), people: Number(c?.people ?? 0), automation: Number(c?.automation ?? 0) } };
   });
 
 /**

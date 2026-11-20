@@ -36,7 +36,7 @@ const view = "view" as const;
 
 export const mcpTools: McpToolDef[] = [
   // 084 AC-3: `mine` keeps the projects the viewer manages or is assigned to (their data scopes), for "which project?".
-  tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release. mine: true keeps only the projects you manage or are assigned to. agentFirst: its proposals come from its linked repo, never by hand.",
+  tool({ ...read, pin: view, name: "list_projects", description: "Active projects with health, sprint progress and next release. mine: true keeps only the projects you manage or are assigned to. agentFirst: its proposals come from its linked repo, never by hand, and its sprint, progress, health (with healthReason) and next release are worked out from those proposals and its releases.",
     input: z.object({ mine: z.boolean().optional() }),
     run: async (v, a) => { const all = await listProjects(v); return a.mine ? all.filter((p) => v.managedProjects.includes(p.id) || v.assignedProjects.includes(p.id)) : all; } }),
   // 008 AC-4: the Overview's Agent activity feed, and one line of it for its pin.
