@@ -6,7 +6,7 @@ import { getProject, listProjects } from "../server/queries";
 import { proposalDb } from "./proposal-db";
 
 const facts = (f: Partial<PortfolioFacts> = {}): PortfolioFacts =>
-  ({ open: 4, tasksDone: 23, tasksTotal: 31, failed: null, stale: null, verified: 0, release: null, stage: null, ...f });
+  ({ open: 4, tasksDone: 23, tasksTotal: 31, failed: null, blocked: null, verified: 0, release: null, stage: null, ...f });
 
 describe("121 agent-first portfolio columns", () => {
   it("AC-1 Sprint is continuous, with the open proposals", () => {
@@ -16,9 +16,9 @@ describe("121 agent-first portfolio columns", () => {
     expect(computePortfolio(facts())).toMatchObject({ sprintDone: 23, sprintTotal: 31, openProposals: 4 });
     expect(computePortfolio(facts({ open: 0, tasksDone: 0, tasksTotal: 0 })).openProposals).toBe(0);
   });
-  it("AC-3 Health: a failed verify, then a stale build, then on track", () => {
-    expect(computePortfolio(facts({ failed: "AMX-112", stale: "AMX-090" }))).toMatchObject({ health: "off-track", healthReason: "AMX-112 failed verify" });
-    expect(computePortfolio(facts({ stale: "AMX-090" }))).toMatchObject({ health: "at-risk", healthReason: "AMX-090 unchanged for 14+ days" });
+  it("AC-3 Health: a failed verify, then a blocked proposal, then on track", () => {
+    expect(computePortfolio(facts({ failed: "AMX-112", blocked: "AMX-090" }))).toMatchObject({ health: "off-track", healthReason: "AMX-112 failed verify" });
+    expect(computePortfolio(facts({ blocked: "AMX-090" }))).toMatchObject({ health: "at-risk", healthReason: "AMX-090 blocked" });
     expect(computePortfolio(facts())).toMatchObject({ health: "on-track", healthReason: null });
   });
   it("AC-4 Next release: a release short of Prod, then verified waiting, then none", () => {

@@ -17,6 +17,9 @@ What changes on screen, and where to see it: [`121-agent-first-portfolio-columns
 - The amax row on Portfolio shows a computed Sprint, Progress, Health and Next release, each with a short reason.
 - Amendment 1 (product owner, 2026-11-20, from a screenshot): long values wrapped and the row looked messy, so Sprint
   and Next release keep a short main line with the detail as a small second line, and Progress drops "tasks".
+- Amendment 2 (product owner, 2026-11-20, review round 3 escalation): amax doesn't record when a proposal entered its
+  phase, and three rounds of guessing a 14-day "unchanged" clock from proxies kept failing review. At risk now reads the
+  repo's own status: an open proposal marked `blocked`. No clock, no migration.
 - Manager says "No manager" instead of a blank, and Margin says "Internal" for an internal project.
 
 ## Acceptance Criteria
@@ -30,10 +33,10 @@ Each rule below applies to an agent-first project only. A manual project keeps i
    (for example "23 of 31", like a manual project's row). With no open proposal, it reads "Nothing open" instead of "0 of 0".
 3. **AC-3 Health** comes from the open proposals:
    - **off-track** when any of them has a latest verify verdict of FAIL;
-   - **at-risk** when none has failed but one in `building` hasn't been updated for 14 days or more;
+   - **at-risk** when none has failed but one's repo status is `blocked` (amendment 2);
    - **on-track** otherwise.
 
-   The chip's tooltip and its `sr` text name the reason (for example "Off track: AMX-112 failed verify").
+   The chip's tooltip and its `sr` text name the reason (for example "Off track: AMX-112 failed verify", "At risk: AMX-090 blocked").
 4. **AC-4 Next release.** It is the newest release that hasn't reached the project's Prod environment, with the
    furthest environment it is in now as a small second line ("v0.14.0" over "in Staging", or "not deployed"). With no
    such release but with verified proposals waiting, it reads "3 verified" over "not released". With neither, it
