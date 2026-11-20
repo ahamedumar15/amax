@@ -27,7 +27,7 @@ export type ProjectRow = {
   sprintStart: string | null; sprintEnd: string | null;
   /** 093: the linked repo, and whether it's agent-first (the repo has brought in proposals; no manual creation). */
   repoUrl: string | null; agentFirst: boolean;
-  healthReason: string | null; openProposals: number | null;
+  healthReason: string | null; nextReleaseNote: string | null; openProposals: number | null;
 };
 
 const project = (r: Record<string, unknown>): ProjectRow => ({
@@ -36,7 +36,7 @@ const project = (r: Record<string, unknown>): ProjectRow => ({
   sprintDone: Number(r.sprint_done), sprintTotal: Number(r.sprint_total), health: r.health as string, riskPct: num(r.risk_pct),
   marginPct: num(r.margin_pct), contractValue: num(r.contract_value), invoiced: num(r.invoiced), nextRelease: (r.next_release as string | null) ?? null,
   sprintStart: isoDate(r.sprint_start), sprintEnd: isoDate(r.sprint_end),
-  repoUrl: (r.repo_url as string | null) ?? null, agentFirst: r.agent_first === true, healthReason: null, openProposals: null,
+  repoUrl: (r.repo_url as string | null) ?? null, agentFirst: r.agent_first === true, healthReason: null, nextReleaseNote: null, openProposals: null,
 });
 
 const withPortfolio = async (tx: Tx, rows: ProjectRow[]): Promise<ProjectRow[]> => {

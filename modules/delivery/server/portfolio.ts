@@ -12,14 +12,15 @@ export type PortfolioFacts = {
 
 export type Computed = {
   sprint: string; sprintDone: number; sprintTotal: number; health: "on-track" | "at-risk" | "off-track";
-  healthReason: string | null; nextRelease: string | null; openProposals: number;
+  healthReason: string | null; nextRelease: string | null; nextReleaseNote: string | null; openProposals: number;
 };
 
 export function computePortfolio(f: PortfolioFacts): Computed {
   const health = f.failed ? "off-track" : f.stale ? "at-risk" : "on-track";
   const healthReason = f.failed ? `${f.failed} failed verify` : f.stale ? `${f.stale} unchanged for ${STALE_DAYS}+ days` : null;
-  const nextRelease = f.release ? `${f.release}, ${f.stage ? `in ${f.stage}` : "not deployed"}` : f.verified ? `${f.verified} verified, not released` : null;
-  return { sprint: `Continuous · ${f.open} open`, sprintDone: f.tasksDone, sprintTotal: f.tasksTotal, health, healthReason, nextRelease, openProposals: f.open };
+  const nextRelease = f.release ?? (f.verified ? `${f.verified} verified` : null);
+  const nextReleaseNote = f.release ? (f.stage ? `in ${f.stage}` : "not deployed") : f.verified ? "not released" : null;
+  return { sprint: "Continuous", sprintDone: f.tasksDone, sprintTotal: f.tasksTotal, health, healthReason, nextRelease, nextReleaseNote, openProposals: f.open };
 }
 
 export const marginLabel = (billing: string, marginPct: number | null) =>

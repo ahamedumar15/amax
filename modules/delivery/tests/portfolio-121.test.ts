@@ -10,7 +10,7 @@ const facts = (f: Partial<PortfolioFacts> = {}): PortfolioFacts =>
 
 describe("121 agent-first portfolio columns", () => {
   it("AC-1 Sprint is continuous, with the open proposals", () => {
-    expect(computePortfolio(facts()).sprint).toBe("Continuous · 4 open");
+    expect(computePortfolio(facts())).toMatchObject({ sprint: "Continuous", openProposals: 4 });
   });
   it("AC-2 Progress sums the open proposals' tasks", () => {
     expect(computePortfolio(facts())).toMatchObject({ sprintDone: 23, sprintTotal: 31, openProposals: 4 });
@@ -22,10 +22,10 @@ describe("121 agent-first portfolio columns", () => {
     expect(computePortfolio(facts())).toMatchObject({ health: "on-track", healthReason: null });
   });
   it("AC-4 Next release: a release short of Prod, then verified waiting, then none", () => {
-    expect(computePortfolio(facts({ release: "v0.14.0", stage: "Staging", verified: 3 })).nextRelease).toBe("v0.14.0, in Staging");
-    expect(computePortfolio(facts({ release: "v0.15.0" })).nextRelease).toBe("v0.15.0, not deployed");
-    expect(computePortfolio(facts({ verified: 3 })).nextRelease).toBe("3 verified, not released");
-    expect(computePortfolio(facts()).nextRelease).toBeNull();
+    expect(computePortfolio(facts({ release: "v0.14.0", stage: "Staging", verified: 3 }))).toMatchObject({ nextRelease: "v0.14.0", nextReleaseNote: "in Staging" });
+    expect(computePortfolio(facts({ release: "v0.15.0" }))).toMatchObject({ nextRelease: "v0.15.0", nextReleaseNote: "not deployed" });
+    expect(computePortfolio(facts({ verified: 3 }))).toMatchObject({ nextRelease: "3 verified", nextReleaseNote: "not released" });
+    expect(computePortfolio(facts())).toMatchObject({ nextRelease: null, nextReleaseNote: null });
   });
   it("AC-5 Margin says Internal for an internal project, the stored margin otherwise", () => {
     expect(marginLabel("internal", null)).toBe("Internal");
@@ -50,7 +50,7 @@ describe.skipIf(!hasDb)("121 AC-7 one source for the portfolio row", () => {
   it("AC-7 list_projects and get_project agree; a manual project keeps its stored values", async () => {
     const all = await listProjects(maya);
     const hri = all.find((p) => p.key === "HRI")!;
-    expect(hri).toMatchObject({ agentFirst: true, sprint: `Continuous · ${hri.openProposals} open`, health: "off-track", healthReason: "HRI-801 failed verify" });
+    expect(hri).toMatchObject({ agentFirst: true, sprint: "Continuous", health: "off-track", healthReason: "HRI-801 failed verify" });
     expect(hri.openProposals).toBeGreaterThan(0);
     expect(hri.sprintTotal).toBeGreaterThanOrEqual(5);
     expect((await getProject(maya, "HRI"))!.project).toEqual(hri);

@@ -15,6 +15,8 @@ deployments. Asked by the product owner (2026-11-20).
 What changes on screen, and where to see it: [`121-agent-first-portfolio-columns`](../../mock/index.html#121-agent-first-portfolio-columns)
 
 - The amax row on Portfolio shows a computed Sprint, Progress, Health and Next release, each with a short reason.
+- Amendment 1 (product owner, 2026-11-20, from a screenshot): long values wrapped and the row looked messy, so Sprint
+  and Next release keep a short main line with the detail as a small second line, and Progress drops "tasks".
 - Manager says "No manager" instead of a blank, and Margin says "Internal" for an internal project.
 
 ## Acceptance Criteria
@@ -22,10 +24,10 @@ What changes on screen, and where to see it: [`121-agent-first-portfolio-columns
 Each rule below applies to an agent-first project only. A manual project keeps its stored values exactly as today.
 "Open proposals" means the project's proposals that aren't released or withdrawn (`withdrawnIn`).
 
-1. **AC-1 Sprint.** The cell reads "Continuous", plus the number of open proposals (for example
-   "Continuous · 4 open"), because an agent-first project has no sprints.
+1. **AC-1 Sprint.** The cell reads "Continuous", because an agent-first project has no sprints, with the
+   number of open proposals as a small second line ("4 open").
 2. **AC-2 Progress.** The bar and its label are the sums of `tasks_done` and `tasks_total` over the open proposals
-   (for example "23 of 31 tasks"). With no open proposal, it reads "Nothing open" instead of "0 of 0".
+   (for example "23 of 31", like a manual project's row). With no open proposal, it reads "Nothing open" instead of "0 of 0".
 3. **AC-3 Health** comes from the open proposals:
    - **off-track** when any of them has a latest verify verdict of FAIL;
    - **at-risk** when none has failed but one in `building` hasn't been updated for 14 days or more;
@@ -33,8 +35,9 @@ Each rule below applies to an agent-first project only. A manual project keeps i
 
    The chip's tooltip and its `sr` text name the reason (for example "Off track: AMX-112 failed verify").
 4. **AC-4 Next release.** It is the newest release that hasn't reached the project's Prod environment, with the
-   furthest environment it is in now (for example "v0.14.0, in Staging"). With no such release but with verified
-   proposals waiting, it reads "3 verified, not released". With neither, it reads "–".
+   furthest environment it is in now as a small second line ("v0.14.0" over "in Staging", or "not deployed"). With no
+   such release but with verified proposals waiting, it reads "3 verified" over "not released". With neither, it
+   reads "–". `list_projects` returns the second line as `nextReleaseNote`.
 5. **AC-5 Margin.** An internal project (`billing = 'internal'`, agent-first or not) shows "Internal", not "–". A billed
    agent-first project keeps its stored margin, since finance data is out of scope here.
 6. **AC-6 Manager** is never computed, because naming a manager is a person's decision. A null manager shows
