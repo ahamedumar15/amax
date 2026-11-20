@@ -24,6 +24,8 @@ describe.skipIf(!hasDb)("121 review: where the agent-first row's next release is
       { nextRelease: "v1.2.0", nextReleaseNote: "in QA" }],
     ["a release whose only deployment was rolled back is not deployed", async () => { await release("v1.3.0", 1); await deploy("v1.3.0", "UAT", "rolled-back"); },
       { nextRelease: "v1.3.0", nextReleaseNote: "not deployed" }],
+    ["a release rolled back in Prod is not live, so it is still next", async () => { await release("v1.4.0", 0); await deploy("v1.4.0", "Prod", "deployed", true); await deploy("v1.4.0", "Prod", "rolled-back"); },
+      { nextRelease: "v1.4.0", nextReleaseNote: "not deployed" }],
   ])("AC-4 %s", async (_, seed, want) => {
     await seed();
     expect(await afx.row()).toMatchObject(want);

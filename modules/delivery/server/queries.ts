@@ -41,7 +41,7 @@ const project = (r: Record<string, unknown>): ProjectRow => ({
 
 const withPortfolio = async (tx: Tx, rows: ProjectRow[]): Promise<ProjectRow[]> => {
   const facts = await portfolioFacts(tx, rows.filter((p) => p.agentFirst).map((p) => p.id));
-  return rows.map((p) => { const f = facts.get(p.id); return f ? { ...p, ...computePortfolio(f) } : p; });
+  return rows.map((p) => { const f = facts.get(p.id); return f ? { ...p, ...computePortfolio(f), riskPct: null } : p; });
 };
 
 export const listProjects = (v: Viewer, status: "active" | "closed" = "active") =>
