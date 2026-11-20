@@ -48,13 +48,15 @@ Each rule below applies to an agent-first project only. A manual project keeps i
 
 ## Tasks
 
-- [ ] `T1` — Portfolio cells read the computed values: Sprint label, Progress "N of M tasks" or "Nothing open", Health chip with its reason as tooltip and `sr` text, Margin "Internal", Manager "No manager" (AC-1–AC-6)
-  Files: modules/delivery/ui/ProjectsPage.tsx, modules/delivery/ui/Avatar.tsx
+- [x] `T1` — Portfolio cells read the computed values: Sprint label, Progress "N of M tasks" or "Nothing open", Health chip with its reason as tooltip and `sr` text, Margin "Internal", Manager "No manager" (AC-1–AC-6)
+  Files: modules/delivery/ui/ProjectsPage.tsx
   Depends: T2
-- [ ] `T2` — One read-time function computes an agent-first project's Sprint, Progress, Health (and its reason) and Next release from its open proposals, releases and Prod deployments; internal billing gives margin "Internal"; `listProjects` and `getProject` apply it, so `list_projects`, `get_project`, the table, lede and tickets share it; manual projects unchanged; no writes, no migration (AC-1–AC-5, AC-7)
+- [x] `T2` — One read-time function computes an agent-first project's Sprint, Progress, Health (and its reason) and Next release from its open proposals, releases and Prod deployments; internal billing gives margin "Internal"; `listProjects` and `getProject` apply it, so `list_projects`, `get_project`, the table, lede and tickets share it; manual projects unchanged; no writes, no migration (AC-1–AC-5, AC-7)
   Files: modules/delivery/server/portfolio.ts, modules/delivery/server/queries.ts, modules/delivery/mcp.ts
-- [ ] `T3` — Unit tests for every rule's branches (open/none, FAIL/stale 14 days/fine, release not in Prod/verified waiting/neither, internal vs billed margin, null manager, manual project untouched), and an e2e for the AMX row on `/delivery` (AC-8)
+- [x] `T3` — Unit tests for every rule's branches (open/none, FAIL/stale 14 days/fine, release not in Prod/verified waiting/neither, internal vs billed margin, null manager, manual project untouched), and an e2e for the AMX row on `/delivery` (AC-8)
   Files: modules/delivery/tests/portfolio-121.test.ts, apps/web/tests/e2e/delivery.spec.ts
   Depends: T1, T2
 
 ## Verify
+
+Quality: 57 → 57 duplicated lines in modules/delivery (none in 121's files; no refactor).

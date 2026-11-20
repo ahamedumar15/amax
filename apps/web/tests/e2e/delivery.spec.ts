@@ -119,6 +119,17 @@ test("roles without delivery access don't get the screens", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1 })).not.toHaveText("Projects");
 });
 
+test("121 AC-8 the Portfolio's AMX row says Internal and No manager; a manual project keeps its stored values", async ({ page }) => {
+  await signIn(page);
+  const row = (key: string) => page.getByRole("row").filter({ has: page.locator(`a[href="/delivery/p/${key}"]`) }).first();
+  const amxRow = row("AMX");
+  await expect(amxRow.locator('td[data-label="Margin"]')).toHaveText("Internal");
+  await expect(amxRow.locator('td[data-label="Manager"]')).toHaveText("No manager");
+  await expect(row("CON").locator('td[data-label="Sprint"]')).toHaveText("Sprint 18");
+  await expect(row("CON").locator('td[data-label="Margin"]')).toHaveText("38.2%");
+  expect(await axe(page)).toEqual([]);
+});
+
 test("039 the AMX board shows amax's own specs in the same phases the queue reports", async ({ page }) => {
   const records = await amx();
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/AMX");
