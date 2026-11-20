@@ -65,4 +65,24 @@ Each rule below applies to an agent-first project only. A manual project keeps i
 
 ## Verify
 
+**Verdict:** PASS (every AC met; review stopped at the five-pass cap with one major open, below)
+- AC-1: pass — Sprint "Continuous" with "N open" below; `portfolio-121.test.ts` AC-1, live AMX row "Continuous / 53 open" (shots/app.png)
+- AC-2: pass — Progress sums the open proposals' tasks ("255 of 255"); "Nothing open" with none; `portfolio-121.test.ts` AC-2
+- AC-3: pass — Off track on a FAIL verdict, At risk on a repo-`blocked` proposal (amendment 2), else On track, reason as tooltip and small text; `portfolio-121.test.ts` AC-3, `portfolio-121-status.test.ts` (4 cases)
+- AC-4: pass — newest release not live in Prod and newer than the live one, with its current environment (latest non-voided deployment per environment, rollbacks excluded), else "N verified / not released", else "–"; `portfolio-121-facts.test.ts` (5 cases), `portfolio-121-offers.test.ts` (3 cases, the pin offer shares the rule)
+- AC-5: pass — "Internal" for internal billing, stored margin otherwise; `portfolio-121.test.ts` AC-5, e2e 121 AC-8, shots/app.png
+- AC-6: pass — "No manager" for a null manager; e2e 121 AC-8, shots/app.png
+- AC-7: pass — `withPortfolio` in `listProjects`/`getProject` is the one source; `portfolio-121.test.ts` AC-7 (list_projects equals get_project, manual CON unchanged); live `list_projects` on the dev DB; no migration
+- AC-8: pass — unit and DB tests above; e2e `delivery.spec.ts` "121 AC-8" written, not run on this host (needs the e2e server; CI runs it)
+
+Commands (base scoped to 120's head `78db0e55` for size and review, then restored):
+- `vitest run` in modules/delivery against the dev Postgres: 749/750; the one failure is pre-existing and host-only (`releases.test.ts` matches `modules/delivery/` with forward slashes; Windows paths). `authors-091`, `commits-104`, `create-project-surfaces` time out only under full-suite load and pass alone.
+- `tsc --noEmit` modules/delivery: 0 · apps/web: 0 · `node scripts/check-graph.mjs`: 0
+- `specclaw-verify size`: 83 production lines against 78db0e55 (cap 400): 0
+- `specclaw-preset-check .`: exit 1, 4675 repo-wide, all pre-existing; none added by 121 (new files clean; touched files were already over 80 lines and commented)
+- `specclaw-quality-scan . --gate`: exit 2, not_run (complexity tool reported 0 functions); duplication none in 121's files
+- Screenshots: shots/app.png (live /delivery, demo user), shots/mock.png (mock#121); the AMX row matches the mock
+
+Review: OPEN at the cap — 5 rounds (opus/opus), last round 0/1/0 b/M/m; fix proof not proven (no review.test_command). Stopped per AGENTS.md after the fifth pass. Open major [B4] `in-prod.ts:16`: two "live in Prod" rules (`liveOnProd` for the next release, `liveProdDeployments` for In Prod) disagree after a Prod rollback; rounds 4 and 5 asked for opposite fixes, so it needs a product decision. Recorded in follow-ups.md. No blocker open.
+
 Quality: 57 → 57 duplicated lines in modules/delivery (none in 121's files; no refactor).
