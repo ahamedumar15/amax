@@ -27,6 +27,7 @@ export const marginLabel = (billing: string, marginPct: number | null) =>
   billing === "internal" ? "Internal" : marginPct === null ? "–" : `${marginPct.toFixed(1)}%`;
 
 const OPEN = sql`p.phase <> 'released' and not ${withdrawnIn("p")}`;
+const LAST_PROGRESS = sql`coalesce((select max(t.done_at) from delivery.task t where t.proposal_id = p.id), p.created_at)`;
 
 export async function portfolioFacts(tx: Tx, projectIds: string[], now: Date): Promise<Map<string, PortfolioFacts>> {
   if (!projectIds.length) return new Map();
@@ -38,14 +39,16 @@ export async function portfolioFacts(tx: Tx, projectIds: string[], now: Date): P
       (select coalesce(sum(p.tasks_done), 0)::int from delivery.proposal p where p.project_id = pr.id and ${OPEN}) as tasks_done,
       (select coalesce(sum(p.tasks_total), 0)::int from delivery.proposal p where p.project_id = pr.id and ${OPEN}) as tasks_total,
       (select min(p.key) from delivery.proposal p where p.project_id = pr.id and ${OPEN} and upper(p.meta->>'verdict') = 'FAIL') as failed,
-      (select min(p.key) from delivery.proposal p where p.project_id = pr.id and ${OPEN} and p.phase = 'building' and p.updated_at <= ${staleBefore}::timestamptz) as stale,
+      (select min(p.key) from delivery.proposal p where p.project_id = pr.id and ${OPEN} and p.phase = 'building' and ${LAST_PROGRESS} <= ${staleBefore}::timestamptz) as stale,
       (select count(*)::int from delivery.proposal p where p.project_id = pr.id and ${OPEN} and p.phase = 'verified') as verified,
       nr.version as release,
       (select e.name from delivery.deployment d join delivery.environment e on e.id = d.environment_id
-        where d.release_id = nr.id and d.voided_at is null order by e.position desc, d.at desc limit 1) as stage
+        where d.release_id = nr.id and d.voided_at is null and d.status <> 'rolled-back' order by e.position desc, d.at desc limit 1) as stage
     from delivery.project pr
     left join lateral (select r.id, r.version from delivery.release r where r.project_id = pr.id
-      and not exists (${liveProdDeployments(sql`r.id`)}) order by r.created_at desc limit 1) nr on true
+      and not exists (${liveProdDeployments(sql`r.id`)})
+      and r.created_at > coalesce((select max(s.created_at) from delivery.release s where s.project_id = pr.id and exists (${liveProdDeployments(sql`s.id`)})), '-infinity')
+      order by r.created_at desc limit 1) nr on true
     where pr.id in (${ids})`);
   return new Map(rows.map((r) => [r.id as string, {
     open: Number(r.open), tasksDone: Number(r.tasks_done), tasksTotal: Number(r.tasks_total), failed: (r.failed as string | null) ?? null,

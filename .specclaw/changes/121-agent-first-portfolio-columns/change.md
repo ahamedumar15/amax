@@ -51,7 +51,7 @@ Each rule below applies to an agent-first project only. A manual project keeps i
 
 ## Tasks
 
-- [x] `T1` — Portfolio cells read the computed values: Sprint label, Progress "N of M tasks" or "Nothing open", Health chip with its reason as tooltip and `sr` text, Margin "Internal", Manager "No manager" (AC-1–AC-6)
+- [x] `T1` — Portfolio cells read the computed values: Sprint "Continuous" over "N open", Progress "N of M" or "Nothing open", Health chip with its reason as tooltip and visible small text, Margin "Internal", Manager "No manager" (AC-1–AC-6)
   Files: modules/delivery/ui/ProjectsPage.tsx
   Depends: T2
 - [x] `T2` — One read-time function computes an agent-first project's Sprint, Progress, Health (and its reason) and Next release from its open proposals, releases and Prod deployments; internal billing gives margin "Internal"; `listProjects` and `getProject` apply it, so `list_projects`, `get_project`, the table, lede and tickets share it; manual projects unchanged; no writes, no migration (AC-1–AC-5, AC-7)
