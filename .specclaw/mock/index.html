@@ -3908,6 +3908,42 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   <p class="lede">120: Next.js moves off 16.4.2 (a known vulnerability); the app looks the same.</p>
 </section>
 
+<!-- ================= 122 Project tabs layout ================= -->
+<section data-change="122-project-tabs-layout" id="122-project-tabs-layout" data-roles="admin leadership pm engineer" data-title="Project tabs" data-nav="no" data-icon="grid" data-parent="001-amax-foundation-project">
+  <p class="lede">122: every project tab shares one header, so the tab bar never moves. Fictional data (Orbit Notes, an agent-first project).</p>
+
+  <h2 style="margin-top:20px">1. Team tab</h2>
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span><a href="#">Orbit Notes</a><span>/</span>Team</nav>
+  <div class="row head"><div><h1 style="display:flex;align-items:center;gap:8px;margin:0">Orbit Notes <button type="button" aria-label="How Orbit Notes' proposals get here" style="width:18px;height:18px;border-radius:50%;border:1px solid currentColor;background:none;color:inherit;font-size:11px;line-height:1;padding:0;opacity:.6">i</button></h1>
+    <p class="lede">Continuous. Released means it reached Prod.</p></div>
+    <div class="actions"><button class="btn sm primary" type="button">✦ Ask amax · Add someone to ORB</button></div></div>
+  <div class="tabs" role="group" aria-label="Sections" style="margin:0 0 20px"><a class="btn sm" href="#">Board</a><a class="btn sm" href="#">Proposals</a><a class="btn sm" href="#">Releases</a><a class="btn sm" href="#">Risks and decisions</a><a class="btn sm" href="#" aria-current="page" aria-pressed="true">Team</a><a class="btn sm" href="#">Contract</a></div>
+  <div class="card pinnable" style="padding-bottom:0"><div class="card-head" style="margin-bottom:0;padding-bottom:18px"><h2>PM: Priya Nadarajah</h2><button class="pin" type="button" aria-label="Pin Orbit Notes PM">📌</button></div></div>
+  <div class="card flush pinnable" style="margin-top:16px">
+    <div class="card-head"><h2 style="display:flex;align-items:center;gap:6px">Team <button class="pin" type="button" aria-label="Pin Orbit Notes team">📌</button></h2><span class="muted" style="font-size:13px;margin-left:auto">From allocations</span></div>
+    <table class="tbl"><thead><tr><th>Person</th><th>Role</th><th class="num">Nov</th><th class="num">Dec</th><th class="num">Jan</th></tr></thead>
+      <tbody><tr><td>Kasun Dias <span class="chip info">until further notice</span></td><td>Software engineer</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td></tr>
+        <tr><td>Nethmi Perera</td><td>QA engineer</td><td class="num">50%</td><td class="num">50%</td><td class="num muted">–</td></tr></tbody></table>
+  </div>
+
+  <h2 style="margin-top:32px">2. Proposals tab: the (i) beside the title, no Project column</h2>
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#">Projects</a><span>/</span><a href="#">Orbit Notes</a><span>/</span>Proposals</nav>
+  <div class="row head"><div><h1 style="display:flex;align-items:center;gap:8px;margin:0">Orbit Notes <button type="button" aria-label="How Orbit Notes' proposals get here" style="width:18px;height:18px;border-radius:50%;border:1px solid currentColor;background:none;color:inherit;font-size:11px;line-height:1;padding:0;opacity:.6">i</button></h1>
+    <p class="lede">Continuous. Released means it reached Prod.</p></div></div>
+  <div class="tabs" role="group" aria-label="Sections" style="margin:0 0 20px"><a class="btn sm" href="#">Board</a><a class="btn sm" href="#" aria-current="page" aria-pressed="true">Proposals</a><a class="btn sm" href="#">Releases</a><a class="btn sm" href="#">Risks and decisions</a><a class="btn sm" href="#">Team</a><a class="btn sm" href="#">Contract</a></div>
+  <div class="card" style="padding:14px 20px"><b style="font-size:20px">3</b> <span class="muted">Unassigned</span></div>
+  <div class="card flush" style="margin-top:16px"><div class="card-head"><h2>Proposals</h2></div>
+    <table class="tbl"><thead><tr><th>Proposal</th><th>Phase</th><th>Tasks</th><th class="num">Time</th><th>Release</th><th>Owner</th></tr></thead>
+      <tbody><tr><td><b>ORB-044</b> Offline drafts <span class="chip warn">Unassigned</span></td><td><span class="chip good">Verified</span></td><td>4 of 4</td><td class="num">0 h</td><td class="muted">None</td><td class="muted">Unassigned</td></tr>
+        <tr><td><b>ORB-031</b> Shared notebooks</td><td><span class="chip">Released</span></td><td>6 of 6</td><td class="num">5.5 h</td><td>v0.13.0</td><td class="muted">Not recorded</td></tr></tbody></table></div>
+
+  <h2 style="margin-top:32px">3. Releases tab with nothing released yet</h2>
+  <div class="card"><div class="card-head"><h2>Release map</h2><span class="chip" style="margin-left:auto">Active · All</span></div>
+    <p class="muted" style="margin:0;font-size:13.5px">No active releases on Orbit Notes. Switch to All to see past ones.</p></div>
+  <div class="card" style="margin-top:16px"><div class="card-head"><h2>All releases</h2><button class="btn sm primary" type="button" style="margin-left:auto">✦ New release</button></div>
+    <p style="text-align:center;margin:8px 0 4px"><b>No releases yet</b></p><p class="muted" style="text-align:center;margin:0;font-size:13px">Ask amax to cut one when proposals are verified.</p></div>
+</section>
+
 <!-- ================= 121 Agent-first portfolio columns ================= -->
 <section data-change="121-agent-first-portfolio-columns" id="121-agent-first-portfolio-columns" data-roles="admin leadership pm engineer finance" data-title="Agent-first portfolio row" data-nav="no" data-icon="grid" data-parent="001-amax-foundation-projects">
   <h1>Agent-first portfolio row</h1>
