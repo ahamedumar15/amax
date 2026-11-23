@@ -74,29 +74,35 @@ What changes on screen, and where to see it: [`122-project-tabs-layout`](../../m
 
 ## Verify
 
-**Verdict:** pending — the local review loop runs after the `contracts.ts` comment removal is committed
+**Verdict:** PASS
+Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/1/1 b/M/m; fix proof not proven: no review.test_command configured, so no test could prove the fix
+Stopped at the five-pass cap (AGENTS.md). No blocker. Open, in `follow-ups.md`: the major (round 5) asking that the
+no-`delivery:read` test run as a table (HR signed in, an Admin viewing as HR, and Delivery's real slot), and the
+minor duplicating `.card-head.start` in `allocations.css`; earlier minors still open: a second `initials()`, no contract
+test for `PROJECT_HEADER_SLOT`, and the header's heavier project read. Fixes after the cap go in their own change.
 
-Checked 2026-11-23 at `d9410f8` plus that one-line removal, Windows 11, dev app on :3000 with the local dev database.
+Checked 2026-11-23 at `38ddc40`, Windows 11, dev app on :3000 with the local dev database.
 
-- AC-1: pass — one `ProjectHeader` (Delivery UI) renders on all six tabs: the Board and the section pages call it directly, and Team (Allocations) renders it from `PROJECT_HEADER_SLOT`. The lede comes from `server/header.ts` (`tests/project-header-122.test.ts` AC1).
-- AC-2: pass — the tab bar's top edge is at 237.3 px on all six AMX tabs, light and dark (spread 0.0 px; it was 219 to 266 px); e2e `project-tabs.spec.ts` AC2.
-- AC-3: pass — one (i) per tab, 8 px right of the h1 on its centre line, and none outside `.dv-head .dv-title` (e2e AC3); the tooltip is the existing `AgentFirstLine` unchanged.
-- AC-4: pass (amendment 1) — Team is one card: the PM row (initials, name, "Project manager", pin) leads, then the table; Umar's row on AMX carries the PM chip (`shots/app-team-dark.png`); e2e AC4 on CON (one card, the lead row above the table, its pin).
-- AC-5: pass — the head's title, pin and "From allocations" sit on one line (e2e AC5).
-- AC-6: pass — no Project column on CON's Proposals and Releases tabs; the all-projects pages keep it (e2e AC6).
-- AC-7: pass — AMX: "No active releases on amax. Switch to All to see past ones." and "No releases yet" with no table (e2e AC7, `shots/app-releases-light.png`).
-- AC-8: pass — at 390 px no tab scrolls the page sideways and the tab bar stays inside the viewport (e2e AC8, `shots/app-team-390.png`).
-- AC-9: pass — Risks and decisions and Contract changed only by the shared header (`ProjectSections.tsx` diff).
-- AC-10: pass — e2e `project-tabs.spec.ts` 5/5 (run against the dev app with a scratch config; CI runs it in the `screens` group); axe clean on Team, Proposals and Releases in both themes; 107's Team e2e moved to the PM row. Not run here: the delivery visual test (it needs the signed-in suite's own database, which doesn't set up on Windows); CI runs it.
+- AC-1: pass — one `ProjectHeader` (Delivery UI) renders on all six tabs: the Board and the section pages call it directly; Team (Allocations) renders it through `PROJECT_HEADER_SLOT`, whose `load` returns the header data or null. The Team page shows "Project not found" for an empty slot or null, and "Projects aren't open to your role" without `delivery:read` (`modules/allocations/tests/team-header-122.test.ts`, 4 cases); the lede is one rule (`modules/delivery/tests/project-header-122.test.ts`).
+- AC-2: pass — the tab bar's top edge is the same on all six AMX tabs, light and dark (measured 237.3 px, spread 0.0 px, before 219 to 266 px); e2e `project-tabs.spec.ts` AC2 AC3.
+- AC-3: pass — on AMX (agent-first; the e2e links its repo for the test) exactly one (i) on every tab, inside `.dv-head .dv-title`, light and dark (e2e AC2 AC3, round 3 fix: it ran on Contoso before, where it checked nothing); the tooltip is the existing `AgentFirstLine`.
+- AC-4: pass (amendment 1) — Team is one card: the PM row (initials, name, "Project manager", pin) leads, then the table; an allocated active PM's row carries the PM chip, a deactivated PM's does not (`shots/app-team-dark.png`); e2e AC4 on Contoso.
+- AC-5: pass — the Team card's head keeps the title, pin and "From allocations" on one line (e2e AC5).
+- AC-6: pass — no Project column on Contoso's Proposals and Releases tabs; the all-projects pages keep it (e2e AC6).
+- AC-7: pass — AMX has no releases: the map reads "No releases on amax yet." and the list "No releases yet" with no table (e2e AC7; round 4: with none at all the map no longer points to All).
+- AC-8: pass — at 390 px no tab scrolls the page sideways and the tab bar stays in the viewport (e2e AC8, `shots/app-team-390.png`).
+- AC-9: pass — Risks and decisions and Contract change only by the shared header (`ProjectSections.tsx`).
+- AC-10: pass — e2e `project-tabs.spec.ts` 5/5 against the dev app (scratch config; CI runs it in the `screens` group); axe clean on Team, Proposals and Releases in both themes; 107's Team e2e reads the PM row. Not run here: the delivery visual test (needs the signed-in suite's own database, which doesn't set up on Windows); CI runs it.
 
-Commands (exit codes):
+Commands (exit codes), at `38ddc40`:
 - `pnpm lint` (36 tasks, module graph check ok): 0
-- `pnpm turbo run build --filter=./apps/web`: 0 (compiled in 22.7 s)
-- `pnpm turbo run test --filter=@amax/delivery --filter=@amax/allocations --concurrency=1`: 1 — 749/751 passed; `releases.test` (Windows backslash paths, host-only) and `create-project-surfaces` (passes alone, a load flake) fail on this host only, neither touched here
-- `npx playwright test` (scratch config, `project-tabs.spec.ts` only): 0, 5 passed
-- `specclaw-verify size` with `base_branch` 20a43e2286 for the run: 0 — 241 production lines (cap 400)
-- `specclaw-preset-check .`: 1 — 4,674 violations repo-wide, pre-existing (as recorded at 120); 122's new files are clean; the comment 122 added to `contracts.ts` was removed; touched files over 80 lines were already over (ProjectPage 127 → 109)
-- `specclaw-quality-scan . --gate`: 2 — the complexity tool did not run (0 functions counted); duplication ran: 872 lines repo-wide, none in this change's files
+- `pnpm turbo run build --filter=./apps/web`: 0 (compiled in 22.7 s, at `503bd21`)
+- `pnpm turbo run test --filter=@amax/delivery --filter=@amax/allocations --concurrency=1 --continue`: 1 — Allocations 82/82; Delivery 749/751, the two failures host-only (`releases.test` backslash paths; `create-project-surfaces` passes alone), neither touched here
+- `npx playwright test` (scratch config, `E2E_DB=amax`, `project-tabs.spec.ts`): 0, 5 passed
+- `specclaw-verify size` with `base_branch` 20a43e2286 for the run: 0 — 241 production lines at the build (cap 400)
+- `specclaw-preset-check .`: 1 — repo-wide, pre-existing (as at 120); 122's new files are clean
+- `specclaw-quality-scan . --gate`: 2 — the complexity tool did not run (0 functions counted); duplication: 872 lines repo-wide, none in this change's files
+- `specclaw-review` rounds 1 to 5 with `base_branch` 20a43e2286 for the run (config restored after)
 
 Screenshots: `shots/mock.png`, `shots/app-{team,proposals,releases,board}-{dark,light}.png`, `shots/app-team-390.png`
 
