@@ -4,9 +4,11 @@ Projects, each project's board of specclaw proposals, and releases moving throug
 
 - **Owner:** `/modules/delivery/` in `.github/CODEOWNERS`
 - **Screens:** `/delivery` (portfolio), `/delivery/p/:key` (board + environments), `/delivery/proposals[/:phase]`, `/delivery/proposals/:key` (081: one proposal; the segment is a phase when it names one, else a key), `/delivery/releases`, `/delivery/releases/:projectKey/:version`
-- **Contracts** (`contracts.ts`): 122, additive: `PROJECT_HEADER_SLOT` (`delivery.project-header`), which Delivery
-  fills with the header every project tab shows (breadcrumb, name with the agent-first (i), lede, the tab's action,
-  tab bar); a module that serves a project tab, as Allocations does for Team, renders `provided(PROJECT_HEADER_SLOT)[0]`.
+- **Contracts** (`contracts.ts`): 122, additive: `PROJECT_HEADER_SLOT` (`delivery.project-header`), filled by Delivery
+  with a `ProjectHeaderSlot`: `load(viewer, projectKey)` returns the header's data (project and lede) or null, and
+  `Header({ head, section, title, actions })` draws the header every project tab shows (breadcrumb, name with the
+  agent-first (i), lede, the tab's action, tab bar). A module that serves a project tab, as Allocations does for Team,
+  calls `load`, shows "Project not found" for null or an empty slot, and then renders `Header`.
   107, additive: `ProjectRef` gains `billing` (Allocations defaults a new member's time
   from it), and `EVENTS.projectManagerChanged` (`delivery.project.manager_changed`, `ProjectManagerChanged`: from, to,
   toName and by). 104, additive: `CommitTime` gains `commits`, `source: "repo"`, `draftId` and `trusted` for a repo sync's draft, and its `day` is the person's own day; `dismissRepoDraft` (with `COMMIT_CLAIMS_JOB`) lets Time's job dismiss an untrusted repo draft when the person dismisses it (`server/ledger.ts`, 0024). `listProjectRefs`, `getProjectRef`, `managedProjectIds`, `PHASES`, `EVENTS`, `proposalHref`, and the `ReleaseDeployed` / `ProposalPhaseChanged` / `ProposalWithdrawn` / `TaskDone` / `CommitTime` payload types. 081, additive: `getProposalRef(tx, keyOrId)` (Time checks an entry's proposal with it) and `setProposalHours(tx, projectIds, totals)`, through which Time hands over approved hours per proposal for whole projects. Delivery can't read Time (Time depends on Delivery; the graph has no cycles), so this is the only writer of `proposal.hours`. `ProposalPhaseChanged` and `TaskDone` gained an optional `ownerUserId`. 081 amendment 6: `EVENTS.ownerChanged` (`delivery.proposal.owner_changed`, `ProposalOwnerChanged`): from, to and who, raised when a create, `update_proposal` or a Suggested owner accept or undo changes the owner (syncs don't).
