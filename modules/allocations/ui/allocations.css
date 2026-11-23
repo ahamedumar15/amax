@@ -55,3 +55,6 @@
 .team-card .team-lead>button:last-child,.team-card .team-lead>.pin:last-child{margin-left:auto}
 @media (max-width:600px){.team-card .team-lead{margin:0 16px 12px;flex-wrap:wrap}}
 .team-card .chip.pm{background:var(--sunken);color:var(--chip-agent);font-weight:600}
+.team-card>.card-head{justify-content:flex-start;flex-wrap:nowrap;align-items:baseline}
+.team-card>.card-head>.note{margin-left:auto;font-size:13px;color:var(--ink-3);white-space:nowrap}
+@media (max-width:600px){.team-card>.card-head{flex-wrap:wrap}.team-card>.card-head>.note{margin-left:0;flex-basis:100%}}

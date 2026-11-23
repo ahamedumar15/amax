@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { PROJECT_SECTIONS, projectHref, type ProjectSection } from "../contracts";
+import { PROJECT_SECTIONS, projectHref, type ProjectHeaderData, type ProjectSection } from "../contracts";
 import { AgentFirstLine } from "./AgentFirstLine";
 import "./delivery.css";
 
-export type HeaderProject = { key: string; name: string; agentFirst?: boolean; repoUrl?: string | null };
+export type HeaderProject = ProjectHeaderData["project"];
 
 export function ProjectTabs({ projectKey, current }: { projectKey: string; current: ProjectSection }) {
   return (

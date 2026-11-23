@@ -66,7 +66,7 @@ test("122 AC6 a project's Proposals and Releases tables have no Project column; 
 
 test("122 AC7 Releases on a project with none: one line for the map and an empty state for the list", async ({ page }) => {
   await signIn(page, "maya@lumenlabs.test", "/delivery/p/AMX/releases");
-  await expect(page.locator("main .card.map .dv-empty-line")).toHaveText("No active releases on amax. Switch to All to see past ones.");
+  await expect(page.locator("main .card.map .dv-empty-line")).toHaveText("No releases on amax yet.");
   const list = page.locator("main .card", { hasText: "All releases" });
   await expect(list.getByText("No releases yet")).toBeVisible();
   await expect(list.locator("table")).toHaveCount(0);

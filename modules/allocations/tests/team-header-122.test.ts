@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { isValidElement, type ReactNode } from "react";
-import { setProvided } from "@amax/core/server";
+import { ForbiddenError, setProvided } from "@amax/core/server";
+import { can } from "@amax/auth";
 import { hasDb } from "@amax/db/testdb";
 import { PROJECT_HEADER_SLOT, type ProjectHeaderSlot } from "@amax/delivery/contracts";
 import { ProjectTeamPage } from "../ui/ProjectTeamPage";
@@ -35,5 +36,14 @@ describe.skipIf(!hasDb)("122 the Team page and Delivery's header slot (Postgres)
     expect(Boolean(header)).toBe(shown);
     expect(text(page).includes("Project not found")).toBe(!shown);
     if (header) expect(header.props).toMatchObject({ head, section: "team", title: "Team" });
+  });
+
+  it("AC1 someone with Allocations but not Projects (HR) gets a role message, never a crash or Project not found", async () => {
+    const hr = { ...(await db.as("sarah")), viewAs: undefined, assignments: [{ role: "HR" as const, legalEntityIds: null, departments: null }] };
+    expect(can(hr, "allocations:read") && !can(hr, "delivery:read")).toBe(true);
+    setProvided([{ id: "delivery", provides: { [PROJECT_HEADER_SLOT]: slot(async () => { throw new ForbiddenError("delivery:read", "delivery.project"); }) } }]);
+    const page = await ProjectTeamPage({ viewer: hr, params: { key: "CON" } } as never);
+    expect(text(page)).toContain("Projects aren't open to your role");
+    expect(text(page)).not.toContain("Project not found");
   });
 });

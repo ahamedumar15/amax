@@ -45,7 +45,8 @@ What changes on screen, and where to see it: [`122-project-tabs-layout`](../../m
 6. **AC-6** On a project's Proposals and Releases tabs, the tables have no Project column (every row is that
    project). The all-projects pages keep theirs.
 7. **AC-7** Releases: with no active release, the Release map card shows one line ("No active releases on <project>.
-   Switch to All to see past ones.") instead of an empty box. With no releases at all, the All releases card shows an
+   Switch to All to see past ones.") instead of an empty box; with no releases at all it says "No releases on <project>
+   yet." (review round 4: there are no past ones to switch to). With no releases at all, the All releases card shows an
    empty state ("No releases yet") in place of the table, and nothing extends past the card's edge.
 8. **AC-8** At 390 px the header wraps without overlap (the action moves below the title), the tab bar scrolls
    sideways inside itself, and no tab scrolls the page sideways.

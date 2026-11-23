@@ -55,6 +55,7 @@ export async function ProjectTeamPage({ viewer: raw, params }: ScreenProps) {
   const viewer = raw as Viewer | null;
   if (!viewer) return <><h1>Team</h1><Card><EmptyState icon="people" title="Sign in to see the team" hint="Allocations come from the database once you're signed in." /></Card></>;
   if (!can(viewer, "allocations:read")) return <><h1>Team</h1><Card><EmptyState icon="people" title="Allocations aren't open to your role" hint="Ask a PM or HR for who is on this project." /></Card></>;
+  if (!can(viewer, "delivery:read")) return <><h1>Team</h1><Card><EmptyState icon="people" title="Projects aren't open to your role" hint="Ask a PM or an Admin for who is on this project." /></Card></>;
   const team = await teamFor(viewer, params.key);
   const slot = provided<ProjectHeaderSlot>(PROJECT_HEADER_SLOT)[0];
   const head = team && slot ? await slot.load(viewer, team.project.key) : null;

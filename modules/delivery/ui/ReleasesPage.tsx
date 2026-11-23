@@ -199,7 +199,7 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey, pr
           <nav className="seg" aria-label="Range"><a href={root} aria-current={map !== "all" ? "true" : undefined}>Active</a><a href={`${root}?map=all`} aria-current={map === "all" ? "true" : undefined}>All</a></nav>
         </div>
         {mapped.length ? <ReleaseMap releases={mapped} columns={envs} />
-          : <p className="dv-empty-line">{map === "all" ? `No releases${on} yet.` : `No active releases${on}. Switch to All to see past ones.`}</p>}
+          : <p className="dv-empty-line">{releases.length === 0 || map === "all" ? `No releases${on} yet.` : `No active releases${on}. Switch to All to see past ones.`}</p>}
       </div>
       <div className="card flush pinnable">
         <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: pinArgs }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
