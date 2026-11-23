@@ -81,12 +81,11 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   // Synced projects have no sprint counters; their progress is the proposals' tasks.
   const done = project.sprintTotal ? project.sprintDone : proposals.reduce((n, p) => n + p.tasksDone, 0);
   const total = project.sprintTotal || proposals.reduce((n, p) => n + p.tasksTotal, 0);
+  const sprintPick = project.sprint ? <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select> : null;
+  const newProposal = !(project.agentFirst && project.repoUrl) && can(viewer, "delivery:proposal:create", { projectId: project.id }) ? <NewProposalButton project={{ pin: projectPin(project), name: project.name }} /> : null;
   return (
     <>
-      <ProjectHeader project={project} lede={projectLede(project, envs)} section="" actions={<>
-        {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
-        {!(project.agentFirst && project.repoUrl) && can(viewer, "delivery:proposal:create", { projectId: project.id }) && <NewProposalButton project={{ pin: projectPin(project), name: project.name }} />}
-      </>} />
+      <ProjectHeader project={project} lede={projectLede(project, envs)} section="" actions={sprintPick || newProposal ? <>{sprintPick}{newProposal}</> : undefined} />
       {/* 081 amendment 4 (AC-44, revised): a refused push leads the page, open, for whoever can fix it; otherwise Repo
           sync waits folded at the bottom. Agent suggestions are the cards' "amax suggests" chips. */}
       {syncFirst && repoSync}

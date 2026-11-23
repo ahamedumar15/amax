@@ -1,21 +1,12 @@
 import type { ScreenProps } from "@amax/core";
 import { can, type Viewer } from "@amax/auth";
-import { PROJECT_HEADER_SLOT, projectHref, type ProjectHeaderComponent } from "@amax/delivery/contracts";
+import { PROJECT_HEADER_SLOT, type ProjectHeaderSlot } from "@amax/delivery/contracts";
 import { provided } from "@amax/core/server";
 import { Card, EmptyState, PinButton } from "@amax/ui";
 import { monthLabel } from "../server/months";
 import { teamFor, type ProjectTeam } from "../server/team";
 import { AskButton } from "./AskButton";
 import "./allocations.css";
-
-async function Header({ viewer, team, canAdd }: { viewer: Viewer; team: ProjectTeam; canAdd: boolean }) {
-  const { key, name } = team.project;
-  const pin = { label: `${name} team`, tool: "get_project_team", args: { projectKey: key } };
-  const action = canAdd ? <AskButton className="btn sm primary" label={`Ask amax · Add someone to ${key}`} prompt={`Add someone to ${key}`} pin={pin} /> : undefined;
-  const Shared = provided<ProjectHeaderComponent>(PROJECT_HEADER_SLOT)[0];
-  if (Shared) return <Shared viewer={viewer} projectKey={key} section="team" title="Team" actions={action} />;
-  return <><nav className="crumb" aria-label="Breadcrumb"><a href="/delivery">Projects</a><span>/</span><a href={projectHref(key)}>{name}</a><span>/</span>Team</nav><h1>{name}</h1></>;
-}
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 
@@ -46,7 +37,7 @@ function TeamCard({ team }: { team: ProjectTeam }) {
             <tbody>
               {people.map((p) => (
                 <tr key={p.personId} className="pinnable">
-                  <td data-label="Person">{p.name}{manager && p.userId === manager.userId && <> <span className="chip pm">PM</span></>}{p.standing && <> <span className="chip info">until further notice</span></>}</td>
+                  <td data-label="Person">{p.name}{manager && !manager.inactive && p.userId === manager.userId && <> <span className="chip pm">PM</span></>}{p.standing && <> <span className="chip info">until further notice</span></>}</td>
                   <td data-label="Role">{p.role}</td>
                   {p.percents.map((n, i) => <td key={months[i]} data-label={monthLabel(months[i])} className="num">{n === null ? <span className="muted">–</span> : `${n}%`}{i === months.length - 1 && <PinButton pin={{ label: `${p.name} on ${project.name}`, tool: "get_project_team", args: { projectKey: project.key, person: p.employeeNo } }} />}</td>)}
                 </tr>
@@ -65,7 +56,12 @@ export async function ProjectTeamPage({ viewer: raw, params }: ScreenProps) {
   if (!viewer) return <><h1>Team</h1><Card><EmptyState icon="people" title="Sign in to see the team" hint="Allocations come from the database once you're signed in." /></Card></>;
   if (!can(viewer, "allocations:read")) return <><h1>Team</h1><Card><EmptyState icon="people" title="Allocations aren't open to your role" hint="Ask a PM or HR for who is on this project." /></Card></>;
   const team = await teamFor(viewer, params.key);
-  if (!team) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
-  const canAdd = can(viewer, "allocations:allocate", { projectId: team.project.id });
-  return <><Header viewer={viewer} team={team} canAdd={canAdd} /><TeamCard team={team} /></>;
+  const slot = provided<ProjectHeaderSlot>(PROJECT_HEADER_SLOT)[0];
+  const head = team && slot ? await slot.load(viewer, team.project.key) : null;
+  if (!team || !slot || !head) return <><h1>Project not found</h1><p className="lede">No project with the key {params.key}.</p></>;
+  const { key, name } = team.project;
+  const action = can(viewer, "allocations:allocate", { projectId: team.project.id })
+    ? <AskButton className="btn sm primary" label={`Ask amax · Add someone to ${key}`} prompt={`Add someone to ${key}`} pin={{ label: `${name} team`, tool: "get_project_team", args: { projectKey: key } }} />
+    : undefined;
+  return <><slot.Header head={head} section="team" title="Team" actions={action} /><TeamCard team={team} /></>;
 }

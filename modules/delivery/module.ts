@@ -18,7 +18,7 @@ import { ReleasePage } from "./ui/ReleasePage";
 import { ProjectProposals, ProjectReleases } from "./ui/ProjectLists";
 import { ContractSection, RisksSection, TeamSection } from "./ui/ProjectSections";
 import { deliveryOverview } from "./server/overview";
-import { ProjectHeaderFor } from "./ui/ProjectHeaderSlot";
+import { projectHeaderSlot } from "./ui/ProjectHeaderSlot";
 
 const READ = ["delivery:read"];
 
@@ -32,7 +32,7 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
-  provides: { [PROJECT_HEADER_SLOT]: ProjectHeaderFor },
+  provides: { [PROJECT_HEADER_SLOT]: projectHeaderSlot },
   permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push", "delivery:proposal:hours", "delivery:commit-time:release", "delivery:project:manage"],
   grants: {
     Leadership: READ,

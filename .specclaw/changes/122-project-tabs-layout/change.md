@@ -90,6 +90,7 @@ Checked 2026-11-23 at `d9410f8` plus that one-line removal, Windows 11, dev app 
 
 Commands (exit codes):
 - `pnpm lint` (36 tasks, module graph check ok): 0
+- `pnpm turbo run build --filter=./apps/web`: 0 (compiled in 22.7 s)
 - `pnpm turbo run test --filter=@amax/delivery --filter=@amax/allocations --concurrency=1`: 1 — 749/751 passed; `releases.test` (Windows backslash paths, host-only) and `create-project-surfaces` (passes alone, a load flake) fail on this host only, neither touched here
 - `npx playwright test` (scratch config, `project-tabs.spec.ts` only): 0, 5 passed
 - `specclaw-verify size` with `base_branch` 20a43e2286 for the run: 0 — 241 production lines (cap 400)

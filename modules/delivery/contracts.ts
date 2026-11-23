@@ -146,7 +146,10 @@ export const PROJECT_SECTIONS = [
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number]["path"];
 
 export const PROJECT_HEADER_SLOT = "delivery.project-header";
-export type ProjectHeaderProps = { viewer: Viewer; projectKey: string; section: ProjectSection; title: string; actions?: ReactNode };
-export type ProjectHeaderComponent = (p: ProjectHeaderProps) => Promise<ReactNode>;
+export type ProjectHeaderData = { project: { key: string; name: string; agentFirst?: boolean; repoUrl?: string | null }; lede: string };
+export type ProjectHeaderSlot = {
+  load: (viewer: Viewer, projectKey: string) => Promise<ProjectHeaderData | null>;
+  Header: (p: { head: ProjectHeaderData; section: ProjectSection; title: string; actions?: ReactNode }) => ReactNode;
+};
 
 export const projectHref = (key: string, section: ProjectSection = "") => `/delivery/p/${encodeURIComponent(key)}${section ? `/${section}` : ""}`;
