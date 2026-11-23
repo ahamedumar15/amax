@@ -9,7 +9,7 @@ import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
 import { proposalAgent } from "./server/agent";
 import { proposalKinds } from "./server/proposal-kinds";
-import { EVENTS, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime, type ProjectManagerChanged } from "./contracts";
+import { EVENTS, PROJECT_HEADER_SLOT, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime, type ProjectManagerChanged } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -18,6 +18,7 @@ import { ReleasePage } from "./ui/ReleasePage";
 import { ProjectProposals, ProjectReleases } from "./ui/ProjectLists";
 import { ContractSection, RisksSection, TeamSection } from "./ui/ProjectSections";
 import { deliveryOverview } from "./server/overview";
+import { ProjectHeaderFor } from "./ui/ProjectHeaderSlot";
 
 const READ = ["delivery:read"];
 
@@ -31,6 +32,7 @@ export default defineModule({
   nav: [{ path: "proposals", title: "Proposals", icon: "doc" }, { path: "releases", title: "Releases", icon: "rocket" }],
   dependsOn: [],
   integratesWith: [],
+  provides: { [PROJECT_HEADER_SLOT]: ProjectHeaderFor },
   permissions: ["delivery:read", "delivery:project:create", "delivery:proposal:create", "delivery:proposal:move", "delivery:release:create", "delivery:deployment:record", "delivery:proposal:sync", "delivery:task:done", "delivery:identity:link", "delivery:commit-time:manage", "delivery:project:link", "delivery:proposal:push", "delivery:proposal:hours", "delivery:commit-time:release", "delivery:project:manage"],
   grants: {
     Leadership: READ,

@@ -1,6 +1,6 @@
 import { can, type Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
-import { IntentButton, PinButton } from "@amax/ui";
+import { EmptyState, IntentButton, PinButton } from "@amax/ui";
 import { projectHref, releaseHref } from "../contracts";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
 import { releasePin } from "../pins";
@@ -186,24 +186,29 @@ export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenPro
  * The release map and table (051): the global list and a project's Releases section share them.
  * `root` is the list's path, `map` the Active/All choice; `projectKey` scopes the pins.
  */
-export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: { viewer: Viewer; releases: ReleaseRow[]; now: Date; root: string; map?: string; projectKey?: string }) {
+export function ReleasesCards({ viewer, releases, now, root, map, projectKey, projectName }: { viewer: Viewer; releases: ReleaseRow[]; now: Date; root: string; map?: string; projectKey?: string; projectName?: string }) {
   // 042: projects have their own environments; columns are the union in stage order.
   const envs = stageColumns(releases);
   const pinArgs = projectKey ? { projectKey } : {};
+  const mapped = map === "all" ? releases : onActiveMap(releases, now);
+  const on = projectName ? ` on ${projectName}` : "";
   return (
     <>
       <div className="card map scroll-x pinnable" style={{ marginBottom: 28 }}>
         <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: pinArgs }} />
           <nav className="seg" aria-label="Range"><a href={root} aria-current={map !== "all" ? "true" : undefined}>Active</a><a href={`${root}?map=all`} aria-current={map === "all" ? "true" : undefined}>All</a></nav>
         </div>
-        <ReleaseMap releases={map === "all" ? releases : onActiveMap(releases, now)} columns={envs} />
+        {mapped.length ? <ReleaseMap releases={mapped} columns={envs} />
+          : <p className="dv-empty-line">{map === "all" ? `No releases${on} yet.` : `No active releases${on}. Switch to All to see past ones.`}</p>}
       </div>
       <div className="card flush pinnable">
         <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: pinArgs }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
+        {releases.length === 0 ? <EmptyState icon="rocket" title="No releases yet" hint="Ask amax to cut one when proposals are verified." />
+          : (
         <div className="scroll-x">
           <table className="tbl">
             <caption className="sr">All releases</caption>
-            <thead><tr><th>Release</th><th>Project</th><th className="num">Proposals</th>{envs.map((e) => <th key={e}>{e}</th>)}<th className="num">Action</th></tr></thead>
+            <thead><tr><th>Release</th>{!projectKey && <th>Project</th>}<th className="num">Proposals</th>{envs.map((e) => <th key={e}>{e}</th>)}<th className="num">Action</th></tr></thead>
             <tbody>
               {releases.map((r) => {
                 // Per project: a PM elsewhere, Finance or Leadership see the stage, not a button.
@@ -211,7 +216,7 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: 
                 return (
                   <tr key={r.id} className="pinnable">
                     <td data-label="Release"><a className="rowlink" href={releaseHref(r)}><b>{r.version}</b></a></td>
-                    <td data-label="Project"><span className="dot" style={{ background: `var(--${r.projectColor})` }} /><a className="quiet" href={projectHref(r.projectKey)}>{r.projectName}</a></td>
+                    {!projectKey && <td data-label="Project"><span className="dot" style={{ background: `var(--${r.projectColor})` }} /><a className="quiet" href={projectHref(r.projectKey)}>{r.projectName}</a></td>}
                     <td data-label="Proposals" className="num">{r.proposals}</td>
                     {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
                     <td data-label="" className="num">
@@ -224,6 +229,7 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey }: 
             </tbody>
           </table>
         </div>
+          )}
       </div>
     </>
   );

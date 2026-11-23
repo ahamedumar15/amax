@@ -95,7 +95,7 @@ function FilterChip({ name, href, clears = "all projects" }: { name: string; hre
   );
 }
 
-export function ProposalsTable({ rows: all, needs, need, me, phase, root, project, q, page: asked, projects, title, mine = false }: { rows: ProposalRow[]; needs?: Map<string, Need[]>; need?: Need; me?: string; phase?: Phase; root: string; project?: string; q?: string; page: number; projects?: { key: string; name: string }[]; title?: string; mine?: boolean }) {
+export function ProposalsTable({ rows: all, needs, need, me, phase, root, project, q, page: asked, projects, title, mine = false, withProject = true }: { rows: ProposalRow[]; needs?: Map<string, Need[]>; need?: Need; me?: string; phase?: Phase; root: string; project?: string; q?: string; page: number; projects?: { key: string; name: string }[]; title?: string; mine?: boolean; withProject?: boolean }) {
   // 081 amendment 11 (AC-96): a tile's need narrows the table only.
   const rows = need && needs ? all.filter((p) => needs.get(p.id)?.includes(need)) : all;
   const page = Math.min(asked, Math.max(1, Math.ceil(rows.length / PAGE)));
@@ -136,10 +136,10 @@ export function ProposalsTable({ rows: all, needs, need, me, phase, root, projec
       <div className="scroll-x">
         <table className="tbl">
           <caption className="sr">Proposals</caption>
-          <thead><tr><th>Proposal</th><th>Project</th><th>Phase</th><th>Tasks</th><th className="num">Time</th><th>Release</th><th>Shipped to</th><th>Owner</th></tr></thead>
+          <thead><tr><th>Proposal</th>{withProject && <th>Project</th>}<th>Phase</th><th>Tasks</th><th className="num">Time</th><th>Release</th><th>Shipped to</th><th>Owner</th></tr></thead>
           <tbody>
             {/* AC-101: nothing matched says so inside the table. */}
-            {shown.length === 0 && <tr><td colSpan={8} className="muted">{empty}</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={withProject ? 8 : 7} className="muted">{empty}</td></tr>}
             {shown.map((p) => {
               const pct = p.tasksTotal ? Math.round((p.tasksDone / p.tasksTotal) * 100) : 0;
               return (
@@ -150,7 +150,7 @@ export function ProposalsTable({ rows: all, needs, need, me, phase, root, projec
                       {needs?.get(p.id)?.map((n) => <span key={n} className={`chip ${NEED_CHIP[n]}`}>{NEED_LABEL[n]}</span>)}
                       {me !== undefined && p.ownerUserId === me && <span className="chip yours">Yours</span>}
                     </span>}</td>
-                  <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} /><a className="quiet" href={projectHref(p.projectKey)}>{p.projectName}</a></td>
+                  {withProject && <td data-label="Project"><span className="dot" style={{ background: COLOR[p.projectColor] }} /><a className="quiet" href={projectHref(p.projectKey)}>{p.projectName}</a></td>}
                   <td data-label="Phase"><PhaseChip phase={p.phase} /></td>
                   <td data-label="Tasks">{p.tasksTotal > 0 ? <div className="meter" role="img" aria-label={`${p.tasksDone} of ${p.tasksTotal} tasks`}><i style={{ width: `${pct}%`, background: pct === 100 ? "var(--mint)" : "var(--violet)" }} /></div> : <span className="muted">–</span>}</td>
                   <td data-label="Time" className="num">{Number(p.hours.toFixed(2))} h</td>

@@ -374,7 +374,7 @@ a.quiet:hover,a.quiet:focus-visible{text-decoration:underline;text-underline-off
 .rel-props a:hover span,.rel-props a:focus-visible span{text-decoration:underline;text-underline-offset:3px}
 .rel-props .chip{flex:none}
 .rel-props li>.pin{top:50%;margin-top:-15px;right:6px}
-@media (max-width:640px){
+@media (max-width:600px){
   .rel-props li{flex-wrap:wrap;row-gap:6px}
   .rel-props a{flex-basis:100%}
   .rel-props .chip{margin-left:calc(var(--key) + 12px)}
@@ -424,9 +424,22 @@ a.quiet:hover,a.quiet:focus-visible{text-decoration:underline;text-underline-off
 .dv-md ul{margin:8px 0;padding-left:20px}
 .dv-md li{margin:2px 0}
 .dv-md code{font-size:.92em;padding:1px 5px;border-radius:6px;background:var(--sunken)}
-@media (max-width:640px){
+@media (max-width:600px){
   .attn ul{grid-template-columns:repeat(2,minmax(0,1fr))}
   .list-head-top{flex-wrap:wrap}
   .list-head>.actions{justify-content:flex-start}
   .prop-cell{min-width:0}
+}
+/* 122: one project header on every tab, so the tab bar never moves; a card head that keeps one line. */
+.dv-head .dv-title{align-items:center}
+.dv-head .dv-title h1{margin:0}
+.dv-head .dv-info{margin:0 0 0 8px}
+.dv-head .row.head{align-items:center}
+.card-head.start{justify-content:flex-start;flex-wrap:nowrap;align-items:baseline}
+.card-head.start>.note{margin-left:auto;font-size:13px;color:var(--ink-3);white-space:nowrap}
+.dv-empty-line{margin:0;font-size:13.5px;color:var(--ink-2)}
+@media (max-width:600px){
+  .dv-head .row.head{align-items:flex-start}
+  .card-head.start{flex-wrap:wrap}
+  .card-head.start>.note{margin-left:0;flex-basis:100%}
 }

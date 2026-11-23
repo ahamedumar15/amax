@@ -3,6 +3,7 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import type { Viewer } from "@amax/auth";
+import type { ReactNode } from "react";
 import { withdrawnIn } from "./server/readiness";
 
 export const PHASES = ["proposed", "planned", "building", "verified", "released"] as const;
@@ -143,5 +144,10 @@ export const PROJECT_SECTIONS = [
   { path: "contract", label: "Contract" },
 ] as const;
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number]["path"];
+
+/** 122: the project header every tab shows. Delivery fills this slot; a module that serves a project tab renders it. */
+export const PROJECT_HEADER_SLOT = "delivery.project-header";
+export type ProjectHeaderProps = { viewer: Viewer; projectKey: string; section: ProjectSection; title: string; actions?: ReactNode };
+export type ProjectHeaderComponent = (p: ProjectHeaderProps) => Promise<ReactNode>;
 
 export const projectHref = (key: string, section: ProjectSection = "") => `/delivery/p/${encodeURIComponent(key)}${section ? `/${section}` : ""}`;

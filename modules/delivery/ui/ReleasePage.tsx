@@ -2,7 +2,7 @@ import { can } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
 import { facet, PinButton } from "@amax/ui";
 import { projectHref, proposalHref } from "../contracts";
-import { ProjectTabs } from "./ProjectSections";
+import { ProjectTabs } from "./ProjectHeader";
 import { deploymentPin, historyPin, proposalPin } from "../pins";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { AskButton } from "./AskButton";

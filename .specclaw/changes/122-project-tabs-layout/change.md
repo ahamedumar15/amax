@@ -17,7 +17,11 @@ What changes on screen, and where to see it: [`122-project-tabs-layout`](../../m
 
 - One project header on every tab: breadcrumb, project name with the agent-first (i) beside it, the project's lede,
   the tab's action on the right, then the tab bar, always in the same place.
-- Team: the PM is one compact line card; the Team card sits below it with the usual gap between cards.
+- Team: ~~the PM is one compact line card; the Team card sits below it~~ one Team card: its head, then the project
+  manager highlighted on its own row (avatar, name, "Project manager", pin), then the allocation table, where the PM's
+  own row carries a **PM** chip.
+- Amendment 1 (product owner, 2026-11-23, from a screenshot during build): two separate cards for the PM and the team
+  "looks odd"; keep it one card with a professional way to highlight the role.
 - Proposals: the (i) is beside the title; the strip and the table follow with no stray row; no Project column.
 - Releases: an empty release map and an empty release list each say so in one line inside their card.
 
@@ -32,8 +36,10 @@ What changes on screen, and where to see it: [`122-project-tabs-layout`](../../m
 3. **AC-3** For an agent-first project, the (i) button sits directly right of the project name in the title row on
    every tab, with its tooltip as today (opens on click and focus, closes on Escape). Nothing renders as its own
    row above the content, on Proposals or anywhere else.
-4. **AC-4** Team: the PM card's height fits its one line (name, any "needs a new PM" chip, its pin) with no empty
-   space below it, and the PM card and the Team card are separated by the same gap as cards on Releases.
+4. **AC-4** (amendment 1) Team is one card. Below its head, the project manager has a highlighted row of its own:
+   initials avatar, name, "Project manager", and a pin to the project. A deactivated PM keeps its "Account deactivated
+   · needs a new PM" chip; a project with none reads "No project manager yet". The allocation table follows in the
+   same card, and when the PM is allocated, their row carries a **PM** chip beside their name.
 5. **AC-5** Team: the Team card's head shows the title, its pin and "From allocations" on one line, with the
    pin beside the title and the note right-aligned. Nothing in the head wraps at 1440 px.
 6. **AC-6** On a project's Proposals and Releases tabs, the tables have no Project column (every row is that
@@ -47,3 +53,26 @@ What changes on screen, and where to see it: [`122-project-tabs-layout`](../../m
 10. **AC-10** Tests: an e2e that opens all six AMX tabs and checks AC-2 and AC-3; checks for AC-4 to AC-7 on AMX
     (and on Contoso for a project with releases); axe finds no violations on Team, Proposals and Releases in light
     and dark themes; the delivery visual test still passes.
+
+## Tasks
+
+- [x] `T1` — One `ProjectHeader` in Delivery's UI (crumb, project name with the agent-first (i) beside it, lede, actions, tab bar) and its styles: card gap, compact one-line card, one-line card head, and at 390 px a wrapping head with the tab bar scrolling inside itself (AC-1, AC-3, AC-4, AC-5, AC-8)
+  Files: modules/delivery/ui/ProjectHeader.tsx, modules/delivery/ui/delivery.css
+- [x] `T2` — Delivery's tabs use it: Board, Proposals, Releases, Risks and decisions, Contract; the (i) is no longer its own row on Proposals; a project's Proposals and Releases tables drop the Project column; Releases says when the map or the list is empty (AC-1, AC-2, AC-3, AC-6, AC-7, AC-9)
+  Files: modules/delivery/ui/ProjectPage.tsx, modules/delivery/ui/ProjectSections.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/ui/ProposalsPage.tsx, modules/delivery/ui/ReleasesPage.tsx
+  Depends: T1
+- [x] `T3` — One source for the header's data: `server/header.ts` reads the project and its Prod environment and builds the lede ("<sprint line>Released means it reached <Prod env>."); Delivery provides the header in a slot, `PROJECT_HEADER_SLOT`, declared in its contract, as Time fills `PROPOSAL_TIME_SLOT` (AC-1)
+  Files: modules/delivery/contracts.ts, modules/delivery/server/header.ts, modules/delivery/ui/ProjectHeaderSlot.tsx, modules/delivery/module.ts
+  Depends: T2
+- [x] `T4` — Team (Allocations) renders the header from the slot, with its Ask amax button as the action; the PM card is one compact line and the Team card's head keeps the title, pin and "From allocations" on one line (AC-1, AC-3, AC-4, AC-5)
+  Files: modules/allocations/ui/ProjectTeamPage.tsx
+  Depends: T1, T3
+- [x] `T5` — Tests: an e2e over the six AMX tabs (tab bar position within 1 px, the (i) beside the title, light and dark), the Team, Proposals and Releases checks (AC-4 to AC-7, Releases on Contoso and on an empty project), 390 px with no sideways page scroll, axe on Team, Proposals and Releases in both themes; a unit test for `projectHeader`'s lede; the delivery visual test still passes (AC-2, AC-8, AC-10)
+  Files: apps/web/tests/e2e/project-tabs-122.spec.ts, modules/delivery/tests/project-header-122.test.ts, modules/delivery/README.md
+  Depends: T2, T4
+
+## Verify
+
+<!-- Filled by verify. -->
+
+Quality: 872 → 872 duplicated lines repo-wide (`specclaw-quality-scan`, 2026-11-23); none in this change's files, so no refactor.

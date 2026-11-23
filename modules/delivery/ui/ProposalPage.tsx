@@ -12,7 +12,7 @@ import { COLOR, day } from "./parts";
 import { ProposalActions } from "./ProposalActions";
 import { proposalSuggestions, ProposalSuggestions } from "./ProposalSuggestions";
 import { Stepper } from "./Stepper";
-import { ProjectTabs } from "./ProjectSections";
+import { ProjectTabs } from "./ProjectHeader";
 import { STAGE_WORD, StageTrack } from "./BoardBand";
 
 const h = (n: number) => `${Number(n.toFixed(2))} h`;

@@ -8,23 +8,14 @@ import { getProject, listEnvironments, listReleases, type ProposalRow } from "..
 import { ownerLabel } from "../server/readiness";
 import { proposalSuggestions } from "./ProposalSuggestions";
 import { NewProposalButton } from "./NewProposalButton";
-import { AgentFirstLine } from "./AgentFirstLine";
 import { Avatar } from "./Avatar";
 import { EnvironmentsCard } from "./EnvironmentsCard";
 import { getRepoSync } from "../server/repo-sync";
 import { RepoSyncCard } from "./RepoSyncCard";
 import { initials, needViewer, SignInFirst, Stk } from "./parts";
-import { ProjectTabs } from "./ProjectSections";
+import { ProjectHeader } from "./ProjectHeader";
+import { projectLede } from "../server/header";
 import { BoardBand } from "./BoardBand";
-
-const D = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
-// "Sprint 18 runs Mon Oct 12 to Fri Oct 23. " The task count, the next release and its health are the band's (081
-// amendment 4), not repeated here.
-function sprintLine(p: { sprint: string | null; sprintStart: string | null; sprintEnd: string | null }) {
-  if (!p.sprint) return "";
-  const when = p.sprintStart && p.sprintEnd ? ` runs ${D(p.sprintStart, { weekday: "short", month: "short", day: "numeric" }).replace(",", "")} to ${D(p.sprintEnd, { weekday: "short", month: "short", day: "numeric" }).replace(",", "")}` : "";
-  return `${p.sprint}${when}. `;
-}
 
 const LANE_LABEL: Record<Phase, string> = { proposed: "Proposed", planned: "Planned", building: "Building", verified: "Verified", released: "Released to Prod" };
 
@@ -92,19 +83,10 @@ export async function ProjectPage({ viewer: raw, params }: ScreenProps) {
   const total = project.sprintTotal || proposals.reduce((n, p) => n + p.tasksTotal, 0);
   return (
     <>
-      <nav className="crumb" aria-label="Breadcrumb"><a href="/delivery">Projects</a><span>/</span>{project.name}</nav>
-      <div className="row head">
-        <div>
-          <h1>{project.name}</h1>
-          <p className="lede">{sprintLine(project)}Released means it reached {envs.find((e) => e.isProd)?.name ?? "Prod"}.</p>
-        </div>
-        <div className="actions">
-          {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
-          {project.agentFirst && project.repoUrl ? <AgentFirstLine repoUrl={project.repoUrl} />
-            : can(viewer, "delivery:proposal:create", { projectId: project.id }) && <NewProposalButton project={{ pin: projectPin(project), name: project.name }} />}
-        </div>
-      </div>
-      <ProjectTabs projectKey={project.key} current="" />
+      <ProjectHeader project={project} lede={projectLede(project, envs)} section="" actions={<>
+        {project.sprint && <select className="select" aria-label="Sprint" defaultValue={project.sprint}><option>{project.sprint}</option></select>}
+        {!(project.agentFirst && project.repoUrl) && can(viewer, "delivery:proposal:create", { projectId: project.id }) && <NewProposalButton project={{ pin: projectPin(project), name: project.name }} />}
+      </>} />
       {/* 081 amendment 4 (AC-44, revised): a refused push leads the page, open, for whoever can fix it; otherwise Repo
           sync waits folded at the bottom. Agent suggestions are the cards' "amax suggests" chips. */}
       {syncFirst && repoSync}
