@@ -73,6 +73,29 @@ What changes on screen, and where to see it: [`122-project-tabs-layout`](../../m
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** pending — the local review loop runs after the `contracts.ts` comment removal is committed
+
+Checked 2026-11-23 at `d9410f8` plus that one-line removal, Windows 11, dev app on :3000 with the local dev database.
+
+- AC-1: pass — one `ProjectHeader` (Delivery UI) renders on all six tabs: the Board and the section pages call it directly, and Team (Allocations) renders it from `PROJECT_HEADER_SLOT`. The lede comes from `server/header.ts` (`tests/project-header-122.test.ts` AC1).
+- AC-2: pass — the tab bar's top edge is at 237.3 px on all six AMX tabs, light and dark (spread 0.0 px; it was 219 to 266 px); e2e `project-tabs.spec.ts` AC2.
+- AC-3: pass — one (i) per tab, 8 px right of the h1 on its centre line, and none outside `.dv-head .dv-title` (e2e AC3); the tooltip is the existing `AgentFirstLine` unchanged.
+- AC-4: pass (amendment 1) — Team is one card: the PM row (initials, name, "Project manager", pin) leads, then the table; Umar's row on AMX carries the PM chip (`shots/app-team-dark.png`); e2e AC4 on CON (one card, the lead row above the table, its pin).
+- AC-5: pass — the head's title, pin and "From allocations" sit on one line (e2e AC5).
+- AC-6: pass — no Project column on CON's Proposals and Releases tabs; the all-projects pages keep it (e2e AC6).
+- AC-7: pass — AMX: "No active releases on amax. Switch to All to see past ones." and "No releases yet" with no table (e2e AC7, `shots/app-releases-light.png`).
+- AC-8: pass — at 390 px no tab scrolls the page sideways and the tab bar stays inside the viewport (e2e AC8, `shots/app-team-390.png`).
+- AC-9: pass — Risks and decisions and Contract changed only by the shared header (`ProjectSections.tsx` diff).
+- AC-10: pass — e2e `project-tabs.spec.ts` 5/5 (run against the dev app with a scratch config; CI runs it in the `screens` group); axe clean on Team, Proposals and Releases in both themes; 107's Team e2e moved to the PM row. Not run here: the delivery visual test (it needs the signed-in suite's own database, which doesn't set up on Windows); CI runs it.
+
+Commands (exit codes):
+- `pnpm lint` (36 tasks, module graph check ok): 0
+- `pnpm turbo run test --filter=@amax/delivery --filter=@amax/allocations --concurrency=1`: 1 — 749/751 passed; `releases.test` (Windows backslash paths, host-only) and `create-project-surfaces` (passes alone, a load flake) fail on this host only, neither touched here
+- `npx playwright test` (scratch config, `project-tabs.spec.ts` only): 0, 5 passed
+- `specclaw-verify size` with `base_branch` 20a43e2286 for the run: 0 — 241 production lines (cap 400)
+- `specclaw-preset-check .`: 1 — 4,674 violations repo-wide, pre-existing (as recorded at 120); 122's new files are clean; the comment 122 added to `contracts.ts` was removed; touched files over 80 lines were already over (ProjectPage 127 → 109)
+- `specclaw-quality-scan . --gate`: 2 — the complexity tool did not run (0 functions counted); duplication ran: 872 lines repo-wide, none in this change's files
+
+Screenshots: `shots/mock.png`, `shots/app-{team,proposals,releases,board}-{dark,light}.png`, `shots/app-team-390.png`
 
 Quality: 872 → 872 duplicated lines repo-wide (`specclaw-quality-scan`, 2026-11-23); none in this change's files, so no refactor.

@@ -145,7 +145,6 @@ export const PROJECT_SECTIONS = [
 ] as const;
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number]["path"];
 
-/** 122: the project header every tab shows. Delivery fills this slot; a module that serves a project tab renders it. */
 export const PROJECT_HEADER_SLOT = "delivery.project-header";
 export type ProjectHeaderProps = { viewer: Viewer; projectKey: string; section: ProjectSection; title: string; actions?: ReactNode };
 export type ProjectHeaderComponent = (p: ProjectHeaderProps) => Promise<ReactNode>;
