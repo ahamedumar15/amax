@@ -1,27 +1,41 @@
 import AxeBuilder from "@axe-core/playwright";
+import postgres from "postgres";
 import { expect, test, type Page } from "@playwright/test";
 import { signIn } from "./ask";
 
 const TABS = ["", "/proposals", "/releases", "/risks", "/team", "/contract"];
 const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`);
 const box = (page: Page, sel: string) => page.locator(sel).first().boundingBox();
+const owner = () => postgres(Object.assign(new URL(process.env.DATABASE_MIGRATE_URL ?? "postgres://amax:amax@127.0.0.1:5440/amax"), { pathname: `/${process.env.E2E_DB ?? "amax_e2e"}` }).toString(), { max: 1, onnotice: () => {} });
+let linked = false;
+
+test.beforeAll(async () => {
+  const db = owner();
+  linked = (await db`update delivery.project set repo_url = 'github.com/example/amax' where key = 'AMX' and repo_url is null returning id`).length > 0;
+  await db.end();
+});
+test.afterAll(async () => {
+  if (!linked) return;
+  const db = owner();
+  await db`update delivery.project set repo_url = null where key = 'AMX'`;
+  await db.end();
+});
 
 test.beforeEach(async ({ page }) => page.setViewportSize({ width: 1440, height: 900 }));
 
-test("122 AC2 AC3 one header on every tab: the tab bar stays put and any (i) sits beside the project name", async ({ page }) => {
-  await signIn(page, "maya@lumenlabs.test", "/delivery/p/CON");
+test("122 AC2 AC3 one header on every tab: the tab bar stays put and the agent-first (i) sits beside the project name", async ({ page }) => {
+  await signIn(page, "maya@lumenlabs.test", "/delivery/p/AMX");
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
-    const tops: number[] = [], infos: number[] = [];
+    const tops: number[] = [];
     for (const tab of TABS) {
-      await page.goto(`/delivery/p/CON${tab}`);
+      await page.goto(`/delivery/p/AMX${tab}`);
       tops.push((await box(page, 'main nav.tabs[aria-label="Sections"]'))!.y);
-      await expect(page.locator("main .dv-head h1")).toHaveText("Contoso Portal");
-      infos.push(await page.locator("main .dv-info-btn").count());
-      expect(await page.locator("main .dv-info-btn").count()).toBe(await page.locator("main .dv-head .dv-title .dv-info-btn").count());
+      await expect(page.locator("main .dv-head h1")).toHaveText("amax");
+      await expect(page.locator("main .dv-info-btn")).toHaveCount(1);
+      await expect(page.locator("main .dv-head .dv-title .dv-info-btn")).toHaveCount(1);
     }
     expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(1);
-    expect(new Set(infos).size).toBe(1);
   }
 });
 
