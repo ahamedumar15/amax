@@ -3,10 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import type { Viewer } from "@amax/auth";
-import { createRelease, recordDeployment } from "../server/services";
+import { createRelease, recordDeployment, voidDeployment } from "../server/services";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { ReleaseBody } from "../ui/ReleasePage";
 import { completedLine } from "../ui/ReleaseInfo";
+import { dayLabel } from "../server/release-status";
 import { When } from "../ui/When";
 import { mcpTools } from "../mcp";
 import { OPEN, releaseDb, T } from "./release-db";
@@ -60,24 +61,33 @@ describe.skipIf(!hasDb)("125 the release page (Postgres)", () => {
     expect(renderToStaticMarkup(createElement(When, { at: "2026-12-12T20:05:00Z" }))).toContain("12 Dec 2026, 20:05 UTC");
   });
 
-  // The read path, not a hand-set day: getRelease takes the completion and void days in the project's entity zone.
-  it.each([
-    { zone: "Pacific/Kiritimati", at: "2026-12-12T20:00:00Z", day: "13 Dec 2026" },
-    { zone: "Pacific/Pago_Pago", at: "2026-12-13T05:00:00Z", day: "12 Dec 2026" },
-    { zone: null, at: "2026-12-13T05:00:00Z", day: "13 Dec 2026" },
-    { zone: null, at: "2026-12-12T23:59:00Z", day: "12 Dec 2026" },
-  ])("AC-5 AC-7 the completed and voided days are the project's: $zone at $at reads $day", async ({ zone, at, day }) => {
-    const [e] = await db.t.owner`select id from core.legal_entity where tenant_id = ${T} limit 1`;
-    if (zone) await db.t.owner`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${e.id}, ${T}, ${zone}) on conflict (legal_entity_id) do update set timezone = excluded.timezone`;
-    await db.t.owner`update delivery.project set legal_entity_id = ${zone ? e.id : null} where key = 'RTK'`;
-    const [r] = await db.t.owner`select r.completing_deployment_id as dep from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'RTK' and r.version = 'd1'`;
-    await db.t.owner`update delivery.release set completed_at = ${at} where completing_deployment_id = ${r.dep}`;
-    await db.t.owner`update delivery.deployment set voided_at = ${at}, void_reason = 'wrong run' where id = ${r.dep}`;
-    const html = await page(db.sahan, "RTK", "d1");
-    expect(html).toContain(`<dt>Completed</dt><dd>${day} · On time</dd>`);
-    expect(html).toContain(`Completed on ${day} · On time`);
-    expect(html).toContain(`was voided on ${day}: wrong run`);
-  });
+  // The whole path, nothing planted: each release completes through recordDeployment and is voided through voidDeployment,
+  // its target set beside the zone's midnight. The expected day comes from Intl, not from releaseDay, so the day getRelease
+  // reads, the day completeOnDeployment judged `completion` by, and the word beside it must all agree.
+  const dayIn = (zone: string, at: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(at);
+  const dayBefore = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const targets = { "its own day": (d: string) => d, "the day before": dayBefore, "the UTC day": (_: string, utc: string) => utc };
+  it.each(["Pacific/Kiritimati", "Pacific/Pago_Pago", "Asia/Colombo", null].flatMap((zone) => Object.keys(targets).map((target) => ({ zone, target }))))(
+    "AC-5 AC-7 the completed and voided days are the project's, beside On time or Late: $zone, target $target", async ({ zone, target }) => {
+      const [e] = await db.t.owner`select id from core.legal_entity where tenant_id = ${T} limit 1`;
+      if (zone) await db.t.owner`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${e.id}, ${T}, ${zone}) on conflict (legal_entity_id) do update set timezone = excluded.timezone`;
+      await db.t.owner`update delivery.project set legal_entity_id = ${zone ? e.id : null} where key = 'RTK'`;
+      const now = new Date();
+      const targetDate = targets[target as keyof typeof targets](dayIn(zone ?? "UTC", now), dayIn("UTC", now));
+      const version = `z-${zone ?? "utc"}-${target}`.replace(/\W+/g, "-");
+      await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version, targetDate });
+      await recordDeployment(db.admin(), { projectKey: "RTK", version, environment: "UAT" });
+      await voidDeployment(db.admin(), { projectKey: "RTK", version, environment: "UAT", reason: "wrong run" });
+      const release = (await getRelease(db.sahan, "RTK", version))!;
+      const day = dayIn(zone ?? "UTC", new Date(release.completedAt!));
+      const word = day > targetDate ? "Late" : "On time";
+      expect([release.completedDay, release.completingVoided?.day, release.completion]).toEqual([day, dayIn(zone ?? "UTC", new Date(release.completingVoided!.at)), day > targetDate ? "late" : "on_time"]);
+      const html = await page(db.sahan, "RTK", version);
+      expect(html).toContain(`<dt>Completed</dt><dd>${dayLabel(day)} · ${word}</dd>`);
+      expect(html).toContain(`Completed on ${dayLabel(day)} · ${word}`);
+      expect(html).toContain(`was voided on ${dayLabel(release.completingVoided!.day)}: wrong run`);
+      if (target === "the day before") expect(word).toBe("Late");
+    });
 
   it("AC-9 AC-10 Edit for an Admin on an open release; a PM elsewhere is told; a completed release is read-only", async () => {
     expect(open).toMatch(/data-ask="Edit release o1 of RTK"[^>]*>.*Edit release/);
