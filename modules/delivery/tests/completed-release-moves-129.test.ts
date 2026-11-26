@@ -32,15 +32,16 @@ describe.skipIf(!hasDb)("129 a proposal in a completed release moves only when a
     expect(moves).toBe(`${p} from ${from} (UAT, ${label})`);
 
     const refusal = new RegExp(`${p} is already in RTK ${from} \\(UAT, ${label}\\); confirm moving it`);
+    // The card is checked before the create runs: once the create commits, the version is taken.
     const card = proposeRelease(db.sahan, { projectKey: "RTK", version: to, proposalKeys: [p], reassign: asked });
-    const create = createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: to, proposalKeys: [p], reassign: asked ?? [] });
+    const create = () => createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: to, proposalKeys: [p], reassign: asked ?? [] });
     if (reassign) {
       await expect(card).resolves.toBeUndefined();
-      await expect(create).resolves.toMatchObject({ moved: [{ key: p, from }] });
+      await expect(create()).resolves.toMatchObject({ moved: [{ key: p, from }] });
       await setReleaseProposals(db.admin(), { projectKey: "RTK", version: other, proposalKeys: [p], reassign: [p] });
     } else {
       await expect(card).rejects.toMatchObject({ field: "proposalKeys", message: expect.stringMatching(refusal) });
-      await expect(create).rejects.toThrow(refusal);
+      await expect(create()).rejects.toThrow(refusal);
       await expect(setReleaseProposals(db.admin(), { projectKey: "RTK", version: other, proposalKeys: [p] })).rejects.toThrow(refusal);
     }
   });
