@@ -45,6 +45,7 @@ describe.skipIf(!hasDb)("125 the release page (Postgres)", () => {
   it("AC-8 the status history: from, to, why and who, oldest first", () => {
     expect(done).toMatch(/Created<\/td>.*Deployed to UAT<\/td>/);
     expect(done).toMatch(/In progress<\/span><\/td><td data-label="To"><span class="chip">Completed/);
+    expect(done).not.toMatch(/(user|sp):[0-9a-f]{8}-/);
   });
 
   it("AC-9 AC-10 Edit for an Admin on an open release; a PM elsewhere is told; a completed release is read-only", async () => {

@@ -2,6 +2,10 @@
 
 **Change:** 125-release-pages · **Created:** 2026-11-26 · **Review:** change
 
+Size waiver: 554 production lines against the 400 cap (product owner, 2026-11-26). One screen set whose parts only work
+together: the list's columns and filters share one rule with `list_releases`, and the release page's cards share it with
+the edit card. Most lines are new UI components under 80 lines each, plus their styles.
+
 ## Problem
 
 Since 123 and 124 a release has a name, a category, dates and a status, but the pages still show only a version and
