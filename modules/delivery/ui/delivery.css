@@ -279,7 +279,7 @@
 .dv-track li>small{color:var(--ink-2);font-size:12px}
 .dv-track .deployed{--c:var(--chip-good)}
 .dv-track .testing{--c:var(--chip-agent)}
-.dv-track .rolled-back{--c:var(--chip-bad)}
+.dv-track .rolled-back,.dv-track .failed{--c:var(--chip-bad)}
 .dv-track .todo{--c:var(--line-2)}
 /* Review 081 round 1 (R3): each step and timeline line pins its own record; the pin sits in its top-right corner, shown on hover or focus. */
 .dv-track li.pinnable .pin,.dv-timeline li.pinnable .pin{top:4px;right:0;width:26px;height:26px}
@@ -467,4 +467,4 @@ a.quiet:hover,a.quiet:focus-visible{text-decoration:underline;text-underline-off
 .rel-env ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .rel-dep{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;padding-right:44px;min-height:32px}
 .rel-dep-act{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
-.rel-voided{margin:0 0 20px;padding:10px 14px;border-radius:12px;background:var(--warn-soft,#FFF6E0);color:var(--ink);font-size:13.5px}
+.rel-voided{margin:0 0 20px;padding:10px 14px;border-radius:12px;background:var(--chip-warn-bg);color:var(--ink);font-size:13.5px}

@@ -4,8 +4,7 @@ import { ScopeError } from "@amax/auth";
 import { contextFor, defineService, isSystemContext, type Emitted } from "@amax/core/server";
 import { cron, defineWorkflow, step } from "@amax/workflows";
 import { clockOf } from "./queries";
-import { releaseDay, releaseStatus } from "./release-status";
-import { writeStatus, zoneOf } from "./release-tracking";
+import { statusAt, writeStatus, zoneOf } from "./release-tracking";
 
 type Moved = { project: string; version: string; from: string; to: string };
 
@@ -26,7 +25,7 @@ export const evaluateReleases = defineService({
     for (const r of open) {
       const entity = (r.legal_entity_id as string | null) ?? "";
       if (!zones.has(entity)) zones.set(entity, await zoneOf(tx, r));
-      const to = releaseStatus({ today: releaseDay(zones.get(entity)!, now), start: r.start_date as string, target: r.target_date as string, completed: false });
+      const to = statusAt(zones.get(entity)!, now, { startDate: r.start_date as string, targetDate: r.target_date as string });
       if (to === r.status) continue;
       const e = await writeStatus(tx, r, to, "schedule", "amax");
       if (e) events.push(e);

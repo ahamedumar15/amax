@@ -1,7 +1,7 @@
 import { facet, PinButton, type PinRef } from "@amax/ui";
 import { releaseHref } from "../contracts";
 import { day, releasePin, stagePin } from "../pins";
-import { StageWord } from "../server/deployment-status";
+import { DEPLOYMENT_STATUSES, StageWord } from "../server/deployment-status";
 import { releaseBand, tasksBand, type ReleaseLike } from "./band";
 
 // 081 amendment 4 (AC-42, revised 2026-11-04): the board leads with what its lanes don't already say: the release the
@@ -13,7 +13,7 @@ type Props = {
   done: number; total: number; closedBy: { agents: number; people: number; automation: number };
 };
 
-export const STAGE_WORD: Record<string, string> = { deployed: "Deployed", testing: "Testing", "rolled-back": "Rolled back", failed: StageWord("failed"), todo: "Not yet" };
+export const STAGE_WORD: Record<string, string> = { ...Object.fromEntries(DEPLOYMENT_STATUSES.map((s) => [s, StageWord(s)])), todo: "Not yet" };
 
 type TrackStage = { environment: string; environmentId?: string; deploymentId?: string | null; isProd: boolean; status: string | null; at: string | null };
 

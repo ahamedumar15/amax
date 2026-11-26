@@ -13,10 +13,9 @@ export type Dates = { category: Category; startDate: string; targetDate: string 
 
 export const zoneOf = (tx: Tx, project: Row) => entityZone(tx, (project.legal_entity_id as string | null) ?? null);
 
-export async function statusFor(tx: Tx, project: Row, d: Pick<Dates, "startDate" | "targetDate">) {
-  const today = releaseDay(await zoneOf(tx, project), await clockOf(tx));
-  return releaseStatus({ today, start: d.startDate, target: d.targetDate, completed: false });
-}
+export const statusAt = (zone: string, now: Date, d: Pick<Dates, "startDate" | "targetDate">) =>
+  releaseStatus({ today: releaseDay(zone, now), start: d.startDate, target: d.targetDate, completed: false });
+export const statusFor = async (tx: Tx, project: Row, d: Pick<Dates, "startDate" | "targetDate">) => statusAt(await zoneOf(tx, project), await clockOf(tx), d);
 
 export const categoryEnv = async (tx: Tx, projectId: unknown, category: Category) =>
   (await tx.execute(category === "prod" ? sql`select * from delivery.environment where project_id = ${projectId} and is_prod`
@@ -33,7 +32,7 @@ export async function checkDates(tx: Tx, project: Row, d: Dates) {
 
 export async function tracked(tx: Tx, releaseId: unknown) {
   const [r] = await tx.execute(sql`select id, tenant_id, version, name, category, status, completing_deployment_id,
-    start_date::text as start_date, target_date::text as target_date from delivery.release where id = ${releaseId}`);
+    start_date::text as start_date, target_date::text as target_date from delivery.release where id = ${releaseId} for update`);
   return r;
 }
 
@@ -53,7 +52,7 @@ async function statusChanged(tx: Tx, releaseId: unknown, from: string | null, to
   const [x] = await tx.execute(sql`select r.id, r.version, r.name, r.category, r.target_date::text as target_date, p.id as project_id, p.key, p.manager_user_id
     from delivery.release r join delivery.project p on p.id = r.project_id where r.id = ${releaseId}`);
   const payload: ReleaseStatusChanged = { releaseId: x.id as string, projectId: x.project_id as string, projectKey: x.key as string, managerUserId: (x.manager_user_id as string | null) ?? null, version: x.version as string,
-    name: (x.name as string | null) ?? (x.version as string), category: categoryLabel(x.category as string) ?? "", targetDate: dayLabel(x.target_date as string | null) ?? "",
+    name: (x.name as string | null) ?? (x.version as string), category: x.category as string, categoryLabel: categoryLabel(x.category as string)!, targetDate: x.target_date as string, targetDay: dayLabel(x.target_date as string)!,
     from, to, toLabel: statusLabel(to), source, href: releaseHref({ projectKey: x.key as string, version: x.version as string }) };
   return { name: EVENTS.releaseStatusChanged, payload };
 }

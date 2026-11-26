@@ -57,7 +57,6 @@ export function timeBand(hours: number, estimate: number | null, waiting = 0) {
 
 type Stage = { environment: string; environmentId?: string; deploymentId?: string | null; position: number; isProd: boolean; status: string | null; at: string | null };
 export type ReleaseLike = { id: string; version: string; proposals: number; stages: Stage[] };
-const STATE = (status: string) => stageWord(status);
 
 /**
  * AC-42 (as revised 2026-11-04): the release the sprint is heading for, stage by stage, since the board's lanes already
@@ -70,6 +69,6 @@ export function releaseBand(releases: ReleaseLike[], next: string | null, health
   const r = releases.find((x) => x.version === named && !live(x)) ?? releases.find((x) => !live(x));
   if (!r) return null;
   const stages = [...r.stages].sort((a, b) => a.position - b.position).map((s) => ({ ...s, state: s.status ?? "todo" }));
-  const sentence = `${r.version}, ${r.proposals} ${r.proposals === 1 ? "proposal" : "proposals"}: ${stages.map((s) => `${s.environment} ${(s.status ? STATE(s.status) : "not yet")}`).join(", ")}`;
+  const sentence = `${r.version}, ${r.proposals} ${r.proposals === 1 ? "proposal" : "proposals"}: ${stages.map((s) => `${s.environment} ${(s.status ? stageWord(s.status) : "not yet")}`).join(", ")}`;
   return { release: r, stages, health: health === "on-track" ? "On track" : "At risk", sentence };
 }

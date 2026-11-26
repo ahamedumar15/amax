@@ -312,6 +312,8 @@ export function isRelease(r: { id: string; projectKey: string; version: string }
 }
 
 /** One release with its proposals and full deployment history, voided ones included. */
+const voidedOf = (d: DeploymentRow | undefined) => (d?.voidedAt ? { at: d.voidedAt, reason: d.voidReason } : null);
+
 export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
     // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
@@ -328,7 +330,7 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
     const named = await namesFor(tx, [...history.map((d) => d.recordedBy), ...statusHistory.map((h) => h.by)]);
     return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r),
       completingDeploymentId: (r.completing_deployment_id as string | null) ?? null,
-      completingVoided: history.find((d) => d.id === r.completing_deployment_id && d.voidedAt) ? (({ voidedAt, voidReason }) => ({ at: voidedAt!, reason: voidReason }))(history.find((d) => d.id === r.completing_deployment_id)!) : null,
+      completingVoided: voidedOf(history.find((d) => d.id === r.completing_deployment_id)),
       history: history.map((d) => ({ ...d, recordedBy: named(d.recordedBy) })), proposals,
       statusHistory: statusHistory.map((h) => ({ ...h, by: named(h.by) })) };
   });

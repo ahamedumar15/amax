@@ -19,7 +19,7 @@ describe.skipIf(!hasDb)("127 the release status event (Postgres)", () => {
     await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "n1", name: "November", startDate: "2026-12-01", targetDate: "2026-12-10" });
     await updateRelease(db.admin(), { projectKey: "RTK", version: "n1", name: "November Release" });
     const [e] = await db.t.owner`select payload from core.event where name = ${EVENTS.releaseStatusChanged} and payload->>'version' = 'n1'`;
-    expect(e.payload).toMatchObject({ projectKey: "RTK", name: "November", category: "UAT", targetDate: "10 Dec 2026", from: null, to: "planned", toLabel: "Planned", source: "create",
+    expect(e.payload).toMatchObject({ projectKey: "RTK", name: "November", category: "uat", categoryLabel: "UAT", targetDate: "2026-12-10", targetDay: "10 Dec 2026", from: null, to: "planned", toLabel: "Planned", source: "create",
       href: "/delivery/releases/RTK/n1" });
     expect(await events("n1")).toEqual(["null>planned:create"]);
   });
@@ -34,6 +34,19 @@ describe.skipIf(!hasDb)("127 the release status event (Postgres)", () => {
     await check();
     await recordDeployment(db.admin(), { projectKey: "RTK", version: "n1", environment: "UAT" });
     expect((await events("n1")).slice(2)).toEqual(["overdue>in_progress:update", "in_progress>overdue:schedule", "overdue>completed:deployment"]);
+  });
+
+  it("AC-5 two checks at once, and a check racing a deployment, write each transition once: one history row, one event", async () => {
+    await pin("2026-11-20");
+    for (const version of ["c1", "c2"]) await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version, startDate: "2026-11-25", targetDate: "2026-11-28" });
+    await pin("2026-11-30");
+    const runs = await Promise.all([check(), check(), recordDeployment(db.admin(), { projectKey: "RTK", version: "c2", environment: "UAT" })]);
+    expect((runs[0] as { changed: number }).changed + (runs[1] as { changed: number }).changed).toBeLessThanOrEqual(2);
+    for (const version of ["c1", "c2"]) {
+      const rows = await db.history("RTK", version);
+      expect([version, new Set(rows).size, (await events(version)).length]).toEqual([version, rows.length, rows.length]);
+    }
+    expect(await db.history("RTK", "c1")).toEqual(["null>planned:create", "planned>overdue:schedule"]);
   });
 
   it("AC-4 a run that fails part way changes nothing and raises nothing; its retry raises each event once", async () => {

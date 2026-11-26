@@ -37,8 +37,11 @@ export type ProposalWithdrawn = { proposalId: string; key: string; projectId: st
 
 export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed", projectManagerChanged: "delivery.project.manager_changed", releaseStatusChanged: "delivery.release.status_changed" } as const;
 
+/** 126: a deployment that didn't succeed: rolled back or failed. One rule for Delivery and every module reading ReleaseDeployed. */
+export const unsuccessfulDeployment = (status: string | null | undefined) => status === "rolled-back" || status === "failed";
+
 /** 127: a release took a new status (create, edit, deployment or the hourly check); `to` is the stored value (`overdue` reads "Off track"); `managerUserId` the project's PM. */
-export type ReleaseStatusChanged = { releaseId: string; projectId: string; projectKey: string; managerUserId: string | null; version: string; name: string; category: string; targetDate: string;
+export type ReleaseStatusChanged = { releaseId: string; projectId: string; projectKey: string; managerUserId: string | null; version: string; name: string; category: string; categoryLabel: string; targetDate: string; targetDay: string;
   from: string | null; to: string; toLabel: string; source: string; href: string };
 
 /** 107: a project's PM handed over; `from` is null when it had none, `by` the actor. */

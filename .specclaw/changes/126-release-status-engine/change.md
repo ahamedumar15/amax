@@ -1,6 +1,6 @@
 # Release tracking, phase 4: release status keeps itself up to date, and Completed is final
 
-**Change:** 126-release-status-engine · **Created:** 2026-11-26 · **Review:** change
+**Change:** 126-release-status-engine · **Created:** 2026-11-26 · **Review:** covered-by 127-release-off-track-notice
 
 ## Problem
 
