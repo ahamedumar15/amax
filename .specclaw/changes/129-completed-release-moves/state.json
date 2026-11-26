@@ -1,0 +1,9 @@
+{
+  "change": "129-completed-release-moves",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-26T17:37:53Z"},
+    "tasks": {"status":"done","at":"2026-11-26T17:38:06Z"}
+  }
+}

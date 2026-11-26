@@ -40,4 +40,13 @@ refused outright, as today.
 
 ## Tasks
 
+No separate UI task: the New release card is built from the rule's data (its detail line and "Move from their release"
+options come from `releaseProposals`), so the screen matches the mock once the rule counts completed releases.
+
+- [ ] `T1` — AC-1 AC-2 AC-3: one "held elsewhere" rule that counts completed releases (`openElsewhere` becomes `heldElsewhere`), used by the card's list, field check and move line and by `assignProposals`; `list_release_proposals`'s `openRelease` becomes `inRelease` (release tracking hasn't reached `main`), its description updated
+  Files: modules/delivery/server/release-proposals.ts, modules/delivery/server/release-card.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/tests/release-card-124.test.ts
+- [ ] `T2` — AC-4: table over open, completed, and completed with `reassign`, through both writers and the card; Released in a completed release still refused; README line
+  Files: modules/delivery/tests/completed-release-moves-129.test.ts, modules/delivery/README.md
+  Depends: T1
+
 ## Verify
