@@ -143,8 +143,9 @@ export async function releaseOffers(v: Viewer, a: Args) {
   const keys = await read(v, async (tx) => (await tx.execute(sql`select string_agg(key, ', ' order by key) as keys from delivery.proposal where release_id = ${r.id}`))[0]?.keys as string | null);
   return allowed(v, [
     ...(next ? [{ label: `Record a deployment of ${name} to ${next.environment}`, prompt: `Record a deployment of ${name} to ${next.environment}`, tool: "record_deployment", permission: "delivery:deployment:record" }] : []),
-    ...(live ? [] : [{ label: `Change the proposals in ${name}`, prompt: `Set the proposals in ${name} to: ${keys ?? ""}`, tool: "set_release_proposals", permission: "delivery:release:create" }]),
-    { label: `Re-tag ${name}`, prompt: `Tag ${name} as `, tool: "tag_release", permission: "delivery:release:create" },
+    // A completed release is final (123, 126): no write that would only be refused.
+    ...(live || r.status === "completed" ? [] : [{ label: `Change the proposals in ${name}`, prompt: `Set the proposals in ${name} to: ${keys ?? ""}`, tool: "set_release_proposals", permission: "delivery:release:create" }]),
+    ...(r.status === "completed" ? [] : [{ label: `Re-tag ${name}`, prompt: `Tag ${name} as `, tool: "tag_release", permission: "delivery:release:create" }]),
   ], r.projectId);
 }
 

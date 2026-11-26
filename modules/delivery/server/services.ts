@@ -15,7 +15,7 @@ import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolve
 import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
 import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
 import { DEPLOYMENT_STATUSES } from "./deployment-status";
-import { checkDates, completeOnDeployment, missingForTracking, notCompleted, notTrackedYet, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
+import { checkDates, completeBy, completeOnDeployment, missingForTracking, notCompleted, notTrackedYet, reachedAlready, statusFor, strandsReleases, tracked, writeStatus, type Dates } from "./release-tracking";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -406,6 +406,8 @@ export const upsertEnvironment = defineService({
     const before = await envByName(tx, project.id, input.name);
     const target = input.rename ? await envByName(tx, project.id, input.rename) : undefined;
     if (target && target.id !== before?.id) throw invalid(`${input.projectKey} already has an environment called ${target.name}`);
+    const stranded = before && (await strandsReleases(tx, project.id, before, { name: input.rename ?? before.name, is_prod: input.isProd ?? before.is_prod }));
+    if (stranded) throw invalid(stranded);
     if (input.isProd) await tx.execute(sql`update delivery.environment set is_prod = false where project_id = ${project.id}`);
     let row;
     if (before) {
@@ -440,6 +442,8 @@ export const removeEnvironment = defineService({
     const [{ n }] = await tx.execute(sql`select count(*)::int as n from delivery.deployment where environment_id = ${env.id}`);
     // Voided records stay as history, so they count too.
     if (Number(n) > 0) throw invalid(`${env.name} has ${n} deployment record${Number(n) === 1 ? "" : "s"} (voided ones included, kept as history), so it stays`);
+    const stranded = await strandsReleases(tx, project.id, env, null);
+    if (stranded) throw invalid(stranded);
     await tx.execute(sql`delete from delivery.environment where id = ${env.id}`);
     return { result: { removed: env.name as string }, resourceId: env.id as string, before: { name: env.name } };
   },
@@ -499,8 +503,12 @@ export const updateRelease = defineService({
     }
     const d = { category: input.category ?? r.category, startDate: input.startDate ?? r.start_date, targetDate: input.targetDate ?? r.target_date } as Dates;
     await checkDates(tx, project, d);
-    const status = await statusFor(tx, project, d);
-    const changed = await writeStatus(tx, r, status, "update", by(ctx), null, sql`, name = ${name}, category = ${d.category}, start_date = ${d.startDate}, target_date = ${d.targetDate}`);
+    const fields = sql`, name = ${name}, category = ${d.category}, start_date = ${d.startDate}, target_date = ${d.targetDate}`;
+    // Tracked, or moved to a category it already reached: that deployment completes it, in the same write (no false Off track).
+    const reached = await reachedAlready(tx, project.id, r.id, d.category);
+    const status = reached ? "completed" : await statusFor(tx, project, d);
+    const changed = reached ? await completeBy(tx, project, { ...r, target_date: d.targetDate }, reached, "deployment", by(ctx), fields)
+      : await writeStatus(tx, r, status, "update", by(ctx), null, fields);
     return { result: { version: input.version, status }, resourceId: r.id as string, before, after: { name, ...d, status }, events: changed ? [changed] : [] };
   },
 });

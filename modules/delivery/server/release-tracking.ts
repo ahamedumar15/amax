@@ -63,12 +63,34 @@ async function statusChanged(tx: Tx, releaseId: unknown, from: string | null, to
   return { name: EVENTS.releaseStatusChanged, payload };
 }
 
-async function completeBy(tx: Tx, project: Row, r: Row, d: Row, source: Source, by: string) {
+export async function completeBy(tx: Tx, project: Row, r: Row, d: Row, source: Source, by: string, also: SQL = sql``) {
   const zone = await zoneOf(tx, project);
   const day = releaseDay(zone, d.at as string);
   const completion = completionOf(day, r.target_date as string);
   return writeStatus(tx, r, "completed", source, by, d.id as string,
-    sql`, completed_at = ${d.at}, completed_zone = ${zone}, completed_day = ${day}, completion = ${completion}, completing_deployment_id = ${d.id}`);
+    sql`, completed_at = ${d.at}, completed_zone = ${zone}, completed_day = ${day}, completion = ${completion}, completing_deployment_id = ${d.id} ${also}`);
+}
+
+/** The first live `deployed` record the release has in its category's environment: when it got there, if it already has. */
+export async function reachedAlready(tx: Tx, projectId: unknown, releaseId: unknown, category: Category) {
+  const env = await categoryEnv(tx, projectId, category);
+  return env ? (await tx.execute(sql`select id, at, status, environment_id from delivery.deployment where release_id = ${releaseId} and environment_id = ${env.id}
+    and status = 'deployed' and voided_at is null order by at limit 1`))[0] : undefined;
+}
+
+const serves = (e: Row) => [...(["dev", "uat"] as const).filter((c) => String(e.name).toLowerCase() === c), ...(e.is_prod ? ["prod" as const] : [])];
+
+/**
+ * An environment change (rename, unmark Prod, remove) that would leave open releases of a category with no environment
+ * to complete on is refused, naming them: they could never complete and would go Off track.
+ */
+export async function strandsReleases(tx: Tx, projectId: unknown, before: Row, after: Row | null) {
+  const lost = serves(before).filter((c) => !(after ? serves(after) : []).includes(c));
+  for (const category of lost) {
+    const open = await tx.execute(sql`select version from delivery.release where project_id = ${projectId} and category = ${category} and status <> 'completed' order by version`);
+    if (open.length) return `${open.map((r) => r.version as string).join(", ")} ${open.length === 1 ? "is an open" : "are open"} ${categoryLabel(category)} release${open.length === 1 ? "" : "s"} that complete${open.length === 1 ? "s" : ""} on ${before.name as string}; complete or change ${open.length === 1 ? "it" : "them"} first`;
+  }
+  return null;
 }
 
 export async function completeOnDeployment(tx: Tx, project: Row, releaseId: unknown, d: Row, by: string): Promise<Emitted | null> {
