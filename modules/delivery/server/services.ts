@@ -73,7 +73,7 @@ async function releaseOf(tx: Tx, projectId: unknown, version: string) {
 // row lock first, then any release rows: one order, no deadlock (123 review round 2).
 const lockProject = (tx: Tx, projectId: unknown) => tx.execute(sql`select 1 from delivery.project where id = ${projectId} for update`);
 
-async function inRelease(tx: Tx, ctx: ServiceContext, input: { projectKey: string; version: string }) {
+async function openRelease(tx: Tx, ctx: ServiceContext, input: { projectKey: string; version: string }) {
   const project = await projectByKey(tx, input.projectKey);
   scoped(ctx, "delivery:release:create", project.id as string);
   await lockProject(tx, project.id);
@@ -467,7 +467,7 @@ export const tagRelease = defineService({
   resource: "delivery.release",
   input: z.object({ projectKey: z.string(), version: z.string(), newVersion: Version }),
   async run(tx, input, ctx) {
-    const { project, r } = await inRelease(tx, ctx, input);
+    const { project, r } = await openRelease(tx, ctx, input);
     await tx.execute(sql`update delivery.release set version = ${input.newVersion}, updated_at = now() where id = ${r.id}`);
     // The release's page is named by its version: say where it moved, so chat can follow it (057).
     const moved = { from: releaseHref(input), to: releaseHref({ projectKey: input.projectKey, version: input.newVersion }) };
@@ -483,7 +483,7 @@ export const setReleaseProposals = defineService({
   resource: "delivery.release",
   input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: Keys, reassign: Keys.default([]) }),
   async run(tx, input, ctx) {
-    const { project, r } = await inRelease(tx, ctx, input);
+    const { project, r } = await openRelease(tx, ctx, input);
     const before = (await tx.execute(sql`select key from delivery.proposal where release_id = ${r.id} order by key`)).map((p) => p.key as string);
     await lockProposals(tx, sql`release_id = ${r.id} or (project_id = ${project.id} and key = any(${textArray(input.proposalKeys)}))`);
     await tx.execute(sql`update delivery.proposal set release_id = null where release_id = ${r.id} and phase <> 'released'`);
@@ -502,7 +502,7 @@ export const updateRelease = defineService({
   resource: "delivery.release",
   input: ReleaseUpdate,
   async run(tx, input, ctx) {
-    const { project, r: locked } = await inRelease(tx, ctx, input);
+    const { project, r: locked } = await openRelease(tx, ctx, input);
     const r = await tracked(tx, locked.id);
     const datesGiven = input.category !== undefined || input.startDate !== undefined || input.targetDate !== undefined;
     if (missingForTracking(r, input)) throw invalid(notTrackedYet(input.projectKey, input.version));

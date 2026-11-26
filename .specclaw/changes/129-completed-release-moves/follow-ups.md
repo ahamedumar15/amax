@@ -1,0 +1,6 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [major B1] `modules/delivery/mcp.ts:134` The held-elsewhere rule now covers completed releases, but only the `list_release_proposals` description was updated. The `set_release_proposals` description (line 134) and the `create_release` description (line 108) still say "A proposal in another release that isn't completed moves only if reassign names it too". These descriptions are the contract the chat model and MCP agents follow, and they now contradict `heldElsewhere`. Fix: change both to say "in another release, open or completed". (round 1) <!-- fp:cb26ab8ea4ee class:other -->
+- [minor B10] `modules/delivery/server/services.ts:76` The find-and-replace of `openRelease` also renamed the private service helper `openRelease` to `inRelease`. That helper loads the release and calls `notCompleted`: it accepts only an open release. The new name suggests the opposite and clashes with the new `inRelease` field, which now means 'any release, open or completed'. This rename was not in T1's scope. Fix: put the helper's name back to `openRelease`, or call it something like `editableRelease`. (round 1) <!-- fp:8d1a1a8b2459 class:other -->
