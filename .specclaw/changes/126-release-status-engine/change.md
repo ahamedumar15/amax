@@ -62,7 +62,17 @@ Terms as in 123. **Unsuccessful**: a deployment whose status is `rolled-back` or
 
 ## Tasks
 
-<!-- Added by plan. -->
+- [ ] `T1` — UI: the one `unsuccessful` rule on every screen that read `rolled-back` (map pill, next step, progress track, deployment chip, board band); the "completing deployment voided" line on the release page; the history's Why for scheduled changes (AC-2 UI side, AC-3 page, AC-7)
+  Files: modules/delivery/server/deployment-status.ts, modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/ReleaseTable.tsx, modules/delivery/ui/ReleaseDeployments.tsx, modules/delivery/ui/ReleaseHistory.tsx, modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/BoardBand.tsx, modules/delivery/ui/band.ts
+- [ ] `T2` — Data and services: migration 0026 (`failed`, `schedule`); `record_deployment` and the contract accept `failed`; Overview, portfolio and pin offers use `unsuccessful`; the failed notification rule; voiding the completing deployment keeps Completed and `get_release_history` reports `completingVoided` (AC-1, AC-2 server side, AC-3)
+  Files: modules/delivery/db/migrations/0026_release_status_engine.sql, modules/delivery/server/services.ts, modules/delivery/server/release-tracking.ts, modules/delivery/server/queries.ts, modules/delivery/server/overview.ts, modules/delivery/server/portfolio.ts, modules/delivery/server/pin-offers.ts, modules/delivery/contracts.ts, modules/delivery/mcp.ts, modules/delivery/module.ts
+  Depends: T1
+- [ ] `T3` — The hourly check: `evaluateReleases` (one audited write per tenant, rows locked, Completed untouched, history only on a change, the project zone with UTC fallback) as workflow `delivery.release-status` with its hourly schedule in the manifest (AC-4, AC-5, AC-6)
+  Files: modules/delivery/server/release-check.ts, modules/delivery/module.ts
+  Depends: T2
+- [ ] `T4` — Tests and docs: the brief's full list (planned, in progress, off track, on time, late, matching and other environments, failed, testing, rollback, void, repeated run, finality, a completion during the check), 123's void test amended, README, lint, typecheck (AC-8)
+  Files: modules/delivery/tests/release-engine-126.test.ts, modules/delivery/tests/release-tracking-123-writes.test.ts, modules/delivery/README.md
+  Depends: T3
 
 ## Verify
 
