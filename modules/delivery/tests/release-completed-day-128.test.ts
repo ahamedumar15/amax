@@ -5,7 +5,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { createRelease, recordDeployment } from "../server/services";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
-import { dayLabel } from "../server/release-status";
+import { withTenant } from "@amax/db";
+import { entityZone } from "@amax/workflows";
+import { dayLabel, releaseDay } from "../server/release-status";
 import { ReleaseBody } from "../ui/ReleasePage";
 import { OPEN, releaseDb, T } from "./release-db";
 
@@ -49,24 +51,34 @@ describe.skipIf(!hasDb)("128 a completed release keeps the day it completed on (
     expect(await page(version)).toContain(`<dt>Completed</dt><dd>${dayLabel(day)} · On time</dd>`);
   });
 
-  it("AC-3 the migration fills the day of a release completed before it, in its project's zone then; UTC without one", async () => {
+  // The backfill against the rule completeBy judged by (entityZone): own zone, the country's default, none (UTC).
+  it("AC-3 the migration fills the day of a release completed before it by entityZone's rule: own zone, country default, UTC", async () => {
+    const [lk, other] = await Promise.all(["=", "<>"].map(async (op) => (await db.t.owner`select id from core.legal_entity where tenant_id = ${T} and country ${db.t.owner.unsafe(op)} 'LK' limit 1`)[0].id as string));
+    await db.t.owner`delete from workflows.entity_zone where legal_entity_id = ${lk}`;
+    await db.t.owner`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${other}, ${T}, 'Pacific/Kiritimati') on conflict (legal_entity_id) do update set timezone = excluded.timezone`;
     await zoneTo(null);
-    await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "b-utc" });
-    await recordDeployment(db.admin(), { projectKey: "RTK", version: "b-utc", environment: "UAT" });
-    // The database as 0026 left it: no day, and 0025's check, which doesn't ask for one.
-    const before = async () => db.t.owner`alter table delivery.release drop constraint release_completed_whole; update delivery.release set completed_day = null;
+    await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "b1" });
+    await recordDeployment(db.admin(), { projectKey: "RTK", version: "b1", environment: "UAT" });
+    // The database as 0026 left it: no day, and 0025's check, which doesn't ask for one. Completed at an instant whose day
+    // differs by zone (20:00 UTC on 12 Dec is 13 Dec in Colombo and Kiritimati), so a wrong zone step can't pass.
+    const before = async () => db.t.owner`alter table delivery.release drop constraint release_completed_whole;
+      update delivery.release set completed_day = null, completed_at = case when completed_at is null then null else '2026-12-12T20:00:00Z'::timestamptz end;
       alter table delivery.release add constraint release_completed_whole check ((status = 'completed') = (completed_at is not null and completion is not null and completing_deployment_id is not null) or status is null)`.simple();
-    for (const zone of ["Pacific/Kiritimati", null]) {
-      await zoneTo(zone);
+    for (const [legalEntity, own, day] of [[other, "Pacific/Kiritimati", "2026-12-13"], [lk, null, "2026-12-13"], [null, null, "2026-12-12"]] as const) {
+      await db.t.owner`update delivery.project set legal_entity_id = ${legalEntity} where key = 'RTK'`;
+      const zone = await withTenant(db.app, T, (tx) => entityZone(tx, legalEntity));
+      expect(zone).toBe(own ?? (legalEntity ? "Asia/Colombo" : "UTC"));
       await before();
       await db.t.owner.unsafe(migration.replace(/^alter table delivery\.release add column completed_day date;$/m, ""));
-      const rows = await db.t.owner`select r.version, r.completed_at, r.completed_day::text as day from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'RTK' and r.completed_at is not null`;
+      const rows = await db.t.owner`select r.completed_at, r.completed_day::text as day from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'RTK' and r.completed_at is not null`;
       expect(rows.length).toBeGreaterThan(0);
-      for (const r of rows) expect(r.day).toBe(dayIn(zone ?? "UTC", (r.completed_at as Date).toISOString()));
+      for (const r of rows) expect([r.day, releaseDay(zone, r.completed_at as Date)]).toEqual([day, day]);
     }
   });
 
   it("AC-1 a completed release without its day is refused", async () => {
-    await expect(db.t.owner`update delivery.release set completed_day = null where version = 'b-utc'`).rejects.toThrow(/release_completed_whole/);
+    await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "c1" });
+    await recordDeployment(db.admin(), { projectKey: "RTK", version: "c1", environment: "UAT" });
+    await expect(db.t.owner`update delivery.release set completed_day = null where version = 'c1'`).rejects.toThrow(/release_completed_whole/);
   });
 });

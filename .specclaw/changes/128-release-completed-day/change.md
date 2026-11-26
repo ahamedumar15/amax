@@ -28,8 +28,9 @@ completing deployment's instant, the day `completion` is judged by.
    information card and lede show it. Changing the project's legal entity, or the entity's zone, after completion leaves
    the day and On time or Late unchanged.
 3. **AC-3 Backfill.** The migration fills `completed_day` for releases completed before it, in their project's zone at
-   migration time: the entity's own zone (`workflows.entity_zone`), else UTC. Release tracking (0025) hasn't reached
-   `main`, so only dev and test databases hold such rows; a country's default zone isn't consulted there.
+   migration time, by `entityZone`'s rule: the entity's own zone (`workflows.entity_zone`), else its country's default
+   (`ENTITY_ZONES`, inlined as it stands at 0027), else UTC. Release tracking (0025) hasn't reached `main`, so only dev
+   and test databases hold such rows. (Amended at review round 1: the country step was left out at first.)
 4. **AC-4 Scope.** The voided completing deployment's day stays read in the project's current zone (a later event, not
    judged against the target). No other screen or tool changes. `ReleaseTracking` gains `completedDay`, additive.
 5. **AC-5 Tests.** A table over at least three zones: complete through `recordDeployment`, then change the project's

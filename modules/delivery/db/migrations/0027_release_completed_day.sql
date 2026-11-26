@@ -2,10 +2,12 @@
 -- project's zone can't move the day away from its On time or Late.
 alter table delivery.release add column completed_day date;
 
--- Releases completed before 128, in their project's zone now: the entity's own zone, else UTC. Release tracking (0025)
--- hadn't reached main, so these are dev and test rows only.
+-- Releases completed before 128, in their project's zone now, by entityZone's rule (entityZoneSql): the entity's own
+-- zone, else its country's default (ENTITY_ZONES as it stands at 0027), else UTC. Release tracking (0025) hadn't
+-- reached main, so these are dev and test rows only.
 update delivery.release r set completed_day = (r.completed_at at time zone coalesce(
     (select z.timezone from delivery.project p join workflows.entity_zone z on z.legal_entity_id = p.legal_entity_id where p.id = r.project_id),
+    (select '{"LK":"Asia/Colombo"}'::jsonb ->> trim(e.country) from delivery.project p join core.legal_entity e on e.id = p.legal_entity_id where p.id = r.project_id),
     'UTC'))::date
   where r.completed_at is not null;
 
