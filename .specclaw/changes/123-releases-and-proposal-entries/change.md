@@ -152,7 +152,7 @@ Review commands (at the final pass, 5fd18c7a): `npx vitest run modules/delivery 
 
 Open at the stop (the final pass; fixes go in their own change, since a code commit under 123 after its final pass fails the review gate):
 
-- Major [B12] `server/services.ts`: `recordDeployment` doesn't take the project lock, so a deployment to QA and making QA the Prod environment can run together. Each misses the other's write, and the release stays open with a live deployment on its category's environment. Fix: `lockProject` before `releaseOf` in `recordDeployment`, plus a two-session test.
+- Major [B12] `server/services.ts`, **false positive** (shown by 129, withdrawn): the finding is that `recordDeployment` without the project lock races making QA the Prod environment and leaves the release open. Both sides already lock the release row, so whichever goes second reads the other's write. Three forced interleavings end Completed on the QA deployment, once, with and without the lock (`../129-deployment-project-lock/evidence/deployment-lock-129.test.ts.txt`).
 - Major (carried, path `modules/delivery/services.ts`, which doesn't exist): the round 3 audit finding. It was fixed in rounds 3 and 4 (`after.completed`, `source: environment`), but the tool carries a finding on a missing path into every later round. This carried finding caused the ESCALATE.
 - Minor: the category-to-environment rule is written twice, `categoryEnv` in SQL and `serves` in JS; derive one from the other.
 - Minor: `STATUS_FILTERS` repeats the status labels; build them from `statusLabel`.

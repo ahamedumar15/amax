@@ -2,6 +2,14 @@
 
 **Change:** 129-deployment-project-lock · **Created:** 2026-11-26 · **Review:** change
 
+**Withdrawn** (product owner, 2026-11-26, at build): the race this change was to close doesn't happen. `recordDeployment`
+and the environment change's completion (`completeReached`) both lock the release row, so whichever goes second reads
+the other's committed write. Three forced interleavings (`evidence/deployment-lock-129.test.ts.txt`: the deployment
+paused after reading the Prod environment; the environment change paused after its environment write; and paused after
+looking for a deployment there) all end Completed on the QA deployment, once, with and without the project lock in
+`recordDeployment`. The lock would only have changed one behaviour (a deployment waiting for a release being created,
+where round 17 refuses it), so no code ships; 123's `## Verify` records the major as a false positive.
+
 ## Problem
 
 123's final review pass left one major open (123's `## Verify`). `record_deployment` locks only the release row, while
@@ -32,10 +40,12 @@ What changes on screen, and where to see it: [`129-deployment-project-lock`](../
 
 No UI task: no screen changes.
 
-- [ ] `T1` — AC-1 AC-3: `recordDeployment` takes `lockProject` before `releaseOf`; README line
+- [~] `T1` — AC-1 AC-3: `recordDeployment` takes `lockProject` before `releaseOf`; README line
   Files: modules/delivery/server/services.ts, modules/delivery/README.md
 - [ ] `T2` — AC-2 AC-3: two-session tests, both orders forced (environment change first, deployment first), one completion on the QA deployment; the existing suites
   Files: modules/delivery/tests/deployment-lock-129.test.ts
   Depends: T1
 
 ## Verify
+
+Withdrawn at build (see the header): no code, no review loop. The evidence test ran 3/3 with the lock and 3/3 without it on the dev database (2026-11-26).
