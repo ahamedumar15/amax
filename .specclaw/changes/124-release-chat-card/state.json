@@ -1,0 +1,9 @@
+{
+  "change": "124-release-chat-card",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-26T08:27:07Z"},
+    "tasks": {"status":"done","at":"2026-11-26T08:27:28Z"}
+  }
+}
