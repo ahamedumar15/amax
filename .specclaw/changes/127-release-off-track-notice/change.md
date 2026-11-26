@@ -47,7 +47,14 @@ What changes on screen, and where to see it: [`127-release-off-track-notice`](..
 
 ## Tasks
 
-<!-- Added by plan. -->
+- [ ] `T1` — The event: `EVENTS.releaseStatusChanged` and `ReleaseStatusChanged` in the contract, built in one place from the release and its project and returned by `writeStatus` on a change; every writer (create, edit, deployment, the check) emits it with its write; payload declared in the manifest (AC-1)
+  Files: modules/delivery/contracts.ts, modules/delivery/server/release-tracking.ts, modules/delivery/server/services.ts, modules/delivery/server/release-check.ts, modules/delivery/module.ts
+- [ ] `T2` — The notice: rule `delivery.release-off-track` on the change to `overdue`, to the project's PMs, urgent, with the title, body and link from the payload (AC-2, AC-3)
+  Files: modules/delivery/module.ts
+  Depends: T1
+- [ ] `T3` — Tests and docs: notice to the project's PM only, once per transition, again after a new transition, none on completion, the zone deciding the day, a run that throws part way writes and notifies nothing and its retry notifies once; README and contracts note; lint and typecheck (AC-4, AC-5)
+  Files: modules/delivery/tests/release-notice-127.test.ts, modules/delivery/README.md
+  Depends: T2
 
 ## Verify
 
