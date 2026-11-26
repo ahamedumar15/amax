@@ -21,9 +21,9 @@ What changes on screen, and where to see it: [`128-release-completed-day`](../..
 Terms. **The completion day**: the day in the project's zone (`releaseDay`, in the entity zone, UTC without one) of the
 completing deployment's instant, the day `completion` is judged by.
 
-1. **AC-1 Stored at completion.** Migration 0027 adds `delivery.release.completed_day date`. Completing a release (a
+1. **AC-1 Stored at completion.** Migration 0027 adds `delivery.release.completed_day date` and `completed_zone text`. Completing a release (a
    deployment of its category) stores the completion day with `completed_at` and `completion`, judged from that same
-   day, in one write. `release_completed_whole` then also requires `completed_day` on a completed release.
+   day, in one write. `release_completed_whole` then also requires both on a completed release.
 2. **AC-2 Read, never recomputed.** `getRelease` returns the stored day as `completedDay`, and the release page's
    information card and lede show it. Changing the project's legal entity, or the entity's zone, after completion leaves
    the day and On time or Late unchanged.
@@ -31,8 +31,10 @@ completing deployment's instant, the day `completion` is judged by.
    migration time, by `entityZone`'s rule: the entity's own zone (`workflows.entity_zone`), else its country's default
    (`ENTITY_ZONES`, inlined as it stands at 0027), else UTC. Release tracking (0025) hasn't reached `main`, so only dev
    and test databases hold such rows. (Amended at review round 1: the country step was left out at first.)
-4. **AC-4 Scope.** The voided completing deployment's day stays read in the project's current zone (a later event, not
-   judged against the target). No other screen or tool changes. `ReleaseTracking` gains `completedDay`, additive.
+4. **AC-4 Scope.** The completion also stores the zone it was judged in (`completed_zone`), and the voided completing
+   deployment's day is read in that zone, so both days on the page come from one zone. (Amended at the final pass,
+   product owner, 2026-11-26: at first the voided day stayed in the current zone.) No other screen or tool changes.
+   `ReleaseTracking` gains `completedDay`, additive.
 5. **AC-5 Tests.** A table over at least three zones: complete through `recordDeployment`, then change the project's
    entity or its zone, and the stored day, `completion` and the rendered "Completed on … · On time|Late" still agree;
    the migration's backfill on a release completed before it; the constraint refuses a completed release without a day.
