@@ -90,7 +90,7 @@ Completed (an untracked one counts, as in 123).
 Review: OPEN — 5 rounds, final pass missing, models opus/opus; last round 0/1/2 b/M/m; fix proof not proven: no review.test_command configured, so no test could prove the fix
 Stopped at the five-pass cap (AGENTS.md). No blocker. Open, in `follow-ups.md`: the round-5 major, that a move out of a
 *completed* release (allowed without `reassign` by 123 AC-6) is audited as `moved` but never shown on the confirm card
-(a product decision: show it, or stop moving out of completed releases); and two minors (one shared "latest release"
+(a product decision: show it, or stop moving out of completed releases; **fixed by 129-completed-release-moves**, product owner's choice: a move out of a completed release needs `reassign` and shows on the card, as for an open one); and two minors (one shared "latest release"
 query for the pin and the card; `set_release_proposals` taking a comma-string like `create_release`). Fixes after the
 cap go in their own change.
 

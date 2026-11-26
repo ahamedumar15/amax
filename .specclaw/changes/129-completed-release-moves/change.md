@@ -51,4 +51,26 @@ options come from `releaseProposals`), so the screen matches the mock once the r
 
 ## Verify
 
+**Verdict:** PASS
+Review: CLEAN — 3 rounds, final pass 5422c42849, models opus/opus; last round 0/0/0 b/M/m (`base_branch` a2a86d4d, the stack before 129, for each run; config restored after each). Round 1's findings were fixed (both writers' tool descriptions; the open-release helper's name); the first final pass's one minor (a timing flake in the test) was fixed and the final pass run again.
+Size: 36 production lines against a2a86d4d (cap 400).
+
+Checked 2026-11-26, Windows 11, dev app on :3000 with the scripted chat model.
+
+- AC-1: pass. One `heldElsewhere` (no completed-release exception) drives `releaseProposals`, the card's field check, `movesOf` and `assignProposals`; with the old exception put back, the two completed-release rows of `completed-release-moves-129.test.ts` fail.
+- AC-2: pass. Both writers refuse a proposal held in a completed release without `reassign`, naming "(UAT, Completed)", and move it with `reassign`, audited `moved` (test table); `create_release` and `set_release_proposals` tool descriptions say so. 123 AC-6's move without `reassign` is amended: its test and the two cross-release races pass `reassign`.
+- AC-3: pass. The card shows "in v8.9.0 · UAT · Completed", offers "CON-012 from v8.9.0" under Move from their release, and refuses it on the field until ticked there (`shots/app-card.png`, CON-012 placed in the completed v8.9.0 for the shot and put back in v8.10.0 after); the confirm card's move line names it (test).
+- AC-4: pass. The table (open, completed, completed with `reassign`) and a Released proposal in a completed release still refused as shipped; `list_release_proposals`' field is `inRelease` (renamed from `openRelease`); README.
+
+Commands (exit codes):
+
+- `npx vitest run modules/delivery modules/notifications modules/leave apps/web/tests` (at the build): 1, 1277/1278, host-only `releases.test` "two call sites"; delivery after round 1: 840/841, the same one; the 129 tests 4/4 after the final-pass fix
+- `npx tsc --noEmit` in `modules/delivery` and `apps/web`: 0
+- `node scripts/check-module-standard.mjs --root .`: 0 (23 modules); `node scripts/check-graph.mjs --root .`: only the deliberate R7 fixture
+- `specclaw-verify size .specclaw 129-completed-release-moves` (base a2a86d4d): 0
+- `specclaw-preset-check .`: 1, repo-wide; in 129's files only the comment rule, as across the repo
+- `specclaw-quality-scan . --gate`: 2, the complexity tool did not run; duplication repo-wide, none in 129's files
+
+Screenshots: `shots/mock.png`, `shots/app-card.png`
+
 Quality: 872 → 872 duplicated lines (repo-wide, 860 at 128's build; none in 129's files, so nothing to refactor). Build notes: no per-task commits from the agent (git is read-only here). 123 AC-6's "a proposal in a Completed release that isn't Released can be moved" now needs `reassign` (129 amends it): `release-tracking-123.test.ts` AC-6 and the two cross-release races in `releases.test.ts` pass `reassign` for that move.
