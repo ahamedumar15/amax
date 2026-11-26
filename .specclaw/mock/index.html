@@ -4024,6 +4024,59 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   <p class="muted" style="font-size:12px">Releases made before this change are untracked: their name is their version, and category, dates and status are empty until someone edits them.</p>
 </section>
 
+<!-- ================= 124 Release chat card ================= -->
+<section data-change="124-release-chat-card" id="124-release-chat-card" data-roles="admin pm" data-title="New release card" data-nav="no" data-icon="rocket" data-parent="001-amax-foundation-project">
+  <h1>Release tracking, phase 2: one New release card</h1>
+  <p class="lede">124: "Create a new release" opens one card; proposals are picked from the project's Verified and Released ones. Fictional data (Orbit Notes).</p>
+
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+  <div class="card" style="max-width:420px;flex:1 1 380px">
+    <p style="margin:0 0 10px;font-size:13.5px;text-align:right"><span style="background:var(--sunken,#F4F2FB);padding:6px 10px;border-radius:12px">Create a new release</span></p>
+    <p class="muted" style="margin:0 0 12px;font-size:13.5px">Here's the release. Fill in what's missing and check it.</p>
+    <p style="margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase" class="muted">Confirm · New release</p>
+    <h2 style="margin:4px 0 14px;font-size:16px">New release for ORB · Orbit Notes</h2>
+    <label style="display:block;font-size:12.5px" class="muted">Name</label>
+    <input class="cf-text" value="November Release" style="width:100%;margin:2px 0 10px" aria-label="Name">
+    <label style="display:block;font-size:12.5px" class="muted">Version</label>
+    <input class="cf-text" value="v0.14.0" style="width:100%;margin:2px 0 10px" aria-label="Version">
+    <span style="display:block;font-size:12.5px" class="muted">Category</span>
+    <div style="display:flex;gap:6px;margin:4px 0 10px"><span class="chip">Dev</span><span class="chip good" aria-pressed="true">UAT</span><span class="chip">Prod</span></div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><label style="display:block;font-size:12.5px" class="muted">Start</label><input class="cf-text" value="2026-12-01" style="width:100%;margin:2px 0 10px" aria-label="Start"></div>
+      <div style="flex:1"><label style="display:block;font-size:12.5px" class="muted">Target</label><input class="cf-text" value="2026-11-28" style="width:100%;margin:2px 0 2px" aria-label="Target" aria-invalid="true">
+        <p class="err" style="margin:0 0 10px;font-size:12px">The target date (2026-11-28) is before the start date (2026-12-01)</p></div>
+    </div>
+    <fieldset style="border:0;padding:0;margin:0 0 10px"><legend style="font-size:12.5px" class="muted">Proposals (Verified or Released)</legend>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="checkbox" checked> <span><b>ORB-044</b> Offline drafts</span></label>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="checkbox" checked> <span><b>ORB-047</b> Shared tags<br><small class="muted">in v0.13.1 · UAT · In progress</small></span></label>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="checkbox"> <span><b>ORB-031</b> Shared notebooks<br><small class="muted">Released</small></span></label>
+    </fieldset>
+    <fieldset style="border:0;padding:10px 12px;margin:0 0 10px;border-radius:12px;background:var(--warn-bg,#FFF6E0)"><legend style="font-size:12.5px;padding:0">Move from their release</legend>
+      <label style="display:flex;gap:8px;margin:4px 0"><input type="checkbox"> <span><b>ORB-047</b> from v0.13.1 (UAT, In progress)</span></label>
+    </fieldset>
+    <p style="font-size:12.5px;margin:0 0 12px" class="muted">ORB-047 is in ORB v0.13.1 (UAT, In progress): it moves only if you tick it above.</p>
+    <div class="actions"><button class="btn sm primary" type="button">Create November Release</button><button class="btn sm" type="button">Edit</button><button class="btn sm" type="button">Cancel</button></div>
+  </div>
+
+  <div style="max-width:420px;flex:1 1 320px">
+    <h2 style="margin-top:0;font-size:15px">After Create</h2>
+    <div class="card">
+      <p style="margin:0;font-size:13.5px">✓ Created November Release (v0.14.0) · 2 proposals</p>
+      <p style="margin:8px 0 0"><a class="btn sm primary" href="#124-release-chat-card">Open the release</a></p>
+    </div>
+    <p class="muted" style="font-size:13.5px">amax · Your November Release has been created. You can view it here: <a href="#124-release-chat-card">/delivery/releases/ORB/v0.14.0</a></p>
+    <h2 style="font-size:15px">Refusals the card can show</h2>
+    <ul style="font-size:13px;line-height:1.7;padding-left:18px;margin:0">
+      <li>You can't create releases in FLT (no card)</li>
+      <li>ORB-047 is already in ORB v0.13.1 (UAT, In progress); confirm moving it, or take it out there first</li>
+      <li>ORB-050 is Building; only Verified or Released proposals can go in a release</li>
+      <li>ORB has no Prod environment; add one, or pick another category</li>
+      <li>That didn't go through. Try again. (nothing was created)</li>
+    </ul>
+  </div>
+  </div>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
