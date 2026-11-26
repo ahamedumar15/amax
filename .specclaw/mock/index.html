@@ -4143,6 +4143,38 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   </div>
 </section>
 
+<!-- ================= 126 Release status engine ================= -->
+<section data-change="126-release-status-engine" id="126-release-status-engine" data-roles="admin pm" data-title="Release status engine" data-nav="no" data-icon="rocket" data-parent="001-amax-foundation-project">
+  <h1>Release tracking, phase 4: status keeps itself up to date</h1>
+  <p class="lede">126: an hourly check moves releases as their dates pass; a failed deployment never completes one; Completed is final. Fictional data (Orbit Notes).</p>
+
+  <h2 style="margin-top:20px">1. Status history with the check's rows</h2>
+  <div class="card flush" style="max-width:760px">
+    <div class="card-head"><h2>Status history</h2></div>
+    <table class="tbl"><thead><tr><th>From</th><th>To</th><th>When</th><th>Why</th><th>Who</th></tr></thead><tbody>
+      <tr><td class="muted">—</td><td><span class="chip">Planned</span></td><td>26 Nov 2026, 10:12</td><td>Created</td><td>Priya Nadarajah</td></tr>
+      <tr><td><span class="chip">Planned</span></td><td><span class="chip info">In progress</span></td><td>1 Dec 2026, 00:04</td><td>Start date reached</td><td>amax</td></tr>
+      <tr><td><span class="chip info">In progress</span></td><td><span class="chip bad">Off track</span></td><td>13 Dec 2026, 00:03</td><td>Target date passed</td><td>amax</td></tr>
+      <tr><td><span class="chip bad">Off track</span></td><td><span class="chip good">Completed</span> <span class="chip warn">late</span></td><td>15 Dec 2026, 16:40</td><td>Deployed to UAT</td><td>CI for Priya</td></tr>
+    </tbody></table>
+  </div>
+
+  <h2 style="margin-top:28px">2. Deployments: a failed run, and a voided completing record</h2>
+  <div class="card" style="max-width:760px">
+    <h3 style="font-size:13.5px;margin:0 0 6px">UAT</h3>
+    <p style="margin:0 0 6px;font-size:13px"><span class="chip bad">failed</span> 14 Dec 2026, 18:20 · CI for Priya · Run 4851</p>
+    <p style="margin:0 0 6px;font-size:13px"><span class="chip">Voided: wrong build</span> 15 Dec 2026, 16:40 · CI for Priya · <span class="chip good">Completed the release</span></p>
+    <p class="muted" style="margin:8px 0 0;font-size:13px">The deployment that completed this release was voided on 16 Dec 2026: wrong build. The release stays completed.</p>
+  </div>
+
+  <h2 style="margin-top:28px">3. Settings → Workflows</h2>
+  <div class="card flush" style="max-width:760px">
+    <table class="tbl"><thead><tr><th>Schedule</th><th>When</th><th>Last run</th><th>Next run</th><th>On</th></tr></thead><tbody>
+      <tr><td><b>Release status check</b><br><small class="muted">Moves releases as their start and target dates pass</small></td><td>Hourly (UTC)</td><td>Today 10:00 · 2 releases moved</td><td>Today 11:00</td><td>✓</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
