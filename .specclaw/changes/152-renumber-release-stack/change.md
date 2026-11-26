@@ -50,12 +50,24 @@ The moves, each keeping its slug: 116→138, 117→139, 118→140, 119→141, 12
 
 No UI task: no screen changes (the mock sections only take new ids).
 
-- [ ] `T1` — AC-1 AC-2 AC-3: one scripted rename of the fourteen folders (file moves only, no git command), their in-folder names, both mock copies' section ids and parents, the live links between the moved changes, and `.specclaw/STATUS.md`; 148's `**Review:** covered-by` line becomes `**Review:** change`; a dry-run list of every edit is checked before it runs, and a search afterwards finds no old name outside the records AC-3 keeps
+- [x] `T1` — AC-1 AC-2 AC-3: one scripted rename of the fourteen folders (file moves only, no git command), their in-folder names, both mock copies' section ids and parents, the live links between the moved changes, and `.specclaw/STATUS.md`; 148's `**Review:** covered-by` line becomes `**Review:** change`; a dry-run list of every edit is checked before it runs, and a search afterwards finds no old name outside the records AC-3 keeps
   Files: .specclaw/changes/116-* … 129-* renamed to 138-* … 151-*, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/STATUS.md
-- [ ] `T2` — AC-6: read how the specclaw sync treats a folder whose number changed with the same slug (re-key or new proposal), and record the answer under `## Verify` for the PR body
+- [x] `T2` — AC-6: read how the specclaw sync treats a folder whose number changed with the same slug (re-key or new proposal), and record the answer under `## Verify` for the PR body
   Files: modules/delivery/sync/ (read only), .specclaw/changes/152-renumber-release-stack/change.md
 - [ ] `T3` — AC-4 AC-5: after the rename is committed, 148's own final pass (base 52435965); the review gate and the change-number check over the stack, and no number in 138–152 among #133's folders; 152's own loop at verify
   Files: .specclaw/changes/148-release-status-engine/review/, .specclaw/changes/152-renumber-release-stack/
   Depends: T1
 
 ## Verify
+
+**The amax sync (AC-6, found at build):** the sync keys a spec change's proposal by its number (AMX-145 for
+`145-releases-and-proposal-entries`) and doesn't re-key one whose folder took a new number; it re-keys only a hand-made
+proposal sitting on a spec change's key (`upsertSpecProposal`). Phases carry over only under the same key
+(`storedPhasesFor`). So after the merge, a push syncing the default branch creates AMX-138…151 as new proposals, phases
+read from each folder's `state.json`. The old keys AMX-116…129 lose their folders: a push with `withdrawMissing`
+withdraws those not Released (14 of the project's proposals is under the half that holds a mass withdrawal); once #133
+merges, its folders 116–137 take those keys instead. Time logged against the old keys stays on those proposals.
+
+Build notes: the deployed mock copy (`apps/mock/public/mock/index.html`) had fallen behind the spec mock since 121
+(94 sections against 103), which fails `mock-balanced-116`'s "the deployed copy is the spec mock" in CI with or without
+the renumber; 152 copies the spec mock over it. No per-task commits from the agent (git is read-only here).
