@@ -76,7 +76,17 @@ Terms. **Tracked** and **untracked** as in 123. Status labels: Planned, In progr
 
 ## Tasks
 
-<!-- Added by plan. -->
+- [ ] `T1` — The list: name and version, category, status chip ("Off track", "late"), start, target, proposals, progress track; Status, Category and Sort link groups on both lists; filtered-empty with Clear filters; a skeleton while loading and "Couldn't load releases" with Try again (AC-1 to AC-4)
+  Files: modules/delivery/ui/ReleasesPage.tsx, modules/delivery/ui/ProjectLists.tsx, modules/delivery/ui/release-list.ts, modules/delivery/ui/ReleaseFilters.tsx, modules/delivery/ui/LoadSafe.tsx, modules/delivery/ui/delivery.css, modules/delivery/server/release-status.ts
+- [ ] `T2` — The release page: information card (completion, On time or Late, untracked offer), proposals, deployments grouped by environment with the completing one marked, status history, Edit release for those who may, the read-only line, the completed release's read-only state, the same loading and error states (AC-5 to AC-8, AC-9 page side, AC-10)
+  Files: modules/delivery/ui/ReleasePage.tsx, modules/delivery/ui/ReleaseInfo.tsx, modules/delivery/ui/ReleaseDeployments.tsx, modules/delivery/ui/ReleaseHistory.tsx, modules/delivery/ui/delivery.css
+  Depends: T1
+- [ ] `T3` — Reads and the edit card: `list_releases` takes `status`, `category` and `sort` (one rule with the page, `release-list.ts`); `get_release_history` marks the completing deployment; `update_release` gets a draft, a `propose` check with the service's schemas, a form card filled from the release, and the receipt; the scripted parser opens it (AC-2 tool side, AC-7, AC-9)
+  Files: modules/delivery/server/queries.ts, modules/delivery/server/release-edit-card.ts, modules/delivery/server/write-cards.ts, modules/delivery/mcp.ts, packages/ai/src/scripted-writes.ts
+  Depends: T1
+- [ ] `T4` — Tests and wiring: list rows, filters and sort; detail cards; edit permission and completed read-only; the edit card's fields, checks and receipt (chat flow); refresh after create and edit (e2e); axe in both themes; README; lint, typecheck (AC-11, AC-12)
+  Files: modules/delivery/tests/release-pages-125.test.ts, modules/delivery/tests/release-edit-125.test.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/release-pages.spec.ts, modules/delivery/README.md
+  Depends: T2, T3
 
 ## Verify
 
