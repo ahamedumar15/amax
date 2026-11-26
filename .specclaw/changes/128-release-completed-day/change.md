@@ -38,4 +38,16 @@ completing deployment's instant, the day `completion` is judged by.
 
 ## Tasks
 
+No UI task: the release page already prints `completedDay` (`ui/ReleaseInfo.tsx`, `ui/ReleasePage.tsx`); 128 changes
+where that day comes from. `completeBy` is the only writer of a completion.
+
+- [ ] `T1` — AC-1 AC-3: migration 0027 adds `completed_day`, backfills completed releases (entity zone, else UTC), and requires it in `release_completed_whole`
+  Files: modules/delivery/db/migrations/0027_release_completed_day.sql
+- [ ] `T2` — AC-1 AC-2 AC-4: `completeBy` stores the day it judged `completion` by; `trackingOf` and `getRelease` return the stored day; the voided day stays in the current zone
+  Files: modules/delivery/server/release-tracking.ts, modules/delivery/server/queries.ts, modules/delivery/README.md
+  Depends: T1
+- [ ] `T3` — AC-5: zone-change table through `recordDeployment` and the rendered page; the backfill; the constraint
+  Files: modules/delivery/tests/release-completed-day-128.test.ts
+  Depends: T2
+
 ## Verify
