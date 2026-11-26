@@ -20,6 +20,7 @@ import { isNeed, NEEDS, withNeed } from "./server/attention";
 import { listReleaseProposals, releaseNote } from "./server/release-proposals";
 import { proposeRelease, releaseCard, ReleaseDraft } from "./server/release-card";
 import { Keys } from "./server/release-status";
+import { DEPLOYMENT_STATUSES } from "./server/deployment-status";
 import { filterReleases, ReleaseFilter } from "./server/release-list";
 import { proposeReleaseEdit, releaseEditCard, ReleaseEditDraft } from "./server/release-edit-card";
 import { checkReleaseRef, getDeployment, getProposalTask, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
@@ -163,7 +164,7 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ legalEntityId: z.string().uuid(), enabled: z.boolean(), peopleNotified: z.boolean().optional() }), service: setCommitTimeLogging, run: (v, a, s = "mcp") => setCommitTimeLogging(ctxFor(v, s), a) }),
   tool({ name: "record_deployment", description: "Record that a release reached any environment of its project (by name, as a pipeline reports it). The project's Prod environment releases its proposals. PM or Admin.", scope: "write", destructive: false,
     permission: "delivery:deployment:record",
-    input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), status: z.enum(["deployed", "testing", "rolled-back"]).optional(), note: z.string().optional() }),
+    input: z.object({ projectKey: z.string(), version: z.string(), environment: z.string(), status: z.enum(DEPLOYMENT_STATUSES).optional(), note: z.string().optional() }),
     card: deploymentCard, service: recordDeployment, run: (v, a, s = "mcp") => recordDeployment(ctxFor(v, s), a) }),
 ];
 

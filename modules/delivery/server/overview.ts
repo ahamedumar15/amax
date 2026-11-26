@@ -7,6 +7,7 @@ import { ForbiddenError, getRuntime } from "@amax/core/server";
 import { ACTIVE, clockOf, endOfDay, listReleases, phaseCounts, type ReleaseRow } from "./queries";
 import { isReadyToVerify, overEstimate, ownerShownIn } from "./readiness";
 import type { Phase } from "../contracts";
+import { unsuccessful } from "./deployment-status";
 import { proposalInProd } from "./in-prod";
 
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => {
@@ -31,7 +32,7 @@ export const deliveryPerformance = (v: Viewer) =>
   });
 
 const passed = (r: ReleaseRow) => r.stages.filter((s) => s.status === "deployed").length;
-const rolledBack = (r: ReleaseRow) => [...r.stages].sort((a, b) => b.position - a.position).find((s) => s.status === "rolled-back");
+const rolledBack = (r: ReleaseRow) => [...r.stages].sort((a, b) => b.position - a.position).find((s) => unsuccessful(s.status));
 const open = (r: ReleaseRow) => !r.stages.some((s) => s.isProd && s.status === "deployed");
 const releasePin = (r: ReleaseRow) => ({ label: `${r.projectName} ${r.version}`, tool: "get_release", args: { releaseId: r.id } });
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "");

@@ -17,7 +17,7 @@ export const releaseHref = (r: { projectKey: string; version: string }) => `/del
 export type ProjectRef = { id: string; key: string; name: string; client: string; billing: string; managerUserId: string | null; managerName: string | null; legalEntityId: string | null };
 
 /** Emitted when a deployment is recorded. `released` is true when the environment is Prod. */
-export type ReleaseDeployed = { releaseId: string; projectId: string; version: string; environment: string; status: "deployed" | "testing" | "rolled-back"; released: boolean };
+export type ReleaseDeployed = { releaseId: string; projectId: string; version: string; environment: string; status: "deployed" | "testing" | "rolled-back" | "failed"; released: boolean };
 /** Emitted on every phase change, from a board move, a sync or a Prod deployment. */
 /** 081: `ownerUserId` is the proposal's owner, told about changes others make (null when it has none). */
 export type ProposalPhaseChanged = { proposalId: string; key: string; projectId: string; from: Phase; to: Phase; by: string; ownerUserId?: string | null };

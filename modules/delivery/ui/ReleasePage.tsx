@@ -8,14 +8,13 @@ import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { categoryLabel } from "../server/release-status";
 import { AskButton } from "./AskButton";
 import { LoadSafe } from "./LoadSafe";
-import { completedLine, ReleaseInfo } from "./ReleaseInfo";
+import { completedDay, completedLine, ReleaseInfo } from "./ReleaseInfo";
 import { ReleaseDeployments } from "./ReleaseDeployments";
 import { ReleaseHistory } from "./ReleaseHistory";
 import { needViewer, PhaseChip, SignInFirst } from "./parts";
 
 type Release = NonNullable<Awaited<ReturnType<typeof getRelease>>> & { projectId: string };
 type Envs = Awaited<ReturnType<typeof listEnvironments>>;
-
 function Actions({ release, canEdit }: { release: Release; canEdit: boolean }) {
   const ref = historyPin(release);
   if (!canEdit) return <p className="muted rel-note">Only the project&apos;s PM or an Admin can change a release.</p>;
@@ -40,6 +39,7 @@ export function ReleaseBody({ viewer, release, envs }: { viewer: Viewer; release
         <p className="lede">{release.projectName} {release.version}{release.category ? ` · ${categoryLabel(release.category)} release` : ""}. {done ? `${done}. A completed release can't change.` : "Changes happen in chat."}</p></div>
         <Actions release={release} canEdit={canEdit} /></div>
       <ProjectTabs projectKey={release.projectKey} current="releases" />
+      {release.completingVoided && <p className="rel-voided" role="note">The deployment that completed this release was voided on {completedDay(release.completingVoided.at)}: {release.completingVoided.reason}. The release stays completed.</p>}
       <div className="cols even" style={{ marginBottom: 28 }}>
         <ReleaseInfo r={release} version={release.version} projectName={release.projectName} pin={pin("information")} />
         <div className="card pinnable">

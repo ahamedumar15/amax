@@ -19,6 +19,7 @@ import { ProjectProposals, ProjectReleases } from "./ui/ProjectLists";
 import { ContractSection, RisksSection, TeamSection } from "./ui/ProjectSections";
 import { deliveryOverview } from "./server/overview";
 import { projectHeaderSlot } from "./ui/ProjectHeaderSlot";
+import { releaseCheck, releaseCheckSchedule } from "./server/release-check";
 
 const READ = ["delivery:read"];
 
@@ -92,6 +93,8 @@ export default defineModule({
   pinSuggestions,
   pageLabel,
   jobs: [],
+  workflows: [releaseCheck],
+  schedules: [releaseCheckSchedule],
   // 035: outgoing webhooks send only declared fields (review 058).
   events: {
     emits: Object.values(EVENTS),
@@ -114,6 +117,9 @@ export default defineModule({
     { id: "delivery.release-rolled-back", event: EVENTS.releaseDeployed, when: { status: "rolled-back" }, category: "releases", urgency: "urgent",
       to: [{ role: "PM" }], permission: "delivery:deployment:record", scope: { projectId: "projectId" },
       title: "Release {version} rolled back in {environment}", href: "/delivery/releases" },
+    { id: "delivery.release-failed", event: EVENTS.releaseDeployed, when: { status: "failed" }, category: "releases", urgency: "urgent",
+      to: [{ role: "PM" }], permission: "delivery:deployment:record", scope: { projectId: "projectId" },
+      title: "Release {version} failed in {environment}", href: "/delivery/releases" },
     // 081 AC-19: a proposal's owner hears when someone else moves or releases it, or finishes one of its tasks.
     { id: "delivery.proposal-phase", event: EVENTS.proposalPhaseChanged, category: "releases", to: [{ owner: "ownerUserId" }], except: "by",
       permission: "delivery:read", scope: { projectId: "projectId" }, subject: "ownerUserId", title: "{key} moved from {from} to {to}", href: "/delivery/proposals/{key}" },

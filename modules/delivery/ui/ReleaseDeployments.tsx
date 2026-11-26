@@ -1,6 +1,7 @@
 import { PinButton, type PinRef } from "@amax/ui";
 import type { DeploymentRow, EnvironmentRow } from "../server/queries";
 import { AskButton } from "./AskButton";
+import { stageWord, unsuccessful } from "../server/deployment-status";
 import { When } from "./When";
 
 type Props = {
@@ -9,7 +10,7 @@ type Props = {
 };
 
 const Status = ({ d }: { d: DeploymentRow }) => d.voidedAt ? <span className="chip">Voided: {d.voidReason}</span>
-  : <span className={`chip ${d.status === "rolled-back" ? "bad" : d.status === "testing" ? "info" : "good"}`}>{d.status === "rolled-back" ? "rolled back" : d.status}</span>;
+  : <span className={`chip ${unsuccessful(d.status) ? "bad" : d.status === "testing" ? "info" : "good"}`}>{stageWord(d.status)}</span>;
 
 function Row({ d, completing, name, canDeploy, pin }: { d: DeploymentRow; completing: boolean; name: string; canDeploy: boolean; pin: PinRef }) {
   return (

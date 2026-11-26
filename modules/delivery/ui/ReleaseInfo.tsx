@@ -3,7 +3,7 @@ import type { ReleaseTracking } from "../server/queries";
 import { categoryLabel, dayLabel } from "../server/release-status";
 import { StatusChip } from "./ReleaseTable";
 
-const completedDay = (at: string) => new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+export const completedDay = (at: string) => new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 export function completedLine(r: ReleaseTracking) {
   return r.completedAt ? `Completed on ${completedDay(r.completedAt)} · ${r.completion === "late" ? "Late" : "On time"}` : null;

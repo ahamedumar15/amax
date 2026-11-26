@@ -14,7 +14,8 @@ import { liveProdDeployments } from "./in-prod";
 import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolveRepoPhases, storedPhasesFor } from "./repo-time";
 import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
 import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
-import { checkDates, completeOnDeployment, notCompleted, reopenOnVoid, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
+import { DEPLOYMENT_STATUSES } from "./deployment-status";
+import { checkDates, completeOnDeployment, notCompleted, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -196,7 +197,7 @@ export const recordDeployment = defineService({
     projectKey: z.string(),
     version: z.string(),
     environment: z.string(),
-    status: z.enum(["deployed", "testing", "rolled-back"]).default("deployed"),
+    status: z.enum(DEPLOYMENT_STATUSES).default("deployed"),
     note: z.string().optional(),
     pipelineRun: z.string().optional(),
   }),
@@ -526,7 +527,6 @@ export const voidDeployment = defineService({
             where d.release_id = ${release.id} and lower(e.name) = lower(${input.environment}) and d.voided_at is null order by d.at desc limit 1`;
     const [d] = await tx.execute(sql`update delivery.deployment set voided_at = now(), void_reason = ${input.reason}, voided_by = ${by(ctx)} where id = (${target}) returning *`);
     if (!d) throw invalid(input.deploymentId ? `that deployment isn't a live ${input.environment} record of ${input.version}` : `no deployment of ${input.version} to ${input.environment} to void`);
-    await reopenOnVoid(tx, project, release.id, d.id, by(ctx));
     const events: Emitted[] = [];
     // Only the record that released the proposals can un-release them, and only if no other live
     // record released them too. Voiding a Dev deploy, or one on an environment that has since

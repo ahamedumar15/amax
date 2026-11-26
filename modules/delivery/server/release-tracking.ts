@@ -6,7 +6,7 @@ import { invalid } from "./refusal";
 import { categoryLabel, completionOf, releaseDay, releaseStatus, type Category, type ReleaseStatus } from "./release-status";
 
 type Row = Record<string, unknown>;
-type Source = "create" | "update" | "deployment" | "void";
+type Source = "create" | "update" | "deployment" | "void" | "schedule";
 export type Dates = { category: Category; startDate: string; targetDate: string };
 
 export const zoneOf = (tx: Tx, project: Row) => entityZone(tx, (project.legal_entity_id as string | null) ?? null);
@@ -56,15 +56,4 @@ export async function completeOnDeployment(tx: Tx, project: Row, releaseId: unkn
   if (!r.category || r.status === "completed" || d.status !== "deployed") return;
   const env = await categoryEnv(tx, project.id, r.category as Category);
   if (env && env.id === d.environment_id) await completeBy(tx, project, r, d, "deployment", by);
-}
-
-export async function reopenOnVoid(tx: Tx, project: Row, releaseId: unknown, voidedId: unknown, by: string) {
-  const r = await tracked(tx, releaseId);
-  if (r.completing_deployment_id !== voidedId) return;
-  const env = await categoryEnv(tx, project.id, r.category as Category);
-  const [next] = env ? await tx.execute(sql`select id, at from delivery.deployment where release_id = ${r.id} and environment_id = ${env.id}
-    and status = 'deployed' and voided_at is null order by at limit 1`) : [];
-  if (next) return completeBy(tx, project, r, next, "void", by);
-  const to = await statusFor(tx, project, { startDate: r.start_date as string, targetDate: r.target_date as string });
-  await writeStatus(tx, r, to, "void", by, null, sql`, completed_at = null, completion = null, completing_deployment_id = null`);
 }

@@ -6,6 +6,7 @@ import { filtered, filterReleases, listHref, type ReleaseFilter } from "../serve
 import { categoryLabel, dayLabel, statusLabel } from "../server/release-status";
 import { releasePin } from "../pins";
 import { actionFor, standing } from "./ReleasesPage";
+import { stageWord, unsuccessful } from "../server/deployment-status";
 import { ReleaseFilters } from "./ReleaseFilters";
 
 const TONE: Record<string, string> = { in_progress: "info", overdue: "bad", completed: "good" };
@@ -14,16 +15,17 @@ export const StatusChip = ({ r }: { r: Pick<ReleaseRow, "status" | "completion">
   <><span className={`chip ${TONE[r.status ?? ""] ?? ""}`}>{statusLabel(r.status)}</span>{r.completion === "late" && <span className="chip warn">late</span>}</>
 );
 
-const STAGE: Record<string, [string, string]> = { deployed: ["●", "deployed"], testing: ["◐", "testing"], "rolled-back": ["✕", "rolled back"] };
+const MARK: Record<string, string> = { deployed: "●", testing: "◐" };
+const STAGE = (status: string): [string, string] => [unsuccessful(status) ? "✕" : MARK[status] ?? "●", stageWord(status)];
 
 export function Progress({ r }: { r: ReleaseRow }) {
   const { own, last } = standing(r);
-  const said = own.map((s) => `${s.environment} ${s.status ? STAGE[s.status]?.[1] ?? s.status : "not yet"}`).join(", ");
+  const said = own.map((s) => `${s.environment} ${s.status ? STAGE(s.status)[1] : "not yet"}`).join(", ");
   return (
     <span className="rel-track">
-      <span aria-hidden="true">{own.map((s) => (s.status ? STAGE[s.status]?.[0] ?? "●" : "○")).join("")}</span>
+      <span aria-hidden="true">{own.map((s) => (s.status ? STAGE(s.status)[0] : "○")).join("")}</span>
       <span className="sr">{said}</span>
-      <small className="muted" aria-hidden="true">{last ? `${last.environment}${last.status === "deployed" ? "" : ` ${STAGE[last.status!]?.[1] ?? ""}`}` : "Not deployed"}</small>
+      <small className="muted" aria-hidden="true">{last ? `${last.environment}${last.status === "deployed" ? "" : ` ${STAGE(last.status!)[1]}`}` : "Not deployed"}</small>
     </span>
   );
 }

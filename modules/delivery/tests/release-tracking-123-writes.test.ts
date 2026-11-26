@@ -40,18 +40,16 @@ describe.skipIf(!hasDb)("123 release tracking: updates, completion and reads (Po
     expect(await db.row("RTK", "d2")).toMatchObject({ status: "completed", completion: "late" });
   });
 
-  it("AC-9 voiding the completing record moves completion to the earliest other valid one, then reopens; other voids change nothing", async () => {
+  it("AC-9 (amended by 126) Completed is final: voiding any record, the completing one included, leaves the release as it is", async () => {
     await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "v1" });
-    for (const environment of ["UAT", "UAT", "Dev"]) await deploy("v1", environment);
-    const first = (await db.row("RTK", "v1")).completing_deployment_id;
-    const voidIt = (environment: string, reason: string, deploymentId?: string) => voidDeployment(db.admin(), { projectKey: "RTK", version: "v1", environment, reason, deploymentId });
+    for (const environment of ["UAT", "Dev"]) await deploy("v1", environment);
+    const before = await db.row("RTK", "v1");
+    const voidIt = (environment: string, reason: string) => voidDeployment(db.admin(), { projectKey: "RTK", version: "v1", environment, reason });
     await voidIt("Dev", "dev redo");
-    expect((await db.row("RTK", "v1")).completing_deployment_id).toBe(first);
-    await voidIt("UAT", "wrong build", first);
-    expect(await db.row("RTK", "v1")).toMatchObject({ status: "completed", completing_deployment_id: expect.not.stringMatching(first) });
-    await voidIt("UAT", "also wrong");
-    expect(await db.row("RTK", "v1")).toMatchObject({ status: "in_progress", completed_at: null, completion: null, completing_deployment_id: null });
-    expect((await db.history("RTK", "v1")).at(-1)).toBe("completed>in_progress:void");
+    await voidIt("UAT", "wrong build");
+    expect(await db.row("RTK", "v1")).toMatchObject({ status: "completed", completed_at: before.completed_at, completion: "on_time", completing_deployment_id: before.completing_deployment_id });
+    expect(await db.history("RTK", "v1")).toEqual(["null>in_progress:create", "in_progress>completed:deployment"]);
+    expect((await getRelease(db.sahan, "RTK", "v1"))!.completingVoided).toMatchObject({ reason: "wrong build" });
   });
 
   it("AC-10 reads carry the tracking fields and status history; the proposal count leaves out withdrawn ones", async () => {

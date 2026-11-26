@@ -6,6 +6,7 @@ import { listReleases, stageColumns, today, type ReleaseRow } from "../server/qu
 import { filterOf, listHref } from "../server/release-list";
 import { LoadSafe } from "./LoadSafe";
 import { ReleaseTable } from "./ReleaseTable";
+import { StageWord, unsuccessful } from "../server/deployment-status";
 import { day, needViewer, SignInFirst } from "./parts";
 
 const HEX: Record<string, string> = { violet: "#7B61FF", amber: "#F2A93B", pink: "#F48B9B", mint: "#2FCB8C" };
@@ -29,7 +30,7 @@ export function standing(r: ReleaseRow) {
 export function nextStep(r: ReleaseRow): { label: string; environment: string | null; primary: boolean } | null {
   const { own, lastI, last, live } = standing(r);
   if (live) return null;
-  if (last?.status === "rolled-back") return { label: `Retry ${last.environment}`, environment: last.environment, primary: false };
+  if (unsuccessful(last?.status)) return { label: `Retry ${last!.environment}`, environment: last!.environment, primary: false };
   // A stage still testing can be promoted past (as in the mock), except Prod: that one is finished in place.
   if (last?.status === "testing" && last.isProd) return { label: `Finish ${last.environment}`, environment: last.environment, primary: true };
   const next = own[lastI + 1];
@@ -37,8 +38,8 @@ export function nextStep(r: ReleaseRow): { label: string; environment: string | 
   // Nothing after the last reached stage (it may sit after Prod): Prod is still the way to Live.
   const prod = own.find((s) => s.isProd);
   if (prod) {
-    const verb = prod.status === "testing" ? "Finish" : prod.status === "rolled-back" ? "Retry" : "Deploy to";
-    return { label: `${verb} ${prod.environment}`, environment: prod.environment, primary: prod.status !== "rolled-back" };
+    const verb = prod.status === "testing" ? "Finish" : unsuccessful(prod.status) ? "Retry" : "Deploy to";
+    return { label: `${verb} ${prod.environment}`, environment: prod.environment, primary: !unsuccessful(prod.status) };
   }
   return { label: "No Prod stage", environment: null, primary: false };
 }
@@ -102,7 +103,7 @@ export function mapRow(r: ReleaseRow, columns: string[]) {
     stations: own.map((s, i) => ({ environment: s.environment, slot: slot(i), reached: Boolean(s.status), last: i === lastReached })),
     lineTo: lastReached >= 0 ? slot(lastReached) : null,
     aheadTo: own.length ? slot(own.length - 1) : null,
-    back: lastReached >= 0 && own[lastReached].status === "rolled-back",
+    back: lastReached >= 0 && unsuccessful(own[lastReached].status),
   };
 }
 
@@ -113,7 +114,7 @@ export function mapPill(r: ReleaseRow) {
   const { last, live } = standing(r);
   if (!last) return null;
   if (live) return { kind: "live" as const, text: `Live since ${day(live.at)}` };
-  if (last.status === "rolled-back") return { kind: "back" as const, text: `Rolled back ${last.at ? dayName(last.at) : ""}`.trim() };
+  if (unsuccessful(last.status)) return { kind: "back" as const, text: `${StageWord(last.status!)} ${last.at ? dayName(last.at) : ""}`.trim() };
   if (last.status === "testing") return { kind: "testing" as const, text: `Testing since ${day(last.at)}` };
   return { kind: "in" as const, text: `In ${last.environment} since ${day(last.at)}` };
 }

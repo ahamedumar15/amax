@@ -327,7 +327,9 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
       .map((h) => ({ from: (h.from_status as string | null) ?? null, to: h.to_status as string, at: iso(h.at), source: h.source as string, deploymentId: (h.deployment_id as string | null) ?? null, by: h.changed_by as string }));
     const named = await namesFor(tx, [...history.map((d) => d.recordedBy), ...statusHistory.map((h) => h.by)]);
     return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r),
-      completingDeploymentId: (r.completing_deployment_id as string | null) ?? null, history: history.map((d) => ({ ...d, recordedBy: named(d.recordedBy) })), proposals,
+      completingDeploymentId: (r.completing_deployment_id as string | null) ?? null,
+      completingVoided: history.find((d) => d.id === r.completing_deployment_id && d.voidedAt) ? (({ voidedAt, voidReason }) => ({ at: voidedAt!, reason: voidReason }))(history.find((d) => d.id === r.completing_deployment_id)!) : null,
+      history: history.map((d) => ({ ...d, recordedBy: named(d.recordedBy) })), proposals,
       statusHistory: statusHistory.map((h) => ({ ...h, by: named(h.by) })) };
   });
 

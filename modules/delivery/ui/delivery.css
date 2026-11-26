@@ -467,3 +467,4 @@ a.quiet:hover,a.quiet:focus-visible{text-decoration:underline;text-underline-off
 .rel-env ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .rel-dep{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px}
 .rel-dep-act{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+.rel-voided{margin:0 0 20px;padding:10px 14px;border-radius:12px;background:var(--warn-soft,#FFF6E0);color:var(--ink);font-size:13.5px}

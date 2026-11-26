@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { Tx } from "@amax/db";
 import { withdrawnIn } from "./readiness";
+import { unsuccessfulSql } from "./deployment-status";
 import { LATEST_DEPLOYMENTS, nextReleaseOf } from "./in-prod";
 
 export type PortfolioFacts = {
@@ -39,7 +40,7 @@ export async function portfolioFacts(tx: Tx, projectIds: string[]): Promise<Map<
       (select count(*)::int from delivery.proposal p where p.project_id = pr.id and ${OPEN} and p.phase = 'verified') as verified,
       nr.version as release,
       (select e.name from (${LATEST_DEPLOYMENTS}) d join delivery.environment e on e.id = d.environment_id
-        where d.release_id = nr.id and d.status <> 'rolled-back' order by e.position desc limit 1) as stage
+        where d.release_id = nr.id and d.status not in ${unsuccessfulSql} order by e.position desc limit 1) as stage
     from delivery.project pr
     left join lateral (${nextReleaseOf(sql`pr.id`)}) nr on true
     where pr.id in (${ids})`);
