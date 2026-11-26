@@ -30,4 +30,12 @@ What changes on screen, and where to see it: [`129-deployment-project-lock`](../
 
 ## Tasks
 
+No UI task: no screen changes.
+
+- [ ] `T1` — AC-1 AC-3: `recordDeployment` takes `lockProject` before `releaseOf`; README line
+  Files: modules/delivery/server/services.ts, modules/delivery/README.md
+- [ ] `T2` — AC-2 AC-3: two-session tests, both orders forced (environment change first, deployment first), one completion on the QA deployment; the existing suites
+  Files: modules/delivery/tests/deployment-lock-129.test.ts
+  Depends: T1
+
 ## Verify
