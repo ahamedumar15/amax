@@ -7,7 +7,7 @@ import { getRuntime } from "@amax/core/server";
 import { ToolError } from "@amax/mcp";
 import { FIELDS } from "./release-card";
 import { CATEGORIES, CategoryInput, categoryLabel } from "./release-status";
-import { categoryProblem, datesProblem } from "./release-tracking";
+import { categoryProblem, datesProblem, missingForTracking } from "./release-tracking";
 
 export const ReleaseEditDraft = z.object({ projectKey: z.string(), version: z.string().trim(), name: z.string().trim().optional(), category: z.string().trim().toLowerCase().optional(),
   startDate: z.string().trim().optional(), targetDate: z.string().trim().optional() });
@@ -23,14 +23,15 @@ export async function releaseEditCard(v: Viewer, a: Draft): Promise<ToolCard> {
   const name = a.name ?? (r?.name as string | undefined) ?? a.version;
   const look = { kind: "Edit a release", confirm: "Save", done: `Updated ${name} (${a.version})` };
   if (!r) return { title: `Edit ${a.projectKey} ${a.version}`, lines: [], look };
-  const value = (k: string) => ((r[k] as string | null) ?? undefined);
+  const kept = (k: string) => ((r[k] as string | null) ?? undefined);
+  const value = (k: string, given?: string) => given ?? kept(k);
   return {
-    title: `Edit ${a.projectKey} ${a.version} · ${r.name as string}`, lines: [], look,
+    title: `Edit ${a.projectKey} ${a.version} · ${name}`, lines: [], look,
     form: { fields: [
-      { name: "name", label: "Name", kind: "text", value: value("name") },
-      { name: "category", label: "Category", kind: "chips", value: value("category"), options: CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c)! })) },
-      { name: "startDate", label: "Start (YYYY-MM-DD)", kind: "text", value: value("start_date") },
-      { name: "targetDate", label: "Target (YYYY-MM-DD)", kind: "text", value: value("target_date") },
+      { name: "name", label: "Name", kind: "text", value: value("name", a.name) },
+      { name: "category", label: "Category", kind: "chips", value: value("category", a.category), options: CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c)! })) },
+      { name: "startDate", label: "Start (YYYY-MM-DD)", kind: "text", value: value("start_date", a.startDate) },
+      { name: "targetDate", label: "Target (YYYY-MM-DD)", kind: "text", value: value("target_date", a.targetDate) },
     ], confirm: { label: "Save" } },
   };
 }
@@ -45,8 +46,8 @@ export const proposeReleaseEdit = (v: Viewer, a: Draft) => withTenant(getRuntime
     if (checked && !checked.success) throw fail(checked.error.issues[0].message, field);
   }
   const d = { category: a.category ?? (r.category as string | null), start: a.startDate ?? (r.start_date as string | null), target: a.targetDate ?? (r.target_date as string | null) };
-  const missing = (["category", "startDate", "targetDate"] as const).find((f, i) => ![d.category, d.start, d.target][i]);
-  if (!r.category && missing && (a.category || a.startDate || a.targetDate)) throw fail("give its name, category, start and target together", missing);
+  const missing = missingForTracking(r, a);
+  if (missing) throw fail("give its category, start and target together", missing);
   const order = d.start && d.target ? datesProblem(d.start, d.target) : null;
   if (order) throw fail(order, "targetDate");
   const noEnv = d.category ? await categoryProblem(tx, { id: r.project_id, key: r.key }, CategoryInput.parse(d.category)) : null;

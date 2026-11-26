@@ -1,9 +1,10 @@
-import { facet, PinButton, type PinRef } from "@amax/ui";
+import { PinButton, type PinRef } from "@amax/ui";
+import { statusChangePin } from "../pins";
 import type { DeploymentRow } from "../server/queries";
 import { statusLabel } from "../server/release-status";
 import { When } from "./When";
 
-type Change = { from: string | null; to: string; at: string | null; source: string; deploymentId: string | null; by: string };
+type Change = { id: string; from: string | null; to: string; at: string | null; source: string; deploymentId: string | null; by: string };
 
 export function why(c: Change, history: DeploymentRow[]) {
   const env = history.find((d) => d.id === c.deploymentId)?.environment;
@@ -16,7 +17,7 @@ export function why(c: Change, history: DeploymentRow[]) {
 
 const Chip = ({ s }: { s: string | null }) => (s ? <span className="chip">{statusLabel(s)}</span> : <span className="muted">—</span>);
 
-export function ReleaseHistory({ changes, history, tracked, pin }: { changes: Change[]; history: DeploymentRow[]; tracked: boolean; pin: PinRef }) {
+export function ReleaseHistory({ changes, history, tracked, pin, release }: { changes: Change[]; history: DeploymentRow[]; tracked: boolean; pin: PinRef; release: { projectKey: string; version: string } }) {
   return (
     <div className="card flush pinnable">
       <div className="card-head"><h2>Status history</h2><PinButton inline pin={pin} /></div>
@@ -24,10 +25,10 @@ export function ReleaseHistory({ changes, history, tracked, pin }: { changes: Ch
         <div className="scroll-x"><table className="tbl">
           <caption className="sr">Status history, oldest first</caption>
           <thead><tr><th>From</th><th>To</th><th>When</th><th>Why</th><th>Who</th><th className="num"><span className="sr">Pin</span></th></tr></thead>
-          <tbody>{changes.map((c, i) => (
-            <tr key={i}><td data-label="From"><Chip s={c.from} /></td><td data-label="To"><Chip s={c.to} /></td>
+          <tbody>{changes.map((c) => (
+            <tr key={c.id}><td data-label="From"><Chip s={c.from} /></td><td data-label="To"><Chip s={c.to} /></td>
               <td data-label="When">{c.at ? <When at={c.at} /> : "—"}</td><td data-label="Why">{why(c, history)}</td><td data-label="Who">{c.by}</td>
-              <td className="num"><PinButton pin={facet(pin, ` status change ${i + 1}: ${statusLabel(c.to)}`)} /></td></tr>
+              <td className="num"><PinButton pin={statusChangePin({ ...release, id: c.id, to: c.to })} /></td></tr>
           ))}</tbody>
         </table></div>
       )}

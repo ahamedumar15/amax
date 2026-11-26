@@ -59,7 +59,7 @@ export function ReleaseBody({ viewer, release, envs }: { viewer: Viewer; release
           deployPin={(d) => deploymentPin({ ...release, ...d })}
           head={<div className="card-head"><h2>Deployments</h2><PinButton inline pin={pin("deployments")} />
             {canDeploy && <AskButton spark className="btn sm primary" label="Record a deployment" prompt={`Record a deployment of ${name} to `} pin={ref} />}</div>} />
-        <ReleaseHistory changes={release.statusHistory} history={release.history} tracked={Boolean(release.category)} pin={pin("status history")} />
+        <ReleaseHistory changes={release.statusHistory} history={release.history} tracked={Boolean(release.category)} pin={pin("status history")} release={release} />
       </div>
     </>
   );

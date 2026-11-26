@@ -19,7 +19,7 @@ describe.skipIf(!hasDb)("123 release tracking: updates, completion and reads (Po
     expect(await updateRelease(db.admin(), { projectKey: "RTK", version: "u1", startDate: "2099-01-01" })).toMatchObject({ status: "planned" });
     expect(await db.history("RTK", "u1")).toEqual(["null>in_progress:create", "in_progress>planned:update"]);
     await expect(updateRelease(db.admin(), { projectKey: "RTK", version: "u1", targetDate: "2026-01-01" })).rejects.toThrow(/before the start date/);
-    await expect(updateRelease(db.admin(), { projectKey: "CON", version: "v2.5.0", category: "uat" })).rejects.toThrow(/isn't tracked yet: give its name, category, start and target together/);
+    await expect(updateRelease(db.admin(), { projectKey: "CON", version: "v2.5.0", category: "uat" })).rejects.toThrow(/isn't tracked yet: give its category, start and target together/);
     await updateRelease(db.admin(), { projectKey: "CON", version: "v2.5.0", name: "Portal", category: "prod", startDate: "2026-10-01", targetDate: "2099-12-31" });
     expect(await db.row("CON", "v2.5.0")).toMatchObject({ name: "Portal", category: "prod", status: "in_progress" });
     await deploy("u1", "UAT");

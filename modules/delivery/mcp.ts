@@ -18,6 +18,7 @@ import { createProposalCard, moveCard, proposeCreate, proposeUpdate, taskCard, u
 import { deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
 import { isNeed, NEEDS, withNeed } from "./server/attention";
 import { listReleaseProposals, releaseNote } from "./server/release-proposals";
+import { getStatusChange } from "./server/queries";
 import { proposeRelease, releaseCard, ReleaseDraft } from "./server/release-card";
 import { Keys } from "./server/release-status";
 import { DEPLOYMENT_STATUSES } from "./server/deployment-status";
@@ -126,6 +127,8 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "update_release", description: "Change a release that isn't completed: its name, category (Dev, UAT or Prod), start or target date (YYYY-MM-DD). A release made before release tracking needs its name, category and both dates together the first time. In chat, call it at once with the project key and version (a pinned release is that one); the user changes the fields on the card.", scope: "write", permission: "delivery:release:create", draft: ReleaseEditDraft, propose: proposeReleaseEdit,
     input: z.object({ projectKey: z.string(), version: z.string(), name: z.string().optional(), category: z.string().optional(), startDate: z.string().optional(), targetDate: z.string().optional() }),
     card: releaseEditCard, service: updateRelease, run: (v, a, s = "mcp") => updateRelease(ctxFor(v, s), a) }),
+  tool({ ...read, pin: { id: "changeId", of: pinOf.statusChange }, name: "get_release_status_change", description: "One status change of a release, by changeId (as get_release_history's statusHistory gives it): from, to, when, why and who.",
+    input: z.object({ changeId: z.string().uuid() }), run: (v, a) => getStatusChange(v, a.changeId) }),
   tool({ ...read, pin: view, name: "list_release_proposals", description: "The proposals of a project that can go in a release: Verified or Released, not withdrawn, not shipped in another release. openRelease names another release one already sits in that isn't completed; moving it from there needs reassign.",
     input: z.object({ projectKey: z.string() }), run: (v, a) => listReleaseProposals(v, a.projectKey) }),
   tool({ name: "set_release_proposals", description: "Set which proposals are in a release (replaces the list; released ones stay). A proposal in another release that isn't completed moves only if reassign names it too.", scope: "write", permission: "delivery:release:create",

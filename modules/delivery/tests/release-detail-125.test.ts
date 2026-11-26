@@ -6,6 +6,9 @@ import type { Viewer } from "@amax/auth";
 import { createRelease, recordDeployment } from "../server/services";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
 import { ReleaseBody } from "../ui/ReleasePage";
+import { completedLine } from "../ui/ReleaseInfo";
+import { When } from "../ui/When";
+import { mcpTools } from "../mcp";
 import { OPEN, releaseDb } from "./release-db";
 
 describe.skipIf(!hasDb)("125 the release page (Postgres)", () => {
@@ -46,6 +49,15 @@ describe.skipIf(!hasDb)("125 the release page (Postgres)", () => {
     expect(done).toMatch(/Created<\/td>.*Deployed to UAT<\/td>/);
     expect(done).toMatch(/In progress<\/span><\/td><td data-label="To"><span class="chip">Completed/);
     expect(done).not.toMatch(/(user|sp):[0-9a-f]{8}-/);
+  });
+
+  it("AC-7 AC-8 each history row pins its own change; the completion day is the project's; times render labelled UTC until the browser has them", async () => {
+    const release = (await getRelease(db.sahan, "RTK", "d1"))!;
+    const change = release.statusHistory.at(-1)!;
+    expect(done).toContain(`&quot;tool&quot;:&quot;get_release_status_change&quot;,&quot;args&quot;:{&quot;changeId&quot;:&quot;${change.id}&quot;}`);
+    expect(await mcpTools.find((t) => t.name === "get_release_status_change")!.run(db.sahan as never, { changeId: change.id } as never, "mcp")).toMatchObject({ id: change.id, to: "completed" });
+    expect(completedLine({ ...release, completedAt: "2026-12-12T20:00:00Z", completedDay: "2026-12-13", completion: "late" })).toBe("Completed on 13 Dec 2026 · Late");
+    expect(renderToStaticMarkup(createElement(When, { at: "2026-12-12T20:05:00Z" }))).toContain("12 Dec 2026, 20:05 UTC");
   });
 
   it("AC-9 AC-10 Edit for an Admin on an open release; a PM elsewhere is told; a completed release is read-only", async () => {

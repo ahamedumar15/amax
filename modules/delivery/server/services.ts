@@ -15,7 +15,7 @@ import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolve
 import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
 import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
 import { DEPLOYMENT_STATUSES } from "./deployment-status";
-import { checkDates, completeOnDeployment, notCompleted, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
+import { checkDates, completeOnDeployment, missingForTracking, notCompleted, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -478,7 +478,7 @@ export const setReleaseProposals = defineService({
 });
 
 const ReleaseUpdate = z.object({ projectKey: z.string(), version: z.string(), name: ReleaseName.optional(), category: CategoryInput.optional(), startDate: Day.optional(), targetDate: Day.optional() })
-  .refine((a) => a.name !== undefined || a.category !== undefined || a.startDate !== undefined || a.targetDate !== undefined, "say what to change: name, category, startDate or targetDate");
+  .refine((a) => a.name !== undefined || a.category !== undefined || a.startDate !== undefined || a.targetDate !== undefined, "Nothing changed: change the name, category, start or target");
 
 export const updateRelease = defineService({
   scoped: true,
@@ -490,9 +490,8 @@ export const updateRelease = defineService({
     const { project, r: locked } = await openRelease(tx, ctx, input);
     const r = await tracked(tx, locked.id);
     const datesGiven = input.category !== undefined || input.startDate !== undefined || input.targetDate !== undefined;
-    if (!r.category && datesGiven && !(input.name && input.category && input.startDate && input.targetDate))
-      throw invalid(`${input.projectKey} ${input.version} isn't tracked yet: give its name, category, start and target together`);
-    const name = input.name ?? (r.name as string);
+    if (missingForTracking(r, input)) throw invalid(`${input.projectKey} ${input.version} isn't tracked yet: give its category, start and target together`);
+    const name = input.name ?? (r.name as string | null) ?? (r.version as string);
     const before = { name: r.name, category: r.category, startDate: r.start_date, targetDate: r.target_date, status: r.status };
     if (!r.category && !datesGiven) {
       await tx.execute(sql`update delivery.release set name = ${name}, updated_at = now() where id = ${r.id}`);

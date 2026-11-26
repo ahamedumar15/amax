@@ -7,6 +7,8 @@ import { ForbiddenError, getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
 import { invalid } from "./refusal";
 import { namesFor } from "./who";
+import { entityZone } from "@amax/workflows";
+import { releaseDay } from "./release-status";
 import { isWithdrawn, ownerShownIn, withdrawnIn } from "./readiness";
 import { LATEST_DEPLOYMENTS, proposalInProd } from "./in-prod";
 import { computePortfolio, portfolioFacts } from "./portfolio";
@@ -312,24 +314,35 @@ export function isRelease(r: { id: string; projectKey: string; version: string }
 }
 
 /** One release with its proposals and full deployment history, voided ones included. */
+export const getStatusChange = (v: Viewer, changeId: string) =>
+  read(v, async (tx) => {
+    const [h] = await tx.execute(sql`select h.id, h.from_status, h.to_status, h.at, h.source, h.changed_by, r.version, p.key from delivery.release_status_history h
+      join delivery.release r on r.id = h.release_id join delivery.project p on p.id = r.project_id where h.id = ${changeId}`);
+    if (!h) return null;
+    const named = await namesFor(tx, [h.changed_by as string]);
+    return { id: h.id as string, projectKey: h.key as string, version: h.version as string, from: (h.from_status as string | null) ?? null, to: h.to_status as string,
+      at: iso(h.at), source: h.source as string, by: named(h.changed_by as string) };
+  });
+
 const voidedOf = (d: DeploymentRow | undefined) => (d?.voidedAt ? { at: d.voidedAt, reason: d.voidReason } : null);
 
 export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
     // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
     const where = releaseWhere({ releaseId, projectKey, version });
-    const [r] = await tx.execute(sql`select r.*, ${TRACKING}, p.key as project_key, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where ${where}`);
+    const [r] = await tx.execute(sql`select r.*, ${TRACKING}, p.key as project_key, p.name as project_name, p.id as pid, p.legal_entity_id from delivery.release r join delivery.project p on p.id = r.project_id where ${where}`);
     if (!r) return null;
     const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
       .map((d): DeploymentRow => ({ id: d.id as string, environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
         recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
     const proposals = (await tx.execute(sql`select id, key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
       .map((p) => ({ id: p.id as string, key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
-    const statusHistory = (await tx.execute(sql`select from_status, to_status, at, source, deployment_id, changed_by from delivery.release_status_history where release_id = ${r.id} order by at`))
-      .map((h) => ({ from: (h.from_status as string | null) ?? null, to: h.to_status as string, at: iso(h.at), source: h.source as string, deploymentId: (h.deployment_id as string | null) ?? null, by: h.changed_by as string }));
+    const statusHistory = (await tx.execute(sql`select id, from_status, to_status, at, source, deployment_id, changed_by from delivery.release_status_history where release_id = ${r.id} order by at`))
+      .map((h) => ({ id: h.id as string, from: (h.from_status as string | null) ?? null, to: h.to_status as string, at: iso(h.at), source: h.source as string, deploymentId: (h.deployment_id as string | null) ?? null, by: h.changed_by as string }));
     const named = await namesFor(tx, [...history.map((d) => d.recordedBy), ...statusHistory.map((h) => h.by)]);
     return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r),
       completingDeploymentId: (r.completing_deployment_id as string | null) ?? null,
+      completedDay: r.completed_at ? releaseDay(await entityZone(tx, (r.legal_entity_id as string | null) ?? null), r.completed_at as string) : null,
       completingVoided: voidedOf(history.find((d) => d.id === r.completing_deployment_id)),
       history: history.map((d) => ({ ...d, recordedBy: named(d.recordedBy) })), proposals,
       statusHistory: statusHistory.map((h) => ({ ...h, by: named(h.by) })) };

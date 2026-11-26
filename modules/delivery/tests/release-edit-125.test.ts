@@ -43,6 +43,16 @@ describe.skipIf(!hasDb)("125 the edit card in chat (Postgres)", () => {
     expect((await db.t.owner`select name, target_date::text as target from delivery.release where version = 'e1'`)[0]).toEqual({ name: "Winter Release", target: "2099-06-30" });
   });
 
+  it("AC-9 the card shows what chat passed; an untracked release is tracked with its category and dates, its name kept, and refused on the field without them", async () => {
+    const given = await turn({ projectKey: "CON", version: "e1", targetDate: "2099-07-31" });
+    expect(given.pending[0].form!.fields.find((f) => f.name === "targetDate")!.value).toBe("2099-07-31");
+    const t = await turn({ projectKey: "CON", version: "v2.5.0" });
+    const check = (edits: Record<string, string>) => checkCardEdits(db.app, registry, maya, t.conversationId, t.pending[0].id, edits);
+    expect(await check({ category: "uat" })).toMatchObject({ field: "startDate" });
+    await confirmAction(db.app, registry, maya, t.conversationId, t.pending[0].id, { edits: { category: "uat", startDate: "2026-10-01", targetDate: "2099-12-31" } });
+    expect((await db.t.owner`select name, category, status from delivery.release where version = 'v2.5.0'`)[0]).toEqual({ name: "v2.5.0", category: "uat", status: "in_progress" });
+  });
+
   it("AC-9 AC-10 no edit card for a completed release, nor for a PM of another project", async () => {
     expect((await turn({ projectKey: "CON", version: "e2" })).pending).toEqual([]);
     expect((await turn({ projectKey: "FLT", version: "v1.8.0" })).pending).toEqual([]);

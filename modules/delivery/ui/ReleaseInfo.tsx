@@ -5,11 +5,11 @@ import { StatusChip } from "./ReleaseTable";
 
 export const completedDay = (at: string) => new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
-export function completedLine(r: ReleaseTracking) {
-  return r.completedAt ? `Completed on ${completedDay(r.completedAt)} · ${r.completion === "late" ? "Late" : "On time"}` : null;
+export function completedLine(r: ReleaseTracking & { completedDay?: string | null }) {
+  return r.completedAt ? `Completed on ${r.completedDay ? dayLabel(r.completedDay) : completedDay(r.completedAt)} · ${r.completion === "late" ? "Late" : "On time"}` : null;
 }
 
-export function ReleaseInfo({ r, version, projectName, pin }: { r: ReleaseTracking; version: string; projectName: string; pin: PinRef }) {
+export function ReleaseInfo({ r, version, projectName, pin }: { r: ReleaseTracking & { completedDay?: string | null }; version: string; projectName: string; pin: PinRef }) {
   const rows: [string, React.ReactNode][] = [["Project", projectName], ["Version", version], ["Category", categoryLabel(r.category) ?? "—"],
     ["Status", <StatusChip key="s" r={r} />], ["Start", dayLabel(r.startDate) ?? "—"], ["Target", dayLabel(r.targetDate) ?? "—"],
     ["Completed", completedLine(r)?.replace("Completed on ", "") ?? <span key="n" className="muted">Not yet</span>]];
