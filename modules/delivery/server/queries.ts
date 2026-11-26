@@ -324,7 +324,7 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
       .map((p) => ({ id: p.id as string, key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
     const statusHistory = (await tx.execute(sql`select from_status, to_status, at, source, deployment_id, changed_by from delivery.release_status_history where release_id = ${r.id} order by at`))
       .map((h) => ({ from: (h.from_status as string | null) ?? null, to: h.to_status as string, at: iso(h.at), source: h.source as string, deploymentId: (h.deployment_id as string | null) ?? null, by: h.changed_by as string }));
-    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r), history, proposals, statusHistory };
+    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r), completingDeploymentId: (r.completing_deployment_id as string | null) ?? null, history, proposals, statusHistory };
   });
 
 // One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.

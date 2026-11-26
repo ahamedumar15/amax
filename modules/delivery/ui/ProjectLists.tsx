@@ -4,6 +4,8 @@ import { listProposals, listReleases, today } from "../server/queries";
 import { ProjectSectionPage } from "./ProjectSections";
 import { ProposalsTable } from "./ProposalsPage";
 import { ReleasesCards } from "./ReleasesPage";
+import { LoadSafe } from "./LoadSafe";
+import { listHref } from "../server/release-list";
 import { needViewer } from "./parts";
 import { attention, isNeed, suggestedIds } from "../server/attention";
 import { AttentionStrip, listQuery, needPin } from "./Attention";
@@ -35,8 +37,12 @@ export function ProjectReleases(props: ScreenProps) {
   return (
     <ProjectSectionPage {...props} section="releases" title="Releases">
       {async (p) => {
-        const [releases, now] = await Promise.all([listReleases(viewer!, { projectKey: p.key }), today(viewer!)]);
-        return <ReleasesCards viewer={viewer!} releases={releases} now={now} root={projectHref(p.key, "releases")} map={props.searchParams?.map} projectKey={p.key} projectName={p.name} />;
+        const root = projectHref(p.key, "releases");
+        return (
+          <LoadSafe what="releases" retry={listHref(root, props.searchParams ?? {})} load={() => Promise.all([listReleases(viewer!, { projectKey: p.key }), today(viewer!)])}>
+            {([releases, now]) => <ReleasesCards viewer={viewer!} releases={releases} now={now} root={root} sp={props.searchParams} projectKey={p.key} projectName={p.name} />}
+          </LoadSafe>
+        );
       }}
     </ProjectSectionPage>
   );

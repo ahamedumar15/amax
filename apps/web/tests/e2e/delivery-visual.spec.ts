@@ -12,7 +12,8 @@ const SECTIONS: { id: string; path: string; regions: string[] }[] = [
   { id: "001-amax-foundation-projects", path: "/delivery", regions: [".row.head", ".tickets .ticket", ".cols.even > .card", ".card.flush .card-head", ".card.flush tbody tr"] },
   { id: "001-amax-foundation-project", path: "/delivery/p/CON", regions: [".crumb", ".row.head", ".tabs", ".board .lane"] },
   { id: "001-amax-foundation-proposals", path: "/delivery/proposals", regions: ["h1", ".lede", ".cols.even > .card:first-child", ".cols.even > .card:last-child", ".card.flush .card-head", ".card.flush tbody tr"] },
-  { id: "001-amax-foundation-releases", path: "/delivery/releases", regions: ["h1", ".lede", ".card.map", ".card.flush .card-head", ".card.flush tbody tr"] },
+  // 125: the list's rows follow 125-release-pages (name, category, status, dates, progress), not 001's rows.
+  { id: "001-amax-foundation-releases", path: "/delivery/releases", regions: ["h1", ".lede", ".card.map", ".card.flush .card-head"] },
 ];
 
 // Known gaps, each with its reason; every other region must be within 2%.

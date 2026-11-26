@@ -7,7 +7,7 @@ export type ReleaseStatus = "planned" | "in_progress" | "overdue" | "completed";
 export type Completion = "on_time" | "late";
 
 const LABEL: Record<Category, string> = { dev: "Dev", uat: "UAT", prod: "Prod" };
-const STATUS_LABEL: Record<ReleaseStatus, string> = { planned: "Planned", in_progress: "In progress", overdue: "Overdue", completed: "Completed" };
+const STATUS_LABEL: Record<ReleaseStatus, string> = { planned: "Planned", in_progress: "In progress", overdue: "Off track", completed: "Completed" };
 const isCategory = (c: string): c is Category => (CATEGORIES as readonly string[]).includes(c);
 
 export const categoryLabel = (c: string | null | undefined) => (c ? (isCategory(c.toLowerCase()) ? LABEL[c.toLowerCase() as Category] : c) : undefined);

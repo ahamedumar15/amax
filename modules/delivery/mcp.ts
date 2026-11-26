@@ -15,11 +15,13 @@ import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail, proposalEvent } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, moveCard, proposeCreate, proposeUpdate, taskCard, updateCard } from "./server/proposal-card";
-import { updateReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
+import { deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
 import { isNeed, NEEDS, withNeed } from "./server/attention";
 import { listReleaseProposals, releaseNote } from "./server/release-proposals";
 import { proposeRelease, releaseCard, ReleaseDraft } from "./server/release-card";
 import { Keys } from "./server/release-status";
+import { filterReleases, ReleaseFilter } from "./server/release-list";
+import { proposeReleaseEdit, releaseEditCard, ReleaseEditDraft } from "./server/release-edit-card";
 import { checkReleaseRef, getDeployment, getProposalTask, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
 import { createProject, createProposal, ProposalCreateInput, createRelease, updateRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 import { commitTime, repoTime } from "./server/repo-time";
@@ -71,8 +73,8 @@ export const mcpTools: McpToolDef[] = [
   // Review 081 round 1 (R3): one line of a proposal's history, for its row's pin on the proposal page.
   tool({ ...read, pin: { id: "proposalId", of: pinOf.event }, name: "get_proposal_event", description: "One line of a proposal's history by proposalId and line (as get_proposal's history gives it, such as audit:12 or task:<id>): what happened, who, and when. A time line shows only to its owner and the project's approvers.",
     input: z.object({ proposalId: z.string().uuid(), line: z.string().regex(/^(?:(audit|time|event|task):[0-9a-f-]+|repo:(proposal|tasks|verify|pr|archived))$/, "a history line id such as audit:12") }), run: (v, a) => proposalEvent(v, a) }),
-  tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, proposal count and the stage it reached in each environment, optionally for one project key.",
-    input: z.object({ projectKey: z.string().optional() }), run: (v, a) => listReleases(v, a) }),
+  tool({ ...read, pin: view, name: "list_releases", description: "Every release with its project, name, category, status, dates, proposal count and the stage it reached in each environment, optionally for one project key. status (planned, in_progress, overdue = Off track, completed, untracked) and category (dev, uat, prod) filter; sort start or target orders by that date, earliest first, untracked last.",
+    input: z.object({ projectKey: z.string().optional() }).extend(ReleaseFilter.shape), run: async (v, a) => filterReleases(await listReleases(v, { projectKey: a.projectKey }), a) }),
   tool({ ...read, pin: { id: "releaseId", of: pinOf.release }, name: "get_release", description: "A release and where it is in Dev, QA, UAT and Prod: by releaseId, or by project key and version.",
     // The ref is checked before the read, so a malformed call is refused whatever the viewer can see.
     input: releaseRef, run: async (v, a) => { checkReleaseRef(a); return (await listReleases(v)).find((r) => isRelease(r, a)) ?? null; } }),
@@ -120,9 +122,9 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ projectKey: z.string(), name: z.string() }), card: removeEnvironmentCard, service: removeEnvironment, run: (v, a, s = "mcp") => removeEnvironment(ctxFor(v, s), a) }),
   tool({ name: "tag_release", description: "Rename a release's version tag, e.g. v2.5.0 to v2.5.1.", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), version: z.string(), newVersion: z.string() }), card: tagCard, service: tagRelease, run: (v, a, s = "mcp") => tagRelease(ctxFor(v, s), a) }),
-  tool({ name: "update_release", description: "Change a release that isn't completed: its name, category (Dev, UAT or Prod), start or target date (YYYY-MM-DD). A release made before release tracking needs its name, category and both dates together the first time.", scope: "write", permission: "delivery:release:create",
+  tool({ name: "update_release", description: "Change a release that isn't completed: its name, category (Dev, UAT or Prod), start or target date (YYYY-MM-DD). A release made before release tracking needs its name, category and both dates together the first time. In chat, call it at once with the project key and version (a pinned release is that one); the user changes the fields on the card.", scope: "write", permission: "delivery:release:create", draft: ReleaseEditDraft, propose: proposeReleaseEdit,
     input: z.object({ projectKey: z.string(), version: z.string(), name: z.string().optional(), category: z.string().optional(), startDate: z.string().optional(), targetDate: z.string().optional() }),
-    card: updateReleaseCard, service: updateRelease, run: (v, a, s = "mcp") => updateRelease(ctxFor(v, s), a) }),
+    card: releaseEditCard, service: updateRelease, run: (v, a, s = "mcp") => updateRelease(ctxFor(v, s), a) }),
   tool({ ...read, pin: view, name: "list_release_proposals", description: "The proposals of a project that can go in a release: Verified or Released, not withdrawn, not shipped in another release. openRelease names another release one already sits in that isn't completed; moving it from there needs reassign.",
     input: z.object({ projectKey: z.string() }), run: (v, a) => listReleaseProposals(v, a.projectKey) }),
   tool({ name: "set_release_proposals", description: "Set which proposals are in a release (replaces the list; released ones stay). A proposal in another release that isn't completed moves only if reassign names it too.", scope: "write", permission: "delivery:release:create",

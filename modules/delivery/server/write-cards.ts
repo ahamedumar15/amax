@@ -4,7 +4,6 @@ import type { Viewer } from "@amax/auth";
 import type { ToolCard } from "@amax/core";
 import { getRuntime } from "@amax/core/server";
 import { repoFields, storedLink } from "./set-up-project-card";
-import { categoryLabel, dayLabel } from "./release-status";
 import { movesLine } from "./release-proposals";
 
 // 081 amendment 3: the confirm cards for the writes Delivery's pins offer (releases, deployments, environments, tasks,
@@ -15,19 +14,6 @@ const card = (title: string, kind: string, lines: [string, string | undefined | 
   title, lines: lines.filter(([, v]) => v !== undefined && v !== null && v !== "").map(([label, value]) => ({ label, value: value as string })),
   look: { kind, subject: title, confirm, done: `Done: ${done}` },
 });
-
-type Tracked = { name?: string; category?: string; startDate?: string; targetDate?: string };
-
-export async function updateReleaseCard(v: Viewer, a: { projectKey: string; version: string } & Tracked) {
-  const [r] = await withTenant(getRuntime().db, v.tenantId, (tx) => tx.execute(sql`select r.name, r.category, r.start_date::text as start_date, r.target_date::text as target_date
-    from delivery.release r join delivery.project p on p.id = r.project_id where p.key = ${a.projectKey} and r.version = ${a.version}`));
-  const change = (label: string, before: string | undefined, after: string | undefined): [string, string | undefined] =>
-    [label, after === undefined || after === before ? undefined : `${before ?? "none"} → ${after}`];
-  return card(`Update ${a.projectKey} ${a.version}`, "Update a release", [["Release", `${a.projectKey} ${a.version}`],
-    change("Name", r?.name as string | undefined, a.name), change("Category", categoryLabel(r?.category as string | undefined), categoryLabel(a.category)),
-    change("Start", dayLabel(r?.start_date as string | undefined), dayLabel(a.startDate)), change("Target", dayLabel(r?.target_date as string | undefined), dayLabel(a.targetDate))],
-    `updated ${a.projectKey} ${a.version}`, "Save");
-}
 
 export const deploymentCard = async (_v: Viewer, a: { projectKey: string; version: string; environment: string; status?: string; note?: string }) =>
   card(`Record ${a.projectKey} ${a.version} in ${a.environment}`, "Record a deployment", [["Release", `${a.projectKey} ${a.version}`], ["Environment", a.environment],

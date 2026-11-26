@@ -282,7 +282,7 @@ test("081 AC-39 pin a project, then its new release: create the release and depl
   await confirm.getByRole("button", { name: "Record", exact: true }).click();
   await expect(confirm).toContainText("Done:");
   await page.goto(`/delivery/releases/FLT/${version}`);
-  await expect(page.locator("tbody tr", { hasText: "Dev" }).first()).toContainText("deployed");
+  await expect(page.getByRole("region", { name: "Dev deployments" })).toContainText("deployed");
 });
 
 // An environment's pin: add one from the environments list's pin, then remove it from its own (it has no deployments).

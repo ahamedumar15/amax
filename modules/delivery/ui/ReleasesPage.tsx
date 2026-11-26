@@ -1,9 +1,11 @@
-import { can, type Viewer } from "@amax/auth";
+import type { Viewer } from "@amax/auth";
 import type { ScreenProps } from "@amax/core";
-import { EmptyState, IntentButton, PinButton } from "@amax/ui";
-import { projectHref, releaseHref } from "../contracts";
+import { PinButton } from "@amax/ui";
+import { releaseHref } from "../contracts";
 import { listReleases, stageColumns, today, type ReleaseRow } from "../server/queries";
-import { releasePin } from "../pins";
+import { filterOf, listHref } from "../server/release-list";
+import { LoadSafe } from "./LoadSafe";
+import { ReleaseTable } from "./ReleaseTable";
 import { day, needViewer, SignInFirst } from "./parts";
 
 const HEX: Record<string, string> = { violet: "#7B61FF", amber: "#F2A93B", pink: "#F48B9B", mint: "#2FCB8C" };
@@ -83,13 +85,6 @@ export function onActiveMap(releases: ReleaseRow[], now: Date): ReleaseRow[] {
     else if (current && recent(liveAt)) show.add(current.r);
   }
   return releases.filter((r) => show.has(r));
-}
-
-function cell(s: ReleaseRow["stages"][number]) {
-  if (!s.status) return <span className="muted">–</span>;
-  if (s.status === "rolled-back") return <><span className="chip bad">Rolled back {day(s.at)}</span>{(s.run || s.note) && <small>{[s.run && `Run ${s.run}`, s.note].filter(Boolean).join(", ")}</small>}</>;
-  if (s.status === "testing") return <span className="chip info">{day(s.at)}, testing</span>;
-  return s.isProd ? <span className="chip good">{day(s.at)}</span> : <>{day(s.at)}</>;
 }
 
 /**
@@ -172,12 +167,14 @@ function ReleaseMap({ releases, columns }: { releases: ReleaseRow[]; columns: st
 export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenProps) {
   const viewer = needViewer(raw);
   if (!viewer) return <><h1>Releases</h1><SignInFirst /></>;
-  const [releases, now] = await Promise.all([listReleases(viewer), today(viewer)]);
+  const root = "/delivery/releases";
   return (
     <>
       <h1>Releases</h1>
       <p className="lede">A release moves when a pipeline reports a deployment, when an agent records one, or when you promote it here.</p>
-      <ReleasesCards viewer={viewer} releases={releases} now={now} root="/delivery/releases" map={searchParams.map} />
+      <LoadSafe what="releases" retry={listHref(root, searchParams)} load={() => Promise.all([listReleases(viewer), today(viewer)])}>
+        {([releases, now]) => <ReleasesCards viewer={viewer} releases={releases} now={now} root={root} sp={searchParams} />}
+      </LoadSafe>
     </>
   );
 }
@@ -186,7 +183,10 @@ export async function ReleasesPage({ viewer: raw, searchParams = {} }: ScreenPro
  * The release map and table (051): the global list and a project's Releases section share them.
  * `root` is the list's path, `map` the Active/All choice; `projectKey` scopes the pins.
  */
-export function ReleasesCards({ viewer, releases, now, root, map, projectKey, projectName }: { viewer: Viewer; releases: ReleaseRow[]; now: Date; root: string; map?: string; projectKey?: string; projectName?: string }) {
+export function ReleasesCards({ viewer, releases, now, root, sp = {}, projectKey, projectName }: { viewer: Viewer; releases: ReleaseRow[]; now: Date; root: string; sp?: Record<string, string | undefined>; projectKey?: string; projectName?: string }) {
+  const map = sp.map;
+  const filter = filterOf(sp);
+  const query = { map, ...filter };
   // 042: projects have their own environments; columns are the union in stage order.
   const envs = stageColumns(releases);
   const pinArgs = projectKey ? { projectKey } : {};
@@ -196,41 +196,12 @@ export function ReleasesCards({ viewer, releases, now, root, map, projectKey, pr
     <>
       <div className="card map scroll-x pinnable" style={{ marginBottom: 28 }}>
         <div className="card-head"><h2>Release map</h2><PinButton inline pin={{ label: "Release map", tool: "list_releases", args: pinArgs }} />
-          <nav className="seg" aria-label="Range"><a href={root} aria-current={map !== "all" ? "true" : undefined}>Active</a><a href={`${root}?map=all`} aria-current={map === "all" ? "true" : undefined}>All</a></nav>
+          <nav className="seg" aria-label="Range"><a href={listHref(root, query, { map: undefined })} aria-current={map !== "all" ? "true" : undefined}>Active</a><a href={listHref(root, query, { map: "all" })} aria-current={map === "all" ? "true" : undefined}>All</a></nav>
         </div>
         {mapped.length ? <ReleaseMap releases={mapped} columns={envs} />
           : <p className="dv-empty-line">{releases.length === 0 || map === "all" ? `No releases${on} yet.` : `No active releases${on}. Switch to All to see past ones.`}</p>}
       </div>
-      <div className="card flush pinnable">
-        <div className="card-head"><h2>All releases</h2><PinButton inline pin={{ label: "All releases", tool: "list_releases", args: pinArgs }} /><IntentButton intent="delivery.new-release" label="New release" /></div>
-        {releases.length === 0 ? <EmptyState icon="rocket" title="No releases yet" hint="Ask amax to cut one when proposals are verified." />
-          : (
-        <div className="scroll-x">
-          <table className="tbl">
-            <caption className="sr">All releases</caption>
-            <thead><tr><th>Release</th>{!projectKey && <th>Project</th>}<th className="num">Proposals</th>{envs.map((e) => <th key={e}>{e}</th>)}<th className="num">Action</th></tr></thead>
-            <tbody>
-              {releases.map((r) => {
-                // Per project: a PM elsewhere, Finance or Leadership see the stage, not a button.
-                const act = actionFor(r, can(viewer, "delivery:deployment:record", { projectId: r.projectId }));
-                return (
-                  <tr key={r.id} className="pinnable">
-                    <td data-label="Release"><a className="rowlink" href={releaseHref(r)}><b>{r.version}</b></a></td>
-                    {!projectKey && <td data-label="Project"><span className="dot" style={{ background: `var(--${r.projectColor})` }} /><a className="quiet" href={projectHref(r.projectKey)}>{r.projectName}</a></td>}
-                    <td data-label="Proposals" className="num">{r.proposals}</td>
-                    {envs.map((e) => { const s = r.stages.find((x) => x.environment === e); return <td key={e} data-label={e}>{s ? cell(s) : <span className="muted" title="Not an environment of this project">n/a</span>}</td>; })}
-                    <td data-label="" className="num">
-                      {act.kind === "text" ? <span className="muted">{act.text}</span> : <span className="muted"><a className="rowlink" href={act.href} title={act.title}>{act.text}</a></span>}
-                      <PinButton pin={releasePin(r)} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-          )}
-      </div>
+      <ReleaseTable viewer={viewer} releases={releases} root={root} query={query} filter={filter} projectKey={projectKey} />
     </>
   );
 }

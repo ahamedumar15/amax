@@ -18,7 +18,7 @@ type Draft = z.infer<typeof ReleaseDraft>;
 const inTenant = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => withTenant(getRuntime().db, v.tenantId, fn);
 const projectOf = async (tx: Tx, key: string) => (await tx.execute(sql`select * from delivery.project where key = ${key}`))[0];
 const fail = (message: string, field?: string) => new ToolError(message, "invalid_input", field);
-const FIELDS = [["name", ReleaseName], ["version", Version], ["category", CategoryInput], ["startDate", Day], ["targetDate", Day]] as const;
+export const FIELDS = [["name", ReleaseName], ["version", Version], ["category", CategoryInput], ["startDate", Day], ["targetDate", Day]] as const;
 
 const option = (p: ReleaseProposal) => ({ value: p.key, label: `${p.key} ${p.title}`,
   ...(p.openRelease ? { detail: [`in ${p.openRelease.version}`, categoryLabel(p.openRelease.category), statusLabel(p.openRelease.status)].filter(Boolean).join(" · ") } : {}) });
