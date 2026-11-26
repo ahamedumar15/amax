@@ -43,10 +43,12 @@ refused outright, as today.
 No separate UI task: the New release card is built from the rule's data (its detail line and "Move from their release"
 options come from `releaseProposals`), so the screen matches the mock once the rule counts completed releases.
 
-- [ ] `T1` — AC-1 AC-2 AC-3: one "held elsewhere" rule that counts completed releases (`openElsewhere` becomes `heldElsewhere`), used by the card's list, field check and move line and by `assignProposals`; `list_release_proposals`'s `openRelease` becomes `inRelease` (release tracking hasn't reached `main`), its description updated
+- [x] `T1` — AC-1 AC-2 AC-3: one "held elsewhere" rule that counts completed releases (`openElsewhere` becomes `heldElsewhere`), used by the card's list, field check and move line and by `assignProposals`; `list_release_proposals`'s `openRelease` becomes `inRelease` (release tracking hasn't reached `main`), its description updated
   Files: modules/delivery/server/release-proposals.ts, modules/delivery/server/release-card.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/tests/release-card-124.test.ts
-- [ ] `T2` — AC-4: table over open, completed, and completed with `reassign`, through both writers and the card; Released in a completed release still refused; README line
+- [x] `T2` — AC-4: table over open, completed, and completed with `reassign`, through both writers and the card; Released in a completed release still refused; README line
   Files: modules/delivery/tests/completed-release-moves-129.test.ts, modules/delivery/README.md
   Depends: T1
 
 ## Verify
+
+Quality: 872 → 872 duplicated lines (repo-wide, 860 at 128's build; none in 129's files, so nothing to refactor). Build notes: no per-task commits from the agent (git is read-only here). 123 AC-6's "a proposal in a Completed release that isn't Released can be moved" now needs `reassign` (129 amends it): `release-tracking-123.test.ts` AC-6 and the two cross-release races in `releases.test.ts` pass `reassign` for that move.

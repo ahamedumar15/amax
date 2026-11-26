@@ -7,7 +7,7 @@ import { getRuntime } from "@amax/core/server";
 import { ToolError } from "@amax/mcp";
 import { nextVersion } from "./pin-offers";
 import { clockOf } from "./queries";
-import { candidates, moveRefusal, notReleasable, openElsewhere, releaseProposals, type ReleaseProposal } from "./release-proposals";
+import { candidates, moveRefusal, notReleasable, heldElsewhere, releaseProposals, type ReleaseProposal } from "./release-proposals";
 import { CATEGORIES, CategoryInput, categoryLabel, Day, Keys, ReleaseName, releaseDay, statusLabel, Version } from "./release-status";
 import { categoryProblem, datesProblem, zoneOf } from "./release-tracking";
 
@@ -21,7 +21,7 @@ const fail = (message: string, field?: string) => new ToolError(message, "invali
 export const FIELDS = [["name", ReleaseName], ["version", Version], ["category", CategoryInput], ["startDate", Day], ["targetDate", Day]] as const;
 
 const option = (p: ReleaseProposal) => ({ value: p.key, label: `${p.key} ${p.title}`,
-  ...(p.openRelease ? { detail: [`in ${p.openRelease.version}`, categoryLabel(p.openRelease.category), statusLabel(p.openRelease.status)].filter(Boolean).join(" · ") } : {}) });
+  ...(p.inRelease ? { detail: [`in ${p.inRelease.version}`, categoryLabel(p.inRelease.category), statusLabel(p.inRelease.status)].filter(Boolean).join(" · ") } : {}) });
 
 async function fieldsFor(tx: Tx, project: Record<string, unknown>): Promise<CardField[]> {
   const [latest] = await tx.execute(sql`select version from delivery.release where project_id = ${project.id} order by created_at desc limit 1`);
@@ -34,7 +34,7 @@ async function fieldsFor(tx: Tx, project: Record<string, unknown>): Promise<Card
     { name: "targetDate", label: "Target (YYYY-MM-DD)", kind: "text" },
     { name: "proposalKeys", label: "Proposals (Verified or Released)", kind: "checks", options: proposals.map(option), empty: `No Verified or Released proposals in ${project.name as string} yet` },
     { name: "reassign", label: "Move from their release", kind: "checks", of: "proposalKeys",
-      options: proposals.filter((p) => p.openRelease).map((p) => ({ value: p.key, label: `${p.key} from ${p.openRelease!.version}` })) },
+      options: proposals.filter((p) => p.inRelease).map((p) => ({ value: p.key, label: `${p.key} from ${p.inRelease!.version}` })) },
   ];
 }
 
@@ -54,7 +54,7 @@ export async function releaseCard(v: Viewer, a: Draft): Promise<ToolCard> {
 async function proposalProblem(tx: Tx, projectId: unknown, keys: string[], reassign: string[]) {
   for (const key of keys) {
     const [p] = await candidates(tx, sql`p.key = ${key} and p.project_id = ${projectId}`);
-    const problem = !p ? `no proposal ${key} in this project` : notReleasable(p, null) ?? (openElsewhere(p, null) && !reassign.includes(key) ? moveRefusal(p) : null);
+    const problem = !p ? `no proposal ${key} in this project` : notReleasable(p, null) ?? (heldElsewhere(p, null) && !reassign.includes(key) ? moveRefusal(p) : null);
     if (problem) return problem;
   }
   return null;

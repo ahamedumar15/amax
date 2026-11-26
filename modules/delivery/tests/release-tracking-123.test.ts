@@ -52,7 +52,7 @@ describe.skipIf(!hasDb)("123 release tracking: data and create (Postgres)", () =
     await expect(setReleaseProposals(db.admin(), { projectKey: "CON", version: "v2.5.0", proposalKeys: ["CON-014"] })).resolves.toBeTruthy();
   });
 
-  it("AC-6 a proposal in another open release is refused by both writers, naming it; once that one completes it can move", async () => {
+  it("AC-6 a proposal in another release is refused by both writers, naming it; once that one completes it moves only when asked (129)", async () => {
     const p = await db.proposal("RTK");
     await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "f1", proposalKeys: [p] });
     await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "f2" });
@@ -61,7 +61,8 @@ describe.skipIf(!hasDb)("123 release tracking: data and create (Postgres)", () =
     await expect(setReleaseProposals(db.admin(), { projectKey: "RTK", version: "f2", proposalKeys: [p] })).rejects.toThrow(refusal);
     await expect(createRelease(db.admin(), { ...OPEN, projectKey: "CON", version: "v9.9.9", proposalKeys: ["CON-010"] })).rejects.toThrow(/already in CON v2.4.0 \(Untracked\)/);
     await recordDeployment(db.admin(), { projectKey: "RTK", version: "f1", environment: "UAT" });
-    await setReleaseProposals(db.admin(), { projectKey: "RTK", version: "f2", proposalKeys: [p] });
+    await expect(setReleaseProposals(db.admin(), { projectKey: "RTK", version: "f2", proposalKeys: [p] })).rejects.toThrow(new RegExp(`${p} is already in RTK f1 \\(UAT, Completed\\)`));
+    await setReleaseProposals(db.admin(), { projectKey: "RTK", version: "f2", proposalKeys: [p], reassign: [p] });
     expect((await getRelease(db.sahan, "RTK", "f2"))!.proposals.find((x) => x.key === p)!.included).toBe(true);
   });
 });

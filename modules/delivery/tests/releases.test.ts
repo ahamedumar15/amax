@@ -412,8 +412,8 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
     await recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Dev" });
     if (via === "set") await createRelease(ctx(), { ...tracked(), projectKey: key, version: "v2", proposalKeys: [] });
     const move = () => via === "create"
-      ? createRelease(ctx(), { ...tracked(), projectKey: key, version: "v2", proposalKeys: [p.key] })
-      : setReleaseProposals(ctx(), { projectKey: key, version: "v2", proposalKeys: [p.key] });
+      ? createRelease(ctx(), { ...tracked(), projectKey: key, version: "v2", proposalKeys: [p.key], reassign: [p.key] })
+      : setReleaseProposals(ctx(), { projectKey: key, version: "v2", proposalKeys: [p.key], reassign: [p.key] });
     const deploy = () => recordDeployment(ctx(), { projectKey: key, version: "v1", environment: "Prod" });
     const h = holdAfterReleaseLock(order === "move-first" ? /select id from delivery\.proposal where .*order by id for update/s : /update delivery\.proposal set phase = 'released'/);
     let first: Promise<unknown> = Promise.resolve(), second: Promise<unknown> = Promise.resolve();

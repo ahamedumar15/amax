@@ -17,7 +17,9 @@ export const candidates = (tx: Tx, where: SQL) => tx.execute(sql`select p.id, p.
   join delivery.project pr on pr.id = p.project_id where ${where} order by p.key`);
 
 export const shippedElsewhere = (p: Row, releaseId: unknown) => p.phase === "released" && p.release_id != null && p.release_id !== releaseId;
-export const openElsewhere = (p: Row, releaseId: unknown) => p.release_id != null && p.release_id !== releaseId && p.status !== "completed";
+// 129: held in another release, open or completed. A move out of either needs `reassign` (a completed release is final,
+// so what it contains never changes silently); one Released there is refused outright (shippedElsewhere).
+export const heldElsewhere = (p: Row, releaseId: unknown) => p.release_id != null && p.release_id !== releaseId;
 const phaseWord = (p: Phase) => p.charAt(0).toUpperCase() + p.slice(1);
 export function notReleasable(p: Row, releaseId: unknown) {
   if (isWithdrawn(p)) return `${p.key as string} was withdrawn; it can't go in a release`;
@@ -31,12 +33,12 @@ export const releaseState = (r: Row) => `${r.category ? `${categoryLabel(r.categ
 export const whereItIs = (p: Row) => `${p.key as string} is already in ${p.project_key as string} ${p.version as string} (${releaseState(p)})`;
 export const moveRefusal = (p: Row) => `${whereItIs(p)}; confirm moving it, or take it out there first`;
 
-export type ReleaseProposal = { key: string; title: string; phase: Phase; openRelease: { version: string; category: string | null; status: string | null } | null };
+export type ReleaseProposal = { key: string; title: string; phase: Phase; inRelease: { version: string; category: string | null; status: string | null } | null };
 
 export const releaseProposals = async (tx: Tx, projectKey: string): Promise<ReleaseProposal[]> =>
   (await candidates(tx, sql`pr.key = ${projectKey}`)).filter(releasable).map((p) => ({
     key: p.key as string, title: p.title as string, phase: p.phase as Phase,
-    openRelease: openElsewhere(p, null) ? { version: p.version as string, category: (p.category as string | null) ?? null, status: (p.status as string | null) ?? null } : null,
+    inRelease: heldElsewhere(p, null) ? { version: p.version as string, category: (p.category as string | null) ?? null, status: (p.status as string | null) ?? null } : null,
   }));
 
 export const listReleaseProposals = (v: Viewer, projectKey: string) => read(v, async (tx) => {
@@ -49,7 +51,7 @@ type MoveInput = { projectKey: string; version?: string; proposalKeys?: string[]
 const movesOf = (v: Viewer, a: MoveInput) => withTenant(getRuntime().db, v.tenantId, async (tx) => {
   const keys = (a.proposalKeys ?? []).filter((k) => (a.reassign ?? []).includes(k));
   const rows = keys.length ? await candidates(tx, sql`p.key = any(${textArray(keys)}) and pr.key = ${a.projectKey}`) : [];
-  return rows.filter((p) => openElsewhere(p, null) && p.version !== a.version);
+  return rows.filter((p) => heldElsewhere(p, null) && p.version !== a.version);
 });
 const joined = (lines: string[], by: string) => (lines.length ? lines.join(by) : undefined);
 export const releaseNote = async (v: Viewer, a: MoveInput) => joined((await movesOf(v, a)).map((p) => `${whereItIs(p)}: it moves to this release`), ". ");

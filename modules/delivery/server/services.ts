@@ -13,7 +13,7 @@ import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
 import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolveRepoPhases, storedPhasesFor } from "./repo-time";
 import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
-import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
+import { candidates, moveRefusal, notReleasable, heldElsewhere, shippedElsewhere } from "./release-proposals";
 import { DEPLOYMENT_STATUSES } from "./deployment-status";
 import { checkDates, completeBy, completeOnDeployment, completeReached, missingForTracking, notCompleted, notTrackedYet, reachedAlready, statusFor, strandsReleases, tracked, writeStatus, type Dates } from "./release-tracking";
 
@@ -50,7 +50,7 @@ async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, k
     const [p] = await candidates(tx, sql`p.key = ${key} and p.project_id = ${projectId}`);
     if (!p) throw notFound(`no proposal ${key} in this project`);
     if (isWithdrawn(p) || shippedElsewhere(p, releaseId)) throw invalid(notReleasable(p, releaseId)!);
-    if (openElsewhere(p, releaseId) && !reassign.includes(key)) throw invalid(moveRefusal(p));
+    if (heldElsewhere(p, releaseId) && !reassign.includes(key)) throw invalid(moveRefusal(p));
     if (Number(live) > 0 && p.release_id !== releaseId) throw invalid(`this release is already live in Prod; put ${key} in a new release`);
     const phase = kept.includes(key) ? null : notReleasable(p, releaseId);
     if (phase) throw invalid(phase);
@@ -73,7 +73,7 @@ async function releaseOf(tx: Tx, projectId: unknown, version: string) {
 // row lock first, then any release rows: one order, no deadlock (123 review round 2).
 const lockProject = (tx: Tx, projectId: unknown) => tx.execute(sql`select 1 from delivery.project where id = ${projectId} for update`);
 
-async function openRelease(tx: Tx, ctx: ServiceContext, input: { projectKey: string; version: string }) {
+async function inRelease(tx: Tx, ctx: ServiceContext, input: { projectKey: string; version: string }) {
   const project = await projectByKey(tx, input.projectKey);
   scoped(ctx, "delivery:release:create", project.id as string);
   await lockProject(tx, project.id);
@@ -467,7 +467,7 @@ export const tagRelease = defineService({
   resource: "delivery.release",
   input: z.object({ projectKey: z.string(), version: z.string(), newVersion: Version }),
   async run(tx, input, ctx) {
-    const { project, r } = await openRelease(tx, ctx, input);
+    const { project, r } = await inRelease(tx, ctx, input);
     await tx.execute(sql`update delivery.release set version = ${input.newVersion}, updated_at = now() where id = ${r.id}`);
     // The release's page is named by its version: say where it moved, so chat can follow it (057).
     const moved = { from: releaseHref(input), to: releaseHref({ projectKey: input.projectKey, version: input.newVersion }) };
@@ -483,7 +483,7 @@ export const setReleaseProposals = defineService({
   resource: "delivery.release",
   input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: Keys, reassign: Keys.default([]) }),
   async run(tx, input, ctx) {
-    const { project, r } = await openRelease(tx, ctx, input);
+    const { project, r } = await inRelease(tx, ctx, input);
     const before = (await tx.execute(sql`select key from delivery.proposal where release_id = ${r.id} order by key`)).map((p) => p.key as string);
     await lockProposals(tx, sql`release_id = ${r.id} or (project_id = ${project.id} and key = any(${textArray(input.proposalKeys)}))`);
     await tx.execute(sql`update delivery.proposal set release_id = null where release_id = ${r.id} and phase <> 'released'`);
@@ -502,7 +502,7 @@ export const updateRelease = defineService({
   resource: "delivery.release",
   input: ReleaseUpdate,
   async run(tx, input, ctx) {
-    const { project, r: locked } = await openRelease(tx, ctx, input);
+    const { project, r: locked } = await inRelease(tx, ctx, input);
     const r = await tracked(tx, locked.id);
     const datesGiven = input.category !== undefined || input.startDate !== undefined || input.targetDate !== undefined;
     if (missingForTracking(r, input)) throw invalid(notTrackedYet(input.projectKey, input.version));

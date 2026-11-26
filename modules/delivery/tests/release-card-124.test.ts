@@ -20,8 +20,8 @@ describe.skipIf(!hasDb)("124 release chat card (Postgres)", () => {
     const listed = await listReleaseProposals(db.sahan, "RTK");
     expect(listed.map((p) => p.key)).toEqual(expect.arrayContaining([free, held, archived]));
     expect(listed.map((p) => p.key)).not.toContain(proposed);
-    expect(listed.find((p) => p.key === held)!.openRelease).toEqual({ version: "l1", category: "uat", status: "in_progress" });
-    expect(listed.find((p) => p.key === free)!.openRelease).toBeNull();
+    expect(listed.find((p) => p.key === held)!.inRelease).toEqual({ version: "l1", category: "uat", status: "in_progress" });
+    expect(listed.find((p) => p.key === free)!.inRelease).toBeNull();
     await create("l2", { proposalKeys: [archived] });
   });
 
