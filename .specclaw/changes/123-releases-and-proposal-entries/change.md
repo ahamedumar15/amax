@@ -92,7 +92,19 @@ A **tracked** release has a category; one with none (every release made before t
 
 ## Tasks
 
-<!-- Added by plan. -->
+- [ ] `T1` — Chat: New release asks for name, category, start and target; the create card shows them; an update card for `update_release` (AC-12, AC-7 card)
+  Files: modules/delivery/chat.ts, modules/delivery/server/write-cards.ts, packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts
+- [ ] `T2` — Migration and the status rule: `0025_release_tracking.sql` (release columns, checks, `name = version` backfill, `release_status_history` with RLS and no update/delete grant) and the pure `releaseStatus` / `completionOf` in a new `server/release-status.ts`, with its unit tests (AC-1, AC-2, AC-3)
+  Files: modules/delivery/db/migrations/0025_release_tracking.sql, modules/delivery/server/release-status.ts, modules/delivery/tests/release-status-123.test.ts
+- [ ] `T3` — Services: `createRelease` takes and checks the new fields and the category environment, writes status and history, returns `href`; `assignProposals` refuses ineligible phases and open-release conflicts (no silent move); new `updateRelease`; `setReleaseProposals` and `tagRelease` refuse a Completed release; `recordDeployment` completes and `voidDeployment` reopens or re-completes, under the existing locks (AC-4 to AC-9)
+  Files: modules/delivery/server/services.ts, modules/delivery/server/release-status.ts
+  Depends: T2
+- [ ] `T4` — Tools and reads: `create_release` input, new `update_release` write tool; `ReleaseRow`, `listReleases`, `getRelease` carry the new fields, `statusHistory`, and a proposal count without withdrawn ones; README and contracts note (AC-4, AC-7, AC-10, AC-11)
+  Files: modules/delivery/mcp.ts, modules/delivery/server/queries.ts, modules/delivery/README.md
+  Depends: T3
+- [ ] `T5` — Tests and callers: DB tests for create, read, list, update, dates, category, eligibility, conflicts, completion, void, scope by role and two tenants; existing tests that call `create_release` / `createRelease` send the new fields; run the delivery, notifications and ai suites, `pnpm lint` and typecheck (AC-4 to AC-13)
+  Files: modules/delivery/tests/release-tracking-123.test.ts, modules/delivery/tests/releases.test.ts, modules/delivery/tests/owner-accept-118.test.ts, modules/delivery/tests/pin-offers.test.ts, modules/delivery/tests/proposal-lifecycle.test.ts, modules/delivery/tests/stable-pins.test.ts, modules/delivery/tests/sync-import.test.ts, modules/delivery/tests/proposal-regression.test.ts, modules/notifications/tests/delivery-flow.test.ts
+  Depends: T1, T4
 
 ## Verify
 
