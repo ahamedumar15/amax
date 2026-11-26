@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
-import { createRelease, setReleaseProposals } from "../server/services";
+import { createRelease, setReleaseProposals, tagRelease } from "../server/services";
 import { getRelease } from "../server/queries";
 import { listReleaseProposals } from "../server/release-proposals";
 import { proposeRelease, ReleaseDraft } from "../server/release-card";
@@ -44,5 +44,16 @@ describe.skipIf(!hasDb)("124 release chat card (Postgres)", () => {
       await expect(proposeRelease(db.sahan, { projectKey: "RTK", [field]: value })).rejects.toMatchObject({ field, message });
       await expect(create("bad", { [field]: value })).rejects.toThrow(message);
     }
+  });
+
+  it("AC-7 padded text reads as the service stores it: the card, create and re-tag agree on the version", async () => {
+    expect(ReleaseDraft.parse({ projectKey: "RTK", version: " v1 ", name: " N ", startDate: " 2026-12-01 ", targetDate: "2026-12-02 " }))
+      .toMatchObject({ version: "v1", name: "N", startDate: "2026-12-01", targetDate: "2026-12-02" });
+    for (const version of [" m1 ", "m1 ", "\tm1"]) {
+      await expect(proposeRelease(db.sahan, ReleaseDraft.parse({ projectKey: "RTK", version }))).rejects.toMatchObject({ field: "version", message: "RTK already has a release m1" });
+      await expect(create(version)).rejects.toThrow("RTK already has a release m1");
+    }
+    await expect(tagRelease(db.admin(), { projectKey: "RTK", version: "l2", newVersion: "   " })).rejects.toThrow("the release needs a version");
+    expect(await tagRelease(db.admin(), { projectKey: "RTK", version: "l2", newVersion: " l2b " })).toMatchObject({ version: "l2b" });
   });
 });

@@ -11,8 +11,8 @@ import { candidates, moveRefusal, notReleasable, openElsewhere, releaseProposals
 import { CATEGORIES, CategoryInput, categoryLabel, Day, Keys, ReleaseName, releaseDay, statusLabel, Version } from "./release-status";
 import { categoryProblem, datesProblem, zoneOf } from "./release-tracking";
 
-export const ReleaseDraft = z.object({ projectKey: z.string(), version: z.string().optional(), name: z.string().optional(), category: z.string().trim().toLowerCase().optional(),
-  startDate: z.string().optional(), targetDate: z.string().optional(), proposalKeys: Keys.optional(), reassign: Keys.optional() });
+export const ReleaseDraft = z.object({ projectKey: z.string(), version: z.string().trim().optional(), name: z.string().trim().optional(), category: z.string().trim().toLowerCase().optional(),
+  startDate: z.string().trim().optional(), targetDate: z.string().trim().optional(), proposalKeys: Keys.optional(), reassign: Keys.optional() });
 type Draft = z.infer<typeof ReleaseDraft>;
 
 const inTenant = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => withTenant(getRuntime().db, v.tenantId, fn);

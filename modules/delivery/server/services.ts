@@ -449,7 +449,7 @@ export const tagRelease = defineService({
   name: "delivery.release.tag",
   action: "delivery:release:create",
   resource: "delivery.release",
-  input: z.object({ projectKey: z.string(), version: z.string(), newVersion: z.string().min(1).max(40) }),
+  input: z.object({ projectKey: z.string(), version: z.string(), newVersion: Version }),
   async run(tx, input, ctx) {
     const { project, r } = await openRelease(tx, ctx, input);
     await tx.execute(sql`update delivery.release set version = ${input.newVersion}, updated_at = now() where id = ${r.id}`);
