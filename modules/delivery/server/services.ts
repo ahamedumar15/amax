@@ -12,7 +12,7 @@ import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
 import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolveRepoPhases, storedPhasesFor } from "./repo-time";
-import { Day, Keys, ReleaseName, CategoryInput, Tracking, type ReleaseStatus } from "./release-status";
+import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
 import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
 import { checkDates, completeOnDeployment, notCompleted, reopenOnVoid, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
 
@@ -168,7 +168,7 @@ export const createRelease = defineService({
   name: "delivery.release.create",
   action: "delivery:release:create",
   resource: "delivery.release",
-  input: z.object({ projectKey: z.string(), version: z.string().min(1), proposalKeys: Keys.default([]), reassign: Keys.default([]), ...Tracking.shape }),
+  input: z.object({ projectKey: z.string(), version: Version, proposalKeys: Keys.default([]), reassign: Keys.default([]), ...Tracking.shape }),
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);

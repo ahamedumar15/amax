@@ -29,8 +29,8 @@ describe("124 the checks field and the in-app link", () => {
 
   it("AC8 the done card opens an in-app path, never another host", () => {
     expect(openOf({ open: { label: "Open the release", url: "/delivery/releases/ORB/v0.14.0" } })).toEqual({ label: "Open the release", url: "/delivery/releases/ORB/v0.14.0" });
-    expect(openOf({ open: { label: "x", url: "//evil.example/x" } })).toBeUndefined();
-    expect(openOf({ open: { label: "x", url: "/\\evil.example" } })).toBeUndefined();
+    for (const url of ["//evil.example/x", "/\\evil.example", "/\t/evil.example", "/\n/evil.example", "/\r/evil.example", "/ /evil.example", "/\u0000/evil.example"])
+      expect(openOf({ open: { label: "x", url } }), JSON.stringify(url)).toBeUndefined();
     expect(openOf({ open: { label: "GitHub", url: "https://github.com/login" } })).toBeDefined();
   });
 });

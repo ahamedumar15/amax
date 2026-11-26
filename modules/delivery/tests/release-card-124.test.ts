@@ -3,6 +3,7 @@ import { hasDb } from "@amax/db/testdb";
 import { createRelease, setReleaseProposals } from "../server/services";
 import { getRelease } from "../server/queries";
 import { listReleaseProposals } from "../server/release-proposals";
+import { proposeRelease, ReleaseDraft } from "../server/release-card";
 import { OPEN, releaseDb } from "./release-db";
 
 describe.skipIf(!hasDb)("124 release chat card (Postgres)", () => {
@@ -33,5 +34,15 @@ describe.skipIf(!hasDb)("124 release chat card (Postgres)", () => {
     expect((await getRelease(db.sahan, "RTK", "m2"))!.proposals.filter((p) => p.included).map((p) => p.key).sort()).toEqual([a, b].sort());
     const [audit] = await db.t.owner`select after from core.audit_event where action = 'delivery.release.proposals' order by seq desc limit 1`;
     expect(audit.after.moved).toEqual([{ key: b, from: "m1" }]);
+  });
+
+  it("AC-2 AC-7 the category is matched in any case, and the card refuses each bad field with the service's own message", async () => {
+    for (const category of ["UAT", "Dev", "PROD", " uat "]) expect(ReleaseDraft.parse({ projectKey: "RTK", category }).category).toBe(category.trim().toLowerCase());
+    const bad = [["name", "x".repeat(121), "a release name is at most 120 characters"], ["version", " ", "the release needs a version"], ["category", "QA", "the category is Dev, UAT or Prod"],
+      ["startDate", "2026-02-30", "that date isn't a real calendar day"], ["targetDate", "12/12/2026", "a date is YYYY-MM-DD"]] as const;
+    for (const [field, value, message] of bad) {
+      await expect(proposeRelease(db.sahan, { projectKey: "RTK", [field]: value })).rejects.toMatchObject({ field, message });
+      await expect(create("bad", { [field]: value })).rejects.toThrow(message);
+    }
   });
 });

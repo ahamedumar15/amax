@@ -8,16 +8,17 @@ import { ToolError } from "@amax/mcp";
 import { nextVersion } from "./pin-offers";
 import { clockOf } from "./queries";
 import { candidates, moveRefusal, notReleasable, openElsewhere, releaseProposals, type ReleaseProposal } from "./release-proposals";
-import { CATEGORIES, CategoryInput, categoryLabel, Day, Keys, releaseDay, statusLabel } from "./release-status";
+import { CATEGORIES, CategoryInput, categoryLabel, Day, Keys, ReleaseName, releaseDay, statusLabel, Version } from "./release-status";
 import { categoryProblem, datesProblem, zoneOf } from "./release-tracking";
 
-export const ReleaseDraft = z.object({ projectKey: z.string(), version: z.string().optional(), name: z.string().optional(), category: z.string().optional(),
+export const ReleaseDraft = z.object({ projectKey: z.string(), version: z.string().optional(), name: z.string().optional(), category: z.string().trim().toLowerCase().optional(),
   startDate: z.string().optional(), targetDate: z.string().optional(), proposalKeys: Keys.optional(), reassign: Keys.optional() });
 type Draft = z.infer<typeof ReleaseDraft>;
 
 const inTenant = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => withTenant(getRuntime().db, v.tenantId, fn);
 const projectOf = async (tx: Tx, key: string) => (await tx.execute(sql`select * from delivery.project where key = ${key}`))[0];
 const fail = (message: string, field?: string) => new ToolError(message, "invalid_input", field);
+const FIELDS = [["name", ReleaseName], ["version", Version], ["category", CategoryInput], ["startDate", Day], ["targetDate", Day]] as const;
 
 const option = (p: ReleaseProposal) => ({ value: p.key, label: `${p.key} ${p.title}`,
   ...(p.openRelease ? { detail: [`in ${p.openRelease.version}`, categoryLabel(p.openRelease.category), statusLabel(p.openRelease.status)].filter(Boolean).join(" · ") } : {}) });
@@ -63,14 +64,14 @@ export const proposeRelease = (v: Viewer, a: Draft) => inTenant(v, async (tx) =>
   const project = await projectOf(tx, a.projectKey);
   if (!project) throw fail(`no project ${a.projectKey}`);
   if (!can(v, "delivery:release:create", { projectId: project.id as string })) throw fail(`You can't create releases in ${a.projectKey}`);
-  if (a.name !== undefined && !a.name.trim()) throw fail("the release needs a name", "name");
+  for (const [field, schema] of FIELDS) {
+    const checked = a[field] === undefined ? null : schema.safeParse(a[field]);
+    if (checked && !checked.success) throw fail(checked.error.issues[0].message, field);
+  }
   const [taken] = a.version ? await tx.execute(sql`select 1 from delivery.release where project_id = ${project.id} and version = ${a.version}`) : [];
   if (taken) throw fail(`${a.projectKey} already has a release ${a.version}`, "version");
-  const category = a.category === undefined ? undefined : CategoryInput.safeParse(a.category);
-  if (category && !category.success) throw fail("the category is Dev, UAT or Prod", "category");
-  const noEnv = category?.success ? await categoryProblem(tx, project, category.data) : null;
+  const noEnv = a.category ? await categoryProblem(tx, project, CategoryInput.parse(a.category)) : null;
   if (noEnv) throw fail(noEnv, "category");
-  for (const field of ["startDate", "targetDate"] as const) if (a[field] && !Day.safeParse(a[field]).success) throw fail("a date is YYYY-MM-DD, a real calendar day", field);
   const order = a.startDate && a.targetDate ? datesProblem(a.startDate, a.targetDate) : null;
   if (order) throw fail(order, "targetDate");
   const bad = await proposalProblem(tx, project.id, a.proposalKeys ?? [], a.reassign ?? []);

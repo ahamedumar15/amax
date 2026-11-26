@@ -39,7 +39,6 @@ export function notCompleted(r: Row, projectKey: string) {
   if (r.status === "completed") throw invalid(`${projectKey} ${r.version as string} is completed; it can't change`);
 }
 
-
 export async function writeStatus(tx: Tx, r: Row, to: ReleaseStatus, source: Source, by: string, deploymentId: string | null = null, also: SQL = sql``) {
   await tx.execute(sql`update delivery.release set status = ${to}, updated_at = now() ${also} where id = ${r.id}`);
   if (r.status === to) return;
