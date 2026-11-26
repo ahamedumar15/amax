@@ -55,4 +55,28 @@ where that day comes from. `completeBy` is the only writer of a completion.
 
 ## Verify
 
+**Verdict:** PASS
+Review: CLEAN — 5 rounds, final pass 13ab4c5a4c, models opus/opus; last round 0/0/0 b/M/m (`base_branch` 3f45d852, 125's last commit, for each run; config restored after each). Fix proof not proven: no `review.test_command` configured.
+Size: 52 production lines against 3f45d852 (cap 400).
+
+Checked 2026-11-26, Windows 11, dev app on :3000 with the scripted chat model, dev database migrated to 0027.
+
+- AC-1: pass. 0027 adds `completed_zone` and `completed_day`; `completeBy` stores both with `completed_at` and `completion`, judged from that day, in one write; `release_completed_whole` refuses a completed release without either (`release-completed-day-128.test.ts`, the refusal test).
+- AC-2: pass. `getRelease` returns the stored day; after the project moves between Kiritimati and Pago Pago (25 hours apart, so the day differs at any hour), the day and On time or Late stay, both On time and Late rows (zone table); on the dev app, CON v8.9.0 read "26 Nov 2026 · On time" before and after its entity moved to Kiritimati, where its completion instant is 27 Nov (`shots/app-before-zone-change.png`, `shots/app-after-zone-change.png`; the entity and zone restored after).
+- AC-3: pass. The backfill follows `entityZone`'s rule, own zone, then the country default, then UTC, checked against `entityZone` at a pinned instant whose day differs by zone; it fails with the country step removed.
+- AC-4: pass (amended at the final pass by the product owner). The voided completing deployment's day reads in the stored zone (zone table voids after the move); it fails with the voided day forced into another zone. No other screen or tool changed.
+- AC-5: pass. `release-completed-day-128.test.ts`, 6 tests.
+
+Commands (exit codes):
+
+- `npx vitest run modules/delivery modules/notifications modules/leave apps/web/tests` (at the final-pass fixes, code unchanged since): 1, 1252/1254, host-only `releases.test` "two call sites" (backslash path) and the `create-project-surfaces` load timeout (7/7 alone)
+- `npx tsc --noEmit` in `modules/delivery` and `apps/web`: 0
+- `node scripts/check-module-standard.mjs --root .`: 0 (23 modules); `node scripts/check-graph.mjs --root .`: only the deliberate R7 fixture
+- `specclaw-verify size .specclaw 128-release-completed-day` (base 3f45d852): 0
+- `specclaw-preset-check .`: 1, repo-wide; in 128's files only the comment rule, as across the repo
+- `specclaw-quality-scan . --gate`: 2, the complexity tool did not run; duplication repo-wide, none in 128's files
+- `pnpm db:migrate` on the dev database: 0027 applied; edited before it reached `main` (only dev and test databases ran it), so the dev database's 0027 checksum and new column were brought up to date by hand
+
+Screenshots: `shots/mock.png`, `shots/app-before-zone-change.png`, `shots/app-after-zone-change.png`
+
 Quality: 860 → 860 duplicated lines (repo-wide; none in 128's files). Build note: no per-task commits from the agent (git is read-only here); the product owner commits.
