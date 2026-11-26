@@ -4189,6 +4189,24 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   </div>
 </section>
 
+<section data-change="128-release-completed-day" id="128-release-completed-day" data-roles="admin leadership pm engineer" data-title="Completed day kept" data-nav="no" data-icon="rocket" data-parent="001-amax-foundation-project">
+  <h1>A completed release keeps the day it completed on</h1>
+  <p class="lede">128: the completion day is stored when the release completes, so a later change of the project's zone can't move it away from its On time or Late. Fictional data (Orbit Notes).</p>
+  <div class="cols even" style="max-width:900px">
+    <div class="card pinnable">
+      <div class="card-head"><h2>Release</h2><button class="btn sm">📌</button></div>
+      <p class="muted" style="margin:0 0 8px;font-size:12.5px">Completed at 23:00 on 13 Dec while the project's entity was in Pacific/Pago_Pago</p>
+      <dl class="rel-info"><div><dt>Target</dt><dd>13 Dec 2026</dd></div><div><dt>Completed</dt><dd>13 Dec 2026 · On time</dd></div></dl>
+    </div>
+    <div class="card pinnable">
+      <div class="card-head"><h2>Release</h2><button class="btn sm">📌</button></div>
+      <p class="muted" style="margin:0 0 8px;font-size:12.5px">After the entity moved to Pacific/Kiritimati</p>
+      <dl class="rel-info"><div><dt>Target</dt><dd>13 Dec 2026</dd></div><div><dt>Completed</dt><dd>13 Dec 2026 · On time</dd></div></dl>
+      <p class="muted" style="margin:8px 0 0;font-size:12.5px">Unchanged. Before 128 this read "15 Dec 2026 · On time": two days past the target, beside On time.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
