@@ -431,8 +431,10 @@ export const upsertEnvironment = defineService({
       await tx.execute(sql`update delivery.environment set position = -position where project_id = ${project.id}`);
     }
     // Pins name the environment by its id (059), so a rename needs nothing more.
-    const completed = await completeReached(tx, project, by(ctx));
-    return { result: { name: row.name as string }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null, after: input, events: completed };
+    // Releases this change completed are audited with it: the environment change is why they completed.
+    const { events, completed } = await completeReached(tx, project, by(ctx));
+    return { result: { name: row.name as string, ...(completed.length ? { completed } : {}) }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null,
+      after: { ...input, completed }, events };
   },
 });
 

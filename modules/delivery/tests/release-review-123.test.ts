@@ -100,10 +100,33 @@ describe.skipIf(!hasDb)("123 review: completed offers, stranded categories, comp
     const k = await project();
     await createRelease(db.admin(), { ...OPEN, projectKey: k, version: "p1", category: "prod" });
     await recordDeployment(db.admin(), { projectKey: k, version: "p1", environment: deployTo });
-    await upsertEnvironment(db.admin(), { projectKey: k, name: "QA", isProd: true });
+    const out = await upsertEnvironment(db.admin(), { projectKey: k, name: "QA", isProd: true });
     const release = (await getRelease(db.sahan, k, "p1"))!;
     expect(release.status).toBe(completes ? "completed" : "in_progress");
-    if (completes) expect(release.completingDeploymentId).toBe(release.history.find((d) => d.environment === "QA")!.id);
+    const qa = release.history.find((d) => d.environment === "QA");
+    expect(out.completed ?? []).toEqual(completes ? [{ version: "p1", deploymentId: qa!.id }] : []);
+    const [audit] = await db.t.owner`select after from core.audit_event where action = 'delivery.environment.upsert' and tenant_id = ${T} order by seq desc limit 1`;
+    expect((audit.after as { completed: unknown }).completed).toEqual(out.completed ?? []);
+    if (completes) expect(release.completingDeploymentId).toBe(qa!.id);
+  });
+
+  // Round 3: a deployment that completes the release while an environment change runs keeps its completion; the
+  // change doesn't rewrite it (Completed is final).
+  it("a Prod deployment and making a reached QA Prod at once: one completion, never rewritten", async () => {
+    for (let i = 0; i < 5; i++) {
+      const k = await project();
+      await createRelease(db.admin(), { ...OPEN, projectKey: k, version: "q1", category: "prod" });
+      await recordDeployment(db.admin(), { projectKey: k, version: "q1", environment: "QA" });
+      await Promise.allSettled([
+        recordDeployment(db.admin(), { projectKey: k, version: "q1", environment: "Prod" }),
+        upsertEnvironment(db.admin(), { projectKey: k, name: "QA", isProd: true }),
+      ]);
+      const release = (await getRelease(db.sahan, k, "q1"))!;
+      const completions = release.statusHistory.filter((h) => h.to === "completed");
+      expect(completions).toHaveLength(1);
+      expect(release.completingDeploymentId).toBe(completions[0].deploymentId);
+      expect(release.completedAt).toBe(release.history.find((d) => d.id === release.completingDeploymentId)!.at);
+    }
   });
 
   // Round 2: the guard and the release write share the project lock, so a rename and a create of that category never both land.
