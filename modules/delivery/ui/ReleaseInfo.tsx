@@ -3,14 +3,12 @@ import type { ReleaseTracking } from "../server/queries";
 import { categoryLabel, dayLabel } from "../server/release-status";
 import { StatusChip } from "./ReleaseTable";
 
-type Completed = ReleaseTracking & { completedDay: string | null };
-
-/** The completion line; the day is the project's, as getRelease reads it (releaseDay in the entity zone). */
-export function completedLine(r: Completed) {
+/** The completion line: the day stored at completion (128), the one On time or Late was judged by. */
+export function completedLine(r: ReleaseTracking) {
   return r.completedAt && r.completedDay ? `Completed on ${dayLabel(r.completedDay)} · ${r.completion === "late" ? "Late" : "On time"}` : null;
 }
 
-export function ReleaseInfo({ r, version, projectName, pin }: { r: Completed; version: string; projectName: string; pin: PinRef }) {
+export function ReleaseInfo({ r, version, projectName, pin }: { r: ReleaseTracking; version: string; projectName: string; pin: PinRef }) {
   const rows: [string, React.ReactNode][] = [["Project", projectName], ["Version", version], ["Category", categoryLabel(r.category) ?? "—"],
     ["Status", <StatusChip key="s" r={r} />], ["Start", dayLabel(r.startDate) ?? "—"], ["Target", dayLabel(r.targetDate) ?? "—"],
     ["Completed", completedLine(r)?.replace("Completed on ", "") ?? <span key="n" className="muted">Not yet</span>]];

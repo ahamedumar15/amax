@@ -222,11 +222,11 @@ export const proposalMetrics = async (v: Viewer, f: Pick<ProposalFilter, "projec
   return { projectKey: f.projectKey ?? null, ...counts, shippedPerWeek: shipped };
 };
 
-export type ReleaseTracking = { name: string | null; category: string | null; startDate: string | null; targetDate: string | null; status: string | null; completedAt: string | null; completion: string | null; updatedAt: string | null };
-const TRACKING = sql`r.start_date::text as start_text, r.target_date::text as target_text`;
+export type ReleaseTracking = { name: string | null; category: string | null; startDate: string | null; targetDate: string | null; status: string | null; completedAt: string | null; completedDay: string | null; completion: string | null; updatedAt: string | null };
+const TRACKING = sql`r.start_date::text as start_text, r.target_date::text as target_text, r.completed_day::text as completed_day_text`;
 const trackingOf = (r: Record<string, unknown>): ReleaseTracking => ({ name: (r.name as string | null) ?? (r.version as string), category: (r.category as string | null) ?? null,
   startDate: (r.start_text as string | null) ?? null, targetDate: (r.target_text as string | null) ?? null, status: (r.status as string | null) ?? null,
-  completedAt: iso(r.completed_at), completion: (r.completion as string | null) ?? null, updatedAt: iso(r.updated_at) });
+  completedAt: iso(r.completed_at), completedDay: (r.completed_day_text as string | null) ?? null, completion: (r.completion as string | null) ?? null, updatedAt: iso(r.updated_at) });
 
 export type ReleaseRow = Partial<ReleaseTracking> & {
   id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt?: string | null;
@@ -326,7 +326,7 @@ export const getStatusChange = (v: Viewer, changeId: string) =>
 
 const voidedOf = (d: DeploymentRow | undefined, day: (at: string) => string) => (d?.voidedAt ? { at: d.voidedAt, day: day(d.voidedAt), reason: d.voidReason } : null);
 
-/** One release with its proposals and full deployment history, voided ones included. Its days are the project's (entity zone). */
+/** One release with its proposals and full deployment history, voided ones included. The completion day is the one stored at completion (128); the voided day is read in the project's zone now. */
 export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
     // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
@@ -345,7 +345,6 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
     const day = (at: string) => releaseDay(zone, at);
     return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r),
       completingDeploymentId: (r.completing_deployment_id as string | null) ?? null,
-      completedDay: r.completed_at ? day(r.completed_at as string) : null,
       completingVoided: voidedOf(history.find((d) => d.id === r.completing_deployment_id), day),
       history: history.map((d) => ({ ...d, recordedBy: named(d.recordedBy) })), proposals,
       statusHistory: statusHistory.map((h) => ({ ...h, by: named(h.by) })) };

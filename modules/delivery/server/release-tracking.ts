@@ -64,8 +64,9 @@ async function statusChanged(tx: Tx, releaseId: unknown, from: string | null, to
 }
 
 async function completeBy(tx: Tx, project: Row, r: Row, d: Row, source: Source, by: string) {
-  const completion = completionOf(releaseDay(await zoneOf(tx, project), d.at as string), r.target_date as string);
-  return writeStatus(tx, r, "completed", source, by, d.id as string, sql`, completed_at = ${d.at}, completion = ${completion}, completing_deployment_id = ${d.id}`);
+  const day = releaseDay(await zoneOf(tx, project), d.at as string);
+  const completion = completionOf(day, r.target_date as string);
+  return writeStatus(tx, r, "completed", source, by, d.id as string, sql`, completed_at = ${d.at}, completed_day = ${day}, completion = ${completion}, completing_deployment_id = ${d.id}`);
 }
 
 export async function completeOnDeployment(tx: Tx, project: Row, releaseId: unknown, d: Row, by: string): Promise<Emitted | null> {
