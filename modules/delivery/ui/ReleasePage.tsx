@@ -5,10 +5,10 @@ import { projectHref, proposalHref, releaseHref } from "../contracts";
 import { ProjectTabs } from "./ProjectHeader";
 import { deploymentPin, historyPin, proposalPin } from "../pins";
 import { getProject, getRelease, listEnvironments } from "../server/queries";
-import { categoryLabel } from "../server/release-status";
+import { categoryLabel, dayLabel } from "../server/release-status";
 import { AskButton } from "./AskButton";
 import { LoadSafe } from "./LoadSafe";
-import { completedDay, completedLine, ReleaseInfo } from "./ReleaseInfo";
+import { completedLine, ReleaseInfo } from "./ReleaseInfo";
 import { ReleaseDeployments } from "./ReleaseDeployments";
 import { ReleaseHistory } from "./ReleaseHistory";
 import { needViewer, PhaseChip, SignInFirst } from "./parts";
@@ -39,7 +39,7 @@ export function ReleaseBody({ viewer, release, envs }: { viewer: Viewer; release
         <p className="lede">{release.projectName} {release.version}{release.category ? ` · ${categoryLabel(release.category)} release` : ""}. {done ? `${done}. A completed release can't change.` : "Changes happen in chat."}</p></div>
         <Actions release={release} canEdit={canEdit} /></div>
       <ProjectTabs projectKey={release.projectKey} current="releases" />
-      {release.completingVoided && <p className="rel-voided" role="note">The deployment that completed this release was voided on {completedDay(release.completingVoided.at)}: {release.completingVoided.reason}. The release stays completed.</p>}
+      {release.completingVoided && <p className="rel-voided" role="note">The deployment that completed this release was voided on {dayLabel(release.completingVoided.day)}: {release.completingVoided.reason}. The release stays completed.</p>}
       <div className="cols even" style={{ marginBottom: 28 }}>
         <ReleaseInfo r={release} version={release.version} projectName={release.projectName} pin={pin("information")} />
         <div className="card pinnable">

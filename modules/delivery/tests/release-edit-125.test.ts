@@ -6,7 +6,7 @@ import { fakeProvider } from "@amax/ai/fake";
 import { createRegistry } from "@amax/mcp";
 import { chatTurn, checkCardEdits, confirmAction } from "@amax/chat";
 import delivery from "../module";
-import { createRelease, recordDeployment } from "../server/services";
+import { createRelease, recordDeployment, updateRelease } from "../server/services";
 import { ctxFor } from "../server/context";
 import { proposalDb, T } from "./proposal-db";
 
@@ -51,6 +51,22 @@ describe.skipIf(!hasDb)("125 the edit card in chat (Postgres)", () => {
     expect(await check({ category: "uat" })).toMatchObject({ field: "startDate" });
     await confirmAction(db.app, registry, maya, t.conversationId, t.pending[0].id, { edits: { category: "uat", startDate: "2026-10-01", targetDate: "2099-12-31" } });
     expect((await db.t.owner`select name, category, status from delivery.release where version = 'v2.5.0'`)[0]).toEqual({ name: "v2.5.0", category: "uat", status: "in_progress" });
+  });
+
+  // One rule for a partial first tracking (missingForTracking): the card and the service refuse the same field, in the same words.
+  it.each([
+    [{ category: "uat" }, "startDate"],
+    [{ startDate: "2026-10-01" }, "category"],
+    [{ targetDate: "2099-12-31" }, "category"],
+    [{ category: "uat", startDate: "2026-10-01" }, "targetDate"],
+    [{ startDate: "2026-10-01", targetDate: "2099-12-31" }, "category"],
+  ])("AC-9 a partial first tracking %o is refused on %s by the card and by update_release alike", async (edits, field) => {
+    await db.t.owner`insert into delivery.release (tenant_id, project_id, version) select ${T}, id, 'u1' from delivery.project where key = 'CON' on conflict do nothing`;
+    const t = await turn({ projectKey: "CON", version: "u1" });
+    const message = "CON u1 isn't tracked yet: give its category, start and target together";
+    expect(await checkCardEdits(db.app, registry, maya, t.conversationId, t.pending[0].id, edits)).toMatchObject({ field, message });
+    await expect(updateRelease(ctxFor(maya), { projectKey: "CON", version: "u1", ...edits })).rejects.toThrow(message);
+    expect((await db.t.owner`select category from delivery.release where version = 'u1'`)[0].category).toBeNull();
   });
 
   it("AC-9 AC-10 no edit card for a completed release, nor for a PM of another project", async () => {

@@ -313,7 +313,7 @@ export function isRelease(r: { id: string; projectKey: string; version: string }
   return (!ref.releaseId || r.id === ref.releaseId) && (!ref.projectKey || r.projectKey === ref.projectKey) && (!ref.version || r.version === ref.version);
 }
 
-/** One release with its proposals and full deployment history, voided ones included. */
+/** One status change of a release, by id: the pin on a status-history row resolves here (R3). */
 export const getStatusChange = (v: Viewer, changeId: string) =>
   read(v, async (tx) => {
     const [h] = await tx.execute(sql`select h.id, h.from_status, h.to_status, h.at, h.source, h.changed_by, r.version, p.key from delivery.release_status_history h
@@ -324,8 +324,9 @@ export const getStatusChange = (v: Viewer, changeId: string) =>
       at: iso(h.at), source: h.source as string, by: named(h.changed_by as string) };
   });
 
-const voidedOf = (d: DeploymentRow | undefined) => (d?.voidedAt ? { at: d.voidedAt, reason: d.voidReason } : null);
+const voidedOf = (d: DeploymentRow | undefined, day: (at: string) => string) => (d?.voidedAt ? { at: d.voidedAt, day: day(d.voidedAt), reason: d.voidReason } : null);
 
+/** One release with its proposals and full deployment history, voided ones included. Its days are the project's (entity zone). */
 export const getRelease = (v: Viewer, projectKey: string | undefined, version: string | undefined, releaseId?: string) =>
   read(v, async (tx) => {
     // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
@@ -340,10 +341,12 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
     const statusHistory = (await tx.execute(sql`select id, from_status, to_status, at, source, deployment_id, changed_by from delivery.release_status_history where release_id = ${r.id} order by at`))
       .map((h) => ({ id: h.id as string, from: (h.from_status as string | null) ?? null, to: h.to_status as string, at: iso(h.at), source: h.source as string, deploymentId: (h.deployment_id as string | null) ?? null, by: h.changed_by as string }));
     const named = await namesFor(tx, [...history.map((d) => d.recordedBy), ...statusHistory.map((h) => h.by)]);
+    const zone = await entityZone(tx, (r.legal_entity_id as string | null) ?? null);
+    const day = (at: string) => releaseDay(zone, at);
     return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r),
       completingDeploymentId: (r.completing_deployment_id as string | null) ?? null,
-      completedDay: r.completed_at ? releaseDay(await entityZone(tx, (r.legal_entity_id as string | null) ?? null), r.completed_at as string) : null,
-      completingVoided: voidedOf(history.find((d) => d.id === r.completing_deployment_id)),
+      completedDay: r.completed_at ? day(r.completed_at as string) : null,
+      completingVoided: voidedOf(history.find((d) => d.id === r.completing_deployment_id), day),
       history: history.map((d) => ({ ...d, recordedBy: named(d.recordedBy) })), proposals,
       statusHistory: statusHistory.map((h) => ({ ...h, by: named(h.by) })) };
   });

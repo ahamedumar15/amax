@@ -9,7 +9,7 @@ import { ReleaseBody } from "../ui/ReleasePage";
 import { completedLine } from "../ui/ReleaseInfo";
 import { When } from "../ui/When";
 import { mcpTools } from "../mcp";
-import { OPEN, releaseDb } from "./release-db";
+import { OPEN, releaseDb, T } from "./release-db";
 
 describe.skipIf(!hasDb)("125 the release page (Postgres)", () => {
   let db: Awaited<ReturnType<typeof releaseDb>>;
@@ -56,8 +56,27 @@ describe.skipIf(!hasDb)("125 the release page (Postgres)", () => {
     const change = release.statusHistory.at(-1)!;
     expect(done).toContain(`&quot;tool&quot;:&quot;get_release_status_change&quot;,&quot;args&quot;:{&quot;changeId&quot;:&quot;${change.id}&quot;}`);
     expect(await mcpTools.find((t) => t.name === "get_release_status_change")!.run(db.sahan as never, { changeId: change.id } as never, "mcp")).toMatchObject({ id: change.id, to: "completed" });
-    expect(completedLine({ ...release, completedAt: "2026-12-12T20:00:00Z", completedDay: "2026-12-13", completion: "late" })).toBe("Completed on 13 Dec 2026 · Late");
+    expect(completedLine({ ...release, completedAt: null })).toBeNull();
     expect(renderToStaticMarkup(createElement(When, { at: "2026-12-12T20:05:00Z" }))).toContain("12 Dec 2026, 20:05 UTC");
+  });
+
+  // The read path, not a hand-set day: getRelease takes the completion and void days in the project's entity zone.
+  it.each([
+    { zone: "Pacific/Kiritimati", at: "2026-12-12T20:00:00Z", day: "13 Dec 2026" },
+    { zone: "Pacific/Pago_Pago", at: "2026-12-13T05:00:00Z", day: "12 Dec 2026" },
+    { zone: null, at: "2026-12-13T05:00:00Z", day: "13 Dec 2026" },
+    { zone: null, at: "2026-12-12T23:59:00Z", day: "12 Dec 2026" },
+  ])("AC-5 AC-7 the completed and voided days are the project's: $zone at $at reads $day", async ({ zone, at, day }) => {
+    const [e] = await db.t.owner`select id from core.legal_entity where tenant_id = ${T} limit 1`;
+    if (zone) await db.t.owner`insert into workflows.entity_zone (legal_entity_id, tenant_id, timezone) values (${e.id}, ${T}, ${zone}) on conflict (legal_entity_id) do update set timezone = excluded.timezone`;
+    await db.t.owner`update delivery.project set legal_entity_id = ${zone ? e.id : null} where key = 'RTK'`;
+    const [r] = await db.t.owner`select r.completing_deployment_id as dep from delivery.release r join delivery.project p on p.id = r.project_id where p.key = 'RTK' and r.version = 'd1'`;
+    await db.t.owner`update delivery.release set completed_at = ${at} where completing_deployment_id = ${r.dep}`;
+    await db.t.owner`update delivery.deployment set voided_at = ${at}, void_reason = 'wrong run' where id = ${r.dep}`;
+    const html = await page(db.sahan, "RTK", "d1");
+    expect(html).toContain(`<dt>Completed</dt><dd>${day} · On time</dd>`);
+    expect(html).toContain(`Completed on ${day} · On time`);
+    expect(html).toContain(`was voided on ${day}: wrong run`);
   });
 
   it("AC-9 AC-10 Edit for an Admin on an open release; a PM elsewhere is told; a completed release is read-only", async () => {

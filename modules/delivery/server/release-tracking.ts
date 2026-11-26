@@ -39,6 +39,9 @@ export async function tracked(tx: Tx, releaseId: unknown) {
 export const missingForTracking = (r: Row, a: { category?: string; startDate?: string; targetDate?: string }) =>
   r.category || !(a.category || a.startDate || a.targetDate) ? null : ((["category", "startDate", "targetDate"] as const).find((f) => !a[f]) ?? null);
 
+/** The refusal for a partial first tracking, one wording for the edit card and update_release. */
+export const notTrackedYet = (projectKey: string, version: string) => `${projectKey} ${version} isn't tracked yet: give its category, start and target together`;
+
 export function notCompleted(r: Row, projectKey: string) {
   if (r.status === "completed") throw invalid(`${projectKey} ${r.version as string} is completed; it can't change`);
 }

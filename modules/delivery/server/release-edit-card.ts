@@ -7,7 +7,7 @@ import { getRuntime } from "@amax/core/server";
 import { ToolError } from "@amax/mcp";
 import { FIELDS } from "./release-card";
 import { CATEGORIES, CategoryInput, categoryLabel } from "./release-status";
-import { categoryProblem, datesProblem, missingForTracking } from "./release-tracking";
+import { categoryProblem, datesProblem, missingForTracking, notTrackedYet } from "./release-tracking";
 
 export const ReleaseEditDraft = z.object({ projectKey: z.string(), version: z.string().trim(), name: z.string().trim().optional(), category: z.string().trim().toLowerCase().optional(),
   startDate: z.string().trim().optional(), targetDate: z.string().trim().optional() });
@@ -47,7 +47,7 @@ export const proposeReleaseEdit = (v: Viewer, a: Draft) => withTenant(getRuntime
   }
   const d = { category: a.category ?? (r.category as string | null), start: a.startDate ?? (r.start_date as string | null), target: a.targetDate ?? (r.target_date as string | null) };
   const missing = missingForTracking(r, a);
-  if (missing) throw fail("give its category, start and target together", missing);
+  if (missing) throw fail(notTrackedYet(a.projectKey, a.version), missing);
   const order = d.start && d.target ? datesProblem(d.start, d.target) : null;
   if (order) throw fail(order, "targetDate");
   const noEnv = d.category ? await categoryProblem(tx, { id: r.project_id, key: r.key }, CategoryInput.parse(d.category)) : null;

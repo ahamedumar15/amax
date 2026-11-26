@@ -15,7 +15,7 @@ import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolve
 import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
 import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
 import { DEPLOYMENT_STATUSES } from "./deployment-status";
-import { checkDates, completeOnDeployment, missingForTracking, notCompleted, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
+import { checkDates, completeOnDeployment, missingForTracking, notCompleted, notTrackedYet, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -490,7 +490,7 @@ export const updateRelease = defineService({
     const { project, r: locked } = await openRelease(tx, ctx, input);
     const r = await tracked(tx, locked.id);
     const datesGiven = input.category !== undefined || input.startDate !== undefined || input.targetDate !== undefined;
-    if (missingForTracking(r, input)) throw invalid(`${input.projectKey} ${input.version} isn't tracked yet: give its category, start and target together`);
+    if (missingForTracking(r, input)) throw invalid(notTrackedYet(input.projectKey, input.version));
     const name = input.name ?? (r.name as string | null) ?? (r.version as string);
     const before = { name: r.name, category: r.category, startDate: r.start_date, targetDate: r.target_date, status: r.status };
     if (!r.category && !datesGiven) {
