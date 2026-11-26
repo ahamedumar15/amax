@@ -48,4 +48,14 @@ The moves, each keeping its slug: 116→138, 117→139, 118→140, 119→141, 12
 
 ## Tasks
 
+No UI task: no screen changes (the mock sections only take new ids).
+
+- [ ] `T1` — AC-1 AC-2 AC-3: one scripted rename of the fourteen folders (file moves only, no git command), their in-folder names, both mock copies' section ids and parents, the live links between the moved changes, and `.specclaw/STATUS.md`; 148's `**Review:** covered-by` line becomes `**Review:** change`; a dry-run list of every edit is checked before it runs, and a search afterwards finds no old name outside the records AC-3 keeps
+  Files: .specclaw/changes/116-* … 129-* renamed to 138-* … 151-*, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/STATUS.md
+- [ ] `T2` — AC-6: read how the specclaw sync treats a folder whose number changed with the same slug (re-key or new proposal), and record the answer under `## Verify` for the PR body
+  Files: modules/delivery/sync/ (read only), .specclaw/changes/152-renumber-release-stack/change.md
+- [ ] `T3` — AC-4 AC-5: after the rename is committed, 148's own final pass (base 52435965); the review gate and the change-number check over the stack, and no number in 138–152 among #133's folders; 152's own loop at verify
+  Files: .specclaw/changes/148-release-status-engine/review/, .specclaw/changes/152-renumber-release-stack/
+  Depends: T1
+
 ## Verify

@@ -1,0 +1,9 @@
+{
+  "change": "152-renumber-release-stack",
+  "phase": "tasks",
+  "branch": "",
+  "phases": {
+    "proposal": {"status":"approved","at":"2026-11-26T18:12:06Z"},
+    "tasks": {"status":"done","at":"2026-11-26T18:12:07Z"}
+  }
+}
