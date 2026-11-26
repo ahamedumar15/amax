@@ -58,6 +58,30 @@ What changes on screen, and where to see it: [`127-release-off-track-notice`](..
 
 ## Verify
 
+**Verdict:** PASS
+Review: CLEAN — 3 rounds, final pass e2789a43de, models opus/opus; last round 0/0/1 b/M/m; fix proof not proven: no review.test_command configured, so no test could prove the fix
+Covers 126-release-status-engine: this loop ran from 126's base (52435965) over both changes' commits; 126 declares `**Review:** covered-by 127-release-off-track-notice`.
+Size: 62 production lines against 9b40ea2c (cap 400). Open, in `follow-ups.md`: two minors (the README's 123 void sentence and Notifications line; the notice also reaches a PM who made the change themselves, no `except: "by"` yet).
+
+Checked 2026-11-26 at `5cbf593` (gates) and `e2789a4` (review), Windows 11, dev app with the scripted chat model.
+
+- AC-1: pass. `delivery.release.status_changed` once per change, none for an unchanged write; payload with ISO `targetDate` and `category` plus their labels after round 1 (`release-notice-127.test.ts` AC-1).
+- AC-2: pass. Maya, Contoso's manager, gets "Notice check is now Off track", urgent, "UAT release · target 30 Sept 2026 · no successful UAT deployment yet", linking to the release (`shots/app-notifications.png`; `notifications/tests/release-off-track-127.test.ts`).
+- AC-3: pass. Once per transition; again after a new transition; completion is its own (AC-3 test); Fleet Tracker's release and an engineer get nothing.
+- AC-4: pass. A run that fails part way writes and raises nothing; its rerun raises each event once (AC-4 test, an injected trigger failure).
+- AC-5: pass. The tests above.
+
+Commands (exit codes), at `5cbf593` unless noted:
+
+- `pnpm lint` (36 tasks): 0; `node scripts/check-module-standard.mjs --root .`: 0 (23 modules); `node scripts/check-graph.mjs --root .`: 1, only the deliberate R7 fixture
+- `pnpm turbo run build --filter=./apps/web`: 0
+- `pnpm turbo run test` (delivery, notifications, workflows, web; `--concurrency=1 --continue --force`): 1, host-only: `releases.test` (backslash path), workflows `kill.test` (`spawn npx ENOENT`), and load timeouts that pass alone (16/16); after the review fixes, delivery, notifications and leave 825/826 (the backslash test)
+- `specclaw-preset-check .`: 1, repo-wide, pre-existing; none in 126's or 127's files
+- `specclaw-quality-scan . --gate`: 2, the complexity tool did not run; duplication 860 lines repo-wide, none in these files
+- `specclaw-review` rounds 1 to 3 as 127 with `base_branch` 52435965 for the run (126's base; config restored after each), covering 126 and 127
+
+Screenshots: `shots/mock.png`, `shots/app-notifications.png` (five notices: five releases from five script runs, one each)
+
 Build notes (2026-11-26): AC-2 reads "the project's manager": routing to every role-PM with the right on the project also reached Admins who hold PM, for every project. The brief asks for the responsible PM, so the event carries the project's `managerUserId` and the rule sends to that person (a project with no manager notifies no one). The notifications test lives in `modules/notifications/tests/` (module boundaries: it drives Delivery through its tools); the event tests in Delivery.
 
 Quality: 860 → 860 duplicated lines (repo-wide; none in this change's files). Complexity: lizard not_run.

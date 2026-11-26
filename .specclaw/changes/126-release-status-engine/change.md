@@ -76,6 +76,34 @@ Terms as in 123. **Unsuccessful**: a deployment whose status is `rolled-back` or
 
 ## Verify
 
+**Verdict:** PASS
+Review: covered by 127-release-off-track-notice (one loop over both changes' commits, from 126's base 52435965): CLEAN, final pass e2789a43de
+Size: 204 production lines against 52435965 (cap 400).
+
+Checked 2026-11-26 at `5cbf593`, Windows 11, dev app on :3000 with the scripted chat model, dev database migrated to 0026.
+
+- AC-1: pass. Migration 0026; `record_deployment` and the contract accept `failed`; a failed UAT record leaves a UAT release open (`release-engine-126.test.ts` AC-1 AC-3; `shots/app-release-failed-voided.png`, the failed row seeded directly in the dev database, since the scripted model has no phrase for it).
+- AC-2: pass. One `unsuccessful` rule (in Delivery's contract after round 1, so Leave uses it too): map pill "Failed Wed Oct 14", "Retry UAT" (AC-2 test), the chip, the board track colour, the Overview note, the portfolio SQL; Leave's retry for failed (`leave/tests/standard.test.ts`); the failed notification rule.
+- AC-3: pass. Voiding the completing deployment keeps Completed (Late) with the line "The deployment that completed this release was voided on 26 Nov 2026: wrong build. The release stays completed." (`shots/app-release-failed-voided.png`; 123's amended AC-9 test).
+- AC-4: pass. `delivery.release-status` hourly, listed in Settings → Workflows (`shots/app-workflows.png`); moves releases with one audited write per tenant (AC-4 test).
+- AC-5: pass. A second run changes nothing; two runs and a deployment at once write each transition once (`release-notice-127.test.ts` AC-5, which fails 3/3 without the row lock).
+- AC-6: pass. A Kiritimati project goes Off track a day before a UTC one (AC-6 test); README documents the fallback.
+- AC-7: pass. "Start date reached", "Target date passed", by amax (AC-4 test).
+- AC-8: pass. The brief's list across `release-engine-126`, `release-notice-127` and 123's suites.
+
+Commands (exit codes), at `5cbf593` unless noted:
+
+- `pnpm lint` (36 tasks): 0; `node scripts/check-module-standard.mjs --root .`: 0 (23 modules); `node scripts/check-graph.mjs --root .`: 1, only the deliberate R7 fixture
+- `pnpm turbo run build --filter=./apps/web`: 0
+- `pnpm turbo run test` (delivery, notifications, workflows, web; `--concurrency=1 --continue --force`): 1, host-only: `releases.test` (backslash path), workflows `kill.test` (`spawn npx ENOENT`), and load timeouts that pass alone (16/16); after the review fixes, delivery, notifications and leave 825/826 (the backslash test)
+- `specclaw-preset-check .`: 1, repo-wide, pre-existing; none in 126's or 127's files
+- `specclaw-quality-scan . --gate`: 2, the complexity tool did not run; duplication 860 lines repo-wide, none in these files
+- `specclaw-review` rounds 1 to 3 as 127 with `base_branch` 52435965 for the run (126's base; config restored after each), covering 126 and 127
+
+Screenshots: `shots/mock.png`, `shots/app-release-failed-voided.png`, `shots/app-workflows.png`
+
+Verify fix: deployment rows leave room for their pin (125's rows let the pin cover Void).
+
 Build notes (2026-11-26): 123's AC-9 test now asserts the amended rule (a void leaves a completed release as it is). `reopenOnVoid` is gone. The pin offers needed no change: they already count only deployed or testing as reached. The rest of the brief's list (matching and other environments, testing, on time and late, the target day inclusive) is covered by 123's suites, which still pass.
 
 Quality: 860 → 860 duplicated lines (repo-wide; none in this change's files). Complexity: lizard not_run.
