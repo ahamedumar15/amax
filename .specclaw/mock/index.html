@@ -4077,6 +4077,72 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   </div>
 </section>
 
+<!-- ================= 125 Release pages ================= -->
+<section data-change="125-release-pages" id="125-release-pages" data-roles="admin leadership pm engineer" data-title="Release pages" data-nav="no" data-icon="rocket" data-parent="001-amax-foundation-project">
+  <h1>Release tracking, phase 3: the release pages</h1>
+  <p class="lede">125: the list shows name, category, status and dates, filters and sorts; the release page shows its information, proposals, deployments by environment and status history. Fictional data (Orbit Notes).</p>
+
+  <h2 style="margin-top:20px">1. All releases, filtered</h2>
+  <div class="card flush">
+    <div class="card-head"><h2>All releases</h2><button class="btn sm primary" type="button" style="margin-left:auto">✦ New release</button></div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;padding:0 28px 12px;font-size:13px">
+      <nav class="seg" aria-label="Status"><a href="#">All</a><a href="#">Planned</a><a href="#" aria-current="true">In progress</a><a href="#">Off track</a><a href="#">Completed</a><a href="#">Untracked</a></nav>
+      <nav class="seg" aria-label="Category"><a href="#" aria-current="true">All</a><a href="#">Dev</a><a href="#">UAT</a><a href="#">Prod</a></nav>
+      <nav class="seg" aria-label="Sort"><a href="#">Newest</a><a href="#">Start date</a><a href="#" aria-current="true">Target date</a></nav>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Release</th><th>Project</th><th>Category</th><th>Status</th><th>Start</th><th>Target</th><th class="num">Proposals</th><th>Progress</th><th class="num">Action</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#"><b>November Release</b></a><br><small class="muted">v0.14.0</small></td><td>Orbit Notes</td><td>UAT</td><td><span class="chip info">In progress</span></td><td>1 Dec 2026</td><td>12 Dec 2026</td><td class="num">2</td>
+          <td><span title="Dev deployed · QA deployed · UAT testing · Prod not yet">●●◐○</span> <small class="muted">UAT testing</small></td><td class="num muted">Deploy to UAT 📌</td></tr>
+        <tr><td><a href="#"><b>Hotfix 13.2</b></a><br><small class="muted">v0.13.2</small></td><td>Orbit Notes</td><td>Prod</td><td><span class="chip bad">Off track</span></td><td>20 Nov 2026</td><td>24 Nov 2026</td><td class="num">1</td>
+          <td><span title="Dev deployed · QA deployed · UAT deployed · Prod not yet">●●●○</span> <small class="muted">UAT</small></td><td class="num muted">Deploy to Prod 📌</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="padding:12px 28px;margin:0;font-size:12.5px">With no match: "No releases match these filters · <a href="#">Clear filters</a>". Loading: a skeleton (aria-busy). A failed read: "Couldn't load releases · <a href="#">Try again</a>".</p>
+  </div>
+
+  <h2 style="margin-top:32px">2. Release page</h2>
+  <div class="row head"><div><h1 style="margin:0">November Release</h1><p class="lede">Orbit Notes v0.14.0 · UAT release. Changes happen in chat.</p></div>
+    <div class="actions"><button class="btn sm primary" type="button">✦ Edit release</button></div></div>
+  <div class="cols even" style="margin-bottom:20px">
+    <div class="card"><div class="card-head"><h2>Release</h2><span style="margin-left:auto">📌</span></div>
+      <table class="tbl"><tbody>
+        <tr><th scope="row">Category</th><td>UAT</td></tr><tr><th scope="row">Status</th><td><span class="chip info">In progress</span></td></tr>
+        <tr><th scope="row">Start</th><td>1 Dec 2026</td></tr><tr><th scope="row">Target</th><td>12 Dec 2026</td></tr><tr><th scope="row">Completed</th><td class="muted">Not yet</td></tr>
+      </tbody></table></div>
+    <div class="card"><div class="card-head"><h2>Proposals</h2><span style="margin-left:auto">📌</span></div>
+      <ul style="list-style:none;padding:0;margin:0;font-size:13.5px;line-height:2">
+        <li><a href="#"><b>ORB-044</b> Offline drafts</a> <span class="chip good">Verified</span> 📌</li>
+        <li><a href="#"><b>ORB-047</b> Shared tags</a> <span class="chip good">Verified</span> 📌</li></ul></div>
+  </div>
+  <div class="cols even">
+    <div class="card"><div class="card-head"><h2>Deployments</h2></div>
+      <h3 style="font-size:13px;margin:4px 0">Dev</h3><p style="margin:0 0 8px;font-size:13px"><span class="chip good">deployed</span> 2 Dec 2026, 10:14 · CI for Priya · run 4812</p>
+      <h3 style="font-size:13px;margin:4px 0">QA</h3><p style="margin:0 0 8px;font-size:13px"><span class="chip good">deployed</span> 3 Dec 2026, 09:02 · Priya Nadarajah</p>
+      <h3 style="font-size:13px;margin:4px 0">UAT</h3><p style="margin:0 0 8px;font-size:13px"><span class="chip info">testing</span> 5 Dec 2026, 16:40 · CI for Priya · run 4830</p>
+      <h3 style="font-size:13px;margin:4px 0">Prod</h3><p class="muted" style="margin:0;font-size:13px">Not deployed yet</p></div>
+    <div class="card"><div class="card-head"><h2>Status history</h2></div>
+      <table class="tbl"><thead><tr><th>From</th><th>To</th><th>When</th><th>Why</th><th>Who</th></tr></thead><tbody>
+        <tr><td class="muted">—</td><td><span class="chip">Planned</span></td><td>26 Nov 2026</td><td>Created</td><td>Priya Nadarajah</td></tr>
+        <tr><td><span class="chip">Planned</span></td><td><span class="chip info">In progress</span></td><td>1 Dec 2026</td><td>Edited</td><td>Priya Nadarajah</td></tr>
+      </tbody></table></div>
+  </div>
+  <div class="card" style="margin-top:20px;max-width:640px"><p style="margin:0;font-size:13.5px"><b>Completed release:</b> "Completed on 11 Dec 2026 · On time. A completed release can't change." No Edit, re-tag or change-proposals buttons; the UAT deployment that completed it reads "Completed the release". <b>Without the right to edit:</b> "Only the project's PM or an Admin can change a release."</p></div>
+
+  <h2 style="margin-top:32px">3. Edit release, in chat</h2>
+  <div class="card" style="max-width:420px">
+    <p style="margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase" class="muted">Confirm · Edit a release</p>
+    <h2 style="margin:4px 0 12px;font-size:16px">Edit ORB v0.14.0 · November Release</h2>
+    <label class="muted" style="font-size:12.5px">Name</label><input class="cf-text" value="November Release" style="width:100%;margin:2px 0 10px" aria-label="Name">
+    <span class="muted" style="font-size:12.5px">Category</span><div style="display:flex;gap:6px;margin:4px 0 10px"><span class="chip">Dev</span><span class="chip good">UAT</span><span class="chip">Prod</span></div>
+    <div style="display:flex;gap:10px"><div style="flex:1"><label class="muted" style="font-size:12.5px">Start</label><input class="cf-text" value="2026-12-01" style="width:100%" aria-label="Start"></div>
+      <div style="flex:1"><label class="muted" style="font-size:12.5px">Target</label><input class="cf-text" value="2026-12-15" style="width:100%" aria-label="Target"></div></div>
+    <div class="actions" style="margin-top:12px"><button class="btn sm primary" type="button">Save</button><button class="btn sm" type="button">Cancel</button></div>
+    <p class="muted" style="font-size:12.5px;margin:8px 0 0">After Save: ✓ Updated November Release (v0.14.0); the page shows the new target without a reload.</p>
+  </div>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
