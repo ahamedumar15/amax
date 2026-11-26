@@ -92,20 +92,50 @@ A **tracked** release has a category; one with none (every release made before t
 
 ## Tasks
 
-- [ ] `T1` — Chat: New release asks for name, category, start and target; the create card shows them; an update card for `update_release` (AC-12, AC-7 card)
+- [x] `T1` — Chat: New release asks for name, category, start and target; the create card shows them; an update card for `update_release` (AC-12, AC-7 card)
   Files: modules/delivery/chat.ts, modules/delivery/server/write-cards.ts, packages/ai/src/scripted-writes.ts, packages/ai/tests/scripted-writes.test.ts
-- [ ] `T2` — Migration and the status rule: `0025_release_tracking.sql` (release columns, checks, `name = version` backfill, `release_status_history` with RLS and no update/delete grant) and the pure `releaseStatus` / `completionOf` in a new `server/release-status.ts`, with its unit tests (AC-1, AC-2, AC-3)
+- [x] `T2` — Migration and the status rule: `0025_release_tracking.sql` (release columns, checks, `name = version` backfill, `release_status_history` with RLS and no update/delete grant) and the pure `releaseStatus` / `completionOf` in a new `server/release-status.ts`, with its unit tests (AC-1, AC-2, AC-3)
   Files: modules/delivery/db/migrations/0025_release_tracking.sql, modules/delivery/server/release-status.ts, modules/delivery/tests/release-status-123.test.ts
-- [ ] `T3` — Services: `createRelease` takes and checks the new fields and the category environment, writes status and history, returns `href`; `assignProposals` refuses ineligible phases and open-release conflicts (no silent move); new `updateRelease`; `setReleaseProposals` and `tagRelease` refuse a Completed release; `recordDeployment` completes and `voidDeployment` reopens or re-completes, under the existing locks (AC-4 to AC-9)
+- [x] `T3` — Services: `createRelease` takes and checks the new fields and the category environment, writes status and history, returns `href`; `assignProposals` refuses ineligible phases and open-release conflicts (no silent move); new `updateRelease`; `setReleaseProposals` and `tagRelease` refuse a Completed release; `recordDeployment` completes and `voidDeployment` reopens or re-completes, under the existing locks (AC-4 to AC-9)
   Files: modules/delivery/server/services.ts, modules/delivery/server/release-status.ts
   Depends: T2
-- [ ] `T4` — Tools and reads: `create_release` input, new `update_release` write tool; `ReleaseRow`, `listReleases`, `getRelease` carry the new fields, `statusHistory`, and a proposal count without withdrawn ones; README and contracts note (AC-4, AC-7, AC-10, AC-11)
+- [x] `T4` — Tools and reads: `create_release` input, new `update_release` write tool; `ReleaseRow`, `listReleases`, `getRelease` carry the new fields, `statusHistory`, and a proposal count without withdrawn ones; README and contracts note (AC-4, AC-7, AC-10, AC-11)
   Files: modules/delivery/mcp.ts, modules/delivery/server/queries.ts, modules/delivery/README.md
   Depends: T3
-- [ ] `T5` — Tests and callers: DB tests for create, read, list, update, dates, category, eligibility, conflicts, completion, void, scope by role and two tenants; existing tests that call `create_release` / `createRelease` send the new fields; run the delivery, notifications and ai suites, `pnpm lint` and typecheck (AC-4 to AC-13)
+- [x] `T5` — Tests and callers: DB tests for create, read, list, update, dates, category, eligibility, conflicts, completion, void, scope by role and two tenants; existing tests that call `create_release` / `createRelease` send the new fields; run the delivery, notifications and ai suites, `pnpm lint` and typecheck (AC-4 to AC-13)
   Files: modules/delivery/tests/release-tracking-123.test.ts, modules/delivery/tests/releases.test.ts, modules/delivery/tests/owner-accept-118.test.ts, modules/delivery/tests/pin-offers.test.ts, modules/delivery/tests/proposal-lifecycle.test.ts, modules/delivery/tests/stable-pins.test.ts, modules/delivery/tests/sync-import.test.ts, modules/delivery/tests/proposal-regression.test.ts, modules/notifications/tests/delivery-flow.test.ts
   Depends: T1, T4
 
 ## Verify
 
-<!-- Filled by verify. -->
+**Verdict:** PENDING — every AC passes below; the specclaw-review loop has not run yet (it reads committed history, and this change is uncommitted)
+
+Checked 2026-11-26 on the working tree over `35a824c`, Windows 11, local dev database (`amax-dev-postgres`, 0025 applied).
+
+- AC-1: pass — `0025_release_tracking.sql` adds the columns, checks and backfill; an untracked fixture release reads its name as its version, a half-tracked row and a target before start are refused by the table (`release-tracking-123.test.ts` AC-1).
+- AC-2: pass — `release_status_history`, one row per status taken and none for an unchanged one; the app role gets permission denied on delete and on updating `to_status`; tenant RLS on every delivery table (AC-2).
+- AC-3: pass — `releaseStatus` and `completionOf`, each branch and the day boundary in UTC, Asia/Colombo and America/New_York (`release-status-123.test.ts` AC3).
+- AC-4: pass — required fields, plain refusals (dates, category, name, no UAT environment, duplicate version), `status` and `href` in the result, audited (AC-4); in the app, FLT v1.11.0 and v1.12.0 were created from chat and stored `uat`, Planned, one history row each, and a target before the start is refused on the card (`shots/app-refusal-light.png`).
+- AC-5: pass — a Proposed proposal is refused naming its phase; Verified goes in; CON-014 (Building) keeps its place in CON v2.5.0 (AC-5).
+- AC-6: pass — both `createRelease` and `setReleaseProposals` refuse a proposal in another open release, naming it, its category and status; an untracked one reads "(Untracked)"; it moves once that release is completed (AC-6); the deadlock race now waits and is refused (`releases.test.ts`).
+- AC-7: pass — `update_release` (write tool with its service), status recomputed with an `update` history row, an untracked release tracked only whole, a completed one refuses update, proposals and re-tag (`release-tracking-123-writes.test.ts` AC-7).
+- AC-8: pass — testing, rolled-back and Dev deployments leave a UAT release In progress; a deployed UAT record completes it on time; a Prod release past its target completes late (AC-8).
+- AC-9: pass — voiding a Dev record changes nothing; voiding the completing record moves completion to the other valid one; voiding that reopens it In progress with the completion cleared and a `void` history row (AC-9). When completion moves, the status stays Completed, so AC-2's rule (no row for an unchanged status) applies and no row is written.
+- AC-10: pass — `list_releases`, `get_release` and `get_release_history` carry the fields and `statusHistory`; the count leaves out a withdrawn proposal; untracked rows read null (AC-10).
+- AC-11: pass — the PM of CON may create there and is refused on RTK; Engineer, Finance and HR are refused; another tenant's release is never found (AC-11).
+- AC-12: pass — the intent asks for the new fields; the card shows Name, Category, Start, Target (`release-status-123.test.ts` AC12; `shots/app-card-light.png`, `shots/app-card-dark.png`); the pin offer's prompt and the scripted parser take the details, and e2e "081 AC-39" types them (not run here; CI runs it).
+- AC-13: pass — the release, proposal, pin, sync and notification suites pass with their callers updated; lint, typecheck and the web build pass.
+
+Commands (exit codes):
+
+- `pnpm lint` (36 tasks): 0; `node scripts/check-graph.mjs --root .`: 1 — one problem, the deliberate R7 fixture under `packages/testing/boundaries/` (the script's own root reads 0 modules on Windows); `node scripts/check-module-standard.mjs --root .`: 0 (23 modules)
+- `pnpm turbo run build --filter=./apps/web`: 0
+- `pnpm turbo run test --filter=@amax/delivery --filter=@amax/notifications --filter=@amax/ai --concurrency=1 --continue --force`: 1 — ai 6/6 files, notifications 7/7, delivery 83/84: the one failure is host-only (`releases.test.ts` "assignProposals … two call sites" compares a backslash path on Windows)
+- `specclaw-verify size` with `base_branch` 35a824c7 for the run (config restored): 0 — 292 production lines (cap 400)
+- `specclaw-preset-check .`: 1 — repo-wide, pre-existing; none in this change's files
+- `specclaw-quality-scan . --gate`: 2 — the complexity tool did not run; duplication 860 lines repo-wide, none in this change's files
+- e2e: not run here (the signed-in suite's database doesn't set up on Windows); the app flow was driven with Playwright against the dev app instead (scratch script)
+
+Screenshots: `shots/mock.png`, `shots/app-card-light.png`, `shots/app-card-dark.png`, `shots/app-refusal-light.png`
+
+Quality: 872 → 860 duplicated lines (repo-wide; `openRelease` shares the tag, proposals and update openings; none in the files this change adds). Complexity: lizard not_run.

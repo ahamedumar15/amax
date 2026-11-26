@@ -263,7 +263,8 @@ test("081 AC-39 pin a project, then its new release: create the release and depl
   const create = offers.getByRole("button", { name: /^Create release v\d+\.\d+\.0 of FLT$/ });
   const version = (await create.innerText()).match(/(v\d+\.\d+\.0)/)![1];
   await create.click();
-  await expect(page.getByLabel("Message amax")).toHaveValue(`Create release ${version} of FLT`);
+  await expect(page.getByLabel("Message amax")).toHaveValue(`Create release ${version} of FLT: `);
+  await page.getByLabel("Message amax").pressSequentially("Fleet beta, Dev, 2026-10-16 to 2026-10-30");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   let confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
   await confirm.getByRole("button", { name: "Create", exact: true }).click();

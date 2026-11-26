@@ -72,6 +72,7 @@ export default defineModule({
     { table: "delivery.deployment", label: "Who recorded a deployment", subject: ["recorded_by"], fields: ["recorded_by", "note"], keep: { prior_phases: "the release's phase states before it, no person in them" }, class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
     // The voider's clock starts at the void, which can be years after the deployment (final review).
     { table: "delivery.deployment", label: "Who voided a deployment", subject: ["voided_by"], fields: ["voided_by", "void_reason"], class: "personal", period: "P7Y", start: { at: ["voided_at"] }, action: "anonymise" },
+    { table: "delivery.release_status_history", label: "Who changed a release's status", subject: ["changed_by"], fields: ["changed_by"], class: "personal", period: "P7Y", start: { at: ["at"] }, action: "anonymise" },
     // 008: who closed a task (a person, or a credential or Git acting for one), kept with the delivery evidence.
     { table: "delivery.task", label: "Who closed a task", subject: ["done_by"], fields: ["done_by"], class: "personal", period: "P7Y", start: { at: ["done_at"] }, action: "anonymise" },
     { table: "delivery.commit_time", label: "Who switched commit time on or off", subject: ["set_by"], entity: "legal_entity_id", fields: ["set_by"], class: "personal", period: "P7Y", start: { at: ["updated_at"] }, action: "anonymise" },

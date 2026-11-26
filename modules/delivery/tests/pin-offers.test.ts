@@ -31,7 +31,7 @@ describe.skipIf(!hasDb)("081 amendment 3: every Delivery pin offers what fits it
     const [con, flt] = [await id(sql`select id from delivery.project where key = 'CON'`), await id(sql`select id from delivery.project where key = 'FLT'`)];
     expect(await offers("get_project")(maya, { projectId: con })).toEqual([
       { label: "New proposal in Contoso Portal", prompt: "Add a proposal to Contoso Portal (CON): ", tool: "create_proposal" },
-      { label: `Create release ${nextVersion(await latest("CON"))} of CON`, prompt: `Create release ${nextVersion(await latest("CON"))} of CON`, tool: "create_release" }]);
+      { label: `Create release ${nextVersion(await latest("CON"))} of CON`, prompt: `Create release ${nextVersion(await latest("CON"))} of CON: `, tool: "create_release" }]);
     expect(await labels("get_project", maya, { projectId: flt })).toEqual(["New proposal in Fleet Tracker", `Create release ${nextVersion(await latest("FLT"))} of FLT`, "Link FLT's repo"]);
     expect(await labels("get_project", leadership, { projectId: con })).toEqual([]);
     expect(await labels("get_repo_sync", maya, { projectId: con })).toEqual(["Relink CON's repo", "Unlink CON's repo"]);

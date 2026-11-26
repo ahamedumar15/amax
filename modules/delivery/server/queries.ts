@@ -219,7 +219,13 @@ export const proposalMetrics = async (v: Viewer, f: Pick<ProposalFilter, "projec
   return { projectKey: f.projectKey ?? null, ...counts, shippedPerWeek: shipped };
 };
 
-export type ReleaseRow = {
+export type ReleaseTracking = { name: string | null; category: string | null; startDate: string | null; targetDate: string | null; status: string | null; completedAt: string | null; completion: string | null; updatedAt: string | null };
+const TRACKING = sql`r.start_date::text as start_text, r.target_date::text as target_text`;
+const trackingOf = (r: Record<string, unknown>): ReleaseTracking => ({ name: (r.name as string | null) ?? (r.version as string), category: (r.category as string | null) ?? null,
+  startDate: (r.start_text as string | null) ?? null, targetDate: (r.target_text as string | null) ?? null, status: (r.status as string | null) ?? null,
+  completedAt: iso(r.completed_at), completion: (r.completion as string | null) ?? null, updatedAt: iso(r.updated_at) });
+
+export type ReleaseRow = Partial<ReleaseTracking> & {
   id: string; projectId: string; version: string; projectKey: string; projectName: string; projectColor: string; proposals: number; createdAt?: string | null;
   stages: { environment: string; environmentId: string; deploymentId: string | null; position: number; isProd: boolean; status: string | null; at: string | null; note: string | null; run: string | null }[];
 };
@@ -227,13 +233,13 @@ export type ReleaseRow = {
 export const listReleases = (v: Viewer, opts: { projectKey?: string } = {}) =>
   read(v, async (tx) => {
     const envs = await tx.execute(sql`select * from delivery.environment order by project_id, position`);
-    const releases = await tx.execute(sql`select r.*, pr.key as project_key, pr.name as project_name, pr.color as project_color,
-      (select count(*)::int from delivery.proposal p where p.release_id = r.id) as proposals
+    const releases = await tx.execute(sql`select r.*, ${TRACKING}, pr.key as project_key, pr.name as project_name, pr.color as project_color,
+      (select count(*)::int from delivery.proposal p where p.release_id = r.id and ${ACTIVE}) as proposals
       from delivery.release r join delivery.project pr on pr.id = r.project_id ${opts.projectKey ? sql`where pr.key = ${opts.projectKey}` : sql``} order by r.created_at desc`);
     const deps = await tx.execute(LATEST_DEPLOYMENTS);
     return releases.map((r): ReleaseRow => ({
       id: r.id as string, projectId: r.project_id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string,
-      projectColor: r.project_color as string, proposals: Number(r.proposals), createdAt: iso(r.created_at),
+      projectColor: r.project_color as string, proposals: Number(r.proposals), createdAt: iso(r.created_at), ...trackingOf(r),
       stages: envs.filter((e) => e.project_id === r.project_id).map((e) => {
         const d = deps.find((x) => x.release_id === r.id && x.environment_id === e.id);
         return { environment: e.name as string, environmentId: e.id as string, deploymentId: (d?.id as string | undefined) ?? null, position: Number(e.position), isProd: Boolean(e.is_prod), status: (d?.status as string | null) ?? null,
@@ -309,14 +315,16 @@ export const getRelease = (v: Viewer, projectKey: string | undefined, version: s
   read(v, async (tx) => {
     // By id when given: a pin keyed on the id survives a re-tag (057). By project key and version otherwise.
     const where = releaseWhere({ releaseId, projectKey, version });
-    const [r] = await tx.execute(sql`select r.*, p.key as project_key, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where ${where}`);
+    const [r] = await tx.execute(sql`select r.*, ${TRACKING}, p.key as project_key, p.name as project_name, p.id as pid from delivery.release r join delivery.project p on p.id = r.project_id where ${where}`);
     if (!r) return null;
     const history = (await tx.execute(sql`select d.*, e.name as env from delivery.deployment d join delivery.environment e on e.id = d.environment_id where d.release_id = ${r.id} order by d.at desc`))
       .map((d): DeploymentRow => ({ id: d.id as string, environment: d.env as string, status: d.status as string, at: new Date(d.at as string).toISOString(), note: (d.note as string | null) ?? null, run: (d.pipeline_run as string | null) ?? null,
         recordedBy: d.recorded_by as string, voidedAt: d.voided_at ? new Date(d.voided_at as string).toISOString() : null, voidReason: (d.void_reason as string | null) ?? null }));
     const proposals = (await tx.execute(sql`select id, key, title, phase, release_id = ${r.id} as included from delivery.proposal where project_id = ${r.pid} order by key`))
       .map((p) => ({ id: p.id as string, key: p.key as string, title: p.title as string, phase: p.phase as Phase, included: Boolean(p.included) }));
-    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), history, proposals };
+    const statusHistory = (await tx.execute(sql`select from_status, to_status, at, source, deployment_id, changed_by from delivery.release_status_history where release_id = ${r.id} order by at`))
+      .map((h) => ({ from: (h.from_status as string | null) ?? null, to: h.to_status as string, at: iso(h.at), source: h.source as string, deploymentId: (h.deployment_id as string | null) ?? null, by: h.changed_by as string }));
+    return { id: r.id as string, version: r.version as string, projectKey: r.project_key as string, projectName: r.project_name as string, createdAt: iso(r.created_at), ...trackingOf(r), history, proposals, statusHistory };
   });
 
 // One-record reads for row pins (057): a pin resolves to the row it sits on, never the whole list.

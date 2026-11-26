@@ -14,6 +14,7 @@ import { createProposal, createRelease, moveProposal, recordDeployment } from ".
 import { markTaskDone } from "../server/tasks";
 import { linkIdentity } from "../suggestions";
 import { proposalDb, T } from "./proposal-db";
+import { tracked } from "./release-fields";
 
 // 118 (117 final pass): accepting a Suggested owner follows the Unassigned chip's rule: an open proposal takes the
 // owner; one released since the suggestion was made is refused with nothing changed.
@@ -39,7 +40,8 @@ describe.skipIf(!hasDb)("118 the Suggested owner's accept guard (Postgres)", () 
   // Review round 2: each state reached through the service that makes it, never a direct update.
   const releaseIt = async (key: string) => {
     const version = `v7.${Date.now()}`;
-    await createRelease(ctxFor(maya), { projectKey: "CON", version, proposalKeys: [key] });
+    await moveProposal(ctxFor(maya), { key, to: "verified" });
+    await createRelease(ctxFor(maya), { ...tracked(), projectKey: "CON", version, proposalKeys: [key] });
     await recordDeployment(ctxFor(maya), { projectKey: "CON", version, environment: "Prod" });
   };
   it.each([

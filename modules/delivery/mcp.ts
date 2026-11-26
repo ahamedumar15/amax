@@ -15,10 +15,10 @@ import { RepoUrl } from "./sync/repo-url";
 import { proposalDetail, proposalEvent } from "./server/proposal-detail";
 import { addProposalTask, updateProposal, withdrawProposal } from "./server/lifecycle";
 import { createProposalCard, moveCard, proposeCreate, proposeUpdate, taskCard, updateCard } from "./server/proposal-card";
-import { createReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
+import { createReleaseCard, updateReleaseCard, deploymentCard, environmentCard, linkCard, releaseProposalsCard, removeEnvironmentCard, tagCard, taskDoneCard, reopenCard, unlinkCard, voidCard, withdrawCard } from "./server/write-cards";
 import { isNeed, NEEDS, withNeed } from "./server/attention";
 import { checkReleaseRef, getDeployment, getProposalTask, getEnvironment, getProject, getRelease, proposalMetrics, isRelease, listEnvironments, likelyProposals, listProjects, listProposals, listReleases } from "./server/queries";
-import { createProject, createProposal, ProposalCreateInput, createRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
+import { createProject, createProposal, ProposalCreateInput, createRelease, updateRelease, moveProposal, recordDeployment, removeEnvironment, setReleaseProposals, tagRelease, upsertEnvironment, voidDeployment } from "./server/services";
 import { commitTime, repoTime } from "./server/repo-time";
 import { proposeSetUp, SetUpDraft, SetUpInput, setUpProject } from "./server/set-up-project";
 import { setUpProjectCard } from "./server/set-up-project-card";
@@ -98,8 +98,8 @@ export const mcpTools: McpToolDef[] = [
   tool({ name: "move_proposal", description: "Move a proposal on the board (proposed, planned, building, verified). Released only comes from a Prod deployment.", scope: "write",
     permission: "delivery:proposal:move", input: z.object({ key: z.string(), to: z.enum(["proposed", "planned", "building", "verified"]) }),
     card: moveCard, service: moveProposal, run: (v, a, s = "mcp") => moveProposal(ctxFor(v, s), a) }),
-  tool({ name: "create_release", description: "Create a release (version tag) for a project, optionally with proposal keys.", scope: "write", permission: "delivery:release:create",
-    input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()).optional() }),
+  tool({ name: "create_release", description: "Create a release for a project: its version tag, a name, its category (Dev, UAT or Prod: the environment whose deployment completes it), a start and target date (YYYY-MM-DD, target not before start), and optionally Verified or Released proposal keys. A proposal in another release that isn't completed is refused. Returns the release's status and href.", scope: "write", permission: "delivery:release:create",
+    input: z.object({ projectKey: z.string(), version: z.string(), name: z.string(), category: z.string().describe("Dev, UAT or Prod"), startDate: z.string(), targetDate: z.string(), proposalKeys: z.array(z.string()).optional() }),
     card: createReleaseCard, service: createRelease, run: (v, a, s = "mcp") => createRelease(ctxFor(v, s), { ...a, proposalKeys: a.proposalKeys ?? [] }) }),
   tool({ ...read, pin: view, name: "list_environments", description: "A project's environments in order, which one is Prod, and how many deployments each has.", input: z.object({ projectKey: z.string() }),
     run: (v, a) => listEnvironments(v, a.projectKey) }),
@@ -116,6 +116,9 @@ export const mcpTools: McpToolDef[] = [
     input: z.object({ projectKey: z.string(), name: z.string() }), card: removeEnvironmentCard, service: removeEnvironment, run: (v, a, s = "mcp") => removeEnvironment(ctxFor(v, s), a) }),
   tool({ name: "tag_release", description: "Rename a release's version tag, e.g. v2.5.0 to v2.5.1.", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), version: z.string(), newVersion: z.string() }), card: tagCard, service: tagRelease, run: (v, a, s = "mcp") => tagRelease(ctxFor(v, s), a) }),
+  tool({ name: "update_release", description: "Change a release that isn't completed: its name, category (Dev, UAT or Prod), start or target date (YYYY-MM-DD). A release made before release tracking needs its name, category and both dates together the first time.", scope: "write", permission: "delivery:release:create",
+    input: z.object({ projectKey: z.string(), version: z.string(), name: z.string().optional(), category: z.string().optional(), startDate: z.string().optional(), targetDate: z.string().optional() }),
+    card: updateReleaseCard, service: updateRelease, run: (v, a, s = "mcp") => updateRelease(ctxFor(v, s), a) }),
   tool({ name: "set_release_proposals", description: "Set which proposals are in a release (replaces the list; released ones stay).", scope: "write", permission: "delivery:release:create",
     input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()) }), card: releaseProposalsCard, service: setReleaseProposals, run: (v, a, s = "mcp") => setReleaseProposals(ctxFor(v, s), a) }),
   tool({ name: "void_deployment", description: "Void a deployment of a release, with a reason: the one given by deploymentId, or else the latest live one to the environment. Voiding the only Prod deployment un-releases its proposals.", scope: "write", destructive: true,
