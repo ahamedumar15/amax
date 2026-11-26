@@ -108,7 +108,17 @@ A **tracked** release has a category; one with none (every release made before t
 
 ## Verify
 
-**Verdict:** PENDING — every AC passes below; the specclaw-review loop has not run yet (it reads committed history, and this change is uncommitted)
+**Verdict:** PASS, with the review stopped at the five-pass cap (AGENTS.md): 0 blockers, 2 majors (one carried on a path that doesn't exist) and 3 minors open at the final pass, recorded below.
+Review: ESCALATE at the cap: 5 passes (rounds 1 to 4 and the final pass, opus), final pass at 5fd18c7ad9. Run as 123 with `base_branch` 35a824c7 (122's head) for each run, config restored after each. The product owner chose this scope (2026-11-26): the CLI always diffs to HEAD, and no earlier loop had reviewed 123's commit, so the loop reviewed the whole release stack (123 to 128) once more. Its fixes are committed under 123, after 124–128's final passes. The review gate passes it: no open blocker, final pass in the PR.
+
+The loop's fixes (rounds 1 to 4, each with a table-driven test in `release-review-123.test.ts`, 20 tests, each fix mutation-checked):
+- A completed release's pin offers no re-tag or proposal change, and a Verified proposal's pin offers the newest open release.
+- An environment that open releases complete on can't be renamed to another name, unmarked as Prod or removed.
+- `update_release` tracking a release, or moving it to a category it already reached, completes it on its first live deployment there, with no Off track on the way.
+- An environment change that gives a category an environment an open release already reached completes it there. The row is read again under its lock, so a completion never rewrites. The change's audit names what it completed, and history and event say `source: environment` (migration 0028).
+- Release edits and environment changes take the project row lock first.
+
+Amendments since this record: AC-9's reopen-on-void is replaced by 126 (Completed is final; the page shows the void); AC-7's "name with the category and dates" by 125 (the name is optional and stays the version).
 
 Checked 2026-11-26 on the working tree over `35a824c`, Windows 11, local dev database (`amax-dev-postgres`, 0025 applied).
 
@@ -137,5 +147,15 @@ Commands (exit codes):
 - e2e: not run here (the signed-in suite's database doesn't set up on Windows); the app flow was driven with Playwright against the dev app instead (scratch script)
 
 Screenshots: `shots/mock.png`, `shots/app-card-light.png`, `shots/app-card-dark.png`, `shots/app-refusal-light.png`
+
+Review commands (at the final pass, 5fd18c7a): `npx vitest run modules/delivery modules/notifications modules/leave apps/web/tests`: 1, 1273/1274, host-only `releases.test` "two call sites"; `npx tsc --noEmit` in `modules/delivery` and `apps/web`: 0; dev database migrated to 0028.
+
+Open at the stop (the final pass; fixes go in their own change, since a code commit under 123 after its final pass fails the review gate):
+
+- Major [B12] `server/services.ts`: `recordDeployment` doesn't take the project lock, so a deployment to QA and making QA the Prod environment can run together. Each misses the other's write, and the release stays open with a live deployment on its category's environment. Fix: `lockProject` before `releaseOf` in `recordDeployment`, plus a two-session test.
+- Major (carried, path `modules/delivery/services.ts`, which doesn't exist): the round 3 audit finding. It was fixed in rounds 3 and 4 (`after.completed`, `source: environment`), but the tool carries a finding on a missing path into every later round. This carried finding caused the ESCALATE.
+- Minor: the category-to-environment rule is written twice, `categoryEnv` in SQL and `serves` in JS; derive one from the other.
+- Minor: `STATUS_FILTERS` repeats the status labels; build them from `statusLabel`.
+- Minor: a completion by `update_release` is recorded with source `deployment`; record it as `update` with the deployment id.
 
 Quality: 872 → 860 duplicated lines (repo-wide; `openRelease` shares the tag, proposals and update openings; none in the files this change adds). Complexity: lizard not_run.

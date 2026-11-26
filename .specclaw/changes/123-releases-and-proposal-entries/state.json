@@ -1,9 +1,10 @@
 {
   "change": "123-releases-and-proposal-entries",
-  "phase": "tasks",
+  "phase": "verify",
   "branch": "",
   "phases": {
     "proposal": {"status":"approved","at":"2026-11-26T07:38:19Z"},
-    "tasks": {"status":"done","at":"2026-11-26T07:40:58Z"}
+    "tasks": {"status":"done","at":"2026-11-26T07:40:58Z"},
+    "verify": {"status":"done","at":"2026-11-26T16:48:54Z"}
   }
 }
