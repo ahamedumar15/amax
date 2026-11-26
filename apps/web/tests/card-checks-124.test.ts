@@ -25,6 +25,10 @@ describe("124 the checks field and the in-app link", () => {
     expect(draw(move, { proposalKeys: "ORB-044,ORB-047" })).toContain('value="ORB-047"');
     const form: CardForm = { fields: [proposals, move] };
     expect(edited(form, { proposalKeys: "ORB-044", reassign: "ORB-047" })).toEqual({ proposalKeys: "ORB-044", reassign: "" });
+    for (const stray of ["ORB-099", "orb-044", "FLT-001"]) {
+      expect(edited(form, { proposalKeys: `ORB-044,${stray}`, reassign: "" }).proposalKeys).toBe(`ORB-044,${stray}`);
+      expect(draw(proposals, { proposalKeys: stray })).toMatch(box(stray));
+    }
   });
 
   it("AC8 the done card opens an in-app path, never another host", () => {

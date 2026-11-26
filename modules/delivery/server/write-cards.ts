@@ -5,6 +5,7 @@ import type { ToolCard } from "@amax/core";
 import { getRuntime } from "@amax/core/server";
 import { repoFields, storedLink } from "./set-up-project-card";
 import { categoryLabel, dayLabel } from "./release-status";
+import { movesLine } from "./release-proposals";
 
 // 081 amendment 3: the confirm cards for the writes Delivery's pins offer (releases, deployments, environments, tasks,
 // repos), so the card says what will happen and its receipt what did, instead of the tool's description and raw
@@ -39,9 +40,9 @@ export const voidCard = async (_v: Viewer, a: { projectKey: string; version: str
 export const tagCard = async (_v: Viewer, a: { projectKey: string; version: string; newVersion: string }) =>
   card(`Re-tag ${a.projectKey} ${a.version} as ${a.newVersion}`, "Re-tag a release", [["Release", `${a.projectKey} ${a.version}`], ["New tag", a.newVersion]], `${a.projectKey} ${a.version} is now ${a.newVersion}`, "Re-tag");
 
-export const releaseProposalsCard = async (_v: Viewer, a: { projectKey: string; version: string; proposalKeys: string[] }) =>
+export const releaseProposalsCard = async (v: Viewer, a: { projectKey: string; version: string; proposalKeys: string[]; reassign?: string[] }) =>
   card(`Set the proposals in ${a.projectKey} ${a.version}`, "Change a release", [["Release", `${a.projectKey} ${a.version}`], ["Proposals", a.proposalKeys.join(", ") || "none"],
-    ["Kept", "proposals already released stay"]], `${a.projectKey} ${a.version} holds ${a.proposalKeys.length} proposal${a.proposalKeys.length === 1 ? "" : "s"}`, "Save");
+    ["Moves", await movesLine(v, a)], ["Kept", "proposals already released stay"]], `${a.projectKey} ${a.version} holds ${a.proposalKeys.length} proposal${a.proposalKeys.length === 1 ? "" : "s"}`, "Save");
 
 export async function environmentCard(v: Viewer, a: { projectKey: string; name: string; rename?: string; position?: number; isProd?: boolean }) {
   const [had] = await withTenant(getRuntime().db, v.tenantId, (tx) => tx.execute(sql`select 1 from delivery.environment e join delivery.project p on p.id = e.project_id

@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { createRelease, setReleaseProposals, tagRelease } from "../server/services";
 import { getRelease } from "../server/queries";
-import { listReleaseProposals } from "../server/release-proposals";
+import { listReleaseProposals, releaseNote } from "../server/release-proposals";
+import { releaseProposalsCard } from "../server/write-cards";
 import { proposeRelease, ReleaseDraft } from "../server/release-card";
 import { OPEN, releaseDb } from "./release-db";
 
@@ -34,6 +35,17 @@ describe.skipIf(!hasDb)("124 release chat card (Postgres)", () => {
     expect((await getRelease(db.sahan, "RTK", "m2"))!.proposals.filter((p) => p.included).map((p) => p.key).sort()).toEqual([a, b].sort());
     const [audit] = await db.t.owner`select after from core.audit_event where action = 'delivery.release.proposals' order by seq desc limit 1`;
     expect(audit.after.moved).toEqual([{ key: b, from: "m1" }]);
+  });
+
+  it("AC-5 AC-6 both writers' cards show a move before confirm, and only a real one", async () => {
+    const x = await db.proposal("RTK");
+    await create("s1", { proposalKeys: [x] });
+    await create("s2");
+    const moves = async (version: string, reassign?: string[]) => (await releaseProposalsCard(db.sahan, { projectKey: "RTK", version, proposalKeys: [x], reassign })).lines.find((l) => l.label === "Moves")?.value;
+    expect(await moves("s2", [x])).toBe(`${x} from s1 (UAT, In progress)`);
+    expect([await moves("s2"), await moves("s1", [x])]).toEqual([undefined, undefined]);
+    expect(await releaseNote(db.sahan, { projectKey: "RTK", proposalKeys: [x], reassign: [x] })).toBe(`${x} is already in RTK s1 (UAT, In progress): it moves to this release`);
+    await expect(listReleaseProposals(db.sahan, "NOPE")).rejects.toThrow("no project NOPE");
   });
 
   it("AC-2 AC-7 the category is matched in any case, and the card refuses each bad field with the service's own message", async () => {

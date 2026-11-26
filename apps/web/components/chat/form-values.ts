@@ -60,8 +60,11 @@ export const hintOf = (field: CardField, values: Values) => (field.kind === "tex
 export const ticked = (value?: string) => (value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 
 type Checks = Extract<CardField, { kind: "checks" }>;
-export const shownChecks = (field: Checks, values: Values) =>
-  field.of ? field.options.filter((o) => ticked(values[field.of!]).includes(o.value)) : field.options;
+export const shownChecks = (field: Checks, values: Values) => {
+  if (field.of) return field.options.filter((o) => ticked(values[field.of!]).includes(o.value));
+  const offered = field.options.map((o) => o.value);
+  return [...field.options, ...ticked(values[field.name]).filter((v) => !offered.includes(v)).map((v) => ({ value: v, label: v, detail: "not among the choices" }))];
+};
 
 const valueOf = (f: CardField, values: Values) => {
   if (f.kind !== "checks") return values[f.name]?.trim() ?? "";

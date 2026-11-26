@@ -4,6 +4,7 @@ import type { Viewer } from "@amax/auth";
 import { getRuntime } from "@amax/core/server";
 import type { Phase } from "../contracts";
 import { read } from "./queries";
+import { notFound } from "./refusal";
 import { isWithdrawn } from "./readiness";
 import { categoryLabel, statusLabel } from "./release-status";
 
@@ -38,11 +39,18 @@ export const releaseProposals = async (tx: Tx, projectKey: string): Promise<Rele
     openRelease: openElsewhere(p, null) ? { version: p.version as string, category: (p.category as string | null) ?? null, status: (p.status as string | null) ?? null } : null,
   }));
 
-export const listReleaseProposals = (v: Viewer, projectKey: string) => read(v, (tx) => releaseProposals(tx, projectKey));
-
-export const releaseNote = (v: Viewer, a: { projectKey: string; proposalKeys?: string[]; reassign?: string[] }) => withTenant(getRuntime().db, v.tenantId, async (tx) => {
-  const keys = a.proposalKeys ?? [];
-  const rows = keys.length ? await candidates(tx, sql`p.key = any(${textArray(keys)}) and pr.key = ${a.projectKey}`) : [];
-  const lines = rows.filter((p) => openElsewhere(p, null) && (a.reassign ?? []).includes(p.key as string)).map((p) => `${whereItIs(p)}: it moves to this release`);
-  return lines.length ? lines.join(". ") : undefined;
+export const listReleaseProposals = (v: Viewer, projectKey: string) => read(v, async (tx) => {
+  const [project] = await tx.execute(sql`select 1 from delivery.project where key = ${projectKey}`);
+  if (!project) throw notFound(`no project ${projectKey}`);
+  return releaseProposals(tx, projectKey);
 });
+
+type MoveInput = { projectKey: string; version?: string; proposalKeys?: string[]; reassign?: string[] };
+const movesOf = (v: Viewer, a: MoveInput) => withTenant(getRuntime().db, v.tenantId, async (tx) => {
+  const keys = (a.proposalKeys ?? []).filter((k) => (a.reassign ?? []).includes(k));
+  const rows = keys.length ? await candidates(tx, sql`p.key = any(${textArray(keys)}) and pr.key = ${a.projectKey}`) : [];
+  return rows.filter((p) => openElsewhere(p, null) && p.version !== a.version);
+});
+const joined = (lines: string[], by: string) => (lines.length ? lines.join(by) : undefined);
+export const releaseNote = async (v: Viewer, a: MoveInput) => joined((await movesOf(v, a)).map((p) => `${whereItIs(p)}: it moves to this release`), ". ");
+export const movesLine = async (v: Viewer, a: MoveInput) => joined((await movesOf(v, a)).map((p) => `${p.key as string} from ${p.version as string} (${releaseState(p)})`), "; ");
