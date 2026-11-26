@@ -3972,6 +3972,58 @@ specclaw/074-audit-filters 9d02b11 → CON: applied
   <p class="muted" style="font-size:12px">Contoso Portal is a manual project and keeps its stored values. Manager is never computed: chat suggests setting one from the row's pin.</p>
 </section>
 
+<!-- ================= 123 Release tracking, phase 1 ================= -->
+<section data-change="123-releases-and-proposal-entries" id="123-releases-and-proposal-entries" data-roles="admin pm" data-title="Release tracking (data)" data-nav="no" data-icon="rocket" data-parent="001-amax-foundation-project">
+  <h1>Release tracking, phase 1</h1>
+  <p class="lede">123: a release gets a name, a category, dates and a status. No page changes yet; chat asks for the new fields. Fictional data (Orbit Notes).</p>
+
+  <h2 style="margin-top:20px">1. Chat: New release asks for the new fields, then confirms</h2>
+  <div class="card" style="max-width:520px">
+    <p class="muted" style="margin:0 0 8px;font-size:13px">amax · What's the release called, which environment is it for (Dev, UAT or Prod), and when does it start and need to be done?</p>
+    <div class="card-head"><h2>New release</h2></div>
+    <table class="tbl"><tbody>
+      <tr><th scope="row">Project</th><td>ORB · Orbit Notes</td></tr>
+      <tr><th scope="row">Version</th><td>v0.14.0</td></tr>
+      <tr><th scope="row">Name</th><td>Offline drafts</td></tr>
+      <tr><th scope="row">Category</th><td>UAT</td></tr>
+      <tr><th scope="row">Start</th><td>1 Dec 2026</td></tr>
+      <tr><th scope="row">Target</th><td>12 Dec 2026</td></tr>
+      <tr><th scope="row">Proposals</th><td>ORB-044, ORB-047</td></tr>
+    </tbody></table>
+    <div class="actions" style="margin-top:12px"><button class="btn sm primary" type="button">Create</button><button class="btn sm" type="button">Cancel</button></div>
+  </div>
+  <p class="muted" style="font-size:12.5px">Done: created ORB v0.14.0 · <a href="#">open the release</a> (status Planned until 1 Dec).</p>
+
+  <h2 style="margin-top:28px">2. Refusals, as chat shows them</h2>
+  <div class="card" style="max-width:640px">
+    <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.7">
+      <li>The target date (28 Nov) is before the start date (1 Dec).</li>
+      <li>ORB has no UAT environment. Add one, or pick Dev or Prod.</li>
+      <li>ORB-050 is Building; only Verified or Released proposals can go in a release.</li>
+      <li>ORB-044 is already in ORB v0.13.1 (UAT, In progress); take it out there first.</li>
+      <li>ORB v0.13.0 is completed; it can't change.</li>
+    </ul>
+  </div>
+
+  <h2 style="margin-top:28px">3. Completion</h2>
+  <div class="card" style="max-width:640px">
+    <p style="margin:0;font-size:13.5px">Recording a <b>deployed</b> UAT deployment of ORB v0.14.0 on 11 Dec completes it: status <span class="chip good">Completed</span> <span class="chip">On time</span>. Testing or rolled-back records, or a Dev deployment, don't. Voiding that deployment reopens it (<span class="chip info">In progress</span>, or <span class="chip bad">Overdue</span> after 12 Dec).</p>
+  </div>
+
+  <h2 style="margin-top:28px">4. get_release_history (sample output)</h2>
+  <pre class="card" style="font-size:12px;overflow:auto;max-width:640px">{
+  "projectKey": "ORB", "version": "v0.14.0", "name": "Offline drafts",
+  "category": "uat", "startDate": "2026-12-01", "targetDate": "2026-12-12",
+  "status": "completed", "completedAt": "2026-12-11T09:40:00Z", "completion": "on_time",
+  "statusHistory": [
+    { "from": null, "to": "planned", "at": "2026-11-26T05:10:00Z", "source": "create", "by": "Priya Nadarajah" },
+    { "from": "planned", "to": "completed", "at": "2026-12-11T09:40:00Z", "source": "deployment", "by": "CI for Priya Nadarajah" }
+  ],
+  "proposals": [ … ], "history": [ … deployments, unchanged … ]
+}</pre>
+  <p class="muted" style="font-size:12px">Releases made before this change are untracked: their name is their version, and category, dates and status are empty until someone edits them.</p>
+</section>
+
 <!-- ================= 097 e2e released row ================= -->
 <section data-change="097-e2e-released-row" id="097-e2e-released-row" data-roles="admin leadership pm engineer" data-title="Released rows" data-nav="no" data-icon="plug" data-parent="062-specclaw-sync-plugin">
   <h1>Proposals · Released, all time</h1>
