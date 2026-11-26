@@ -7,7 +7,7 @@ import { ForbiddenError, getRuntime } from "@amax/core/server";
 import { ACTIVE, clockOf, endOfDay, listReleases, phaseCounts, type ReleaseRow } from "./queries";
 import { isReadyToVerify, overEstimate, ownerShownIn } from "./readiness";
 import type { Phase } from "../contracts";
-import { unsuccessful } from "./deployment-status";
+import { StageWord, unsuccessful } from "./deployment-status";
 import { proposalInProd } from "./in-prod";
 
 const read = <T>(v: Viewer, fn: (tx: Tx) => Promise<T>) => {
@@ -39,7 +39,7 @@ const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-
 
 function stageNote(r: ReleaseRow) {
   const back = unsuccessfulStage(r);
-  if (back) return `${back.status === "failed" ? "Failed in" : "Rolled back from"} ${back.environment} on ${day(back.at)}`;
+  if (back) return `${StageWord(back.status!)} ${back.status === "rolled-back" ? "from" : "in"} ${back.environment} on ${day(back.at)}`;
   const stages = [...r.stages].sort((a, b) => a.position - b.position);
   const at = stages.filter((s) => s.status).at(-1), next = stages.find((s) => !s.status);
   return `${at ? `In ${at.environment}` : "Not deployed yet"}${next ? `, ${next.environment} next` : ""}`;
