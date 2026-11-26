@@ -8,7 +8,7 @@ import { EVENTS, releaseHref, type ReleaseStatusChanged } from "../contracts";
 import { categoryLabel, completionOf, dayLabel, releaseDay, releaseStatus, statusLabel, type Category, type ReleaseStatus } from "./release-status";
 
 type Row = Record<string, unknown>;
-type Source = "create" | "update" | "deployment" | "void" | "schedule";
+type Source = "create" | "update" | "deployment" | "void" | "schedule" | "environment";
 export type Dates = { category: Category; startDate: string; targetDate: string };
 
 export const zoneOf = (tx: Tx, project: Row) => entityZone(tx, (project.legal_entity_id as string | null) ?? null);
@@ -92,7 +92,7 @@ export async function completeReached(tx: Tx, project: Row, by: string) {
     if (r.status === "completed") continue;
     const reached = await reachedAlready(tx, project.id, r.id, r.category as Category);
     if (!reached) continue;
-    const done = await completeBy(tx, project, r, reached, "deployment", by);
+    const done = await completeBy(tx, project, r, reached, "environment", by);
     if (done) events.push(done);
     completed.push({ version: r.version as string, deploymentId: reached.id as string });
   }

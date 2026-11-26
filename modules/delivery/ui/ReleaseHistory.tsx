@@ -12,6 +12,7 @@ export function why(c: Change, history: DeploymentRow[]) {
   if (c.source === "update") return "Edited";
   if (c.source === "schedule") return c.to === "overdue" ? "Target date passed" : c.to === "in_progress" ? "Start date reached" : "Date reached";
   if (c.source === "deployment") return env ? `Deployed to ${env}` : "Deployed";
+  if (c.source === "environment") return env ? `${env} became its environment` : "Environment changed";
   return env ? `${env} deployment voided` : "Deployment voided";
 }
 
