@@ -9,7 +9,7 @@ import { ingestPush } from "./server/ingest";
 import { linkIdentity } from "./suggestions";
 import { proposalAgent } from "./server/agent";
 import { proposalKinds } from "./server/proposal-kinds";
-import { EVENTS, PROJECT_HEADER_SLOT, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type TaskDone, type TaskReopened, type CommitTime, type ProjectManagerChanged } from "./contracts";
+import { EVENTS, PROJECT_HEADER_SLOT, managedProjectIds, type ProposalPhaseChanged, type ProposalRekeyed, type ProposalWithdrawn, type ProposalOwnerChanged, type ReleaseDeployed, type ReleaseStatusChanged, type TaskDone, type TaskReopened, type CommitTime, type ProjectManagerChanged } from "./contracts";
 import { ProjectsPage } from "./ui/ProjectsPage";
 import { ProjectPage } from "./ui/ProjectPage";
 import { ProposalsPage } from "./ui/ProposalsPage";
@@ -102,6 +102,8 @@ export default defineModule({
     handles: proposalAgent,
     payloads: {
       [EVENTS.releaseDeployed]: declarePayload<ReleaseDeployed>({ releaseId: "plain", projectId: "plain", version: "plain", environment: "plain", status: "plain", released: "plain" }),
+      [EVENTS.releaseStatusChanged]: declarePayload<ReleaseStatusChanged>({ releaseId: "plain", projectId: "plain", projectKey: "plain", managerUserId: "plain", version: "plain", name: "plain", category: "plain",
+        targetDate: "plain", from: "plain", to: "plain", toLabel: "plain", source: "plain", href: "plain" }),
       [EVENTS.proposalPhaseChanged]: declarePayload<ProposalPhaseChanged>({ proposalId: "plain", key: "plain", projectId: "plain", from: "plain", to: "plain", by: "plain", ownerUserId: "plain" }),
       [EVENTS.proposalRekeyed]: declarePayload<ProposalRekeyed>({ proposalId: "plain", projectId: "plain", from: "plain", to: "plain" }),
       [EVENTS.proposalWithdrawn]: declarePayload<ProposalWithdrawn>({ proposalId: "plain", key: "plain", projectId: "plain", by: "plain", reason: "plain", ownerUserId: "plain", title: "plain" }),
@@ -117,6 +119,9 @@ export default defineModule({
     { id: "delivery.release-rolled-back", event: EVENTS.releaseDeployed, when: { status: "rolled-back" }, category: "releases", urgency: "urgent",
       to: [{ role: "PM" }], permission: "delivery:deployment:record", scope: { projectId: "projectId" },
       title: "Release {version} rolled back in {environment}", href: "/delivery/releases" },
+    { id: "delivery.release-off-track", event: EVENTS.releaseStatusChanged, when: { to: "overdue" }, category: "releases", urgency: "urgent",
+      to: [{ owner: "managerUserId" }], permission: "delivery:release:create", scope: { projectId: "projectId" },
+      title: "{name} is now Off track", body: "{category} release · target {targetDate} · no successful {category} deployment yet", href: "{href}" },
     { id: "delivery.release-failed", event: EVENTS.releaseDeployed, when: { status: "failed" }, category: "releases", urgency: "urgent",
       to: [{ role: "PM" }], permission: "delivery:deployment:record", scope: { projectId: "projectId" },
       title: "Release {version} failed in {environment}", href: "/delivery/releases" },

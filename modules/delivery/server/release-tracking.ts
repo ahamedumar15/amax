@@ -3,7 +3,9 @@ import type { Tx } from "@amax/db";
 import { entityZone } from "@amax/workflows";
 import { clockOf } from "./queries";
 import { invalid } from "./refusal";
-import { categoryLabel, completionOf, releaseDay, releaseStatus, type Category, type ReleaseStatus } from "./release-status";
+import type { Emitted } from "@amax/core/server";
+import { EVENTS, releaseHref, type ReleaseStatusChanged } from "../contracts";
+import { categoryLabel, completionOf, dayLabel, releaseDay, releaseStatus, statusLabel, type Category, type ReleaseStatus } from "./release-status";
 
 type Row = Record<string, unknown>;
 type Source = "create" | "update" | "deployment" | "void" | "schedule";
@@ -39,21 +41,31 @@ export function notCompleted(r: Row, projectKey: string) {
   if (r.status === "completed") throw invalid(`${projectKey} ${r.version as string} is completed; it can't change`);
 }
 
-export async function writeStatus(tx: Tx, r: Row, to: ReleaseStatus, source: Source, by: string, deploymentId: string | null = null, also: SQL = sql``) {
+export async function writeStatus(tx: Tx, r: Row, to: ReleaseStatus, source: Source, by: string, deploymentId: string | null = null, also: SQL = sql``): Promise<Emitted | null> {
   await tx.execute(sql`update delivery.release set status = ${to}, updated_at = now() ${also} where id = ${r.id}`);
-  if (r.status === to) return;
+  if (r.status === to) return null;
   await tx.execute(sql`insert into delivery.release_status_history (tenant_id, release_id, from_status, to_status, source, deployment_id, changed_by)
     values (${r.tenant_id}, ${r.id}, ${(r.status as string | null) ?? null}, ${to}, ${source}, ${deploymentId}, ${by})`);
+  return statusChanged(tx, r.id, (r.status as string | null) ?? null, to, source);
+}
+
+async function statusChanged(tx: Tx, releaseId: unknown, from: string | null, to: ReleaseStatus, source: Source): Promise<Emitted> {
+  const [x] = await tx.execute(sql`select r.id, r.version, r.name, r.category, r.target_date::text as target_date, p.id as project_id, p.key, p.manager_user_id
+    from delivery.release r join delivery.project p on p.id = r.project_id where r.id = ${releaseId}`);
+  const payload: ReleaseStatusChanged = { releaseId: x.id as string, projectId: x.project_id as string, projectKey: x.key as string, managerUserId: (x.manager_user_id as string | null) ?? null, version: x.version as string,
+    name: (x.name as string | null) ?? (x.version as string), category: categoryLabel(x.category as string) ?? "", targetDate: dayLabel(x.target_date as string | null) ?? "",
+    from, to, toLabel: statusLabel(to), source, href: releaseHref({ projectKey: x.key as string, version: x.version as string }) };
+  return { name: EVENTS.releaseStatusChanged, payload };
 }
 
 async function completeBy(tx: Tx, project: Row, r: Row, d: Row, source: Source, by: string) {
   const completion = completionOf(releaseDay(await zoneOf(tx, project), d.at as string), r.target_date as string);
-  await writeStatus(tx, r, "completed", source, by, d.id as string, sql`, completed_at = ${d.at}, completion = ${completion}, completing_deployment_id = ${d.id}`);
+  return writeStatus(tx, r, "completed", source, by, d.id as string, sql`, completed_at = ${d.at}, completion = ${completion}, completing_deployment_id = ${d.id}`);
 }
 
-export async function completeOnDeployment(tx: Tx, project: Row, releaseId: unknown, d: Row, by: string) {
+export async function completeOnDeployment(tx: Tx, project: Row, releaseId: unknown, d: Row, by: string): Promise<Emitted | null> {
   const r = await tracked(tx, releaseId);
-  if (!r.category || r.status === "completed" || d.status !== "deployed") return;
+  if (!r.category || r.status === "completed" || d.status !== "deployed") return null;
   const env = await categoryEnv(tx, project.id, r.category as Category);
-  if (env && env.id === d.environment_id) await completeBy(tx, project, r, d, "deployment", by);
+  return env && env.id === d.environment_id ? completeBy(tx, project, r, d, "deployment", by) : null;
 }

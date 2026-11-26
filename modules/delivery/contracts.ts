@@ -35,7 +35,11 @@ export type ProposalRekeyed = { proposalId: string; projectId: string; from: str
 /** 081 amendment 7 (AC-74): `ownerUserId` (null for none) and `title`, so the owner can be told. */
 export type ProposalWithdrawn = { proposalId: string; key: string; projectId: string; by: string; reason: string; ownerUserId?: string | null; title?: string };
 
-export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed", projectManagerChanged: "delivery.project.manager_changed" } as const;
+export const EVENTS = { releaseDeployed: "delivery.release.deployed", proposalPhaseChanged: "delivery.proposal.phase_changed", proposalRekeyed: "delivery.proposal.rekeyed", proposalWithdrawn: "delivery.proposal.withdrawn", taskDone: "delivery.task.done", taskReopened: "delivery.task.reopened", commitTime: "delivery.commit.time", ownerChanged: "delivery.proposal.owner_changed", projectManagerChanged: "delivery.project.manager_changed", releaseStatusChanged: "delivery.release.status_changed" } as const;
+
+/** 127: a release took a new status (create, edit, deployment or the hourly check); `to` is the stored value (`overdue` reads "Off track"); `managerUserId` the project's PM. */
+export type ReleaseStatusChanged = { releaseId: string; projectId: string; projectKey: string; managerUserId: string | null; version: string; name: string; category: string; targetDate: string;
+  from: string | null; to: string; toLabel: string; source: string; href: string };
 
 /** 107: a project's PM handed over; `from` is null when it had none, `by` the actor. */
 export type ProjectManagerChanged = { projectId: string; key: string; name: string; from: string | null; to: string; toName: string; by: string };

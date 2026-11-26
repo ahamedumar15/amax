@@ -29,7 +29,7 @@ What changes on screen, and where to see it: [`127-release-off-track-notice`](..
    source, href), in the same transaction as the status and its history row. A write that leaves the status as it
    was raises none. Its payload is declared for outgoing webhooks; README and contracts say so (additive).
 2. **AC-2 The notice.** A notification rule `delivery.release-off-track` on that event, when `to` is `overdue`, tells
-   the project's PMs (role PM, with `delivery:release:create` on the project), category releases, urgent: title
+   the project's manager (its PM, `managerUserId` on the event, who must hold `delivery:release:create` on the project), category releases, urgent: title
    "{name} is now Off track", body "{category} release · target {targetDate} · no successful {category} deployment
    yet", linking to the release page. It goes through the notifications module, so each person's preferences, quiet
    hours and permissions apply.
@@ -47,15 +47,17 @@ What changes on screen, and where to see it: [`127-release-off-track-notice`](..
 
 ## Tasks
 
-- [ ] `T1` — The event: `EVENTS.releaseStatusChanged` and `ReleaseStatusChanged` in the contract, built in one place from the release and its project and returned by `writeStatus` on a change; every writer (create, edit, deployment, the check) emits it with its write; payload declared in the manifest (AC-1)
+- [x] `T1` — The event: `EVENTS.releaseStatusChanged` and `ReleaseStatusChanged` in the contract, built in one place from the release and its project and returned by `writeStatus` on a change; every writer (create, edit, deployment, the check) emits it with its write; payload declared in the manifest (AC-1)
   Files: modules/delivery/contracts.ts, modules/delivery/server/release-tracking.ts, modules/delivery/server/services.ts, modules/delivery/server/release-check.ts, modules/delivery/module.ts
-- [ ] `T2` — The notice: rule `delivery.release-off-track` on the change to `overdue`, to the project's PMs, urgent, with the title, body and link from the payload (AC-2, AC-3)
+- [x] `T2` — The notice: rule `delivery.release-off-track` on the change to `overdue`, to the project's PMs, urgent, with the title, body and link from the payload (AC-2, AC-3)
   Files: modules/delivery/module.ts
   Depends: T1
-- [ ] `T3` — Tests and docs: notice to the project's PM only, once per transition, again after a new transition, none on completion, the zone deciding the day, a run that throws part way writes and notifies nothing and its retry notifies once; README and contracts note; lint and typecheck (AC-4, AC-5)
+- [x] `T3` — Tests and docs: notice to the project's PM only, once per transition, again after a new transition, none on completion, the zone deciding the day, a run that throws part way writes and notifies nothing and its retry notifies once; README and contracts note; lint and typecheck (AC-4, AC-5)
   Files: modules/delivery/tests/release-notice-127.test.ts, modules/delivery/README.md
   Depends: T2
 
 ## Verify
 
-<!-- Filled by verify. -->
+Build notes (2026-11-26): AC-2 reads "the project's manager": routing to every role-PM with the right on the project also reached Admins who hold PM, for every project. The brief asks for the responsible PM, so the event carries the project's `managerUserId` and the rule sends to that person (a project with no manager notifies no one). The notifications test lives in `modules/notifications/tests/` (module boundaries: it drives Delivery through its tools); the event tests in Delivery.
+
+Quality: 860 → 860 duplicated lines (repo-wide; none in this change's files). Complexity: lizard not_run.

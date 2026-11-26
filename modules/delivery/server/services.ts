@@ -180,10 +180,10 @@ export const createRelease = defineService({
       values (${ctx.tenantId}, ${project.id}, ${input.version}, ${input.name}, ${input.category}, ${input.startDate}, ${input.targetDate}, ${status})
       on conflict (project_id, version) do nothing returning id, tenant_id`);
     if (!r) throw invalid(`${input.projectKey} already has a release ${input.version}`);
-    await writeStatus(tx, { ...r, status: null }, status, "create", by(ctx));
+    const created = await writeStatus(tx, { ...r, status: null }, status, "create", by(ctx));
     const moved = await assignProposals(tx, project.id, r.id, input.proposalKeys, [], input.reassign);
     const href = releaseHref(input);
-    return { result: { id: r.id as string, status, href, moved, open: { label: "Open the release", url: href } }, resourceId: r.id as string, after: { ...input, moved } };
+    return { result: { id: r.id as string, status, href, moved, open: { label: "Open the release", url: href } }, resourceId: r.id as string, after: { ...input, moved }, events: created ? [created] : [] };
   },
 });
 
@@ -211,8 +211,8 @@ export const recordDeployment = defineService({
     const released = Boolean(env.is_prod) && input.status === "deployed";
     const [d] = await tx.execute(sql`insert into delivery.deployment (tenant_id, release_id, environment_id, status, note, pipeline_run, recorded_by, released)
       values (${ctx.tenantId}, ${release.id}, ${env.id}, ${input.status}, ${input.note ?? null}, ${input.pipelineRun ?? null}, ${by(ctx)}, ${released}) returning id, at, status, environment_id`);
-    await completeOnDeployment(tx, project, release.id, d, by(ctx));
-    const events: Emitted[] = [{
+    const completed = await completeOnDeployment(tx, project, release.id, d, by(ctx));
+    const events: Emitted[] = [...(completed ? [completed] : []), {
       name: EVENTS.releaseDeployed,
       payload: { releaseId: release.id as string, projectId: project.id as string, version: input.version, environment: env.name as string, status: input.status, released } satisfies ReleaseDeployed,
     }];
@@ -501,8 +501,8 @@ export const updateRelease = defineService({
     const d = { category: input.category ?? r.category, startDate: input.startDate ?? r.start_date, targetDate: input.targetDate ?? r.target_date } as Dates;
     await checkDates(tx, project, d);
     const status = await statusFor(tx, project, d);
-    await writeStatus(tx, r, status, "update", by(ctx), null, sql`, name = ${name}, category = ${d.category}, start_date = ${d.startDate}, target_date = ${d.targetDate}`);
-    return { result: { version: input.version, status }, resourceId: r.id as string, before, after: { name, ...d, status } };
+    const changed = await writeStatus(tx, r, status, "update", by(ctx), null, sql`, name = ${name}, category = ${d.category}, start_date = ${d.startDate}, target_date = ${d.targetDate}`);
+    return { result: { version: input.version, status }, resourceId: r.id as string, before, after: { name, ...d, status }, events: changed ? [changed] : [] };
   },
 });
 
