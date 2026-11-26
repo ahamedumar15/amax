@@ -78,6 +78,22 @@ export async function reachedAlready(tx: Tx, projectId: unknown, releaseId: unkn
     and status = 'deployed' and voided_at is null order by at limit 1`))[0] : undefined;
 }
 
+/**
+ * After an environment change gives a category a new environment (made Prod, renamed Dev or UAT), each open release
+ * that already has a live deployment there completes on it, as `update_release` does. Under the project lock.
+ */
+export async function completeReached(tx: Tx, project: Row, by: string) {
+  const open = await tx.execute(sql`select id from delivery.release where project_id = ${project.id} and category is not null and status <> 'completed' order by id`);
+  const events: Emitted[] = [];
+  for (const { id } of open) {
+    const r = await tracked(tx, id);
+    const reached = await reachedAlready(tx, project.id, r.id, r.category as Category);
+    const done = reached ? await completeBy(tx, project, r, reached, "deployment", by) : null;
+    if (done) events.push(done);
+  }
+  return events;
+}
+
 const serves = (e: Row) => [...(["dev", "uat"] as const).filter((c) => String(e.name).toLowerCase() === c), ...(e.is_prod ? ["prod" as const] : [])];
 
 /**

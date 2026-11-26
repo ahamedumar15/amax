@@ -81,7 +81,7 @@ export async function proposalOffers(v: Viewer, a: Args) {
       from delivery.proposal p join delivery.project pr on pr.id = p.project_id where p.id = ${p.id}`);
     // The newest release of the project not yet live in Prod: where a verified proposal with no release goes.
     const [r] = p.phase === "verified" && !p.release ? await tx.execute(sql`select r.version, coalesce((select string_agg(q.key, ', ' order by q.key) from delivery.proposal q where q.release_id = r.id), '') as keys
-      from (${nextReleaseOf(sql`(select id from delivery.project where key = ${p.projectKey})`)}) r`) : [];
+      from (${nextReleaseOf(sql`(select id from delivery.project where key = ${p.projectKey})`, true)}) r`) : [];
     const [inRelease] = p.phase === "verified" && p.release ? await tx.execute(sql`select release_id from delivery.proposal where id = ${p.id}`) : [];
     return { projectId: x.project_id as string, openTask: (x.open_task as string | null) ?? null, justClosed: (x.just_closed as string | null) ?? null, release: r ? { version: r.version as string, keys: r.keys as string } : null,
       releaseId: (inRelease?.release_id as string | null) ?? null, timeTables: Boolean(x.time_tables) };

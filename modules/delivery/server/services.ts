@@ -15,7 +15,7 @@ import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolve
 import { Day, Keys, ReleaseName, CategoryInput, Tracking, Version, type ReleaseStatus } from "./release-status";
 import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
 import { DEPLOYMENT_STATUSES } from "./deployment-status";
-import { checkDates, completeBy, completeOnDeployment, missingForTracking, notCompleted, notTrackedYet, reachedAlready, statusFor, strandsReleases, tracked, writeStatus, type Dates } from "./release-tracking";
+import { checkDates, completeBy, completeOnDeployment, completeReached, missingForTracking, notCompleted, notTrackedYet, reachedAlready, statusFor, strandsReleases, tracked, writeStatus, type Dates } from "./release-tracking";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -69,9 +69,14 @@ async function releaseOf(tx: Tx, projectId: unknown, version: string) {
   return r;
 }
 
+// Release edits and environment changes check each other (a category needs its environment), so both take the project
+// row lock first, then any release rows: one order, no deadlock (123 review round 2).
+const lockProject = (tx: Tx, projectId: unknown) => tx.execute(sql`select 1 from delivery.project where id = ${projectId} for update`);
+
 async function openRelease(tx: Tx, ctx: ServiceContext, input: { projectKey: string; version: string }) {
   const project = await projectByKey(tx, input.projectKey);
   scoped(ctx, "delivery:release:create", project.id as string);
+  await lockProject(tx, project.id);
   const r = await releaseOf(tx, project.id, input.version);
   notCompleted(r, input.projectKey);
   return { project, r };
@@ -173,6 +178,7 @@ export const createRelease = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);
+    await lockProject(tx, project.id);
     await checkDates(tx, project, input);
     const status = await statusFor(tx, project, input);
     // A version that exists (or is being created right now) is refused clearly, not as a raw unique violation.
@@ -403,6 +409,7 @@ export const upsertEnvironment = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);
+    await lockProject(tx, project.id);
     const before = await envByName(tx, project.id, input.name);
     const target = input.rename ? await envByName(tx, project.id, input.rename) : undefined;
     if (target && target.id !== before?.id) throw invalid(`${input.projectKey} already has an environment called ${target.name}`);
@@ -424,7 +431,8 @@ export const upsertEnvironment = defineService({
       await tx.execute(sql`update delivery.environment set position = -position where project_id = ${project.id}`);
     }
     // Pins name the environment by its id (059), so a rename needs nothing more.
-    return { result: { name: row.name as string }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null, after: input };
+    const completed = await completeReached(tx, project, by(ctx));
+    return { result: { name: row.name as string }, resourceId: row.id as string, before: before ? { name: before.name, isProd: before.is_prod } : null, after: input, events: completed };
   },
 });
 
@@ -437,6 +445,7 @@ export const removeEnvironment = defineService({
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);
+    await lockProject(tx, project.id);
     const env = await envByName(tx, project.id, input.name);
     if (!env) throw notFound(`no environment ${input.name}`);
     const [{ n }] = await tx.execute(sql`select count(*)::int as n from delivery.deployment where environment_id = ${env.id}`);

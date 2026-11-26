@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hasDb } from "@amax/db/testdb";
 import { createProject, createRelease, recordDeployment, removeEnvironment, updateRelease, upsertEnvironment } from "../server/services";
-import { releaseOffers } from "../server/pin-offers";
+import { proposalOffers, releaseOffers } from "../server/pin-offers";
 import { getRelease } from "../server/queries";
 import { OPEN, releaseDb, T } from "./release-db";
 
@@ -75,5 +75,46 @@ describe.skipIf(!hasDb)("123 review: completed offers, stranded categories, comp
     expect([release.completingDeploymentId, release.completedAt, release.completion]).toEqual([uat.id, uat.at, "late"]);
     expect(release.statusHistory.map((h) => `${h.to}:${h.source}`).at(-1)).toBe("completed:deployment");
     expect(release.statusHistory.some((h) => h.to === "overdue")).toBe(false);
+  });
+
+  // Round 2: the proposal pin's "Put <key> in <release>" skips a completed release, as the release pin does.
+  it.each([
+    { newest: "a completed Dev release", category: "dev", deployTo: "Dev", offered: "o1" },
+    { newest: "a completed UAT release", category: "uat", deployTo: "UAT", offered: "o1" },
+    { newest: "an open release", category: "uat", deployTo: "Dev", offered: "n1" },
+  ])("a Verified proposal with no release is offered the newest open one when the newest is $newest", async ({ category, deployTo, offered }) => {
+    const k = await project();
+    await createRelease(db.admin(), { ...OPEN, projectKey: k, version: "o1" });
+    await createRelease(db.admin(), { ...OPEN, projectKey: k, version: "n1", category });
+    await recordDeployment(db.admin(), { projectKey: k, version: "n1", environment: deployTo });
+    const key = await db.proposal(k);
+    const puts = (await proposalOffers(db.sahan, { key })).filter((o) => o.tool === "set_release_proposals").map((o) => o.label);
+    expect(puts).toEqual([`Put ${key} in ${k} ${offered}`]);
+  });
+
+  // Round 2: an environment change that gives a category an environment an open release already reached completes it.
+  it.each([
+    { case: "QA made Prod, reached", deployTo: "QA", completes: true },
+    { case: "QA made Prod, not reached", deployTo: "Dev", completes: false },
+  ])("upsert_environment: $case completes the open Prod release: $completes", async ({ deployTo, completes }) => {
+    const k = await project();
+    await createRelease(db.admin(), { ...OPEN, projectKey: k, version: "p1", category: "prod" });
+    await recordDeployment(db.admin(), { projectKey: k, version: "p1", environment: deployTo });
+    await upsertEnvironment(db.admin(), { projectKey: k, name: "QA", isProd: true });
+    const release = (await getRelease(db.sahan, k, "p1"))!;
+    expect(release.status).toBe(completes ? "completed" : "in_progress");
+    if (completes) expect(release.completingDeploymentId).toBe(release.history.find((d) => d.environment === "QA")!.id);
+  });
+
+  // Round 2: the guard and the release write share the project lock, so a rename and a create of that category never both land.
+  it("renaming UAT away and creating a UAT release at once: exactly one succeeds, every time", async () => {
+    for (let i = 0; i < 5; i++) {
+      const k = await project();
+      const [rename, create] = await Promise.allSettled([
+        upsertEnvironment(db.admin(), { projectKey: k, name: "UAT", rename: "Staging" }),
+        createRelease(db.admin(), { ...OPEN, projectKey: k, version: "r1", category: "uat" }),
+      ]);
+      expect([rename.status, create.status].filter((x) => x === "fulfilled")).toHaveLength(1);
+    }
   });
 });
