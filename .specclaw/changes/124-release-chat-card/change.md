@@ -73,17 +73,22 @@ Completed (an untracked one counts, as in 123).
 
 ## Tasks
 
-- [ ] `T1` — Chat card UI: the `checks` field kind (checkbox fieldset with legend and error, keyboard, both themes), its comma-joined value in the form values, and an in-app path on the done card's link (no ↗, same tab) (AC-4, AC-8 link)
+- [x] `T1` — Chat card UI: the `checks` field kind (checkbox fieldset with legend and error, keyboard, both themes), its comma-joined value in the form values, and an in-app path on the done card's link (no ↗, same tab) (AC-4, AC-8 link)
   Files: packages/core/src/module.ts, apps/web/components/chat/FormChecks.tsx, apps/web/components/chat/CardForm.tsx, apps/web/components/chat/form-values.ts, apps/web/lib/chat-outcome.ts, apps/web/components/chat/Chat.tsx, apps/web/tests/card-checks-124.test.ts
-- [ ] `T2` — Eligible proposals and explicit moves: `list_release_proposals`; `reassign` on `createRelease` and `setReleaseProposals` (moves only what it names, audited `after.moved`, otherwise the naming refusal); comma-string or array proposal keys (AC-3, AC-5)
+- [x] `T2` — Eligible proposals and explicit moves: `list_release_proposals`; `reassign` on `createRelease` and `setReleaseProposals` (moves only what it names, audited `after.moved`, otherwise the naming refusal); comma-string or array proposal keys (AC-3, AC-5)
   Files: modules/delivery/server/release-proposals.ts, modules/delivery/server/services.ts, modules/delivery/mcp.ts, modules/delivery/tests/release-card-124.test.ts
-- [ ] `T3` — The New release card: `create_release` draft input, `propose` (permission, project), form card (Name, Version from the next version, Category chips, Start today in the project zone, Target, Proposals and Move checks), `note` warnings, field checks on edit, result `open` link and receipt; intent, chat suggestion and pin offer open it (AC-1, AC-2, AC-6, AC-7, AC-8, AC-9)
+- [x] `T3` — The New release card: `create_release` draft input, `propose` (permission, project), form card (Name, Version from the next version, Category chips, Start today in the project zone, Target, Proposals and Move checks), `note` warnings, field checks on edit, result `open` link and receipt; intent, chat suggestion and pin offer open it (AC-1, AC-2, AC-6, AC-7, AC-8, AC-9)
   Files: modules/delivery/server/release-card.ts, modules/delivery/server/write-cards.ts, modules/delivery/mcp.ts, modules/delivery/chat.ts, modules/delivery/server/pin-offers.ts, packages/ai/src/scripted-writes.ts, modules/delivery/tests/release-card-124.test.ts
   Depends: T1, T2
-- [ ] `T4` — Integration: tests for intent, card, checks, conflicts, confirm, cancel and a failing service; e2e "081 AC-39" through the card; 123's suites, README, lint, typecheck (AC-10)
+- [x] `T4` — Integration: tests for intent, card, checks, conflicts, confirm, cancel and a failing service; e2e "081 AC-39" through the card; 123's suites, README, lint, typecheck (AC-10)
   Files: modules/delivery/tests/release-card-124.test.ts, modules/delivery/tests/pin-offers.test.ts, packages/ai/tests/scripted-writes.test.ts, apps/web/tests/e2e/delivery.spec.ts, modules/delivery/README.md
   Depends: T3
 
 ## Verify
 
-<!-- Filled by verify. -->
+Build notes (2026-11-26):
+
+- AC-6 as built: an unticked move is a field error on Proposals (the service's own refusal text), checked on edit and again at confirm, where it keeps the card open; once the proposal is ticked under Move, the note says "… : it moves to this release". A refusal from the service itself would close the card as failed, so every refusal the card can predict is made by its `propose` check first.
+- A Released proposal that was never in a release (archived history from the repo) is now eligible; before, 123's "already shipped in another release" also caught it, though it was in none.
+
+Quality: 860 → 860 duplicated lines (repo-wide; none in this change's files). Complexity: lizard not_run.

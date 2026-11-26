@@ -43,7 +43,7 @@ const newProposals = (p: Record<string, unknown>): Gated[] => (p.agent_first ? [
 const newProposal = (p: Record<string, unknown>): Gated => ({ label: `New proposal in ${p.name as string}`, prompt: `Add a proposal to ${p.name as string} (${p.key as string}): `, tool: "create_proposal", permission: "delivery:proposal:create" });
 const newRelease = (p: Record<string, unknown>): Gated => {
   const version = nextVersion((p.latest as string | null) ?? null);
-  return { label: `Create release ${version} of ${p.key as string}`, prompt: `Create release ${version} of ${p.key as string}: `, tool: "create_release", permission: "delivery:release:create" };
+  return { label: `Create release ${version} of ${p.key as string}`, prompt: `Create release ${version} of ${p.key as string}`, tool: "create_release", permission: "delivery:release:create" };
 };
 const link = (key: string, again: boolean): Gated => ({ label: `${again ? "Relink" : "Link"} ${key}'s repo`, prompt: `Link ${key}'s repo to `, tool: "link_project_repo", permission: "delivery:project:link" });
 

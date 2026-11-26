@@ -17,10 +17,6 @@ const card = (title: string, kind: string, lines: [string, string | undefined | 
 
 type Tracked = { name?: string; category?: string; startDate?: string; targetDate?: string };
 
-export const createReleaseCard = async (_v: Viewer, a: { projectKey: string; version: string; proposalKeys?: string[] } & Tracked) =>
-  card(`Create release ${a.version} of ${a.projectKey}`, "New release", [["Project", a.projectKey], ["Version", a.version], ["Name", a.name], ["Category", categoryLabel(a.category)],
-    ["Start", dayLabel(a.startDate)], ["Target", dayLabel(a.targetDate)], ["Proposals", a.proposalKeys?.join(", ") || "none yet"]], `created ${a.projectKey} ${a.version}`, "Create");
-
 export async function updateReleaseCard(v: Viewer, a: { projectKey: string; version: string } & Tracked) {
   const [r] = await withTenant(getRuntime().db, v.tenantId, (tx) => tx.execute(sql`select r.name, r.category, r.start_date::text as start_date, r.target_date::text as target_date
     from delivery.release r join delivery.project p on p.id = r.project_id where p.key = ${a.projectKey} and r.version = ${a.version}`));

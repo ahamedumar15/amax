@@ -21,7 +21,8 @@ const realDay = (s: string) => {
 };
 export const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "a date is YYYY-MM-DD").refine(realDay, "that date isn't a real calendar day");
 export const CategoryInput = z.string().trim().toLowerCase().refine(isCategory, "the category is Dev, UAT or Prod").transform((c) => c as Category);
-export const ReleaseName = z.string().trim().min(1, "the release needs a name").max(120);
+export const Keys = z.preprocess((v) => (typeof v === "string" ? v.split(",").map((k) => k.trim()).filter(Boolean) : v), z.array(z.string()));
+export const ReleaseName =z.string().trim().min(1, "the release needs a name").max(120);
 export const Tracking = z.object({ name: ReleaseName, category: CategoryInput, startDate: Day, targetDate: Day });
 export type Tracking = z.infer<typeof Tracking>;
 

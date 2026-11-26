@@ -115,7 +115,12 @@ export type CardLook = { kind?: string; figure?: string; subject?: string; detai
  */
 export type CardField =
   | { name: string; label: string; kind: "text"; value?: string; hint?: string; upper?: boolean; follow?: string; rangeFrom?: string }
-  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string; short?: string }[]; other?: string; required?: boolean };
+  | { name: string; label: string; kind: "chips"; value?: string; options: { value: string; label: string; short?: string }[]; other?: string; required?: boolean }
+  /**
+   * 124: tick any number; the value is the ticked values joined by commas. `of` names another checks field: only the
+   * options ticked there are shown, and the field is hidden while none are. `empty` is said when there are no options.
+   */
+  | { name: string; label: string; kind: "checks"; value?: string; options: { value: string; label: string; detail?: string }[]; of?: string; empty?: string };
 /** `note` (107): the tool's note for the starting input (its `note` hook), shown until an edit's check says otherwise. */
 export type CardForm = { fields: CardField[]; note?: string; optional?: { label: string; fields: string[] }; confirm?: { label: string; unless?: { field: string; label: string } } };
 export type ToolCard = { title: string; lines: CardLine[]; look?: CardLook; form?: CardForm };

@@ -10,7 +10,7 @@ import { isWithdrawn, ownerShownIn, withdrawnIn } from "./readiness";
 import { LATEST_DEPLOYMENTS, proposalInProd } from "./in-prod";
 import { computePortfolio, portfolioFacts } from "./portfolio";
 
-const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
+export const read = async <T>(viewer: Viewer, fn: (tx: Tx) => Promise<T>) => {
   if (!can(viewer, "delivery:read")) throw new ForbiddenError("delivery:read", "delivery");
   return withTenant(getRuntime().db, viewer.tenantId, fn);
 };

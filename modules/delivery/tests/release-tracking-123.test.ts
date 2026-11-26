@@ -56,7 +56,7 @@ describe.skipIf(!hasDb)("123 release tracking: data and create (Postgres)", () =
     const p = await db.proposal("RTK");
     await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "f1", proposalKeys: [p] });
     await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "f2" });
-    const refusal = new RegExp(`${p} is already in RTK f1 \\(UAT, In progress\\); take it out there first`);
+    const refusal = new RegExp(`${p} is already in RTK f1 \\(UAT, In progress\\); confirm moving it, or take it out there first`);
     await expect(createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: "f3", proposalKeys: [p] })).rejects.toThrow(refusal);
     await expect(setReleaseProposals(db.admin(), { projectKey: "RTK", version: "f2", proposalKeys: [p] })).rejects.toThrow(refusal);
     await expect(createRelease(db.admin(), { ...OPEN, projectKey: "CON", version: "v9.9.9", proposalKeys: ["CON-010"] })).rejects.toThrow(/already in CON v2.4.0 \(Untracked\)/);

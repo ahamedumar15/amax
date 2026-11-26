@@ -460,7 +460,7 @@ describe.skipIf(!hasDb)("final review: release bugs", () => {
       await Promise.allSettled([first, second]);
     }
     await expect(first).resolves.toBeTruthy();
-    await expect(second).rejects.toThrow(/is already in DLK w \(UAT, In progress\); take it out there first/);
+    await expect(second).rejects.toThrow(/is already in DLK w \(UAT, In progress\); confirm moving it, or take it out there first/);
     const rows = await t.owner`select p.key, r.version from delivery.proposal p join delivery.release r on r.id = p.release_id where p.key in (${a.key}, ${b.key}) order by p.key`;
     expect(rows).toEqual([{ key: a.key, version: "w" }, { key: b.key, version: "w" }]);
   });

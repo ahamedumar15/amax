@@ -10,11 +10,8 @@ export const chatIntents = [
       // 081 AC-69: the owner, picked on a choice card from the project's team, the creator first. AC-78, AC-79: only this
       // month's team (the people AC-67 accepts), each with their spare capacity.
       { name: "ownerUserId", ask: "Who owns it? Always settle this before the card, even though it defaults to the user; skip it only if they already named an owner or said me. Once the project and title are known, call get_project_team for the project, then call offer_choices with the question \"Who owns it?\": one create_proposal option per owner, the same input each time, first \"Me\" (no ownerUserId), then up to three people from the team with a userId who aren't the user and are on the project this month (their first percent above 0; nobody allocated only in later months), most allocated first; label \"<name> · <role> · <freeThisMonth>% free this month\", or \"· fully allocated\" when freeThisMonth is 0, or \"· over-allocated by <n>%\" when it is below 0, or no capacity part when it is null; ownerUserId their userId. With no one else on the team, or no team you can read, don't ask: the owner is the user." }] },
-  { id: "delivery.new-release", label: "New release", tool: "create_release", required: ["projectKey", "version", "name", "category", "startDate", "targetDate"],
-    fields: [{ name: "projectKey", ask: "Which project?" }, { name: "version", ask: "Version, e.g. v2.5.0" }, { name: "name", ask: "What is the release called?" },
-      { name: "category", ask: "Which environment is it for?", options: ["Dev", "UAT", "Prod"] }, { name: "startDate", ask: "When does it start? (YYYY-MM-DD)" },
-      { name: "targetDate", ask: "When must it be done? (YYYY-MM-DD, not before the start)" },
-      { name: "proposalKeys", ask: "Which Verified or Released proposals go in it? None is fine." }] },
+  { id: "delivery.new-release", label: "New release", tool: "create_release", required: ["projectKey"],
+    fields: [{ name: "projectKey", ask: "Which project? (a pinned or named one is that one; don't ask)" }, { name: "name", ask: "Don't ask: the card has the name, category, dates and proposals." }] },
   { id: "delivery.link-repo", label: "Link a repo", tool: "link_project_repo", required: ["projectKey"],
     fields: [{ name: "projectKey", ask: "Which project? (a pinned or named one is that one; don't ask)" }, { name: "repoUrl", ask: "Don't ask: the card has the repo and branch fields." }] },
   { id: "delivery.deploy", label: "Record a deployment", tool: "record_deployment", required: ["projectKey", "version", "environment"],

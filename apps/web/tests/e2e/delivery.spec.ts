@@ -263,12 +263,17 @@ test("081 AC-39 pin a project, then its new release: create the release and depl
   const create = offers.getByRole("button", { name: /^Create release v\d+\.\d+\.0 of FLT$/ });
   const version = (await create.innerText()).match(/(v\d+\.\d+\.0)/)![1];
   await create.click();
-  await expect(page.getByLabel("Message amax")).toHaveValue(`Create release ${version} of FLT: `);
-  await page.getByLabel("Message amax").pressSequentially("Fleet beta, Dev, 2026-10-16 to 2026-10-30");
+  await expect(page.getByLabel("Message amax")).toHaveValue(`Create release ${version} of FLT`);
   await page.getByRole("button", { name: "Send", exact: true }).click();
+  // 124: one New release card; the version is filled in, the rest is picked on the card.
   let confirm = page.getByRole("group", { name: /^Confirm:/ }).last();
-  await confirm.getByRole("button", { name: "Create", exact: true }).click();
-  await expect(confirm).toContainText("Done:");
+  await expect(confirm.getByLabel("Version")).toHaveValue(version);
+  await confirm.getByLabel("Name").fill("Fleet beta");
+  await confirm.getByText("Dev", { exact: true }).click();
+  await confirm.getByLabel("Target (YYYY-MM-DD)").fill("2099-12-31");
+  await confirm.getByRole("button", { name: "Create Fleet beta", exact: true }).click();
+  await expect(confirm).toContainText(`Created Fleet beta (${version})`);
+  await expect(confirm.getByRole("link", { name: "Open the release" })).toHaveAttribute("href", `/delivery/releases/FLT/${version}`);
   await page.goto("/delivery/p/FLT/releases");
   await page.getByRole("button", { name: `Add Fleet Tracker ${version} to chat` }).first().press("Enter");
   await offers.getByRole("button", { name: `Record a deployment of FLT ${version} to Dev` }).click();

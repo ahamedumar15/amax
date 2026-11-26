@@ -12,8 +12,9 @@ import { invalid, notFound } from "./refusal";
 import { isWithdrawn, withdrawnIn } from "./readiness";
 import { liveProdDeployments } from "./in-prod";
 import { commitTime, knownTime, repoInstant, repoPhasesInMeta, repoTime, resolveRepoPhases, storedPhasesFor } from "./repo-time";
-import { Day, ReleaseName, CategoryInput, Tracking, type ReleaseStatus } from "./release-status";
-import { checkDates, completeOnDeployment, notCompleted, releaseState, reopenOnVoid, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
+import { Day, Keys, ReleaseName, CategoryInput, Tracking, type ReleaseStatus } from "./release-status";
+import { candidates, moveRefusal, notReleasable, openElsewhere, shippedElsewhere } from "./release-proposals";
+import { checkDates, completeOnDeployment, notCompleted, reopenOnVoid, statusFor, tracked, writeStatus, type Dates } from "./release-tracking";
 
 const by = (ctx: ServiceContext) => ctx.onBehalfOf ? `${ctx.actor.id} for ${ctx.onBehalfOf}` : ctx.actor.id;
 
@@ -39,25 +40,25 @@ async function projectByKey(tx: Tx, key: string) {
 // which would deadlock (round 19).
 const lockProposals = (tx: Tx, where: ReturnType<typeof sql>) => tx.execute(sql`select id from delivery.proposal where ${where} order by id for update`);
 
-async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, keys: string[], kept: string[] = []) {
+async function assignProposals(tx: Tx, projectId: unknown, releaseId: unknown, keys: string[], kept: string[] = [], reassign: string[] = []) {
   const [{ live }] = await tx.execute(sql`select count(*)::int as live from (${liveProdDeployments(sql`${releaseId}`)}) x`);
   await lockProposals(tx, sql`project_id = ${projectId} and key = any(${textArray(keys)})`);
+  const moved: { key: string; from: string }[] = [];
   for (const key of keys) {
     // Locked above, so the phase read here is the committed one.
-    const [p] = await tx.execute(sql`select p.id, p.phase, p.release_id, p.withdrawn_at, p.meta, r.version, r.category, r.status, pr.key as project_key
-      from delivery.proposal p left join delivery.release r on r.id = p.release_id join delivery.project pr on pr.id = p.project_id where p.key = ${key} and p.project_id = ${projectId}`);
+    const [p] = await candidates(tx, sql`p.key = ${key} and p.project_id = ${projectId}`);
     if (!p) throw notFound(`no proposal ${key} in this project`);
-    if (isWithdrawn(p)) throw invalid(`${key} was withdrawn; it can't go in a release`);
-    if (p.phase === "released" && p.release_id !== releaseId) throw invalid(`${key} already shipped in another release`);
-    if (p.release_id && p.release_id !== releaseId && p.status !== "completed") throw invalid(`${key} is already in ${p.project_key as string} ${p.version as string} (${releaseState(p)}); take it out there first`);
+    if (isWithdrawn(p) || shippedElsewhere(p, releaseId)) throw invalid(notReleasable(p, releaseId)!);
+    if (openElsewhere(p, releaseId) && !reassign.includes(key)) throw invalid(moveRefusal(p));
     if (Number(live) > 0 && p.release_id !== releaseId) throw invalid(`this release is already live in Prod; put ${key} in a new release`);
-    if (!kept.includes(key) && !RELEASABLE.includes(p.phase as Phase)) throw invalid(`${key} is ${phaseWord(p.phase as Phase)}; only Verified or Released proposals can go in a release`);
+    const phase = kept.includes(key) ? null : notReleasable(p, releaseId);
+    if (phase) throw invalid(phase);
+    if (p.release_id && p.release_id !== releaseId) moved.push({ key, from: p.version as string });
     await tx.execute(sql`update delivery.proposal set release_id = ${releaseId} where id = ${p.id}`);
   }
+  return moved;
 }
 
-const RELEASABLE: Phase[] = ["verified", "released"];
-const phaseWord = (p: Phase) => p.charAt(0).toUpperCase() + p.slice(1);
 
 // Every write that reads a release locks its row, so a Prod deployment and a change to its proposals
 // can't interleave: proposals added to a release are either released with it or refused (final review).
@@ -167,7 +168,7 @@ export const createRelease = defineService({
   name: "delivery.release.create",
   action: "delivery:release:create",
   resource: "delivery.release",
-  input: z.object({ projectKey: z.string(), version: z.string().min(1), proposalKeys: z.array(z.string()).default([]), ...Tracking.shape }),
+  input: z.object({ projectKey: z.string(), version: z.string().min(1), proposalKeys: Keys.default([]), reassign: Keys.default([]), ...Tracking.shape }),
   async run(tx, input, ctx) {
     const project = await projectByKey(tx, input.projectKey);
     scoped(ctx, "delivery:release:create", project.id as string);
@@ -179,8 +180,9 @@ export const createRelease = defineService({
       on conflict (project_id, version) do nothing returning id, tenant_id`);
     if (!r) throw invalid(`${input.projectKey} already has a release ${input.version}`);
     await writeStatus(tx, { ...r, status: null }, status, "create", by(ctx));
-    await assignProposals(tx, project.id, r.id, input.proposalKeys);
-    return { result: { id: r.id as string, status, href: releaseHref(input) }, resourceId: r.id as string, after: input };
+    const moved = await assignProposals(tx, project.id, r.id, input.proposalKeys, [], input.reassign);
+    const href = releaseHref(input);
+    return { result: { id: r.id as string, status, href, moved, open: { label: "Open the release", url: href } }, resourceId: r.id as string, after: { ...input, moved } };
   },
 });
 
@@ -463,14 +465,14 @@ export const setReleaseProposals = defineService({
   name: "delivery.release.proposals",
   action: "delivery:release:create",
   resource: "delivery.release",
-  input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: z.array(z.string()) }),
+  input: z.object({ projectKey: z.string(), version: z.string(), proposalKeys: Keys, reassign: Keys.default([]) }),
   async run(tx, input, ctx) {
     const { project, r } = await openRelease(tx, ctx, input);
     const before = (await tx.execute(sql`select key from delivery.proposal where release_id = ${r.id} order by key`)).map((p) => p.key as string);
     await lockProposals(tx, sql`release_id = ${r.id} or (project_id = ${project.id} and key = any(${textArray(input.proposalKeys)}))`);
     await tx.execute(sql`update delivery.proposal set release_id = null where release_id = ${r.id} and phase <> 'released'`);
-    await assignProposals(tx, project.id, r.id, input.proposalKeys, before);
-    return { result: { version: input.version, proposals: input.proposalKeys }, resourceId: r.id as string, before: { proposals: before }, after: { proposals: input.proposalKeys } };
+    const moved = await assignProposals(tx, project.id, r.id, input.proposalKeys, before, input.reassign);
+    return { result: { version: input.version, proposals: input.proposalKeys, moved }, resourceId: r.id as string, before: { proposals: before }, after: { proposals: input.proposalKeys, moved } };
   },
 });
 

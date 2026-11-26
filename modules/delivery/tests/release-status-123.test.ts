@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { completionOf, releaseDay, releaseStatus, Tracking } from "../server/release-status";
-import { createReleaseCard } from "../server/write-cards";
 
 const at = (today: string, completed = false) => releaseStatus({ today, start: "2026-12-01", target: "2026-12-12", completed });
 
@@ -12,12 +11,6 @@ describe("123 release status rule", () => {
     expect(completionOf(releaseDay("UTC", evening), "2026-12-12")).toBe("on_time");
     expect(completionOf(releaseDay("Asia/Colombo", evening), "2026-12-12")).toBe("late");
     expect(completionOf(releaseDay("America/New_York", "2026-12-13T03:00:00Z"), "2026-12-12")).toBe("on_time");
-  });
-
-  it("AC12 the New release card shows the name, category and dates", async () => {
-    const card = await createReleaseCard({} as never, { projectKey: "ORB", version: "v0.14.0", name: "Offline drafts", category: "uat", startDate: "2026-12-01", targetDate: "2026-12-12", proposalKeys: ["ORB-044"] });
-    expect(card.lines.map((l) => `${l.label}: ${l.value}`)).toEqual(["Project: ORB", "Version: v0.14.0", "Name: Offline drafts", "Category: UAT",
-      "Start: 1 Dec 2026", "Target: 12 Dec 2026", "Proposals: ORB-044"]);
   });
 
   it("AC4 fields: a name, Dev, UAT or Prod in any case, and real calendar days", () => {

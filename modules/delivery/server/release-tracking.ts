@@ -3,7 +3,7 @@ import type { Tx } from "@amax/db";
 import { entityZone } from "@amax/workflows";
 import { clockOf } from "./queries";
 import { invalid } from "./refusal";
-import { categoryLabel, completionOf, releaseDay, releaseStatus, statusLabel, type Category, type ReleaseStatus } from "./release-status";
+import { categoryLabel, completionOf, releaseDay, releaseStatus, type Category, type ReleaseStatus } from "./release-status";
 
 type Row = Record<string, unknown>;
 type Source = "create" | "update" | "deployment" | "void";
@@ -20,9 +20,13 @@ export const categoryEnv = async (tx: Tx, projectId: unknown, category: Category
   (await tx.execute(category === "prod" ? sql`select * from delivery.environment where project_id = ${projectId} and is_prod`
     : sql`select * from delivery.environment where project_id = ${projectId} and lower(name) = ${category}`))[0];
 
+export const datesProblem = (start: string, target: string) => (target < start ? `The target date (${target}) is before the start date (${start})` : null);
+export const categoryProblem = async (tx: Tx, project: Row, category: Category) =>
+  ((await categoryEnv(tx, project.id, category)) ? null : `${project.key as string} has no ${categoryLabel(category)} environment; add one, or pick another category`);
+
 export async function checkDates(tx: Tx, project: Row, d: Dates) {
-  if (d.targetDate < d.startDate) throw invalid(`The target date (${d.targetDate}) is before the start date (${d.startDate})`);
-  if (!(await categoryEnv(tx, project.id, d.category))) throw invalid(`${project.key as string} has no ${categoryLabel(d.category)} environment; add one, or pick another category`);
+  const problem = datesProblem(d.startDate, d.targetDate) ?? (await categoryProblem(tx, project, d.category));
+  if (problem) throw invalid(problem);
 }
 
 export async function tracked(tx: Tx, releaseId: unknown) {
@@ -35,7 +39,6 @@ export function notCompleted(r: Row, projectKey: string) {
   if (r.status === "completed") throw invalid(`${projectKey} ${r.version as string} is completed; it can't change`);
 }
 
-export const releaseState = (r: Row) => `${r.category ? `${categoryLabel(r.category as string)}, ` : ""}${statusLabel(r.status as string | null)}`;
 
 export async function writeStatus(tx: Tx, r: Row, to: ReleaseStatus, source: Source, by: string, deploymentId: string | null = null, also: SQL = sql``) {
   await tx.execute(sql`update delivery.release set status = ${to}, updated_at = now() ${also} where id = ${r.id}`);

@@ -1,0 +1,48 @@
+import { sql, type SQL } from "drizzle-orm";
+import { textArray, withTenant, type Tx } from "@amax/db";
+import type { Viewer } from "@amax/auth";
+import { getRuntime } from "@amax/core/server";
+import type { Phase } from "../contracts";
+import { read } from "./queries";
+import { isWithdrawn } from "./readiness";
+import { categoryLabel, statusLabel } from "./release-status";
+
+type Row = Record<string, unknown>;
+
+export const RELEASABLE: Phase[] = ["verified", "released"];
+
+export const candidates = (tx: Tx, where: SQL) => tx.execute(sql`select p.id, p.key, p.title, p.phase, p.release_id, p.withdrawn_at, p.meta,
+  r.version, r.category, r.status, pr.key as project_key from delivery.proposal p left join delivery.release r on r.id = p.release_id
+  join delivery.project pr on pr.id = p.project_id where ${where} order by p.key`);
+
+export const shippedElsewhere = (p: Row, releaseId: unknown) => p.phase === "released" && p.release_id != null && p.release_id !== releaseId;
+export const openElsewhere = (p: Row, releaseId: unknown) => p.release_id != null && p.release_id !== releaseId && p.status !== "completed";
+const phaseWord = (p: Phase) => p.charAt(0).toUpperCase() + p.slice(1);
+export function notReleasable(p: Row, releaseId: unknown) {
+  if (isWithdrawn(p)) return `${p.key as string} was withdrawn; it can't go in a release`;
+  if (shippedElsewhere(p, releaseId)) return `${p.key as string} already shipped in another release`;
+  return RELEASABLE.includes(p.phase as Phase) ? null : `${p.key as string} is ${phaseWord(p.phase as Phase)}; only Verified or Released proposals can go in a release`;
+}
+
+export const releasable = (p: Row) => notReleasable(p, null) === null;
+
+export const releaseState = (r: Row) => `${r.category ? `${categoryLabel(r.category as string)}, ` : ""}${statusLabel(r.status as string | null)}`;
+export const whereItIs = (p: Row) => `${p.key as string} is already in ${p.project_key as string} ${p.version as string} (${releaseState(p)})`;
+export const moveRefusal = (p: Row) => `${whereItIs(p)}; confirm moving it, or take it out there first`;
+
+export type ReleaseProposal = { key: string; title: string; phase: Phase; openRelease: { version: string; category: string | null; status: string | null } | null };
+
+export const releaseProposals = async (tx: Tx, projectKey: string): Promise<ReleaseProposal[]> =>
+  (await candidates(tx, sql`pr.key = ${projectKey}`)).filter(releasable).map((p) => ({
+    key: p.key as string, title: p.title as string, phase: p.phase as Phase,
+    openRelease: openElsewhere(p, null) ? { version: p.version as string, category: (p.category as string | null) ?? null, status: (p.status as string | null) ?? null } : null,
+  }));
+
+export const listReleaseProposals = (v: Viewer, projectKey: string) => read(v, (tx) => releaseProposals(tx, projectKey));
+
+export const releaseNote = (v: Viewer, a: { projectKey: string; proposalKeys?: string[]; reassign?: string[] }) => withTenant(getRuntime().db, v.tenantId, async (tx) => {
+  const keys = a.proposalKeys ?? [];
+  const rows = keys.length ? await candidates(tx, sql`p.key = any(${textArray(keys)}) and pr.key = ${a.projectKey}`) : [];
+  const lines = rows.filter((p) => openElsewhere(p, null) && (a.reassign ?? []).includes(p.key as string)).map((p) => `${whereItIs(p)}: it moves to this release`);
+  return lines.length ? lines.join(". ") : undefined;
+});
