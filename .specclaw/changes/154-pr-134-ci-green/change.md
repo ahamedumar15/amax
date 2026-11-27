@@ -36,4 +36,17 @@ No screen changes. This change gets no mock section (CI only).
 
 ## Tasks
 
+No UI task: CI only.
+
+- [ ] `T1` — AC-1: the public config ignores `project-tabs` and `release-pages`; the signed-in config runs `release-pages` in `writes`; a test reads every e2e spec, and each one that signs in or opens the database must be ignored by the public config and matched by exactly one signed-in project
+  Files: apps/web/playwright.config.ts, apps/web/playwright.auth.config.ts, apps/web/tests/e2e-configs-154.test.ts
+- [ ] `T2` — AC-2 AC-3: migration 0029 makes `release_completing_deployment_id_fkey` deferrable, initially deferred; `inOrder` (exported for its test) leaves deferrable keys out of the order and refuses a remaining cycle, naming its tables
+  Files: modules/delivery/db/migrations/0029_release_completing_deferrable.sql, packages/core/src/backup/restore.ts
+- [ ] `T3` — AC-4: the drill restores a snapshot holding a completed release, its deployments, and a proposal with tasks; `inOrder` on a deferrable cycle (ordered) and a non-deferrable one (refused, naming both)
+  Files: packages/core/tests/backup-restore-order-154.test.ts
+  Depends: T2
+- [ ] `T4` — AC-5: after the push, PR #134's `checks` (both e2e runs) and `docker-k3s` watched to the end; any remaining failure's log read and recorded
+  Files: .specclaw/changes/154-pr-134-ci-green/change.md
+  Depends: T1, T2, T3
+
 ## Verify
