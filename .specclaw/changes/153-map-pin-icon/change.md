@@ -30,4 +30,23 @@ its pin is the same small "+" as every other card's pin. Like 098, this change g
 
 ## Verify
 
+**Verdict:** PASS
+Review: CLEAN — 2 rounds, final pass 6405df04a8, models opus/opus; last round 0/0/0 b/M/m (`base_branch` 962bb5ce for each run; config restored after each).
+Size: 2 production lines against 962bb5ce (cap 400).
+
+Checked 2026-11-27, Windows 11, dev app on :3000, signed in as maya@lumenlabs.test on CON's Releases tab.
+
+- AC-1: pass. `.map>svg` sizes only the map drawing; hovering the Release map card, the pin icon measures 15×15 (760×760 before), and the map keeps its width (`shots/app-hover-before.png`, `shots/app-hover-light.png`, `shots/app-hover-dark.png`).
+- AC-2: pass. `map-pin-icon-153.test.ts` (2 tests): the only `.map` rule sizing an `svg` is `.map>svg` with its 760-px minimum, and in the rendered cards the map drawing is the card's direct `svg` child while the pin's icon sits in the card head's button; with the old `.map svg` put back, the stylesheet test fails.
+
+Commands (exit codes):
+
+- `npx vitest run modules/delivery apps/web/tests packages/testing/tests/mock-balanced-116.test.ts`: 1, host-only `releases.test` "two call sites", plus three load timeouts that pass alone (27/27: `authors-091`, `commits-104`, `create-project-surfaces`)
+- `node scripts/check-module-standard.mjs --root .`: 0 (23 modules)
+- `specclaw-verify size .specclaw 153-map-pin-icon` (base 962bb5ce): 0
+- `specclaw-preset-check .`: 1, repo-wide; in 153's files only the comment rule, as across the repo
+- `specclaw-quality-scan . --gate`: 2, the complexity tool did not run
+
+Screenshots: `shots/app-hover-before.png`, `shots/app-hover-light.png`, `shots/app-hover-dark.png` (no mock section: the map looks as 051's mock shows)
+
 Quality: no duplicated lines added (a one-selector CSS change and one test). Build notes: in the running dev app the map card's pin icon measured 760×760 on hover before and 15×15 after. No per-task commits from the agent (git is read-only here).
