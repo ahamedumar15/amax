@@ -9,7 +9,8 @@ import authConfig from "../playwright.auth.config";
 // were on neither side, and PR #134's CI failed on them. A new spec has to be placed on one side or the other.
 const PUBLIC = ["marketing-seo.spec.ts", "marketing-theme.spec.ts", "marketing-video.spec.ts", "marketing.spec.ts", "shell.spec.ts"];
 const dir = join(__dirname, "e2e");
-const specs = readdirSync(dir).filter((f) => f.endsWith(".spec.ts")).sort();
+// Playwright's own default testMatch, so a spec under any extension it runs has to be placed too.
+const specs = readdirSync(dir).filter((f) => /\.(spec|test)\.[cm]?[jt]sx?$/.test(f)).sort();
 const matches = (pattern: unknown, file: string) => [pattern].flat().some((p) => p instanceof RegExp && p.test(file));
 const signedInProjects = (file: string) => (authConfig.projects ?? []).filter((p) => matches(p.testMatch, file)).map((p) => p.name);
 

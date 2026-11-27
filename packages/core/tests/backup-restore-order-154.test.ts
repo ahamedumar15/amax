@@ -35,21 +35,28 @@ describe.skipIf(!hasDb)("154 the restore drill orders around the release cycle",
     expect(out.rowsChecked).toBeGreaterThan(5);
   }, 120_000);
 
+  // Only a key deferred by default (`initially deferred`) waits for the commit; one that is deferrable but `initially
+  // immediate` is checked per statement, so it still orders the restore, like a plain key.
   it.each([
-    { keys: "deferrable", deferrable: true },
-    { keys: "checked at once", deferrable: false },
-  ])("AC-3 AC-4 a two-table cycle of keys $keys", async ({ deferrable }) => {
-    const s = `cyc154${deferrable ? "d" : "n"}`;
-    const when = deferrable ? "deferrable initially deferred" : "";
+    { keys: "deferrable, initially deferred", tag: "d", when: "deferrable initially deferred", ordered: true },
+    { keys: "deferrable, initially immediate", tag: "i", when: "deferrable initially immediate", ordered: false },
+    { keys: "checked at once", tag: "n", when: "", ordered: false },
+  ])("AC-3 AC-4 a two-table cycle of keys $keys", async ({ tag, when, ordered }) => {
+    const s = `cyc154${tag}`;
     await db.t.owner.unsafe(`create schema ${s}; create table ${s}.a (id int primary key, b_id int); create table ${s}.b (id int primary key, a_id int references ${s}.a ${when});
       alter table ${s}.a add foreign key (b_id) references ${s}.b ${when}; create table ${s}.c (id int primary key, a_id int references ${s}.a)`);
-    const names = [`${s}.c`, `${s}.b`, `${s}.a`];
-    const order = db.tx((tx) => inOrder(tx, names));
-    if (deferrable) {
+    const order = db.tx((tx) => inOrder(tx, [`${s}.c`, `${s}.b`, `${s}.a`]));
+    if (ordered) {
       const got = await order;
       expect(got.indexOf(`${s}.a`)).toBeLessThan(got.indexOf(`${s}.c`));
     } else {
       await expect(order).rejects.toThrow(`form a cycle checked at once, so no restore order exists: ${s}.a, ${s}.b, ${s}.c`);
     }
+  });
+
+  it("AC-3 a parent and child joined by a deferrable, initially immediate key: the parent is restored first", async () => {
+    await db.t.owner.unsafe(`create schema pc154; create table pc154.parent (id int primary key);
+      create table pc154.child (id int primary key, parent_id int references pc154.parent deferrable initially immediate)`);
+    expect(await db.tx((tx) => inOrder(tx, ["pc154.child", "pc154.parent"]))).toEqual(["pc154.parent", "pc154.child"]);
   });
 });
