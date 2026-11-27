@@ -54,11 +54,25 @@ No UI task: no screen changes (the mock sections only take new ids).
   Files: .specclaw/changes/116-* … 129-* renamed to 138-* … 151-*, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/STATUS.md
 - [x] `T2` — AC-6: read how the specclaw sync treats a folder whose number changed with the same slug (re-key or new proposal), and record the answer under `## Verify` for the PR body
   Files: modules/delivery/sync/ (read only), .specclaw/changes/152-renumber-release-stack/change.md
-- [~] `T3` — AC-4 AC-5: after the rename is committed, 148's own final pass (base 52435965); the review gate and the change-number check over the stack, and no number in 138–152 among #133's folders; 152's own loop at verify
+- [x] `T3` — AC-4 AC-5: after the rename is committed, 148's own final pass (base 52435965); the review gate and the change-number check over the stack, and no number in 138–152 among #133's folders; 152's own loop at verify
   Files: .specclaw/changes/148-release-status-engine/review/, .specclaw/changes/152-renumber-release-stack/
   Depends: T1
 
 ## Verify
+
+**Verdict:** PASS
+Review: CLEAN — 3 rounds, final pass f9c8f69605, models opus/opus; last round 0/0/0 b/M/m (`base_branch` 49a04639, the stack before 152, for each run; config restored after each). Round 1's minor (ledes, banners and the visual test's note) and the first final pass's minor (two "Before 128/129" sentences) were fixed, and the final pass run again.
+
+Checked 2026-11-27.
+
+- AC-1: pass. The fourteen folders are 138–151 (a dry run of the 77 in-folder edits was checked before it ran); each one's heading, `state.json` and `status.md` carry its new name; rounds, shots, evidence and follow-ups are unchanged.
+- AC-2: pass. Both mock copies give the moved sections their new ids, ledes and banners, and the two copies are identical (`mock-balanced-116` 4/4).
+- AC-3: pass. Live links moved (Mock Delta anchors, "mock section is" pointers, 146's pointer to 151, the visual test); a search finds old names only in the records kept: review rounds, follow-ups, review memory, three size-check commands, 142's screenshot note, and 148/149's cover records.
+- AC-4: pass. 148 is `**Review:** change` with its own final pass after the rename (CLEAN at 382e1d491b, base 52435965); `node scripts/check-review-gate.mjs --base upstream/main --head HEAD --fork true`: 0, all fifteen pass.
+- AC-5: pass. `node scripts/check-change-numbers.mjs --base upstream/main --head HEAD`: ok; this stack uses 138–152 and #133 adds 116–137 (`gh pr view 133 --json files`), so no number is shared.
+- AC-6: pass. Recorded below: the sync creates AMX-138…151 and doesn't re-key; the old keys go to #133 or are withdrawn.
+
+Screenshots: none (no screen changes; the mock sections only took new ids).
 
 **The amax sync (AC-6, found at build):** the sync keys a spec change's proposal by its number (AMX-145 for
 `145-releases-and-proposal-entries`) and doesn't re-key one whose folder took a new number; it re-keys only a hand-made
