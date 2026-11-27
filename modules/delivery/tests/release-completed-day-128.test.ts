@@ -70,7 +70,10 @@ describe.skipIf(!hasDb)("128 a completed release keeps the day it completed on (
     const [{ id: rtk }] = await db.t.owner`select id from delivery.project where key = 'RTK'`;
     // The table as 0026 left it, under 0025's check: no zone or day. RTK's completions moved to an instant whose day
     // differs by zone (20:00 UTC on 12 Dec is 13 Dec in Colombo and Kiritimati), so a wrong zone step can't pass.
-    const before = () => db.t.owner.unsafe(`alter table delivery.release drop constraint release_completed_whole;
+    // 154 made the release's completing-deployment key deferred; checked per statement here, so no pending check blocks the
+    // ALTERs that follow an UPDATE in the same batch (in a real run 0027 comes before 0029, so it never meets one).
+    const replay = (text: string) => db.t.owner.unsafe(`set constraints all immediate; ${text}`);
+    const before = () => replay(`alter table delivery.release drop constraint release_completed_whole;
       alter table delivery.release drop column completed_zone, drop column completed_day;
       update delivery.release set completed_at = '2026-12-12T20:00:00Z' where project_id = '${rtk}' and completed_at is not null;
       alter table delivery.release add constraint release_completed_whole check ((status = 'completed') = (completed_at is not null and completion is not null and completing_deployment_id is not null) or status is null)`);
@@ -80,14 +83,14 @@ describe.skipIf(!hasDb)("128 a completed release keeps the day it completed on (
         const zone = await withTenant(db.app, T, (tx) => entityZone(tx, legalEntity));
         expect(zone).toBe(own ?? (legalEntity ? "Asia/Colombo" : "UTC"));
         await before();
-        await db.t.owner.unsafe(migration);
+        await replay(migration);
         const rows = await db.t.owner`select completed_at, completed_zone, completed_day::text as day from delivery.release where project_id = ${rtk} and completed_at is not null`;
         expect(rows.length).toBeGreaterThan(0);
         for (const r of rows) expect([r.completed_zone, r.day, releaseDay(zone, r.completed_at as Date)]).toEqual([zone, day, day]);
       }
     } finally {
       const [{ n }] = await db.t.owner`select count(*)::int as n from information_schema.columns where table_schema = 'delivery' and table_name = 'release' and column_name = 'completed_zone'`;
-      if (n === 0) await db.t.owner.unsafe(migration);
+      if (n === 0) await replay(migration);
     }
   });
 

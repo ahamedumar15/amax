@@ -38,11 +38,11 @@ No screen changes. This change gets no mock section (CI only).
 
 No UI task: CI only.
 
-- [ ] `T1` — AC-1: the public config ignores `project-tabs` and `release-pages`; the signed-in config runs `release-pages` in `writes`; a test reads every e2e spec, and each one that signs in or opens the database must be ignored by the public config and matched by exactly one signed-in project
+- [x] `T1` — AC-1: the public config ignores `project-tabs` and `release-pages`; the signed-in config runs `release-pages` in `writes`; a test reads every e2e spec, and each one that signs in or opens the database must be ignored by the public config and matched by exactly one signed-in project
   Files: apps/web/playwright.config.ts, apps/web/playwright.auth.config.ts, apps/web/tests/e2e-configs-154.test.ts
-- [ ] `T2` — AC-2 AC-3: migration 0029 makes `release_completing_deployment_id_fkey` deferrable, initially deferred; `inOrder` (exported for its test) leaves deferrable keys out of the order and refuses a remaining cycle, naming its tables
+- [x] `T2` — AC-2 AC-3: migration 0029 makes `release_completing_deployment_id_fkey` deferrable, initially deferred; `inOrder` (exported for its test) leaves deferrable keys out of the order and refuses a remaining cycle, naming its tables
   Files: modules/delivery/db/migrations/0029_release_completing_deferrable.sql, packages/core/src/backup/restore.ts
-- [ ] `T3` — AC-4: the drill restores a snapshot holding a completed release, its deployments, and a proposal with tasks; `inOrder` on a deferrable cycle (ordered) and a non-deferrable one (refused, naming both)
+- [x] `T3` — AC-4: the drill restores a snapshot holding a completed release, its deployments, and a proposal with tasks; `inOrder` on a deferrable cycle (ordered) and a non-deferrable one (refused, naming both)
   Files: packages/core/tests/backup-restore-order-154.test.ts
   Depends: T2
 - [ ] `T4` — AC-5: after the push, PR #134's `checks` (both e2e runs) and `docker-k3s` watched to the end; any remaining failure's log read and recorded
@@ -50,3 +50,10 @@ No UI task: CI only.
   Depends: T1, T2, T3
 
 ## Verify
+
+Build notes: the restore now turns user triggers off for the whole load and back on after `set constraints all immediate`,
+because a table can't be altered while a deferred key check it queued is pending (the drill's first run on 0029 failed on
+exactly that). The same rule meets 150's backfill test, which replays 0027 on today's schema: it now runs its batches with
+`set constraints all immediate` (a real migration run applies 0027 before 0029). The README says so for later
+migrations. Mutation checks: without 0029 the drill refuses, naming the tables in the cycle; without `release-pages` in
+the signed-in config, the guard test fails on it. No per-task commits from the agent (git is read-only here).
