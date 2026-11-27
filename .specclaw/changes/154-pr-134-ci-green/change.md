@@ -51,6 +51,8 @@ No UI task: CI only.
 
 ## Verify
 
+CI's second run (2026-11-27, at 107e3f7d): `docker-k3s` and the public e2e run passed; the signed-in run failed its first project, the visual test, on 001's project header (`/delivery/p/CON .row.head`, 57 px in the app against 63 in 001's mock). 144 changed that header on purpose (its own mock: the h1 without its bottom margin, 57 px), so the visual test leaves it out, as 147 did for the list's rows; 144's e2e covers the header. The other 109 signed-in tests had not run yet.
+
 Build notes: the restore now turns user triggers off for the whole load and back on after `set constraints all immediate`,
 because a table can't be altered while a deferred key check it queued is pending (the drill's first run on 0029 failed on
 exactly that). The same rule meets 150's backfill test, which replays 0027 on today's schema: it now runs its batches with
