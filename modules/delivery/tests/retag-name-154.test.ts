@@ -20,5 +20,9 @@ describe.skipIf(!hasDb)("154 a re-tag carries a name that is just the version", 
     else await createRelease(db.admin(), { ...OPEN, projectKey: "RTK", version: from, name });
     await tagRelease(db.admin(), { projectKey: "RTK", version: from, newVersion: to });
     expect(await nameOf(to)).toBe(want);
+    // 155: the audit row names the name too, when the re-tag changed it.
+    const [audit] = await db.t.owner`select before, after from core.audit_event where action = 'delivery.release.tag' and tenant_id = ${T} order by seq desc limit 1`;
+    const renamed = want === to;
+    expect([audit.before, audit.after]).toEqual(renamed ? [{ version: from, name: from }, { version: to, name: to }] : [{ version: from }, { version: to }]);
   });
 });

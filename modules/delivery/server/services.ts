@@ -468,13 +468,16 @@ export const tagRelease = defineService({
   input: z.object({ projectKey: z.string(), version: z.string(), newVersion: Version }),
   async run(tx, input, ctx) {
     const { project, r } = await openRelease(tx, ctx, input);
-    // 154: a name that is just the old version (0025 gave every release made before 145 one) follows the re-tag; a real name stays.
-    await tx.execute(sql`update delivery.release set version = ${input.newVersion}, name = case when name = ${input.version} then ${input.newVersion} else name end,
-      updated_at = now() where id = ${r.id}`);
+    // 154: a name that is just the old version (0025 gave every release made before 145 one) follows the re-tag; a real name
+    // stays. 155: worked out once, so the name written and the name audited can't disagree.
+    const renamed = r.name === input.version;
+    const name = renamed ? input.newVersion : (r.name as string | null);
+    await tx.execute(sql`update delivery.release set version = ${input.newVersion}, name = ${name}, updated_at = now() where id = ${r.id}`);
     // The release's page is named by its version: say where it moved, so chat can follow it (057).
     const moved = { from: releaseHref(input), to: releaseHref({ projectKey: input.projectKey, version: input.newVersion }) };
     // Pins name it by its id (059), so they need nothing.
-    return { result: { version: input.newVersion, moved }, resourceId: r.id as string, before: { version: input.version }, after: { version: input.newVersion } };
+    return { result: { version: input.newVersion, moved }, resourceId: r.id as string,
+      before: { version: input.version, ...(renamed ? { name: input.version } : {}) }, after: { version: input.newVersion, ...(renamed ? { name } : {}) } };
   },
 });
 

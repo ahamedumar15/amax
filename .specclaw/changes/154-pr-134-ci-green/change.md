@@ -51,6 +51,20 @@ No UI task: CI only.
 
 ## Verify
 
+**Verdict:** PASS, with the review stopped at the five-pass cap (AGENTS.md): 0 blockers, 1 major open at the final pass, fixed in 155.
+Review: OPEN at the cap: 5 passes (rounds 1 and 2, final passes 3, 4 and 5, opus), last final pass at 0b3dcd25ce (`base_branch` f0d4cfa4, config restored after each). The review gate passes it: no open blocker, final pass in the PR.
+Size: well under the cap (the build measured 37 production lines; the replica's fixes add test lines and one SQL clause).
+
+- AC-1: pass. The public run ignores `project-tabs` and `release-pages`, the signed-in run runs `release-pages` in `writes`; `e2e-configs-154.test.ts` places every spec on exactly one side by the configs (fails with `project-tabs` back out of the ignore list).
+- AC-2: pass. 0029 makes `release_completing_deployment_id_fkey` deferrable, initially deferred.
+- AC-3: pass. `inOrder` leaves only initially-deferred keys out of the order and refuses a remaining cycle, naming its tables; the restore turns user triggers off for the whole load.
+- AC-4: pass. `backup-restore-order-154.test.ts` (5 tests; the drill fails without 0029, the cycle and parent/child rows fail with the old filter).
+- AC-5: pass locally, CI to confirm. PR #134's second CI run: `docker-k3s` and the public e2e run pass. The Docker replica of the `checks` job (above) ends with public e2e 9/9 and signed-in e2e 112/112.
+
+Open at the stop (fix in its own change, since a code commit under 154 after its final pass fails the review gate):
+
+- Major [module standard: every write is audited] `server/services.ts` `tagRelease`: the re-tag's audit row records the version only, not the name that now follows it. Fixed in 155-retag-audit-name.
+
 CI's second run (2026-11-27, at 107e3f7d): `docker-k3s` and the public e2e run passed; the signed-in run failed its first project, the visual test, on 001's project header (`/delivery/p/CON .row.head`, 57 px in the app against 63 in 001's mock). 144 changed that header on purpose (its own mock: the h1 without its bottom margin, 57 px), so the visual test leaves it out, as 147 did for the list's rows; 144's e2e covers the header. The other 109 signed-in tests had not run yet.
 
 Docker replica of CI's checks job (2026-11-27; postgres:16-alpine with the amax_app role, the app built from the tree):
