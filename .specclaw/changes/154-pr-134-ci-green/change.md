@@ -53,6 +53,25 @@ No UI task: CI only.
 
 CI's second run (2026-11-27, at 107e3f7d): `docker-k3s` and the public e2e run passed; the signed-in run failed its first project, the visual test, on 001's project header (`/delivery/p/CON .row.head`, 57 px in the app against 63 in 001's mock). 144 changed that header on purpose (its own mock: the h1 without its bottom margin, 57 px), so the visual test leaves it out, as 147 did for the list's rows; 144's e2e covers the header. The other 109 signed-in tests had not run yet.
 
+Docker replica of CI's checks job (2026-11-27; postgres:16-alpine with the amax_app role, the app built from the tree):
+six runs until the signed-in e2e run went through. What the runs found and the fixes (all e2e specs that met 144's and
+147's pages for the first time, plus one product gap):
+
+- `sections.spec.ts`: a project's own Releases and Proposals tabs leave out the Project column (144, 147), so each row is
+  checked as this project's by its link.
+- `release-pages.spec.ts` (147): a new target that leaves the status as it was writes no history row (145 AC-2), so the
+  history still holds only "Created".
+- `releases.spec.ts` (042, 054): 147's release page: the heading is the release's name, "Record a deployment" (exact),
+  deployments grouped by environment.
+- **Amended at build (found by the replica, raised with the product owner for review):** `tag_release` carries a name that is just the old
+  version (0025 named every release made before 145 after its version) along with the re-tag; a real name stays
+  (`retag-name-154.test.ts`, 3 rows; 2 fail without it). Without it the v2.4.1 page stayed headed "v2.4.0".
+- `auth.spec.ts` AC5 (sign out, then `/delivery` redirects to sign-in) failed in 2 of 6 runs and passed in the others:
+  a timing flake in an existing test; nothing in this PR touches sign-in or sign-out (its one proxy change forwards
+  GitHub's return URLs only). Left as it is; a failed CI job is re-run.
+
+Final run: public e2e 9/9, signed-in e2e 112/112.
+
 Build notes: the restore now turns user triggers off for the whole load and back on after `set constraints all immediate`,
 because a table can't be altered while a deferred key check it queued is pending (the drill's first run on 0029 failed on
 exactly that). The same rule meets 150's backfill test, which replays 0027 on today's schema: it now runs its batches with

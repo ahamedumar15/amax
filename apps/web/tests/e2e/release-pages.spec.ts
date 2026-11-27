@@ -34,6 +34,8 @@ test("125 create and edit a release in chat; the list and the release page follo
   await card.getByRole("button", { name: "Save", exact: true }).click();
   await expect(card).toContainText(`Updated E2E release (${version})`);
   await expect(page.locator("main .rel-info")).toContainText("15 Dec 2099");
-  await expect(page.locator("main", { hasText: "Status history" })).toContainText("Edited");
+  // A new target that leaves the status as it was writes no history row (145 AC-2): still only "Created".
+  await expect(page.locator("main", { hasText: "Status history" })).toContainText("Created");
+  await expect(page.locator("main")).not.toContainText("Edited");
   for (const colorScheme of ["light", "dark"] as const) { await page.emulateMedia({ colorScheme }); expect(await axe(page)).toEqual([]); }
 });
