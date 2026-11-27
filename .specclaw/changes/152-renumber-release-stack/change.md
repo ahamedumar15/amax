@@ -54,7 +54,7 @@ No UI task: no screen changes (the mock sections only take new ids).
   Files: .specclaw/changes/116-* … 129-* renamed to 138-* … 151-*, .specclaw/mock/index.html, apps/mock/public/mock/index.html, .specclaw/STATUS.md
 - [x] `T2` — AC-6: read how the specclaw sync treats a folder whose number changed with the same slug (re-key or new proposal), and record the answer under `## Verify` for the PR body
   Files: modules/delivery/sync/ (read only), .specclaw/changes/152-renumber-release-stack/change.md
-- [ ] `T3` — AC-4 AC-5: after the rename is committed, 148's own final pass (base 52435965); the review gate and the change-number check over the stack, and no number in 138–152 among #133's folders; 152's own loop at verify
+- [~] `T3` — AC-4 AC-5: after the rename is committed, 148's own final pass (base 52435965); the review gate and the change-number check over the stack, and no number in 138–152 among #133's folders; 152's own loop at verify
   Files: .specclaw/changes/148-release-status-engine/review/, .specclaw/changes/152-renumber-release-stack/
   Depends: T1
 
