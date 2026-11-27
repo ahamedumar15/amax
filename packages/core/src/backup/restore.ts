@@ -33,15 +33,15 @@ async function resetScratch(url: string, root: string | null) {
 }
 
 /**
- * Parents before children by foreign key, so each table's single insert finds the rows it points at. A deferrable key is
- * checked at the restore's commit, so it doesn't order anything (154: release and deployment point at each other). Tables
+ * Parents before children by foreign key, so each table's single insert finds the rows it points at. A key deferred by
+ * default (`initially deferred`) is checked at the restore's commit, so it doesn't order anything (154: release and deployment point at each other). Tables
  * still left with no parent restored first are a cycle of keys checked at once: refused, naming them, never loaded in no
  * order.
  */
 export async function inOrder(tx: Tx, names: string[]) {
   const edges = await tx.execute(sql`select cn.nspname || '.' || cc.relname as child, pn.nspname || '.' || pc.relname as parent from pg_constraint c
     join pg_class cc on cc.oid = c.conrelid join pg_namespace cn on cn.oid = cc.relnamespace join pg_class pc on pc.oid = c.confrelid join pg_namespace pn on pn.oid = pc.relnamespace
-    where c.contype = 'f' and c.conrelid <> c.confrelid and not c.condeferrable`);
+    where c.contype = 'f' and c.conrelid <> c.confrelid and not c.condeferred`);
   const deps = new Map(names.map((n) => [n, new Set(edges.filter((e) => e.child === n && names.includes(e.parent as string)).map((e) => e.parent as string))]));
   const out: string[] = [];
   while (out.length < names.length) {

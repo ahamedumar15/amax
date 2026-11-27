@@ -1,0 +1,6 @@
+# Follow-ups
+
+Deferred by the review loop: minors and pre-existing findings.
+
+- [minor B6] `packages/core/src/backup/restore.ts:44` `inOrder` skips every edge that has `condeferrable` set. A key declared `deferrable initially immediate` is still checked at the end of each statement, because the restore never runs `set constraints all deferred` before loading. Such a key loses its ordering edge, and if a child table is loaded before its parent the insert fails. No key like that exists today, which is why this is minor. Fix: drop only edges where `c.condeferred` is true, or run `set constraints all deferred` before the load loop. (round 1) <!-- fp:8a06073933ef class:other -->
+- [minor B1] `modules/delivery/README.md:66` The new note only warns about migrations that update `release` rows and then alter `release`. The deferred constraint also queues events on the referenced side: deleting a `delivery.deployment` row, or updating its id, queues a deferred check against `release_completing_deployment_id_fkey`. An `ALTER TABLE delivery.deployment` later in the same transaction is then refused with 'pending trigger events'. Name both tables in the note. (round 1) <!-- fp:fb9571010201 class:other -->
