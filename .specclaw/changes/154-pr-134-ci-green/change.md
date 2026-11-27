@@ -45,7 +45,7 @@ No UI task: CI only.
 - [x] `T3` — AC-4: the drill restores a snapshot holding a completed release, its deployments, and a proposal with tasks; `inOrder` on a deferrable cycle (ordered) and a non-deferrable one (refused, naming both)
   Files: packages/core/tests/backup-restore-order-154.test.ts
   Depends: T2
-- [ ] `T4` — AC-5: after the push, PR #134's `checks` (both e2e runs) and `docker-k3s` watched to the end; any remaining failure's log read and recorded
+- [x] `T4` — AC-5: after the push, PR #134's `checks` (both e2e runs) and `docker-k3s` watched to the end; any remaining failure's log read and recorded
   Files: .specclaw/changes/154-pr-134-ci-green/change.md
   Depends: T1, T2, T3
 
@@ -59,7 +59,7 @@ Size: well under the cap (the build measured 37 production lines; the replica's 
 - AC-2: pass. 0029 makes `release_completing_deployment_id_fkey` deferrable, initially deferred.
 - AC-3: pass. `inOrder` leaves only initially-deferred keys out of the order and refuses a remaining cycle, naming its tables; the restore turns user triggers off for the whole load.
 - AC-4: pass. `backup-restore-order-154.test.ts` (5 tests; the drill fails without 0029, the cycle and parent/child rows fail with the old filter).
-- AC-5: pass locally, CI to confirm. PR #134's second CI run: `docker-k3s` and the public e2e run pass. The Docker replica of the `checks` job (above) ends with public e2e 9/9 and signed-in e2e 112/112.
+- AC-5: pass. PR #134's CI at 56ccdef4 (2026-11-27): all nine checks pass, `checks` (both e2e runs) and `docker-k3s` included. PR #134's second CI run: `docker-k3s` and the public e2e run pass. The Docker replica of the `checks` job (above) ends with public e2e 9/9 and signed-in e2e 112/112.
 
 Open at the stop (fix in its own change, since a code commit under 154 after its final pass fails the review gate):
 
