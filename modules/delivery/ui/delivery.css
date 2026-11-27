@@ -36,7 +36,7 @@
 .tcard .chip.yours{font-size:11px;padding:1px 7px}
 .prog{height:6px;border-radius:6px;background:var(--sunken);margin:0 0 12px;overflow:hidden}
 .prog i{display:block;height:100%;border-radius:6px;background:var(--violet)}
-.map svg{width:100%;max-width:1000px;min-width:760px;height:auto;display:block}
+.map>svg{width:100%;max-width:1000px;min-width:760px;height:auto;display:block}
 .map .station{fill:var(--card);stroke-width:3.5}
 .map .lbl{fill:var(--ink);font:600 14px var(--font)}
 .map .env{fill:var(--ink-3);font:600 13px var(--font)}

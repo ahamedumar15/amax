@@ -25,7 +25,9 @@ its pin is the same small "+" as every other card's pin. Like 098, this change g
 
 ## Tasks
 
-- [ ] `T1` — AC-1 AC-2: the map's size rule scoped to the card's direct `svg` child (`.map > svg`), and a test that renders the Releases cards, checks the map drawing is the card's direct `svg` child and the pin icon isn't, and that no `.map` rule sizes a descendant `svg`
+- [x] `T1` — AC-1 AC-2: the map's size rule scoped to the card's direct `svg` child (`.map > svg`), and a test that renders the Releases cards, checks the map drawing is the card's direct `svg` child and the pin icon isn't, and that no `.map` rule sizes a descendant `svg`
   Files: modules/delivery/ui/delivery.css, modules/delivery/tests/map-pin-icon-153.test.ts
 
 ## Verify
+
+Quality: no duplicated lines added (a one-selector CSS change and one test). Build notes: in the running dev app the map card's pin icon measured 760×760 on hover before and 15×15 after. No per-task commits from the agent (git is read-only here).
